@@ -601,7 +601,7 @@ function memberChain(node: unknown): readonly unknown[] {
 }
 
 /** Storybook 10.6.5 `keyOf`: a member's name, or `undefined` when only running the file gives it. */
-function keyOf(member: unknown): unknown {
+export function keyOf(member: unknown): unknown {
   if (field(member, 'property', 'type') === 'StringLiteral') {
     return field(member, 'property', 'value');
   }
@@ -758,6 +758,11 @@ const memberTypes: readonly unknown[] = [
   'OptionalMemberExpression',
 ];
 
+/** `object.key`, `object?.key` or `object[key]`. */
+export function isMember(node: unknown): boolean {
+  return memberTypes.includes(field(node, 'type'));
+}
+
 /** The identifiers whose objects a value shares: those `evaluate` in reset-setting.ts follows, those of a `.story()` or `.extend()` argument, which Storybook 10.6.5 keeps as the story's `input`, and the object of a member such as `Base.args`. */
 function identifiersReachedFrom(node: unknown): readonly unknown[] {
   const current = unwrap(node);
@@ -770,7 +775,7 @@ function identifiersReachedFrom(node: unknown): readonly unknown[] {
     return identifiersReachedFrom(storyArgument(current));
   }
 
-  if (memberTypes.includes(field(current, 'type'))) {
+  if (isMember(current)) {
     return identifiersReachedFrom(field(current, 'object'));
   }
 

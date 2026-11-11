@@ -2,21 +2,18 @@ import type { NodePath } from '@babel/core';
 import {
   csfFile,
   field,
-  lastWinsProperties,
   list,
   objectValue,
-  objectValues,
   ownStoryValue,
   playedStories,
   propertyKey,
+  resolvedPropertyValues,
+  resolvedValues,
   storyValues,
   topLevelBindings,
-  topLevelValueOrSelf,
   unchangedBindings,
   unknownOverAPlay,
   unknownValue,
-  unwrap,
-  valuesIn,
   type LayerValue,
 } from '@layzee/storybook-csf';
 
@@ -247,29 +244,9 @@ function fallbackValue(
   bindings: ReadonlyMap<string, unknown>,
 ): LayerValue {
   return [
-    ...valuesIn(lastWinsProperties(before, bindings, spreadArgs), key),
-    ...below.flatMap((layer) => layerValues(layer, key, bindings)),
+    ...resolvedPropertyValues(before, key, bindings),
+    ...below.flatMap((layer) => resolvedValues(layer, key, bindings)),
   ][0];
-}
-
-/** Every value a layer below gives `key`, the one that runs first: a name the file binds at the top level read as its value, and a spread of a top-level object's `args` (`...Base.args`) replaced by that object's properties. */
-function layerValues(
-  layer: LayerValue,
-  key: Key,
-  bindings: ReadonlyMap<string, unknown>,
-): readonly LayerValue[] {
-  const object = unwrap(topLevelValueOrSelf(layer, bindings));
-
-  return field(object, 'type') === 'ObjectExpression'
-    ? valuesIn(
-        lastWinsProperties(
-          list(field(object, 'properties')),
-          bindings,
-          spreadArgs,
-        ),
-        key,
-      )
-    : objectValues(object, key);
 }
 
 /** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */
@@ -302,31 +279,6 @@ function literalOf(node: unknown): { readonly value: unknown } | undefined {
     field(node, 'argument', 'type') === 'NumericLiteral' &&
     typeof negated === 'number'
     ? { value: -negated }
-    : undefined;
-}
-
-const memberTypes: readonly unknown[] = [
-  'MemberExpression',
-  'OptionalMemberExpression',
-];
-
-/** The top-level object that a `...shared` spread names, or the `args` of the one that a `...Base.args`, `...Base?.args` or `...Base['args']` spread names. */
-function spreadArgs(
-  argument: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): unknown {
-  const name = field(argument, 'name');
-
-  if (typeof name === 'string') {
-    return unwrap(bindings.get(name));
-  }
-
-  const object = field(argument, 'object', 'name');
-
-  return memberTypes.includes(field(argument, 'type')) &&
-    memberKey(argument) === 'args' &&
-    typeof object === 'string'
-    ? objectValue(unwrap(bindings.get(object)), 'args')
     : undefined;
 }
 

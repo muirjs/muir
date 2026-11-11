@@ -367,6 +367,28 @@ export const fallbackCases: readonly Case[] = [
     expect: [[args, "{ ...Base.args, label: 'a' }"]],
   },
   {
+    id: 'spread-of-named-args-same-literal',
+    title:
+      'a key whose literal value equals the one in the top-level object that the args spread before it name makes no mutant',
+    source:
+      "const shared = { label: 'a' };\n" +
+      'const Base = { args: shared };\n' +
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Primary = { args: { ...Base.args, label: 'a', disabled: true } };\n",
+    expect: [[args, "{ ...Base.args, label: 'a' }"]],
+  },
+  {
+    id: 'spread-of-other-member-same-literal',
+    title:
+      'a key whose literal value equals the one in a top-level object that a spread of another member than args names makes no mutant',
+    source:
+      "const defaults = { label: 'a' };\n" +
+      'const Common = { defaults };\n' +
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Primary = { args: { ...Common.defaults, label: 'a', disabled: true } };\n",
+    expect: [[args, "{ ...Common.defaults, label: 'a' }"]],
+  },
+  {
     id: 'spread-of-named-object-same-literal',
     title:
       'a key whose literal value equals the one in a top-level object spread before it makes no mutant',
