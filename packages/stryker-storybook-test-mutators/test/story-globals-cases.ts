@@ -377,6 +377,18 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{ outline: false }']],
   },
   {
+    id: 'story-globals-default-string-key',
+    title:
+      "a default global written with a string-literal key, 'outline': false, makes no mutant",
+    source: storyFile(
+      'export const Story = {',
+      "  globals: { 'outline': false, locale: 'de' },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [[storyGlobals, "{ 'outline': false }"]],
+  },
+  {
     id: 'story-globals-default-over-meta',
     title:
       "a story's default value of a global the meta sets gets a mutant, as removing it brings the meta's value back",

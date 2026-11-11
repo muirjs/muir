@@ -2,8 +2,11 @@ import {
   csfFile,
   field,
   list,
+  maySet,
+  maySetIn,
   ownStoryValue,
   playedStories,
+  propertyKey,
   propertyValue,
   storyValues,
   topLevelBindings,
@@ -128,7 +131,7 @@ function isObjectOf(
   return (
     field(value, 'type') === 'ObjectExpression' &&
     list(field(value, 'properties')).every((property) => {
-      const key = keyOf(property);
+      const key = propertyKey(property);
 
       return (
         typeof key === 'string' &&
@@ -162,16 +165,9 @@ function lastLiteralOf(object: unknown, key: string): unknown {
     return undefined;
   }
 
-  return keyOf(property) === key
+  return propertyKey(property) === key
     ? literalOf(field(property, 'value'))
     : unknownValue;
-}
-
-/** The name of a `key: value` property; `undefined` for a computed key, which only running the file resolves. */
-function keyOf(property: unknown): unknown {
-  return field(property, 'computed') === true
-    ? undefined
-    : field(property, 'key', 'name');
 }
 
 /** A default value of a key that nothing before it in the site, and nothing below the site, may set, so that removing it changes nothing the mutator can see. */
@@ -180,7 +176,7 @@ function isDefaultGlobal(
   before: readonly unknown[],
   below: Below,
 ): boolean {
-  const key = keyOf(property);
+  const key = propertyKey(property);
 
   return (
     typeof key === 'string' &&
@@ -188,24 +184,6 @@ function isDefaultGlobal(
       true &&
     !before.some((earlier) => maySet(earlier, key)) &&
     !below.globals.some((globals) => maySetIn(globals, key))
-  );
-}
-
-/** An object that may set `key`: one with a property that may, or no object literal. */
-function maySetIn(object: unknown, key: string): boolean {
-  return field(object, 'type') === 'ObjectExpression'
-    ? list(field(object, 'properties')).some((property) =>
-        maySet(property, key),
-      )
-    : true;
-}
-
-/** A property of that key, a spread or a computed key, which only running the file resolves. */
-function maySet(property: unknown, key: string): boolean {
-  return (
-    field(property, 'type') === 'SpreadElement' ||
-    field(property, 'computed') === true ||
-    keyOf(property) === key
   );
 }
 
