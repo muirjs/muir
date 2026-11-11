@@ -15,7 +15,7 @@ import { lzStorybookMutators } from '../../src/index.ts';
 import { resolveFromCore } from '../../src/install.ts';
 import { mutatorSets } from '../../src/mutators.ts';
 import { packageName } from '../../src/package-name.ts';
-import type { Case } from '../cases.ts';
+import type { Case } from './case.ts';
 
 interface Mutant {
   readonly fileName: string;
