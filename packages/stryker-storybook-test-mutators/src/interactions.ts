@@ -528,19 +528,112 @@ const userEventMethods: ReadonlySet<string> = new Set([
   'paste',
 ]);
 
-/** `userEvent`, `<x>.userEvent` such as the play context's, or a local bound to `userEvent.setup()`. */
+/** `userEvent`, `<x>.userEvent` such as the play context's, a local given only `userEvent.setup()` or a choice between user-events, or Vitest browser's userEvent under another name. */
 function isUserEvent(node: types.Node, path: NodePath): boolean {
   const name = nameOf(node);
 
-  return (
+  if (
     name === 'userEvent' ||
-    (node.type === 'MemberExpression' &&
-      nameOf(node.property) === 'userEvent') ||
-    (name !== undefined && isSetupCall(boundValue(path, name)))
+    (node.type === 'MemberExpression' && nameOf(node.property) === 'userEvent')
+  ) {
+    return true;
+  }
+
+  if (name === undefined) {
+    return false;
+  }
+
+  const value = boundValue(path, name);
+
+  return (
+    isSetupCall(value) ||
+    isUserEventChoice(value, path) ||
+    isVitestBrowserUserEvent(path, name) ||
+    isContextUserEvent(path, name)
   );
 }
 
-function isSetupCall(node: types.Node | null | undefined): boolean {
+/** `({ userEvent: <name> }) => ...`: a context's userEvent destructured under another name in a parameter. */
+function isContextUserEvent(path: NodePath, name: string): boolean {
+  const binding = path.scope.getBinding(name);
+
+  return (
+    binding?.kind === 'param' &&
+    binding.path.node.type === 'ObjectPattern' &&
+    takesUserEventAs(binding.path.node, name)
+  );
+}
+
+/** `{ userEvent: <name> }`, among other properties. */
+function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
+  return pattern.properties.some(
+    (property) =>
+      property.type === 'ObjectProperty' &&
+      nameOf(property.key) === 'userEvent' &&
+      nameOf(property.value) === name,
+  );
+}
+
+/** `<condition> ? <userEvent> : <userEvent>`, such as Vitest browser's userEvent in a Vitest run and Storybook's otherwise. */
+function isUserEventChoice(
+  node: types.Node | undefined,
+  path: NodePath,
+): boolean {
+  return (
+    node?.type === 'ConditionalExpression' &&
+    isUserEvent(node.consequent, path) &&
+    isUserEvent(node.alternate, path)
+  );
+}
+
+/** `import { userEvent as <name> } from 'vitest/browser'` or `const { userEvent: <name> } = await import('vitest/browser')`. */
+function isVitestBrowserUserEvent(path: NodePath, name: string): boolean {
+  const binding = path.scope.getBinding(name);
+
+  if (binding === undefined) {
+    return false;
+  }
+
+  if (binding.path.isImportSpecifier()) {
+    const declaration = binding.path.parent;
+
+    return (
+      nameOf(binding.path.node.imported) === 'userEvent' &&
+      declaration.type === 'ImportDeclaration' &&
+      vitestBrowserSources.has(declaration.source.value)
+    );
+  }
+
+  if (!binding.path.isVariableDeclarator()) {
+    return false;
+  }
+
+  const { id, init } = binding.path.node;
+
+  return (
+    id.type === 'ObjectPattern' &&
+    takesUserEventAs(id, name) &&
+    init !== null &&
+    init !== undefined &&
+    isVitestBrowserImport(awaited(init))
+  );
+}
+
+/** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */
+function isVitestBrowserImport(node: types.Node): boolean {
+  return (
+    node.type === 'ImportExpression' &&
+    node.source.type === 'StringLiteral' &&
+    vitestBrowserSources.has(node.source.value)
+  );
+}
+
+const vitestBrowserSources: ReadonlySet<string> = new Set([
+  'vitest/browser',
+  '@vitest/browser/context',
+]);
+
+function isSetupCall(node: types.Node | undefined): boolean {
   return (
     node?.type === 'CallExpression' &&
     node.callee.type === 'MemberExpression' &&
@@ -549,15 +642,22 @@ function isSetupCall(node: types.Node | null | undefined): boolean {
   );
 }
 
-function boundValue(
-  path: NodePath,
-  name: string,
-): types.Node | null | undefined {
-  const declarator = path.scope.getBinding(name)?.path.node;
+/** The one value a local `name` is ever given, by its declaration or a later assignment. */
+function boundValue(path: NodePath, name: string): types.Node | undefined {
+  const binding = path.scope.getBinding(name);
 
-  return declarator?.type === 'VariableDeclarator'
-    ? declarator.init
-    : undefined;
+  if (binding === undefined || !binding.path.isVariableDeclarator()) {
+    return undefined;
+  }
+
+  const values = [
+    binding.path.node.init,
+    ...binding.constantViolations.map(({ node }) =>
+      node.type === 'AssignmentExpression' ? node.right : node,
+    ),
+  ].filter((value) => value !== null && value !== undefined);
+
+  return values.length === 1 ? values[0] : undefined;
 }
 
 function nameOf(node: types.Node): string | undefined {

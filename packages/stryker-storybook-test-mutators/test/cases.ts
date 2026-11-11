@@ -82,6 +82,130 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-setup-let',
+    title: 'a call on a let bound to userEvent.setup() is removed',
+    source: inPlay(
+      'let user = userEvent.setup();',
+      "await user.click(canvas.getByRole('button'));",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-setup-from-helper',
+    title:
+      "a call on a setup instance from a helper's return value makes no mutant",
+    source: inPlay(
+      'const { user } = await openMenu(canvas);',
+      "await user.click(canvas.getByRole('button'));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'user-event-setup-let-assigned',
+    title: 'a call on a let assigned userEvent.setup() once is removed',
+    source: inPlay(
+      'let user;',
+      'user = userEvent.setup();',
+      "await user.keyboard('{Enter}');",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-setup-let-reassigned',
+    title: 'a call on a let reassigned after userEvent.setup() makes no mutant',
+    source: inPlay(
+      'let user = userEvent.setup();',
+      'user = createDriver();',
+      "await user.keyboard('{Enter}');",
+    ),
+    expect: [],
+  },
+  {
+    id: 'vitest-browser-dynamic-import',
+    title:
+      "a call on userEvent destructured under another name from import('vitest/browser') is removed",
+    source: inPlay(
+      "const { userEvent: trustedUserEvent } = await import('vitest/browser');",
+      "await trustedUserEvent.click(canvas.getByRole('button'));",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-context-dynamic-import',
+    title:
+      "a call on userEvent destructured under another name from import('@vitest/browser/context') is removed",
+    source: inPlay(
+      "const { userEvent: pointer } = await import('@vitest/browser/context');",
+      "await pointer.hover(canvas.getByRole('button'));",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-conditional',
+    title:
+      "a call on a local that is import('vitest/browser')'s userEvent or userEvent is removed",
+    source: inPlay(
+      "const pointer = '__vitest_browser__' in globalThis ? (await import('vitest/browser')).userEvent : userEvent;",
+      "await pointer.hover(canvas.getByRole('button'));",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-named-import',
+    title:
+      "a call on userEvent imported under another name from 'vitest/browser' is removed",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay("await browserUserEvent.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-namespace-import',
+    title:
+      "a call on the userEvent of a namespace import of 'vitest/browser' is removed",
+    source: `import * as browser from 'vitest/browser';\n${inPlay("await browser.userEvent.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-other-member',
+    title:
+      "a call on another member of import('vitest/browser') under a user-event's name makes no mutant",
+    source: inPlay(
+      "const { page: trustedUserEvent } = await import('vitest/browser');",
+      "await trustedUserEvent.click(canvas.getByRole('button'));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'other-module-user-event',
+    title:
+      "a call on userEvent destructured from another module's import() makes no mutant",
+    source: inPlay(
+      "const { userEvent: pointer } = await import('./driver');",
+      "await pointer.hover(canvas.getByRole('button'));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'context-user-event-renamed',
+    title:
+      "a call on the play context's userEvent destructured under another name is removed",
+    source: `export const Story = {\n  play: async ({ canvas, userEvent: user }) => {\n    await user.click(canvas.getByRole('button'));\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'test-context-user-event-renamed',
+    title:
+      "a call on a story test's context userEvent destructured under another name is removed",
+    source: `export const Story = meta.story({});\nStory.test('clicks', async ({ canvas, userEvent: user }) => {\n  await user.click(canvas.getByRole('button'));\n});\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'context-other-key-renamed',
+    title:
+      "a call on another context key destructured under a user-event's name makes no mutant",
+    source: `export const Story = {\n  play: async ({ canvas, driver: user }) => {\n    await user.click(canvas.getByRole('button'));\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'user-event-not-interaction',
     title: 'a userEvent call that interacts with nothing makes no mutant',
     source: inPlay('userEvent.setup();'),
