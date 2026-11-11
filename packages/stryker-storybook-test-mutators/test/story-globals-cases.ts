@@ -507,6 +507,41 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-default-under-meta-spread',
+    title:
+      "a story's default value of a global gets no mutant when the globals of a top-level object the meta spreads do not set it, and those globals are the meta's site",
+    source: [
+      "const common = { globals: { locale: 'de' } };",
+      "export default { title: 'Probe', ...common };",
+      '',
+      'export const Story = {',
+      "  globals: { outline: false, locale: 'fr' },",
+      '  play: async () => {},',
+      '};',
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-viewport-under-meta-spread-parameters',
+    title:
+      "a story's default viewport gets no mutant when the parameters of a top-level object the meta spreads do not set viewport",
+    source: [
+      "const common = { parameters: { layout: 'centered' } };",
+      "export default { title: 'Probe', ...common };",
+      '',
+      'export const Story = {',
+      "  globals: { viewport: 'responsive', locale: 'fr' },",
+      '  play: async () => {},',
+      '};',
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, "{ viewport: 'responsive' }"]],
+  },
+  {
     id: 'story-globals-default-over-base',
     title:
       'an .extend() story gets a mutant of a default value of a global its base sets',

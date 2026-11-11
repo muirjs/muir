@@ -34,7 +34,9 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   const file = csfFile(body, bindings);
   const unchanged = unchangedBindings(bindings, file.written);
   const metaValues = (key: string) =>
-    file.metaObjects.map((meta) => objectValue(meta, key)).filter(defined);
+    file.metaObjects
+      .map((meta) => resolvedValue(meta, key, unchanged))
+      .filter(defined);
   const metaGlobals = metaValues('globals');
   const metaParameters = metaValues('parameters');
   // An unknown play with no play under it is no play here: when what may set it sets none, the story's globals mutants can only survive.
