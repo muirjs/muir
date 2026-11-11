@@ -255,6 +255,21 @@ export const fallbackCases: readonly Case[] = [
     expect: [[args, "{ ...Base.args, label: 'a' }"]],
   },
   {
+    id: 'spread-of-args-before-unresolved-spread',
+    title:
+      "a key whose literal value equals the one in a story's args spread before it is removed when a spread of an imported object comes after that story's args",
+    source:
+      "import { shared } from './shared';\n" +
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Base = { args: { label: 'a' }, ...shared };\n" +
+      "export const Primary = { args: { ...Base.args, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ ...Base.args, disabled: true }'],
+      [args, "{ ...Base.args, label: 'a' }"],
+      [args, '{ ...Base.args }'],
+    ],
+  },
+  {
     id: 'optional-spread-same-literal',
     title:
       "a key whose literal value equals the one in that story's args, spread before it with ?., makes no mutant",

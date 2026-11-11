@@ -9,7 +9,6 @@ import {
   ownStoryValue,
   playedStories,
   propertyKey,
-  propertyValue,
   storyValues,
   topLevelBindings,
   unknownOverAPlay,
@@ -316,7 +315,7 @@ function spreadArgs(
   return memberTypes.includes(field(argument, 'type')) &&
     memberKey(argument) === 'args' &&
     typeof object === 'string'
-    ? propertyValue(unwrap(bindings.get(object)), 'args')
+    ? objectValue(unwrap(bindings.get(object)), 'args')
     : undefined;
 }
 
