@@ -33,6 +33,13 @@ const userEventCalls: readonly (readonly [string, string])[] = [
   ['paste', "'a'"],
 ];
 
+// The methods that only Vitest browser's userEvent has, with arguments.
+const vitestBrowserCalls: readonly (readonly [string, string])[] = [
+  ['fill', "input, 'a'"],
+  ['dragAndDrop', 'card, column'],
+  ['wheel', "list, { direction: 'down' }"],
+];
+
 const rawDomCalls: readonly string[] = [
   'blur()',
   'click()',
@@ -50,6 +57,12 @@ export const interactionCases: readonly Case[] = [
     id: `raw-dom-${call.slice(0, call.indexOf('('))}`,
     title: `a raw DOM element's ${call} statement is removed`,
     source: inPlay(`button.${call};`),
+    expect: [[interaction, ';'] as const],
+  })),
+  ...vitestBrowserCalls.map(([method, args]) => ({
+    id: `vitest-browser-method-${method}`,
+    title: `an awaited Vitest browser userEvent.${method} statement is removed`,
+    source: `import { userEvent } from 'vitest/browser';\n${inPlay(`await userEvent.${method}(${args});`)}`,
     expect: [[interaction, ';'] as const],
   })),
   {
@@ -116,6 +129,31 @@ export const interactionCases: readonly Case[] = [
     source: inPlay(
       'let user = userEvent.setup();',
       'user = createDriver();',
+      "await user.keyboard('{Enter}');",
+    ),
+    expect: [],
+  },
+  {
+    id: 'user-event-setup-context',
+    title:
+      "a call on a local bound to the play context's userEvent.setup() is removed",
+    source: `export const Story = {\n  play: async (context) => {\n    const user = context.userEvent.setup();\n    await user.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-setup',
+    title:
+      "a call on a local bound to the setup() of userEvent imported under another name from 'vitest/browser' is removed",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('const user = browserUserEvent.setup();', 'await user.click(button);')}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-setup-let-for-of',
+    title:
+      'a call on a let given userEvent.setup() and then each value of a for...of makes no mutant',
+    source: inPlay(
+      'let user = userEvent.setup();',
+      'for (user of drivers) {}',
       "await user.keyboard('{Enter}');",
     ),
     expect: [],
@@ -257,6 +295,38 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'raw-dom-in-render',
+    title: "a raw DOM element's focus() in a story's render makes no mutant",
+    source: `export const Story = {\n  render: () => {\n    input.focus();\n    return null;\n  },\n};\n`,
+    expect: [],
+  },
+  {
+    id: 'raw-dom-in-story-test',
+    title: "a raw DOM element's click() in a story test's body is removed",
+    source: `export const Story = meta.story({});\nStory.test('clicks', async () => {\n  button.click();\n});\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'raw-dom-in-named-play',
+    title:
+      "a raw DOM element's click() in a play function declared in the file and given by name is removed",
+    source: `const play = async () => {\n  button.click();\n};\nexport const Story = { play };\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'raw-dom-in-decorator',
+    title:
+      "a raw DOM element's dispatchEvent(event) in a decorator makes no mutant",
+    source: `export default {\n  decorators: [\n    (Story) => {\n      window.dispatchEvent(new Event('resize'));\n      return Story();\n    },\n  ],\n};\n`,
+    expect: [],
+  },
+  {
+    id: 'play-call-in-render',
+    title: "a video's play() in a story's render makes no mutant",
+    source: `export const Story = {\n  render: () => {\n    useEffect(() => {\n      video.play();\n    });\n    return null;\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'raw-dom-arity',
     title:
       'a click with an argument on a receiver that is no user-event makes no mutant',
@@ -268,6 +338,13 @@ export const interactionCases: readonly Case[] = [
     title:
       'an interaction that is the expression body of a step callback becomes undefined',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Submit', () => userEvent.click(button));\n  },\n};\n`,
+    expect: [[interaction, 'undefined']],
+  },
+  {
+    id: 'context-step-expression-body',
+    title:
+      'an interaction that is the expression body of a context.step callback becomes undefined',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.step('Submit', () => context.userEvent.click(button));\n  },\n};\n`,
     expect: [[interaction, 'undefined']],
   },
   {
@@ -334,6 +411,70 @@ export const interactionCases: readonly Case[] = [
     source: inPlay(
       "await userEvent.click(canvas.getByRole('textbox'));",
       "await userEvent.type(canvas.getByRole('textbox'), 'a');",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-click-before-type',
+    title:
+      'a Vitest browser click directly before a type on the same target is removed, as that type does not click',
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('await browserUserEvent.click(input);', "await browserUserEvent.type(input, 'a');")}`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-namespace-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the userEvent of a namespace import of 'vitest/browser', is removed",
+    source: `import * as browser from 'vitest/browser';\n${inPlay('await browser.userEvent.click(input);', "await browser.userEvent.type(input, 'a');")}`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-choice-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on a local that is import('vitest/browser')'s userEvent or userEvent, is removed",
+    source: inPlay(
+      "const pointer = '__vitest_browser__' in globalThis ? (await import('vitest/browser')).userEvent : userEvent;",
+      'await pointer.click(input);',
+      "await pointer.type(input, 'a');",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-setup-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the setup() of a Vitest browser userEvent, is removed',
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('const user = browserUserEvent.setup();', 'await user.click(input);', "await user.type(input, 'a');")}`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-import-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on userEvent imported from 'vitest/browser', is removed",
+    source: `import { userEvent } from 'vitest/browser';\nexport const Story = {\n  play: async () => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'skip-optional-click-before-type',
+    title:
+      'a userEvent?.click directly before a userEvent?.type on the same target gets no mutant, as type clicks first',
+    source: inPlay(
+      'await userEvent?.click(input);',
+      "await userEvent?.type(input, 'a');",
     ),
     expect: [[interaction, ';']],
   },
@@ -425,10 +566,29 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-in-type-assertion',
+    title: 'a click on userEvent inside an as expression is removed',
+    source: inPlay('await (userEvent as any).click(button);'),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'fire-event-in-type-assertion',
+    title: 'a fireEvent.click on fireEvent inside an as expression is removed',
+    source: inPlay('await (fireEvent as any).click(button);'),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'await-in-type-assertion',
     title: 'an await of an interaction inside an as expression is removed',
     source: inPlay('(await userEvent.click(button)) as unknown;'),
     expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-named-before-each',
+    title:
+      'an interaction in a function declared in the file and given as a beforeEach makes no mutant',
+    source: `async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  beforeEach: setup,\n};\n`,
+    expect: [],
   },
   {
     id: 'skip-before-each-array',
@@ -459,6 +619,17 @@ export const interactionCases: readonly Case[] = [
     ],
   },
   {
+    id: 'type-used-in-step-before-clear',
+    title:
+      'a type that an interaction in a step uses before a later clear of the same target is removed',
+    source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await userEvent.type(input, 'a');\n    await step('Submit', async () => {\n      await userEvent.click(submit);\n    });\n    await userEvent.clear(input);\n    await expect(args.onSubmit).toHaveBeenCalledWith('a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'click-before-type-skip-click',
     title:
       'a click directly before a type of the same target with skipClick is removed, as that type does not click',
@@ -472,6 +643,29 @@ export const interactionCases: readonly Case[] = [
     ],
   },
   {
+    id: 'click-before-type-quoted-skip-click',
+    title:
+      "a click directly before a type of the same target with a quoted 'skipClick': true key is removed",
+    source: inPlay(
+      'await userEvent.click(input);',
+      "await userEvent.type(input, 'a', { 'skipClick': true });",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'skip-click-before-type-skip-click-false',
+    title:
+      'a click directly before a type of the same target with skipClick: false makes no mutant, as that type clicks first',
+    source: inPlay(
+      'await userEvent.click(input);',
+      "await userEvent.type(input, 'a', { skipClick: false });",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'negative-only-until-step-interaction',
     title:
       'the checks that decide a skip end at a step holding an interaction, so only the click in the step is skipped',
@@ -479,10 +673,55 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'negative-only-until-context-step-interaction',
+    title:
+      'the checks that decide a skip end at a context.step holding an interaction, so only the click in the step is skipped',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(first);\n    await context.step('Second', async () => {\n      await context.userEvent.click(second);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'negative-only-after-context-step',
+    title:
+      'an interaction in a context.step whose following checks in the play are all negative makes no mutant',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.step('Click', async () => {\n      await context.userEvent.click(button);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'skip-negative-only-in-step',
     title:
       'an interaction followed only by a step of negative checks makes no mutant',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(button);\n    await step('Check', async () => {\n      await expect(args.onClick).not.toHaveBeenCalled();\n    });\n  },\n};\n`,
+    expect: [],
+  },
+];
+
+// Cases that once crashed the instrumenter, which fails every case it instruments together.
+export const crashCases: readonly Case[] = [
+  {
+    id: 'user-event-choice-of-itself',
+    title:
+      'a call on a var given a choice between itself and userEvent makes no mutant',
+    source: inPlay(
+      'var user = flag ? user : userEvent;',
+      'await user.click(button);',
+    ),
+    expect: [],
+  },
+  {
+    id: 'user-event-choice-of-itself-assigned',
+    title:
+      'a call on a let assigned a choice between itself and userEvent makes no mutant',
+    source: inPlay(
+      'let user;',
+      'user = flag ? user : userEvent;',
+      'await user.click(button);',
+    ),
+    expect: [],
+  },
+  {
+    id: 'user-event-setup-of-itself',
+    title: 'a call on a var given its own setup() makes no mutant',
+    source: inPlay('var user = user.setup();', 'await user.click(button);'),
     expect: [],
   },
 ];
@@ -530,6 +769,19 @@ export const clickFocusCases: readonly Case[] = [
       'a click that is the expression body of a step callback becomes a focus() call',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Save', () => userEvent.click(button));\n  },\n};\n`,
     expect: [[clickFocus, 'button.focus()']],
+  },
+  {
+    id: 'click-focus-optional-call',
+    title: 'a userEvent?.click of an element becomes a focus() call on it',
+    source: inPlay('await userEvent?.click(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-type-assertion',
+    title:
+      'a click on userEvent inside an as expression becomes a focus() call',
+    source: inPlay('await (userEvent as any).click(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
   },
   {
     id: 'click-focus-dbl-click',
@@ -749,6 +1001,15 @@ export const targetCases: readonly Case[] = [
     expect: [[target, "'Cancel'"]],
   },
   {
+    id: 'target-optional-call',
+    title: 'the target query of a userEvent?.click is swapped too',
+    source: inPlay(
+      "await userEvent?.click(canvas.getByRole('button', { name: 'Save' }));",
+      "await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [[target, "'Cancel'"]],
+  },
+  {
     id: 'target-fire-event',
     title: 'the target of a fireEvent call is swapped too',
     source: inPlay(
@@ -798,6 +1059,39 @@ export const repeatCases: readonly Case[] = [
       [
         repeat,
         '{ await fireEvent.click(button); await fireEvent.click(button); }',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-fire-event-in-type-assertion',
+    title: 'a fireEvent.click on fireEvent inside an as expression runs twice',
+    source: inPlay('await (fireEvent as any).click(button);'),
+    expect: [
+      [
+        repeat,
+        '{ await (fireEvent as any).click(button); await (fireEvent as any).click(button); }',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-optional-call',
+    title: 'a userEvent?.click statement runs twice',
+    source: inPlay('await userEvent?.click(button);'),
+    expect: [
+      [
+        repeat,
+        '{ await userEvent?.click(button); await userEvent?.click(button); }',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-fire-event-optional-call',
+    title: 'a fireEvent?.click statement runs twice',
+    source: inPlay('await fireEvent?.click(button);'),
+    expect: [
+      [
+        repeat,
+        '{ await fireEvent?.click(button); await fireEvent?.click(button); }',
       ],
     ],
   },

@@ -2,6 +2,8 @@ import type { NodePath, types } from '@babel/core';
 
 import type { BabelTypes } from './mutator.ts';
 
+type Binding = NonNullable<ReturnType<NodePath['scope']['getBinding']>>;
+
 /** `<call>;` or `await <call>;`, where the call is an interaction. */
 export function isInteractionStatement(
   path: NodePath,
@@ -79,11 +81,14 @@ function isClearedLater(path: NodePath, t: BabelTypes): boolean {
     return false;
   }
 
-  const next = nextSiblings(path).find(
-    (sibling) =>
-      checksIn(sibling).length > 0 || isInteractionStatement(sibling),
-  );
-  const later = next === undefined ? undefined : userEventCall(next);
+  const siblings = nextSiblings(path);
+  const between = untilNextInteraction(siblings);
+  const next = siblings[between.length];
+  const later =
+    next === undefined ||
+    between.some((sibling) => checksIn(sibling).length > 0)
+      ? undefined
+      : userEventCall(next);
 
   return (
     later?.method === 'clear' &&
@@ -92,7 +97,7 @@ function isClearedLater(path: NodePath, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event click or hover directly before a user-event type of the same target, which clicks it first. */
+/** A user-event click or hover directly before a user-event 14 type of the same target, which clicks it first; Vitest browser's type does not. */
 function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
   const current = userEventCall(path);
   const [next] = nextSiblings(path);
@@ -103,30 +108,33 @@ function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
     following?.target !== undefined &&
     ['click', 'hover'].includes(current.method) &&
     following.method === 'type' &&
+    !mayBeVitestBrowserUserEvent(following.receiver, path) &&
     !hasSkipClick(following.args[2]) &&
     t.isNodesEquivalent(current.target, following.target)
   );
 }
 
-/** user-event 14's `type(element, text, { skipClick })`, which then types without clicking first. */
+/** user-event 14's `type(element, text, { skipClick })` with a `skipClick` other than `false`, which may then type without clicking first. */
 function hasSkipClick(options: types.Node | undefined): boolean {
   return (
     options?.type === 'ObjectExpression' &&
     options.properties.some(
       (property) =>
         property.type === 'ObjectProperty' &&
-        nameOf(property.key) === 'skipClick',
+        keyName(property.key) === 'skipClick' &&
+        !(property.value.type === 'BooleanLiteral' && !property.value.value),
     )
   );
 }
 
 export interface UserEventCall {
+  readonly receiver: types.Node;
   readonly method: string;
   readonly target: types.Node | undefined;
   readonly args: readonly types.Node[];
 }
 
-/** The method and first argument of a `<userEvent>.<method>(...)` statement or step callback body. */
+/** The receiver, method and first argument of a `<userEvent>.<method>(...)` statement or step callback body. */
 export function userEventCall(path: NodePath): UserEventCall | undefined {
   const expression = interactionExpression(path);
 
@@ -137,9 +145,22 @@ export function userEventCall(path: NodePath): UserEventCall | undefined {
   const call = awaited(expression);
   const method = userEventMethod(call, path);
 
-  return method !== undefined && call.type === 'CallExpression'
-    ? { method, target: call.arguments[0], args: call.arguments }
-    : undefined;
+  if (
+    method === undefined ||
+    (call.type !== 'CallExpression' &&
+      call.type !== 'OptionalCallExpression') ||
+    (call.callee.type !== 'MemberExpression' &&
+      call.callee.type !== 'OptionalMemberExpression')
+  ) {
+    return undefined;
+  }
+
+  return {
+    receiver: withoutTypeWrappers(call.callee.object),
+    method,
+    target: call.arguments[0],
+    args: call.arguments,
+  };
 }
 
 /** The interaction statement or step callback body whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
@@ -151,7 +172,10 @@ export function targetInteraction(path: NodePath): NodePath | undefined {
   const expression =
     interaction === null ? undefined : interactionExpression(interaction);
   const call = expression === undefined ? undefined : awaited(expression);
-  const [argument] = call?.type === 'CallExpression' ? call.arguments : [];
+  const [argument] =
+    call?.type === 'CallExpression' || call?.type === 'OptionalCallExpression'
+      ? call.arguments
+      : [];
 
   return interaction !== null &&
     (isInteractionStatement(interaction) || isInteractionBody(interaction)) &&
@@ -201,9 +225,11 @@ export function fireEventMethod(path: NodePath): string | undefined {
 
   const call = awaited(expression);
 
-  return call.type === 'CallExpression' &&
-    call.callee.type === 'MemberExpression' &&
-    nameOf(call.callee.object) === 'fireEvent'
+  return (call.type === 'CallExpression' ||
+    call.type === 'OptionalCallExpression') &&
+    (call.callee.type === 'MemberExpression' ||
+      call.callee.type === 'OptionalMemberExpression') &&
+    nameOf(withoutTypeWrappers(call.callee.object)) === 'fireEvent'
     ? nameOf(call.callee.property)
     : undefined;
 }
@@ -223,7 +249,7 @@ function userEventMethod(call: types.Node, path: NodePath): string | undefined {
 
   return method !== undefined &&
     userEventMethods.has(method) &&
-    isUserEvent(call.callee.object, path)
+    isUserEvent(withoutTypeWrappers(call.callee.object), path)
     ? method
     : undefined;
 }
@@ -303,8 +329,20 @@ function nextSiblings(path: NodePath): readonly NodePath[] {
     : [];
 }
 
+/** `step(...)`, or `<context>.step(...)` on a play context that is not destructured. */
 function isStepCall(node: types.Node): boolean {
-  return node.type === 'CallExpression' && nameOf(node.callee) === 'step';
+  if (node.type !== 'CallExpression') {
+    return false;
+  }
+
+  const { callee } = node;
+
+  return (
+    nameOf(callee) === 'step' ||
+    (callee.type === 'MemberExpression' &&
+      callee.object.type === 'Identifier' &&
+      nameOf(callee.property) === 'step')
+  );
 }
 
 interface Check {
@@ -371,27 +409,89 @@ export function hasZeroCallsCheck(path: NodePath): boolean {
 
 const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);
 
-/** A function that is the value of a `beforeEach` or `afterEach` property or an element of its array, or a method of that name. */
+const storyTestProperties: ReadonlySet<string> = new Set(['play', ...hooks]);
+
 function isHook(path: NodePath): boolean {
+  return isPropertyFunction(path, hooks);
+}
+
+/** Whether `path` lies in story test code: a play function, a hook or a `.test()` body. */
+function isInStoryTestCode(path: NodePath): boolean {
+  return (
+    path.findParent(
+      (parent) =>
+        isPropertyFunction(parent, storyTestProperties) ||
+        isStoryTestBody(parent),
+    ) !== null
+  );
+}
+
+/** A function passed to `<Story>.test(...)`. */
+function isStoryTestBody(path: NodePath): boolean {
+  const call = path.parent;
+
+  return (
+    path.isFunction() &&
+    call?.type === 'CallExpression' &&
+    call.callee.type === 'MemberExpression' &&
+    nameOf(call.callee.property) === 'test'
+  );
+}
+
+/** A function that is the value of a property named in `names` or an element of its array, a method of such a name, or a function declared in the file and given there by its name. */
+function isPropertyFunction(
+  path: NodePath,
+  names: ReadonlySet<string>,
+): boolean {
   const { node } = path;
 
   if (node.type === 'ObjectMethod') {
     const name = nameOf(node.key);
 
-    return name !== undefined && hooks.has(name);
+    return name !== undefined && names.has(name);
   }
 
+  if (!path.isFunction()) {
+    return false;
+  }
+
+  const binding = functionBinding(path);
+
+  return (
+    isPropertyValue(path, names) ||
+    (binding?.referencePaths ?? []).some((reference) =>
+      isPropertyValue(reference, names),
+    )
+  );
+}
+
+/** A value of a property named in `names`, or an element of its array. */
+function isPropertyValue(path: NodePath, names: ReadonlySet<string>): boolean {
   const value =
     path.parentPath?.node.type === 'ArrayExpression' ? path.parentPath : path;
   const property = value.parent;
 
-  if (!path.isFunction() || property?.type !== 'ObjectProperty') {
+  if (property?.type !== 'ObjectProperty') {
     return false;
   }
 
   const name = nameOf(property.key);
 
-  return name !== undefined && hooks.has(name);
+  return name !== undefined && names.has(name);
+}
+
+/** The binding of `function <name>() {}` or of `const <name> = <function>`. */
+function functionBinding(path: NodePath): Binding | undefined {
+  const { node, parent, parentPath } = path;
+  const id =
+    node.type === 'FunctionDeclaration'
+      ? node.id
+      : parent?.type === 'VariableDeclarator' && parent.init === node
+        ? parent.id
+        : undefined;
+  const name = id === null || id === undefined ? undefined : nameOf(id);
+
+  return name === undefined ? undefined : parentPath?.scope.getBinding(name);
 }
 
 /** The expression inside `<x>!`, `<x> as T`, `<x> satisfies T`, `<T><x>` and parentheses. */
@@ -438,12 +538,12 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
 
   return (
     userEventMethod(call, path) !== undefined ||
-    nameOf(callee.object) === 'fireEvent' ||
+    nameOf(withoutTypeWrappers(callee.object)) === 'fireEvent' ||
     (method !== undefined &&
-      composedPlayMethods.has(method) &&
-      callee.object.type === 'Identifier') ||
-    (method !== undefined &&
-      rawDomArguments.get(method) === call.arguments.length)
+      (composedPlayMethods.has(method)
+        ? callee.object.type === 'Identifier'
+        : rawDomArguments.get(method) === call.arguments.length) &&
+      isInStoryTestCode(path))
   );
 }
 
@@ -508,8 +608,12 @@ const rawDomArguments: ReadonlyMap<string, number> = new Map([
 // `<Story>.play(context)`, and `<Story>.run()` on a CSF factory story.
 const composedPlayMethods: ReadonlySet<string> = new Set(['play', 'run']);
 
-// The user-event 14 methods that act on the page (@testing-library/user-event, which storybook/test re-exports).
+// The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
+// storybook/test re-exports) and those only Vitest browser's userEvent has.
 const userEventMethods: ReadonlySet<string> = new Set([
+  'fill',
+  'dragAndDrop',
+  'wheel',
   'click',
   'dblClick',
   'tripleClick',
@@ -528,8 +632,12 @@ const userEventMethods: ReadonlySet<string> = new Set([
   'paste',
 ]);
 
-/** `userEvent`, `<x>.userEvent` such as the play context's, a local given only `userEvent.setup()` or a choice between user-events, or Vitest browser's userEvent under another name. */
-function isUserEvent(node: types.Node, path: NodePath): boolean {
+/** `userEvent`, `<x>.userEvent` such as the play context's, a local given only `userEvent.setup()` or a choice between user-events, or Vitest browser's userEvent under another name. `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
+function isUserEvent(
+  node: types.Node,
+  path: NodePath,
+  seen: ReadonlySet<Binding> = new Set(),
+): boolean {
   const name = nameOf(node);
 
   if (
@@ -539,15 +647,18 @@ function isUserEvent(node: types.Node, path: NodePath): boolean {
     return true;
   }
 
-  if (name === undefined) {
+  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+
+  if (name === undefined || (binding !== undefined && seen.has(binding))) {
     return false;
   }
 
   const value = boundValue(path, name);
+  const followed = binding === undefined ? seen : new Set([...seen, binding]);
 
   return (
-    isSetupCall(value) ||
-    isUserEventChoice(value, path) ||
+    isSetupCall(value, path, followed) ||
+    isUserEventChoice(value, path, followed) ||
     isVitestBrowserUserEvent(path, name) ||
     isContextUserEvent(path, name)
   );
@@ -578,11 +689,12 @@ function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
 function isUserEventChoice(
   node: types.Node | undefined,
   path: NodePath,
+  seen: ReadonlySet<Binding>,
 ): boolean {
   return (
     node?.type === 'ConditionalExpression' &&
-    isUserEvent(node.consequent, path) &&
-    isUserEvent(node.alternate, path)
+    isUserEvent(node.consequent, path, seen) &&
+    isUserEvent(node.alternate, path, seen)
   );
 }
 
@@ -619,6 +731,56 @@ function isVitestBrowserUserEvent(path: NodePath, name: string): boolean {
   );
 }
 
+/** A user-event receiver that is or may be Vitest browser's userEvent. */
+function mayBeVitestBrowserUserEvent(
+  node: types.Node,
+  path: NodePath,
+  seen: ReadonlySet<Binding> = new Set(),
+): boolean {
+  if (node.type === 'MemberExpression') {
+    return (
+      isVitestBrowserNamespace(node.object, path) ||
+      isVitestBrowserImport(awaited(node.object))
+    );
+  }
+
+  const name = nameOf(node);
+  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+
+  if (name === undefined || binding === undefined || seen.has(binding)) {
+    return false;
+  }
+
+  const value = boundValue(path, name);
+  const followed = new Set([...seen, binding]);
+  const sources =
+    value?.type === 'ConditionalExpression'
+      ? [value.consequent, value.alternate]
+      : [setupReceiver(value)];
+
+  return (
+    isVitestBrowserUserEvent(path, name) ||
+    sources.some(
+      (source) =>
+        source !== undefined &&
+        mayBeVitestBrowserUserEvent(source, path, followed),
+    )
+  );
+}
+
+/** `<name>` from `import * as <name> from 'vitest/browser'`. */
+function isVitestBrowserNamespace(node: types.Node, path: NodePath): boolean {
+  const name = nameOf(node);
+  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+  const declaration = binding?.path.parent;
+
+  return (
+    binding?.path.node.type === 'ImportNamespaceSpecifier' &&
+    declaration?.type === 'ImportDeclaration' &&
+    vitestBrowserSources.has(declaration.source.value)
+  );
+}
+
 /** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */
 function isVitestBrowserImport(node: types.Node): boolean {
   return (
@@ -633,16 +795,27 @@ const vitestBrowserSources: ReadonlySet<string> = new Set([
   '@vitest/browser/context',
 ]);
 
-function isSetupCall(node: types.Node | undefined): boolean {
-  return (
-    node?.type === 'CallExpression' &&
-    node.callee.type === 'MemberExpression' &&
-    nameOf(node.callee.property) === 'setup' &&
-    nameOf(node.callee.object) === 'userEvent'
-  );
+/** `<userEvent>.setup()`, on any user-event receiver. */
+function isSetupCall(
+  node: types.Node | undefined,
+  path: NodePath,
+  seen: ReadonlySet<Binding>,
+): boolean {
+  const receiver = setupReceiver(node);
+
+  return receiver !== undefined && isUserEvent(receiver, path, seen);
 }
 
-/** The one value a local `name` is ever given, by its declaration or a later assignment. */
+/** The receiver of `<x>.setup()`. */
+function setupReceiver(node: types.Node | undefined): types.Node | undefined {
+  return node?.type === 'CallExpression' &&
+    node.callee.type === 'MemberExpression' &&
+    nameOf(node.callee.property) === 'setup'
+    ? node.callee.object
+    : undefined;
+}
+
+/** The one value a local `name` is ever given, by its declaration or a later assignment; none when something else, such as `++` or a `for...of` head, also changes it. */
 function boundValue(path: NodePath, name: string): types.Node | undefined {
   const binding = path.scope.getBinding(name);
 
@@ -650,14 +823,24 @@ function boundValue(path: NodePath, name: string): types.Node | undefined {
     return undefined;
   }
 
-  const values = [
-    binding.path.node.init,
-    ...binding.constantViolations.map(({ node }) =>
-      node.type === 'AssignmentExpression' ? node.right : node,
-    ),
-  ].filter((value) => value !== null && value !== undefined);
+  const assigned = binding.constantViolations.flatMap(({ node }) =>
+    node.type === 'AssignmentExpression' ? [node.right] : [],
+  );
+
+  if (assigned.length < binding.constantViolations.length) {
+    return undefined;
+  }
+
+  const values = [binding.path.node.init, ...assigned].filter(
+    (value) => value !== null && value !== undefined,
+  );
 
   return values.length === 1 ? values[0] : undefined;
+}
+
+/** The name of an object key, quoted or not. */
+function keyName(key: types.Node): string | undefined {
+  return key.type === 'StringLiteral' ? key.value : nameOf(key);
 }
 
 function nameOf(node: types.Node): string | undefined {

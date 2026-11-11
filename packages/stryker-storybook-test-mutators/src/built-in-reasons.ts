@@ -26,7 +26,7 @@ export const builtInReasons: Readonly<Record<string, string>> = {
     'Empties query options, which only loosen a query with one candidate, and expected objects or wait options, which pass by construction or fail.',
   OptionalChaining: 'Changes a null path that a passing play never takes.',
   Regex:
-    'Widens a query pattern, which is equivalent or fails with a multiple-match error.',
+    'Widens or narrows a query pattern, which is equivalent, fails with a multiple-match error, or finds nothing and fails wherever it runs.',
   StringLiteral:
     'Empties roles, names and expected text, which Testing Library matches exactly, so the line fails wherever it runs, or negative checks, which pass by construction.',
   UnaryOperator:
