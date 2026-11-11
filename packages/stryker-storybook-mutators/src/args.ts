@@ -2,12 +2,10 @@ import type { NodePath } from '@babel/core';
 import {
   csfFile,
   field,
-  isIndexedTestCall,
   list,
-  ownOrBasePlay,
+  playedStories,
   propertyValue,
   storyArgument,
-  testCallOf,
   topLevelBindings,
   unwrap,
   withoutBinding,
@@ -132,39 +130,15 @@ function argsSites(
   readsOf: (fn: unknown) => Reads,
 ): Sites {
   const bindings = topLevelBindings(body);
-  const { metaObjects, stories } = csfFile(body, bindings);
-
-  if (metaObjects.length === 0) {
-    return new Map();
-  }
-
-  const metaPlay = metaObjects
-    .map((meta) => propertyValue(meta, 'play'))
-    .find((play) => play !== undefined);
+  const { metaObjects } = csfFile(body, bindings);
   const metaArgs = metaObjects
     .map((meta) => propertyValue(meta, 'args'))
     .find((args) => args !== undefined);
 
   return new Map(
-    stories
-      .filter(
-        ({ tested, init }) =>
-          tested && isTaggedTest([...metaObjects, storyArgument(unwrap(init))]),
-      )
-      .flatMap(({ init, local, runtimeAssignments }) => {
-        const assignedPlay = runtimeAssignments
-          .filter(({ path }) => path.length === 1 && path[0] === 'play')
-          .at(-1)?.value;
-        const play = topLevelValueOrSelf(
-          assignedPlay ?? ownOrBasePlay(init, bindings) ?? metaPlay,
-          bindings,
-        );
+    playedStories(body, bindings).flatMap(
+      ({ story: { init }, play, tests }) => {
         const plays = play === undefined ? [] : [play];
-        const tests = testCallsOn(body, local).map((call) => ({
-          ...call,
-          testFunction: topLevelValueOrSelf(call.testFunction, bindings),
-        }));
-
         const [storyArgs, ...baseArgs] = argsLayers(init, bindings);
 
         return [
@@ -189,18 +163,8 @@ function argsSites(
             );
           }),
         ];
-      }),
-  );
-}
-
-/** Storybook 10.6.5 `combineTags`: a later `test` or `!test` in the static tags of the meta, then the story, wins over an earlier one. */
-function isTaggedTest(owners: readonly unknown[]): boolean {
-  return (
-    owners
-      .flatMap((owner) => list(field(propertyValue(owner, 'tags'), 'elements')))
-      .map((tag) => field(tag, 'value'))
-      .filter((tag) => tag === 'test' || tag === '!test')
-      .at(-1) !== '!test'
+      },
+    ),
   );
 }
 
@@ -351,16 +315,6 @@ function argsLayers(
     : [own];
 }
 
-/** A name's top-level value; a name the file does not bind, or any other node, as it is. */
-function topLevelValueOrSelf(
-  node: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): unknown {
-  const name = field(node, 'name');
-
-  return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
-}
-
 /** The args site of `argsObject` when it is an object literal, at least one function runs for it and none reads it whole; none otherwise. */
 function site(
   argsObject: unknown,
@@ -380,38 +334,6 @@ function union(reads: readonly Reads[]): Reads {
   return reads.includes('whole')
     ? 'whole'
     : new Set(reads.flatMap((keys) => (keys === 'whole' ? [] : [...keys])));
-}
-
-/** The top-level `<story>.test(name, [options,] fn)` calls on a story that Storybook 10.6.5 indexes and runs, the first of each name; a call with a spread argument has an unknown test function. */
-function testCallsOn(
-  body: readonly unknown[],
-  local: unknown,
-): readonly { readonly options: unknown; readonly testFunction: unknown }[] {
-  return body
-    .flatMap(testCallOf)
-    .filter(({ target }) => target === local)
-    .filter(
-      ({ args: [name] }, index, calls) =>
-        calls.findIndex(
-          ({ args: [other] }) => field(other, 'value') === field(name, 'value'),
-        ) === index,
-    )
-    .flatMap(({ statement, args }) => {
-      const [, ...rest] = args;
-
-      if (isIndexedTestCall(statement)) {
-        return [
-          {
-            options: rest.length > 1 ? rest[0] : undefined,
-            testFunction: rest.at(-1),
-          },
-        ];
-      }
-
-      return args.some((arg) => field(arg, 'type') === 'SpreadElement')
-        ? [{ options: undefined, testFunction: undefined }]
-        : [];
-    });
 }
 
 /** The keys of `args` that a play or test function reads through its context parameter. */
