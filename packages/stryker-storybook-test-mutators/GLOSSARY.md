@@ -43,3 +43,11 @@ following checks are all negative checks, a click or hover that a `type` of the 
 first unless given `skipClick`), and a `type` or `clear` that a later `clear` of the same target undoes before any
 check.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
+
+### Waits
+
+**Retrying wait**:
+A Testing Library call that retries until it passes or times out: `waitFor(() => ...)`,
+`waitForElementToBeRemoved(...)`, or a `findBy` or `findAllBy` query. `LzStorybookWaitFor` makes it check once, or
+removes the removal wait.
+_Avoid_: async wait, polling

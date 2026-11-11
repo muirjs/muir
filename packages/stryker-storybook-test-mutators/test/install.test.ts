@@ -253,6 +253,32 @@ describe('roster', () => {
     ]);
   });
 
+  it('turns LzStorybookWaitFor on by its name inside experimental', async () => {
+    assert.deepEqual(
+      await namesWith({ experimental: { LzStorybookWaitFor: true } }),
+      [...defaults, 'LzStorybookWaitFor'],
+    );
+  });
+
+  it('refuses LzStorybookWaitFor as an opt-in key, as it is experimental', async () => {
+    await assert.rejects(namesWith({ LzStorybookWaitFor: true }), {
+      message:
+        '@layzee/stryker-storybook-test-mutators: no opt-in mutator is named LzStorybookWaitFor; it is ' +
+        'experimental, so it goes inside experimental.',
+    });
+  });
+
+  it('refuses LzStorybookInteractionRepeat inside experimental, as it is opt-in', async () => {
+    await assert.rejects(
+      namesWith({ experimental: { LzStorybookInteractionRepeat: true } }),
+      {
+        message:
+          '@layzee/stryker-storybook-test-mutators: no experimental mutator is named LzStorybookInteractionRepeat; ' +
+          'it is opt-in, so it goes outside experimental.',
+      },
+    );
+  });
+
   it('turns every opt-in mutator on with extended', async () => {
     assert.deepEqual(await namesWith({ extended: true }), [
       ...defaults,

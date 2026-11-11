@@ -11,6 +11,7 @@ import {
   interactionTargetMutator,
 } from './interaction-mutators.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
+import { waitForMutator } from './wait-for.ts';
 
 // In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave the roster out of a
 // mutation run. The literal names are what the option type reads.
@@ -27,7 +28,7 @@ export const mutatorSets = roster({
     interactionTargetMutator(),
   ],
   optIn: [interactionRepeatMutator()],
-  experimental: [],
+  experimental: [waitForMutator()],
 });
 
 type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];
