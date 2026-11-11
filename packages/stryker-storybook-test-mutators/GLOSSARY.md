@@ -26,13 +26,19 @@ _Avoid_: nested play, reused play
 A `focus()`, `blur()` or `click()` call with no argument, or a `dispatchEvent(event)` call, on an element.
 _Avoid_: native event, DOM action
 
+**Target query**:
+The Testing Library query that an interaction acts on as its first argument, awaited or not, such as
+`canvas.getByRole('button', { name: 'Save' })` in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))`;
+`LzStorybookInteractionTarget` swaps its name or text for another one in the same file.
+_Avoid_: target (alone), locator (the Playwright mutators' term)
+
 **Negative check**:
 An `expect(...)` check with `.not` in its matcher chain, which passes when the interaction before it did nothing.
 _Avoid_: absence check, negated assertion
 
 **Skipped interaction**:
-An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus` and `LzStorybookInteractionRepeat` make no
-mutant of: one in a `beforeEach` or `afterEach`, one whose
+An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat` and
+`LzStorybookInteractionTarget` make no mutant of: one in a `beforeEach` or `afterEach`, one whose
 following checks are all negative checks, a click or hover that a `type` of the same target repeats (`type` clicks
 first unless given `skipClick`), and a `type` or `clear` that a later `clear` of the same target undoes before any
 check.

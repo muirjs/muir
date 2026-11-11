@@ -1,4 +1,10 @@
 import type { types } from '@babel/core';
+import {
+  fieldOf,
+  literalValue,
+  swapMutator,
+  type Site,
+} from '@layzee/stryker-mutator-install';
 
 import {
   fireEventMethod,
@@ -6,6 +12,7 @@ import {
   isInteractionStatement,
   isQueryCall,
   isSkipped,
+  targetStatement,
   userEventCall,
   type UserEventCall,
 } from './interactions.ts';
@@ -133,6 +140,68 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
           t.cloneNode(statement),
         ]);
       }
+    },
+  };
+}
+
+function listOf(value: unknown): readonly unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+/** The `name` of a `getByRole(role, { name })` query, keyed by its role, or the first argument of another query. */
+function querySite(call: unknown): Site | undefined {
+  const method = fieldOf(fieldOf(fieldOf(call, 'callee'), 'property'), 'name');
+  const [first, options] = listOf(fieldOf(call, 'arguments'));
+
+  if (typeof method !== 'string' || !/^(get|find|query)By[A-Z]/.test(method)) {
+    return undefined;
+  }
+
+  if (method.endsWith('ByRole')) {
+    const name = fieldOf(
+      listOf(fieldOf(options, 'properties')).find(
+        (property) => fieldOf(fieldOf(property, 'key'), 'name') === 'name',
+      ),
+      'value',
+    );
+    const value = literalValue(name);
+
+    return value === undefined
+      ? undefined
+      : { key: `${method}:${literalValue(first)}`, value, node: name };
+  }
+
+  const value = literalValue(first);
+
+  return value === undefined ? undefined : { key: method, value, node: first };
+}
+
+export function interactionTargetMutator(): LzStorybookTestMutator & {
+  readonly name: 'LzStorybookInteractionTarget';
+} {
+  const swap = swapMutator(
+    'LzStorybookInteractionTarget',
+    sampleOf(
+      "await userEvent.click(canvas.getByRole('button', { name: 'a' }));\n    await userEvent.click(canvas.getByRole('button', { name: 'b' }));",
+    ),
+    querySite,
+  );
+
+  return {
+    name: swap.name,
+    sample: swap.sample,
+    *mutate(path, t) {
+      const statement = targetStatement(path);
+
+      if (statement === undefined || isSkipped(statement, t)) {
+        return;
+      }
+
+      yield* [
+        ...swap.mutate(path, {
+          cloneNode: (node) => (t.isNode(node) ? t.cloneNode(node) : node),
+        }),
+      ].filter((node) => t.isNode(node));
     },
   };
 }

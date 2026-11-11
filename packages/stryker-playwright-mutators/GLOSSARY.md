@@ -69,16 +69,6 @@ A mutant that removes one awaited call that stands alone as a statement, such as
 whose result the test uses makes none.
 _Avoid_: deletion, statement drop
 
-**Same-file swap**:
-A mutant that replaces a literal with the nearest distinct value of the same kind before or after it in the same
-file, so each swap site gets at most two.
-_Avoid_: replacement, substitution
-
-**Swap site**:
-A literal that a same-file swap may replace, together with what tells it apart from another literal of the same
-kind, such as a role's name or a mounted story id.
-_Avoid_: site (alone), target, candidate
-
 **Teardown**:
 The code an Action, Wait or Clock mutator skips: `test.afterEach` and `test.afterAll` bodies, and the code after
 `await use(...)` in a fixture.

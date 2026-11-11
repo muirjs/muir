@@ -236,25 +236,26 @@ describe('roster', () => {
     return names();
   }
 
+  const defaults = [
+    'LzStorybookInteraction',
+    'LzStorybookClickFocus',
+    'LzStorybookInteractionTarget',
+  ];
+
   it('installs the default mutators with no options', async () => {
-    assert.deepEqual(await namesWith(undefined), [
-      'LzStorybookInteraction',
-      'LzStorybookClickFocus',
-    ]);
+    assert.deepEqual(await namesWith(undefined), defaults);
   });
 
   it('turns LzStorybookInteractionRepeat on by its name, after the defaults', async () => {
     assert.deepEqual(await namesWith({ LzStorybookInteractionRepeat: true }), [
-      'LzStorybookInteraction',
-      'LzStorybookClickFocus',
+      ...defaults,
       'LzStorybookInteractionRepeat',
     ]);
   });
 
   it('turns every opt-in mutator on with extended', async () => {
     assert.deepEqual(await namesWith({ extended: true }), [
-      'LzStorybookInteraction',
-      'LzStorybookClickFocus',
+      ...defaults,
       'LzStorybookInteractionRepeat',
     ]);
   });

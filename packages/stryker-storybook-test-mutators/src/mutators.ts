@@ -8,6 +8,7 @@ import {
   clickFocusMutator,
   interactionMutator,
   interactionRepeatMutator,
+  interactionTargetMutator,
 } from './interaction-mutators.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
 
@@ -20,7 +21,11 @@ function roster<const T extends MutatorSets<LzStorybookTestMutator>>(
 }
 
 export const mutatorSets = roster({
-  defaults: [interactionMutator(), clickFocusMutator()],
+  defaults: [
+    interactionMutator(),
+    clickFocusMutator(),
+    interactionTargetMutator(),
+  ],
   optIn: [interactionRepeatMutator()],
   experimental: [],
 });

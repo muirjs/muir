@@ -111,6 +111,24 @@ export function userEventCall(path: NodePath): UserEventCall | undefined {
     : undefined;
 }
 
+/** The interaction statement whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
+export function targetStatement(path: NodePath): NodePath | undefined {
+  const query = path.findParent((parent) => parent.isCallExpression());
+  const statement = path.findParent((parent) => parent.isStatement());
+  const call =
+    statement?.node.type === 'ExpressionStatement'
+      ? awaited(statement.node.expression)
+      : undefined;
+  const [argument] = call?.type === 'CallExpression' ? call.arguments : [];
+
+  return statement !== null &&
+    isInteractionStatement(statement) &&
+    argument !== undefined &&
+    awaited(argument) === query?.node
+    ? statement
+    : undefined;
+}
+
 /** The event of a `fireEvent.<event>(...)` statement. */
 export function fireEventMethod(path: NodePath): string | undefined {
   const statement = path.node;

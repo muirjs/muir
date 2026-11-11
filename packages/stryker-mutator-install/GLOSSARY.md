@@ -47,6 +47,20 @@ A mutator that runs only when the install's `experimental` option names it or is
 can still change.
 _Avoid_: beta mutator, unstable mutator
 
+### Swaps
+
+**Same-file swap**:
+A mutant that replaces a literal with the nearest distinct value of the same kind before or after it in the same
+file, so each swap site gets at most two. The Playwright Locator and MountStory mutators and
+`LzStorybookInteractionTarget` make them.
+_Avoid_: replacement, substitution
+
+**Swap site**:
+A literal that a same-file swap may replace or take a replacement from, together with what tells it apart from
+another literal of the same kind, such as a role's name or a mounted story id. A mutator may replace only some of
+its sites, as `LzStorybookInteractionTarget` replaces only those in a target query.
+_Avoid_: site (alone), target, candidate
+
 ### Stryker's own mutators
 
 **Built-in mutator**:
