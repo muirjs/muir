@@ -576,6 +576,18 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'story-globals-meta-duplicate-key',
+    title:
+      'a meta that writes globals twice has the last as its site, as that one replaces the first',
+    source: [
+      "export default { title: 'Probe', globals: { locale: 'de', outline: true }, globals: { locale: 'fr' } };",
+      '',
+      'export const Story = { play: async () => {} };',
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-computed-key-named-globals',
     title:
       'an object under a computed key [globals] makes no mutant, as the constant it names gives another key',

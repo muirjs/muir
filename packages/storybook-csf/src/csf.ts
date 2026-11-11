@@ -809,10 +809,11 @@ function nodesIn(node: object): readonly unknown[] {
   return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
 }
 
+/** The value the last property of `key` in an object literal gives, which replaces any earlier one; a spread is not read. */
 export function propertyValue(object: unknown, key: string): unknown {
   return propertyKeyValue(
-    list(field(object, 'properties')).find(
-      (candidate) => field(candidate, 'key', 'name') === key,
+    list(field(object, 'properties')).findLast(
+      (candidate) => propertyKey(candidate) === key,
     ),
     key,
   );
