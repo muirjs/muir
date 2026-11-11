@@ -12,7 +12,7 @@ import {
   interactionTargetMutator,
 } from './interaction-mutators.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
-import { spyStubMutator } from './spy-stub.ts';
+import { spyStubMutator, spyStubOutcomeMutator } from './spy-stub.ts';
 import { storyGlobalsMutator } from './story-globals.ts';
 import { waitForMutator } from './wait-for.ts';
 
@@ -35,6 +35,7 @@ export const mutatorSets = roster({
     waitForMutator(),
     assertionBeforeMutator(),
     spyStubMutator(),
+    spyStubOutcomeMutator(),
     storyGlobalsMutator(),
   ],
 });

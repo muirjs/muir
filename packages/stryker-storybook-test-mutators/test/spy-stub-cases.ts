@@ -18,44 +18,25 @@ export const spyStubCases: readonly Case[] = [
     expect: [[spyStub, 'fn()']],
   },
   {
-    id: 'spy-stub-resolved-outcome',
+    id: 'spy-stub-resolved-no-outcome',
     title:
-      'a resolved stub also rejects with an Error instead, as the outcome mutant',
+      'a resolved stub gets only the removal mutant, as its outcome mutant is LzStorybookSpyStubOutcome',
     source: storyFile(
       'export const Story = {',
       '  args: { save: fn().mockResolvedValue({ id: 1 }) },',
       '};',
     ),
-    expect: [
-      [spyStub, 'fn()'],
-      [spyStub, 'fn().mockRejectedValue(new Error("Stryker"))'],
-    ],
+    expect: [[spyStub, 'fn()']],
   },
   {
-    id: 'spy-stub-rejected-outcome',
-    title: 'a rejected stub also resolves to undefined, as the outcome mutant',
-    source: storyFile(
-      'export const Story = {',
-      "  args: { save: fn().mockRejectedValue(new Error('offline')) },",
-      '};',
-    ),
-    expect: [
-      [spyStub, 'fn()'],
-      [spyStub, 'fn().mockResolvedValue(undefined)'],
-    ],
-  },
-  {
-    id: 'spy-stub-once-outcome',
-    title: 'the outcome mutant of a Once stub stays a Once stub',
+    id: 'spy-stub-once',
+    title: 'a Once stub chained on fn() leaves the bare fn() call',
     source: storyFile(
       'export const Story = {',
       '  args: { save: fn().mockResolvedValueOnce(1) },',
       '};',
     ),
-    expect: [
-      [spyStub, 'fn()'],
-      [spyStub, 'fn().mockRejectedValueOnce(new Error("Stryker"))'],
-    ],
+    expect: [[spyStub, 'fn()']],
   },
   {
     id: 'spy-stub-in-render',
@@ -100,24 +81,10 @@ export const spyStubCases: readonly Case[] = [
     expect: [[spyStub, ';']],
   },
   {
-    id: 'spy-stub-statement-outcome',
-    title:
-      'a resolved stub statement also rejects with an Error instead, as the outcome mutant',
-    source: inPlay('mocked(save).mockResolvedValue(note);'),
-    expect: [
-      [spyStub, ';'],
-      [spyStub, 'mocked(save).mockRejectedValue(new Error("Stryker"))'],
-    ],
-  },
-  {
     id: 'spy-stub-optional-call',
-    title:
-      'an optional-chained stub statement gets the same mutants as a plain one',
+    title: 'an optional-chained stub statement is removed as a plain one is',
     source: inPlay('mocked(save)?.mockResolvedValue(note);'),
-    expect: [
-      [spyStub, ';'],
-      [spyStub, 'mocked(save)?.mockRejectedValue(new Error("Stryker"))'],
-    ],
+    expect: [[spyStub, ';']],
   },
   {
     id: 'spy-stub-computed-member',

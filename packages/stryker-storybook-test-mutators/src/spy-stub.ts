@@ -22,22 +22,52 @@ export function spyStubMutator(): LzStorybookTestMutator & {
 
       if (isStubStatement(path)) {
         yield t.emptyStatement();
-      } else {
-        yield* stubCallMutants(path, t);
+
+        return;
+      }
+
+      // A definition-time stub is removed by leaving its receiver.
+      const call = stubCallAt(path);
+
+      if (call?.site !== undefined) {
+        yield t.cloneNode(call.callee.object);
       }
     },
   };
 }
 
-/** The removal mutant of a definition-time stub, and the outcome mutant of any stub that settles a promise. */
-function* stubCallMutants(
-  path: NodePath,
-  t: BabelTypes,
-): Generator<types.Node> {
+export function spyStubOutcomeMutator(): LzStorybookTestMutator & {
+  readonly name: 'LzStorybookSpyStubOutcome';
+} {
+  return {
+    name: 'LzStorybookSpyStubOutcome',
+    sample: `import { fn } from 'storybook/test';\nexport const Story = {\n  args: { onSave: fn().mockResolvedValue(1) },\n};\n`,
+    *mutate(path, t) {
+      readStoryFileAt(path, sitesOf);
+
+      const call = stubCallAt(path);
+      const flipped = call === undefined ? undefined : outcomeMutant(call, t);
+
+      if (flipped !== undefined) {
+        yield flipped;
+      }
+    },
+  };
+}
+
+/** A stub call: a definition-time stub, with its site, or the call of a stub statement. */
+interface StubCall {
+  readonly node: types.CallExpression | types.OptionalCallExpression;
+  readonly callee: types.MemberExpression | types.OptionalMemberExpression;
+  readonly site: StubSite | undefined;
+  readonly stub: StubMethodCall;
+}
+
+function stubCallAt(path: NodePath): StubCall | undefined {
   const member = memberCall(path.node);
 
   if (member === undefined) {
-    return;
+    return undefined;
   }
 
   const { call: node, callee } = member;
@@ -49,28 +79,30 @@ function* stubCallMutants(
     site ??
     (parent !== null && isStubStatement(parent) ? stubOf(node) : undefined);
 
-  if (stub === undefined) {
-    return;
-  }
+  return stub === undefined ? undefined : { node, callee, site, stub };
+}
 
-  if (site !== undefined) {
-    yield t.cloneNode(callee.object);
-  }
-
+/** The stub call with a resolved stub made a rejected one or back; `undefined` for a stub that settles no promise. */
+function outcomeMutant(
+  { node, callee, stub }: StubCall,
+  t: BabelTypes,
+): types.Node | undefined {
   const outcome = outcomeOf(stub.method, t);
 
-  if (outcome !== undefined) {
-    const flippedCallee = t.cloneNode(callee);
-    const flipped = t.cloneNode(node);
-
-    flippedCallee.property = t.identifier(
-      `${outcome.method}${stub.once ? 'Once' : ''}`,
-    );
-    flipped.callee = flippedCallee;
-    flipped.arguments = [outcome.argument];
-
-    yield flipped;
+  if (outcome === undefined) {
+    return undefined;
   }
+
+  const flippedCallee = t.cloneNode(callee);
+  const flipped = t.cloneNode(node);
+
+  flippedCallee.property = t.identifier(
+    `${outcome.method}${stub.once ? 'Once' : ''}`,
+  );
+  flipped.callee = flippedCallee;
+  flipped.arguments = [outcome.argument];
+
+  return flipped;
 }
 
 /** An expression statement in story test code whose call sets a spy stub, such as `mocked(save).mockResolvedValue(note);`. */

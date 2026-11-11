@@ -9,11 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { lzStorybookTestMutators } from '@layzee/stryker-storybook-test-mutators';
 
 import { stubIgnorer } from '../src/stub-ignorer.ts';
-import {
-  isOutcomeMutant,
-  spyStubName,
-  spyStubReason,
-} from '../src/stub-verdict.ts';
+import { spyStubName, spyStubReason } from '../src/stub-verdict.ts';
 import { instrument } from './support/instrument.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -37,8 +33,8 @@ async function spyStubMutants(name: string) {
     .map(({ line, ignoreReason }) => ({ line, ignoreReason }));
 }
 
-/** The SpyStub mutants of a story whose `onSave` arg is `stub`, each with whether the reporter takes it for an outcome mutant. */
-async function classifiedStubMutants(stub: string) {
+/** The SpyStub and SpyStubOutcome mutants of a story whose `onSave` arg is `stub`, each as its mutator name and replacement. */
+async function namedStubMutants(stub: string) {
   const { mutants } = await instrument(
     join(fixtures, 'no-main', 'src', 'Outcome.stories.tsx'),
     [
@@ -53,17 +49,17 @@ async function classifiedStubMutants(stub: string) {
   );
 
   return mutants
-    .filter(({ mutatorName }) => mutatorName === spyStubName)
-    .map(({ replacement }) => [
-      replacement,
-      isOutcomeMutant(replacement, 'Outcome.stories.tsx'),
-    ]);
+    .filter(({ mutatorName }) => mutatorName.startsWith(spyStubName))
+    .map(({ mutatorName, replacement }) => [mutatorName, replacement]);
 }
 
 describe('LzStorybookSpyStub with the lz-storybook ignorer', () => {
   before(async () => {
     await lzStorybookTestMutators({
-      experimental: { LzStorybookSpyStub: true },
+      experimental: {
+        LzStorybookSpyStub: true,
+        LzStorybookSpyStubOutcome: true,
+      },
     });
   });
 
@@ -74,24 +70,25 @@ describe('LzStorybookSpyStub with the lz-storybook ignorer', () => {
     ]);
   });
 
-  it("counts LzStorybookSpyStub's outcome mutant of a mockResolvedValue stub as an outcome mutant in the reporter, and its removal mutant as none", async () => {
+  it('names the removal mutant of a mockResolvedValue stub LzStorybookSpyStub, which the reporter counts, and its outcome mutant LzStorybookSpyStubOutcome, which it does not', async () => {
     assert.deepEqual(
-      await classifiedStubMutants("fn().mockResolvedValue('saved')"),
+      await namedStubMutants("fn().mockResolvedValue('saved')"),
       [
-        ['fn()', false],
-        ['fn().mockRejectedValue(new Error("Stryker"))', true],
+        [spyStubName, 'fn()'],
+        [
+          'LzStorybookSpyStubOutcome',
+          'fn().mockRejectedValue(new Error("Stryker"))',
+        ],
       ],
     );
   });
 
-  it("counts LzStorybookSpyStub's outcome mutant of a mockRejectedValueOnce stub as an outcome mutant in the reporter, and its removal mutant as none", async () => {
+  it('names the removal mutant of a mockRejectedValueOnce stub LzStorybookSpyStub and its outcome mutant LzStorybookSpyStubOutcome', async () => {
     assert.deepEqual(
-      await classifiedStubMutants(
-        "fn().mockRejectedValueOnce(new Error('no'))",
-      ),
+      await namedStubMutants("fn().mockRejectedValueOnce(new Error('no'))"),
       [
-        ['fn()', false],
-        ['fn().mockResolvedValueOnce(undefined)', true],
+        [spyStubName, 'fn()'],
+        ['LzStorybookSpyStubOutcome', 'fn().mockResolvedValueOnce(undefined)'],
       ],
     );
   });

@@ -61,14 +61,17 @@ _Avoid_: duplicated assertion, moved check
 
 **Stub statement**:
 An expression statement in story test code whose call is a spy stub method on any receiver, such as
-`mocked(save).mockResolvedValue(note);` in a play or a `beforeEach`. `LzStorybookSpyStub` removes it, as it removes
-the chain of a definition-time stub (the Storybook context's term).
+`mocked(save).mockResolvedValue(note);` in a play or a `beforeEach`, on a member that is not computed.
+`LzStorybookSpyStub` removes it, as it removes the chain of a definition-time stub (the Storybook context's term).
 _Avoid_: mock statement, stub call
 
 **Outcome mutant**:
-The `LzStorybookSpyStub` mutant that turns a `mockResolvedValue` stub into `mockRejectedValue(new Error('Stryker'))`
-and a `mockRejectedValue` stub into `mockResolvedValue(undefined)`, keeping a `Once` form, so a survivor shows that
-no check tells success from failure of that call.
+The `LzStorybookSpyStubOutcome` mutant that turns a stub statement or definition-time stub of `mockResolvedValue`
+into `mockRejectedValue(new Error('Stryker'))` and one of `mockRejectedValue` into `mockResolvedValue(undefined)`,
+keeping a `Once` form, so a survivor shows that no check tells success from failure of that call. It has a mutator
+name of its own, apart from `LzStorybookSpyStub`, which removes the stub, so a report and `mutator.excludedMutations`
+tell the two apart. A `// Stryker disable` comment matches each mutator name exactly, ignoring case only, so it takes
+`LzStorybookSpyStub,LzStorybookSpyStubOutcome` or `all` to silence both.
 _Avoid_: flip mutant, rejection mutant
 
 ### Globals

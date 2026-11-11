@@ -298,6 +298,13 @@ describe('roster', () => {
     );
   });
 
+  it('turns LzStorybookSpyStubOutcome on by its name inside experimental', async () => {
+    assert.deepEqual(
+      await namesWith({ experimental: { LzStorybookSpyStubOutcome: true } }),
+      [...defaults, 'LzStorybookSpyStubOutcome'],
+    );
+  });
+
   it('turns LzStorybookStoryGlobals on by its name inside experimental', async () => {
     assert.deepEqual(
       await namesWith({ experimental: { LzStorybookStoryGlobals: true } }),
