@@ -2,6 +2,7 @@ import type { NodePath } from '@babel/core';
 import {
   csfFile,
   field,
+  isUnknownPlay,
   list,
   ownStoryValue,
   playedStories,
@@ -12,14 +13,12 @@ import {
   storyValues,
   topLevelBindings,
   unchangedBindings,
-  unknownOverAPlay,
-  unknownValue,
   type LayerValue,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookMutator } from './mutator.ts';
 
-type Key = string | number;
+type Key = NonNullable<ReturnType<typeof propertyKey>>;
 
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<Key> | 'whole';
@@ -158,11 +157,7 @@ function argsSites(
         const playReads: readonly Reads[] =
           play === undefined
             ? []
-            : [
-                play === unknownValue || play === unknownOverAPlay
-                  ? 'whole'
-                  : readsOf(play),
-              ];
+            : [isUnknownPlay(play) ? 'whole' : readsOf(play)];
         const [storyArgs, ...baseArgs] = storyValues(init, unchanged, 'args');
 
         return [

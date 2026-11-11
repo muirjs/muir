@@ -23,6 +23,10 @@ export const unknownOverAPlay = 'unknown over a play';
 /** A play that something the file cannot read, such as a spread of an imported object, may set: `unknownOverAPlay`, or `unknownValue` when no play the file reads is under it. */
 export type UnknownPlay = typeof unknownValue | typeof unknownOverAPlay;
 
+export function isUnknownPlay(play: unknown): play is UnknownPlay {
+  return play === unknownValue || play === unknownOverAPlay;
+}
+
 /** A tested story that runs a play or a `.test()` call. */
 export interface PlayedStory {
   readonly story: StoryExport;
