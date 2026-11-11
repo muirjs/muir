@@ -677,6 +677,42 @@
         }
       ],
       "source": "// SpyStub spike: reset off for the file, so the definition-time stub reaches the component and the play checks it.\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nfunction Probe({ getValue }: { getValue: () => unknown }) {\n  return <output data-testid=\"value\">{String(getValue())}</output>;\n}\n\nconst meta = {\n  component: Probe,\n  parameters: { test: { restoreMocks: false } },\n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\n\nexport const CheckedStub: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\n\nexport const UncheckedStub: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toBeInTheDocument();\n  },\n};\n"
+    },
+    "src/SpyStubOutcome.stories.tsx": {
+      "language": "typescript",
+      "mutants": [
+        {
+          "id": "51",
+          "mutatorName": "LzStorybookSpyStub",
+          "replacement": "fn()",
+          "statusReason": "expect(received).toHaveReturnedWith(expected)",
+          "status": "Killed",
+          "static": true,
+          "testsCompleted": 1,
+          "duration": 1000,
+          "killedBy": ["0"],
+          "coveredBy": [],
+          "location": {
+            "end": { "column": 50, "line": 17 },
+            "start": { "column": 19, "line": 17 }
+          }
+        },
+        {
+          "id": "52",
+          "mutatorName": "LzStorybookSpyStubOutcome",
+          "replacement": "fn().mockRejectedValue(new Error(\"Stryker\"))",
+          "status": "Survived",
+          "static": true,
+          "testsCompleted": 1,
+          "duration": 1000,
+          "coveredBy": [],
+          "location": {
+            "end": { "column": 50, "line": 17 },
+            "start": { "column": 19, "line": 17 }
+          }
+        }
+      ],
+      "source": "// SpyStubOutcome: reset off for the file; the play checks that the save returns a promise, not how it settles.\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nfunction Probe({ onSave }: { onSave: () => Promise<unknown> }) {\n  return <button onClick={() => void onSave()}>Save</button>;\n}\n\nconst meta = {\n  component: Probe,\n  parameters: { test: { restoreMocks: false } },\n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\n\nexport const SavedStub: Story = {\n  args: { onSave: fn().mockResolvedValue('saved') },\n  play: async ({ args, canvas, userEvent }) => {\n    await userEvent.click(canvas.getByRole('button'));\n    await expect(args.onSave).toHaveReturnedWith(expect.any(Promise));\n  },\n};\n"
     }
   },
   "schemaVersion": "1.0",

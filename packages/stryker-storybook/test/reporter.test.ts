@@ -101,9 +101,12 @@ const resolvedStub = [
   '',
 ].join('\n');
 
-function survivedStubMutant(replacement: string) {
+function survivedStubMutant(
+  replacement: string,
+  mutatorName = 'LzStorybookSpyStub',
+) {
   return {
-    mutatorName: 'LzStorybookSpyStub',
+    mutatorName,
     status: 'Survived',
     replacement,
     location: { start: { line: 3, column: 34 }, end: { line: 3, column: 66 } },
@@ -385,7 +388,7 @@ describe('storybookReporter', () => {
     );
   });
 
-  it("reports no unchecked stub for a Survived outcome mutant, as the stub's removal is what tells whether a check reads it", (t) => {
+  it("reports no unchecked stub for a Survived LzStorybookSpyStubOutcome mutant, as the stub's removal is what tells whether a check reads it", (t) => {
     const { reporter, findings } = setup(t);
 
     reporter.onMutationTestReportReady({
@@ -393,31 +396,16 @@ describe('storybookReporter', () => {
         'src/Resolved.stories.tsx': {
           source: resolvedStub,
           mutants: [
-            survivedStubMutant('fn().mockRejectedValue(new Error("Stryker"))'),
+            survivedStubMutant(
+              'fn().mockRejectedValue(new Error("Stryker"))',
+              'LzStorybookSpyStubOutcome',
+            ),
           ],
         },
       },
     });
 
     assert.deepEqual(uncheckedFindings(findings()), []);
-  });
-
-  it('reports an unchecked stub for a survived removal mutant with a TypeScript cast in a .ts story file', (t) => {
-    const { reporter, findings } = setup(t);
-
-    reporter.onMutationTestReportReady({
-      files: {
-        'src/Resolved.stories.ts': {
-          source: resolvedStub,
-          mutants: [survivedStubMutant('fn(<Note>value)')],
-        },
-      },
-    });
-
-    assert.deepEqual(
-      uncheckedFindings(findings()).map((finding) => finding['file']),
-      ['src/Resolved.stories.ts'],
-    );
   });
 
   it('reports one unchecked stub for a line where several spy stub mutants survived', (t) => {

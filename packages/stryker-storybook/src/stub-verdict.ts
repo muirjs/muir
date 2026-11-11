@@ -1,6 +1,3 @@
-import { field, stubMethodOf } from '@layzee/storybook-csf';
-
-import { parseProgram } from './parse.ts';
 import {
   classifyStubs,
   type ClassifiedStub,
@@ -11,26 +8,8 @@ import type { StorybookProject } from './storybook-project.ts';
 
 export const storybookPluginName = 'lz-storybook';
 
+/** The mutator whose surviving mutants make unchecked stubs: it removes a stub, where `LzStorybookSpyStubOutcome` only flips how a stub settles. */
 export const spyStubName = 'LzStorybookSpyStub';
-
-/**
- * An `LzStorybookSpyStub` outcome mutant, which makes a resolved stub reject or a rejected one resolve and so still
- * calls a stub method, where a removal mutant leaves the stub's receiver or `;`. Whether a check reads the stub is the
- * removal mutant's to tell.
- */
-export function isOutcomeMutant(
-  replacement: string | undefined,
-  fileName: string,
-): boolean {
-  const [statement] =
-    replacement === undefined ? [] : parseProgram(replacement, fileName).body;
-
-  return (
-    stubMethodOf(
-      field(statement, 'expression', 'callee', 'property', 'name'),
-    ) !== undefined
-  );
-}
 
 export type ReasonVerdict = Exclude<StubVerdict, 'kept'> | 'once-not-rewritten';
 

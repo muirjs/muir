@@ -24,7 +24,6 @@ import {
 } from './storybook-project.ts';
 import { siteFindings } from './stub-findings.ts';
 import {
-  isOutcomeMutant,
   spyStubName,
   uncheckedFinding,
   type ReasonVerdict,
@@ -45,7 +44,7 @@ interface StubFinding {
 
 type ReportMutant = Pick<
   schema.MutantResult,
-  'mutatorName' | 'status' | 'location' | 'replacement'
+  'mutatorName' | 'status' | 'location'
 >;
 
 interface ReportInput {
@@ -197,10 +196,8 @@ function stubFindings(
     ...Object.entries(files).flatMap(([file, { mutants }]) =>
       [
         ...new Set(
-          mutants.flatMap(({ mutatorName, status, location, replacement }) =>
-            mutatorName === spyStubName &&
-            status === 'Survived' &&
-            !isOutcomeMutant(replacement, file)
+          mutants.flatMap(({ mutatorName, status, location }) =>
+            mutatorName === spyStubName && status === 'Survived'
               ? [location.start.line]
               : [],
           ),
