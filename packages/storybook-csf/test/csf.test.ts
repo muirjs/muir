@@ -95,6 +95,20 @@ describe('csfFile written', () => {
     );
   });
 
+  it('leaves out a story that shares only a string constant with a name the file hands on', () => {
+    assert.equal(
+      writtenNames(
+        "import { mutate } from './mutate';",
+        "const ROUTE = '/a';",
+        "const meta = { title: 'a/b', parameters: { routePath: ROUTE } };",
+        'mutate(meta);',
+        'export default meta;',
+        'export const A = { parameters: { routePath: ROUTE } };',
+      ).includes('A'),
+      false,
+    );
+  });
+
   it('leaves out a name that is also the key of a shorthand property', () => {
     assert.equal(
       writtenNames(

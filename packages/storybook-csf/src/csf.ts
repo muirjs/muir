@@ -738,7 +738,7 @@ interface Reach {
   readonly identifier: unknown;
 }
 
-/** A top-level `const C = { ...A, b: { c: B } }` or `const C = A` shares A's and B's nested objects with C, so a write through any of them changes what the others run with. */
+/** A top-level `const C = { ...A, b: { c: B } }` or `const C = A` shares A's and B's nested objects with C, so a write through any of them changes what the others run with; a name bound to a literal shares none. */
 function reachesOf(
   inits: readonly (readonly [unknown, unknown])[],
   bindings: Bindings,
@@ -747,12 +747,24 @@ function reachesOf(
     identifiersReachedFrom(init).flatMap((identifier) => {
       const to = field(identifier, 'name');
 
-      return typeof to === 'string' && bindings.has(to)
+      return typeof to === 'string' &&
+        bindings.has(to) &&
+        !primitiveTypes.includes(field(unwrap(bindings.get(to)), 'type'))
         ? [{ from, to, identifier }]
         : [];
     }),
   );
 }
+
+/** A literal or template literal holds no object, so two names that read one share nothing a write could change. */
+const primitiveTypes: readonly unknown[] = [
+  'StringLiteral',
+  'NumericLiteral',
+  'BooleanLiteral',
+  'NullLiteral',
+  'BigIntLiteral',
+  'TemplateLiteral',
+];
 
 const memberTypes: readonly unknown[] = [
   'MemberExpression',
