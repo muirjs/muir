@@ -121,6 +121,17 @@ export const interactionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'user-event-setup-let-for-of',
+    title:
+      'a call on a let given userEvent.setup() and then each value of a for...of makes no mutant',
+    source: inPlay(
+      'let user = userEvent.setup();',
+      'for (user of drivers) {}',
+      "await user.keyboard('{Enter}');",
+    ),
+    expect: [],
+  },
+  {
     id: 'vitest-browser-dynamic-import',
     title:
       "a call on userEvent destructured under another name from import('vitest/browser') is removed",

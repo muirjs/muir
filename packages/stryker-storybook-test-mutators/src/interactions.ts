@@ -652,7 +652,7 @@ function isSetupCall(node: types.Node | undefined): boolean {
   );
 }
 
-/** The one value a local `name` is ever given, by its declaration or a later assignment. */
+/** The one value a local `name` is ever given, by its declaration or a later assignment; none when something else, such as `++` or a `for...of` head, also changes it. */
 function boundValue(path: NodePath, name: string): types.Node | undefined {
   const binding = path.scope.getBinding(name);
 
@@ -660,12 +660,17 @@ function boundValue(path: NodePath, name: string): types.Node | undefined {
     return undefined;
   }
 
-  const values = [
-    binding.path.node.init,
-    ...binding.constantViolations.map(({ node }) =>
-      node.type === 'AssignmentExpression' ? node.right : node,
-    ),
-  ].filter((value) => value !== null && value !== undefined);
+  const assigned = binding.constantViolations.flatMap(({ node }) =>
+    node.type === 'AssignmentExpression' ? [node.right] : [],
+  );
+
+  if (assigned.length < binding.constantViolations.length) {
+    return undefined;
+  }
+
+  const values = [binding.path.node.init, ...assigned].filter(
+    (value) => value !== null && value !== undefined,
+  );
 
   return values.length === 1 ? values[0] : undefined;
 }
