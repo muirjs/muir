@@ -402,6 +402,24 @@ describe('storybookReporter', () => {
     assert.deepEqual(uncheckedFindings(findings()), []);
   });
 
+  it('reports an unchecked stub for a survived removal mutant with a TypeScript cast in a .ts story file', (t) => {
+    const { reporter, findings } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.ts': {
+          source: resolvedStub,
+          mutants: [survivedStubMutant('fn(<Note>value)')],
+        },
+      },
+    });
+
+    assert.deepEqual(
+      uncheckedFindings(findings()).map((finding) => finding['file']),
+      ['src/Resolved.stories.ts'],
+    );
+  });
+
   it('reports one unchecked stub for a line where several spy stub mutants survived', (t) => {
     const { reporter, findings } = setup(t);
 

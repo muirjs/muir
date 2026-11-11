@@ -18,11 +18,12 @@ export const spyStubName = 'LzStorybookSpyStub';
  * calls a stub method, where a removal mutant leaves the stub's receiver or `;`. Whether a check reads the stub is the
  * removal mutant's to tell.
  */
-export function isOutcomeMutant(replacement: string | undefined): boolean {
+export function isOutcomeMutant(
+  replacement: string | undefined,
+  fileName: string,
+): boolean {
   const [statement] =
-    replacement === undefined
-      ? []
-      : parseProgram(replacement, 'replacement.tsx').body;
+    replacement === undefined ? [] : parseProgram(replacement, fileName).body;
 
   return (
     stubMethodOf(

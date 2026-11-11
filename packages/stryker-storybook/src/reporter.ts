@@ -200,7 +200,7 @@ function stubFindings(
           mutants.flatMap(({ mutatorName, status, location, replacement }) =>
             mutatorName === spyStubName &&
             status === 'Survived' &&
-            !isOutcomeMutant(replacement)
+            !isOutcomeMutant(replacement, file)
               ? [location.start.line]
               : [],
           ),

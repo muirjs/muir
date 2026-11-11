@@ -54,7 +54,10 @@ async function classifiedStubMutants(stub: string) {
 
   return mutants
     .filter(({ mutatorName }) => mutatorName === spyStubName)
-    .map(({ replacement }) => [replacement, isOutcomeMutant(replacement)]);
+    .map(({ replacement }) => [
+      replacement,
+      isOutcomeMutant(replacement, 'Outcome.stories.tsx'),
+    ]);
 }
 
 describe('LzStorybookSpyStub with the lz-storybook ignorer', () => {
