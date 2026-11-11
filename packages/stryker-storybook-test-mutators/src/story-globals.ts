@@ -124,21 +124,29 @@ function bySite(
 // addons, and its `DEFAULT_VIEWPORT` name). A project's preview `initialGlobals` can differ; the mutator cannot see them.
 const viewportDefaults: readonly unknown[] = ['responsive', '100pct-100pct'];
 
-const defaultGlobals: Readonly<
-  Record<string, (value: unknown, below: Below) => boolean>
-> = {
-  // The Vitest addon's `setViewport` uses a viewport global's `value`, else `parameters.viewport.defaultViewport`,
-  // so a viewport is no default where a `parameters` object of the site's runs may set `viewport`.
-  viewport: (value, { parameters, bindings }) =>
-    !parameters.some((object) => maySetIn(object, 'viewport', bindings)) &&
-    (viewportDefaults.includes(literalOf(value)) ||
-      (field(value, 'type') === 'ObjectExpression' &&
-        isDefaultViewportValue(objectValue(value, 'value')))),
-  backgrounds: (value) =>
-    isObjectOf(value, { value: [undefined], grid: [false] }),
-  measureEnabled: isFalse,
-  outline: isFalse,
-};
+const defaultBackgrounds: ReadonlyMap<string, readonly unknown[]> = new Map([
+  ['value', [undefined]],
+  ['grid', [false]],
+]);
+
+const defaultGlobals: ReadonlyMap<
+  string,
+  (value: unknown, below: Below) => boolean
+> = new Map([
+  [
+    // The Vitest addon's `setViewport` uses a viewport global's `value`, else `parameters.viewport.defaultViewport`,
+    // so a viewport is no default where a `parameters` object of the site's runs may set `viewport`.
+    'viewport',
+    (value: unknown, { parameters, bindings }: Below) =>
+      !parameters.some((object) => maySetIn(object, 'viewport', bindings)) &&
+      (viewportDefaults.includes(literalOf(value)) ||
+        (field(value, 'type') === 'ObjectExpression' &&
+          isDefaultViewportValue(objectValue(value, 'value')))),
+  ],
+  ['backgrounds', (value: unknown) => isObjectOf(value, defaultBackgrounds)],
+  ['measureEnabled', isFalse],
+  ['outline', isFalse],
+]);
 
 function isFalse(value: unknown): boolean {
   return literalOf(value) === false;
@@ -147,7 +155,7 @@ function isFalse(value: unknown): boolean {
 /** An object literal whose every property is a literal of a key in `allowed`, with a value listed for it. */
 function isObjectOf(
   value: unknown,
-  allowed: Readonly<Record<string, readonly unknown[]>>,
+  allowed: ReadonlyMap<string, readonly unknown[]>,
 ): boolean {
   return (
     field(value, 'type') === 'ObjectExpression' &&
@@ -156,7 +164,7 @@ function isObjectOf(
 
       return (
         typeof key === 'string' &&
-        allowed[key]?.includes(literalOf(field(property, 'value'))) === true
+        allowed.get(key)?.includes(literalOf(field(property, 'value'))) === true
       );
     })
   );
@@ -194,7 +202,7 @@ function isDefaultGlobal(
 
   return (
     typeof key === 'string' &&
-    defaultGlobals[key]?.(field(property, 'value'), below) === true &&
+    defaultGlobals.get(key)?.(field(property, 'value'), below) === true &&
     !before.some((earlier) => maySet(earlier, key)) &&
     !below.globals.some((globals) => maySetIn(globals, key, below.bindings))
   );

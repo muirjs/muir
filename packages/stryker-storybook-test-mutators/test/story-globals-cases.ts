@@ -788,3 +788,27 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [],
   },
 ];
+
+export const storyGlobalsCrashCases: readonly Case[] = [
+  {
+    id: 'story-globals-prototype-key',
+    title:
+      'a global named after an Object.prototype member is no default global, so instrumenting finishes',
+    source: storyFile(
+      "export const Story = { globals: { __defineGetter__: 1, locale: 'de' }, play: async () => {} };",
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ __defineGetter__: 1 }'],
+    ],
+  },
+  {
+    id: 'story-globals-backgrounds-prototype-key',
+    title:
+      'a backgrounds global with a key named after an Object.prototype member is no default, so instrumenting finishes',
+    source: storyFile(
+      'export const Story = { globals: { backgrounds: { constructor: 1 } }, play: async () => {} };',
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+];
