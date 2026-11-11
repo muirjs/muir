@@ -77,7 +77,7 @@ describe('playedStories', () => {
     );
   });
 
-  it('gives a spread of an imported object as the play of a story where it may set play last, as only running the file tells', () => {
+  it('gives an unknown play to a story where a spread of an imported object may set play last, as only running the file tells', () => {
     const stories = played(
       "import { Shared } from './shared';",
       "export default { title: 'a/b' };",
@@ -86,9 +86,12 @@ describe('playedStories', () => {
     );
 
     assert.deepEqual(
-      stories.map(({ story, play }) => [story.name, field(play, 'type')]),
+      stories.map(({ story, play }) => [
+        story.name,
+        typeof play === 'string' ? play : field(play, 'type'),
+      ]),
       [
-        ['A', 'SpreadElement'],
+        ['A', 'unknown over a play'],
         ['B', 'ArrowFunctionExpression'],
       ],
     );

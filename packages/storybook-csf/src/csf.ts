@@ -829,6 +829,36 @@ export function propertyKeyValue(property: unknown, key: string): unknown {
     : field(property, 'value');
 }
 
+/** The key of `label: ...`, `'label': ...` or `0: ...`; `undefined` for a computed key or a spread, which only running the file resolves. */
+export function propertyKey(property: unknown): string | number | undefined {
+  if (field(property, 'computed') === true) {
+    return undefined;
+  }
+
+  const name =
+    field(property, 'key', 'name') ?? field(property, 'key', 'value');
+
+  return typeof name === 'string' || typeof name === 'number'
+    ? name
+    : undefined;
+}
+
+/** A property that may set `key`: one of that key, or a spread or computed key, which only running the file resolves. */
+export function maySet(property: unknown, key: string | number): boolean {
+  const name = propertyKey(property);
+
+  return name === undefined || name === key;
+}
+
+/** An object that may set `key`: an object literal with a property that may, or any other value, which only running the file reads. */
+export function maySetIn(object: unknown, key: string | number): boolean {
+  return field(object, 'type') === 'ObjectExpression'
+    ? list(field(object, 'properties')).some((property) =>
+        maySet(property, key),
+      )
+    : true;
+}
+
 function storyNode(init: unknown, bindings: Bindings): unknown {
   if (isTemplateBind(init)) {
     return followed(field(init, 'callee', 'object'), bindings);

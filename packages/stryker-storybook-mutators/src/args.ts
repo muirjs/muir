@@ -4,8 +4,10 @@ import {
   field,
   lastWinsProperties,
   list,
+  maySet,
   ownStoryValue,
   playedStories,
+  propertyKey,
   propertyValue,
   storyValues,
   topLevelBindings,
@@ -79,7 +81,7 @@ export function argsMutator(): LzStorybookMutator & {
             .map((property) => t.cloneNode(property, true)),
         );
       const eligible = properties.filter((property, index) => {
-        const key = keyName(property);
+        const key = propertyKey(property);
 
         return (
           property.type === 'ObjectProperty' &&
@@ -87,13 +89,15 @@ export function argsMutator(): LzStorybookMutator & {
           key !== undefined &&
           !kept.read.has(key) &&
           !kept.sameAsBelow.has(key) &&
-          !properties.slice(index + 1).some((later) => keyName(later) === key)
+          !properties
+            .slice(index + 1)
+            .some((later) => propertyKey(later) === key)
         );
       });
       // A mutant whose keys left all equal the value they fall back to behaves like Stryker's ObjectLiteral `{}`.
       const differsFromEmpty = (removed: readonly unknown[]) =>
         properties.some((property) => {
-          const key = keyName(property);
+          const key = propertyKey(property);
 
           return (
             !removed.includes(property) &&
@@ -146,14 +150,18 @@ function argsSites(
   return sitesFrom(
     playedStories(body, bindings, file).flatMap(
       ({ story: { init }, play, tests }) => {
-        const plays = play === undefined ? [] : [play];
+        // An unknown play may read any key.
+        const playReads: readonly Reads[] =
+          play === undefined
+            ? []
+            : [typeof play === 'string' ? 'whole' : readsOf(play)];
         const [storyArgs, ...baseArgs] = storyValues(init, bindings, 'args');
 
         return [
           ...site(
             ownStoryValue(init, bindings, 'args'),
             [
-              ...plays.map(readsOf),
+              ...playReads,
               ...tests.map((test) =>
                 test === 'unmatched' ? 'whole' : readsOf(test.testFunction),
               ),
@@ -170,7 +178,7 @@ function argsSites(
 
             return site(
               testArgs,
-              [...plays, testFunction].map(readsOf),
+              [...playReads, readsOf(testFunction)],
               sameLiteralKeys(
                 testArgs,
                 [storyArgs, ...baseArgs, metaArgs],
@@ -200,7 +208,7 @@ function sameLiteralKeys(
 
   return new Set(
     properties.flatMap((property, index) => {
-      const key = keyName(property);
+      const key = propertyKey(property);
       const value = field(property, 'value');
       const fallbackValue =
         key === undefined
@@ -209,7 +217,7 @@ function sameLiteralKeys(
               [
                 properties.slice(0, index),
                 ...below.map((layer) =>
-                  field(layer, 'type') === 'SpreadElement'
+                  layer === 'unknown'
                     ? [layer]
                     : list(field(layer, 'properties')),
                 ),
@@ -270,13 +278,11 @@ function valueIn(
   key: Key,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
-  const property = byPriority(layers, bindings).find((candidate) => {
-    const name = keyName(candidate);
+  const property = byPriority(layers, bindings).find((candidate) =>
+    maySet(candidate, key),
+  );
 
-    return name === undefined || name === key;
-  });
-
-  return keyName(property) === key ? field(property, 'value') : undefined;
+  return propertyKey(property) === key ? field(property, 'value') : undefined;
 }
 
 /** Each layer's properties, last first, with a spread of a top-level object's `args` (`...Base.args`) replaced by that object's properties. */
@@ -421,7 +427,7 @@ function boundReads(target: NodePath, read: Read): Reads {
 
   return union(
     target.get('properties').map((property): Reads => {
-      const key = keyName(property.node);
+      const key = propertyKey(property.node);
 
       if (!property.isObjectProperty() || key === undefined) {
         return 'whole';
@@ -490,20 +496,6 @@ function memberKey(member: unknown): Key | undefined {
 
   return typeof value === 'string' || typeof value === 'number'
     ? value
-    : undefined;
-}
-
-/** The key of `label: ...`, `'label': ...` or `0: ...`; `undefined` for a computed key or a rest element. */
-function keyName(property: unknown): Key | undefined {
-  if (field(property, 'computed') === true) {
-    return undefined;
-  }
-
-  const name =
-    field(property, 'key', 'name') ?? field(property, 'key', 'value');
-
-  return typeof name === 'string' || typeof name === 'number'
-    ? name
     : undefined;
 }
 

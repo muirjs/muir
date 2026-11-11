@@ -10,14 +10,18 @@ import {
   type StoryExport,
   type TestChild,
 } from './csf.ts';
+import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { storyValues } from './story-layers.ts';
+import { storyValueChain } from './story-layers.ts';
+
+/** A play that something the file cannot read, such as a spread of an imported object, may set: `'unknown over a play'` when a play the file reads runs if it sets none (an earlier own play, an `.extend()` base's or the meta's), else `'unknown'`. */
+export type UnknownPlay = 'unknown' | 'unknown over a play';
 
 /** A tested story that runs a play or a `.test()` call. */
 export interface PlayedStory {
   readonly story: StoryExport;
-  /** The play Storybook runs for the story, or a top-level function it names; `undefined` when it has none, and a spread that does not resolve when that spread may set it. */
-  readonly play: unknown;
+  /** The play Storybook runs for the story, or a top-level function it names; `undefined` when it has none. */
+  readonly play: object | UnknownPlay | undefined;
   /** Its `.test()` calls, `'unmatched'` for a call with a spread argument, whose arguments only running the file tells. */
   readonly tests: readonly TestChild[];
 }
@@ -45,16 +49,21 @@ export function playedStories(
       const assignedPlay = story.runtimeAssignments
         .filter(({ path }) => path.length === 1 && path[0] === 'play')
         .at(-1)?.value;
-      const ownOrBasePlay = storyValues(story.init, bindings, 'play').find(
-        (play) => play !== undefined,
+      const [ownOrBasePlay, ...fallbacks] = storyValueChain(
+        story.init,
+        bindings,
+        'play',
       );
 
       return {
         story,
-        play: topLevelValueOrSelf(
-          assignedPlay ?? ownOrBasePlay ?? metaPlay,
-          bindings,
-        ),
+        play:
+          assignedPlay === undefined && ownOrBasePlay === 'unknown'
+            ? unknownPlay(
+                fallbacks.some((play) => play !== 'unknown') ||
+                  metaPlay !== undefined,
+              )
+            : knownPlay(assignedPlay ?? ownOrBasePlay ?? metaPlay, bindings),
         tests: testCallsOn(body, story.local).map((test) =>
           test === 'unmatched'
             ? test
@@ -77,6 +86,19 @@ function isTaggedTest(owners: readonly unknown[]): boolean {
       .filter((tag) => tag === 'test' || tag === '!test')
       .at(-1) !== '!test'
   );
+}
+
+function unknownPlay(overAPlay: boolean): UnknownPlay {
+  return overAPlay ? 'unknown over a play' : 'unknown';
+}
+
+function knownPlay(
+  node: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): object | undefined {
+  const play = topLevelValueOrSelf(node, bindings);
+
+  return isRecord(play) ? play : undefined;
 }
 
 /** A name's top-level value; a name the file does not bind, or any other node, as it is. */

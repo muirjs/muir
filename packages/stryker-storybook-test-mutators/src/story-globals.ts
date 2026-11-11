@@ -29,10 +29,9 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
     file.metaObjects.map((meta) => propertyValue(meta, key)).filter(defined);
   const metaGlobals = metaValues('globals');
   const metaParameters = metaValues('parameters');
-  // A play only a spread that does not resolve may set is no play here: when that spread sets none, the story's globals mutants can only survive.
+  // An unknown play is no play here: when what may set it sets none, the story's globals mutants can only survive.
   const played = playedStories(body, bindings, file).filter(
-    ({ play, tests }) =>
-      field(play, 'type') !== 'SpreadElement' || tests.length > 0,
+    ({ play, tests }) => typeof play !== 'string' || tests.length > 0,
   );
 
   return bySite(

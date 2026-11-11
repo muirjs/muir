@@ -4,25 +4,28 @@ import {
   unwrap,
   withoutBinding,
 } from './csf.ts';
+import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 
-/**
- * The value of `key` that each of a story's layers sets, the story's own first; `undefined` for a layer that sets
- * none, and the spread itself for a layer where a spread that does not resolve may set it last, as only running the
- * file tells what that spread sets.
- */
+/** What one property, or one layer, of a story gives a key: `undefined` for nothing, `'unknown'` when something the file cannot read may set it, else the value node. */
+export type LayerValue = object | 'unknown' | undefined;
+
+/** The value of `key` that each of a story's layers sets, the story's own first. */
 export function storyValues(
   init: unknown,
   bindings: ReadonlyMap<string, unknown>,
   key: string,
-): readonly unknown[] {
-  return storyLayers(init, bindings).map((layer) => {
-    const winner = winningProperty(layer, key);
+): readonly LayerValue[] {
+  return storyLayers(init, bindings).map((layer) => valuesIn(layer, key)[0]);
+}
 
-    return field(winner, 'type') === 'SpreadElement'
-      ? winner
-      : propertyKeyValue(winner, key);
-  });
+/** Every value that a property of the story's layers gives `key`, the one that runs first, then each it falls back to in turn. */
+export function storyValueChain(
+  init: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+  key: string,
+): readonly LayerValue[] {
+  return storyLayers(init, bindings).flatMap((layer) => valuesIn(layer, key));
 }
 
 /** The value of `key` the story's own object sets when it is the one that runs; `undefined` when a later property replaces it or a later spread that does not resolve may. */
@@ -32,7 +35,7 @@ export function ownStoryValue(
   key: string,
 ): unknown {
   const [own = []] = storyLayers(init, bindings);
-  const winner = winningProperty(own, key);
+  const winner = own.find((property) => setsOrMay(property, key));
 
   return list(field(storyArgument(unwrap(init)), 'properties')).includes(winner)
     ? propertyKeyValue(winner, key)
@@ -99,11 +102,27 @@ function storyLayers(
     : [own];
 }
 
-/** The first property of a last-wins-first layer that sets `key` or, as a spread that does not resolve, may. */
-function winningProperty(layer: readonly unknown[], key: string): unknown {
-  return layer.find(
-    (property) =>
-      field(property, 'type') === 'SpreadElement' ||
-      propertyKeyValue(property, key) !== undefined,
+/** The values the properties of a last-wins-first layer that set `key`, or as a spread that does not resolve may, give it. */
+function valuesIn(
+  layer: readonly unknown[],
+  key: string,
+): readonly LayerValue[] {
+  return layer
+    .filter((property) => setsOrMay(property, key))
+    .map((property): LayerValue => {
+      if (field(property, 'type') === 'SpreadElement') {
+        return 'unknown';
+      }
+
+      const value = propertyKeyValue(property, key);
+
+      return isRecord(value) ? value : undefined;
+    });
+}
+
+function setsOrMay(property: unknown, key: string): boolean {
+  return (
+    field(property, 'type') === 'SpreadElement' ||
+    propertyKeyValue(property, key) !== undefined
   );
 }
