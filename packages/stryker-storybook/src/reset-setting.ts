@@ -11,6 +11,7 @@ import {
   namedExports,
   storyArgument,
   topLevelBindings,
+  unchangedBindings,
   unwrap,
   withoutBinding,
 } from '@layzee/storybook-csf';
@@ -141,9 +142,7 @@ export function classifyStubs(
     stories: exported,
     written: writtenNames,
   } = csfFile(body, topLevel, index);
-  const bindings: ReadonlyMap<string, unknown> = new Map(
-    [...topLevel].filter(([name]) => !writtenNames.has(name)),
-  );
+  const bindings = unchangedBindings(topLevel, writtenNames);
   const isSelfImported = mayImportItself(body, fileName);
   const metaValue = evaluate(meta, bindings);
   const metaTest = testSettings(member(metaValue, 'parameters'));

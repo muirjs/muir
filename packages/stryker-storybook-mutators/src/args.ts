@@ -12,6 +12,7 @@ import {
   storyValues,
   topLevelBindings,
   topLevelValueOrSelf,
+  unchangedBindings,
   unknownOverAPlay,
   unknownValue,
   unwrap,
@@ -148,6 +149,7 @@ function argsSites(
 ): Sites {
   const bindings = topLevelBindings(body);
   const file = csfFile(body, bindings);
+  const unchanged = unchangedBindings(bindings, file.written);
   const metaArgs = file.metaObjects
     .map((meta) => objectValue(meta, 'args'))
     .find((args) => args !== undefined);
@@ -175,7 +177,7 @@ function argsSites(
                 test === 'unmatched' ? 'whole' : readsOf(test.testFunction),
               ),
             ],
-            sameLiteralKeys(storyArgs, [...baseArgs, metaArgs], bindings),
+            sameLiteralKeys(storyArgs, [...baseArgs, metaArgs], unchanged),
           ),
           ...tests.flatMap((test) => {
             if (test === 'unmatched') {
@@ -191,7 +193,7 @@ function argsSites(
               sameLiteralKeys(
                 testArgs,
                 [storyArgs, ...baseArgs, metaArgs],
-                bindings,
+                unchanged,
               ),
             );
           }),

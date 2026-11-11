@@ -214,6 +214,73 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-over-named-story-args-written',
+    title:
+      "a key in .test() options whose literal value equals the one in the top-level object that the story's args name is removed when the file writes to that object",
+    source: inFactoryFile(
+      'const shared = { a: 1 };',
+      'shared.a = 2;',
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({ args: shared });',
+      "Primary.test('t', { args: { a: 1, b: 2, c: 3 } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ a: 1, b: 2 }'],
+      [args, '{ a: 1, c: 3 }'],
+      [args, '{ b: 2, c: 3 }'],
+    ],
+  },
+  {
+    id: 'extend-over-named-base-args-written',
+    title:
+      "a key in .extend() whose literal value equals the one in the top-level object that the base story's args name is removed when the file writes to that object",
+    source: inFactoryFile(
+      'const shared = { a: 1 };',
+      'shared.a = 2;',
+      'const meta = preview.meta({});',
+      'export const Base = meta.story({ args: shared });',
+      'export const Primary = Base.extend({ args: { a: 1, b: 2, c: 3 }, play: async () => {} });',
+    ),
+    expect: [
+      [args, '{ a: 1, b: 2 }'],
+      [args, '{ a: 1, c: 3 }'],
+      [args, '{ b: 2, c: 3 }'],
+    ],
+  },
+  {
+    id: 'meta-named-args-written',
+    title:
+      "a key whose literal value equals the one in the top-level object that the meta's args name is removed when the file writes to that object",
+    source:
+      'const shared = { a: 1 };\n' +
+      'shared.a = 2;\n' +
+      "export default { title: 'Button', args: shared, play: async () => {} };\n" +
+      'export const Primary = { args: { a: 1, b: 2, c: 3 } };\n',
+    expect: [
+      [args, '{ a: 1, b: 2 }'],
+      [args, '{ a: 1, c: 3 }'],
+      [args, '{ b: 2, c: 3 }'],
+    ],
+  },
+  {
+    id: 'test-options-over-named-story-args-handed-on',
+    title:
+      "a key in .test() options whose literal value equals the one in the top-level object that the story's args name is removed when the file hands that object to a function",
+    source: inFactoryFile(
+      "import { mutate } from './mutate';",
+      'const shared = { a: 1 };',
+      'mutate(shared);',
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({ args: shared });',
+      "Primary.test('t', { args: { a: 1, b: 2, c: 3 } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ a: 1, b: 2 }'],
+      [args, '{ a: 1, c: 3 }'],
+      [args, '{ b: 2, c: 3 }'],
+    ],
+  },
+  {
     id: 'test-options-named-same-literal',
     title:
       "a key in .test() options named by a top-level constant whose literal value equals the story's makes no mutant",
@@ -268,6 +335,22 @@ export const fallbackCases: readonly Case[] = [
       "export const Base = { args: { label: 'a' } };\n" +
       "export const Primary = { args: { ...Base.args, label: 'a', disabled: true } };\n",
     expect: [[args, "{ ...Base.args, label: 'a' }"]],
+  },
+  {
+    id: 'spread-of-written-args',
+    title:
+      "a key whose literal value equals the one in the story args spread before it is removed when the file writes to that story's args",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'export const Base = { args: { a: 2 } };\n' +
+      'Base.args.a = 1;\n' +
+      'export const Primary = { args: { ...Base.args, a: 2, b: 2, c: 3 } };\n',
+    expect: [
+      [args, '{ ...Base.args, a: 2, b: 2 }'],
+      [args, '{ ...Base.args, a: 2, c: 3 }'],
+      [args, '{ ...Base.args, b: 2, c: 3 }'],
+      [args, '{ ...Base.args }'],
+    ],
   },
   {
     id: 'spread-of-args-before-unresolved-spread',

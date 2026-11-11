@@ -465,6 +465,14 @@ export function topLevelBindings(body: readonly unknown[]): Bindings {
   );
 }
 
+/** The top-level bindings whose value the file leaves as declared: none in its `written` set, which holds every name it writes, reassigns or hands to code it does not read. */
+export function unchangedBindings(
+  bindings: Bindings,
+  written: ReadonlySet<unknown>,
+): Bindings {
+  return new Map([...bindings].filter(([name]) => !written.has(name)));
+}
+
 function declarationOf(statement: unknown): unknown {
   return field(statement, 'type') === 'ExportNamedDeclaration'
     ? field(statement, 'declaration')
