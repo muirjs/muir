@@ -20,7 +20,9 @@ _Avoid_: story mutator, Storybook operator
 An `args` object literal in a story file that `LzStorybookArgs` mutates because a play or test function runs for it:
 a story's own `args` (a CSF3 story object, `.story()` or `.extend()`), unless a later spread of an object that sets
 `args` replaces them, or the `args` in a `.test(name, options, fn)` options object, written inline or as a top-level
-constant the call names.
+constant the call names. An options object that several stories' `.test()` calls share is one site for all of them:
+its read keys are those of every story, and a key gets no per-key mutant as equal to the value below only when it is
+equal for each story.
 _Avoid_: args target, story args (the meta's `args` are no args site)
 
 **Read key**:

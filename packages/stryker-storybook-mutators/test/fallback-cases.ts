@@ -184,6 +184,23 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-shared-same-literal',
+    title:
+      "a key in .test() options shared by two stories is removed when only one story's value equals it, whichever story comes last",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const B = meta.story({});',
+      'export const A = meta.story({ args: { x: 1 } });',
+      'const opts = { args: { x: 1, y: 2 } };',
+      "B.test('b', opts, () => {});",
+      "A.test('a', opts, () => {});",
+    ),
+    expect: [
+      [args, '{ x: 1 }'],
+      [args, '{ y: 2 }'],
+    ],
+  },
+  {
     id: 'extend-other-literal-than-base',
     title:
       "a key in .extend() whose literal value equals the meta's but not the base story's is removed",

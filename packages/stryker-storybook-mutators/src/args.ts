@@ -29,6 +29,13 @@ interface Kept {
 
 type Site = readonly [argsObject: unknown, kept: Kept];
 
+/** One story's use of an args object: what the functions that run for it read, and its keys equal to the value below. */
+type Use = readonly [
+  argsObject: unknown,
+  reads: Reads,
+  sameAsBelow: ReadonlySet<Key>,
+];
+
 type Sites = ReadonlyMap<unknown, Kept>;
 
 /** What a read evaluates to: the `args` object, or the story context that holds it. */
@@ -136,7 +143,7 @@ function argsSites(
     .map((meta) => propertyValue(meta, 'args'))
     .find((args) => args !== undefined);
 
-  return new Map(
+  return sitesFrom(
     playedStories(body, bindings).flatMap(
       ({ story: { init }, play, tests }) => {
         const plays = play === undefined ? [] : [play];
@@ -298,19 +305,43 @@ function spreadArgs(
     : undefined;
 }
 
-/** The args site of `argsObject` when it is an object literal, at least one function runs for it and none reads it whole; none otherwise. */
+/** One story's use of `argsObject` when it is an object literal that at least one function runs for; none otherwise. */
 function site(
   argsObject: unknown,
   readers: readonly Reads[],
   sameAsBelow: ReadonlySet<Key>,
-): readonly Site[] {
-  const read = union(readers);
-
+): readonly Use[] {
   return field(argsObject, 'type') !== 'ObjectExpression' ||
-    readers.length === 0 ||
-    read === 'whole'
+    readers.length === 0
     ? []
-    : [[argsObject, { read, sameAsBelow }]];
+    : [[argsObject, union(readers), sameAsBelow]];
+}
+
+/** The args sites of every story's uses, as a `.test()` options object can serve several stories: the keys any of them reads stay, a key stays as equal to the value below only when it is for all of them, and an object one of them reads whole is no site. */
+function sitesFrom(uses: readonly Use[]): Sites {
+  return new Map(
+    uses.flatMap(([argsObject]): readonly Site[] => {
+      const all = uses.filter(([other]) => other === argsObject);
+      const read = union(all.map(([, reads]) => reads));
+      const [first, ...rest] = all.map(([, , sameAsBelow]) => sameAsBelow);
+
+      return read === 'whole'
+        ? []
+        : [
+            [
+              argsObject,
+              {
+                read,
+                sameAsBelow: new Set(
+                  [...(first ?? [])].filter((key) =>
+                    rest.every((same) => same.has(key)),
+                  ),
+                ),
+              },
+            ],
+          ];
+    }),
+  );
 }
 
 function union(reads: readonly Reads[]): Reads {
