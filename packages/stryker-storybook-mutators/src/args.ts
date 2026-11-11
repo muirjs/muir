@@ -95,6 +95,9 @@ function argsSites(body: readonly unknown[]): Sites {
   const metaPlay = metaObjects
     .map((meta) => propertyValue(meta, 'play'))
     .find((play) => play !== undefined);
+  const metaArgs = metaObjects
+    .map((meta) => propertyValue(meta, 'args'))
+    .find((args) => args !== undefined);
 
   return new Map(
     stories.flatMap(({ init, local }) => {
@@ -108,16 +111,54 @@ function argsSites(body: readonly unknown[]): Sites {
         testFunction: followed(call.testFunction, bindings),
       }));
 
+      const storyArgs = propertyValue(storyArgument(unwrap(init)), 'args');
+
       return [
-        site(propertyValue(storyArgument(unwrap(init)), 'args'), [
-          ...plays,
-          ...tests.map(({ testFunction }) => testFunction),
-        ]),
+        site(
+          storyArgs,
+          [...plays, ...tests.map(({ testFunction }) => testFunction)],
+          sameLiteralKeys(storyArgs, metaArgs),
+        ),
         ...tests.map(({ options, testFunction }) =>
           site(propertyValue(options, 'args'), [...plays, testFunction]),
         ),
       ].flatMap((found) => (found === undefined ? [] : [found]));
     }),
+  );
+}
+
+const literalTypes: readonly unknown[] = [
+  'StringLiteral',
+  'NumericLiteral',
+  'BooleanLiteral',
+  'NullLiteral',
+];
+
+/** The keys whose literal value in `args` equals the meta's, so that removing one falls back to the same value. */
+function sameLiteralKeys(
+  args: unknown,
+  metaArgs: unknown,
+): ReadonlySet<unknown> {
+  const metaValues = new Map(
+    list(field(metaArgs, 'properties')).map(
+      (property) => [keyName(property), field(property, 'value')] as const,
+    ),
+  );
+
+  return new Set(
+    list(field(args, 'properties'))
+      .filter((property) => {
+        const value = field(property, 'value');
+        const metaValue = metaValues.get(keyName(property));
+
+        return (
+          field(property, 'computed') !== true &&
+          literalTypes.includes(field(value, 'type')) &&
+          field(value, 'type') === field(metaValue, 'type') &&
+          field(value, 'value') === field(metaValue, 'value')
+        );
+      })
+      .map(keyName),
   );
 }
 
@@ -131,12 +172,13 @@ function followed(
   return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
 }
 
-/** An `args` object literal with the keys the functions that run for it read, when one runs and none reads it whole. */
+/** An `args` object literal with the keys that stay: those the functions that run for it read, and `kept`; when one runs and none reads it whole. */
 function site(
   argsObject: unknown,
   readers: readonly unknown[],
+  kept: ReadonlySet<unknown> = new Set(),
 ): readonly [unknown, ReadonlySet<unknown>] | undefined {
-  const reads = union(readers.map(keysRead));
+  const reads = union([...readers.map(keysRead), kept]);
 
   return field(argsObject, 'type') !== 'ObjectExpression' ||
     readers.length === 0 ||

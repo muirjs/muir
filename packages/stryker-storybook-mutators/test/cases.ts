@@ -433,6 +433,37 @@ export const cases: readonly Case[] = [
       [args, "{ 'aria-label': 'a' }"],
     ],
   },
+  {
+    id: 'meta-same-literal',
+    title: "a key whose literal value equals the meta's makes no mutant",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'meta-other-literal',
+    title: "a key whose literal value differs from the meta's is removed",
+    source:
+      "export default { title: 'Button', args: { label: 'b', disabled: true }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', disabled: 1 } };\n",
+    expect: [
+      [args, '{ disabled: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'meta-same-non-literal',
+    title:
+      'a key whose value is no literal is removed, even when the meta has the same text',
+    source:
+      "export default { title: 'Button', args: { onClick: fn(), disabled: true }, play: async () => {} };\n" +
+      'export const Primary = { args: { onClick: fn(), disabled: false } };\n',
+    expect: [
+      [args, '{ disabled: false }'],
+      [args, '{ onClick: fn() }'],
+    ],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {
