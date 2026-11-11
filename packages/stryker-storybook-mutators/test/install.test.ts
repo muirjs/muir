@@ -1,13 +1,5 @@
 import assert from 'node:assert/strict';
-import {
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import { install, resolveFromCore } from '../src/install.ts';
@@ -17,6 +9,7 @@ import {
   ownMark,
   sets,
 } from './support/fake-instrumenter.ts';
+import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 const silent = (): undefined => undefined;
 
@@ -163,13 +156,13 @@ describe('install', () => {
 describe('resolveFromCore against a fake instrumenter', () => {
   const babel = import.meta.resolve('@babel/core');
 
-  function fakeCore(t: TestContext, types: string) {
-    const root = realpathSync(
-      mkdtempSync(join(tmpdir(), 'storybook-mutators-core-')),
+  function fakeCore(t: TestContext, typesSource: string) {
+    const modules = join(
+      tempRoot(t, 'storybook-mutators-core-'),
+      'node_modules',
     );
-    t.after(() => rmSync(root, { recursive: true, force: true }));
-    const modules = join(root, 'node_modules');
-    const files: Readonly<Record<string, string>> = {
+
+    writeTree(modules, {
       '@stryker-mutator/core/package.json':
         '{ "name": "@stryker-mutator/core", "version": "9.9.9" }',
       '@stryker-mutator/instrumenter/package.json':
@@ -184,12 +177,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
         '{ "name": "@babel/core", "type": "module", "main": "index.js" }',
       '@babel/core/index.js':
         `import { types as real } from ${JSON.stringify(babel)};\n` +
-        `export const types = ${types};`,
-    };
-
-    Object.entries(files).forEach(([file, content]) => {
-      mkdirSync(dirname(join(modules, file)), { recursive: true });
-      writeFileSync(join(modules, file), content);
+        `export const types = ${typesSource};`,
     });
 
     return {

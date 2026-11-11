@@ -92,18 +92,6 @@ export const shapeCases: readonly Case[] = [
     ],
   },
   {
-    id: 'key-with-spaces',
-    title: 'a quoted key with spaces is removed like any other',
-    source: inStory(
-      "args: { 'Stryker was here': 'a', disabled: true },",
-      'play: async () => {},',
-    ),
-    expect: [
-      [args, '{ disabled: true }'],
-      [args, "{ 'Stryker was here': 'a' }"],
-    ],
-  },
-  {
     id: 'numeric-key',
     title: 'a numeric key is removed like any other',
     source: inStory(

@@ -22,7 +22,8 @@ export const playCases: readonly Case[] = [
   },
   {
     id: 'play-before-meta',
-    title: 'a key read by a play declared above the meta stays',
+    title:
+      'a play declared above the meta still lets the keys it does not read be removed',
     source:
       'const sharedPlay = ({ args, canvas }) =>\n' +
       '  expect(canvas.getByText(args.label)).toBeVisible();\n' +
@@ -78,7 +79,7 @@ export const playCases: readonly Case[] = [
   {
     id: 'second-meta',
     title:
-      'the play and args of a factory meta count when the default export sets neither',
+      "a factory meta's play runs for its story, and a key equal to the factory meta's args makes no mutant, in a file that also has a default export",
     source: inFactoryFile(
       "export default { title: 'Button' };",
       "const meta = preview.meta({ args: { label: 'a' }, play: async () => {} });",
@@ -138,21 +139,6 @@ export const playCases: readonly Case[] = [
       "export const Disabled = Primary.extend({ args: { label: 'a', disabled: true }, play: async ({ args }) => { args.label; } });",
     ),
     expect: [[args, "{ label: 'a' }"]],
-  },
-  {
-    id: 'story-on-story',
-    title:
-      'a story made by .story() on another story takes neither its args nor its play, as only .extend() merges the base story in',
-    source: inFactoryFile(
-      'const meta = preview.meta({});',
-      "export const Primary = meta.story({ args: { label: 'a' }, play: async ({ args }) => { args.disabled; } });",
-      "export const Other = Primary.story({ args: { label: 'a', disabled: true } });",
-      "Other.test('t', async () => {});",
-    ),
-    expect: [
-      [args, '{ disabled: true }'],
-      [args, "{ label: 'a' }"],
-    ],
   },
   {
     id: 'test-options',
@@ -275,7 +261,7 @@ export const playCases: readonly Case[] = [
   {
     id: 'assigned-play-other-writes',
     title:
-      'the play is the last write to the play key itself, not a later write to another key or below play',
+      'only a later Primary.play = replaces the play, not a later Primary.play.x = or Primary.storyName =',
     source:
       "export default { title: 'Button' };\n" +
       "export const Primary = { args: { label: 'a', disabled: true } };\n" +

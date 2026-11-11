@@ -213,31 +213,32 @@ export const fallbackCases: readonly Case[] = [
     expect: [[args, "{ ...Base['args'], label: 'a' }"]],
   },
   {
-    id: 'spread-not-story-args',
+    id: 'computed-spread',
     title:
-      'a spread of anything but <story>.args comes first, so a key after it is removed even when its literal value equals that story args',
+      "a key after a spread with a computed key that only running the file gives is removed, even when its literal value equals that story's args",
     source:
       "export default { title: 'Button', play: async () => {} };\n" +
       "export const Base = { args: { label: 'a' } };\n" +
-      "export const Computed = { args: { ...Base[args], label: 'a', disabled: true } };\n" +
-      "export const Other = { args: { ...Base.parameters, label: 'a', disabled: true } };\n",
+      "export const Primary = { args: { ...Base[args], label: 'a', disabled: true } };\n",
     expect: [
       [args, '{ ...Base[args], disabled: true }'],
       [args, "{ ...Base[args], label: 'a' }"],
       [args, '{ ...Base[args] }'],
+    ],
+  },
+  {
+    id: 'other-member-spread',
+    title:
+      "a key after a spread of another member than args is removed, even when its literal value equals that story's args",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Base = { args: { label: 'a' } };\n" +
+      "export const Primary = { args: { ...Base.parameters, label: 'a', disabled: true } };\n",
+    expect: [
       [args, '{ ...Base.parameters, disabled: true }'],
       [args, "{ ...Base.parameters, label: 'a' }"],
       [args, '{ ...Base.parameters }'],
     ],
-  },
-  {
-    id: 'self-spread',
-    title:
-      "args that spread their own story's args make no mutant, as each key falls back to itself",
-    source:
-      "export default { title: 'Button', play: async () => {} };\n" +
-      "export const Primary = { args: { ...Primary.args, label: 'a', disabled: true } };\n",
-    expect: [],
   },
   {
     id: 'meta-computed-key',
@@ -263,5 +264,17 @@ export const fallbackCases: readonly Case[] = [
       [args, "{ [k]: 'b', label: 'a' }"],
       [args, "{ [k]: 'b' }"],
     ],
+  },
+];
+
+export const crashCases: readonly Case[] = [
+  {
+    id: 'self-spread',
+    title:
+      'the lookup ends on a story whose args spread its own args, so instrumenting finishes, with no mutant',
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Primary = { args: { ...Primary.args, label: 'a', disabled: true } };\n",
+    expect: [],
   },
 ];

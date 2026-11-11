@@ -184,13 +184,22 @@ export const readCases: readonly Case[] = [
     expect: [[args, "{ 'label': 'a' }"]],
   },
   {
-    id: 'computed-member-read',
-    title: "a key the play reads as args['<key>'] or args[<number>] stays",
+    id: 'string-computed-member-read',
+    title: "a key the play reads as args['<key>'] stays",
     source: inStory(
-      "args: { 0: 'a', label: 'b', disabled: true },",
-      "play: async ({ args }) => { args['label']; args[0]; },",
+      "args: { label: 'a', disabled: true },",
+      "play: async ({ args }) => { args['label']; },",
     ),
-    expect: [[args, "{ 0: 'a', label: 'b' }"]],
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'number-computed-member-read',
+    title: 'a numeric key the play reads as args[<number>] stays',
+    source: inStory(
+      "args: { 0: 'a', disabled: true },",
+      'play: async ({ args }) => { args[0]; },',
+    ),
+    expect: [[args, "{ 0: 'a' }"]],
   },
   {
     id: 'string-key-destructure',
