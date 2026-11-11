@@ -171,7 +171,7 @@ function maySet(property: unknown, key: string): boolean {
   return (
     field(property, 'type') === 'SpreadElement' ||
     field(property, 'computed') === true ||
-    field(property, 'key', 'name') === key
+    keyOf(property) === key
   );
 }
 
