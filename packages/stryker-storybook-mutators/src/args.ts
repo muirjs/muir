@@ -98,13 +98,15 @@ function argsSites(body: readonly unknown[]): Sites {
 
   return new Map(
     stories.flatMap(({ init, local }) => {
-      const named = ownOrBasePlay(init, bindings) ?? metaPlay;
-      const play =
-        field(named, 'type') === 'Identifier'
-          ? bindings.get(String(field(named, 'name')))
-          : named;
+      const play = followed(
+        ownOrBasePlay(init, bindings) ?? metaPlay,
+        bindings,
+      );
       const plays = play === undefined ? [] : [play];
-      const tests = testCallsOn(body, local);
+      const tests = testCallsOn(body, local).map((call) => ({
+        ...call,
+        testFunction: followed(call.testFunction, bindings),
+      }));
 
       return [
         site(propertyValue(storyArgument(unwrap(init)), 'args'), [
@@ -117,6 +119,16 @@ function argsSites(body: readonly unknown[]): Sites {
       ].flatMap((found) => (found === undefined ? [] : [found]));
     }),
   );
+}
+
+/** A name's top-level value; a name the file does not bind, or any other node, as it is. */
+function followed(
+  node: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): unknown {
+  const name = field(node, 'name');
+
+  return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
 }
 
 /** An `args` object literal with the keys the functions that run for it read, when one runs and none reads it whole. */

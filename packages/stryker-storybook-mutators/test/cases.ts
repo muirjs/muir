@@ -370,6 +370,29 @@ export const cases: readonly Case[] = [
     ),
     expect: [],
   },
+  {
+    id: 'shared-test-function',
+    title: 'a key read by a test function the .test() call names stays',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'const sharedTest = async ({ args }) => { args.label; };',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true } });",
+      "Primary.test('label', sharedTest);",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'imported-play-with-test',
+    title:
+      'a story whose play comes from another module makes no mutant, even with a .test() call',
+    source: inFactoryFile(
+      "import { sharedPlay } from './shared';",
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true }, play: sharedPlay });",
+      "Primary.test('t', async () => {});",
+    ),
+    expect: [],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {
