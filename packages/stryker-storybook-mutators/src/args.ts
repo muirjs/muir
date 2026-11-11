@@ -71,7 +71,7 @@ export function argsMutator(): LzStorybookMutator & {
             .filter((property) => !removed.includes(property))
             .map((property) => t.cloneNode(property, true)),
         );
-      const eligible = properties.filter((property) => {
+      const eligible = properties.filter((property, index) => {
         const key = keyName(property);
 
         return (
@@ -79,7 +79,8 @@ export function argsMutator(): LzStorybookMutator & {
           !property.computed &&
           key !== undefined &&
           !kept.read.has(key) &&
-          !kept.sameAsBelow.has(key)
+          !kept.sameAsBelow.has(key) &&
+          !properties.slice(index + 1).some((later) => keyName(later) === key)
         );
       });
       // A mutant whose keys left all equal the value they fall back to behaves like Stryker's ObjectLiteral `{}`.

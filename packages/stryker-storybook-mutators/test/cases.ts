@@ -237,6 +237,20 @@ export const cases: readonly Case[] = [
     ],
   },
   {
+    id: 'duplicate-key',
+    title:
+      'a key that a later key of the same name overrides makes no mutant, as removing it changes nothing',
+    source: inStory(
+      "args: { label: 'a', label: 'b', disabled: true },",
+      'play: async () => {},',
+    ),
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', label: 'b' }"],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'computed-key',
     title: 'a computed key in args stays in every mutant',
     source: inStory(
