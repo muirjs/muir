@@ -61,15 +61,15 @@ export function playedStories(
         story,
         play: storyPlay(
           assignedPlay,
-          [...storyValueChain(story.init, bindings, 'play'), ...metaPlays],
-          bindings,
+          [...storyValueChain(story.init, unchanged, 'play'), ...metaPlays],
+          unchanged,
         ),
         tests: testCallsOn(body, story.local).map((test) =>
           test === 'unmatched'
             ? test
             : {
                 options: test.options,
-                testFunction: topLevelValueOrSelf(test.testFunction, bindings),
+                testFunction: topLevelValueOrSelf(test.testFunction, unchanged),
               },
         ),
       };

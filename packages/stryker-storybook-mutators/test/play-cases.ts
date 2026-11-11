@@ -182,6 +182,19 @@ export const playCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'test-function-reassigned',
+    title:
+      'the args in .test() options make no mutant when the test function names a binding the file reassigns, as the function that runs may read any key',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      'let check = async () => {};',
+      'check = async ({ args }) => args.whole;',
+      "Primary.test('disabled', { args: { label: 'a', disabled: true } }, check);",
+    ),
+    expect: [],
+  },
+  {
     id: 'test-options-args-before-unresolved-spread',
     title:
       'the args in .test() options before a spread of an imported object make no mutant, as the spread may replace them',
@@ -319,6 +332,28 @@ export const playCases: readonly Case[] = [
       'const Base = { parameters: {} };\n' +
       "Base.args = { label: 'b' };\n" +
       "export const Primary = { args: { label: 'a', disabled: true }, ...Base, play: async () => {} };\n",
+    expect: [],
+  },
+  {
+    id: 'reassigned-play-name',
+    title:
+      "a story's args make no mutant when its play names a binding the file reassigns, as the play that runs may read any key",
+    source:
+      "export default { title: 'Button' };\n" +
+      'let check = async () => {};\n' +
+      'check = async ({ args }) => args.whole;\n' +
+      "export const Primary = { args: { label: 'a', disabled: true }, play: check };\n",
+    expect: [],
+  },
+  {
+    id: 'play-before-written-spread',
+    title:
+      "a story's args make no mutant when its play comes before a spread of an object the file writes a play to, as that play may read any key",
+    source:
+      "export default { title: 'Button' };\n" +
+      'const Base = { parameters: {} };\n' +
+      'Base.play = async ({ args }) => args.whole;\n' +
+      "export const Primary = { play: async () => {}, ...Base, args: { label: 'a', disabled: true } };\n",
     expect: [],
   },
   {
