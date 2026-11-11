@@ -1,7 +1,7 @@
+import { field } from '@layzee/storybook-csf';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { field } from './node-field.ts';
 import {
   isStoryFile,
   strykerStorybookProject,

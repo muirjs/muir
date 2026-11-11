@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve, sep } from 'node:path';
 
+import { field, hasRecords, list, recordVariable } from '@layzee/storybook-csf';
 import {
   PlanKind,
   type MutantEarlyResultPlan,
@@ -13,7 +14,6 @@ import {
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 import type { Reporter } from '@stryker-mutator/api/report';
 
-import { field, list } from './node-field.ts';
 import { packageName } from './package-name.ts';
 import {
   isStoryFile,
@@ -22,7 +22,6 @@ import {
   type ProjectLog,
   type StorybookProject,
 } from './storybook-project.ts';
-import { hasRecords, recordVariable } from './stryker-record.ts';
 import { siteFindings } from './stub-findings.ts';
 import {
   spyStubName,

@@ -25,16 +25,19 @@ mutators from there, so build first (the Nx targets below do).
 - `packages/stryker-jsx-mutators`: the JSX mutators, package `@layzee/stryker-jsx-mutators`.
 - `packages/stryker-playwright-mutators`: the mutators for Playwright test code, package
   `@layzee/stryker-playwright-mutators`.
-- `packages/stryker-mutator-install`: the private code that both mutator packages use to put their mutators into
+- `packages/stryker-mutator-install`: the internal code that both mutator packages use to put their mutators into
   Stryker, package `@layzee/stryker-mutator-install`.
 - `packages/stryker-storybook`: the Stryker plugins for Storybook stories and their play functions, package
   `@layzee/stryker-storybook`.
 - `packages/storybook-mock-transformer`: the Vite plugin that keeps Storybook's definition-time spy stubs through the
   default mock reset, package `@layzee/storybook-mock-transformer`.
-- `packages/<package>/stryker.config.mjs`: in each of the six packages, a Stryker config that mutates the
-  package's own source. The runner's hooks' tests install the hooks under test on their own global,
-  `__stryker_hook_test__`, named by `LZ_STRYKER_PLAYWRIGHT_HOOK_TEST_NAMESPACE`, so an instrumented copy of a hook
-  keeps Stryker's `__stryker__`. The runner never sets that variable.
+- `packages/storybook-csf`: the internal code that the Storybook packages share, such as the story file reader,
+  package `@layzee/storybook-csf`.
+- `packages/<package>/stryker.config.mjs`: in each of the nine packages, a Stryker config that mutates the
+  package's own source. `storybook-csf`'s config also runs `stryker-storybook`'s tests, and mutates in place, since
+  those tests import the package through `node_modules`. The runner's hooks' tests install the hooks under test on
+  their own global, `__stryker_hook_test__`, named by `LZ_STRYKER_PLAYWRIGHT_HOOK_TEST_NAMESPACE`, so an
+  instrumented copy of a hook keeps Stryker's `__stryker__`. The runner never sets that variable.
 - `apps/demo-app` (Nx project `@layzee/demo-app`): the demo app and its Playwright component tests
   (`playwright.components.config.mts`).
 - `apps/demo-app-e2e`: the demo app's Playwright e2e tests.
@@ -42,8 +45,9 @@ mutators from there, so build first (the Nx targets below do).
   `stryker.e2e.ui.config.ts` adds the JSX mutators to the e2e run.
 - `stryker.base.ts`: the settings that all four Stryker configs share. The package configs share its reporters
   and ignore list.
-- `stryker.package.ts`: `packageConfig(name, tests?)`, the shared body of the six package `stryker.config.mjs` files.
-  `tests` names the test files when only some can run against Stryker's instrumented sources.
+- `stryker.package.ts`: `packageConfig(name, tests?, otherTests?)`, the shared body of the nine package
+  `stryker.config.mjs` files. `tests` names the test files when only some can run against Stryker's instrumented
+  sources; `otherTests` adds other packages' test files.
 - `stryker.e2e.command.config.ts`: the demo baselines on Stryker's `command` runner, selected with
   `STRYKER_BASELINE=define` or `STRYKER_BASELINE=off`.
 - `oss/`: the configs, patches, and scripts that copies of four open-source repos needed for a Stryker
@@ -84,8 +88,8 @@ npx nx run @layzee/stryker-jsx-mutators:test
 
 Neither do the Playwright mutators' tests nor the install code's. To check that a package's tests catch a change to
 its source, run Stryker on it with the package's own config, where `<package>` is `stryker-jsx-mutators`,
-`stryker-playwright-mutators`, `stryker-mutator-install`, `stryker-playwright-runner`, `stryker-storybook` or
-`storybook-mock-transformer`:
+`stryker-playwright-mutators`, `stryker-mutator-install`, `stryker-playwright-runner`, `stryker-storybook`,
+`storybook-mock-transformer` or `storybook-csf`:
 
 ```sh
 npx nx run @layzee/stryker-playwright-mutators:test
@@ -101,7 +105,7 @@ test files on every core, and mutants would time out without being killed. For t
 `timeoutMS` to 30000: on a loaded machine, Stryker's default of 5000 let mutants that no test kills pass as Timeouts.
 
 Set `LZ_NODE_TEST_RUNNER` to the `src/index.ts` of an `@layzee/stryker-node-test-runner` checkout to run any of the
-six configs with that runner instead, which runs only the tests that cover each mutant; the default `command`
+nine configs with that runner instead, which runs only the tests that cover each mutant; the default `command`
 runner reruns the whole suite for every mutant. The runner is not on npm, so the command runner stays the default.
 An empty `LZ_NODE_TEST_RUNNER` counts as unset. Use it for `stryker-storybook`: its suite takes about 80 seconds
 in one process, and the command runner would run all of it for every mutant.

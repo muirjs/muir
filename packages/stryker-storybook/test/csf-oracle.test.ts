@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { isRecord } from '@layzee/storybook-csf';
 import { loadCsf, vitestTransform } from 'storybook/internal/csf-tools';
 
 import { csfIgnorer } from '../src/csf-ignorer.ts';
-import { isRecord } from '../src/is-record.ts';
 import { instrument } from './support/instrument.ts';
 
 const root = fileURLToPath(new URL('fixtures/csf-oracle/', import.meta.url));

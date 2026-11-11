@@ -1,6 +1,6 @@
 # Mutator install
 
-The private code that puts a `@layzee` mutator package's mutators into the instrumenter that StrykerJS uses, since
+The internal code that puts a `@layzee` mutator package's mutators into the instrumenter that StrykerJS uses, since
 Stryker has no public way to add a mutator or to turn a built-in one off, and that checks the change took effect. It
 also holds the mutator code that more than one mutator package uses: the swap engine and the site readers it reads
 swap sites with.

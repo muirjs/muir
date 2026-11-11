@@ -13,11 +13,10 @@ import { isAbsolute, join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { appendRecord, isRecord, recordVariable } from '@layzee/storybook-csf';
 import { PlanKind, type schema } from '@stryker-mutator/api/core';
 
-import { isRecord } from '../src/is-record.ts';
 import { storybookReporter } from '../src/reporter.ts';
-import { appendRecord, recordVariable } from '../src/stryker-record.ts';
 import { describeVerdict, spyStubReason } from '../src/stub-verdict.ts';
 import recorded from './fixtures/reporter/mutation.json' with { type: 'json' };
 

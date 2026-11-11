@@ -1,5 +1,5 @@
-import { isRecord } from './is-record.ts';
-import { field } from './node-field.ts';
+import { field, isRecord } from '@layzee/storybook-csf';
+
 import { packageName } from './package-name.ts';
 
 export interface LzStorybookOptions {

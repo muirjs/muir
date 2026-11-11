@@ -2,8 +2,9 @@
 
 Stryker plugins for Storybook story files, and three Vite plugins: one rewrites definition-time stubs so they survive
 the mock reset, one resets module mock spies before each test, and one lets Storybook's tests run in Stryker's
-sandbox. This context covers both `@layzee/stryker-storybook` and `@layzee/storybook-mock-transformer`: the
-transformer exists only to rewrite the stubs this package diagnoses, and both read the same spy stub shape.
+sandbox. This context covers `@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer` and
+`@layzee/storybook-csf`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
+same spy stub shape from `@layzee/storybook-csf`, which holds the code they share.
 
 ## Language
 

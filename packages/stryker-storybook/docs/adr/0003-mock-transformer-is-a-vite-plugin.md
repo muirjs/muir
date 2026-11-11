@@ -1,3 +1,7 @@
+---
+status: byte-copy consequence superseded by docs/adr ADR-0005
+---
+
 # The mock transformer is a Vite plugin in its own package, without a Stryker option
 
 Storybook's default mock reset erases stubs made at definition time, such as `fn().mockReturnValue(v)` outside any

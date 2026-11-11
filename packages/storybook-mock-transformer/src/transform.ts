@@ -1,9 +1,12 @@
 import { parse } from '@babel/parser';
+import {
+  appendRecord,
+  definitionTimeStubs,
+  type StubMethod,
+} from '@layzee/storybook-csf';
 import MagicString, { type SourceMap } from 'magic-string';
 
 import { packageName } from './package-name.ts';
-import { appendRecord } from './stryker-record.ts';
-import { definitionTimeStubs, type StubMethod } from './stub-shape.ts';
 
 export interface TransformResult {
   readonly code: string;

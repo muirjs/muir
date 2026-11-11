@@ -1,13 +1,15 @@
 import {
   csfFile,
+  field,
+  isRecord,
+  list,
   storyArgument,
   topLevelBindings,
   unwrap,
   withoutBinding,
-} from './csf.ts';
-import { isRecord } from './is-record.ts';
+} from '@layzee/storybook-csf';
+
 import type { LzStorybookMutator } from './mutator.ts';
-import { field, list } from './node-field.ts';
 
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<unknown> | 'whole';

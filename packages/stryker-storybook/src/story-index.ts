@@ -1,8 +1,10 @@
+import {
+  field,
+  isStringArray,
+  list,
+  type IndexedStory,
+} from '@layzee/storybook-csf';
 import { loadCsf } from 'storybook/internal/csf-tools';
-
-import type { IndexedStory } from './csf.ts';
-import { isStringArray } from './is-record.ts';
-import { field, list } from './node-field.ts';
 
 /** The stories Storybook's CsfFile indexes; none when Storybook cannot read the file. */
 export function storyIndex(

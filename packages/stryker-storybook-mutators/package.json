@@ -40,6 +40,7 @@
     "@stryker-mutator/core": "~10.1.0"
   },
   "dependencies": {
+    "@layzee/storybook-csf": "0.0.0",
     "@layzee/stryker-mutator-install": "0.0.0"
   },
   "devDependencies": {
@@ -64,13 +65,6 @@
       "test": {
         "dependsOn": [
           "^build"
-        ],
-        "inputs": [
-          "default",
-          "^default",
-          "{workspaceRoot}/packages/stryker-storybook/src/csf.ts",
-          "{workspaceRoot}/packages/stryker-storybook/src/is-record.ts",
-          "{workspaceRoot}/packages/stryker-storybook/src/node-field.ts"
         ]
       },
       "lint": {
