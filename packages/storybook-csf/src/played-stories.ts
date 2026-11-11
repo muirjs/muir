@@ -1,26 +1,25 @@
 import {
   csfFile,
+  firstTestCalls,
   isIndexedTestCall,
   propertyValue,
   storyArgument,
+  testArguments,
   testCallOf,
   unwrap,
   withoutBinding,
   type StoryExport,
+  type TestChild,
 } from './csf.ts';
 import { field, list } from './node-field.ts';
 
-/** A top-level `<story>.test(name, [options,] fn)` call; both are `undefined` for a call with a spread argument, whose arguments only running the file tells. */
-export interface StoryTest {
-  readonly options: unknown;
-  readonly testFunction: unknown;
-}
-
+/** A tested story that runs a play or a `.test()` call. */
 export interface PlayedStory {
   readonly story: StoryExport;
   /** The play Storybook runs for the story, or a top-level function it names; `undefined` when it has none. */
   readonly play: unknown;
-  readonly tests: readonly StoryTest[];
+  /** Its `.test()` calls, `'unmatched'` for a call with a spread argument, whose arguments only running the file tells. */
+  readonly tests: readonly TestChild[];
 }
 
 /** The stories Storybook 10.6.5's Vitest transform tests that run a play or a `.test()` call. In a file with no meta object Storybook indexes no story, so there are none. */
@@ -54,11 +53,13 @@ export function playedStories(
           assignedPlay ?? ownOrBasePlay(story.init, bindings) ?? metaPlay,
           bindings,
         ),
-        tests: testCallsOn(body, story.local).map(
-          ({ options, testFunction }) => ({
-            options: topLevelValueOrSelf(options, bindings),
-            testFunction: topLevelValueOrSelf(testFunction, bindings),
-          }),
+        tests: testCallsOn(body, story.local).map((test) =>
+          test === 'unmatched'
+            ? test
+            : {
+                options: topLevelValueOrSelf(test.options, bindings),
+                testFunction: topLevelValueOrSelf(test.testFunction, bindings),
+              },
         ),
       };
     })
@@ -86,36 +87,22 @@ function topLevelValueOrSelf(
   return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
 }
 
-/** The top-level `<story>.test(name, [options,] fn)` calls on a story that Storybook 10.6.5 indexes and runs, the first of each name; a call with a spread argument has an unknown test function. */
+/** The top-level `<story>.test(name, [options,] fn)` calls on a story that Storybook 10.6.5 indexes and runs, the first of each name; a call with a spread argument is `'unmatched'`. */
 function testCallsOn(
   body: readonly unknown[],
   local: unknown,
-): readonly StoryTest[] {
-  return body
-    .flatMap(testCallOf)
-    .filter(({ target }) => target === local)
-    .filter(
-      ({ args: [name] }, index, calls) =>
-        calls.findIndex(
-          ({ args: [other] }) => field(other, 'value') === field(name, 'value'),
-        ) === index,
-    )
-    .flatMap(({ statement, args }) => {
-      const [, ...rest] = args;
+): readonly TestChild[] {
+  return firstTestCalls(
+    body.flatMap(testCallOf).filter(({ target }) => target === local),
+  ).flatMap((call): readonly TestChild[] => {
+    if (isIndexedTestCall(call.statement)) {
+      return [testArguments(call)];
+    }
 
-      if (isIndexedTestCall(statement)) {
-        return [
-          {
-            options: rest.length > 1 ? rest[0] : undefined,
-            testFunction: rest.at(-1),
-          },
-        ];
-      }
-
-      return args.some((arg) => field(arg, 'type') === 'SpreadElement')
-        ? [{ options: undefined, testFunction: undefined }]
-        : [];
-    });
+    return call.args.some((arg) => field(arg, 'type') === 'SpreadElement')
+      ? ['unmatched']
+      : [];
+  });
 }
 
 /** The story's own play, or for `Base.extend({...})` the one it takes from `Base`, as Storybook 10.6.5 `extend()` merges the base story in. */

@@ -108,9 +108,9 @@ describe('playedStories', () => {
     );
 
     assert.deepEqual(
-      story?.tests.map(({ options, testFunction }) => [
-        field(options, 'type'),
-        field(testFunction, 'async'),
+      story?.tests.map((test) => [
+        field(test, 'options', 'type'),
+        field(test, 'testFunction', 'async'),
       ]),
       [
         ['ObjectExpression', true],
@@ -129,7 +129,7 @@ describe('playedStories', () => {
     );
 
     assert.deepEqual(
-      story?.tests.map(({ options }) => field(options, 'type')),
+      story?.tests.map((test) => field(test, 'options', 'type')),
       ['ObjectExpression'],
     );
   });

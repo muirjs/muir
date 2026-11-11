@@ -144,12 +144,20 @@ function argsSites(
         return [
           ...site(
             storyArgs,
-            [...plays, ...tests.map(({ testFunction }) => testFunction)].map(
-              readsOf,
-            ),
+            [
+              ...plays.map(readsOf),
+              ...tests.map((test) =>
+                test === 'unmatched' ? 'whole' : readsOf(test.testFunction),
+              ),
+            ],
             sameLiteralKeys(storyArgs, [...baseArgs, metaArgs], bindings),
           ),
-          ...tests.flatMap(({ options, testFunction }) => {
+          ...tests.flatMap((test) => {
+            if (test === 'unmatched') {
+              return [];
+            }
+
+            const { options, testFunction } = test;
             const testArgs = propertyValue(options, 'args');
 
             return site(

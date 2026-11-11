@@ -295,22 +295,42 @@ export interface StoryExport {
   readonly extendsBase: boolean;
 }
 
-/** The options argument of the `.test()` call an index row names, `undefined` for a call without one, or `'unmatched'` when that call cannot be told. */
-export type TestChild = { readonly options: unknown } | 'unmatched';
+/** The options argument (`undefined` for a call without one) and the test function of a story's `.test()` call, or `'unmatched'` when that call or its arguments cannot be told. */
+export type TestChild = TestArguments | 'unmatched';
 
-/** Storybook 10.6.5 test-utils.ts `testStory` runs the first child that has the row's name. */
+export interface TestArguments {
+  readonly options: unknown;
+  readonly testFunction: unknown;
+}
+
+/** The options and test function of a `.test(name, [options,] fn)` call. */
+export function testArguments({ args }: TestCall): TestArguments {
+  const [, ...rest] = args;
+
+  return {
+    options: rest.length > 1 ? rest[0] : undefined,
+    testFunction: rest.at(-1),
+  };
+}
+
+/** The first `.test()` call of each name, as Storybook 10.6.5 test-utils.ts `testStory` runs the first child that has the row's name. */
+export function firstTestCalls(
+  calls: readonly TestCall[],
+): readonly TestCall[] {
+  return calls.filter(
+    ({ args: [name] }, index) =>
+      calls.findIndex(
+        ({ args: [other] }) => field(other, 'value') === field(name, 'value'),
+      ) === index,
+  );
+}
+
 function childOf(testName: unknown, calls: readonly TestCall[]): TestChild {
-  const call = calls.find(
+  const call = firstTestCalls(calls).find(
     ({ args: [name] }) => field(name, 'value') === testName,
   );
 
-  if (call === undefined) {
-    return 'unmatched';
-  }
-
-  const [, ...rest] = call.args;
-
-  return { options: rest.length > 1 ? rest[0] : undefined };
+  return call === undefined ? 'unmatched' : testArguments(call);
 }
 
 const storyFactories: readonly unknown[] = ['story', 'extend'];

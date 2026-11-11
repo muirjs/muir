@@ -34,6 +34,13 @@ _Avoid_: play code (too narrow), interaction test
 A story whose test Storybook's Vitest addon runs, because its tags pass the tag filter and none of them skips it.
 _Avoid_: test story, story test
 
+**Played story**:
+A tested story in a file with a meta object whose static tags do not end in `!test`, and that runs a play (its own,
+one assigned later, one from a story it spreads or its `.extend()` base, or the meta's) or a `.test()` call. Its
+`.test()` children are the first indexed call of each name; one with a spread argument is unmatched. The Storybook
+mutators and the Storybook test mutators mutate only played stories.
+_Avoid_: run story, story with a play
+
 **Tag filter**:
 The `include`, `exclude` and `skip` tag lists of Storybook's Vitest addon, which pick the tested stories. Without
 one, stories tagged `test` are tested.

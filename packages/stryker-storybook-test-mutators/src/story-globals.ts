@@ -32,12 +32,17 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
 
         return [
           [storyGlobals, below] as const,
-          ...tests.map(
-            ({ options }) =>
-              [
-                propertyValue(options, 'globals'),
-                storyGlobals === undefined ? below : [storyGlobals, ...below],
-              ] as const,
+          ...tests.flatMap((test) =>
+            test === 'unmatched'
+              ? []
+              : [
+                  [
+                    propertyValue(test.options, 'globals'),
+                    storyGlobals === undefined
+                      ? below
+                      : [storyGlobals, ...below],
+                  ] as const,
+                ],
           ),
         ];
       }),
