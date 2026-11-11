@@ -314,6 +314,41 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'raw-dom-in-assigned-play',
+    title:
+      "a raw DOM element's click() in a play function assigned to the story is removed",
+    source: `export const Story = {};\nStory.play = async () => {\n  button.click();\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'composed-play-in-assigned-play',
+    title:
+      'a composed play in a play function assigned to the story is removed',
+    source: `export const Other = { play: async () => {} };\nexport const Story = {};\nStory.play = async (context) => {\n  await Other.play(context);\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'raw-dom-in-unexported-story-test',
+    title:
+      "a raw DOM element's click() in a .test() body of a story the file does not export makes no mutant",
+    source: `const Story = meta.story({});\nStory.test('clicks', async () => {\n  button.click();\n});\n`,
+    expect: [],
+  },
+  {
+    id: 'raw-dom-in-excluded-export-play',
+    title:
+      "a raw DOM element's click() in the play of an export that excludeStories leaves out makes no mutant",
+    source: `export default { excludeStories: ['helper'] };\nexport const helper = {\n  play: async () => {\n    button.click();\n  },\n};\n`,
+    expect: [],
+  },
+  {
+    id: 'play-call-in-render-object-play',
+    title:
+      "a video's play() in a play property of an object a render builds makes no mutant",
+    source: `export const Story = {\n  render: () => {\n    const player = {\n      play: () => {\n        video.play();\n      },\n    };\n    return player;\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'raw-dom-in-decorator',
     title:
       "a raw DOM element's dispatchEvent(event) in a decorator makes no mutant",

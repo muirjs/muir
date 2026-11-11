@@ -12,6 +12,9 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../storybook-csf/tsconfig.lib.json"
+    },
+    {
       "path": "../stryker-mutator-install/tsconfig.lib.json"
     }
   ]
