@@ -206,7 +206,7 @@ export const cases: readonly Case[] = [
   {
     id: 'skip-click-before-type',
     title:
-      'a click directly before a type on the same target makes no mutant, as type clicks first',
+      'a click directly before a type on the same target gets no mutant and the type gets one, as type clicks first',
     source: inPlay(
       "await userEvent.click(canvas.getByRole('textbox'));",
       "await userEvent.type(canvas.getByRole('textbox'), 'a');",
@@ -215,7 +215,8 @@ export const cases: readonly Case[] = [
   },
   {
     id: 'skip-hover-before-clear',
-    title: 'a hover directly before a clear on the same target makes no mutant',
+    title:
+      'a hover directly before a clear on the same target gets no mutant and the clear gets one',
     source: inPlay(
       'await userEvent.hover(input);',
       'await userEvent.clear(input);',
