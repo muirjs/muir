@@ -36,3 +36,6 @@
   open.
 - To supersede, write the new ADR and add frontmatter `status: superseded by ADR-NNNN` to the old one. The old ADR
   stays, and its decision text is not edited.
+- When the new ADR replaces only part of the old one, such as one consequence, name that part in the frontmatter:
+  `status: <part> superseded by ADR-NNNN`. Put the folder before the number when the new ADR sits in another
+  folder: `status: byte-copy consequence superseded by docs/adr ADR-0005`.

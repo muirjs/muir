@@ -25,13 +25,13 @@ mutators from there, so build first (the Nx targets below do).
 - `packages/stryker-jsx-mutators`: the JSX mutators, package `@layzee/stryker-jsx-mutators`.
 - `packages/stryker-playwright-mutators`: the mutators for Playwright test code, package
   `@layzee/stryker-playwright-mutators`.
-- `packages/stryker-mutator-install`: the private code that both mutator packages use to put their mutators into
+- `packages/stryker-mutator-install`: the internal code that both mutator packages use to put their mutators into
   Stryker, package `@layzee/stryker-mutator-install`.
 - `packages/stryker-storybook`: the Stryker plugins for Storybook stories and their play functions, package
   `@layzee/stryker-storybook`.
 - `packages/storybook-mock-transformer`: the Vite plugin that keeps Storybook's definition-time spy stubs through the
   default mock reset, package `@layzee/storybook-mock-transformer`.
-- `packages/storybook-csf`: the private code that the Storybook packages share, such as the story file reader,
+- `packages/storybook-csf`: the internal code that the Storybook packages share, such as the story file reader,
   package `@layzee/storybook-csf`.
 - `packages/<package>/stryker.config.mjs`: in each of the nine packages, a Stryker config that mutates the
   package's own source. `storybook-csf`'s config also runs `stryker-storybook`'s tests, and mutates in place, since

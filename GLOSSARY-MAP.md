@@ -14,7 +14,7 @@
 - [Storybook](./packages/stryker-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
   Covers `packages/stryker-storybook`, `packages/storybook-mock-transformer` and `packages/storybook-csf`, the
-  private package that holds the code the Storybook packages share.
+  internal package that holds the code the Storybook packages share.
 - [Storybook test mutators](./packages/stryker-storybook-test-mutators/GLOSSARY.md): mutate story test code, so
   a test-code run shows which steps of a play function no check depends on.
 - [Storybook mutators](./packages/stryker-storybook-mutators/GLOSSARY.md): mutate story data, so a run of the
@@ -28,8 +28,8 @@
   experimental tiers so far, and they use built-in removal.
 - **Storybook test mutators -> Mutator install**: installed the same way, with built-in removal.
 - **Storybook mutators -> Mutator install**: installed the same way, keeping Stryker's built-in mutators.
-- **Storybook mutators -> Storybook**: they read story files with the Storybook context's CSF reader from
-  `@layzee/storybook-csf`, and mutate story data, so they belong in the Stryker configuration for the components,
+- **Storybook mutators -> Storybook**: they read story files with `csf.ts` from `@layzee/storybook-csf`, and
+  mutate story data, so they belong in the Stryker configuration for the components,
   where the CSF ignorer's play mode is `ignore`.
 - **Storybook test mutators -> Storybook**: they mutate story test code, whose mutants the CSF ignorer reports as
   Ignored unless its play mode is `mutate`, so they belong in the Stryker configuration that sets that mode.

@@ -2,7 +2,7 @@
 
 The code that `@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer` and
 `@layzee/stryker-storybook-mutators` share: reading story files (CSF) from a parsed program, finding definition-time
-spy stubs, and the transformer record. The package is private and is not for direct use. Each of those packages
+spy stubs, and the transformer record. The package is internal: it is published for those packages and is not for direct use. Each of those packages
 declares it as a regular dependency, so installing one of them installs this one. It has no Stryker peer dependency.
 
 ## Exports

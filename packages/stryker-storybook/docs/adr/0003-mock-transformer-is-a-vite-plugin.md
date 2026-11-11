@@ -1,3 +1,7 @@
+---
+status: byte-copy consequence superseded by docs/adr ADR-0005
+---
+
 # The mock transformer is a Vite plugin in its own package, without a Stryker option
 
 Storybook's default mock reset erases stubs made at definition time, such as `fn().mockReturnValue(v)` outside any
@@ -17,6 +21,4 @@ enables the mock _repairing_". The plugin runs in Vite, not in Stryker, so it li
   disagree about it.
 - `stub-shape.ts` and `stryker-record.ts` in `@layzee/storybook-mock-transformer` are byte copies of
   `@layzee/stryker-storybook`'s files, so the Vite plugin needs no dependency on a Stryker plugin package. Its
-  `test/copies.test.ts` fails when a copy drifts, and its test target lists the owner's files as inputs. Replaced by
-  [ADR-0005](../../../../docs/adr/0005-shared-storybook-code-in-one-package.md): both packages import these files
-  from `@layzee/storybook-csf`.
+  `test/copies.test.ts` fails when a copy drifts, and its test target lists the owner's files as inputs.

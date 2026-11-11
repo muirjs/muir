@@ -3,14 +3,14 @@
 `@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer` and `@layzee/stryker-storybook-mutators` need the
 same code to read story files (`csf.ts`), find definition-time spy stubs (`stub-shape.ts`), write and read the
 transformer record (`stryker-record.ts`), and read values of unknown shape (`is-record.ts`, `node-field.ts`). That
-code lives in the private package `@layzee/storybook-csf`, which the three depend on as a regular dependency. It has
+code lives in the internal package `@layzee/storybook-csf`, which the three depend on as a regular dependency. It has
 no Stryker peer, so the mock transformer, a Vite plugin, still depends on no Stryker package. Lars ruled: "CSF
-reader/shared code: Approve recommendation.", approving that shared code reaches its consumers as a published
-dependency rather than as copies.
+reader/shared code: Approve recommendation." The recommendation he approved: shared code reaches its consumers as a
+published dependency, in one package with no Stryker peer, rather than as copies.
 
-This replaces the design plan's decision to keep these files as byte copies, one owner each, guarded by a
-`test/copies.test.ts` in each consuming package (`plans/storybook-packages-design.plan.md`, section 3.2 and section
-7 question 1), and the byte-copy consequence of the Storybook context's ADR 0003.
+Before this, `@layzee/stryker-storybook` owned these files and the other two packages held byte copies of them, each
+guarded by a `test/copies.test.ts` that failed when a copy drifted. The copies let the Vite plugin share the code
+without depending on a Stryker plugin package or on a package created only for shared code.
 
 ## Considered Options
 
@@ -21,5 +21,8 @@ This replaces the design plan's decision to keep these files as byte copies, one
 
 ## Consequences
 
+- `@layzee/stryker-storybook`'s tests exercise most of this code, so the package's Stryker config runs them along with
+  its own tests, and mutates in place: those tests import the package through `node_modules`, which a Stryker sandbox
+  links to the unmutated sources.
 - The `is-record.ts` files in `@layzee/stryker-mutator-install` and `@layzee/stryker-playwright-runner` stay where
   they are; this package serves the Storybook packages only.
