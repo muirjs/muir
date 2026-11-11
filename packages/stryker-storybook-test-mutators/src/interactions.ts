@@ -143,7 +143,8 @@ export function userEventCall(path: NodePath): UserEventCall | undefined {
   const call = awaited(expression);
   const method = userEventMethod(call, path);
 
-  return method !== undefined && call.type === 'CallExpression'
+  return method !== undefined &&
+    (call.type === 'CallExpression' || call.type === 'OptionalCallExpression')
     ? { method, target: call.arguments[0], args: call.arguments }
     : undefined;
 }
@@ -157,7 +158,10 @@ export function targetInteraction(path: NodePath): NodePath | undefined {
   const expression =
     interaction === null ? undefined : interactionExpression(interaction);
   const call = expression === undefined ? undefined : awaited(expression);
-  const [argument] = call?.type === 'CallExpression' ? call.arguments : [];
+  const [argument] =
+    call?.type === 'CallExpression' || call?.type === 'OptionalCallExpression'
+      ? call.arguments
+      : [];
 
   return interaction !== null &&
     (isInteractionStatement(interaction) || isInteractionBody(interaction)) &&
@@ -207,9 +211,11 @@ export function fireEventMethod(path: NodePath): string | undefined {
 
   const call = awaited(expression);
 
-  return call.type === 'CallExpression' &&
-    call.callee.type === 'MemberExpression' &&
-    nameOf(call.callee.object) === 'fireEvent'
+  return (call.type === 'CallExpression' ||
+    call.type === 'OptionalCallExpression') &&
+    (call.callee.type === 'MemberExpression' ||
+      call.callee.type === 'OptionalMemberExpression') &&
+    nameOf(withoutTypeWrappers(call.callee.object)) === 'fireEvent'
     ? nameOf(call.callee.property)
     : undefined;
 }
@@ -229,7 +235,7 @@ function userEventMethod(call: types.Node, path: NodePath): string | undefined {
 
   return method !== undefined &&
     userEventMethods.has(method) &&
-    isUserEvent(call.callee.object, path)
+    isUserEvent(withoutTypeWrappers(call.callee.object), path)
     ? method
     : undefined;
 }
@@ -456,7 +462,7 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
 
   return (
     userEventMethod(call, path) !== undefined ||
-    nameOf(callee.object) === 'fireEvent' ||
+    nameOf(withoutTypeWrappers(callee.object)) === 'fireEvent' ||
     (method !== undefined &&
       composedPlayMethods.has(method) &&
       callee.object.type === 'Identifier') ||

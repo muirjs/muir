@@ -383,6 +383,16 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-optional-click-before-type',
+    title:
+      'a userEvent?.click directly before a userEvent?.type on the same target gets no mutant, as type clicks first',
+    source: inPlay(
+      'await userEvent?.click(input);',
+      "await userEvent?.type(input, 'a');",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'hover-before-clear',
     title:
       'a hover directly before a clear on the same target is removed, as clear only focuses',
@@ -467,6 +477,18 @@ export const interactionCases: readonly Case[] = [
     id: 'awaited-type-assertion',
     title: 'an awaited interaction inside an as expression is removed',
     source: inPlay('await (userEvent.click(button) as Promise<void>);'),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-in-type-assertion',
+    title: 'a click on userEvent inside an as expression is removed',
+    source: inPlay('await (userEvent as any).click(button);'),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'fire-event-in-type-assertion',
+    title: 'a fireEvent.click on fireEvent inside an as expression is removed',
+    source: inPlay('await (fireEvent as any).click(button);'),
     expect: [[interaction, ';']],
   },
   {
@@ -654,6 +676,19 @@ export const clickFocusCases: readonly Case[] = [
       'a click that is the expression body of a step callback becomes a focus() call',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Save', () => userEvent.click(button));\n  },\n};\n`,
     expect: [[clickFocus, 'button.focus()']],
+  },
+  {
+    id: 'click-focus-optional-call',
+    title: 'a userEvent?.click of an element becomes a focus() call on it',
+    source: inPlay('await userEvent?.click(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-type-assertion',
+    title:
+      'a click on userEvent inside an as expression becomes a focus() call',
+    source: inPlay('await (userEvent as any).click(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
   },
   {
     id: 'click-focus-dbl-click',
@@ -873,6 +908,15 @@ export const targetCases: readonly Case[] = [
     expect: [[target, "'Cancel'"]],
   },
   {
+    id: 'target-optional-call',
+    title: 'the target query of a userEvent?.click is swapped too',
+    source: inPlay(
+      "await userEvent?.click(canvas.getByRole('button', { name: 'Save' }));",
+      "await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [[target, "'Cancel'"]],
+  },
+  {
     id: 'target-fire-event',
     title: 'the target of a fireEvent call is swapped too',
     source: inPlay(
@@ -922,6 +966,39 @@ export const repeatCases: readonly Case[] = [
       [
         repeat,
         '{ await fireEvent.click(button); await fireEvent.click(button); }',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-fire-event-in-type-assertion',
+    title: 'a fireEvent.click on fireEvent inside an as expression runs twice',
+    source: inPlay('await (fireEvent as any).click(button);'),
+    expect: [
+      [
+        repeat,
+        '{ await (fireEvent as any).click(button); await (fireEvent as any).click(button); }',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-optional-call',
+    title: 'a userEvent?.click statement runs twice',
+    source: inPlay('await userEvent?.click(button);'),
+    expect: [
+      [
+        repeat,
+        '{ await userEvent?.click(button); await userEvent?.click(button); }',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-fire-event-optional-call',
+    title: 'a fireEvent?.click statement runs twice',
+    source: inPlay('await fireEvent?.click(button);'),
+    expect: [
+      [
+        repeat,
+        '{ await fireEvent?.click(button); await fireEvent?.click(button); }',
       ],
     ],
   },
