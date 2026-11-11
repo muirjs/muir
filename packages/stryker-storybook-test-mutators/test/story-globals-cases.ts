@@ -620,6 +620,48 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'story-globals-meta-before-unresolved-spread',
+    title:
+      "the meta's globals before a spread of an imported object make no mutant, as the spread may replace them",
+    source: [
+      "import { shared } from './shared';",
+      '',
+      "export default { title: 'Probe', globals: { locale: 'de' }, ...shared };",
+      '',
+      "export const Story = { globals: { locale: 'fr' }, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-meta-before-computed-key',
+    title:
+      "the meta's globals before a computed key of an imported name make no mutant, as that key may replace them",
+    source: [
+      "import { k } from './k';",
+      '',
+      "export default { title: 'Probe', globals: { locale: 'de' }, [k]: {} };",
+      '',
+      "export const Story = { globals: { locale: 'fr' }, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-viewport-under-meta-unresolved-spread',
+    title:
+      "a story's responsive viewport under a meta whose parameters a spread may replace is no default, as the spread may set viewport",
+    source: [
+      "import { shared } from './shared';",
+      '',
+      "export default { title: 'Probe', parameters: {}, ...shared };",
+      '',
+      "export const Story = { globals: { viewport: { value: 'responsive' } }, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-computed-key-named-globals',
     title:
       'an object under a computed key [globals] makes no mutant, as the constant it names gives another key',

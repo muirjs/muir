@@ -8,7 +8,6 @@ import {
   ownStoryValue,
   playedStories,
   propertyKey,
-  propertyValue,
   storyValues,
   topLevelBindings,
   unknownValue,
@@ -32,7 +31,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   const bindings = topLevelBindings(body);
   const file = csfFile(body, bindings);
   const metaValues = (key: string) =>
-    file.metaObjects.map((meta) => propertyValue(meta, key)).filter(defined);
+    file.metaObjects.map((meta) => objectValue(meta, key)).filter(defined);
   const metaGlobals = metaValues('globals');
   const metaParameters = metaValues('parameters');
   // An unknown play with no play under it is no play here: when what may set it sets none, the story's globals mutants can only survive.
