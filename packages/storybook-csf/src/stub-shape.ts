@@ -1,7 +1,7 @@
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 
-const stubMethods = [
+export const stubMethods = [
   'mockReturnValue',
   'mockResolvedValue',
   'mockRejectedValue',

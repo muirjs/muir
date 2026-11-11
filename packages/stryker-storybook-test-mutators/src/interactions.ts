@@ -367,13 +367,13 @@ function storyTestCode(path: NodePath): ReadonlySet<unknown> {
 }
 
 /** Reads the file's story test code at its program: Stryker places a statement's mutants when it leaves the statement, so a later read could find a story replaced by a mutant switch. */
-function readStoryFileAt(path: NodePath): void {
+export function readStoryFileAt(path: NodePath): void {
   if (path.isProgram()) {
     storyTestCode(path);
   }
 }
 
-function isInStoryTestCode(path: NodePath): boolean {
+export function isInStoryTestCode(path: NodePath): boolean {
   const testCode = storyTestCode(path);
 
   return path.findParent((parent) => testCode.has(parent.node)) !== null;

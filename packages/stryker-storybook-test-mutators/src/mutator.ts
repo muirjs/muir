@@ -14,6 +14,8 @@ export const babelTypeMembers = [
   'isNode',
   'isNodesEquivalent',
   'memberExpression',
+  'newExpression',
+  'stringLiteral',
 ] as const satisfies readonly (keyof typeof types)[];
 
 export type BabelTypes = Pick<typeof types, (typeof babelTypeMembers)[number]>;

@@ -57,6 +57,20 @@ negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declar
 and one that already stands earlier in the play are not copied.
 _Avoid_: duplicated assertion, moved check
 
+### Spy stubs
+
+**Stub statement**:
+An expression statement in story test code whose call is a spy stub method on any receiver, such as
+`mocked(save).mockResolvedValue(note);` in a play or a `beforeEach`. `LzStorybookSpyStub` removes it, as it removes
+the chain of a definition-time stub (the Storybook context's term).
+_Avoid_: mock statement, stub call
+
+**Outcome mutant**:
+The `LzStorybookSpyStub` mutant that turns a `mockResolvedValue` stub into `mockRejectedValue(new Error('Stryker'))`
+and a `mockRejectedValue` stub into `mockResolvedValue(undefined)`, keeping a `Once` form, so a survivor shows that
+no check tells success from failure of that call.
+_Avoid_: flip mutant, rejection mutant
+
 ### Waits
 
 **Retrying wait**:
