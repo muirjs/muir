@@ -45,7 +45,7 @@ export function argsMutator(): LzStorybookMutator & {
   return {
     name: 'LzStorybookArgs',
     sample:
-      "export const Story = {\n  args: { label: 'a', disabled: true },\n  play: async () => {},\n};\n",
+      "export default { title: 'Sample' };\nexport const Story = {\n  args: { label: 'a', disabled: true },\n  play: async () => {},\n};\n",
     *mutate(path, t) {
       // Stryker places the mutants of a statement when it leaves it, so the file is read before any statement changes.
       if (path.isProgram()) {
@@ -131,6 +131,11 @@ function argsSites(
 ): Sites {
   const bindings = topLevelBindings(body);
   const { metaObjects, stories } = csfFile(body, bindings);
+
+  if (metaObjects.length === 0) {
+    return new Map();
+  }
+
   const metaPlay = metaObjects
     .map((meta) => propertyValue(meta, 'play'))
     .find((play) => play !== undefined);

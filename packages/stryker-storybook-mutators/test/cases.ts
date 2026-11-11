@@ -100,6 +100,14 @@ export const cases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'no-meta',
+    title:
+      'a story-like object in a file with no CSF meta makes no mutant, as the file is no story file',
+    source:
+      "export const Primary = { args: { label: 'a', disabled: true }, play: async () => {} };\n",
+    expect: [],
+  },
+  {
     id: 'meta-play',
     title: "a story's args are mutated when the meta has a play",
     source:
