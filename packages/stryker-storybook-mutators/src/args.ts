@@ -149,7 +149,7 @@ function argsSites(
   const bindings = topLevelBindings(body);
   const file = csfFile(body, bindings);
   const metaArgs = file.metaObjects
-    .map((meta) => propertyValue(meta, 'args'))
+    .map((meta) => objectValue(meta, 'args'))
     .find((args) => args !== undefined);
 
   return sitesFrom(

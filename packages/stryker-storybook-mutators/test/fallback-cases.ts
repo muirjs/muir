@@ -315,6 +315,19 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'meta-args-before-unresolved-spread',
+    title:
+      "a key whose literal value equals the meta's is removed when the meta's args come before a spread of an imported object, which may replace them",
+    source:
+      "import { shared } from './shared';\n" +
+      "export default { title: 'Button', args: { label: 'a' }, ...shared };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true }, play: async () => {} };\n",
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'computed-key-before',
     title:
       "a key after a computed key is removed, even when its literal value equals the meta's, as the computed key may set it",
