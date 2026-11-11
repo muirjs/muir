@@ -7,6 +7,7 @@ import {
   ownStoryValue,
   playedStories,
   propertyKey,
+  propertyKeyValue,
   propertyValue,
   storyValues,
   topLevelBindings,
@@ -50,7 +51,9 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
         );
         const everyRunParameters = [
           ...storyParameters,
-          ...matched.map((options) => propertyValue(options, 'parameters')),
+          ...tests.map((test) =>
+            test === 'unmatched' ? 'unknown' : optionsParameters(test.options),
+          ),
         ].filter(defined);
         const globals = [...bases, ...metaGlobals].filter(defined);
 
@@ -66,7 +69,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
                 {
                   globals: [runs, ...globals].filter(defined),
                   parameters: [
-                    propertyValue(options, 'parameters'),
+                    optionsParameters(options),
                     ...storyParameters,
                   ].filter(defined),
                 },
@@ -81,6 +84,32 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
     ].filter(([globals]) => defined(globals)),
   );
 }, new Map<unknown, Below>());
+
+/** The `parameters` that a `.test()` call's options give its run; `'unknown'` where a spread, a computed key or options the file cannot read may set them. */
+function optionsParameters(options: unknown): unknown {
+  if (options === undefined) {
+    return undefined;
+  }
+
+  if (field(options, 'type') !== 'ObjectExpression') {
+    return 'unknown';
+  }
+
+  const property = lastMaySet(options, 'parameters');
+
+  if (property === undefined) {
+    return undefined;
+  }
+
+  return propertyKeyValue(property, 'parameters') ?? 'unknown';
+}
+
+/** The last property of an object literal that may set `key`. */
+function lastMaySet(object: unknown, key: string): unknown {
+  return list(field(object, 'properties'))
+    .toReversed()
+    .find((candidate) => maySet(candidate, key));
+}
 
 /** Each site with what may set it below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. */
 function bySite(
@@ -157,9 +186,7 @@ function literalOf(node: unknown): unknown {
 
 /** The literal of the last property of an object that may set `key`; `undefined` when none does, and no literal when a spread or computed key may. */
 function lastLiteralOf(object: unknown, key: string): unknown {
-  const property = list(field(object, 'properties'))
-    .toReversed()
-    .find((candidate) => maySet(candidate, key));
+  const property = lastMaySet(object, key);
 
   if (property === undefined) {
     return undefined;

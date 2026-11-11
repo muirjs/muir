@@ -368,6 +368,50 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{}']],
   },
   {
+    id: 'story-globals-story-viewport-under-imported-test-options',
+    title:
+      "a story's responsive viewport global gets a mutant when a .test() call that runs it takes imported options, which may set viewport parameters",
+    source: factoryFile(
+      "import { opts } from './shared';",
+      "export const Story = meta.story({ globals: { viewport: { value: 'responsive' } } });",
+      "Story.test('t', opts, async () => {});",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-story-viewport-under-spread-test-options',
+    title:
+      "a story's responsive viewport global gets a mutant when the options of a .test() call that runs it spread an imported object, which may set viewport parameters",
+    source: factoryFile(
+      "import { opts } from './shared';",
+      "export const Story = meta.story({ globals: { viewport: { value: 'responsive' } } });",
+      "Story.test('t', { ...opts }, async () => {});",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-story-viewport-under-unmatched-test',
+    title:
+      "a story's responsive viewport global gets a mutant when an unmatched .test(...testArgs) call runs it, as its options may set viewport parameters",
+    source: factoryFile(
+      "import { testArgs } from './shared';",
+      "export const Story = meta.story({ globals: { viewport: { value: 'responsive' } } });",
+      'Story.test(...testArgs);',
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-test-options-viewport-over-own-spread',
+    title:
+      'a responsive viewport global in .test() options gets a mutant when those options also spread an imported object, which may set viewport parameters',
+    source: factoryFile(
+      "import { opts } from './shared';",
+      'export const Story = meta.story({});',
+      "Story.test('t', { ...opts, globals: { viewport: { value: 'responsive' } } }, async () => {});",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-meta-viewport-under-test-parameters',
     title:
       "a meta's responsive viewport global gets a mutant when the options of a .test() call on a story it runs for set viewport parameters",
