@@ -31,7 +31,7 @@ _Avoid_: used arg, checked arg
 
 **Per-key mutant**:
 An args site with one key that is no read key removed, so the story falls back to the value below it: one that a
-`...Base.args` spread before the key sets, then the base story's for `.extend()` or the story's for `.test()`
+`...Base.args` spread (or `...Base?.args`, `...Base['args']`) before the key sets, then the base story's for `.extend()` or the story's for `.test()`
 options, then the meta's and the project's. A key whose literal value (a negative number and a template literal without expressions
 count) equals that value gets none, and neither
 does a key whose removal leaves only keys like that, as such args behave like ObjectLiteral's `{}`.

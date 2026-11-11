@@ -315,7 +315,12 @@ function byPriority(
   );
 }
 
-/** The `args` of the top-level object that a `...Base.args` spread names. */
+const memberTypes: readonly unknown[] = [
+  'MemberExpression',
+  'OptionalMemberExpression',
+];
+
+/** The `args` of the top-level object that a `...Base.args`, `...Base?.args` or `...Base['args']` spread names. */
 function spreadArgs(
   property: unknown,
   bindings: ReadonlyMap<string, unknown>,
@@ -324,9 +329,8 @@ function spreadArgs(
   const object = field(argument, 'object', 'name');
 
   return field(property, 'type') === 'SpreadElement' &&
-    field(argument, 'type') === 'MemberExpression' &&
-    field(argument, 'computed') !== true &&
-    field(argument, 'property', 'name') === 'args' &&
+    memberTypes.includes(field(argument, 'type')) &&
+    memberKey(argument) === 'args' &&
     typeof object === 'string'
     ? propertyValue(unwrap(bindings.get(object)), 'args')
     : undefined;

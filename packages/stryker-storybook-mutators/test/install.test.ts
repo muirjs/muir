@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { join } from 'node:path';
+import { describe, it, type TestContext } from 'node:test';
 
-import { install } from '../src/install.ts';
+import { install, resolveFromCore } from '../src/install.ts';
 import {
   builtIns,
   fakeInstrumenter,
   ownMark,
   sets,
 } from './support/fake-instrumenter.ts';
+import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 const silent = (): undefined => undefined;
 
@@ -148,5 +150,58 @@ describe('install', () => {
       "@layzee/stryker-storybook-mutators: 3 LzStorybook mutators on, beside Stryker's built-in mutators. " +
         'Opt-in or experimental: LzThree, LzFour.',
     ]);
+  });
+});
+
+describe('resolveFromCore against a fake instrumenter', () => {
+  const babel = import.meta.resolve('@babel/core');
+
+  function fakeCore(t: TestContext, typesSource: string) {
+    const modules = join(
+      tempRoot(t, 'storybook-mutators-core-'),
+      'node_modules',
+    );
+
+    writeTree(modules, {
+      '@stryker-mutator/core/package.json':
+        '{ "name": "@stryker-mutator/core", "version": "9.9.9" }',
+      '@stryker-mutator/instrumenter/package.json':
+        '{ "name": "@stryker-mutator/instrumenter", "version": "9.9.8", "type": "module" }',
+      '@stryker-mutator/instrumenter/dist/src/mutators/mutate.js':
+        'export const allMutators = [];',
+      '@stryker-mutator/instrumenter/dist/src/mutant-placers/index.js':
+        'export const allMutantPlacers = [];',
+      '@stryker-mutator/instrumenter/dist/src/index.js':
+        'export class Instrumenter { async instrument() { return { files: [], mutants: [] }; } }',
+      '@babel/core/package.json':
+        '{ "name": "@babel/core", "type": "module", "main": "index.js" }',
+      '@babel/core/index.js':
+        `import { types as real } from ${JSON.stringify(babel)};\n` +
+        `export const types = ${typesSource};`,
+    });
+
+    return {
+      corePackage: join(modules, '@stryker-mutator', 'core', 'package.json'),
+      dir: join(modules, '@stryker-mutator', 'instrumenter'),
+    };
+  }
+
+  it('throws, naming the Babel types member that is no function', async (t) => {
+    const { corePackage, dir } = fakeCore(
+      t,
+      '{ ...real, objectExpression: 1 }',
+    );
+
+    await assert.rejects(resolveFromCore(corePackage), {
+      message: `@layzee/stryker-storybook-mutators: the instrumenter 9.9.8 in ${dir} has no Babel types with objectExpression.`,
+    });
+  });
+
+  it('throws, listing every Babel types member that is missing', async (t) => {
+    const { corePackage, dir } = fakeCore(t, '{}');
+
+    await assert.rejects(resolveFromCore(corePackage), {
+      message: `@layzee/stryker-storybook-mutators: the instrumenter 9.9.8 in ${dir} has no Babel types with cloneNode, objectExpression.`,
+    });
   });
 });
