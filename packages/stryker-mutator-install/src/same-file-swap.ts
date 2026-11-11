@@ -1,4 +1,4 @@
-import { callTypes } from './ast.ts';
+import { argumentOf, callTypes, findProperty, memberNameOf } from './ast.ts';
 import type { SampledMutator } from './install.ts';
 import { fieldOf, isRecord } from './is-record.ts';
 
@@ -107,6 +107,41 @@ export function literalText(node: unknown): string | undefined {
     default:
       return undefined;
   }
+}
+
+/**
+ * The `name` of a call to one of the methods with a string-literal role, such as `getByRole('button', { name: 'Save'
+ * })`; the role is the key, so the methods share replacements.
+ */
+export function roleSite(methods: readonly string[]): SiteReader {
+  return (call) => {
+    const method = memberNameOf(fieldOf(call, 'callee'));
+    const role = argumentOf(call, 0);
+    const name = fieldOf(findProperty(argumentOf(call, 1), 'name'), 'value');
+    const value = literalValue(name);
+
+    return typeof method === 'string' &&
+      methods.includes(method) &&
+      fieldOf(role, 'type') === 'StringLiteral' &&
+      value !== undefined
+      ? { key: `role:${literalValue(role)}`, value, node: name }
+      : undefined;
+  };
+}
+
+/** The first argument of a call to one of the methods; the method is the key. */
+export function firstArgumentSite(methods: readonly string[]): SiteReader {
+  return (call) => {
+    const method = memberNameOf(fieldOf(call, 'callee'));
+    const argument = argumentOf(call, 0);
+    const value = literalValue(argument);
+
+    return typeof method === 'string' &&
+      methods.includes(method) &&
+      value !== undefined
+      ? { key: method, value, node: argument }
+      : undefined;
+  };
 }
 
 function isCall(node: unknown): boolean {

@@ -1,4 +1,13 @@
-export { bindingOf, callTypes, memberTypes } from './ast.ts';
+export {
+  argumentOf,
+  bindingOf,
+  callTypes,
+  findProperty,
+  isMember,
+  memberNameOf,
+  memberTypes,
+  propertyKey,
+} from './ast.ts';
 export {
   builtInNames,
   builtInSample,
@@ -34,8 +43,10 @@ export {
 } from './install.ts';
 export { fieldOf, isRecord } from './is-record.ts';
 export {
+  firstArgumentSite,
   literalText,
   literalValue,
+  roleSite,
   swapMutator,
   type Site,
   type SiteReader,

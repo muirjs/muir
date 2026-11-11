@@ -1,14 +1,12 @@
-import { bindingOf, fieldOf } from '@layzee/stryker-mutator-install';
-
 import {
   argumentOf,
-  hasProperty,
-  isCall,
+  bindingOf,
+  fieldOf,
   memberNameOf,
-  outermost,
   propertyKey,
-  rowOf,
-} from './ast.ts';
+} from '@layzee/stryker-mutator-install';
+
+import { hasProperty, isCall, outermost, rowOf } from './ast.ts';
 import type { LzPlaywrightMutator } from './mutators.ts';
 
 export function fulfillMutator<const TName extends string>(

@@ -1,4 +1,4 @@
-import { fieldOf } from '@layzee/stryker-mutator-install';
+import { fieldOf, memberNameOf } from '@layzee/stryker-mutator-install';
 
 import {
   ancestors,
@@ -7,7 +7,6 @@ import {
   isNamedReceiver,
   isRequestContext,
   isTestCallee,
-  memberNameOf,
   rowOf,
 } from './ast.ts';
 import type { LzPlaywrightMutator } from './mutators.ts';

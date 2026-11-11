@@ -1,4 +1,5 @@
 import {
+  roleSite,
   swapMutator,
   type MutatorOptions,
   type MutatorSets,
@@ -23,7 +24,6 @@ import {
 import {
   isSameStory,
   mountStorySite,
-  roleSite,
   testIdSite,
   textSite,
 } from './swap-sites.ts';
@@ -61,7 +61,7 @@ export const mutatorSets = roster({
       sampleOf(
         "page.getByRole('button', { name: 'a' });\n  page.getByRole('button', { name: 'b' });",
       ),
-      roleSite,
+      roleSite(['getByRole']),
     ),
     swapMutator(
       'LzPlaywrightTextLocator',
