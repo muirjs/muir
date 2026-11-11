@@ -20,18 +20,20 @@ _Avoid_: story mutator, Storybook operator
 An `args` object literal that `LzStorybookArgs` mutates: a story's own `args` (a CSF3 story object, `.story()` or
 `.extend()`) or the `args` in a `.test(name, options, fn)` options object, when a play or test function runs for it:
 the story's own play, the play `.extend()` takes from its base story, the meta's play, or a `.test()` call on the
-story.
+story. The story must be one Storybook's Vitest transform tests, and its static tags must not end in `!test`.
 _Avoid_: args target, story args (the meta's `args` are no args site)
 
 **Read key**:
-A key of an args site that a function that runs for it reads, as `args.<key>`, `context.args.<key>` or by
-destructuring. Every key is a read key when such a function hands `args` or its context on whole, or is one the file
-cannot read.
+A key of an args site that a function that runs for it, or a `step()` callback in it, reads from its context: as
+`args.<key>`, `initialArgs.<key>`, `context.args.<key>`, through a variable that holds one of these, or by
+destructuring. Every key is a read key when such a function hands `args` or its context on whole, reads a key that
+only running it names, or is one the file cannot read.
 _Avoid_: used arg, checked arg
 
 **Per-key mutant**:
-An args site with one key that is no read key removed, so the story falls back to the meta's and the project's
-value for it.
+An args site with one key that is no read key removed, so the story falls back to the value below it: one that a
+`...Base.args` spread before the key sets, then the base story's for `.extend()` or the story's for `.test()`
+options, then the meta's and the project's. A key whose literal value equals that value gets none.
 _Avoid_: arg removal
 
 **Coarse mutant**:

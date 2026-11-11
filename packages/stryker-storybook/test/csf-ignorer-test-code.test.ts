@@ -305,6 +305,36 @@ describe('lz-storybook-csf', () => {
     );
   });
 
+  it('places the args in the options of a .test() call', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "export default { title: 'a/b' };\nexport const A = {};\nA.test(\n  'name',\n  {\n    args: { label: 'a', disabled: true },\n  },\n  async () => {\n    await x(1 + 1);\n  },\n);",
+        )
+      ).filter((outcome) => outcome.startsWith('6 ')),
+      [
+        '6 ObjectLiteral placed',
+        '6 StringLiteral placed',
+        '6 BooleanLiteral placed',
+      ],
+    );
+  });
+
+  it('ignores the statement of a .test() call with options that hold no other mutant', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "export default { title: 'a/b' };\nexport const A = {};\nA.test('name', { tags: ['x'] }, async () => {\n  await x(1 + 1);\n});",
+        )
+      ).filter((outcome) => outcome.startsWith('3 CallExpression')),
+      [`3 CallExpression ${testReason}`],
+    );
+  });
+
   it('ignores the arrow function of a .test() call without options', async () => {
     const { outcomes } = setup();
 
