@@ -3,8 +3,9 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { playedStories, topLevelBindings } from '../src/csf.ts';
+import { topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
+import { playedStories } from '../src/played-stories.ts';
 
 function played(...lines: readonly string[]) {
   const body = list(
