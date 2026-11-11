@@ -53,8 +53,7 @@ export function ownStoryValue(
  * The properties a story ends up with, one layer each for the story and then each `.extend()` base, as Storybook
  * 10.6.5 `extend()` merges a base story in key by key. Each layer lists its properties last-wins first, with the
  * properties of an object it spreads that `resolvedValues` reads in place of the spread, as object spread replaces a
- * key whole. A base
- * the bindings do not hold, imported or one the file changes, is an unknown layer.
+ * key whole. A base the bindings do not hold, imported or one the file changes, is an unknown layer.
  */
 function storyLayers(
   init: unknown,

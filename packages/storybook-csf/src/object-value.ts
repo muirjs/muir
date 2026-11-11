@@ -62,23 +62,13 @@ export function writtenValue(object: unknown, key: string): object | undefined {
   );
 }
 
-/** Every value a property of `object` gives `key`, the one JavaScript keeps first; none for no object, and one `unknownValue` for a value that is no object literal. */
-export function objectValues(
-  object: unknown,
-  key: string | number,
-): readonly LayerValue[] {
-  if (object === undefined) {
-    return [];
-  }
-
-  if (object === unknownValue || field(object, 'type') !== 'ObjectExpression') {
-    return [unknownValue];
-  }
-
-  return valuesIn(list(field(object, 'properties')).toReversed(), key);
-}
-
-/** The value `object` gives `key` as JavaScript reads it, the last property that may set it winning. */
+/** The value the object literal `object` gives `key` as JavaScript reads it, the last property that may set it winning; `undefined` for no object, and `unknownValue` for a value that is no object literal. */
 export function objectValue(object: unknown, key: string | number): LayerValue {
-  return objectValues(object, key)[0];
+  if (object === undefined) {
+    return undefined;
+  }
+
+  return field(object, 'type') === 'ObjectExpression'
+    ? valuesIn(list(field(object, 'properties')).toReversed(), key)[0]
+    : unknownValue;
 }
