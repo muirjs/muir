@@ -161,14 +161,15 @@ export const storyGlobalsCases: readonly Case[] = [
   },
   {
     id: 'story-globals-rotated-viewport',
-    title: 'a rotated responsive viewport is no default, so it gets a mutant',
+    title:
+      "a rotated responsive viewport makes no mutant, as the Vitest addon's setViewport reads only its value",
     source: storyFile(
       'export const Story = {',
       "  globals: { viewport: { value: 'responsive', isRotated: true } },",
       '  play: async () => {},',
       '};',
     ),
-    expect: [[storyGlobals, '{}']],
+    expect: [],
   },
   {
     id: 'story-globals-default-backgrounds',

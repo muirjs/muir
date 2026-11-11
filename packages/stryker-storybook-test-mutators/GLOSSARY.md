@@ -83,7 +83,8 @@ _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:
 A property of a globals site whose value is Storybook 10.6.5's own initial value for that global: `viewport` as
-`'responsive'` or `'100pct-100pct'`, or as an object of such a value or `undefined` with `isRotated: false`;
+`'responsive'` or `'100pct-100pct'`, or as an object whose `value` is such a value or `undefined`, whatever else it
+holds, as the Vitest addon's `setViewport` reads only `value`;
 `backgrounds` with an `undefined` value and `grid: false`; `measureEnabled: false`; `outline: false`. It gets no
 mutant only when nothing in the file may set that key below it: no earlier property of the site, spread or computed
 key, and no `globals` of the meta, of a top-level story the story spreads or of its `.extend()` base, and for a

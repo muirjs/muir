@@ -93,10 +93,10 @@ const viewportDefaults: readonly unknown[] = ['responsive', '100pct-100pct'];
 const defaultGlobals: Readonly<Record<string, (value: unknown) => boolean>> = {
   viewport: (value) =>
     viewportDefaults.includes(literalOf(value)) ||
-    isObjectOf(value, {
-      value: [undefined, ...viewportDefaults],
-      isRotated: [false],
-    }),
+    (field(value, 'type') === 'ObjectExpression' &&
+      [undefined, ...viewportDefaults].includes(
+        literalOf(propertyValue(value, 'value')),
+      )),
   backgrounds: (value) =>
     isObjectOf(value, { value: [undefined], grid: [false] }),
   measureEnabled: isFalse,
