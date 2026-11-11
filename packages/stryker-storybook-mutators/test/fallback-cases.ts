@@ -199,6 +199,20 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'extend-imported-base-over-meta',
+    title:
+      "a key in .extend() whose literal value equals the meta's is removed when the base story is imported, as the base may set it",
+    source: inFactoryFile(
+      "import { Base } from './base.stories';",
+      "const meta = preview.meta({ args: { label: 'a' } });",
+      "export const Primary = Base.extend({ args: { label: 'a', disabled: true }, play: async () => {} });",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'test-options-over-named-story-args',
     title:
       "a key in .test() options whose literal value equals the one in the top-level object that the story's args name makes no mutant",

@@ -5,7 +5,7 @@ import { parse } from '@babel/parser';
 
 import { topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
-import { objectValue } from '../src/object-value.ts';
+import { objectValue, unknownValue } from '../src/object-value.ts';
 import { storyValues } from '../src/story-layers.ts';
 
 describe('storyValues', () => {
@@ -33,6 +33,28 @@ describe('storyValues', () => {
         field(objectValue(globals, 'locale'), 'value'),
       ),
       ['de', 'en'],
+    );
+  });
+
+  it('gives an unknown value for an .extend() base the file does not bind', () => {
+    const body = list(
+      field(
+        parse(
+          [
+            "import { A } from './a';",
+            "export const B = A.extend({ globals: { locale: 'fr' } });",
+          ].join('\n'),
+          { sourceType: 'module', plugins: ['typescript'] },
+        ),
+        'program',
+        'body',
+      ),
+    );
+    const bindings = topLevelBindings(body);
+
+    assert.deepEqual(
+      storyValues(bindings.get('B'), bindings, 'globals').slice(1),
+      [unknownValue],
     );
   });
 });

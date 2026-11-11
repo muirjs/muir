@@ -556,6 +556,19 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-default-over-imported-base',
+    title:
+      'an .extend() story gets a mutant of a default value of a global when its base is imported, as the base may set it',
+    source: factoryFile(
+      "import { Base } from './base.stories';",
+      "export const Plain = Base.extend({ globals: { outline: false, locale: 'de' }, play: async () => {} });",
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+    ],
+  },
+  {
     id: 'story-globals-default-over-story',
     title:
       'the options of a .test() call get a mutant of a default value of a global the story sets',
