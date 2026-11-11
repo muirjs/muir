@@ -99,7 +99,7 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
         !isSkipped(path, t)
       ) {
         const focus = t.callExpression(
-          t.memberExpression(target, t.identifier('focus')),
+          t.memberExpression(t.cloneNode(target), t.identifier('focus')),
           [],
         );
 
