@@ -655,9 +655,7 @@ function identifiersInReadForms(statement: unknown): readonly unknown[] {
 
       return [
         field(declarator, 'id'),
-        field(init, 'callee', 'property', 'name') === 'story'
-          ? field(init, 'callee', 'object')
-          : undefined,
+        isStoryFactoryCall(init) ? field(init, 'callee', 'object') : undefined,
       ];
     }),
     ...list(field(statement, 'specifiers')).flatMap((specifier) => [

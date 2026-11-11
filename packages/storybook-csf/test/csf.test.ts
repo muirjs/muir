@@ -71,6 +71,18 @@ describe('csfFile written', () => {
     );
   });
 
+  it('leaves out the base story of an .extend() call', () => {
+    assert.equal(
+      writtenNames(
+        "import preview from '../.storybook/preview';",
+        'const meta = preview.meta({});',
+        'export const Primary = meta.story({});',
+        'export const Small = Primary.extend({});',
+      ).includes('Primary'),
+      false,
+    );
+  });
+
   it('leaves out a name that is also the key of a shorthand property', () => {
     assert.equal(
       writtenNames(
