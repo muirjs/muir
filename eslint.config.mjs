@@ -226,6 +226,7 @@ export default withWarningsAsErrors([
       'packages/stryker-jsx-mutators/package.json',
       'packages/stryker-storybook-test-mutators/package.json',
       'packages/stryker-storybook-mutators/package.json',
+      'packages/stryker-msw-mutators/package.json',
     ],
     rules: {
       // The mutators import Babel for types only.
