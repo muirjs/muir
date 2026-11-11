@@ -4,6 +4,7 @@ import {
   field,
   lastWinsProperties,
   list,
+  objectValue,
   objectValues,
   ownStoryValue,
   playedStories,
@@ -182,7 +183,7 @@ function argsSites(
             }
 
             const { options, testFunction } = test;
-            const testArgs = propertyValue(options, 'args');
+            const testArgs = objectValue(options, 'args');
 
             return site(
               testArgs,
