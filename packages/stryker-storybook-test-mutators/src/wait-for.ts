@@ -1,5 +1,6 @@
 import type { types } from '@babel/core';
 
+import { awaited } from './interactions.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
 
 /** `waitForElementToBeRemoved(...);`, awaited or not. */
@@ -8,10 +9,7 @@ function isRemovalWait(node: types.Node): boolean {
     return false;
   }
 
-  const call =
-    node.expression.type === 'AwaitExpression'
-      ? node.expression.argument
-      : node.expression;
+  const call = awaited(node.expression);
 
   return (
     call.type === 'CallExpression' &&

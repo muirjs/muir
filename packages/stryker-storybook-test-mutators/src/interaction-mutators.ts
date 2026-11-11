@@ -1,4 +1,4 @@
-import type { types } from '@babel/core';
+import type { NodePath, types } from '@babel/core';
 import {
   fieldOf,
   literalValue,
@@ -7,7 +7,11 @@ import {
 } from '@layzee/stryker-mutator-install';
 
 import {
+  awaited,
   fireEventMethod,
+  firstCheckAfter,
+  hasNegativeCheck,
+  isExpectStatement,
   isInteractionBody,
   isInteractionStatement,
   isQueryCall,
@@ -16,7 +20,7 @@ import {
   userEventCall,
   type UserEventCall,
 } from './interactions.ts';
-import type { LzStorybookTestMutator } from './mutator.ts';
+import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
 
 function sampleOf(statement: string): string {
   return `export const Story = {\n  play: async ({ canvas, userEvent }) => {\n    ${statement}\n  },\n};\n`;
@@ -24,7 +28,6 @@ function sampleOf(statement: string): string {
 
 const clickMethods: readonly string[] = ['click', 'dblClick'];
 
-/** `await <x>;`. */
 function isAwaited(statement: types.Node): boolean {
   return (
     statement.type === 'ExpressionStatement' &&
@@ -204,6 +207,120 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
       ].filter((node) => t.isNode(node));
     },
   };
+}
+
+/** `expect(...).toHaveBeenCalledTimes(0);`, awaited or not. */
+function isZeroCallsCheck(statement: types.ExpressionStatement): boolean {
+  const call = awaited(statement.expression);
+  const [count] = call.type === 'CallExpression' ? call.arguments : [];
+
+  return (
+    call.type === 'CallExpression' &&
+    call.callee.type === 'MemberExpression' &&
+    call.callee.property.type === 'Identifier' &&
+    call.callee.property.name === 'toHaveBeenCalledTimes' &&
+    count?.type === 'NumericLiteral' &&
+    count.value === 0
+  );
+}
+
+/** Whether `check` reads a name declared after the interaction and before the check, which a copy before the interaction could not read. */
+function readsNameDeclaredBetween(
+  interaction: NodePath,
+  check: NodePath,
+): boolean {
+  const after = interaction.node.end ?? 0;
+  const before = check.node.start ?? 0;
+  let found = false;
+
+  check.traverse({
+    ReferencedIdentifier(reference) {
+      const declared = reference.scope.getBinding(reference.node.name)
+        ?.identifier.start;
+
+      if (
+        typeof declared === 'number' &&
+        declared > after &&
+        declared < before
+      ) {
+        found = true;
+        reference.stop();
+      }
+    },
+  });
+
+  return found;
+}
+
+/** Whether a statement equal to `check` ends before the interaction, in the outermost function around it. */
+function standsEarlier(
+  check: NodePath,
+  interaction: NodePath,
+  t: BabelTypes,
+): boolean {
+  const play = interaction
+    .getAncestry()
+    .filter((ancestor) => ancestor.isFunction())
+    .at(-1);
+  const start = interaction.node.start ?? 0;
+  let found = false;
+
+  play?.traverse({
+    ExpressionStatement(statement) {
+      if (
+        (statement.node.end ?? start) <= start &&
+        t.isNodesEquivalent(statement.node, check.node)
+      ) {
+        found = true;
+        statement.stop();
+      }
+    },
+  });
+
+  return found;
+}
+
+export function assertionBeforeMutator(): LzStorybookTestMutator & {
+  readonly name: 'LzStorybookAssertionBefore';
+} {
+  return {
+    name: 'LzStorybookAssertionBefore',
+    sample: sampleOf(
+      'await userEvent.click(button);\n    await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    *mutate(path, t) {
+      const statement = path.node;
+      const check = isInteractionStatement(path)
+        ? checkToCopy(path, t)
+        : undefined;
+
+      if (
+        check !== undefined &&
+        statement.type === 'ExpressionStatement' &&
+        !isSkipped(path, t)
+      ) {
+        yield t.blockStatement([t.cloneNode(check), t.cloneNode(statement)]);
+      }
+    },
+  };
+}
+
+/** The first check after the interaction, when it is an expect statement whose copy before the interaction can tell whether it held already. */
+function checkToCopy(
+  interaction: NodePath,
+  t: BabelTypes,
+): types.ExpressionStatement | undefined {
+  const check = firstCheckAfter(interaction);
+
+  return check !== undefined &&
+    check.node.type === 'ExpressionStatement' &&
+    isExpectStatement(check) &&
+    !hasNegativeCheck(check) &&
+    !isZeroCallsCheck(check.node) &&
+    !readsNameDeclaredBetween(interaction, check) &&
+    !standsEarlier(check, interaction, t)
+    ? check.node
+    : undefined;
 }
 
 export function interactionMutator(): LzStorybookTestMutator & {

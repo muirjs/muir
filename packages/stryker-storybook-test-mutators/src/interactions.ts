@@ -129,6 +129,38 @@ export function targetStatement(path: NodePath): NodePath | undefined {
     : undefined;
 }
 
+/** The first statement after `path` in its block that holds an `expect(...)` check, before the next interaction. */
+export function firstCheckAfter(path: NodePath): NodePath | undefined {
+  return before(
+    nextSiblings(path),
+    (statement) =>
+      isInteractionStatement(statement) || isStepWithInteraction(statement),
+  ).find((sibling) => checksIn(sibling).length > 0);
+}
+
+/** Whether `path` holds an `expect(...)` check with `.not` in its matcher chain. */
+export function hasNegativeCheck(path: NodePath): boolean {
+  return checksIn(path).some(Boolean);
+}
+
+/** `expect(...).<matcher>(...);`, awaited or not. */
+export function isExpectStatement(path: NodePath): boolean {
+  const statement = path.node;
+
+  return (
+    statement.type === 'ExpressionStatement' &&
+    startsWithExpect(awaited(statement.expression))
+  );
+}
+
+function startsWithExpect(node: types.Node): boolean {
+  if (node.type === 'CallExpression') {
+    return nameOf(node.callee) === 'expect' || startsWithExpect(node.callee);
+  }
+
+  return node.type === 'MemberExpression' && startsWithExpect(node.object);
+}
+
 /** The event of a `fireEvent.<event>(...)` statement. */
 export function fireEventMethod(path: NodePath): string | undefined {
   const statement = path.node;
@@ -306,7 +338,8 @@ function withoutTypeWrappers(node: types.Node): types.Node {
     : node;
 }
 
-function awaited(node: types.Node): types.Node {
+/** The expression inside `await <x>` and any type wrappers around either. */
+export function awaited(node: types.Node): types.Node {
   const expression = withoutTypeWrappers(node);
 
   return withoutTypeWrappers(

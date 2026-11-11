@@ -5,6 +5,7 @@ import type {
 } from '@layzee/stryker-mutator-install';
 
 import {
+  assertionBeforeMutator,
   clickFocusMutator,
   interactionMutator,
   interactionRepeatMutator,
@@ -28,7 +29,7 @@ export const mutatorSets = roster({
     interactionTargetMutator(),
   ],
   optIn: [interactionRepeatMutator()],
-  experimental: [waitForMutator()],
+  experimental: [waitForMutator(), assertionBeforeMutator()],
 });
 
 type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];
