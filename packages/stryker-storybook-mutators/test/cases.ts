@@ -762,6 +762,303 @@ export const cases: readonly Case[] = [
       [args, "{ k: 'a' }"],
     ],
   },
+  {
+    id: 'play-before-meta',
+    title: 'a key read by a play declared above the meta stays',
+    source:
+      'const sharedPlay = ({ args, canvas }) =>\n' +
+      '  expect(canvas.getByText(args.label)).toBeVisible();\n' +
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true }, play: sharedPlay };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'object-method',
+    title: 'a method in args stays in every mutant',
+    source: inStory(
+      "args: { label: 'a', onClick() {}, disabled: true },",
+      'play: async () => {},',
+    ),
+    expect: [
+      [args, '{ onClick() {}, disabled: true }'],
+      [args, "{ label: 'a', onClick() {} }"],
+      [args, '{ onClick() {} }'],
+    ],
+  },
+  {
+    id: 'second-meta',
+    title:
+      'the play and args of a factory meta count when the default export sets neither',
+    source: inFactoryFile(
+      "export default { title: 'Button' };",
+      "const meta = preview.meta({ args: { label: 'a' }, play: async () => {} });",
+      "export const Primary = meta.story({ args: { label: 'a', size: 's', disabled: true } });",
+    ),
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 's' }"],
+    ],
+  },
+  {
+    id: 'assigned-play-other-writes',
+    title:
+      'the play is the last write to the play key itself, not a later write to another key or below play',
+    source:
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n" +
+      'Primary.play = async ({ args }) => { args.label; };\n' +
+      "Primary.play.displayName = 'p';\n" +
+      "Primary.storyName = 'P';\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'story-tagged-not-test-then-other',
+    title: 'a story tagged !test then another tag makes no mutant',
+    source: inStory(
+      "tags: ['!test', 'autodocs'],",
+      "args: { label: 'a', disabled: true },",
+      'play: async () => {},',
+    ),
+    expect: [],
+  },
+  {
+    id: 'meta-same-number-and-boolean',
+    title: "a key whose number or boolean equals the meta's makes no mutant",
+    source:
+      "export default { title: 'Button', args: { size: 1, disabled: true }, play: async () => {} };\n" +
+      "export const Primary = { args: { size: 1, disabled: true, label: 'a', variant: 'b' } };\n",
+    expect: [
+      [args, "{ size: 1, disabled: true, variant: 'b' }"],
+      [args, "{ size: 1, disabled: true, label: 'a' }"],
+    ],
+  },
+  {
+    id: 'meta-other-sign',
+    title: "a key whose negative number is the meta's positive one is removed",
+    source:
+      "export default { title: 'Button', args: { size: 1 }, play: async () => {} };\n" +
+      "export const Primary = { args: { size: -1, label: 'a' } };\n",
+    expect: [
+      [args, "{ label: 'a' }"],
+      [args, '{ size: -1 }'],
+    ],
+  },
+  {
+    id: 'unary-plus',
+    title:
+      'a key whose value is a number with a plus sign is removed, as only a minus sign makes a literal',
+    source:
+      "export default { title: 'Button', args: { size: -1 }, play: async () => {} };\n" +
+      "export const Primary = { args: { size: +1, label: 'a' } };\n",
+    expect: [
+      [args, "{ label: 'a' }"],
+      [args, '{ size: +1 }'],
+    ],
+  },
+  {
+    id: 'meta-same-null',
+    title: 'a key set to null that the meta sets to null makes no mutant',
+    source:
+      "export default { title: 'Button', args: { label: null }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: null, size: 's', disabled: true } };\n",
+    expect: [
+      [args, '{ label: null, disabled: true }'],
+      [args, "{ label: null, size: 's' }"],
+    ],
+  },
+  {
+    id: 'template-with-expression',
+    title:
+      "a key whose template literal has an expression is removed, even when its text starts like the meta's",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      'export const Primary = { args: { label: `a${x}`, disabled: true } };\n',
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, '{ label: `a${x}` }'],
+    ],
+  },
+  {
+    id: 'key-with-spaces',
+    title: 'a quoted key with spaces is removed like any other',
+    source: inStory(
+      "args: { 'Stryker was here': 'a', disabled: true },",
+      'play: async () => {},',
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ 'Stryker was here': 'a' }"],
+    ],
+  },
+  {
+    id: 'meta-key-not-last',
+    title:
+      "a key whose literal value equals the meta's makes no mutant when the meta sets other keys after it",
+    source:
+      "export default { title: 'Button', args: { label: 'a', size: 's' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', variant: 'b', disabled: true } };\n",
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', variant: 'b' }"],
+    ],
+  },
+  {
+    id: 'computed-key-before',
+    title:
+      "a key after a computed key is removed, even when its literal value equals the meta's, as the computed key may set it",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { [k]: 'b', label: 'a', disabled: true } };\n",
+    expect: [
+      [args, "{ [k]: 'b', disabled: true }"],
+      [args, "{ [k]: 'b', label: 'a' }"],
+      [args, "{ [k]: 'b' }"],
+    ],
+  },
+  {
+    id: 'self-spread',
+    title:
+      "args that spread their own story's args make no mutant, as each key falls back to itself",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Primary = { args: { ...Primary.args, label: 'a', disabled: true } };\n",
+    expect: [],
+  },
+  {
+    id: 'spread-not-story-args',
+    title:
+      'a spread of anything but <story>.args comes first, so a key after it is removed even when its literal value equals that story args',
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Base = { args: { label: 'a' } };\n" +
+      "export const Optional = { args: { ...Base?.args, label: 'a', disabled: true } };\n" +
+      "export const Computed = { args: { ...Base[args], label: 'a', disabled: true } };\n" +
+      "export const Other = { args: { ...Base.parameters, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ ...Base?.args, disabled: true }'],
+      [args, "{ ...Base?.args, label: 'a' }"],
+      [args, '{ ...Base?.args }'],
+      [args, '{ ...Base[args], disabled: true }'],
+      [args, "{ ...Base[args], label: 'a' }"],
+      [args, '{ ...Base[args] }'],
+      [args, '{ ...Base.parameters, disabled: true }'],
+      [args, "{ ...Base.parameters, label: 'a' }"],
+      [args, '{ ...Base.parameters }'],
+    ],
+  },
+  {
+    id: 'story-on-story',
+    title:
+      'a story made by .story() on another story takes neither its args nor its play, as only .extend() merges the base story in',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a' }, play: async ({ args }) => { args.disabled; } });",
+      "export const Other = Primary.story({ args: { label: 'a', disabled: true } });",
+      "Other.test('t', async () => {});",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'extend-own-play',
+    title:
+      "a key read by the play .extend() sets stays, as that play replaces the base story's",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({ play: async () => {} });',
+      "export const Disabled = Primary.extend({ args: { label: 'a', disabled: true }, play: async ({ args }) => { args.label; } });",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'other-story-test',
+    title: "a key read by another story's test function is removed",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true }, play: async () => {} });",
+      'export const Other = meta.story({});',
+      "Other.test('t', async ({ args }) => { args.label; });",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'test-other-name',
+    title:
+      'the args in the options of a second .test() call with another name are mutated',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      "Primary.test('a', async () => {});",
+      "Primary.test('b', { args: { label: 'a', disabled: true } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'test-name-not-literal-story-args',
+    title:
+      "a .test() call whose name is no string literal leaves the story's args mutated, as Storybook does not run it",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true }, play: async () => {} });",
+      'Primary.test(name, async () => {});',
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'step-member-callback-read',
+    title:
+      'a key a step callback reads stays when the play calls step on its context',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      "play: async (context) => { await context.step('s', async ({ args }) => { args.label; }); },",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'other-call-callback',
+    title:
+      'a key read by a callback passed to a call other than step is removed, as that call does not pass the context',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async () => { items.map(({ args }) => args.label); },',
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'computed-member-read',
+    title: "a key the play reads as args['<key>'] or args[<number>] stays",
+    source: inStory(
+      "args: { 0: 'a', label: 'b', disabled: true },",
+      "play: async ({ args }) => { args['label']; args[0]; },",
+    ),
+    expect: [[args, "{ 0: 'a', label: 'b' }"]],
+  },
+  {
+    id: 'numeric-key',
+    title: 'a numeric key is removed like any other',
+    source: inStory(
+      "args: { 0: 'a', disabled: true },",
+      'play: async () => {},',
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ 0: 'a' }"],
+    ],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {
