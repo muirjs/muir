@@ -121,6 +121,20 @@ export const interactionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'user-event-setup-context',
+    title:
+      "a call on a local bound to the play context's userEvent.setup() is removed",
+    source: `export const Story = {\n  play: async (context) => {\n    const user = context.userEvent.setup();\n    await user.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'vitest-browser-setup',
+    title:
+      "a call on a local bound to the setup() of userEvent imported under another name from 'vitest/browser' is removed",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('const user = browserUserEvent.setup();', 'await user.click(button);')}`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'user-event-setup-let-for-of',
     title:
       'a call on a let given userEvent.setup() and then each value of a for...of makes no mutant',
@@ -519,6 +533,12 @@ export const crashCases: readonly Case[] = [
       'user = flag ? user : userEvent;',
       'await user.click(button);',
     ),
+    expect: [],
+  },
+  {
+    id: 'user-event-setup-of-itself',
+    title: 'a call on a var given its own setup() makes no mutant',
+    source: inPlay('var user = user.setup();', 'await user.click(button);'),
     expect: [],
   },
 ];

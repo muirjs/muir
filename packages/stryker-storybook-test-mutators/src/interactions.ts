@@ -555,7 +555,7 @@ function isUserEvent(
   const followed = binding === undefined ? seen : new Set([...seen, binding]);
 
   return (
-    isSetupCall(value) ||
+    isSetupCall(value, path, followed) ||
     isUserEventChoice(value, path, followed) ||
     isVitestBrowserUserEvent(path, name) ||
     isContextUserEvent(path, name)
@@ -643,12 +643,17 @@ const vitestBrowserSources: ReadonlySet<string> = new Set([
   '@vitest/browser/context',
 ]);
 
-function isSetupCall(node: types.Node | undefined): boolean {
+/** `<userEvent>.setup()`, on any user-event receiver. */
+function isSetupCall(
+  node: types.Node | undefined,
+  path: NodePath,
+  seen: ReadonlySet<Binding>,
+): boolean {
   return (
     node?.type === 'CallExpression' &&
     node.callee.type === 'MemberExpression' &&
     nameOf(node.callee.property) === 'setup' &&
-    nameOf(node.callee.object) === 'userEvent'
+    isUserEvent(node.callee.object, path, seen)
   );
 }
 
