@@ -36,11 +36,12 @@ _Avoid_: test story, story test
 
 **Played story**:
 A tested story in a file with a meta object whose static tags do not end in `!test`, and that runs a play (its own,
-one assigned later, one from a story it spreads or its `.extend()` base, or the meta's; a later spread the file cannot
-resolve may hold one, an unknown play, which `LzStorybookStoryGlobals` counts as no play and `LzStorybookArgs` as
-one that reads all args) or a `.test()` call. Its `.test()` children are the first indexed call of each name; one
-with a spread argument is unmatched. The Storybook mutators and the Storybook test mutators mutate only played
-stories.
+one assigned later, one from a story it spreads or its `.extend()` base, or the meta's) or a `.test()` call. When a
+spread or computed key the file cannot resolve may set its play last, the play is an unknown play; with no own play,
+such a spread in any position gives one. An unknown play may have a play the file reads under it (an earlier own
+play, the `.extend()` base's or the meta's), which runs when the unknown one sets none. Its `.test()` children are
+the first indexed call of each name; one with a spread argument is unmatched. The Storybook mutators and the
+Storybook test mutators mutate only played stories.
 _Avoid_: run story, story with a play
 
 **Tag filter**:

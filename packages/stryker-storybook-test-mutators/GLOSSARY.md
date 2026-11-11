@@ -76,9 +76,10 @@ _Avoid_: flip mutant, rejection mutant
 **Globals site**:
 A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: the own `globals` of a
 played story (the Storybook context's term), unless a later spread of a story that sets `globals` replaces them or a
-later spread the file cannot resolve may; the meta's `globals` when the file has a played story; and the `globals` in
-the options of a played story's `.test()` calls, inline or a top-level constant. A story whose only play is an unknown
-one, which a spread the file cannot resolve may set, counts as no played story here unless it has a `.test()` call.
+later spread or computed key the file cannot resolve may; the meta's `globals` when the file has a played story; and
+the `globals` in the options of a played story's `.test()` calls, inline or a top-level constant. A story whose play
+is an unknown one (see Played story) with no play the file reads under it counts as no played story here unless it
+has a `.test()` call; an unknown play with such a play under it counts as a play.
 _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:
@@ -92,9 +93,10 @@ key, and no `globals` of the meta or of the story's `.extend()` bases, which Sto
 `globals` sets nothing below them, as object spread replaces `globals` whole. A `viewport` is no default when a
 `parameters` object of any run of its site may set `viewport`: the meta's, the story's and its bases' for every
 story the site runs for, and those of each `.test()` call's options that run it, as Storybook merges them over each
-other and `setViewport` falls back to `parameters.viewport.defaultViewport` without a global value. The table is
-fixed; a project's own `initialGlobals` and parameters in its preview are not read, so a default value that overrides
-them still gets no mutant.
+other and `setViewport` falls back to `parameters.viewport.defaultViewport` without a global value. Options the file
+cannot read (an imported object, or a spread or computed key that may set `parameters`) and an unmatched `.test()`
+call count as ones that may set `viewport`. The table is fixed; a project's own `initialGlobals` and parameters in
+its preview are not read, so a default value that overrides them still gets no mutant.
 _Avoid_: initial global, preset global
 
 ### Waits
