@@ -41,7 +41,7 @@ export function resolvedPropertyValues(
   key: string | number,
   bindings: Bindings,
 ): readonly LayerValue[] {
-  return valuesIn(lastWinsFirst(properties, bindings), key);
+  return valuesIn(lastWinsProperties(properties, bindings), key);
 }
 
 /** The properties of the object literal `node` evaluates to, last-wins first; `undefined` when the file does not show one. */
@@ -53,7 +53,7 @@ function propertiesOf(
   const name = field(current, 'name');
 
   if (field(current, 'type') === 'ObjectExpression') {
-    return lastWinsFirst(list(field(current, 'properties')), bindings);
+    return lastWinsProperties(list(field(current, 'properties')), bindings);
   }
 
   if (field(current, 'type') === 'Identifier' && typeof name === 'string') {
@@ -77,8 +77,8 @@ function propertiesOf(
     : undefined;
 }
 
-/** `properties` last-wins first, each spread of an object `propertiesOf` reads replaced by that object's properties; a spread it does not read stays in place, for `valuesIn` to read as one that may set any key. */
-function lastWinsFirst(
+/** `properties` last-wins first, each spread of an object `resolvedValues` reads replaced by that object's properties; a spread it does not read stays in place, for `valuesIn` to read as one that may set any key. */
+export function lastWinsProperties(
   properties: readonly unknown[],
   bindings: Bindings,
 ): readonly unknown[] {

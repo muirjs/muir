@@ -6,6 +6,7 @@ import {
   valuesIn,
   type LayerValue,
 } from './object-value.ts';
+import { lastWinsProperties } from './resolved-values.ts';
 
 /** A layer's properties last-wins first, or `unknownValue` for an `.extend()` base the file does not bind. */
 type Layer = readonly unknown[] | typeof unknownValue;
@@ -49,42 +50,10 @@ export function ownStoryValue(
 }
 
 /**
- * `properties` last-wins first, each spread whose argument `spreadObject` resolves to an object literal replaced by
- * that object's properties, read the same way without the binding the spread names, so a cycle of spreads ends. A
- * spread it does not resolve stays in its place, for the caller to read as one that may set any key.
- */
-export function lastWinsProperties(
-  properties: readonly unknown[],
-  bindings: ReadonlyMap<string, unknown>,
-  spreadObject: (
-    argument: unknown,
-    bindings: ReadonlyMap<string, unknown>,
-  ) => unknown,
-): readonly unknown[] {
-  return properties.toReversed().flatMap((property) => {
-    const argument = field(property, 'argument');
-    const spread =
-      field(property, 'type') === 'SpreadElement'
-        ? spreadObject(argument, bindings)
-        : undefined;
-
-    return field(spread, 'type') === 'ObjectExpression'
-      ? lastWinsProperties(
-          list(field(spread, 'properties')),
-          withoutBinding(
-            bindings,
-            field(argument, 'name') ?? field(argument, 'object', 'name'),
-          ),
-          spreadObject,
-        )
-      : [property];
-  });
-}
-
-/**
  * The properties a story ends up with, one layer each for the story and then each `.extend()` base, as Storybook
  * 10.6.5 `extend()` merges a base story in key by key. Each layer lists its properties last-wins first, with the
- * properties of a top-level object it spreads in place of the spread, as object spread replaces a key whole. A base
+ * properties of an object it spreads that `resolvedValues` reads in place of the spread, as object spread replaces a
+ * key whole. A base
  * the bindings do not hold, imported or one the file changes, is an unknown layer.
  */
 function storyLayers(
@@ -95,11 +64,6 @@ function storyLayers(
   const own = lastWinsProperties(
     list(field(storyArgument(call), 'properties')),
     bindings,
-    (argument, inner) => {
-      const name = field(argument, 'name');
-
-      return typeof name === 'string' ? unwrap(inner.get(name)) : undefined;
-    },
   );
   const base = field(call, 'callee', 'object', 'name');
 

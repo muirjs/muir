@@ -36,6 +36,30 @@ describe('storyValues', () => {
     );
   });
 
+  it('gives the value of a member of a top-level object the story spreads, in place of the spread', () => {
+    const body = list(
+      field(
+        parse(
+          [
+            "const Common = { story: { globals: { locale: 'de' } } };",
+            'export const B = { ...Common.story };',
+          ].join('\n'),
+          { sourceType: 'module', plugins: ['typescript'] },
+        ),
+        'program',
+        'body',
+      ),
+    );
+    const bindings = topLevelBindings(body);
+
+    assert.deepEqual(
+      storyValues(bindings.get('B'), bindings, 'globals').map((globals) =>
+        field(objectValue(globals, 'locale'), 'value'),
+      ),
+      ['de'],
+    );
+  });
+
   it('gives an unknown value for an .extend() base the file does not bind', () => {
     const body = list(
       field(
