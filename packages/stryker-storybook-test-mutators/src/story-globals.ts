@@ -51,10 +51,14 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
         );
         const everyRunParameters = [
           ...storyParameters,
-          ...tests.map((test) =>
-            test === 'unmatched' ? 'unknown' : optionsParameters(test.options),
-          ),
-        ].filter(defined);
+          ...tests
+            .map((test) =>
+              test === 'unmatched'
+                ? 'unknown'
+                : optionsParameters(test.options),
+            )
+            .filter(defined),
+        ];
         const globals = [...bases, ...metaGlobals].filter(defined);
 
         return [
