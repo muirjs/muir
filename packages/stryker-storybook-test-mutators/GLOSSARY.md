@@ -42,9 +42,10 @@ _Avoid_: absence check, negated assertion
 **Skipped interaction**:
 An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`,
 `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or
-`afterEach`, given inline or as a function declared in the file, one whose following checks are all negative checks, a click or hover that a user-event 14 `type` of the
-same target repeats (that `type` clicks first unless given a `skipClick` other than `false`; Vitest browser's does
-not click), and a `type` or `clear` that a later `clear` of the same target undoes before any check.
+`afterEach`, given inline or as a function declared in the file, one whose following checks are all negative checks,
+a click or hover that a user-event 14 `type` of the same target in the next statement repeats (that `type` clicks
+first unless given a `skipClick` other than `false`; Vitest browser's does not click), and a `type` or `clear` that a
+later `clear` of the same target undoes before any check.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
