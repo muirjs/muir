@@ -39,17 +39,18 @@ _Avoid_: absence check, negated assertion
 
 **Skipped interaction**:
 An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`,
-`LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or `afterEach`, one whose
-following checks are all negative checks, a click or hover that a `type` of the same target repeats (`type` clicks
-first unless given `skipClick`), and a `type` or `clear` that a later `clear` of the same target undoes before any
-check.
+`LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or
+`afterEach`, one whose following checks are all negative checks, a click or hover that a `type` of the same target
+repeats (`type` clicks first unless given `skipClick`), and a `type` or `clear` that a later `clear` of the same
+target undoes before any check.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
 The first `expect(...)` statement after an interaction in the interaction's own block, before the next interaction,
-that `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that holds
-the interaction is not looked at. A negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or
-assigned after the interaction, and one that already stands earlier in the play are not copied.
+that `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that
+holds the interaction is not looked at, so an interaction that is a step callback's expression body has none. A
+negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or assigned after the interaction,
+and one that already stands earlier in the play are not copied.
 _Avoid_: duplicated assertion, moved check
 
 ### Waits
