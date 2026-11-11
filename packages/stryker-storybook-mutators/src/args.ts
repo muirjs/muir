@@ -310,11 +310,17 @@ const memberTypes: readonly unknown[] = [
   'OptionalMemberExpression',
 ];
 
-/** The `args` of the top-level object that a `...Base.args`, `...Base?.args` or `...Base['args']` spread names. */
+/** The top-level object that a `...shared` spread names, or the `args` of the one that a `...Base.args`, `...Base?.args` or `...Base['args']` spread names. */
 function spreadArgs(
   argument: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
+  const name = field(argument, 'name');
+
+  if (typeof name === 'string') {
+    return unwrap(bindings.get(name));
+  }
+
   const object = field(argument, 'object', 'name');
 
   return memberTypes.includes(field(argument, 'type')) &&

@@ -367,6 +367,16 @@ export const fallbackCases: readonly Case[] = [
     expect: [[args, "{ ...Base.args, label: 'a' }"]],
   },
   {
+    id: 'spread-of-named-object-same-literal',
+    title:
+      'a key whose literal value equals the one in a top-level object spread before it makes no mutant',
+    source:
+      "const shared = { label: 'a' };\n" +
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Primary = { args: { ...shared, label: 'a', disabled: true } };\n",
+    expect: [[args, "{ ...shared, label: 'a' }"]],
+  },
+  {
     id: 'spread-of-written-args',
     title:
       "a key whose literal value equals the one in the story args spread before it is removed when the file writes to that story's args",
