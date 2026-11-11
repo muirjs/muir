@@ -807,6 +807,40 @@ function storyNode(init: unknown, bindings: Bindings): unknown {
   return storyArgument(init);
 }
 
+/** The story's own play, or for `Base.extend({...})` the one it takes from `Base`, as Storybook 10.6.5 `extend()` merges the base story in. */
+export function ownOrBasePlay(
+  init: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): unknown {
+  const call = unwrap(init);
+  const own = playIn(storyArgument(call), bindings);
+  const base = field(call, 'callee', 'object', 'name');
+
+  return own === undefined &&
+    field(call, 'callee', 'property', 'name') === 'extend' &&
+    typeof base === 'string'
+    ? ownOrBasePlay(bindings.get(base), withoutBinding(bindings, base))
+    : own;
+}
+
+/** The play an object literal sets: its last `play` key, or the play of a top-level object it spreads after that key. */
+function playIn(
+  object: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): unknown {
+  return list(field(object, 'properties'))
+    .toReversed()
+    .map((property) => {
+      const spread = field(property, 'argument', 'name');
+
+      return field(property, 'type') === 'SpreadElement' &&
+        typeof spread === 'string'
+        ? playIn(unwrap(bindings.get(spread)), withoutBinding(bindings, spread))
+        : propertyValue({ properties: [property] }, 'play');
+    })
+    .find((play) => play !== undefined);
+}
+
 export function storyArgument(init: unknown): unknown {
   const current = unwrap(init);
 
