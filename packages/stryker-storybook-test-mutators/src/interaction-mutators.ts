@@ -186,13 +186,25 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
   };
 }
 
+function positionOf(node: types.Node, edge: 'start' | 'end'): number {
+  const position = node[edge];
+
+  if (typeof position !== 'number') {
+    throw new Error(
+      `LzStorybookAssertionBefore: a ${node.type} node has no ${edge} position, which it needs to tell what runs before the interaction.`,
+    );
+  }
+
+  return position;
+}
+
 /** Whether `check` reads a name declared after the interaction and before the check, which a copy before the interaction could not read. */
 function readsNameDeclaredBetween(
   interaction: NodePath,
   check: NodePath,
 ): boolean {
-  const after = interaction.node.end ?? 0;
-  const before = check.node.start ?? 0;
+  const after = positionOf(interaction.node, 'end');
+  const before = positionOf(check.node, 'start');
   let found = false;
 
   check.traverse({
@@ -224,13 +236,17 @@ function standsEarlier(
     .getAncestry()
     .filter((ancestor) => ancestor.isFunction())
     .at(-1);
-  const start = interaction.node.start ?? 0;
+  const start = positionOf(interaction.node, 'start');
   let found = false;
 
   play?.traverse({
     ExpressionStatement(statement) {
+      const { end } = statement.node;
+
+      // A statement with no position is a replacement in a mutant Stryker has placed already, not the play's code.
       if (
-        (statement.node.end ?? start) <= start &&
+        typeof end === 'number' &&
+        end <= start &&
         t.isNodesEquivalent(statement.node, check.node)
       ) {
         found = true;
