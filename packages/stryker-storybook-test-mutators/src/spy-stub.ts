@@ -1,7 +1,7 @@
 import type { NodePath, types } from '@babel/core';
 import {
   definitionTimeStubs,
-  stubMethods,
+  stubMethodOf,
   type StubMethod,
   type StubSite,
 } from '@layzee/storybook-csf';
@@ -28,8 +28,17 @@ export function spyStubMutator(): LzStorybookTestMutator & {
       }
 
       if (
-        node.type !== 'CallExpression' ||
-        node.callee.type !== 'MemberExpression'
+        node.type !== 'CallExpression' &&
+        node.type !== 'OptionalCallExpression'
+      ) {
+        return;
+      }
+
+      const { callee } = node;
+
+      if (
+        callee.type !== 'MemberExpression' &&
+        callee.type !== 'OptionalMemberExpression'
       ) {
         return;
       }
@@ -47,19 +56,23 @@ export function spyStubMutator(): LzStorybookTestMutator & {
       }
 
       if (site !== undefined) {
-        yield t.cloneNode(node.callee.object);
+        yield t.cloneNode(callee.object);
       }
 
       const outcome = outcomeOf(stub.method, t);
 
       if (outcome !== undefined) {
-        yield t.callExpression(
-          t.memberExpression(
-            t.cloneNode(node.callee.object),
-            t.identifier(`${outcome.method}${stub.once ? 'Once' : ''}`),
-          ),
-          [outcome.argument],
+        const flippedCallee = t.cloneNode(callee);
+        const flipped = t.cloneNode(node);
+
+        flippedCallee.computed = false;
+        flippedCallee.property = t.identifier(
+          `${outcome.method}${stub.once ? 'Once' : ''}`,
         );
+        flipped.callee = flippedCallee;
+        flipped.arguments = [outcome.argument];
+
+        yield flipped;
       }
     },
   };
@@ -76,18 +89,13 @@ function isStubStatement(path: NodePath): boolean {
   );
 }
 
-function stubOf(
-  node: types.Node,
-): { readonly method: StubMethod; readonly once: boolean } | undefined {
-  const name =
-    node.type === 'CallExpression' && node.callee.type === 'MemberExpression'
-      ? nameOf(node.callee.property)
-      : undefined;
-  const method = stubMethods.find(
-    (candidate) => name === candidate || name === `${candidate}Once`,
-  );
-
-  return method === undefined ? undefined : { method, once: name !== method };
+function stubOf(node: types.Node): ReturnType<typeof stubMethodOf> {
+  return (node.type === 'CallExpression' ||
+    node.type === 'OptionalCallExpression') &&
+    (node.callee.type === 'MemberExpression' ||
+      node.callee.type === 'OptionalMemberExpression')
+    ? stubMethodOf(nameOf(node.callee.property))
+    : undefined;
 }
 
 /** The stub that flips a resolved stub to a rejected one and back. */

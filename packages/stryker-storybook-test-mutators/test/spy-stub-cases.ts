@@ -109,4 +109,14 @@ export const spyStubCases: readonly Case[] = [
       [spyStub, 'mocked(save).mockRejectedValue(new Error("Stryker"))'],
     ],
   },
+  {
+    id: 'spy-stub-optional-call',
+    title:
+      'an optional-chained stub statement gets the same mutants as a plain one',
+    source: inPlay('mocked(save)?.mockResolvedValue(note);'),
+    expect: [
+      [spyStub, ';'],
+      [spyStub, 'mocked(save)?.mockRejectedValue(new Error("Stryker"))'],
+    ],
+  },
 ];

@@ -1,7 +1,7 @@
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 
-export const stubMethods = [
+const stubMethods = [
   'mockReturnValue',
   'mockResolvedValue',
   'mockRejectedValue',
@@ -9,6 +9,17 @@ export const stubMethods = [
 ] as const;
 
 export type StubMethod = (typeof stubMethods)[number];
+
+/** The stub method a spy method name calls, and whether it is the `Once` form; `undefined` for any other name. */
+export function stubMethodOf(
+  name: unknown,
+): { readonly method: StubMethod; readonly once: boolean } | undefined {
+  const method = stubMethods.find(
+    (candidate) => name === candidate || name === `${candidate}Once`,
+  );
+
+  return method === undefined ? undefined : { method, once: name !== method };
+}
 
 export interface StubSite {
   readonly spy: string;
@@ -72,10 +83,7 @@ function stubSite(
   const end = field(node, 'end');
   const line = field(node, 'loc', 'start', 'line');
   const spy = field(node, 'callee', 'object', 'callee', 'name');
-  const name = field(node, 'callee', 'property', 'name');
-  const method = stubMethods.find(
-    (candidate) => name === candidate || name === `${candidate}Once`,
-  );
+  const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
 
   if (
     !isCall(node) ||
@@ -86,7 +94,7 @@ function stubSite(
     !isCall(field(node, 'callee', 'object')) ||
     typeof spy !== 'string' ||
     !spies.has(spy) ||
-    method === undefined
+    stub === undefined
   ) {
     return undefined;
   }
@@ -95,8 +103,7 @@ function stubSite(
 
   return {
     spy,
-    method,
-    once: name !== method,
+    ...stub,
     start,
     end,
     line,
