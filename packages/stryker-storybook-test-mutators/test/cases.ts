@@ -185,6 +185,27 @@ export const interactionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'context-user-event-renamed',
+    title:
+      "a call on the play context's userEvent destructured under another name is removed",
+    source: `export const Story = {\n  play: async ({ canvas, userEvent: user }) => {\n    await user.click(canvas.getByRole('button'));\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'test-context-user-event-renamed',
+    title:
+      "a call on a story test's context userEvent destructured under another name is removed",
+    source: `export const Story = meta.story({});\nStory.test('clicks', async ({ canvas, userEvent: user }) => {\n  await user.click(canvas.getByRole('button'));\n});\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'context-other-key-renamed',
+    title:
+      "a call on another context key destructured under a user-event's name makes no mutant",
+    source: `export const Story = {\n  play: async ({ canvas, driver: user }) => {\n    await user.click(canvas.getByRole('button'));\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'user-event-not-interaction',
     title: 'a userEvent call that interacts with nothing makes no mutant',
     source: inPlay('userEvent.setup();'),

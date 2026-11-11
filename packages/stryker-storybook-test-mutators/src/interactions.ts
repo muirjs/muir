@@ -548,7 +548,29 @@ function isUserEvent(node: types.Node, path: NodePath): boolean {
   return (
     isSetupCall(value) ||
     isUserEventChoice(value, path) ||
-    isVitestBrowserUserEvent(path, name)
+    isVitestBrowserUserEvent(path, name) ||
+    isContextUserEvent(path, name)
+  );
+}
+
+/** `({ userEvent: <name> }) => ...`: a context's userEvent destructured under another name in a parameter. */
+function isContextUserEvent(path: NodePath, name: string): boolean {
+  const binding = path.scope.getBinding(name);
+
+  return (
+    binding?.kind === 'param' &&
+    binding.path.node.type === 'ObjectPattern' &&
+    takesUserEventAs(binding.path.node, name)
+  );
+}
+
+/** `{ userEvent: <name> }`, among other properties. */
+function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
+  return pattern.properties.some(
+    (property) =>
+      property.type === 'ObjectProperty' &&
+      nameOf(property.key) === 'userEvent' &&
+      nameOf(property.value) === name,
   );
 }
 
@@ -590,12 +612,7 @@ function isVitestBrowserUserEvent(path: NodePath, name: string): boolean {
 
   return (
     id.type === 'ObjectPattern' &&
-    id.properties.some(
-      (property) =>
-        property.type === 'ObjectProperty' &&
-        nameOf(property.key) === 'userEvent' &&
-        nameOf(property.value) === name,
-    ) &&
+    takesUserEventAs(id, name) &&
     init !== null &&
     init !== undefined &&
     isVitestBrowserImport(awaited(init))
