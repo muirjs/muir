@@ -318,6 +318,16 @@ export const playCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'meta-play-before-unresolved-spread',
+    title:
+      'a story under a meta play before a spread of an imported object makes no mutant, as the play that runs is unknown and may read any key',
+    source:
+      "import { shared } from './shared';\n" +
+      "export default { title: 'Button', play: async ({ args }) => { args.label; }, ...shared };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n",
+    expect: [],
+  },
+  {
     id: 'computed-key-named-args',
     title:
       'an object under a computed key [args] makes no mutant, as the constant it names gives another key',

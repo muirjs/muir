@@ -5,7 +5,7 @@ import { parse } from '@babel/parser';
 
 import { csfFile, topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
-import { playedStories } from '../src/played-stories.ts';
+import { playedStories, unknownOverAPlay } from '../src/played-stories.ts';
 
 function played(...lines: readonly string[]) {
   const body = list(
@@ -95,6 +95,16 @@ describe('playedStories', () => {
         ['B', 'ArrowFunctionExpression'],
       ],
     );
+  });
+
+  it('gives an unknown play over a play to a story under a meta whose play a later spread of an imported object may replace', () => {
+    const [story] = played(
+      "import { Shared } from './shared';",
+      "export default { title: 'a/b', play: async () => {}, ...Shared };",
+      'export const A = {};',
+    );
+
+    assert.equal(story?.play, unknownOverAPlay);
   });
 
   it("gives an .extend() story its base story's play", () => {

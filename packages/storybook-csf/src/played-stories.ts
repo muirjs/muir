@@ -12,7 +12,7 @@ import {
 } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { unknownValue } from './object-value.ts';
+import { objectValues, unknownValue } from './object-value.ts';
 import { storyValueChain } from './story-layers.ts';
 
 /** An unknown play with a play the file reads under it, which runs when the unknown one sets none: an earlier own play, an `.extend()` base's or the meta's. */
@@ -40,9 +40,7 @@ export function playedStories(
     return [];
   }
 
-  const metaPlay = metaObjects
-    .map((meta) => propertyValue(meta, 'play'))
-    .find((play) => play !== undefined);
+  const metaPlays = metaObjects.flatMap((meta) => objectValues(meta, 'play'));
 
   return stories
     .filter(
@@ -58,7 +56,7 @@ export function playedStories(
         story,
         play: storyPlay(
           assignedPlay,
-          [...storyValueChain(story.init, bindings, 'play'), metaPlay],
+          [...storyValueChain(story.init, bindings, 'play'), ...metaPlays],
           bindings,
         ),
         tests: testCallsOn(body, story.local).map((test) =>
