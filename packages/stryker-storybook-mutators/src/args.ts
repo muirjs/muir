@@ -138,13 +138,13 @@ function argsSites(
   readsOf: (fn: unknown) => Reads,
 ): Sites {
   const bindings = topLevelBindings(body);
-  const { metaObjects } = csfFile(body, bindings);
-  const metaArgs = metaObjects
+  const file = csfFile(body, bindings);
+  const metaArgs = file.metaObjects
     .map((meta) => propertyValue(meta, 'args'))
     .find((args) => args !== undefined);
 
   return sitesFrom(
-    playedStories(body, bindings).flatMap(
+    playedStories(body, bindings, file).flatMap(
       ({ story: { init }, play, tests }) => {
         const plays = play === undefined ? [] : [play];
         const [storyArgs, ...baseArgs] = storyValues(init, bindings, 'args');

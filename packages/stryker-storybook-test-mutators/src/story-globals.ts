@@ -25,12 +25,12 @@ const defined = (value: unknown): boolean => value !== undefined;
 const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   const body = list(program.body);
   const bindings = topLevelBindings(body);
-  const { metaObjects } = csfFile(body, bindings);
+  const file = csfFile(body, bindings);
   const metaValues = (key: string) =>
-    metaObjects.map((meta) => propertyValue(meta, key)).filter(defined);
+    file.metaObjects.map((meta) => propertyValue(meta, key)).filter(defined);
   const metaGlobals = metaValues('globals');
   const metaParameters = metaValues('parameters');
-  const played = playedStories(body, bindings);
+  const played = playedStories(body, bindings, file);
 
   return bySite(
     [

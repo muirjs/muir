@@ -8,6 +8,7 @@ import {
   testCallOf,
   unwrap,
   withoutBinding,
+  type CsfFile,
   type StoryExport,
   type TestChild,
 } from './csf.ts';
@@ -26,9 +27,8 @@ export interface PlayedStory {
 export function playedStories(
   body: readonly unknown[],
   bindings: ReadonlyMap<string, unknown>,
+  { metaObjects, stories }: CsfFile = csfFile(body, bindings),
 ): readonly PlayedStory[] {
-  const { metaObjects, stories } = csfFile(body, bindings);
-
   if (metaObjects.length === 0) {
     return [];
   }
