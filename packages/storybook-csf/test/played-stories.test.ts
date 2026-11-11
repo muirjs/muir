@@ -117,4 +117,19 @@ describe('playedStories', () => {
       ],
     );
   });
+
+  it('follows .test() options named by a top-level constant to its object', () => {
+    const [story] = played(
+      "import preview from '../.storybook/preview';",
+      "const meta = preview.meta({ title: 'a/b' });",
+      'export const A = meta.story({});',
+      'const options = { args: {} };',
+      "A.test('one', options, () => {});",
+    );
+
+    assert.deepEqual(
+      story?.tests.map(({ options }) => field(options, 'type')),
+      ['ObjectExpression'],
+    );
+  });
 });

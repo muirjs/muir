@@ -844,16 +844,19 @@ export function playedStories(
       const assignedPlay = story.runtimeAssignments
         .filter(({ path }) => path.length === 1 && path[0] === 'play')
         .at(-1)?.value;
+
       return {
         story,
         play: topLevelValueOrSelf(
           assignedPlay ?? ownOrBasePlay(story.init, bindings) ?? metaPlay,
           bindings,
         ),
-        tests: testCallsOn(body, story.local).map((call) => ({
-          ...call,
-          testFunction: topLevelValueOrSelf(call.testFunction, bindings),
-        })),
+        tests: testCallsOn(body, story.local).map(
+          ({ options, testFunction }) => ({
+            options: topLevelValueOrSelf(options, bindings),
+            testFunction: topLevelValueOrSelf(testFunction, bindings),
+          }),
+        ),
       };
     })
     .filter(({ play, tests }) => play !== undefined || tests.length > 0);
@@ -913,7 +916,7 @@ function testCallsOn(
 }
 
 /** The story's own play, or for `Base.extend({...})` the one it takes from `Base`, as Storybook 10.6.5 `extend()` merges the base story in. */
-export function ownOrBasePlay(
+function ownOrBasePlay(
   init: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {

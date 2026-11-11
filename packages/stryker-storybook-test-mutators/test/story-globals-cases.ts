@@ -216,4 +216,37 @@ export const storyGlobalsCases: readonly Case[] = [
     ),
     expect: [[storyGlobals, '{}']],
   },
+  {
+    id: 'story-globals-assigned-play',
+    title:
+      'a story whose play is assigned after it gets mutants of its globals',
+    source: storyFile(
+      "export const Story = { globals: { viewport: { value: 'phone' } } };",
+      'Story.play = async () => {};',
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-not-tested',
+    title: 'a story tagged !test makes no mutant, as no test runs it',
+    source: storyFile(
+      'export const Story = {',
+      "  tags: ['!test'],",
+      "  globals: { viewport: { value: 'phone' } },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [],
+  },
+  {
+    id: 'story-globals-named-test-options',
+    title:
+      'the globals in .test() options named by a top-level constant get mutants',
+    source: factoryFile(
+      'export const Story = meta.story({});',
+      "const onPhone = { globals: { viewport: { value: 'phone' } } };",
+      "Story.test('on a phone', onPhone, async () => {});",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
 ];

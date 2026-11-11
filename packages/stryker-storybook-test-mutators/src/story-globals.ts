@@ -2,10 +2,9 @@ import {
   csfFile,
   field,
   list,
-  ownOrBasePlay,
+  playedStories,
   propertyValue,
   storyArgument,
-  testCallOf,
   topLevelBindings,
   unwrap,
 } from '@layzee/storybook-csf';
@@ -13,36 +12,19 @@ import {
 import type { LzStorybookTestMutator } from './mutator.ts';
 import { perFile } from './story-file.ts';
 
-/** The `globals` object literals of the stories that a play runs for. */
+/** The `globals` object literals of the stories that a play or `.test()` call runs for. */
 const sitesOf = perFile((program): ReadonlySet<unknown> => {
   const body = list(program.body);
   const bindings = topLevelBindings(body);
-  const { metaObjects, stories } = csfFile(body, bindings);
-  const metaPlays = metaObjects.some(
-    (meta) => propertyValue(meta, 'play') !== undefined,
-  );
-
-  const locals = stories.map(({ local }) => local);
-  const testCalls = body
-    .flatMap(testCallOf)
-    .filter(({ target }) => locals.includes(target));
-  const testTargets = testCalls.map(({ target }) => target);
-  const testOptions = testCalls.flatMap(({ args: [, ...rest] }) =>
-    rest.length > 1 ? [rest[0]] : [],
-  );
-  const played = stories
-    .filter(
-      ({ init, local }) =>
-        metaPlays ||
-        ownOrBasePlay(init, bindings) !== undefined ||
-        testTargets.includes(local),
-    )
-    .map(({ init }) => storyArgument(unwrap(init)));
+  const { metaObjects } = csfFile(body, bindings);
+  const played = playedStories(body, bindings);
 
   return new Set(
-    [...played, ...(played.length > 0 ? metaObjects : []), ...testOptions].map(
-      (owner) => propertyValue(owner, 'globals'),
-    ),
+    [
+      ...played.map(({ story }) => storyArgument(unwrap(story.init))),
+      ...(played.length > 0 ? metaObjects : []),
+      ...played.flatMap(({ tests }) => tests.map(({ options }) => options)),
+    ].map((owner) => propertyValue(owner, 'globals')),
   );
 }, new Set());
 

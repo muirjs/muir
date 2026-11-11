@@ -74,10 +74,11 @@ _Avoid_: flip mutant, rejection mutant
 ### Globals
 
 **Globals site**:
-A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: a story's own `globals`
-when the story has a play of its own, from a top-level story it spreads, from its `.extend()` base or from the meta,
-or has a `.test()` call; the meta's `globals` when such a story exists; and the `globals` in the options of a
-`.test()` call on a story.
+A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: the own `globals` of a
+story that a play or a `.test()` call runs for, as `@layzee/storybook-csf` reads it (a play of its own, assigned as
+`Story.play = ...`, from a top-level story it spreads, from its `.extend()` base or from the meta, and no `!test` tag
+last); the meta's `globals` when such a story exists; and the `globals` in the options of such a story's `.test()`
+calls, inline or a top-level constant. A file with no meta object has none, as Storybook indexes no story in it.
 _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:
