@@ -668,9 +668,12 @@ function identifiersInReadForms(statement: unknown): readonly unknown[] {
           ...list(field(statement, 'expression', 'arguments')),
         ]
       : []),
-    field(statement, 'expression', 'operator') === '='
-      ? rootObject(field(statement, 'expression', 'left', 'object'))
-      : undefined,
+    ...(field(statement, 'expression', 'operator') === '='
+      ? [
+          rootObject(field(statement, 'expression', 'left', 'object')),
+          field(statement, 'expression', 'right'),
+        ]
+      : []),
   ];
 }
 

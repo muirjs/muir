@@ -83,6 +83,18 @@ describe('csfFile written', () => {
     );
   });
 
+  it('leaves out a name a member assignment assigns', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'const assigned = async () => {};',
+        'export const A = {};',
+        'A.play = assigned;',
+      ).includes('assigned'),
+      false,
+    );
+  });
+
   it('leaves out a name that is also the key of a shorthand property', () => {
     assert.equal(
       writtenNames(
