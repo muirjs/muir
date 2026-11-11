@@ -2,6 +2,7 @@ import { dirname, extname, resolve } from 'node:path';
 
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
+import { propertyKey } from './object-value.ts';
 
 export interface IndexedStory {
   /** The story's static tags, the meta's first. */
@@ -810,54 +811,19 @@ function nodesIn(node: object): readonly unknown[] {
 }
 
 /** The value the last property of `key` in an object literal gives, which replaces any earlier one; a spread is not read. */
-export function propertyValue(object: unknown, key: string): unknown {
-  return propertyKeyValue(
-    list(field(object, 'properties')).findLast(
-      (candidate) => propertyKey(candidate) === key,
-    ),
-    key,
+export function propertyValue(
+  object: unknown,
+  key: string,
+): object | undefined {
+  const property = list(field(object, 'properties')).findLast(
+    (candidate) => propertyKey(candidate) === key,
   );
-}
+  const value =
+    field(property, 'type') === 'ObjectMethod'
+      ? property
+      : field(property, 'value');
 
-/** The value a property of `key` gives, a method being its own value; `undefined` for a property of another key, a computed key or a spread. */
-export function propertyKeyValue(property: unknown, key: string): unknown {
-  if (propertyKey(property) !== key) {
-    return undefined;
-  }
-
-  return field(property, 'type') === 'ObjectMethod'
-    ? property
-    : field(property, 'value');
-}
-
-/** The key of `label: ...`, `'label': ...` or `0: ...`; `undefined` for a computed key or a spread, which only running the file resolves. */
-export function propertyKey(property: unknown): string | number | undefined {
-  if (field(property, 'computed') === true) {
-    return undefined;
-  }
-
-  const name =
-    field(property, 'key', 'name') ?? field(property, 'key', 'value');
-
-  return typeof name === 'string' || typeof name === 'number'
-    ? name
-    : undefined;
-}
-
-/** A property that may set `key`: one of that key, or a spread or computed key, which only running the file resolves. */
-export function maySet(property: unknown, key: string | number): boolean {
-  const name = propertyKey(property);
-
-  return name === undefined || name === key;
-}
-
-/** An object that may set `key`: an object literal with a property that may, or any other value, which only running the file reads. */
-export function maySetIn(object: unknown, key: string | number): boolean {
-  return field(object, 'type') === 'ObjectExpression'
-    ? list(field(object, 'properties')).some((property) =>
-        maySet(property, key),
-      )
-    : true;
+  return isRecord(value) ? value : undefined;
 }
 
 function storyNode(init: unknown, bindings: Bindings): unknown {

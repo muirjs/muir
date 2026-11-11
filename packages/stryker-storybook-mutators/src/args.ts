@@ -4,14 +4,18 @@ import {
   field,
   lastWinsProperties,
   list,
-  maySet,
+  objectValues,
   ownStoryValue,
   playedStories,
   propertyKey,
   propertyValue,
   storyValues,
   topLevelBindings,
+  unknownOverAPlay,
+  unknownValue,
   unwrap,
+  valuesIn,
+  type LayerValue,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookMutator } from './mutator.ts';
@@ -154,7 +158,11 @@ function argsSites(
         const playReads: readonly Reads[] =
           play === undefined
             ? []
-            : [typeof play === 'string' ? 'whole' : readsOf(play)];
+            : [
+                play === unknownValue || play === unknownOverAPlay
+                  ? 'whole'
+                  : readsOf(play),
+              ];
         const [storyArgs, ...baseArgs] = storyValues(init, bindings, 'args');
 
         return [
@@ -198,10 +206,10 @@ const literalTypes: readonly unknown[] = [
   'BooleanLiteral',
 ];
 
-/** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it, where a layer that is no object literal may set any key. */
+/** The keys whose literal value in `args` equals the value they fall back to when removed. */
 function sameLiteralKeys(
-  args: unknown,
-  below: readonly unknown[],
+  args: LayerValue,
+  below: readonly LayerValue[],
   bindings: ReadonlyMap<string, unknown>,
 ): ReadonlySet<Key> {
   const properties = list(field(args, 'properties'));
@@ -210,17 +218,13 @@ function sameLiteralKeys(
     properties.flatMap((property, index) => {
       const key = propertyKey(property);
       const value = field(property, 'value');
-      const fallbackValue =
+      const fallback =
         key === undefined
           ? undefined
-          : valueIn(
-              [properties.slice(0, index), ...below.map(belowProperties)],
-              key,
-              bindings,
-            );
+          : fallbackValue(properties.slice(0, index), below, key, bindings);
 
       const literal = literalOf(value);
-      const fallbackLiteral = literalOf(fallbackValue);
+      const fallbackLiteral = literalOf(fallback);
 
       return key !== undefined &&
         literal !== undefined &&
@@ -232,15 +236,35 @@ function sameLiteralKeys(
   );
 }
 
-/** The properties a layer below gives: none for no layer, an object literal's own, and for anything else, which only running the file reads, one entry that may set any key. */
-function belowProperties(layer: unknown): readonly unknown[] {
-  if (layer === undefined) {
-    return [];
-  }
+/** The value `key` falls back to when removed: the one the properties before it set, else the first layer below that sets it; `unknownValue` when a spread or computed key that only running the file resolves, or a layer that is no object literal, comes first. */
+function fallbackValue(
+  before: readonly unknown[],
+  below: readonly LayerValue[],
+  key: Key,
+  bindings: ReadonlyMap<string, unknown>,
+): LayerValue {
+  return [
+    ...valuesIn(lastWinsProperties(before, bindings, spreadArgs), key),
+    ...below.flatMap((layer) => layerValues(layer, key, bindings)),
+  ][0];
+}
 
+/** Every value a layer below gives `key`, the one that runs first, with a spread of a top-level object's `args` (`...Base.args`) replaced by that object's properties. */
+function layerValues(
+  layer: LayerValue,
+  key: Key,
+  bindings: ReadonlyMap<string, unknown>,
+): readonly LayerValue[] {
   return field(layer, 'type') === 'ObjectExpression'
-    ? list(field(layer, 'properties'))
-    : ['unknown'];
+    ? valuesIn(
+        lastWinsProperties(
+          list(field(layer, 'properties')),
+          bindings,
+          spreadArgs,
+        ),
+        key,
+      )
+    : objectValues(layer, key);
 }
 
 /** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */
@@ -274,29 +298,6 @@ function literalOf(node: unknown): { readonly value: unknown } | undefined {
     typeof negated === 'number'
     ? { value: -negated }
     : undefined;
-}
-
-/** The value of `key` that the properties of `layers`, the first layer and its last property first, set; `undefined` when none sets it or a spread or computed key that only running the file resolves comes first. */
-function valueIn(
-  layers: readonly (readonly unknown[])[],
-  key: Key,
-  bindings: ReadonlyMap<string, unknown>,
-): unknown {
-  const property = byPriority(layers, bindings).find((candidate) =>
-    maySet(candidate, key),
-  );
-
-  return propertyKey(property) === key ? field(property, 'value') : undefined;
-}
-
-/** Each layer's properties, last first, with a spread of a top-level object's `args` (`...Base.args`) replaced by that object's properties. */
-function byPriority(
-  layers: readonly (readonly unknown[])[],
-  bindings: ReadonlyMap<string, unknown>,
-): readonly unknown[] {
-  return layers.flatMap((properties) =>
-    lastWinsProperties(properties, bindings, spreadArgs),
-  );
 }
 
 const memberTypes: readonly unknown[] = [

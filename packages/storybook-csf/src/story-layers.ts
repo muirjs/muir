@@ -1,16 +1,6 @@
-import {
-  maySet,
-  propertyKey,
-  propertyKeyValue,
-  storyArgument,
-  unwrap,
-  withoutBinding,
-} from './csf.ts';
-import { isRecord } from './is-record.ts';
+import { storyArgument, unwrap, withoutBinding } from './csf.ts';
 import { field, list } from './node-field.ts';
-
-/** What one property, or one layer, of a story gives a key: `undefined` for nothing, `'unknown'` when something the file cannot read may set it, else the value node. */
-export type LayerValue = object | 'unknown' | undefined;
+import { maySet, valuesIn, type LayerValue } from './object-value.ts';
 
 /** The value of `key` that each of a story's layers sets, the story's own first. */
 export function storyValues(
@@ -30,17 +20,17 @@ export function storyValueChain(
   return storyLayers(init, bindings).flatMap((layer) => valuesIn(layer, key));
 }
 
-/** The value of `key` the story's own object sets when it is the one that runs; `undefined` when a later property replaces it or a later spread that does not resolve may. */
+/** The value of `key` the story's own object sets when it is the one that runs: `unknownValue` when an own spread or computed key that does not resolve may set it last, `undefined` when a property of another object replaces it or none sets it. */
 export function ownStoryValue(
   init: unknown,
   bindings: ReadonlyMap<string, unknown>,
   key: string,
-): unknown {
+): LayerValue {
   const [own = []] = storyLayers(init, bindings);
   const winner = own.find((property) => maySet(property, key));
 
   return list(field(storyArgument(unwrap(init)), 'properties')).includes(winner)
-    ? propertyKeyValue(winner, key)
+    ? valuesIn([winner], key)[0]
     : undefined;
 }
 
@@ -102,22 +92,4 @@ function storyLayers(
     typeof base === 'string'
     ? [own, ...storyLayers(bindings.get(base), withoutBinding(bindings, base))]
     : [own];
-}
-
-/** The values the properties of a last-wins-first layer that may set `key` give it: `'unknown'` for a spread that does not resolve or a computed key. */
-function valuesIn(
-  layer: readonly unknown[],
-  key: string,
-): readonly LayerValue[] {
-  return layer
-    .filter((property) => maySet(property, key))
-    .map((property): LayerValue => {
-      if (propertyKey(property) !== key) {
-        return 'unknown';
-      }
-
-      const value = propertyKeyValue(property, key);
-
-      return isRecord(value) ? value : undefined;
-    });
 }

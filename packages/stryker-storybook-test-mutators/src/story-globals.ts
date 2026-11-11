@@ -4,13 +4,15 @@ import {
   list,
   maySet,
   maySetIn,
+  objectValue,
   ownStoryValue,
   playedStories,
   propertyKey,
-  propertyKeyValue,
   propertyValue,
   storyValues,
   topLevelBindings,
+  unknownValue,
+  type LayerValue,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
@@ -18,8 +20,8 @@ import { perFile, readStoryFileAt } from './story-file.ts';
 
 /** What may set a site's key when it is removed: the `globals` objects below the site, and the `parameters` objects of every layer of every run of the site. */
 interface Below {
-  readonly globals: readonly unknown[];
-  readonly parameters: readonly unknown[];
+  readonly globals: readonly LayerValue[];
+  readonly parameters: readonly LayerValue[];
 }
 
 const defined = (value: unknown): boolean => value !== undefined;
@@ -35,7 +37,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   const metaParameters = metaValues('parameters');
   // An unknown play with no play under it is no play here: when what may set it sets none, the story's globals mutants can only survive.
   const played = playedStories(body, bindings, file).filter(
-    ({ play, tests }) => play !== 'unknown' || tests.length > 0,
+    ({ play, tests }) => play !== unknownValue || tests.length > 0,
   );
 
   return bySite(
@@ -54,8 +56,8 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
           ...tests
             .map((test) =>
               test === 'unmatched'
-                ? 'unknown'
-                : optionsParameters(test.options),
+                ? unknownValue
+                : objectValue(test.options, 'parameters'),
             )
             .filter(defined),
         ];
@@ -73,7 +75,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
                 {
                   globals: [runs, ...globals].filter(defined),
                   parameters: [
-                    optionsParameters(options),
+                    objectValue(options, 'parameters'),
                     ...storyParameters,
                   ].filter(defined),
                 },
@@ -88,32 +90,6 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
     ].filter(([globals]) => defined(globals)),
   );
 }, new Map<unknown, Below>());
-
-/** The `parameters` that a `.test()` call's options give its run; `'unknown'` where a spread, a computed key or options the file cannot read may set them. */
-function optionsParameters(options: unknown): unknown {
-  if (options === undefined) {
-    return undefined;
-  }
-
-  if (field(options, 'type') !== 'ObjectExpression') {
-    return 'unknown';
-  }
-
-  const property = lastMaySet(options, 'parameters');
-
-  if (property === undefined) {
-    return undefined;
-  }
-
-  return propertyKeyValue(property, 'parameters') ?? 'unknown';
-}
-
-/** The last property of an object literal that may set `key`. */
-function lastMaySet(object: unknown, key: string): unknown {
-  return list(field(object, 'properties'))
-    .toReversed()
-    .find((candidate) => maySet(candidate, key));
-}
 
 /** Each site with what may set it below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. */
 function bySite(
@@ -135,7 +111,7 @@ function bySite(
 const viewportDefaults: readonly unknown[] = ['responsive', '100pct-100pct'];
 
 const defaultGlobals: Readonly<
-  Record<string, (value: unknown, parameters: readonly unknown[]) => boolean>
+  Record<string, (value: unknown, parameters: readonly LayerValue[]) => boolean>
 > = {
   // The Vitest addon's `setViewport` uses a viewport global's `value`, else `parameters.viewport.defaultViewport`,
   // so a viewport is no default where a `parameters` object of the site's runs may set `viewport`.
@@ -143,9 +119,7 @@ const defaultGlobals: Readonly<
     !parameters.some((object) => maySetIn(object, 'viewport')) &&
     (viewportDefaults.includes(literalOf(value)) ||
       (field(value, 'type') === 'ObjectExpression' &&
-        [undefined, ...viewportDefaults].includes(
-          lastLiteralOf(value, 'value'),
-        ))),
+        isDefaultViewportValue(objectValue(value, 'value')))),
   backgrounds: (value) =>
     isObjectOf(value, { value: [undefined], grid: [false] }),
   measureEnabled: isFalse,
@@ -174,31 +148,26 @@ function isObjectOf(
   );
 }
 
-const unknownValue = Symbol('not a literal');
+/** A viewport object's `value` that leaves the viewport at its default: none, `undefined` or a default name. */
+function isDefaultViewportValue(value: LayerValue): boolean {
+  return (
+    value === undefined ||
+    [undefined, ...viewportDefaults].includes(literalOf(value))
+  );
+}
+
+const notALiteral = Symbol('not a literal');
 
 function literalOf(node: unknown): unknown {
   if (field(node, 'type') === 'Identifier') {
-    return field(node, 'name') === 'undefined' ? undefined : unknownValue;
+    return field(node, 'name') === 'undefined' ? undefined : notALiteral;
   }
 
   const type = field(node, 'type');
 
   return type === 'StringLiteral' || type === 'BooleanLiteral'
     ? field(node, 'value')
-    : unknownValue;
-}
-
-/** The literal of the last property of an object that may set `key`; `undefined` when none does, and no literal when a spread or computed key may. */
-function lastLiteralOf(object: unknown, key: string): unknown {
-  const property = lastMaySet(object, key);
-
-  if (property === undefined) {
-    return undefined;
-  }
-
-  return propertyKey(property) === key
-    ? literalOf(field(property, 'value'))
-    : unknownValue;
+    : notALiteral;
 }
 
 /** A default value of a key that nothing before it in the site, and nothing below the site, may set, so that removing it changes nothing the mutator can see. */
