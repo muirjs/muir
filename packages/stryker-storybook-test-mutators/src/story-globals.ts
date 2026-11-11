@@ -89,9 +89,12 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
                 },
               ] as const,
           ),
-          ...metaGlobals.map(
-            (site) =>
-              [site, { globals: [], parameters: everyRunParameters }] as const,
+          ...file.metaObjects.map(
+            (meta) =>
+              [
+                ownValue(meta, 'globals', unchanged),
+                { globals: [], parameters: everyRunParameters },
+              ] as const,
           ),
         ];
       }),

@@ -83,8 +83,7 @@ later spread or computed key the file cannot resolve does not count); the meta's
 story; and
 the `globals` in the options of a played story's `.test()` calls, inline or a top-level constant the file leaves
 unchanged, unless a later spread in the options sets `globals` (again an unresolved spread or computed key does
-not count). The meta's `globals` are no site where a later spread or computed key the file cannot resolve in the
-meta may replace them. A story whose play is an unknown one (see Played story) with no play the file reads under it counts
+not count), and the same holds for the meta's `globals`. A story whose play is an unknown one (see Played story) with no play the file reads under it counts
 as no played story here unless it has a `.test()` call; an unknown play with such a play under it, the meta's
 included, counts as a play. Every property of a site that is no default global gets a mutant, even where no test
 can kill it (ADR 0006), as in these known shapes: a value equal to the value below it; a key of the meta's

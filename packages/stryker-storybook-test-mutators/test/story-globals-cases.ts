@@ -732,7 +732,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-meta-before-unresolved-spread',
     title:
-      "the meta's globals before a spread of an imported object make no mutant, as the spread may replace them",
+      "the meta's globals before a spread of an imported object are a site, as the file does not prove that the spread replaces them",
     source: [
       "import { shared } from './shared';",
       '',
@@ -741,12 +741,15 @@ export const storyGlobalsCases: readonly Case[] = [
       "export const Story = { globals: { locale: 'fr' }, play: async () => {} };",
       '',
     ].join('\n'),
-    expect: [[storyGlobals, '{}']],
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, '{}'],
+    ],
   },
   {
     id: 'story-globals-meta-before-computed-key',
     title:
-      "the meta's globals before a computed key of an imported name make no mutant, as that key may replace them",
+      "the meta's globals before a computed key of an imported name are a site, as the file does not prove that the key replaces them",
     source: [
       "import { k } from './k';",
       '',
@@ -755,7 +758,10 @@ export const storyGlobalsCases: readonly Case[] = [
       "export const Story = { globals: { locale: 'fr' }, play: async () => {} };",
       '',
     ].join('\n'),
-    expect: [[storyGlobals, '{}']],
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, '{}'],
+    ],
   },
   {
     id: 'story-globals-viewport-under-meta-unresolved-spread',
