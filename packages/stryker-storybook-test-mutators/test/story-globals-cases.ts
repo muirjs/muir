@@ -271,6 +271,19 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-computed-key',
+    title:
+      'a computed key is no default global, whatever name the identifier in it has',
+    source: storyFile(
+      "const outline = 'locale';",
+      'export const Story = {',
+      '  globals: { [outline]: false },',
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-default-over-base',
     title:
       'an .extend() story gets a mutant of a default value of a global its base sets',

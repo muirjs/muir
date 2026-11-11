@@ -115,7 +115,7 @@ function isObjectOf(
   return (
     field(value, 'type') === 'ObjectExpression' &&
     list(field(value, 'properties')).every((property) => {
-      const key = field(property, 'key', 'name');
+      const key = keyOf(property);
 
       return (
         typeof key === 'string' &&
@@ -132,11 +132,18 @@ function literalOf(node: unknown): unknown {
     return field(node, 'name') === 'undefined' ? undefined : unknownValue;
   }
 
-  return ['StringLiteral', 'BooleanLiteral'].includes(
-    String(field(node, 'type')),
-  )
+  const type = field(node, 'type');
+
+  return type === 'StringLiteral' || type === 'BooleanLiteral'
     ? field(node, 'value')
     : unknownValue;
+}
+
+/** The name of a `key: value` property; `undefined` for a computed key, which only running the file resolves. */
+function keyOf(property: unknown): unknown {
+  return field(property, 'computed') === true
+    ? undefined
+    : field(property, 'key', 'name');
 }
 
 /** A default value of a key that nothing before it in the site, and no `globals` object below the site, may set, so that removing it changes nothing the mutator can see. */
@@ -145,7 +152,7 @@ function isDefaultGlobal(
   before: readonly unknown[],
   below: readonly unknown[],
 ): boolean {
-  const key = field(property, 'key', 'name');
+  const key = keyOf(property);
 
   return (
     typeof key === 'string' &&
