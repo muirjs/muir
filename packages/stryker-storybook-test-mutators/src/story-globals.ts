@@ -81,19 +81,13 @@ function bySite(
   entries: readonly (readonly [unknown, Below])[],
 ): ReadonlyMap<unknown, Below> {
   return new Map(
-    entries.map(([site]) => {
-      const all = entries
-        .filter(([other]) => other === site)
-        .map(([, below]) => below);
-
-      return [
-        site,
-        {
-          globals: all.flatMap(({ globals }) => globals),
-          parameters: all.flatMap(({ parameters }) => parameters),
-        },
-      ];
-    }),
+    [...Map.groupBy(entries, ([site]) => site)].map(([site, all]) => [
+      site,
+      {
+        globals: all.flatMap(([, below]) => below.globals),
+        parameters: all.flatMap(([, below]) => below.parameters),
+      },
+    ]),
   );
 }
 

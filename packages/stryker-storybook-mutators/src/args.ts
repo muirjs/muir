@@ -323,27 +323,28 @@ function site(
 /** The args sites of every story's uses, as a `.test()` options object can serve several stories: the keys any of them reads stay, a key stays as equal to the value below only when it is for all of them, and an object one of them reads whole is no site. */
 function sitesFrom(uses: readonly Use[]): Sites {
   return new Map(
-    uses.flatMap(([argsObject]): readonly Site[] => {
-      const all = uses.filter(([other]) => other === argsObject);
-      const read = union(all.map(([, reads]) => reads));
-      const [first, ...rest] = all.map(([, , sameAsBelow]) => sameAsBelow);
+    [...Map.groupBy(uses, ([argsObject]) => argsObject)].flatMap(
+      ([argsObject, all]): readonly Site[] => {
+        const read = union(all.map(([, reads]) => reads));
 
-      return read === 'whole'
-        ? []
-        : [
-            [
-              argsObject,
-              {
-                read,
-                sameAsBelow: new Set(
-                  [...(first ?? [])].filter((key) =>
-                    rest.every((same) => same.has(key)),
-                  ),
-                ),
-              },
-            ],
-          ];
-    }),
+        return read === 'whole'
+          ? []
+          : [
+              [
+                argsObject,
+                {
+                  read,
+                  sameAsBelow: all
+                    .map(([, , sameAsBelow]) => sameAsBelow)
+                    .reduce(
+                      (kept, same) =>
+                        new Set([...kept].filter((key) => same.has(key))),
+                    ),
+                },
+              ],
+            ];
+      },
+    ),
   );
 }
 

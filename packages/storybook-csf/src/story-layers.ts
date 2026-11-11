@@ -1,4 +1,9 @@
-import { propertyValue, storyArgument, unwrap, withoutBinding } from './csf.ts';
+import {
+  propertyKeyValue,
+  storyArgument,
+  unwrap,
+  withoutBinding,
+} from './csf.ts';
 import { field, list } from './node-field.ts';
 
 /**
@@ -16,7 +21,7 @@ export function storyValues(
 
     return field(winner, 'type') === 'SpreadElement'
       ? winner
-      : propertyValue({ properties: [winner] }, key);
+      : propertyKeyValue(winner, key);
   });
 }
 
@@ -30,7 +35,7 @@ export function ownStoryValue(
   const winner = winningProperty(own, key);
 
   return list(field(storyArgument(unwrap(init)), 'properties')).includes(winner)
-    ? propertyValue({ properties: [winner] }, key)
+    ? propertyKeyValue(winner, key)
     : undefined;
 }
 
@@ -99,6 +104,6 @@ function winningProperty(layer: readonly unknown[], key: string): unknown {
   return layer.find(
     (property) =>
       field(property, 'type') === 'SpreadElement' ||
-      propertyValue({ properties: [property] }, key) !== undefined,
+      propertyKeyValue(property, key) !== undefined,
   );
 }

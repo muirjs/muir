@@ -810,9 +810,19 @@ function nodesIn(node: object): readonly unknown[] {
 }
 
 export function propertyValue(object: unknown, key: string): unknown {
-  const property = list(field(object, 'properties')).find(
-    (candidate) => field(candidate, 'key', 'name') === key,
+  return propertyKeyValue(
+    list(field(object, 'properties')).find(
+      (candidate) => field(candidate, 'key', 'name') === key,
+    ),
+    key,
   );
+}
+
+/** The value a property of `key` gives, a method being its own value; `undefined` for a property of another key or a spread. */
+export function propertyKeyValue(property: unknown, key: string): unknown {
+  if (field(property, 'key', 'name') !== key) {
+    return undefined;
+  }
 
   return field(property, 'type') === 'ObjectMethod'
     ? property

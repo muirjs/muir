@@ -92,8 +92,9 @@ key, and no `globals` of the meta or of the story's `.extend()` bases, which Sto
 `globals` sets nothing below them, as object spread replaces `globals` whole. A `viewport` is no default when a
 `parameters` object of any run of its site may set `viewport`: the meta's, the story's and its bases' for every
 story the site runs for, and those of each `.test()` call's options that run it, as Storybook merges them over each
-other and `setViewport` falls back to `parameters.viewport.defaultViewport` without a global value. The table is fixed; a project's own `initialGlobals` and parameters in its preview are not
-read, so a default value that overrides them still gets no mutant.
+other and `setViewport` falls back to `parameters.viewport.defaultViewport` without a global value. The table is
+fixed; a project's own `initialGlobals` and parameters in its preview are not read, so a default value that overrides
+them still gets no mutant.
 _Avoid_: initial global, preset global
 
 ### Waits
