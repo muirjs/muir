@@ -82,7 +82,11 @@ unchanged. The meta's and the
 options' `globals` are no site either where a later spread or computed key the file cannot resolve in that object
 may replace them. A story whose play is an unknown one (see Played story) with no play the file reads under it counts
 as no played story here unless it has a `.test()` call; an unknown play with such a play under it, the meta's
-included, counts as a play.
+included, counts as a play. Every property of a site that is no default global gets a mutant, even where no test
+can kill it (ADR 0006), as in these known shapes: a value equal to the value below it; a key of the meta's
+`globals` that every played story's own `globals` or `.test()` options set; a site that a runtime assignment such as
+`S.globals = { ... }` replaces; on a story with no play, a key that the options of every `.test()` call on it set; and
+a property that a later property of the same key in the same object overrides.
 _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:

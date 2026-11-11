@@ -47,7 +47,10 @@ key the file cannot resolve (see Played story) may replace (in the story, the
 meta, or a story that `...Base.args` names), or where such a spread or computed key may set the key last, leaves that
 value unknown. A key whose literal value (a negative number and a template literal without expressions count) equals
 that value gets none, and neither does a key whose removal leaves only keys like that, as such args behave like
-ObjectLiteral's `{}`.
+ObjectLiteral's `{}`. Any other key keeps its mutant even where no test can kill it (ADR 0006), as in these known
+shapes: a story whose `args` a runtime assignment such as `S.args = { ... }` or `S.args.label = 'b'` replaces; a
+key that a later spread in the same object sets; and, on a story with no play, a key that the options of every
+`.test()` call on it set, as only the story's own run, which only renders, sees it.
 _Avoid_: arg removal
 
 **Coarse mutant**:
