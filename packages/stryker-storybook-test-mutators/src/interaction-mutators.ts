@@ -33,11 +33,17 @@ function sampleOf(statement: string): string {
 
 const clickMethods: readonly string[] = ['click', 'dblClick'];
 
-/** A click target with no effects of its own: an identifier, a query, or an awaited query. */
+/** A click target with no effects of its own: an identifier, a query, or an awaited query, any of them under `!`. */
 function focusTarget(
   target: types.Node | undefined,
   path: NodePath,
 ): types.Expression | undefined {
+  if (target?.type === 'TSNonNullExpression') {
+    return focusTarget(target.expression, path) === undefined
+      ? undefined
+      : target;
+  }
+
   if (target?.type === 'Identifier') {
     const binding = path.scope.getBinding(target.name);
     const init =

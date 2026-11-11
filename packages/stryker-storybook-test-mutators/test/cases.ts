@@ -395,6 +395,12 @@ export const clickFocusCases: readonly Case[] = [
     ],
   },
   {
+    id: 'click-focus-non-null',
+    title: 'a click of a query under a non-null assertion focuses its element',
+    source: inPlay("await userEvent.click(canvas.getByRole('button')!);"),
+    expect: [[clickFocus, "await canvas.getByRole('button')!.focus();"]],
+  },
+  {
     id: 'click-focus-dbl-click',
     title: 'a userEvent.dblClick becomes a focus() call on its element',
     source: inPlay('await userEvent.dblClick(button);'),
