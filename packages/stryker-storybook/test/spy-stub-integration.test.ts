@@ -8,9 +8,12 @@ import { fileURLToPath } from 'node:url';
 
 import { lzStorybookTestMutators } from '@layzee/stryker-storybook-test-mutators';
 
-import { isOutcomeMutant } from '../src/reporter.ts';
 import { stubIgnorer } from '../src/stub-ignorer.ts';
-import { spyStubName, spyStubReason } from '../src/stub-verdict.ts';
+import {
+  isOutcomeMutant,
+  spyStubName,
+  spyStubReason,
+} from '../src/stub-verdict.ts';
 import { instrument } from './support/instrument.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));

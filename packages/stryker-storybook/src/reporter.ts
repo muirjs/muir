@@ -24,6 +24,7 @@ import {
 } from './storybook-project.ts';
 import { siteFindings } from './stub-findings.ts';
 import {
+  isOutcomeMutant,
   spyStubName,
   uncheckedFinding,
   type ReasonVerdict,
@@ -46,14 +47,6 @@ type ReportMutant = Pick<
   schema.MutantResult,
   'mutatorName' | 'status' | 'location' | 'replacement'
 >;
-
-/** The replacement of an `LzStorybookSpyStub` outcome mutant, which makes a resolved stub reject or a rejected one resolve; whether a check reads the stub is the removal mutant's to tell. */
-const outcomeReplacement =
-  /\.mock(?:Rejected|Resolved)Value(?:Once)?\((?:new Error\((["'])Stryker\1\)|undefined)\)$/;
-
-export function isOutcomeMutant(replacement: string | undefined): boolean {
-  return outcomeReplacement.test(replacement ?? '');
-}
 
 interface ReportInput {
   readonly files: Readonly<
