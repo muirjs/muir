@@ -2,9 +2,11 @@ import type { NodePath } from '@babel/core';
 import {
   csfFile,
   field,
+  isIndexedTestCall,
   list,
   propertyValue,
   storyArgument,
+  testCallOf,
   topLevelBindings,
   unwrap,
   withoutBinding,
@@ -311,31 +313,35 @@ function union(reads: readonly Reads[]): Reads {
     : new Set(reads.flatMap((keys) => (keys === 'whole' ? [] : [...keys])));
 }
 
-interface TestCall {
-  readonly options: unknown;
-  readonly testFunction: unknown;
-}
-
-/** The top-level `<story>.test(name, [options,] fn)` calls on a story. */
+/** The top-level `<story>.test(name, [options,] fn)` calls on a story that Storybook 10.6.5 indexes and runs, the first of each name; a call with a spread argument has an unknown test function. */
 function testCallsOn(
   body: readonly unknown[],
   local: unknown,
-): readonly TestCall[] {
+): readonly { readonly options: unknown; readonly testFunction: unknown }[] {
   return body
-    .map((statement) => field(statement, 'expression'))
+    .flatMap(testCallOf)
+    .filter(({ target }) => target === local)
     .filter(
-      (call) =>
-        field(call, 'type') === 'CallExpression' &&
-        field(call, 'callee', 'property', 'name') === 'test' &&
-        field(call, 'callee', 'object', 'name') === local,
+      ({ args: [name] }, index, calls) =>
+        calls.findIndex(
+          ({ args: [other] }) => field(other, 'value') === field(name, 'value'),
+        ) === index,
     )
-    .map((call) => {
-      const args = list(field(call, 'arguments'));
+    .flatMap(({ statement, args }) => {
+      const [, ...rest] = args;
 
-      return {
-        options: args.length > 2 ? args[1] : undefined,
-        testFunction: args.at(-1),
-      };
+      if (isIndexedTestCall(statement)) {
+        return [
+          {
+            options: rest.length > 1 ? rest[0] : undefined,
+            testFunction: rest.at(-1),
+          },
+        ];
+      }
+
+      return args.some((arg) => field(arg, 'type') === 'SpreadElement')
+        ? [{ options: undefined, testFunction: undefined }]
+        : [];
     });
 }
 

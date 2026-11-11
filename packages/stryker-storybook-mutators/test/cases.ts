@@ -294,6 +294,40 @@ export const cases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-name-not-literal',
+    title:
+      "the args in the options of a .test() call whose name is no string literal make no mutant, as Storybook's index lists no such call",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      "Primary.test(name, { args: { label: 'a', disabled: true } }, async () => {});",
+    ),
+    expect: [],
+  },
+  {
+    id: 'test-spread-argument',
+    title:
+      'a .test() call with a spread argument makes every key of the story stay, as only running the file tells which test function it passes',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true }, play: async () => {} });",
+      "Primary.test('t', ...steps);",
+    ),
+    expect: [],
+  },
+  {
+    id: 'test-name-repeated',
+    title:
+      'the args in the options of a second .test() call with the same name make no mutant, as Storybook runs the first',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      "Primary.test('t', async () => {});",
+      "Primary.test('t', { args: { label: 'a', disabled: true } }, async () => {});",
+    ),
+    expect: [],
+  },
+  {
     id: 'story-with-test',
     title:
       "a story's args are mutated when a .test() call runs it, and keys its test function reads stay",
