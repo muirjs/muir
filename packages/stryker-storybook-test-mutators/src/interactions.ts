@@ -2,6 +2,8 @@ import type { NodePath, types } from '@babel/core';
 
 import type { BabelTypes } from './mutator.ts';
 
+type Binding = NonNullable<ReturnType<NodePath['scope']['getBinding']>>;
+
 /** `<call>;` or `await <call>;`, where the call is an interaction. */
 export function isInteractionStatement(
   path: NodePath,
@@ -528,8 +530,12 @@ const userEventMethods: ReadonlySet<string> = new Set([
   'paste',
 ]);
 
-/** `userEvent`, `<x>.userEvent` such as the play context's, a local given only `userEvent.setup()` or a choice between user-events, or Vitest browser's userEvent under another name. */
-function isUserEvent(node: types.Node, path: NodePath): boolean {
+/** `userEvent`, `<x>.userEvent` such as the play context's, a local given only `userEvent.setup()` or a choice between user-events, or Vitest browser's userEvent under another name. `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
+function isUserEvent(
+  node: types.Node,
+  path: NodePath,
+  seen: ReadonlySet<Binding> = new Set(),
+): boolean {
   const name = nameOf(node);
 
   if (
@@ -539,15 +545,18 @@ function isUserEvent(node: types.Node, path: NodePath): boolean {
     return true;
   }
 
-  if (name === undefined) {
+  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+
+  if (name === undefined || (binding !== undefined && seen.has(binding))) {
     return false;
   }
 
   const value = boundValue(path, name);
+  const followed = binding === undefined ? seen : new Set([...seen, binding]);
 
   return (
     isSetupCall(value) ||
-    isUserEventChoice(value, path) ||
+    isUserEventChoice(value, path, followed) ||
     isVitestBrowserUserEvent(path, name) ||
     isContextUserEvent(path, name)
   );
@@ -578,11 +587,12 @@ function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
 function isUserEventChoice(
   node: types.Node | undefined,
   path: NodePath,
+  seen: ReadonlySet<Binding>,
 ): boolean {
   return (
     node?.type === 'ConditionalExpression' &&
-    isUserEvent(node.consequent, path) &&
-    isUserEvent(node.alternate, path)
+    isUserEvent(node.consequent, path, seen) &&
+    isUserEvent(node.alternate, path, seen)
   );
 }
 

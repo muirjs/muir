@@ -487,6 +487,31 @@ export const interactionCases: readonly Case[] = [
   },
 ];
 
+// Cases that once crashed the instrumenter, which fails every case it instruments together.
+export const crashCases: readonly Case[] = [
+  {
+    id: 'user-event-choice-of-itself',
+    title:
+      'a call on a var given a choice between itself and userEvent makes no mutant',
+    source: inPlay(
+      'var user = flag ? user : userEvent;',
+      'await user.click(button);',
+    ),
+    expect: [],
+  },
+  {
+    id: 'user-event-choice-of-itself-assigned',
+    title:
+      'a call on a let assigned a choice between itself and userEvent makes no mutant',
+    source: inPlay(
+      'let user;',
+      'user = flag ? user : userEvent;',
+      'await user.click(button);',
+    ),
+    expect: [],
+  },
+];
+
 const clickFocus = 'LzStorybookClickFocus';
 
 export const clickFocusCases: readonly Case[] = [
