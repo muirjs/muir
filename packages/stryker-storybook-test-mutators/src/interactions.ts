@@ -409,27 +409,90 @@ export function hasZeroCallsCheck(path: NodePath): boolean {
 
 const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);
 
-/** A function that is the value of a `beforeEach` or `afterEach` property or an element of its array, or a method of that name. */
+// The story properties whose functions are story test code.
+const storyTestProperties: ReadonlySet<string> = new Set(['play', ...hooks]);
+
 function isHook(path: NodePath): boolean {
+  return isPropertyFunction(path, hooks);
+}
+
+/** Whether `path` lies in story test code: a play function, a hook or a `.test()` body. */
+function isInStoryTestCode(path: NodePath): boolean {
+  return (
+    path.findParent(
+      (parent) =>
+        isPropertyFunction(parent, storyTestProperties) ||
+        isStoryTestBody(parent),
+    ) !== null
+  );
+}
+
+/** A function passed to `<Story>.test(...)`. */
+function isStoryTestBody(path: NodePath): boolean {
+  const call = path.parent;
+
+  return (
+    path.isFunction() &&
+    call?.type === 'CallExpression' &&
+    call.callee.type === 'MemberExpression' &&
+    nameOf(call.callee.property) === 'test'
+  );
+}
+
+/** A function that is the value of a property named in `names` or an element of its array, a method of such a name, or a function declared in the file and given there by its name. */
+function isPropertyFunction(
+  path: NodePath,
+  names: ReadonlySet<string>,
+): boolean {
   const { node } = path;
 
   if (node.type === 'ObjectMethod') {
     const name = nameOf(node.key);
 
-    return name !== undefined && hooks.has(name);
+    return name !== undefined && names.has(name);
   }
 
+  if (!path.isFunction()) {
+    return false;
+  }
+
+  const binding = functionBinding(path);
+
+  return (
+    isPropertyValue(path, names) ||
+    (binding?.referencePaths ?? []).some((reference) =>
+      isPropertyValue(reference, names),
+    )
+  );
+}
+
+/** A value of a property named in `names`, or an element of its array. */
+function isPropertyValue(path: NodePath, names: ReadonlySet<string>): boolean {
   const value =
     path.parentPath?.node.type === 'ArrayExpression' ? path.parentPath : path;
   const property = value.parent;
 
-  if (!path.isFunction() || property?.type !== 'ObjectProperty') {
+  if (property?.type !== 'ObjectProperty') {
     return false;
   }
 
   const name = nameOf(property.key);
 
-  return name !== undefined && hooks.has(name);
+  return name !== undefined && names.has(name);
+}
+
+/** The binding of `function <name>() {}` or of `const <name> = <function>`. */
+function functionBinding(path: NodePath): Binding | undefined {
+  const { node, parent, parentPath } = path;
+  const id =
+    node.type === 'FunctionDeclaration'
+      ? node.id
+      : parent?.type === 'VariableDeclarator' && parent.init === node
+        ? parent.id
+        : undefined;
+  const name = id === null || id === undefined ? undefined : nameOf(id);
+
+  return name === undefined ? undefined : parentPath?.scope.getBinding(name);
 }
 
 /** The expression inside `<x>!`, `<x> as T`, `<x> satisfies T`, `<T><x>` and parentheses. */
@@ -478,10 +541,10 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
     userEventMethod(call, path) !== undefined ||
     nameOf(withoutTypeWrappers(callee.object)) === 'fireEvent' ||
     (method !== undefined &&
-      composedPlayMethods.has(method) &&
-      callee.object.type === 'Identifier') ||
-    (method !== undefined &&
-      rawDomArguments.get(method) === call.arguments.length)
+      (composedPlayMethods.has(method)
+        ? callee.object.type === 'Identifier'
+        : rawDomArguments.get(method) === call.arguments.length) &&
+      isInStoryTestCode(path))
   );
 }
 

@@ -295,6 +295,38 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'raw-dom-in-render',
+    title: "a raw DOM element's focus() in a story's render makes no mutant",
+    source: `export const Story = {\n  render: () => {\n    input.focus();\n    return null;\n  },\n};\n`,
+    expect: [],
+  },
+  {
+    id: 'raw-dom-in-story-test',
+    title: "a raw DOM element's click() in a story test's body is removed",
+    source: `export const Story = meta.story({});\nStory.test('clicks', async () => {\n  button.click();\n});\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'raw-dom-in-named-play',
+    title:
+      "a raw DOM element's click() in a play function declared in the file and given by name is removed",
+    source: `const play = async () => {\n  button.click();\n};\nexport const Story = { play };\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'raw-dom-in-decorator',
+    title:
+      "a raw DOM element's dispatchEvent(event) in a decorator makes no mutant",
+    source: `export default {\n  decorators: [\n    (Story) => {\n      window.dispatchEvent(new Event('resize'));\n      return Story();\n    },\n  ],\n};\n`,
+    expect: [],
+  },
+  {
+    id: 'play-call-in-render',
+    title: "a video's play() in a story's render makes no mutant",
+    source: `export const Story = {\n  render: () => {\n    useEffect(() => {\n      video.play();\n    });\n    return null;\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'raw-dom-arity',
     title:
       'a click with an argument on a receiver that is no user-event makes no mutant',
@@ -550,6 +582,13 @@ export const interactionCases: readonly Case[] = [
     title: 'an await of an interaction inside an as expression is removed',
     source: inPlay('(await userEvent.click(button)) as unknown;'),
     expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-named-before-each',
+    title:
+      'an interaction in a function declared in the file and given as a beforeEach makes no mutant',
+    source: `async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  beforeEach: setup,\n};\n`,
+    expect: [],
   },
   {
     id: 'skip-before-each-array',
