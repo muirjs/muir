@@ -31,8 +31,9 @@ only running it names, or is one the file cannot read.
 _Avoid_: used arg, checked arg
 
 **Per-key mutant**:
-An args site with one key that is no read key removed, so the story falls back to the meta's and the project's
-value for it.
+An args site with one key that is no read key removed, so the story falls back to the value below it: one that a
+`...Base.args` spread before the key sets, then the base story's for `.extend()` or the story's for `.test()`
+options, then the meta's and the project's. A key whose literal value equals that value gets none.
 _Avoid_: arg removal
 
 **Coarse mutant**:

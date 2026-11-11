@@ -585,6 +585,64 @@ export const cases: readonly Case[] = [
     ),
     expect: [],
   },
+  {
+    id: 'extend-same-literal',
+    title:
+      "a key in .extend() whose literal value equals the base story's makes no mutant",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a' }, play: async () => {} });",
+      "export const Small = Primary.extend({ args: { label: 'a', size: 's' } });",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'test-options-same-literal',
+    title:
+      "a key in .test() options whose literal value equals the story's makes no mutant",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a' } });",
+      "Primary.test('t', { args: { label: 'a', size: 's' } }, async () => {});",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'extend-other-literal-than-base',
+    title:
+      "a key in .extend() whose literal value equals the meta's but not the base story's is removed",
+    source: inFactoryFile(
+      'const meta = preview.meta({ args: { disabled: false }, play: async () => {} });',
+      'export const Primary = meta.story({ args: { disabled: true } });',
+      "export const Enabled = Primary.extend({ args: { label: 'a', disabled: false } });",
+    ),
+    expect: [
+      [args, '{ disabled: false }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'spread-same-literal',
+    title:
+      'a key whose literal value equals the one in the story args spread before it makes no mutant',
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Base = { args: { label: 'a' } };\n" +
+      "export const Primary = { args: { ...Base.args, label: 'a', disabled: true } };\n",
+    expect: [[args, "{ ...Base.args, label: 'a' }"]],
+  },
+  {
+    id: 'meta-computed-key',
+    title:
+      'a computed key in the meta args keeps no key of the story from being removed',
+    source:
+      "export default { title: 'Button', args: { [k]: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { k: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ k: 'a' }"],
+    ],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {

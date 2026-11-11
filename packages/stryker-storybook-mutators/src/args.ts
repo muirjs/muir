@@ -130,7 +130,7 @@ function argsSites(
           testFunction: followed(call.testFunction, bindings),
         }));
 
-        const storyArgs = propertyValue(storyArgument(unwrap(init)), 'args');
+        const [storyArgs, ...baseArgs] = argsLayers(init, bindings);
 
         return [
           site(
@@ -138,14 +138,21 @@ function argsSites(
             [...plays, ...tests.map(({ testFunction }) => testFunction)].map(
               readsOf,
             ),
-            sameLiteralKeys(storyArgs, metaArgs),
+            sameLiteralKeys(storyArgs, [...baseArgs, metaArgs], bindings),
           ),
-          ...tests.map(({ options, testFunction }) =>
-            site(
-              propertyValue(options, 'args'),
+          ...tests.map(({ options, testFunction }) => {
+            const testArgs = propertyValue(options, 'args');
+
+            return site(
+              testArgs,
               [...plays, testFunction].map(readsOf),
-            ),
-          ),
+              sameLiteralKeys(
+                testArgs,
+                [storyArgs, ...baseArgs, metaArgs],
+                bindings,
+              ),
+            );
+          }),
         ].flatMap((found) => (found === undefined ? [] : [found]));
       }),
   );
@@ -169,29 +176,105 @@ const literalTypes: readonly unknown[] = [
   'NullLiteral',
 ];
 
-/** The keys whose literal value in `args` equals the meta's, so that removing one falls back to the same value. */
-function sameLiteralKeys(args: unknown, metaArgs: unknown): ReadonlySet<Key> {
-  const metaValues = new Map(
-    list(field(metaArgs, 'properties')).map(
-      (property) => [keyName(property), field(property, 'value')] as const,
-    ),
-  );
+/** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it. */
+function sameLiteralKeys(
+  args: unknown,
+  below: readonly unknown[],
+  bindings: ReadonlyMap<string, unknown>,
+): ReadonlySet<Key> {
+  const properties = list(field(args, 'properties'));
 
   return new Set(
-    list(field(args, 'properties')).flatMap((property) => {
+    properties.flatMap((property, index) => {
       const key = keyName(property);
       const value = field(property, 'value');
-      const metaValue = metaValues.get(key);
+      const fallbackValue =
+        key === undefined
+          ? undefined
+          : valueIn(
+              [
+                properties.slice(0, index),
+                ...below.map((layer) => list(field(layer, 'properties'))),
+              ],
+              key,
+              bindings,
+            );
 
       return key !== undefined &&
-        field(property, 'computed') !== true &&
         literalTypes.includes(field(value, 'type')) &&
-        field(value, 'type') === field(metaValue, 'type') &&
-        field(value, 'value') === field(metaValue, 'value')
+        field(value, 'type') === field(fallbackValue, 'type') &&
+        field(value, 'value') === field(fallbackValue, 'value')
         ? [key]
         : [];
     }),
   );
+}
+
+/** The value of `key` that the properties of `layers`, the first layer and its last property first, set; `undefined` when none sets it or a spread or computed key that only running the file resolves comes first. */
+function valueIn(
+  layers: readonly (readonly unknown[])[],
+  key: Key,
+  bindings: ReadonlyMap<string, unknown>,
+): unknown {
+  const property = byPriority(layers, bindings).find((candidate) => {
+    const name = keyName(candidate);
+
+    return name === undefined || name === key;
+  });
+
+  return keyName(property) === key ? field(property, 'value') : undefined;
+}
+
+/** Each layer's properties, last first, with a spread of a top-level object's `args` (`...Base.args`) replaced by that object's properties. */
+function byPriority(
+  layers: readonly (readonly unknown[])[],
+  bindings: ReadonlyMap<string, unknown>,
+): readonly unknown[] {
+  return layers.flatMap((properties) =>
+    properties.toReversed().flatMap((property) => {
+      const object = field(property, 'argument', 'object', 'name');
+      const spread = spreadArgs(property, bindings);
+
+      return field(spread, 'type') === 'ObjectExpression'
+        ? byPriority(
+            [list(field(spread, 'properties'))],
+            withoutBinding(bindings, object),
+          )
+        : [property];
+    }),
+  );
+}
+
+/** The `args` of the top-level object that a `...Base.args` spread names. */
+function spreadArgs(
+  property: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): unknown {
+  const argument = field(property, 'argument');
+  const object = field(argument, 'object', 'name');
+
+  return field(property, 'type') === 'SpreadElement' &&
+    field(argument, 'type') === 'MemberExpression' &&
+    field(argument, 'computed') !== true &&
+    field(argument, 'property', 'name') === 'args' &&
+    typeof object === 'string'
+    ? propertyValue(unwrap(bindings.get(object)), 'args')
+    : undefined;
+}
+
+/** A story's own `args`, then for `Base.extend({...})` those of `Base` and its own base, as Storybook 10.6.5 `extend()` merges the base story in. */
+function argsLayers(
+  init: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): readonly unknown[] {
+  const call = unwrap(init);
+  const own = propertyValue(storyArgument(call), 'args');
+  const base = field(call, 'callee', 'object', 'name');
+
+  return field(call, 'callee', 'property', 'name') === 'extend' &&
+    typeof base === 'string'
+    ? [own, ...argsLayers(bindings.get(base), withoutBinding(bindings, base))]
+    : [own];
 }
 
 /** A name's top-level value; a name the file does not bind, or any other node, as it is. */
@@ -208,7 +291,7 @@ function followed(
 function site(
   argsObject: unknown,
   readers: readonly Reads[],
-  kept: ReadonlySet<Key> = new Set(),
+  kept: ReadonlySet<Key>,
 ): readonly [unknown, ReadonlySet<Key>] | undefined {
   const reads = union([...readers, kept]);
 
