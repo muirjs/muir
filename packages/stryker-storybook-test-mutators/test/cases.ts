@@ -528,6 +528,29 @@ export const interactionCases: readonly Case[] = [
     ],
   },
   {
+    id: 'click-before-type-quoted-skip-click',
+    title:
+      "a click directly before a type of the same target with a quoted 'skipClick': true key is removed",
+    source: inPlay(
+      'await userEvent.click(input);',
+      "await userEvent.type(input, 'a', { 'skipClick': true });",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'skip-click-before-type-skip-click-false',
+    title:
+      'a click directly before a type of the same target with skipClick: false makes no mutant, as that type clicks first',
+    source: inPlay(
+      'await userEvent.click(input);',
+      "await userEvent.type(input, 'a', { skipClick: false });",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'negative-only-until-step-interaction',
     title:
       'the checks that decide a skip end at a step holding an interaction, so only the click in the step is skipped',

@@ -113,14 +113,15 @@ function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
   );
 }
 
-/** user-event 14's `type(element, text, { skipClick })`, which then types without clicking first. */
+/** user-event 14's `type(element, text, { skipClick })` with a `skipClick` other than `false`, which may then type without clicking first. */
 function hasSkipClick(options: types.Node | undefined): boolean {
   return (
     options?.type === 'ObjectExpression' &&
     options.properties.some(
       (property) =>
         property.type === 'ObjectProperty' &&
-        nameOf(property.key) === 'skipClick',
+        keyName(property.key) === 'skipClick' &&
+        !(property.value.type === 'BooleanLiteral' && !property.value.value),
     )
   );
 }
@@ -697,6 +698,11 @@ function boundValue(path: NodePath, name: string): types.Node | undefined {
   );
 
   return values.length === 1 ? values[0] : undefined;
+}
+
+/** The name of an object key, quoted or not. */
+function keyName(key: types.Node): string | undefined {
+  return key.type === 'StringLiteral' ? key.value : nameOf(key);
 }
 
 function nameOf(node: types.Node): string | undefined {

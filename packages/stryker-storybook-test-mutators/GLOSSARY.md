@@ -41,7 +41,7 @@ _Avoid_: absence check, negated assertion
 An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`,
 `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or
 `afterEach`, one whose following checks are all negative checks, a click or hover that a `type` of the same target
-repeats (`type` clicks first unless given `skipClick`), and a `type` or `clear` that a later `clear` of the same
+repeats (`type` clicks first unless given a `skipClick` other than `false`), and a `type` or `clear` that a later `clear` of the same
 target undoes before any check.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
