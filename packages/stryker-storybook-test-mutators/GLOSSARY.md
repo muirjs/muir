@@ -29,7 +29,8 @@ _Avoid_: native event, DOM action
 **Target query**:
 The Testing Library query that an interaction acts on as its first argument, awaited or not, such as
 `canvas.getByRole('button', { name: 'Save' })` in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))`;
-`LzStorybookInteractionTarget` swaps its name or text for another one in the same file.
+`LzStorybookInteractionTarget` swaps its name or text for another one in the same file: the name of a `getBy`,
+`findBy` or `queryBy` query of the same string-literal role, or the text of a query of the same method.
 _Avoid_: target (alone), locator (the Playwright mutators' term)
 
 **Negative check**:

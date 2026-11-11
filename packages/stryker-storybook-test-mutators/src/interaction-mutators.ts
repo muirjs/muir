@@ -1,13 +1,14 @@
 import type { NodePath, types } from '@babel/core';
 import {
-  fieldOf,
-  literalValue,
+  firstArgumentSite,
+  roleSite,
   swapMutator,
   type Site,
 } from '@layzee/stryker-mutator-install';
 
 import {
   awaited,
+  elementQueryPrefixes,
   fireEventMethod,
   firstCheckAfter,
   hasNegativeCheck,
@@ -16,6 +17,8 @@ import {
   isInteractionStatement,
   isQueryCall,
   isSkipped,
+  queryKinds,
+  queryMethods,
   targetStatement,
   userEventCall,
   type UserEventCall,
@@ -61,13 +64,15 @@ const textFieldRoles: readonly (string | undefined)[] = [
   'combobox',
 ];
 
+const roleQueries = queryMethods(elementQueryPrefixes, ['Role']);
+
 /** The role a `*ByRole` query names in a string literal. */
 function queryRole(query: types.Node): string | undefined {
   if (
     query.type !== 'CallExpression' ||
     query.callee.type !== 'MemberExpression' ||
     query.callee.property.type !== 'Identifier' ||
-    !query.callee.property.name.endsWith('ByRole')
+    !roleQueries.includes(query.callee.property.name)
   ) {
     return undefined;
   }
@@ -147,36 +152,17 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
   };
 }
 
-function listOf(value: unknown): readonly unknown[] {
-  return Array.isArray(value) ? value : [];
-}
+const roleQuerySite = roleSite(roleQueries);
+const argumentQuerySite = firstArgumentSite(
+  queryMethods(
+    elementQueryPrefixes,
+    queryKinds.filter((kind) => kind !== 'Role'),
+  ),
+);
 
-/** The `name` of a `getByRole(role, { name })` query, keyed by its role, or the first argument of another query. */
+/** The `name` of a `*ByRole(role, { name })` query, keyed by its role, or the first argument of another query. */
 function querySite(call: unknown): Site | undefined {
-  const method = fieldOf(fieldOf(fieldOf(call, 'callee'), 'property'), 'name');
-  const [first, options] = listOf(fieldOf(call, 'arguments'));
-
-  if (typeof method !== 'string' || !/^(get|find|query)By[A-Z]/.test(method)) {
-    return undefined;
-  }
-
-  if (method.endsWith('ByRole')) {
-    const name = fieldOf(
-      listOf(fieldOf(options, 'properties')).find(
-        (property) => fieldOf(fieldOf(property, 'key'), 'name') === 'name',
-      ),
-      'value',
-    );
-    const value = literalValue(name);
-
-    return value === undefined
-      ? undefined
-      : { key: `${method}:${literalValue(first)}`, value, node: name };
-  }
-
-  const value = literalValue(first);
-
-  return value === undefined ? undefined : { key: method, value, node: first };
+  return roleQuerySite(call) ?? argumentQuerySite(call);
 }
 
 export function interactionTargetMutator(): LzStorybookTestMutator & {

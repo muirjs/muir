@@ -519,6 +519,38 @@ export const targetCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'target-get-and-find-by-role',
+    title:
+      'the name of a getByRole query becomes the name a findByRole query of the same role takes',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button', { name: 'Save' }));",
+      "await expect(await canvas.findByRole('button', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [[target, "'Cancel'"]],
+  },
+  {
+    id: 'target-role-variable',
+    title:
+      'a role query whose role is no string literal makes no mutant, as its role is unknown',
+    source: inPlay(
+      'await userEvent.click(canvas.getByRole(role, { name: "One" }));',
+      'await userEvent.click(canvas.getByRole(other, { name: "Two" }));',
+    ),
+    expect: [],
+  },
+  {
+    id: 'target-quoted-name-key',
+    title: "a role query's name under a quoted key is swapped too",
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button', { 'name': 'Save' }));",
+      "await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));",
+    ),
+    expect: [
+      [target, "'Cancel'"],
+      [target, "'Save'"],
+    ],
+  },
+  {
     id: 'target-fire-event',
     title: 'the target of a fireEvent call is swapped too',
     source: inPlay(

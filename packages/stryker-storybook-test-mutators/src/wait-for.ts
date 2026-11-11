@@ -1,7 +1,9 @@
 import type { types } from '@babel/core';
 
-import { awaited } from './interactions.ts';
+import { awaited, queryMethods } from './interactions.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
+
+const findQueries = queryMethods(['findBy', 'findAllBy']);
 
 /** `waitForElementToBeRemoved(...);`, awaited or not. */
 function isRemovalWait(node: types.Node): boolean {
@@ -47,7 +49,7 @@ export function waitForMutator(): LzStorybookTestMutator & {
         call.type === 'CallExpression' &&
         call.callee.type === 'MemberExpression' &&
         call.callee.property.type === 'Identifier' &&
-        /^find(All)?By[A-Z]/.test(call.callee.property.name)
+        findQueries.includes(call.callee.property.name)
       ) {
         yield t.callExpression(
           t.memberExpression(
