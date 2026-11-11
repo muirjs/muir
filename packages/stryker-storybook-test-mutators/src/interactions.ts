@@ -97,7 +97,7 @@ function isClearedLater(path: NodePath, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event click or hover directly before a user-event type of the same target, which clicks it first. */
+/** A user-event click or hover directly before a user-event 14 type of the same target, which clicks it first; Vitest browser's type does not. */
 function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
   const current = userEventCall(path);
   const [next] = nextSiblings(path);
@@ -108,6 +108,7 @@ function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
     following?.target !== undefined &&
     ['click', 'hover'].includes(current.method) &&
     following.method === 'type' &&
+    !mayBeVitestBrowserUserEvent(following.receiver, path) &&
     !hasSkipClick(following.args[2]) &&
     t.isNodesEquivalent(current.target, following.target)
   );
@@ -127,12 +128,13 @@ function hasSkipClick(options: types.Node | undefined): boolean {
 }
 
 export interface UserEventCall {
+  readonly receiver: types.Node;
   readonly method: string;
   readonly target: types.Node | undefined;
   readonly args: readonly types.Node[];
 }
 
-/** The method and first argument of a `<userEvent>.<method>(...)` statement or step callback body. */
+/** The receiver, method and first argument of a `<userEvent>.<method>(...)` statement or step callback body. */
 export function userEventCall(path: NodePath): UserEventCall | undefined {
   const expression = interactionExpression(path);
 
@@ -143,10 +145,22 @@ export function userEventCall(path: NodePath): UserEventCall | undefined {
   const call = awaited(expression);
   const method = userEventMethod(call, path);
 
-  return method !== undefined &&
-    (call.type === 'CallExpression' || call.type === 'OptionalCallExpression')
-    ? { method, target: call.arguments[0], args: call.arguments }
-    : undefined;
+  if (
+    method === undefined ||
+    (call.type !== 'CallExpression' &&
+      call.type !== 'OptionalCallExpression') ||
+    (call.callee.type !== 'MemberExpression' &&
+      call.callee.type !== 'OptionalMemberExpression')
+  ) {
+    return undefined;
+  }
+
+  return {
+    receiver: withoutTypeWrappers(call.callee.object),
+    method,
+    target: call.arguments[0],
+    args: call.arguments,
+  };
 }
 
 /** The interaction statement or step callback body whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
@@ -655,6 +669,56 @@ function isVitestBrowserUserEvent(path: NodePath, name: string): boolean {
   );
 }
 
+/** A user-event receiver that is or may be Vitest browser's userEvent. */
+function mayBeVitestBrowserUserEvent(
+  node: types.Node,
+  path: NodePath,
+  seen: ReadonlySet<Binding> = new Set(),
+): boolean {
+  if (node.type === 'MemberExpression') {
+    return (
+      isVitestBrowserNamespace(node.object, path) ||
+      isVitestBrowserImport(awaited(node.object))
+    );
+  }
+
+  const name = nameOf(node);
+  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+
+  if (name === undefined || binding === undefined || seen.has(binding)) {
+    return false;
+  }
+
+  const value = boundValue(path, name);
+  const followed = new Set([...seen, binding]);
+  const sources =
+    value?.type === 'ConditionalExpression'
+      ? [value.consequent, value.alternate]
+      : [setupReceiver(value)];
+
+  return (
+    isVitestBrowserUserEvent(path, name) ||
+    sources.some(
+      (source) =>
+        source !== undefined &&
+        mayBeVitestBrowserUserEvent(source, path, followed),
+    )
+  );
+}
+
+/** `<name>` from `import * as <name> from 'vitest/browser'`. */
+function isVitestBrowserNamespace(node: types.Node, path: NodePath): boolean {
+  const name = nameOf(node);
+  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+  const declaration = binding?.path.parent;
+
+  return (
+    binding?.path.node.type === 'ImportNamespaceSpecifier' &&
+    declaration?.type === 'ImportDeclaration' &&
+    vitestBrowserSources.has(declaration.source.value)
+  );
+}
+
 /** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */
 function isVitestBrowserImport(node: types.Node): boolean {
   return (
@@ -675,12 +739,18 @@ function isSetupCall(
   path: NodePath,
   seen: ReadonlySet<Binding>,
 ): boolean {
-  return (
-    node?.type === 'CallExpression' &&
+  const receiver = setupReceiver(node);
+
+  return receiver !== undefined && isUserEvent(receiver, path, seen);
+}
+
+/** The receiver of `<x>.setup()`. */
+function setupReceiver(node: types.Node | undefined): types.Node | undefined {
+  return node?.type === 'CallExpression' &&
     node.callee.type === 'MemberExpression' &&
-    nameOf(node.callee.property) === 'setup' &&
-    isUserEvent(node.callee.object, path, seen)
-  );
+    nameOf(node.callee.property) === 'setup'
+    ? node.callee.object
+    : undefined;
 }
 
 /** The one value a local `name` is ever given, by its declaration or a later assignment; none when something else, such as `++` or a `for...of` head, also changes it. */

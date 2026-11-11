@@ -383,6 +383,60 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'vitest-browser-click-before-type',
+    title:
+      'a Vitest browser click directly before a type on the same target is removed, as that type does not click',
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('await browserUserEvent.click(input);', "await browserUserEvent.type(input, 'a');")}`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-namespace-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the userEvent of a namespace import of 'vitest/browser', is removed",
+    source: `import * as browser from 'vitest/browser';\n${inPlay('await browser.userEvent.click(input);', "await browser.userEvent.type(input, 'a');")}`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-choice-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on a local that is import('vitest/browser')'s userEvent or userEvent, is removed",
+    source: inPlay(
+      "const pointer = '__vitest_browser__' in globalThis ? (await import('vitest/browser')).userEvent : userEvent;",
+      'await pointer.click(input);',
+      "await pointer.type(input, 'a');",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-setup-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the setup() of a Vitest browser userEvent, is removed',
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('const user = browserUserEvent.setup();', 'await user.click(input);', "await user.type(input, 'a');")}`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-import-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on userEvent imported from 'vitest/browser', is removed",
+    source: `import { userEvent } from 'vitest/browser';\nexport const Story = {\n  play: async () => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'skip-optional-click-before-type',
     title:
       'a userEvent?.click directly before a userEvent?.type on the same target gets no mutant, as type clicks first',
