@@ -46,8 +46,10 @@ export function swapMutator<const TName extends string>(
         return;
       }
 
-      // Built on the first node Stryker shows of this file: Program for a whole file, the first node inside the
-      // range for a line range. Either way no mutant has been placed in the file yet.
+      // Built on the first node this mutator is shown of the file: Program, the first node of a line range, or, for
+      // LzStorybookInteractionTarget, its first site. Stryker places mutants on exit, so other mutators' mutants may
+      // already stand in earlier statements; they copy the literals of sites unchanged, and no swap of this mutator
+      // has been placed yet.
       const replacements =
         indexed.get(program) ??
         replacementsBySite(
