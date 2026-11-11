@@ -931,13 +931,9 @@ export const cases: readonly Case[] = [
     source:
       "export default { title: 'Button', play: async () => {} };\n" +
       "export const Base = { args: { label: 'a' } };\n" +
-      "export const Optional = { args: { ...Base?.args, label: 'a', disabled: true } };\n" +
       "export const Computed = { args: { ...Base[args], label: 'a', disabled: true } };\n" +
       "export const Other = { args: { ...Base.parameters, label: 'a', disabled: true } };\n",
     expect: [
-      [args, '{ ...Base?.args, disabled: true }'],
-      [args, "{ ...Base?.args, label: 'a' }"],
-      [args, '{ ...Base?.args }'],
       [args, '{ ...Base[args], disabled: true }'],
       [args, "{ ...Base[args], label: 'a' }"],
       [args, '{ ...Base[args] }'],
@@ -945,6 +941,26 @@ export const cases: readonly Case[] = [
       [args, "{ ...Base.parameters, label: 'a' }"],
       [args, '{ ...Base.parameters }'],
     ],
+  },
+  {
+    id: 'optional-spread-same-literal',
+    title:
+      "a key whose literal value equals the one in that story's args, spread before it with ?., makes no mutant",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Base = { args: { label: 'a' } };\n" +
+      "export const Primary = { args: { ...Base?.args, label: 'a', disabled: true } };\n",
+    expect: [[args, "{ ...Base?.args, label: 'a' }"]],
+  },
+  {
+    id: 'string-key-spread-same-literal',
+    title:
+      "a key whose literal value equals the one in that story's args, spread before it as ['args'], makes no mutant",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Base = { args: { label: 'a' } };\n" +
+      "export const Primary = { args: { ...Base['args'], label: 'a', disabled: true } };\n",
+    expect: [[args, "{ ...Base['args'], label: 'a' }"]],
   },
   {
     id: 'story-on-story',
