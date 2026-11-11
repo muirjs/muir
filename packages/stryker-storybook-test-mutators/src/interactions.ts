@@ -409,7 +409,6 @@ export function hasZeroCallsCheck(path: NodePath): boolean {
 
 const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);
 
-// The story properties whose functions are story test code.
 const storyTestProperties: ReadonlySet<string> = new Set(['play', ...hooks]);
 
 function isHook(path: NodePath): boolean {
