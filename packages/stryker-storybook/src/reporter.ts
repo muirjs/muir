@@ -44,8 +44,12 @@ interface StubFinding {
 
 type ReportMutant = Pick<
   schema.MutantResult,
-  'mutatorName' | 'status' | 'location'
+  'mutatorName' | 'status' | 'location' | 'replacement'
 >;
+
+/** The replacement of an `LzStorybookSpyStub` outcome mutant, which makes a resolved stub reject or a rejected one resolve; whether a check reads the stub is the removal mutant's to tell. */
+const outcomeReplacement =
+  /\.mock(?:Rejected|Resolved)Value(?:Once)?\((?:new Error\((["'])Stryker\1\)|undefined)\)$/;
 
 interface ReportInput {
   readonly files: Readonly<
@@ -194,11 +198,17 @@ function stubFindings(
       ).map((finding) => ({ file, ...finding })),
     ),
     ...Object.entries(files).flatMap(([file, { mutants }]) =>
-      mutants.flatMap(({ mutatorName, status, location }) =>
-        mutatorName === spyStubName && status === 'Survived'
-          ? [{ file, line: location.start.line, ...uncheckedFinding }]
-          : [],
-      ),
+      [
+        ...new Set(
+          mutants.flatMap(({ mutatorName, status, location, replacement }) =>
+            mutatorName === spyStubName &&
+            status === 'Survived' &&
+            !outcomeReplacement.test(replacement ?? '')
+              ? [location.start.line]
+              : [],
+          ),
+        ),
+      ].map((line) => ({ file, line, ...uncheckedFinding })),
     ),
   ];
 }

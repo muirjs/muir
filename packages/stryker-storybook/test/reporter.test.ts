@@ -92,6 +92,30 @@ const literalStub = [
   '',
 ].join('\n');
 
+const resolvedStub = [
+  "import { fn } from 'storybook/test';",
+  '',
+  "export default { args: { onSave: fn().mockResolvedValue('saved') } };",
+  '',
+  'export const Primary = { play: async () => {} };',
+  '',
+].join('\n');
+
+function survivedStubMutant(replacement: string) {
+  return {
+    mutatorName: 'LzStorybookSpyStub',
+    status: 'Survived',
+    replacement,
+    location: { start: { line: 3, column: 34 }, end: { line: 3, column: 66 } },
+  } as const;
+}
+
+function uncheckedFindings(findings: readonly unknown[]): readonly unknown[] {
+  return findings.filter(
+    (finding) => isRecord(finding) && finding['verdict'] === 'unchecked',
+  );
+}
+
 function ignoredAt(source: string, text: string, mutatorName: string) {
   const lines = source.split('\n');
   const line = lines.findIndex((candidate) => candidate.includes(text)) + 1;
@@ -358,6 +382,43 @@ describe('storybookReporter', () => {
           fix: 'assert in the play what the stubbed value changes',
         },
       ],
+    );
+  });
+
+  it("reports no unchecked stub for a Survived outcome mutant, as the stub's removal is what tells whether a check reads it", (t) => {
+    const { reporter, findings } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            survivedStubMutant('fn().mockRejectedValue(new Error("Stryker"))'),
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(uncheckedFindings(findings()), []);
+  });
+
+  it('reports one unchecked stub for a line where several spy stub mutants survived', (t) => {
+    const { reporter, findings } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [survivedStubMutant('fn()'), survivedStubMutant('fn()')],
+        },
+      },
+    });
+
+    assert.deepEqual(
+      uncheckedFindings(findings()).map(
+        (finding) => isRecord(finding) && [finding['file'], finding['line']],
+      ),
+      [['src/Resolved.stories.tsx', 3]],
     );
   });
 

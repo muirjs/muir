@@ -89,8 +89,9 @@ returns `undefined` or the original implementation.
 _Avoid_: lost stub, reset stub
 
 **Unchecked stub**:
-A spy stub at whose line an `LzStorybookSpyStub` mutant survived; the `lz-storybook` report lists it as a stub
-finding, because no test fails without the stub.
+A spy stub at whose line an `LzStorybookSpyStub` mutant that removes a stub survived; the `lz-storybook` report lists
+it once as a stub finding, because no test fails without the stub. A surviving outcome mutant (the test mutators'
+term) makes no unchecked stub: it shows that no check tells success from failure, not that none reads the stub.
 _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:
