@@ -51,11 +51,13 @@ function propertyValue(property: unknown): object | undefined {
   return isRecord(value) ? value : undefined;
 }
 
-/** The value node the file writes for `key` in an object literal: the last property of that key, whether or not a later spread or computed key may replace it when the file runs. It tells what role a node has, such as test code or a tag list, not which value runs; `objectValue` reads that. */
+/** The value node the file writes for `key` in an object literal, as Storybook 10.6.5 CsfFile reads a meta or story property: the last property whose key is the identifier `key`, computed or not (`t.isIdentifier(p.key)`), so a string-literal key gives none, whether or not a later spread or computed key may replace it when the file runs. It tells what role a node has, such as test code or a tag list, not which value runs; `resolvedValues` reads that, with JavaScript's keys. */
 export function writtenValue(object: unknown, key: string): object | undefined {
   return propertyValue(
     list(field(object, 'properties')).findLast(
-      (candidate) => propertyKey(candidate) === key,
+      (candidate) =>
+        field(candidate, 'key', 'type') === 'Identifier' &&
+        field(candidate, 'key', 'name') === key,
     ),
   );
 }

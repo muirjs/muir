@@ -41,6 +41,43 @@ describe('playedStories', () => {
     );
   });
 
+  it("lists a story under a meta whose '!test' tags have a string-literal key, which Storybook does not read", () => {
+    assert.deepEqual(
+      namesOf(
+        played(
+          "export default { title: 'a/b', 'tags': ['!test'] };",
+          'export const A = { play: async () => {} };',
+        ),
+      ),
+      ['A'],
+    );
+  });
+
+  it("lists a story a meta's excludeStories with a string-literal key names, which Storybook does not read", () => {
+    assert.deepEqual(
+      namesOf(
+        played(
+          "export default { title: 'a/b', 'excludeStories': ['A'] };",
+          'export const A = { play: async () => {} };',
+        ),
+      ),
+      ['A'],
+    );
+  });
+
+  it("lists no story under a meta whose '!test' tags have a computed key that names tags, which Storybook reads as tags", () => {
+    assert.deepEqual(
+      namesOf(
+        played(
+          "import { tags } from './keys';",
+          "export default { title: 'a/b', [tags]: ['!test'] };",
+          'export const A = { play: async () => {} };',
+        ),
+      ),
+      [],
+    );
+  });
+
   it('lists none in a file with no meta object, which Storybook does not index', () => {
     assert.deepEqual(
       namesOf(played('export const A = { play: async () => {} };')),

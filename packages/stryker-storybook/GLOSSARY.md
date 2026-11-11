@@ -22,7 +22,9 @@ _Avoid_: Storybook config, project config
 
 **Static CSF value**:
 A value in a story file that Storybook reads from the source without running the file, such as `title`, `id`,
-`tags`, `name` or an export name. A mutant there cannot change what Storybook reads.
+`tags`, `name` or an export name. A mutant there cannot change what Storybook reads. Storybook reads a property of
+the meta or a story only when its key is an identifier, so `'tags': ['!test']` sets no static tags, while the story
+that runs gets every key as JavaScript reads it, a string-literal one included.
 _Avoid_: static annotation, index value
 
 **Story test code**:
