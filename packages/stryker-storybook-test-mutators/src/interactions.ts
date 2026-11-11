@@ -134,10 +134,36 @@ function userEventMethod(call: types.Node, path: NodePath): string | undefined {
 function hasOnlyNegativeChecks(path: NodePath): boolean {
   const negations = before(
     followingStatements(path),
-    isInteractionStatement,
+    (statement) =>
+      isInteractionStatement(statement) || isStepWithInteraction(statement),
   ).flatMap(checksIn);
 
   return negations.length > 0 && negations.every(Boolean);
+}
+
+/** A `step(...)` statement whose callback holds an interaction. */
+function isStepWithInteraction(statement: NodePath): boolean {
+  const { node } = statement;
+
+  if (
+    node.type !== 'ExpressionStatement' ||
+    !isStepCall(awaited(node.expression))
+  ) {
+    return false;
+  }
+
+  let found = false;
+
+  statement.traverse({
+    enter(inner) {
+      if (isInteractionStatement(inner) || isInteractionBody(inner)) {
+        found = true;
+        inner.stop();
+      }
+    },
+  });
+
+  return found;
 }
 
 /** The statements before the first one that `stop` matches. */

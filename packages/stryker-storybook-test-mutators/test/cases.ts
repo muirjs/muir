@@ -330,4 +330,18 @@ export const cases: readonly Case[] = [
       [interaction, ';'],
     ],
   },
+  {
+    id: 'negative-only-until-step-interaction',
+    title:
+      'the checks that decide a skip end at a step holding an interaction, so only the click in the step is skipped',
+    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      await userEvent.click(second);\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-negative-only-in-step',
+    title:
+      'an interaction followed only by a step of negative checks makes no mutant',
+    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(button);\n    await step('Check', async () => {\n      await expect(args.onClick).not.toHaveBeenCalled();\n    });\n  },\n};\n`,
+    expect: [],
+  },
 ];
