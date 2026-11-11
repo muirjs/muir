@@ -25,6 +25,9 @@
       "path": "./packages/stryker-storybook"
     },
     {
+      "path": "./packages/stryker-storybook-test-mutators"
+    },
+    {
       "path": "./packages/storybook-mock-transformer"
     }
   ]
