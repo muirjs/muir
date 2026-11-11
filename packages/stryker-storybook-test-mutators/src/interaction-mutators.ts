@@ -198,8 +198,8 @@ function positionOf(node: types.Node, edge: 'start' | 'end'): number {
   return position;
 }
 
-/** Whether `check` reads a name declared after the interaction and before the check, which a copy before the interaction could not read. */
-function readsNameDeclaredBetween(
+/** Whether `check` reads a name declared or assigned after the interaction and before the check, which a copy before the interaction could not read. */
+function readsNameBoundBetween(
   interaction: NodePath,
   check: NodePath,
 ): boolean {
@@ -209,13 +209,19 @@ function readsNameDeclaredBetween(
 
   check.traverse({
     ReferencedIdentifier(reference) {
-      const declared = reference.scope.getBinding(reference.node.name)
-        ?.identifier.start;
+      const binding = reference.scope.getBinding(reference.node.name);
+      const bound = [
+        binding?.identifier.start,
+        ...(binding?.constantViolations ?? []).map(
+          (assignment) => assignment.node.start,
+        ),
+      ];
 
       if (
-        typeof declared === 'number' &&
-        declared > after &&
-        declared < before
+        bound.some(
+          (start) =>
+            typeof start === 'number' && start > after && start < before,
+        )
       ) {
         found = true;
         reference.stop();
@@ -289,7 +295,7 @@ function checkToCopy(
     isExpectStatement(check) &&
     !hasNegativeCheck(check) &&
     !hasZeroCallsCheck(check) &&
-    !readsNameDeclaredBetween(interaction, check) &&
+    !readsNameBoundBetween(interaction, check) &&
     !standsEarlier(check, interaction, t)
     ? check.node
     : undefined;

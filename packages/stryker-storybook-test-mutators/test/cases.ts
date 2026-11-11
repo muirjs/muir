@@ -732,6 +732,18 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'assertion-before-skip-later-assignment',
+    title:
+      'an interaction whose first check reads a name assigned after the interaction makes no mutant',
+    source: inPlay(
+      'let dialog;',
+      'await userEvent.click(open);',
+      "dialog = canvas.getByRole('dialog');",
+      'await expect(dialog).toBeVisible();',
+    ),
+    expect: [],
+  },
+  {
     id: 'assertion-before-skip-repeated-check',
     title:
       'an interaction whose first check also stands earlier in the play makes no mutant, as that check states an invariant',
