@@ -9,20 +9,17 @@ import {
 import {
   awaited,
   elementQueryPrefixes,
-  fireEventMethod,
   firstCheckAfter,
   hasNegativeCheck,
   hasZeroCallsCheck,
+  interactionAt,
   isExpectStatement,
-  isInteractionStatement,
   isQueryCall,
-  isUnskippedInteraction,
-  isUnskippedInteractionBody,
+  isSkipped,
   queryKinds,
   queryMethods,
   targetInteraction,
-  userEventCall,
-  type UserEventCall,
+  type Interaction,
 } from './interactions.ts';
 import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
 
@@ -114,13 +111,17 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookClickFocus',
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
-      const call = userEventCall(path);
-      const target = focusTarget(call?.target, path);
+      const interaction = interactionAt(path);
+      const target =
+        interaction?.kind === 'userEvent' &&
+        clickMethods.includes(interaction.method)
+          ? focusTarget(interaction.call.arguments[0], path)
+          : undefined;
 
       if (
-        call === undefined ||
-        !clickMethods.includes(call.method) ||
-        target === undefined
+        interaction === undefined ||
+        target === undefined ||
+        isSkipped(interaction, t)
       ) {
         return;
       }
@@ -130,30 +131,34 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
         [],
       );
 
-      if (isUnskippedInteraction(path, t)) {
-        yield t.expressionStatement(
-          path.node.expression.type === 'AwaitExpression'
-            ? t.awaitExpression(focus)
-            : focus,
-        );
-      } else if (isUnskippedInteractionBody(path, t)) {
-        yield focus;
-      }
+      yield interaction.site === 'statement'
+        ? t.expressionStatement(
+            interaction.node.expression.type === 'AwaitExpression'
+              ? t.awaitExpression(focus)
+              : focus,
+          )
+        : focus;
     },
   };
 }
 
 const repeatedMethods: readonly string[] = ['click', 'dblClick', 'keyboard'];
 
-/** A click, a dblClick, or a key press other than one that a second press repeats with no change. */
-function isRepeatedUserEvent(call: UserEventCall | undefined): boolean {
+/** A fireEvent click, or a user-event click, dblClick or key press other than one that a second press repeats with no change. */
+function isRepeated(interaction: Interaction): boolean {
+  if (interaction.kind === 'fireEvent') {
+    return interaction.method === 'click';
+  }
+
+  const [key] = interaction.call.arguments;
+
   return (
-    call !== undefined &&
-    repeatedMethods.includes(call.method) &&
+    interaction.kind === 'userEvent' &&
+    repeatedMethods.includes(interaction.method) &&
     !(
-      call.method === 'keyboard' &&
-      call.target?.type === 'StringLiteral' &&
-      idempotentKeys.includes(call.target.value)
+      interaction.method === 'keyboard' &&
+      key?.type === 'StringLiteral' &&
+      idempotentKeys.includes(key.value)
     )
   );
 }
@@ -167,20 +172,23 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookInteractionRepeat',
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
+      const interaction = interactionAt(path);
+
       if (
-        !isRepeatedUserEvent(userEventCall(path)) &&
-        fireEventMethod(path) !== 'click'
+        interaction === undefined ||
+        !isRepeated(interaction) ||
+        isSkipped(interaction, t)
       ) {
         return;
       }
 
-      if (isUnskippedInteraction(path, t)) {
+      if (interaction.site === 'statement') {
         yield t.blockStatement([
-          t.cloneNode(path.node),
-          t.cloneNode(path.node),
+          t.cloneNode(interaction.node),
+          t.cloneNode(interaction.node),
         ]);
-      } else if (isUnskippedInteractionBody(path, t)) {
-        const twice = [path.node, path.node].map((body) =>
+      } else {
+        const twice = [interaction.node, interaction.node].map((body) =>
           t.expressionStatement(t.awaitExpression(t.cloneNode(body))),
         );
 
@@ -223,11 +231,7 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       const interaction = targetInteraction(path);
 
-      if (
-        interaction === undefined ||
-        (!isUnskippedInteraction(interaction, t) &&
-          !isUnskippedInteractionBody(interaction, t))
-      ) {
+      if (interaction === undefined || isSkipped(interaction, t)) {
         return;
       }
 
@@ -325,12 +329,19 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
       'await userEvent.click(button);\n    await expect(args.onClick).toHaveBeenCalled();',
     ),
     *mutate(path, t) {
-      const check = isInteractionStatement(path)
-        ? checkToCopy(path, t)
-        : undefined;
+      const interaction = interactionAt(path);
 
-      if (check !== undefined && isUnskippedInteraction(path, t)) {
-        yield t.blockStatement([t.cloneNode(check), t.cloneNode(path.node)]);
+      if (interaction?.site !== 'statement') {
+        return;
+      }
+
+      const check = checkToCopy(path, t);
+
+      if (check !== undefined && !isSkipped(interaction, t)) {
+        yield t.blockStatement([
+          t.cloneNode(check),
+          t.cloneNode(interaction.node),
+        ]);
       }
     },
   };
@@ -360,10 +371,12 @@ export function interactionMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookInteraction',
     sample: sampleOf("await userEvent.click(canvas.getByRole('button'));"),
     *mutate(path, t) {
-      if (isUnskippedInteraction(path, t)) {
-        yield t.emptyStatement();
-      } else if (isUnskippedInteractionBody(path, t)) {
-        yield t.identifier('undefined');
+      const interaction = interactionAt(path);
+
+      if (interaction !== undefined && !isSkipped(interaction, t)) {
+        yield interaction.site === 'statement'
+          ? t.emptyStatement()
+          : t.identifier('undefined');
       }
     },
   };
