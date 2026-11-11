@@ -214,6 +214,36 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-over-named-story-args-as-const',
+    title:
+      "a key in .test() options whose literal value equals the one in the top-level object that the story's args name, declared as const, makes no mutant",
+    source: inFactoryFile(
+      'const shared = { a: 1 } as const;',
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({ args: shared });',
+      "Primary.test('t', { args: { a: 1, b: 2, c: 3 } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ a: 1, b: 2 }'],
+      [args, '{ a: 1, c: 3 }'],
+    ],
+  },
+  {
+    id: 'test-options-over-named-story-args-satisfies',
+    title:
+      "a key in .test() options whose literal value equals the one in the top-level object that the story's args name, declared with satisfies, makes no mutant",
+    source: inFactoryFile(
+      'const shared = { a: 1 } satisfies Record<string, number>;',
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({ args: shared });',
+      "Primary.test('t', { args: { a: 1, b: 2, c: 3 } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ a: 1, b: 2 }'],
+      [args, '{ a: 1, c: 3 }'],
+    ],
+  },
+  {
     id: 'test-options-over-named-story-args-written',
     title:
       "a key in .test() options whose literal value equals the one in the top-level object that the story's args name is removed when the file writes to that object",

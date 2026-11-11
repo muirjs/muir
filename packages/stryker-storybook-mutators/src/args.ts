@@ -258,7 +258,7 @@ function layerValues(
   key: Key,
   bindings: ReadonlyMap<string, unknown>,
 ): readonly LayerValue[] {
-  const object = topLevelValueOrSelf(layer, bindings);
+  const object = unwrap(topLevelValueOrSelf(layer, bindings));
 
   return field(object, 'type') === 'ObjectExpression'
     ? valuesIn(
