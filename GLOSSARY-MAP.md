@@ -16,6 +16,8 @@
   Covers `packages/stryker-storybook` and `packages/storybook-mock-transformer`.
 - [Storybook test mutators](./packages/stryker-storybook-test-mutators/GLOSSARY.md): mutate story test code, so
   a test-code run shows which steps of a play function no check depends on.
+- [Storybook mutators](./packages/stryker-storybook-mutators/GLOSSARY.md): mutate story data, so a run of the
+  components configuration shows which story data no story test depends on.
 
 ## Relationships
 
