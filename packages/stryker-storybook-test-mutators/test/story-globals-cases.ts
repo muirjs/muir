@@ -291,6 +291,22 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-shared-test-options',
+    title:
+      'options shared by .test() calls on two stories keep a default value that one story sets otherwise, whichever story comes first',
+    source: factoryFile(
+      'export const A = meta.story({ globals: { outline: true } });',
+      'export const B = meta.story({});',
+      'const opts = { globals: { outline: false } };',
+      "A.test('a', opts, async () => {});",
+      "B.test('b', opts, async () => {});",
+    ),
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
     id: 'story-globals-computed-key',
     title:
       'a computed key is no default global, whatever name the identifier in it has',

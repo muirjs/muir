@@ -22,7 +22,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
     .filter((globals) => globals !== undefined);
   const played = playedStories(body, bindings);
 
-  return new Map<unknown, readonly unknown[]>(
+  return bySite(
     [
       ...played.flatMap(({ story: { init }, tests }) => {
         const ownGlobals = propertyValue(
@@ -54,6 +54,18 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
     ].filter(([globals]) => globals !== undefined),
   );
 }, new Map<unknown, readonly unknown[]>());
+
+/** Each site with the layers below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. */
+function bySite(
+  entries: readonly (readonly [unknown, readonly unknown[]])[],
+): ReadonlyMap<unknown, readonly unknown[]> {
+  return new Map(
+    entries.map(([site]) => [
+      site,
+      entries.filter(([other]) => other === site).flatMap(([, below]) => below),
+    ]),
+  );
+}
 
 // Storybook 10.6.5's own default globals (`initialGlobals` of its viewport, backgrounds, measure and outline
 // addons, and its `DEFAULT_VIEWPORT` name). A project's preview `initialGlobals` can differ; the mutator cannot see them.
