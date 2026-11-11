@@ -393,6 +393,46 @@ export const cases: readonly Case[] = [
     ),
     expect: [],
   },
+  {
+    id: 'args-default',
+    title: 'a key read through args with a default in the pattern stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ args = {} }) => { args.label; },',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'args-pattern-default',
+    title: 'a key destructured from args with a default in the pattern stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ args: { label } = {} }) => { label; },',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'string-key-member-read',
+    title: 'a quoted key the play reads as args.<key> stays',
+    source: inStory(
+      "args: { 'label': 'a', disabled: true },",
+      'play: async ({ args }) => { args.label; },',
+    ),
+    expect: [[args, "{ 'label': 'a' }"]],
+  },
+  {
+    id: 'string-key-destructure',
+    title: 'a key the play destructures with quotes stays, and only that key',
+    source: inStory(
+      "args: { 'aria-label': 'a', title: 'b', disabled: true },",
+      "play: async ({ args: { 'aria-label': label } }) => { label; },",
+    ),
+    expect: [
+      [args, "{ 'aria-label': 'a', disabled: true }"],
+      [args, "{ 'aria-label': 'a', title: 'b' }"],
+      [args, "{ 'aria-label': 'a' }"],
+    ],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {

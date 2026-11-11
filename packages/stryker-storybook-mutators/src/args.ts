@@ -62,7 +62,7 @@ export function argsMutator(): LzStorybookMutator & {
         (property) =>
           property.type === 'ObjectProperty' &&
           !property.computed &&
-          !read.has(field(property, 'key', 'name')),
+          !read.has(keyName(property)),
       );
 
       yield* eligible.map((removed) => without([removed]));
@@ -207,7 +207,9 @@ function keysRead(play: unknown): Reads {
     return 'whole';
   }
 
-  const binding = propertyValue(context, 'args');
+  const value = propertyValue(context, 'args');
+  const binding =
+    field(value, 'type') === 'AssignmentPattern' ? field(value, 'left') : value;
 
   if (field(binding, 'type') === 'ObjectPattern') {
     return patternKeys(binding);
@@ -289,9 +291,7 @@ function patternKeys(pattern: unknown): Reads {
   return hasRest(pattern)
     ? 'whole'
     : new Set(
-        list(field(pattern, 'properties')).map((property) =>
-          field(property, 'key', 'name'),
-        ),
+        list(field(pattern, 'properties')).map((property) => keyName(property)),
       );
 }
 
@@ -317,6 +317,11 @@ function childrenIn(node: unknown, parent: unknown): readonly Child[] {
         ...Object.values(node).flatMap((value) => childrenIn(value, node)),
       ]
     : [];
+}
+
+/** The key of `label: ...` or `'label': ...`. */
+function keyName(property: unknown): unknown {
+  return field(property, 'key', 'name') ?? field(property, 'key', 'value');
 }
 
 function propertyValue(object: unknown, key: string): unknown {
