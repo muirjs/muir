@@ -263,4 +263,30 @@ export const cases: readonly Case[] = [
       [interaction, ';'],
     ],
   },
+  {
+    id: 'composed-play-non-null',
+    title:
+      'a composed play called through a non-null assertion, Other.play!(context), is removed',
+    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async (context) => {\n    await Other.play!(context);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'composed-step-non-null',
+    title:
+      "a step that runs another story's play through a non-null assertion is removed",
+    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async ({ step }) => {\n    await step('Enter value', Other.play!);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'awaited-type-assertion',
+    title: 'an awaited interaction inside an as expression is removed',
+    source: inPlay('await (userEvent.click(button) as Promise<void>);'),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'await-in-type-assertion',
+    title: 'an await of an interaction inside an as expression is removed',
+    source: inPlay('(await userEvent.click(button)) as unknown;'),
+    expect: [[interaction, ';']],
+  },
 ];

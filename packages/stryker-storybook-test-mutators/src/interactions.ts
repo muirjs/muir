@@ -214,8 +214,23 @@ function isHook(path: NodePath): boolean {
   );
 }
 
+/** The expression inside `<x>!`, `<x> as T`, `<x> satisfies T`, `<T><x>` and parentheses. */
+function withoutTypeWrappers(node: types.Node): types.Node {
+  return node.type === 'TSNonNullExpression' ||
+    node.type === 'TSAsExpression' ||
+    node.type === 'TSSatisfiesExpression' ||
+    node.type === 'TSTypeAssertion' ||
+    node.type === 'ParenthesizedExpression'
+    ? withoutTypeWrappers(node.expression)
+    : node;
+}
+
 function awaited(node: types.Node): types.Node {
-  return node.type === 'AwaitExpression' ? node.argument : node;
+  const expression = withoutTypeWrappers(node);
+
+  return withoutTypeWrappers(
+    expression.type === 'AwaitExpression' ? expression.argument : expression,
+  );
 }
 
 function isInteractionCall(call: types.Node, path: NodePath): boolean {
@@ -226,7 +241,7 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
     return false;
   }
 
-  const { callee } = call;
+  const callee = withoutTypeWrappers(call.callee);
 
   if (
     callee.type !== 'MemberExpression' &&
@@ -251,7 +266,10 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
 }
 
 /** `<Story>.play`. */
-function isStoryPlay(node: types.Node | undefined): boolean {
+function isStoryPlay(argument: types.Node | undefined): boolean {
+  const node =
+    argument === undefined ? undefined : withoutTypeWrappers(argument);
+
   return (
     node?.type === 'MemberExpression' &&
     node.object.type === 'Identifier' &&
