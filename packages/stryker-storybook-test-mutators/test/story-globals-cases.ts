@@ -250,6 +250,53 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{}']],
   },
   {
+    id: 'story-globals-meta-viewport-over-story-parameters',
+    title:
+      "a responsive viewport global in the meta gets a mutant when a story it runs for sets viewport parameters, which merge over the meta's",
+    source: [
+      "export default { title: 'Probe', globals: { viewport: { value: 'responsive' } } };",
+      '',
+      "export const Story = { parameters: { viewport: { defaultViewport: 'mobile1' } }, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-test-options-viewport-over-own-parameters',
+    title:
+      'a responsive viewport global in .test() options gets a mutant when the same options set viewport parameters',
+    source: factoryFile(
+      'export const Story = meta.story({});',
+      "Story.test('t', { parameters: { viewport: { defaultViewport: 'mobile1' } }, globals: { viewport: { value: 'responsive' } } }, async () => {});",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-story-viewport-under-test-parameters',
+    title:
+      "a story's responsive viewport global gets a mutant when the options of a .test() call that runs it set viewport parameters",
+    source: factoryFile(
+      "export const Story = meta.story({ globals: { viewport: { value: 'responsive' } } });",
+      "Story.test('t', { parameters: { viewport: { defaultViewport: 'mobile1' } } }, async () => {});",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-meta-viewport-under-test-parameters',
+    title:
+      "a meta's responsive viewport global gets a mutant when the options of a .test() call on a story it runs for set viewport parameters",
+    source: [
+      "import preview from '../.storybook/preview';",
+      '',
+      "const meta = preview.meta({ title: 'Probe', globals: { viewport: { value: 'responsive' } } });",
+      '',
+      'export const Story = meta.story({});',
+      "Story.test('t', { parameters: { viewport: { defaultViewport: 'mobile1' } } }, async () => {});",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-default-backgrounds',
     title:
       "Storybook's initial backgrounds global, no value and no grid, makes no mutant",

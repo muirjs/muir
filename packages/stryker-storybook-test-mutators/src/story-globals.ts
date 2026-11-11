@@ -13,7 +13,7 @@ import {
 import type { LzStorybookTestMutator } from './mutator.ts';
 import { perFile, readStoryFileAt } from './story-file.ts';
 
-/** What may set a site's globals when one of its keys is removed: the `globals` objects below it, and the `parameters` objects of the stories it runs for, whose `viewport.defaultViewport` the Vitest addon's `setViewport` falls back to. */
+/** What may set a site's key when it is removed: the `globals` objects below the site, and the `parameters` objects of every layer of every run of the site. */
 interface Below {
   readonly globals: readonly unknown[];
   readonly parameters: readonly unknown[];
@@ -40,38 +40,43 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
           'globals',
         );
         const [runs, ...bases] = storyValues(init, bindings, 'globals');
-        const parameters = [
+        const storyParameters = [
           ...storyValues(init, bindings, 'parameters'),
           ...metaParameters,
         ].filter(defined);
-        const below = {
-          globals: [...bases, ...metaGlobals].filter(defined),
-          parameters,
-        };
+        const matched = tests.flatMap((test) =>
+          test === 'unmatched' ? [] : [test.options],
+        );
+        const everyRunParameters = [
+          ...storyParameters,
+          ...matched.map((options) => propertyValue(options, 'parameters')),
+        ].filter(defined);
+        const globals = [...bases, ...metaGlobals].filter(defined);
 
         return [
-          [runs === ownGlobals ? ownGlobals : undefined, below] as const,
-          ...tests.flatMap((test) =>
-            test === 'unmatched'
-              ? []
-              : [
-                  [
-                    propertyValue(test.options, 'globals'),
-                    {
-                      ...below,
-                      globals: [runs, ...below.globals].filter(defined),
-                    },
-                  ] as const,
-                ],
+          [
+            runs === ownGlobals ? ownGlobals : undefined,
+            { globals, parameters: everyRunParameters },
+          ] as const,
+          ...matched.map(
+            (options) =>
+              [
+                propertyValue(options, 'globals'),
+                {
+                  globals: [runs, ...globals].filter(defined),
+                  parameters: [
+                    propertyValue(options, 'parameters'),
+                    ...storyParameters,
+                  ].filter(defined),
+                },
+              ] as const,
+          ),
+          ...metaGlobals.map(
+            (site) =>
+              [site, { globals: [], parameters: everyRunParameters }] as const,
           ),
         ];
       }),
-      ...(played.length > 0
-        ? metaGlobals.map(
-            (globals) =>
-              [globals, { globals: [], parameters: metaParameters }] as const,
-          )
-        : []),
     ].filter(([globals]) => defined(globals)),
   );
 }, new Map<unknown, Below>());
@@ -99,15 +104,20 @@ function bySite(
 
 // Storybook 10.6.5's own default globals (`initialGlobals` of its viewport, backgrounds, measure and outline
 // addons, and its `DEFAULT_VIEWPORT` name). A project's preview `initialGlobals` can differ; the mutator cannot see them.
-// The Vitest addon's `setViewport` reads only a viewport global's `value`, and without one falls back to
-// `parameters.viewport.defaultViewport`, so a viewport under `parameters.viewport` the file sets is no default.
 const viewportDefaults: readonly unknown[] = ['responsive', '100pct-100pct'];
 
-const defaultGlobals: Readonly<Record<string, (value: unknown) => boolean>> = {
-  viewport: (value) =>
-    viewportDefaults.includes(literalOf(value)) ||
-    (field(value, 'type') === 'ObjectExpression' &&
-      [undefined, ...viewportDefaults].includes(lastLiteralOf(value, 'value'))),
+const defaultGlobals: Readonly<
+  Record<string, (value: unknown, parameters: readonly unknown[]) => boolean>
+> = {
+  // The Vitest addon's `setViewport` uses a viewport global's `value`, else `parameters.viewport.defaultViewport`,
+  // so a viewport is no default where a `parameters` object of the site's runs may set `viewport`.
+  viewport: (value, parameters) =>
+    !parameters.some((object) => maySetIn(object, 'viewport')) &&
+    (viewportDefaults.includes(literalOf(value)) ||
+      (field(value, 'type') === 'ObjectExpression' &&
+        [undefined, ...viewportDefaults].includes(
+          lastLiteralOf(value, 'value'),
+        ))),
   backgrounds: (value) =>
     isObjectOf(value, { value: [undefined], grid: [false] }),
   measureEnabled: isFalse,
@@ -182,13 +192,10 @@ function isDefaultGlobal(
 
   return (
     typeof key === 'string' &&
-    defaultGlobals[key]?.(field(property, 'value')) === true &&
+    defaultGlobals[key]?.(field(property, 'value'), below.parameters) ===
+      true &&
     !before.some((earlier) => maySet(earlier, key)) &&
-    !below.globals.some((globals) => maySetIn(globals, key)) &&
-    !(
-      key === 'viewport' &&
-      below.parameters.some((parameters) => maySetIn(parameters, key))
-    )
+    !below.globals.some((globals) => maySetIn(globals, key))
   );
 }
 

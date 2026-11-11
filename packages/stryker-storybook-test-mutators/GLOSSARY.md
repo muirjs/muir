@@ -88,9 +88,10 @@ or computed key after it, whatever else it holds, as the Vitest addon's `setView
 mutant only when nothing in the file may set that key below it: no earlier property of the site, spread or computed
 key, and no `globals` of the meta or of the story's `.extend()` bases, which Storybook merges key by key, and for a
 `.test()` call's options none of the story itself, spread stories included. A story it spreads before its own
-`globals` sets nothing below them, as object spread replaces `globals` whole. A `viewport` is no default under
-`parameters.viewport` that the meta, the story or a base sets, as `setViewport` falls back to its `defaultViewport`
-without a global value. The table is fixed; a project's own `initialGlobals` and parameters in its preview are not
+`globals` sets nothing below them, as object spread replaces `globals` whole. A `viewport` is no default when a
+`parameters` object of any run of its site may set `viewport`: the meta's, the story's and its bases' for every
+story the site runs for, and those of each `.test()` call's options that run it, as Storybook merges them over each
+other and `setViewport` falls back to `parameters.viewport.defaultViewport` without a global value. The table is fixed; a project's own `initialGlobals` and parameters in its preview are not
 read, so a default value that overrides them still gets no mutant.
 _Avoid_: initial global, preset global
 
