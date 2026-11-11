@@ -15,6 +15,8 @@ export interface CsfShapes {
   /** Story objects and functions, `parameters` objects that hold `__id`, and `.test()` options objects. */
   readonly literalContainers: ReadonlySet<unknown>;
   readonly testCode: ReadonlySet<unknown>;
+  /** The statements of `.test()` calls with options, which are test code apart from the options. */
+  readonly testStatementsWithOptions: ReadonlySet<unknown>;
   readonly mswValues: ReadonlySet<unknown>;
   readonly staticValues: ReadonlySet<unknown>;
 }
@@ -94,11 +96,15 @@ export function csfShapes(program: unknown): CsfShapes {
     ]),
     testCode: new Set([
       ...testKeys.flatMap((key) => testCodeOf(key)),
-      ...testCalls.flatMap(({ statement, testFunction }) => [
-        statement,
-        testFunction,
-      ]),
+      ...testCalls.flatMap(({ statement, options, testFunction }) =>
+        options === undefined ? [statement, testFunction] : [testFunction],
+      ),
     ]),
+    testStatementsWithOptions: new Set(
+      testCalls.flatMap(({ statement, options }) =>
+        options === undefined ? [] : [statement],
+      ),
+    ),
     mswValues: new Set(
       annotationsIn(runtime, 'parameters').flatMap((parameters) =>
         withInit(propertyValue(parameters, 'msw'), bindings),

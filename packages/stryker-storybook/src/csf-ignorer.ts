@@ -44,6 +44,7 @@ export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
 
     // StrykerJS reads a node's leading comments when it enters that node, after the ignorer has seen the Program node.
     shapes.literalContainers.forEach(keepLiteralContainer);
+    shapes.testStatementsWithOptions.forEach(keepTestCall);
 
     return ignoreModeReasons(shapes);
   };
@@ -84,16 +85,31 @@ function ignoreModeReasons(shapes: CsfShapes): ReadonlyMap<unknown, string> {
 
 // A Stryker ignorer skips a whole subtree; a next-line directive skips only the mutants on the container's first line.
 function keepLiteralContainer(container: unknown): void {
-  if (!isRecord(container)) {
+  addDirective(
+    container,
+    `Stryker disable next-line ObjectLiteral,ArrowFunction: ${containerReason}`,
+  );
+}
+
+// The statement stays unignored so that its options are mutated; the directive keeps out the mutant that removes the call.
+function keepTestCall(statement: unknown): void {
+  addDirective(
+    statement,
+    `Stryker disable next-line CallExpression: ${testReason}`,
+  );
+}
+
+function addDirective(node: unknown, directive: string): void {
+  if (!isRecord(node)) {
     return;
   }
 
-  container['leadingComments'] = [
-    ...list(container['leadingComments']),
+  node['leadingComments'] = [
+    ...list(node['leadingComments']),
     {
       // Stryker disable next-line StringLiteral: the type keeps the node a well-formed Babel comment, but no output depends on its value: StrykerJS reads only the comment's value, and Babel's generator prints a comment of any type but CommentBlock as a line comment
       type: 'CommentLine',
-      value: ` Stryker disable next-line ObjectLiteral,ArrowFunction: ${containerReason}`,
+      value: ` ${directive}`,
     },
   ];
 }
