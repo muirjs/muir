@@ -14,14 +14,13 @@ import {
   hasNegativeCheck,
   hasZeroCallsCheck,
   isExpectStatement,
-  isInteractionBody,
   isInteractionStatement,
   isQueryCall,
-  isSkipped,
   isUnskippedInteraction,
+  isUnskippedInteractionBody,
   queryKinds,
   queryMethods,
-  targetStatement,
+  targetInteraction,
   userEventCall,
   type UserEventCall,
 } from './interactions.ts';
@@ -52,9 +51,7 @@ function focusTarget(
         ? binding.path.node.init
         : undefined;
 
-    return init != null && isTextFieldQuery(awaited(init))
-      ? undefined
-      : target;
+    return init != null && isTextFieldQuery(awaited(init)) ? undefined : target;
   }
 
   if (target?.type !== 'AwaitExpression' && target?.type !== 'CallExpression') {
@@ -92,11 +89,7 @@ function methodOf(call: types.Node): string | undefined {
 }
 
 // Clicking an element of these roles is meant to focus it.
-const textFieldRoles: readonly string[] = [
-  'textbox',
-  'searchbox',
-  'combobox',
-];
+const textFieldRoles: readonly string[] = ['textbox', 'searchbox', 'combobox'];
 
 const roleQueries = queryMethods(elementQueryPrefixes, ['Role']);
 
@@ -125,21 +118,26 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
       const target = focusTarget(call?.target, path);
 
       if (
-        call !== undefined &&
-        clickMethods.includes(call.method) &&
-        target !== undefined &&
-        isUnskippedInteraction(path, t)
+        call === undefined ||
+        !clickMethods.includes(call.method) ||
+        target === undefined
       ) {
-        const focus = t.callExpression(
-          t.memberExpression(t.cloneNode(target), t.identifier('focus')),
-          [],
-        );
+        return;
+      }
 
+      const focus = t.callExpression(
+        t.memberExpression(t.cloneNode(target), t.identifier('focus')),
+        [],
+      );
+
+      if (isUnskippedInteraction(path, t)) {
         yield t.expressionStatement(
           path.node.expression.type === 'AwaitExpression'
             ? t.awaitExpression(focus)
             : focus,
         );
+      } else if (isUnskippedInteractionBody(path, t)) {
+        yield focus;
       }
     },
   };
@@ -170,14 +168,26 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
       if (
-        (isRepeatedUserEvent(userEventCall(path)) ||
-          fireEventMethod(path) === 'click') &&
-        isUnskippedInteraction(path, t)
+        !isRepeatedUserEvent(userEventCall(path)) &&
+        fireEventMethod(path) !== 'click'
       ) {
+        return;
+      }
+
+      if (isUnskippedInteraction(path, t)) {
         yield t.blockStatement([
           t.cloneNode(path.node),
           t.cloneNode(path.node),
         ]);
+      } else if (isUnskippedInteractionBody(path, t)) {
+        const twice = [path.node, path.node].map((body) =>
+          t.expressionStatement(t.awaitExpression(t.cloneNode(body))),
+        );
+
+        yield t.callExpression(
+          t.arrowFunctionExpression([], t.blockStatement(twice), true),
+          [],
+        );
       }
     },
   };
@@ -211,9 +221,13 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
     name: swap.name,
     sample: swap.sample,
     *mutate(path, t) {
-      const statement = targetStatement(path);
+      const interaction = targetInteraction(path);
 
-      if (statement === undefined || !isUnskippedInteraction(statement, t)) {
+      if (
+        interaction === undefined ||
+        (!isUnskippedInteraction(interaction, t) &&
+          !isUnskippedInteractionBody(interaction, t))
+      ) {
         return;
       }
 
@@ -348,7 +362,7 @@ export function interactionMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       if (isUnskippedInteraction(path, t)) {
         yield t.emptyStatement();
-      } else if (isInteractionBody(path) && !isSkipped(path, t)) {
+      } else if (isUnskippedInteractionBody(path, t)) {
         yield t.identifier('undefined');
       }
     },

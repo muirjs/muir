@@ -401,6 +401,13 @@ export const clickFocusCases: readonly Case[] = [
     expect: [[clickFocus, "await canvas.getByRole('button')!.focus();"]],
   },
   {
+    id: 'click-focus-step-body',
+    title:
+      'a click that is the expression body of a step callback becomes a focus() call',
+    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Save', () => userEvent.click(button));\n  },\n};\n`,
+    expect: [[clickFocus, 'button.focus()']],
+  },
+  {
     id: 'click-focus-dbl-click',
     title: 'a userEvent.dblClick becomes a focus() call on its element',
     source: inPlay('await userEvent.dblClick(button);'),
@@ -611,6 +618,13 @@ export const targetCases: readonly Case[] = [
     ],
   },
   {
+    id: 'target-step-body',
+    title:
+      'the target query of an interaction that is the expression body of a step is swapped too',
+    source: `export const Story = {\n  play: async ({ canvas, step, userEvent }) => {\n    await step('Save', () => userEvent.click(canvas.getByRole('button', { name: 'Save' })));\n    await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible();\n  },\n};\n`,
+    expect: [[target, "'Cancel'"]],
+  },
+  {
     id: 'target-fire-event',
     title: 'the target of a fireEvent call is swapped too',
     source: inPlay(
@@ -671,6 +685,29 @@ export const repeatCases: readonly Case[] = [
       [
         repeat,
         '{ await userEvent.dblClick(row); await userEvent.dblClick(row); }',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-step-body',
+    title:
+      'a click that is the expression body of a step callback runs twice, in order, in an async arrow called in its place',
+    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Add', () => userEvent.click(button));\n  },\n};\n`,
+    expect: [
+      [
+        repeat,
+        '(async () => { await userEvent.click(button); await userEvent.click(button); })()',
+      ],
+    ],
+  },
+  {
+    id: 'repeat-step-body-fire-event',
+    title: 'a fireEvent.click that is the expression body of a step runs twice',
+    source: `export const Story = {\n  play: async ({ step }) => {\n    await step('Add', () => fireEvent.click(button));\n  },\n};\n`,
+    expect: [
+      [
+        repeat,
+        '(async () => { await fireEvent.click(button); await fireEvent.click(button); })()',
       ],
     ],
   },
@@ -830,6 +867,13 @@ export const assertionBeforeCases: readonly Case[] = [
         '{ await expect(args.onClick).toHaveBeenCalledTimes(2); await userEvent.click(second); }',
       ],
     ],
+  },
+  {
+    id: 'assertion-before-skip-step-body',
+    title:
+      'an interaction that is the expression body of a step makes no mutant, as no check follows it in its own block',
+    source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await step('Save', () => userEvent.click(save));\n    await expect(args.onSave).toHaveBeenCalled();\n  },\n};\n`,
+    expect: [],
   },
   {
     id: 'assertion-before-skip-before-each',

@@ -21,17 +21,41 @@ export function isUnskippedInteraction(
 }
 
 /** The expression body of an arrow passed to `step(...)`, `<call>` or `await <call>`, where the call is an interaction. */
-export function isInteractionBody(path: NodePath): boolean {
+export function isInteractionBody(
+  path: NodePath,
+): path is NodePath<types.Expression> {
+  return isStepBody(path) && isInteractionCall(awaited(path.node), path);
+}
+
+/** An interaction body that is no skipped interaction. */
+export function isUnskippedInteractionBody(
+  path: NodePath,
+  t: BabelTypes,
+): path is NodePath<types.Expression> {
+  return isInteractionBody(path) && !isSkipped(path, t);
+}
+
+/** The expression body of an arrow passed to `step(...)`. */
+function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   const arrow = path.parentPath;
   const owner = arrow?.parentPath?.node;
 
   return (
     arrow?.node.type === 'ArrowFunctionExpression' &&
     arrow.node.body === path.node &&
+    path.isExpression() &&
     owner !== undefined &&
-    isStepCall(owner) &&
-    isInteractionCall(awaited(path.node), path)
+    isStepCall(owner)
   );
+}
+
+/** The expression of an expression statement or of a step callback's expression body. */
+function interactionExpression(path: NodePath): types.Node | undefined {
+  if (path.isExpressionStatement()) {
+    return path.node.expression;
+  }
+
+  return isStepBody(path) ? path.node : undefined;
 }
 
 /** An interaction that makes no mutant: one in a story hook, one whose following checks are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
@@ -102,15 +126,15 @@ export interface UserEventCall {
   readonly args: readonly types.Node[];
 }
 
-/** The method and first argument of a `<userEvent>.<method>(...)` statement. */
+/** The method and first argument of a `<userEvent>.<method>(...)` statement or step callback body. */
 export function userEventCall(path: NodePath): UserEventCall | undefined {
-  const statement = path.node;
+  const expression = interactionExpression(path);
 
-  if (statement.type !== 'ExpressionStatement') {
+  if (expression === undefined) {
     return undefined;
   }
 
-  const call = awaited(statement.expression);
+  const call = awaited(expression);
   const method = userEventMethod(call, path);
 
   return method !== undefined && call.type === 'CallExpression'
@@ -118,21 +142,22 @@ export function userEventCall(path: NodePath): UserEventCall | undefined {
     : undefined;
 }
 
-/** The interaction statement whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
-export function targetStatement(path: NodePath): NodePath | undefined {
+/** The interaction statement or step callback body whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
+export function targetInteraction(path: NodePath): NodePath | undefined {
   const query = path.findParent((parent) => parent.isCallExpression());
-  const statement = path.findParent((parent) => parent.isStatement());
-  const call =
-    statement?.node.type === 'ExpressionStatement'
-      ? awaited(statement.node.expression)
-      : undefined;
+  const interaction = path.findParent(
+    (parent) => parent.isStatement() || isStepBody(parent),
+  );
+  const expression =
+    interaction === null ? undefined : interactionExpression(interaction);
+  const call = expression === undefined ? undefined : awaited(expression);
   const [argument] = call?.type === 'CallExpression' ? call.arguments : [];
 
-  return statement !== null &&
-    isInteractionStatement(statement) &&
+  return interaction !== null &&
+    (isInteractionStatement(interaction) || isInteractionBody(interaction)) &&
     argument !== undefined &&
     awaited(argument) === query?.node
-    ? statement
+    ? interaction
     : undefined;
 }
 
@@ -166,15 +191,15 @@ function startsWithExpect(node: types.Node): boolean {
   return node.type === 'MemberExpression' && startsWithExpect(node.object);
 }
 
-/** The event of a `fireEvent.<event>(...)` statement. */
+/** The event of a `fireEvent.<event>(...)` statement or step callback body. */
 export function fireEventMethod(path: NodePath): string | undefined {
-  const statement = path.node;
+  const expression = interactionExpression(path);
 
-  if (statement.type !== 'ExpressionStatement') {
+  if (expression === undefined) {
     return undefined;
   }
 
-  const call = awaited(statement.expression);
+  const call = awaited(expression);
 
   return call.type === 'CallExpression' &&
     call.callee.type === 'MemberExpression' &&
