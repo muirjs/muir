@@ -3,6 +3,7 @@ import {
   csfFile,
   field,
   list,
+  propertyValue,
   storyArgument,
   topLevelBindings,
   unwrap,
@@ -15,6 +16,8 @@ type Key = string | number;
 
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<Key> | 'whole';
+
+type Site = readonly [argsObject: unknown, kept: ReadonlySet<Key>];
 
 type Sites = ReadonlyMap<unknown, ReadonlySet<Key>>;
 
@@ -120,27 +123,27 @@ function argsSites(
           tested && isTaggedTest([...metaObjects, storyArgument(unwrap(init))]),
       )
       .flatMap(({ init, local }) => {
-        const play = followed(
+        const play = topLevelValueOrSelf(
           ownOrBasePlay(init, bindings) ?? metaPlay,
           bindings,
         );
         const plays = play === undefined ? [] : [play];
         const tests = testCallsOn(body, local).map((call) => ({
           ...call,
-          testFunction: followed(call.testFunction, bindings),
+          testFunction: topLevelValueOrSelf(call.testFunction, bindings),
         }));
 
         const [storyArgs, ...baseArgs] = argsLayers(init, bindings);
 
         return [
-          site(
+          ...site(
             storyArgs,
             [...plays, ...tests.map(({ testFunction }) => testFunction)].map(
               readsOf,
             ),
             sameLiteralKeys(storyArgs, [...baseArgs, metaArgs], bindings),
           ),
-          ...tests.map(({ options, testFunction }) => {
+          ...tests.flatMap(({ options, testFunction }) => {
             const testArgs = propertyValue(options, 'args');
 
             return site(
@@ -153,7 +156,7 @@ function argsSites(
               ),
             );
           }),
-        ].flatMap((found) => (found === undefined ? [] : [found]));
+        ];
       }),
   );
 }
@@ -278,7 +281,7 @@ function argsLayers(
 }
 
 /** A name's top-level value; a name the file does not bind, or any other node, as it is. */
-function followed(
+function topLevelValueOrSelf(
   node: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
@@ -292,14 +295,14 @@ function site(
   argsObject: unknown,
   readers: readonly Reads[],
   kept: ReadonlySet<Key>,
-): readonly [unknown, ReadonlySet<Key>] | undefined {
+): readonly Site[] {
   const reads = union([...readers, kept]);
 
   return field(argsObject, 'type') !== 'ObjectExpression' ||
     readers.length === 0 ||
     reads === 'whole'
-    ? undefined
-    : [argsObject, reads];
+    ? []
+    : [[argsObject, reads]];
 }
 
 function union(reads: readonly Reads[]): Reads {
@@ -515,14 +518,4 @@ function descendants(path: NodePath): readonly NodePath[] {
   });
 
   return found;
-}
-
-function propertyValue(object: unknown, key: string): unknown {
-  const property = list(field(object, 'properties')).find(
-    (candidate) => field(candidate, 'key', 'name') === key,
-  );
-
-  return field(property, 'type') === 'ObjectMethod'
-    ? property
-    : field(property, 'value');
 }
