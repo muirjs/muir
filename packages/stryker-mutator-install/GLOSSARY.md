@@ -1,7 +1,9 @@
 # Mutator install
 
 The private code that puts a `@layzee` mutator package's mutators into the instrumenter that StrykerJS uses, since
-Stryker has no public way to add a mutator or to turn a built-in one off, and that checks the change took effect.
+Stryker has no public way to add a mutator or to turn a built-in one off, and that checks the change took effect. It
+also holds the mutator code that more than one mutator package uses: the swap engine and the site readers it reads
+swap sites with.
 
 ## Language
 
@@ -60,6 +62,17 @@ A literal that a same-file swap may replace or take a replacement from, together
 another literal of the same kind, such as a role's name or a mounted story id. A mutator may replace only some of
 its sites, as `LzStorybookInteractionTarget` replaces only those in a target query.
 _Avoid_: site (alone), target, candidate
+
+**Swap engine**:
+The code that makes a same-file swap mutator from a sample and a site reader: it reads every call of a file once and
+gives each swap site its nearest distinct values.
+_Avoid_: swapper, swap helper
+
+**Site reader**:
+A function that reads the swap site of a call, if it has one, such as the role site reader, which reads the `name`
+of a query of a string-literal role from a list of query methods and keys it by the role, so those methods share
+values.
+_Avoid_: site parser, matcher
 
 ### Stryker's own mutators
 
