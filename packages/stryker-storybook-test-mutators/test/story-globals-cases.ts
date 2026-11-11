@@ -249,4 +249,52 @@ export const storyGlobalsCases: readonly Case[] = [
     ),
     expect: [[storyGlobals, '{}']],
   },
+  {
+    id: 'story-globals-default-over-meta',
+    title:
+      "a story's default value of a global the meta sets gets a mutant, as removing it brings the meta's value back",
+    source: [
+      "export default { title: 'Probe', globals: { outline: true, viewport: { value: 'mobile1' } } };",
+      '',
+      'export const Story = {',
+      "  globals: { outline: false, viewport: { value: 'responsive' } },",
+      '  play: async () => {},',
+      '};',
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{ outline: true }'],
+      [storyGlobals, "{ viewport: { value: 'mobile1' } }"],
+      [storyGlobals, "{ viewport: { value: 'responsive' } }"],
+    ],
+  },
+  {
+    id: 'story-globals-default-over-base',
+    title:
+      'an .extend() story gets a mutant of a default value of a global its base sets',
+    source: factoryFile(
+      'export const Base = meta.story({ globals: { outline: true }, play: async () => {} });',
+      "export const Plain = Base.extend({ globals: { outline: false, locale: 'de' } });",
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-default-over-story',
+    title:
+      'the options of a .test() call get a mutant of a default value of a global the story sets',
+    source: factoryFile(
+      'export const Story = meta.story({ globals: { outline: true } });',
+      "Story.test('plain', { globals: { outline: false, locale: 'de' } }, async () => {});",
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
 ];

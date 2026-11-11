@@ -7,29 +7,87 @@ import {
   storyArgument,
   topLevelBindings,
   unwrap,
+  withoutBinding,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
 import { perFile } from './story-file.ts';
 
-/** The `globals` object literals of the stories that a play or `.test()` call runs for. */
-const sitesOf = perFile((program): ReadonlySet<unknown> => {
+/** The `globals` object literals of the stories that a play or `.test()` call runs for, each with the `globals` objects below it in the file, whose value of a key comes back when the site's is removed. */
+const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
   const body = list(program.body);
   const bindings = topLevelBindings(body);
-  const { metaObjects } = csfFile(body, bindings);
+  const metaGlobals = csfFile(body, bindings)
+    .metaObjects.map((meta) => propertyValue(meta, 'globals'))
+    .filter((globals) => globals !== undefined);
   const played = playedStories(body, bindings);
 
-  return new Set(
+  return new Map<unknown, readonly unknown[]>(
     [
-      ...played.map(({ story }) => storyArgument(unwrap(story.init))),
-      ...(played.length > 0 ? metaObjects : []),
-      ...played.flatMap(({ tests }) => tests.map(({ options }) => options)),
-    ].map((owner) => propertyValue(owner, 'globals')),
+      ...played.flatMap(({ story: { init }, tests }) => {
+        const [storyGlobals, ...inherited] = globalsIn(init, bindings);
+        const below = [...inherited, ...metaGlobals].filter(
+          (globals) => globals !== undefined,
+        );
+
+        return [
+          [storyGlobals, below] as const,
+          ...tests.map(
+            ({ options }) =>
+              [
+                propertyValue(options, 'globals'),
+                storyGlobals === undefined ? below : [storyGlobals, ...below],
+              ] as const,
+          ),
+        ];
+      }),
+      ...(played.length > 0
+        ? metaGlobals.map((globals) => [globals, []] as const)
+        : []),
+    ].filter(([globals]) => globals !== undefined),
   );
-}, new Set());
+}, new Map<unknown, readonly unknown[]>());
+
+/** The `globals` objects a story takes from the top-level stories it spreads and from its `.extend()` bases. */
+function inheritedGlobals(
+  init: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): readonly unknown[] {
+  const call = unwrap(init);
+  const base = field(call, 'callee', 'object', 'name');
+  const spreads = list(field(storyArgument(call), 'properties')).flatMap(
+    (property) => {
+      const spread = field(property, 'argument', 'name');
+
+      return field(property, 'type') === 'SpreadElement' &&
+        typeof spread === 'string'
+        ? globalsIn(bindings.get(spread), withoutBinding(bindings, spread))
+        : [];
+    },
+  );
+
+  return field(call, 'callee', 'property', 'name') === 'extend' &&
+    typeof base === 'string'
+    ? [
+        ...spreads,
+        ...globalsIn(bindings.get(base), withoutBinding(bindings, base)),
+      ]
+    : spreads;
+}
+
+/** A story's own `globals`, then those it takes from the stories it spreads and its `.extend()` bases; `undefined` where one sets none. */
+function globalsIn(
+  init: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): readonly unknown[] {
+  return [
+    propertyValue(storyArgument(unwrap(init)), 'globals'),
+    ...inheritedGlobals(init, bindings),
+  ];
+}
 
 // Storybook 10.6.5's own default globals (`initialGlobals` of its viewport, backgrounds, measure and outline
-// addons, and its `DEFAULT_VIEWPORT` name): a story that sets one runs as it would without it.
+// addons, and its `DEFAULT_VIEWPORT` name). A project's preview `initialGlobals` can differ; the mutator cannot see them.
 const viewportDefaults: readonly unknown[] = ['responsive', '100pct-100pct'];
 
 const defaultGlobals: Readonly<Record<string, (value: unknown) => boolean>> = {
@@ -81,12 +139,32 @@ function literalOf(node: unknown): unknown {
     : unknownValue;
 }
 
-function isDefaultGlobal(property: unknown): boolean {
+/** A default value of a key that nothing before it in the site, and no `globals` object below the site, may set, so that removing it changes nothing the mutator can see. */
+function isDefaultGlobal(
+  property: unknown,
+  before: readonly unknown[],
+  below: readonly unknown[],
+): boolean {
   const key = field(property, 'key', 'name');
 
   return (
     typeof key === 'string' &&
-    defaultGlobals[key]?.(field(property, 'value')) === true
+    defaultGlobals[key]?.(field(property, 'value')) === true &&
+    !before.some((earlier) => maySet(earlier, key)) &&
+    !below.some((globals) =>
+      field(globals, 'type') === 'ObjectExpression'
+        ? list(field(globals, 'properties')).some((set) => maySet(set, key))
+        : true,
+    )
+  );
+}
+
+/** A property of that key, a spread or a computed key, which only running the file resolves. */
+function maySet(property: unknown, key: string): boolean {
+  return (
+    field(property, 'type') === 'SpreadElement' ||
+    field(property, 'computed') === true ||
+    field(property, 'key', 'name') === key
   );
 }
 
@@ -97,15 +175,18 @@ export function storyGlobalsMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookStoryGlobals',
     sample: `export default { title: 'Sample' };\nexport const Story = {\n  globals: { viewport: { value: 'mobile1' } },\n  play: async () => {},\n};\n`,
     *mutate(path, t) {
-      const sites = sitesOf(path);
       const { node } = path;
+      const below = sitesOf(path).get(node);
 
-      if (node.type !== 'ObjectExpression' || !sites.has(node)) {
+      if (node.type !== 'ObjectExpression' || below === undefined) {
         return;
       }
 
       yield* node.properties
-        .filter((property) => !isDefaultGlobal(property))
+        .filter(
+          (property, index) =>
+            !isDefaultGlobal(property, node.properties.slice(0, index), below),
+        )
         .map((removed) =>
           t.objectExpression(
             node.properties
