@@ -2,8 +2,11 @@ import type { NodePath } from '@babel/core';
 import {
   csfFile,
   field,
+  isIndexedTestCall,
   list,
+  propertyValue,
   storyArgument,
+  testCallOf,
   topLevelBindings,
   unwrap,
   withoutBinding,
@@ -16,7 +19,17 @@ type Key = string | number;
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<Key> | 'whole';
 
-type Sites = ReadonlyMap<unknown, ReadonlySet<Key>>;
+/** The keys of an args site that stay in every mutant. */
+interface Kept {
+  /** The keys a function that runs for the site reads. */
+  readonly read: ReadonlySet<Key>;
+  /** The keys whose literal value equals the one they fall back to when removed. */
+  readonly sameAsBelow: ReadonlySet<Key>;
+}
+
+type Site = readonly [argsObject: unknown, kept: Kept];
+
+type Sites = ReadonlyMap<unknown, Kept>;
 
 /** What a read evaluates to: the `args` object, or the story context that holds it. */
 type Read = 'args' | 'context';
@@ -32,22 +45,22 @@ export function argsMutator(): LzStorybookMutator & {
   return {
     name: 'LzStorybookArgs',
     sample:
-      "export const Story = {\n  args: { label: 'a', disabled: true },\n  play: async () => {},\n};\n",
+      "export default { title: 'Sample' };\nexport const Story = {\n  args: { label: 'a', disabled: true },\n  play: async () => {},\n};\n",
     *mutate(path, t) {
-      // Stryker places the mutants of a statement when it leaves it, so the file is read before any statement changes.
+      // Stryker places a statement's mutants as it leaves the statement, so the file is read on entering the Program, or, under a line-range `mutate` that skips the Program, on entering the first object in range.
       if (path.isProgram()) {
         sitesOf(path);
       }
 
-      if (!path.isObjectExpression() || path.node.properties.length < 2) {
+      if (!path.isObjectExpression()) {
         return;
       }
 
       const program = path.findParent((parent) => parent.isProgram());
-      const read =
+      const kept =
         program === null ? undefined : sitesOf(program).get(path.node);
 
-      if (read === undefined) {
+      if (kept === undefined) {
         return;
       }
 
@@ -55,25 +68,38 @@ export function argsMutator(): LzStorybookMutator & {
       const without = (removed: readonly unknown[]) =>
         t.objectExpression(
           properties
-            .filter((kept) => !removed.includes(kept))
-            .map((kept) => t.cloneNode(kept, true)),
+            .filter((property) => !removed.includes(property))
+            .map((property) => t.cloneNode(property, true)),
         );
-      const eligible = properties.filter((property) => {
+      const eligible = properties.filter((property, index) => {
         const key = keyName(property);
 
         return (
           property.type === 'ObjectProperty' &&
           !property.computed &&
           key !== undefined &&
-          !read.has(key)
+          !kept.read.has(key) &&
+          !kept.sameAsBelow.has(key) &&
+          !properties.slice(index + 1).some((later) => keyName(later) === key)
         );
       });
+      // A mutant whose keys left all equal the value they fall back to behaves like Stryker's ObjectLiteral `{}`.
+      const differsFromEmpty = (removed: readonly unknown[]) =>
+        properties.some((property) => {
+          const key = keyName(property);
 
-      yield* eligible.map((removed) => without([removed]));
+          return (
+            !removed.includes(property) &&
+            (key === undefined || !kept.sameAsBelow.has(key))
+          );
+        });
 
-      if (eligible.length > 1 && eligible.length < properties.length) {
-        yield without(eligible);
-      }
+      yield* [
+        ...eligible.map((removed) => [removed]),
+        ...(eligible.length > 1 ? [eligible] : []),
+      ]
+        .filter(differsFromEmpty)
+        .map(without);
     },
   };
 }
@@ -99,13 +125,18 @@ function sitesOf(program: NodePath): Sites {
   return sites;
 }
 
-/** The `args` objects of stories and `.test()` options that a play or test function runs for, each with the keys those functions read. */
+/** The `args` objects of stories and `.test()` options that a play or test function runs for, each with the keys that stay. In a file with a meta object, for each story Storybook 10.6.5's Vitest transform tests and whose static tags do not end in `!test`, the play is the last one assigned to the story, else its own or the one it spreads or `.extend()` takes from its base, else the meta's. */
 function argsSites(
   body: readonly unknown[],
   readsOf: (fn: unknown) => Reads,
 ): Sites {
   const bindings = topLevelBindings(body);
   const { metaObjects, stories } = csfFile(body, bindings);
+
+  if (metaObjects.length === 0) {
+    return new Map();
+  }
+
   const metaPlay = metaObjects
     .map((meta) => propertyValue(meta, 'play'))
     .find((play) => play !== undefined);
@@ -119,28 +150,31 @@ function argsSites(
         ({ tested, init }) =>
           tested && isTaggedTest([...metaObjects, storyArgument(unwrap(init))]),
       )
-      .flatMap(({ init, local }) => {
-        const play = followed(
-          ownOrBasePlay(init, bindings) ?? metaPlay,
+      .flatMap(({ init, local, runtimeAssignments }) => {
+        const assignedPlay = runtimeAssignments
+          .filter(({ path }) => path.length === 1 && path[0] === 'play')
+          .at(-1)?.value;
+        const play = topLevelValueOrSelf(
+          assignedPlay ?? ownOrBasePlay(init, bindings) ?? metaPlay,
           bindings,
         );
         const plays = play === undefined ? [] : [play];
         const tests = testCallsOn(body, local).map((call) => ({
           ...call,
-          testFunction: followed(call.testFunction, bindings),
+          testFunction: topLevelValueOrSelf(call.testFunction, bindings),
         }));
 
         const [storyArgs, ...baseArgs] = argsLayers(init, bindings);
 
         return [
-          site(
+          ...site(
             storyArgs,
             [...plays, ...tests.map(({ testFunction }) => testFunction)].map(
               readsOf,
             ),
             sameLiteralKeys(storyArgs, [...baseArgs, metaArgs], bindings),
           ),
-          ...tests.map(({ options, testFunction }) => {
+          ...tests.flatMap(({ options, testFunction }) => {
             const testArgs = propertyValue(options, 'args');
 
             return site(
@@ -153,7 +187,7 @@ function argsSites(
               ),
             );
           }),
-        ].flatMap((found) => (found === undefined ? [] : [found]));
+        ];
       }),
   );
 }
@@ -173,7 +207,6 @@ const literalTypes: readonly unknown[] = [
   'StringLiteral',
   'NumericLiteral',
   'BooleanLiteral',
-  'NullLiteral',
 ];
 
 /** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it. */
@@ -200,14 +233,50 @@ function sameLiteralKeys(
               bindings,
             );
 
+      const literal = literalOf(value);
+      const fallbackLiteral = literalOf(fallbackValue);
+
       return key !== undefined &&
-        literalTypes.includes(field(value, 'type')) &&
-        field(value, 'type') === field(fallbackValue, 'type') &&
-        field(value, 'value') === field(fallbackValue, 'value')
+        literal !== undefined &&
+        fallbackLiteral !== undefined &&
+        Object.is(literal.value, fallbackLiteral.value)
         ? [key]
         : [];
     }),
   );
+}
+
+/** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */
+function literalOf(node: unknown): { readonly value: unknown } | undefined {
+  const type = field(node, 'type');
+
+  if (type === 'NullLiteral') {
+    return { value: null };
+  }
+
+  if (literalTypes.includes(type)) {
+    return { value: field(node, 'value') };
+  }
+
+  const [quasi, ...more] = list(field(node, 'quasis'));
+  const cooked = field(quasi, 'value', 'cooked');
+
+  if (
+    type === 'TemplateLiteral' &&
+    more.length === 0 &&
+    typeof cooked === 'string'
+  ) {
+    return { value: cooked };
+  }
+
+  const negated = field(node, 'argument', 'value');
+
+  return type === 'UnaryExpression' &&
+    field(node, 'operator') === '-' &&
+    field(node, 'argument', 'type') === 'NumericLiteral' &&
+    typeof negated === 'number'
+    ? { value: -negated }
+    : undefined;
 }
 
 /** The value of `key` that the properties of `layers`, the first layer and its last property first, set; `undefined` when none sets it or a spread or computed key that only running the file resolves comes first. */
@@ -278,7 +347,7 @@ function argsLayers(
 }
 
 /** A name's top-level value; a name the file does not bind, or any other node, as it is. */
-function followed(
+function topLevelValueOrSelf(
   node: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
@@ -287,19 +356,19 @@ function followed(
   return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
 }
 
-/** An `args` object literal with the keys that stay: those the functions that run for it read, and `kept`; when one runs and none reads it whole. */
+/** The args site of `argsObject` when it is an object literal, at least one function runs for it and none reads it whole; none otherwise. */
 function site(
   argsObject: unknown,
   readers: readonly Reads[],
-  kept: ReadonlySet<Key>,
-): readonly [unknown, ReadonlySet<Key>] | undefined {
-  const reads = union([...readers, kept]);
+  sameAsBelow: ReadonlySet<Key>,
+): readonly Site[] {
+  const read = union(readers);
 
   return field(argsObject, 'type') !== 'ObjectExpression' ||
     readers.length === 0 ||
-    reads === 'whole'
-    ? undefined
-    : [argsObject, reads];
+    read === 'whole'
+    ? []
+    : [[argsObject, { read, sameAsBelow }]];
 }
 
 function union(reads: readonly Reads[]): Reads {
@@ -308,31 +377,35 @@ function union(reads: readonly Reads[]): Reads {
     : new Set(reads.flatMap((keys) => (keys === 'whole' ? [] : [...keys])));
 }
 
-interface TestCall {
-  readonly options: unknown;
-  readonly testFunction: unknown;
-}
-
-/** The top-level `<story>.test(name, [options,] fn)` calls on a story. */
+/** The top-level `<story>.test(name, [options,] fn)` calls on a story that Storybook 10.6.5 indexes and runs, the first of each name; a call with a spread argument has an unknown test function. */
 function testCallsOn(
   body: readonly unknown[],
   local: unknown,
-): readonly TestCall[] {
+): readonly { readonly options: unknown; readonly testFunction: unknown }[] {
   return body
-    .map((statement) => field(statement, 'expression'))
+    .flatMap(testCallOf)
+    .filter(({ target }) => target === local)
     .filter(
-      (call) =>
-        field(call, 'type') === 'CallExpression' &&
-        field(call, 'callee', 'property', 'name') === 'test' &&
-        field(call, 'callee', 'object', 'name') === local,
+      ({ args: [name] }, index, calls) =>
+        calls.findIndex(
+          ({ args: [other] }) => field(other, 'value') === field(name, 'value'),
+        ) === index,
     )
-    .map((call) => {
-      const args = list(field(call, 'arguments'));
+    .flatMap(({ statement, args }) => {
+      const [, ...rest] = args;
 
-      return {
-        options: args.length > 2 ? args[1] : undefined,
-        testFunction: args.at(-1),
-      };
+      if (isIndexedTestCall(statement)) {
+        return [
+          {
+            options: rest.length > 1 ? rest[0] : undefined,
+            testFunction: rest.at(-1),
+          },
+        ];
+      }
+
+      return args.some((arg) => field(arg, 'type') === 'SpreadElement')
+        ? [{ options: undefined, testFunction: undefined }]
+        : [];
     });
 }
 
@@ -342,7 +415,7 @@ function ownOrBasePlay(
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
   const call = unwrap(init);
-  const own = propertyValue(storyArgument(call), 'play');
+  const own = playIn(storyArgument(call), bindings);
   const base = field(call, 'callee', 'object', 'name');
 
   return own === undefined &&
@@ -350,6 +423,24 @@ function ownOrBasePlay(
     typeof base === 'string'
     ? ownOrBasePlay(bindings.get(base), withoutBinding(bindings, base))
     : own;
+}
+
+/** The play an object literal sets: its last `play` key, or the play of a top-level object it spreads after that key. */
+function playIn(
+  object: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): unknown {
+  return list(field(object, 'properties'))
+    .toReversed()
+    .map((property) => {
+      const spread = field(property, 'argument', 'name');
+
+      return field(property, 'type') === 'SpreadElement' &&
+        typeof spread === 'string'
+        ? playIn(unwrap(bindings.get(spread)), withoutBinding(bindings, spread))
+        : propertyValue({ properties: [property] }, 'play');
+    })
+    .find((play) => play !== undefined);
 }
 
 /** The keys of `args` that a play or test function reads through its context parameter. */
@@ -515,14 +606,4 @@ function descendants(path: NodePath): readonly NodePath[] {
   });
 
   return found;
-}
-
-function propertyValue(object: unknown, key: string): unknown {
-  const property = list(field(object, 'properties')).find(
-    (candidate) => field(candidate, 'key', 'name') === key,
-  );
-
-  return field(property, 'type') === 'ObjectMethod'
-    ? property
-    : field(property, 'value');
 }

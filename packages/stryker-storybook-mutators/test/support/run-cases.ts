@@ -41,10 +41,22 @@ async function mutantsOf(
   }
 
   return mutants.map((mutant: unknown) => ({
-    fileName: String(fieldOf(mutant, 'fileName')),
-    mutatorName: String(fieldOf(mutant, 'mutatorName')),
-    replacement: String(fieldOf(mutant, 'replacement')),
+    fileName: stringField(mutant, 'fileName'),
+    mutatorName: stringField(mutant, 'mutatorName'),
+    replacement: stringField(mutant, 'replacement'),
   }));
+}
+
+function stringField(mutant: unknown, key: string): string {
+  const value = fieldOf(mutant, key);
+
+  if (typeof value !== 'string') {
+    throw new TypeError(
+      `Instrumenter.instrument() gave a mutant with no ${key}`,
+    );
+  }
+
+  return value;
 }
 
 function fileOf(testCase: Case): string {

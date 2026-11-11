@@ -100,6 +100,14 @@ export const cases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'no-meta',
+    title:
+      'a story-like object in a file with no CSF meta makes no mutant, as the file is no story file',
+    source:
+      "export const Primary = { args: { label: 'a', disabled: true }, play: async () => {} };\n",
+    expect: [],
+  },
+  {
     id: 'meta-play',
     title: "a story's args are mutated when the meta has a play",
     source:
@@ -229,6 +237,20 @@ export const cases: readonly Case[] = [
     ],
   },
   {
+    id: 'duplicate-key',
+    title:
+      'a key that a later key of the same name overrides makes no mutant, as removing it changes nothing',
+    source: inStory(
+      "args: { label: 'a', label: 'b', disabled: true },",
+      'play: async () => {},',
+    ),
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', label: 'b' }"],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'computed-key',
     title: 'a computed key in args stays in every mutant',
     source: inStory(
@@ -294,6 +316,40 @@ export const cases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-name-not-literal',
+    title:
+      "the args in the options of a .test() call whose name is no string literal make no mutant, as Storybook's index lists no such call",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      "Primary.test(name, { args: { label: 'a', disabled: true } }, async () => {});",
+    ),
+    expect: [],
+  },
+  {
+    id: 'test-spread-argument',
+    title:
+      'a .test() call with a spread argument makes every key of the story stay, as only running the file tells which test function it passes',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true }, play: async () => {} });",
+      "Primary.test('t', ...steps);",
+    ),
+    expect: [],
+  },
+  {
+    id: 'test-name-repeated',
+    title:
+      'the args in the options of a second .test() call with the same name make no mutant, as Storybook runs the first',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      "Primary.test('t', async () => {});",
+      "Primary.test('t', { args: { label: 'a', disabled: true } }, async () => {});",
+    ),
+    expect: [],
+  },
+  {
     id: 'story-with-test',
     title:
       "a story's args are mutated when a .test() call runs it, and keys its test function reads stay",
@@ -314,6 +370,26 @@ export const cases: readonly Case[] = [
       'export const A = { play: async ({ args }) => { args.label; } };\n' +
       "export const B = { args: { label: 'a', disabled: true }, play: A.play };\n",
     expect: [],
+  },
+  {
+    id: 'spread-base-play',
+    title:
+      "a key read by the play of a story spread into the story stays, as that play replaces the meta's",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'export const A = { play: async ({ args }) => { args.label; } };\n' +
+      "export const B = { ...A, args: { label: 'a', disabled: true } };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'assigned-play',
+    title:
+      'a play assigned to the story after its declaration runs for its args, and a key it reads stays',
+    source:
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n" +
+      'Primary.play = async ({ args }) => { args.label; };\n',
+    expect: [[args, "{ label: 'a' }"]],
   },
   {
     id: 'play-call-result',
@@ -435,11 +511,48 @@ export const cases: readonly Case[] = [
   },
   {
     id: 'meta-same-literal',
-    title: "a key whose literal value equals the meta's makes no mutant",
+    title:
+      "a key whose literal value equals the meta's makes no mutant, nor does removing the other key, which leaves args that behave like ObjectLiteral's {}",
     source:
       "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
       "export const Primary = { args: { label: 'a', disabled: true } };\n",
-    expect: [[args, "{ label: 'a' }"]],
+    expect: [],
+  },
+  {
+    id: 'meta-same-negative-number',
+    title: "a key whose negative number equals the meta's makes no mutant",
+    source:
+      "export default { title: 'Button', args: { size: -1 }, play: async () => {} };\n" +
+      "export const Primary = { args: { size: -1, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ size: -1, disabled: true }'],
+      [args, "{ size: -1, label: 'a' }"],
+    ],
+  },
+  {
+    id: 'meta-same-template-literal',
+    title:
+      "a key whose template literal without expressions equals the meta's string makes no mutant",
+    source:
+      "export default { title: 'Button', args: { size: 'small' }, play: async () => {} };\n" +
+      "export const Primary = { args: { size: `small`, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ size: `small`, disabled: true }'],
+      [args, "{ size: `small`, label: 'a' }"],
+    ],
+  },
+  {
+    id: 'undefined-without-meta-value',
+    title:
+      "a key set to undefined that the meta does not set is removed, as the project's args may set it",
+    source: inStory(
+      'args: { label: undefined, disabled: true },',
+      'play: async () => {},',
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, '{ label: undefined }'],
+    ],
   },
   {
     id: 'meta-other-literal',
@@ -592,9 +705,12 @@ export const cases: readonly Case[] = [
     source: inFactoryFile(
       'const meta = preview.meta({});',
       "export const Primary = meta.story({ args: { label: 'a' }, play: async () => {} });",
-      "export const Small = Primary.extend({ args: { label: 'a', size: 's' } });",
+      "export const Small = Primary.extend({ args: { label: 'a', size: 's', disabled: true } });",
     ),
-    expect: [[args, "{ label: 'a' }"]],
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 's' }"],
+    ],
   },
   {
     id: 'test-options-same-literal',
@@ -603,9 +719,12 @@ export const cases: readonly Case[] = [
     source: inFactoryFile(
       'const meta = preview.meta({});',
       "export const Primary = meta.story({ args: { label: 'a' } });",
-      "Primary.test('t', { args: { label: 'a', size: 's' } }, async () => {});",
+      "Primary.test('t', { args: { label: 'a', size: 's', disabled: true } }, async () => {});",
     ),
-    expect: [[args, "{ label: 'a' }"]],
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 's' }"],
+    ],
   },
   {
     id: 'extend-other-literal-than-base',

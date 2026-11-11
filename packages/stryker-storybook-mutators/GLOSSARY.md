@@ -17,10 +17,9 @@ _Avoid_: story mutator, Storybook operator
 ### Args
 
 **Args site**:
-An `args` object literal that `LzStorybookArgs` mutates: a story's own `args` (a CSF3 story object, `.story()` or
-`.extend()`) or the `args` in a `.test(name, options, fn)` options object, when a play or test function runs for it:
-the story's own play, the play `.extend()` takes from its base story, the meta's play, or a `.test()` call on the
-story. The story must be one Storybook's Vitest transform tests, and its static tags must not end in `!test`.
+An `args` object literal in a story file that `LzStorybookArgs` mutates because a play or test function runs for it:
+a story's own `args` (a CSF3 story object, `.story()` or `.extend()`) or the `args` in a `.test(name, options, fn)`
+options object.
 _Avoid_: args target, story args (the meta's `args` are no args site)
 
 **Read key**:
@@ -33,9 +32,11 @@ _Avoid_: used arg, checked arg
 **Per-key mutant**:
 An args site with one key that is no read key removed, so the story falls back to the value below it: one that a
 `...Base.args` spread before the key sets, then the base story's for `.extend()` or the story's for `.test()`
-options, then the meta's and the project's. A key whose literal value equals that value gets none.
+options, then the meta's and the project's. A key whose literal value (a negative number and a template literal without expressions
+count) equals that value gets none, and neither
+does a key whose removal leaves only keys like that, as such args behave like ObjectLiteral's `{}`.
 _Avoid_: arg removal
 
 **Coarse mutant**:
-An args site with every key that is no read key removed at once.
+An args site with every key that is no read key removed at once, under the same `{}` rule as a per-key mutant.
 _Avoid_: story args mutant, StoryArgs
