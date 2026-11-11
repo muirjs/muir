@@ -31,6 +31,9 @@
       "path": "./packages/stryker-storybook-mutators"
     },
     {
+      "path": "./packages/stryker-msw-mutators"
+    },
+    {
       "path": "./packages/storybook-mock-transformer"
     },
     {

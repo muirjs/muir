@@ -20,6 +20,8 @@
   a test-code run shows which steps of a play function no check depends on.
 - [Storybook mutators](./packages/stryker-storybook-mutators/GLOSSARY.md): mutate story data, so a run of the
   components configuration shows which story data no story test depends on.
+- [msw mutators](./packages/stryker-msw-mutators/GLOSSARY.md): mutate the responses of msw request handlers, so a
+  test-code run shows which mocked responses no test outcome depends on, with any test runner.
 
 ## Relationships
 
@@ -32,6 +34,12 @@
   built-in removal; `LzStorybookInteractionTarget` makes its same-file swaps through the same swap engine and site
   readers.
 - **Storybook mutators -> Mutator install**: installed the same way, keeping Stryker's built-in mutators.
+- **msw mutators -> Mutator install**: installed the same way, with an experimental tier, keeping Stryker's
+  built-in mutators. A test mutator package that removes the built-ins in the same Stryker run removes them for msw
+  handlers too, since the mutator list is one per run.
+- **msw mutators <-> Storybook**: neither uses the other. The CSF ignorer hides the handlers in a story's
+  `parameters.msw` where its play mode is `ignore`, so the msw mutators reach them in the configuration that sets
+  `mutate`.
 - **Storybook mutators -> Storybook**: they read story files with `csf.ts` from `@layzee/storybook-csf`, and
   mutate story data, so they belong in the Stryker configuration for the components,
   where the CSF ignorer's play mode is `ignore`.

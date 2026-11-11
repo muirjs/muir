@@ -11,8 +11,8 @@ swap sites with.
 
 **Mutator package**:
 A `@layzee` package whose mutators reach Stryker through an install: `@layzee/stryker-jsx-mutators`,
-`@layzee/stryker-playwright-mutators`, `@layzee/stryker-storybook-mutators` and
-`@layzee/stryker-storybook-test-mutators`.
+`@layzee/stryker-playwright-mutators`, `@layzee/stryker-storybook-mutators`,
+`@layzee/stryker-storybook-test-mutators` and `@layzee/stryker-msw-mutators`.
 _Avoid_: mutator plugin
 
 **Install**:
