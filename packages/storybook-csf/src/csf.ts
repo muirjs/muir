@@ -60,7 +60,7 @@ export function csfShapes(program: unknown): CsfShapes {
     key: string,
   ): readonly unknown[] =>
     [
-      ...[...metaObjects, ...stories].map((owner) => propertyValue(owner, key)),
+      ...[...metaObjects, ...stories].map((owner) => writtenValue(owner, key)),
       ...assignedIn(from, key).map(({ value }) => value),
     ].flatMap((value) => withInit(value, bindings));
   const testCodeOf = (key: string): readonly unknown[] => [
@@ -69,8 +69,8 @@ export function csfShapes(program: unknown): CsfShapes {
   ];
   const locals = exported.map(({ local }) => local);
   const idParameters = stories
-    .map((story) => propertyValue(story, 'parameters'))
-    .filter((parameters) => propertyValue(parameters, '__id') !== undefined);
+    .map((story) => writtenValue(story, 'parameters'))
+    .filter((parameters) => writtenValue(parameters, '__id') !== undefined);
   const testCalls = body
     .flatMap(testCallOf)
     .filter(({ target }) => locals.includes(target))
@@ -108,16 +108,16 @@ export function csfShapes(program: unknown): CsfShapes {
     ),
     mswValues: new Set(
       annotationsIn(runtime, 'parameters').flatMap((parameters) =>
-        withInit(propertyValue(parameters, 'msw'), bindings),
+        withInit(writtenValue(parameters, 'msw'), bindings),
       ),
     ),
     staticValues: new Set([
       ...staticKeys.flatMap((key) => annotationsIn(assignments, key)),
-      ...idParameters.map((parameters) => propertyValue(parameters, '__id')),
+      ...idParameters.map((parameters) => writtenValue(parameters, '__id')),
       bindings.get('__namedExportsOrder'),
       ...testCalls.flatMap(({ name, options }) => [
         name,
-        ...withInit(propertyValue(options, 'tags'), bindings),
+        ...withInit(writtenValue(options, 'tags'), bindings),
       ]),
       ...specifiers.map((specifier) => field(specifier, 'exported')),
     ]),
@@ -228,7 +228,7 @@ function storyFilter(
     'excludeStories',
   ].map((key) =>
     metaObjects
-      .map((meta) => propertyValue(meta, key))
+      .map((meta) => writtenValue(meta, key))
       .find((value) => value !== undefined),
   );
 
@@ -810,11 +810,8 @@ function nodesIn(node: object): readonly unknown[] {
   return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
 }
 
-/** The value the last property of `key` in an object literal gives, which replaces any earlier one; a spread is not read. */
-export function propertyValue(
-  object: unknown,
-  key: string,
-): object | undefined {
+/** The value node the file writes for `key` in an object literal: the last property of that key, whether or not a later spread or computed key may replace it when the file runs. It tells what role a node has, such as test code or a tag list, not which value runs; `objectValue` reads that. */
+export function writtenValue(object: unknown, key: string): object | undefined {
   const property = list(field(object, 'properties')).findLast(
     (candidate) => propertyKey(candidate) === key,
   );

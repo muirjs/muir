@@ -1,7 +1,7 @@
 import {
   firstTestCalls,
   isIndexedTestCall,
-  propertyValue,
+  writtenValue,
   storyArgument,
   testArguments,
   testCallOf,
@@ -76,7 +76,7 @@ export function playedStories(
 function isTaggedTest(owners: readonly unknown[]): boolean {
   return (
     owners
-      .flatMap((owner) => list(field(propertyValue(owner, 'tags'), 'elements')))
+      .flatMap((owner) => list(field(writtenValue(owner, 'tags'), 'elements')))
       .map((tag) => field(tag, 'value'))
       .filter((tag) => tag === 'test' || tag === '!test')
       .at(-1) !== '!test'

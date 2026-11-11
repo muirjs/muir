@@ -3,8 +3,9 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { propertyValue, topLevelBindings } from '../src/csf.ts';
+import { topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
+import { objectValue } from '../src/object-value.ts';
 import { storyValues } from '../src/story-layers.ts';
 
 describe('storyValues', () => {
@@ -29,7 +30,7 @@ describe('storyValues', () => {
 
     assert.deepEqual(
       storyValues(bindings.get('B'), bindings, 'globals').map((globals) =>
-        field(propertyValue(globals, 'locale'), 'value'),
+        field(objectValue(globals, 'locale'), 'value'),
       ),
       ['de', 'en'],
     );
