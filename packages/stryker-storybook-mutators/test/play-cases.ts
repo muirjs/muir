@@ -331,6 +331,16 @@ export const playCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'meta-play-from-spread',
+    title:
+      'the play of a top-level object the meta spreads runs for a story, which keeps the keys it reads',
+    source:
+      'const common = { play: async ({ args }) => args.label };\n' +
+      "export default { title: 'Button', ...common };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
     id: 'meta-play-before-unresolved-spread',
     title:
       'a story under a meta play before a spread of an imported object makes no mutant, as the play that runs is unknown and may read any key',

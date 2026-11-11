@@ -5,6 +5,7 @@ import {
   testArguments,
   testCallOf,
   topLevelValueOrSelf,
+  unchangedBindings,
   unwrap,
   type CsfFile,
   type StoryExport,
@@ -12,7 +13,8 @@ import {
 } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { objectValues, unknownValue, writtenValue } from './object-value.ts';
+import { unknownValue, writtenValue } from './object-value.ts';
+import { resolvedValues } from './resolved-values.ts';
 import { storyValueChain } from './story-layers.ts';
 
 /** An unknown play with a play the file reads under it, which runs when the unknown one sets none: an earlier own play, an `.extend()` base's or the meta's. */
@@ -34,13 +36,16 @@ export interface PlayedStory {
 export function playedStories(
   body: readonly unknown[],
   bindings: ReadonlyMap<string, unknown>,
-  { metaObjects, stories }: CsfFile,
+  { metaObjects, stories, written }: CsfFile,
 ): readonly PlayedStory[] {
   if (metaObjects.length === 0) {
     return [];
   }
 
-  const metaPlays = metaObjects.flatMap((meta) => objectValues(meta, 'play'));
+  const unchanged = unchangedBindings(bindings, written);
+  const metaPlays = metaObjects.flatMap((meta) =>
+    resolvedValues(meta, 'play', unchanged),
+  );
 
   return stories
     .filter(
