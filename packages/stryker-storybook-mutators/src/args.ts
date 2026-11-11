@@ -198,7 +198,6 @@ const literalTypes: readonly unknown[] = [
   'StringLiteral',
   'NumericLiteral',
   'BooleanLiteral',
-  'NullLiteral',
 ];
 
 /** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it. */
@@ -225,14 +224,50 @@ function sameLiteralKeys(
               bindings,
             );
 
+      const literal = literalOf(value);
+      const fallbackLiteral = literalOf(fallbackValue);
+
       return key !== undefined &&
-        literalTypes.includes(field(value, 'type')) &&
-        field(value, 'type') === field(fallbackValue, 'type') &&
-        field(value, 'value') === field(fallbackValue, 'value')
+        literal !== undefined &&
+        fallbackLiteral !== undefined &&
+        Object.is(literal.value, fallbackLiteral.value)
         ? [key]
         : [];
     }),
   );
+}
+
+/** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */
+function literalOf(node: unknown): { readonly value: unknown } | undefined {
+  const type = field(node, 'type');
+
+  if (type === 'NullLiteral') {
+    return { value: null };
+  }
+
+  if (literalTypes.includes(type)) {
+    return { value: field(node, 'value') };
+  }
+
+  const [quasi, ...more] = list(field(node, 'quasis'));
+  const cooked = field(quasi, 'value', 'cooked');
+
+  if (
+    type === 'TemplateLiteral' &&
+    more.length === 0 &&
+    typeof cooked === 'string'
+  ) {
+    return { value: cooked };
+  }
+
+  const negated = field(node, 'argument', 'value');
+
+  return type === 'UnaryExpression' &&
+    field(node, 'operator') === '-' &&
+    field(node, 'argument', 'type') === 'NumericLiteral' &&
+    typeof negated === 'number'
+    ? { value: -negated }
+    : undefined;
 }
 
 /** The value of `key` that the properties of `layers`, the first layer and its last property first, set; `undefined` when none sets it or a spread or computed key that only running the file resolves comes first. */

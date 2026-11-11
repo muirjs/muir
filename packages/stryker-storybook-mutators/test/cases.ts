@@ -477,6 +477,29 @@ export const cases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'meta-same-negative-number',
+    title: "a key whose negative number equals the meta's makes no mutant",
+    source:
+      "export default { title: 'Button', args: { size: -1 }, play: async () => {} };\n" +
+      "export const Primary = { args: { size: -1, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, "{ size: -1, disabled: true }"],
+      [args, "{ size: -1, label: 'a' }"],
+    ],
+  },
+  {
+    id: 'meta-same-template-literal',
+    title:
+      "a key whose template literal without expressions equals the meta's string makes no mutant",
+    source:
+      "export default { title: 'Button', args: { size: 'small' }, play: async () => {} };\n" +
+      "export const Primary = { args: { size: `small`, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ size: `small`, disabled: true }'],
+      [args, "{ size: `small`, label: 'a' }"],
+    ],
+  },
+  {
     id: 'meta-other-literal',
     title: "a key whose literal value differs from the meta's is removed",
     source:
