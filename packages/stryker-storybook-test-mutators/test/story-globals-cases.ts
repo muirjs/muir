@@ -94,7 +94,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-own-before-unresolved-spread',
     title:
-      "a story's globals before a spread of an imported object make no mutant, as the spread may replace them",
+      "a story's globals before a spread of an imported object are a site, as the file does not prove that the spread replaces them",
     source: [
       "import { Shared } from './shared';",
       '',
@@ -103,7 +103,7 @@ export const storyGlobalsCases: readonly Case[] = [
       "export const Story = { globals: { locale: 'fr' }, ...Shared, play: async () => {} };",
       '',
     ].join('\n'),
-    expect: [],
+    expect: [[storyGlobals, '{}']],
   },
   {
     id: 'story-globals-unknown-play',
@@ -164,7 +164,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-test-options-over-unresolved-spread',
     title:
-      "the options of a .test() call get a mutant of a default value when the story's globals come before a spread of an imported object, which may set that global",
+      "the options of a .test() call get a mutant of a default value when the story's globals come before a spread of an imported object, which may set that global, and the story's globals get theirs",
     source: [
       "import { Shared } from './shared';",
       "import preview from '../.storybook/preview';",
@@ -175,7 +175,10 @@ export const storyGlobalsCases: readonly Case[] = [
       "Story.test('t', { globals: { outline: false } }, async () => {});",
       '',
     ].join('\n'),
-    expect: [[storyGlobals, '{}']],
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, '{}'],
+    ],
   },
   {
     id: 'story-globals-test-options',
@@ -603,7 +606,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-before-written-spread',
     title:
-      "a story's own globals get no mutant when a later spread names a story the file writes globals to, as that spread may replace them",
+      "a story's own globals are a site when a later spread names a story the file writes globals to, as the file does not prove that the spread replaces them; the default outline still gets none",
     source: storyFile(
       'export const Base = { args: {} };',
       "Base.globals = { locale: 'fr' };",
@@ -613,7 +616,7 @@ export const storyGlobalsCases: readonly Case[] = [
       '  play: async () => {},',
       '};',
     ),
-    expect: [],
+    expect: [[storyGlobals, '{ outline: false }']],
   },
   {
     id: 'story-globals-default-over-story',
@@ -671,7 +674,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-replaced-by-computed-key',
     title:
-      "a story's own globals before a computed key of an imported name make no mutant, as that key may replace them",
+      "a story's own globals before a computed key of an imported name are a site, as the file does not prove that the key replaces them",
     source: [
       "import { k } from './k';",
       '',
@@ -680,7 +683,7 @@ export const storyGlobalsCases: readonly Case[] = [
       "export const Story = { globals: { locale: 'fr' }, [k]: {}, play: async () => {} };",
       '',
     ].join('\n'),
-    expect: [],
+    expect: [[storyGlobals, '{}']],
   },
   {
     id: 'story-globals-meta-duplicate-key',

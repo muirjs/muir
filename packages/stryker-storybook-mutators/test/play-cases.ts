@@ -326,13 +326,16 @@ export const playCases: readonly Case[] = [
   {
     id: 'before-written-spread',
     title:
-      "a story's args before a spread of an object the file writes args to make no mutant, as the spread may replace them",
+      "a story's args before a spread of an object the file writes args to are mutated, as the file does not prove that the spread replaces them",
     source:
       "export default { title: 'Button' };\n" +
       'const Base = { parameters: {} };\n' +
       "Base.args = { label: 'b' };\n" +
       "export const Primary = { args: { label: 'a', disabled: true }, ...Base, play: async () => {} };\n",
-    expect: [],
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
   },
   {
     id: 'reassigned-play-name',
@@ -359,22 +362,28 @@ export const playCases: readonly Case[] = [
   {
     id: 'before-unresolved-spread',
     title:
-      "a story's args before a spread of an imported object make no mutant, as the spread may replace them",
+      "a story's args before a spread of an imported object are mutated, as the file does not prove that the spread replaces them (ADR 0006)",
     source:
       "import { Shared } from './shared';\n" +
       "export default { title: 'Button' };\n" +
       "export const Primary = { args: { label: 'a', disabled: true }, ...Shared, play: async () => {} };\n",
-    expect: [],
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
   },
   {
     id: 'before-computed-key',
     title:
-      "a story's args before a computed key of an imported name make no mutant, as that key may replace them",
+      "a story's args before a computed key of an imported name are mutated, as the file does not prove that the key replaces them",
     source:
       "import { k } from './k';\n" +
       "export default { title: 'Button' };\n" +
       "export const Primary = { args: { label: 'a', disabled: true }, [k]: {}, play: async () => {} };\n",
-    expect: [],
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
   },
   {
     id: 'meta-play-from-spread',

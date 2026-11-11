@@ -1,7 +1,7 @@
 import { storyArgument, unwrap, withoutBinding } from './csf.ts';
 import { field, list } from './node-field.ts';
 import {
-  maySet,
+  propertyKey,
   unknownValue,
   valuesIn,
   type LayerValue,
@@ -35,14 +35,14 @@ export function storyValueChain(
   );
 }
 
-/** The value of `key` the story's own object sets when it is the one that runs: `unknownValue` when an own spread or computed key that does not resolve may set it last, `undefined` when a property of another object replaces it or none sets it. */
+/** The value of `key` the story's own object sets when nothing the file reads replaces it: a spread or computed key the file does not resolve may or may not set it, so it does not count; `undefined` when a property of another object replaces it or none sets it. */
 export function ownStoryValue(
   init: unknown,
   bindings: ReadonlyMap<string, unknown>,
   key: string,
 ): LayerValue {
   const [own] = storyLayers(init, bindings);
-  const winner = own.find((property) => maySet(property, key));
+  const winner = own.find((property) => propertyKey(property) === key);
 
   return list(field(storyArgument(unwrap(init)), 'properties')).includes(winner)
     ? valuesIn([winner], key)[0]
