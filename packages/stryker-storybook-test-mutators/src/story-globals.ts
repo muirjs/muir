@@ -6,6 +6,7 @@ import {
   maySetIn,
   objectValue,
   ownStoryValue,
+  ownValue,
   playedStories,
   propertyKey,
   resolvedValue,
@@ -78,7 +79,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
           ...matched.map(
             (options) =>
               [
-                resolvedValue(options, 'globals', unchanged),
+                ownValue(options, 'globals', unchanged),
                 {
                   globals: [runs, ...globals].filter(defined),
                   parameters: [

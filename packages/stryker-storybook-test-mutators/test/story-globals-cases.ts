@@ -700,7 +700,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-test-options-before-unresolved-spread',
     title:
-      'the globals in .test() options before a spread of an imported object make no mutant, as the spread may replace them',
+      'the globals in .test() options before a spread of an imported object are a site, as the file does not prove that the spread replaces them',
     source: [
       "import { shared } from './shared';",
       '',
@@ -711,12 +711,12 @@ export const storyGlobalsCases: readonly Case[] = [
       "Story.test('t', { globals: { locale: 'fr' }, ...shared }, async () => {});",
       '',
     ].join('\n'),
-    expect: [],
+    expect: [[storyGlobals, '{}']],
   },
   {
     id: 'story-globals-test-options-before-computed-key',
     title:
-      'the globals in .test() options before a computed key of an imported name make no mutant, as that key may replace them',
+      'the globals in .test() options before a computed key of an imported name are a site, as the file does not prove that the key replaces them',
     source: [
       "import { k } from './k';",
       '',
@@ -727,7 +727,7 @@ export const storyGlobalsCases: readonly Case[] = [
       "Story.test('t', { globals: { locale: 'fr' }, [k]: {} }, async () => {});",
       '',
     ].join('\n'),
-    expect: [],
+    expect: [[storyGlobals, '{}']],
   },
   {
     id: 'story-globals-meta-before-unresolved-spread',
