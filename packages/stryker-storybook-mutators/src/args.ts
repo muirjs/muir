@@ -102,30 +102,46 @@ function argsSites(body: readonly unknown[]): Sites {
     .find((args) => args !== undefined);
 
   return new Map(
-    stories.flatMap(({ init, local }) => {
-      const play = followed(
-        ownOrBasePlay(init, bindings) ?? metaPlay,
-        bindings,
-      );
-      const plays = play === undefined ? [] : [play];
-      const tests = testCallsOn(body, local).map((call) => ({
-        ...call,
-        testFunction: followed(call.testFunction, bindings),
-      }));
+    stories
+      .filter(
+        ({ tested, init }) =>
+          tested && isTaggedTest([...metaObjects, storyArgument(unwrap(init))]),
+      )
+      .flatMap(({ init, local }) => {
+        const play = followed(
+          ownOrBasePlay(init, bindings) ?? metaPlay,
+          bindings,
+        );
+        const plays = play === undefined ? [] : [play];
+        const tests = testCallsOn(body, local).map((call) => ({
+          ...call,
+          testFunction: followed(call.testFunction, bindings),
+        }));
 
-      const storyArgs = propertyValue(storyArgument(unwrap(init)), 'args');
+        const storyArgs = propertyValue(storyArgument(unwrap(init)), 'args');
 
-      return [
-        site(
-          storyArgs,
-          [...plays, ...tests.map(({ testFunction }) => testFunction)],
-          sameLiteralKeys(storyArgs, metaArgs),
-        ),
-        ...tests.map(({ options, testFunction }) =>
-          site(propertyValue(options, 'args'), [...plays, testFunction]),
-        ),
-      ].flatMap((found) => (found === undefined ? [] : [found]));
-    }),
+        return [
+          site(
+            storyArgs,
+            [...plays, ...tests.map(({ testFunction }) => testFunction)],
+            sameLiteralKeys(storyArgs, metaArgs),
+          ),
+          ...tests.map(({ options, testFunction }) =>
+            site(propertyValue(options, 'args'), [...plays, testFunction]),
+          ),
+        ].flatMap((found) => (found === undefined ? [] : [found]));
+      }),
+  );
+}
+
+/** Storybook 10.6.5 `combineTags`: a later `test` or `!test` in the static tags of the meta, then the story, wins over an earlier one. */
+function isTaggedTest(owners: readonly unknown[]): boolean {
+  return (
+    owners
+      .flatMap((owner) => list(field(propertyValue(owner, 'tags'), 'elements')))
+      .map((tag) => field(tag, 'value'))
+      .filter((tag) => tag === 'test' || tag === '!test')
+      .at(-1) !== '!test'
   );
 }
 

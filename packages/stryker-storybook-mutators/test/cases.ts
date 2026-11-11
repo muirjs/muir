@@ -464,6 +464,46 @@ export const cases: readonly Case[] = [
       [args, '{ onClick: fn() }'],
     ],
   },
+  {
+    id: 'meta-exported-by-specifier',
+    title:
+      "a story in a file whose meta object is exported by specifier makes no mutant, as Storybook's Vitest transform tests no story there",
+    source:
+      "const meta = { title: 'Button', play: async () => {} };\n" +
+      'export { meta as default };\n' +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n",
+    expect: [],
+  },
+  {
+    id: 'story-tagged-not-test',
+    title: 'a story tagged !test makes no mutant',
+    source: inStory(
+      "tags: ['!test'],",
+      "args: { label: 'a', disabled: true },",
+      'play: async () => {},',
+    ),
+    expect: [],
+  },
+  {
+    id: 'meta-tagged-not-test',
+    title: 'a story under a meta tagged !test makes no mutant',
+    source:
+      "export default { title: 'Button', tags: ['!test'], play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n",
+    expect: [],
+  },
+  {
+    id: 'story-tagged-test-under-not-test-meta',
+    title:
+      "a story tagged test under a meta tagged !test is mutated, as Storybook combines the story's tags after the meta's",
+    source:
+      "export default { title: 'Button', tags: ['!test'], play: async () => {} };\n" +
+      "export const Primary = { tags: ['test'], args: { label: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {
