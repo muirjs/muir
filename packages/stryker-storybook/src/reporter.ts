@@ -51,6 +51,10 @@ type ReportMutant = Pick<
 const outcomeReplacement =
   /\.mock(?:Rejected|Resolved)Value(?:Once)?\((?:new Error\((["'])Stryker\1\)|undefined)\)$/;
 
+export function isOutcomeMutant(replacement: string | undefined): boolean {
+  return outcomeReplacement.test(replacement ?? '');
+}
+
 interface ReportInput {
   readonly files: Readonly<
     Record<
@@ -203,7 +207,7 @@ function stubFindings(
           mutants.flatMap(({ mutatorName, status, location, replacement }) =>
             mutatorName === spyStubName &&
             status === 'Survived' &&
-            !outcomeReplacement.test(replacement ?? '')
+            !isOutcomeMutant(replacement)
               ? [location.start.line]
               : [],
           ),
