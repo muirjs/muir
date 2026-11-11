@@ -26,6 +26,7 @@
 - **Playwright mutators -> Mutator install**: installed the same way; only the Playwright mutators have opt-in and
   experimental tiers so far, and they use built-in removal.
 - **Storybook test mutators -> Mutator install**: installed the same way, with built-in removal.
+- **Storybook mutators -> Mutator install**: installed the same way, keeping Stryker's built-in mutators.
 - **Storybook test mutators -> Storybook**: they mutate story test code, whose mutants the CSF ignorer reports as
   Ignored unless its play mode is `mutate`, so they belong in the Stryker configuration that sets that mode.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
