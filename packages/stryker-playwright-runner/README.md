@@ -628,6 +628,27 @@ otherwise:
   projects' `baseURL` move to a free port, as
   [More than one Stryker process](#more-than-one-stryker-process) says.
 
+## Code coverage tools
+
+Stryker records its own coverage, so a code coverage tool in the project does not change which mutants are
+killed. A run with each of these gave the same mutant results as a run without it: Istanbul through
+`vite-plugin-istanbul` with a fixture that saves `window.__coverage__`, `monocart-reporter` with a
+`page.coverage` fixture, Playwright's `coverage` reporter, and c8 around the `webServer` command. During a
+Stryker run:
+
+- Fixtures run, because they are test code. A fixture that writes coverage files writes them in the dry run
+  and in every mutant run. Those files describe the instrumented, mutated copy of the code in Stryker's
+  sandbox and are keyed by its paths (`.stryker-tmp/sandbox-*/...`). Istanbul instruments that copy a second
+  time and counts Stryker's own branches, so its numbers describe no build of yours. Keep those files out of
+  your coverage reports.
+- The reporters in the Playwright config do not run, so `monocart-reporter` and Playwright's `coverage`
+  reporter write no report.
+- A `webServer` under c8 leaves raw V8 data but no report, because the server is stopped at the end of the
+  run instead of exiting on its own. A plain Playwright run stops it the same way.
+
+Collect code coverage in a plain Playwright run, for example behind an environment variable that only that
+run sets.
+
 ## Limits
 
 - When the dry run's tests pass but no page, Playwright worker or hooked `webServer` loaded instrumented
