@@ -37,7 +37,7 @@ export function isSkipped(path: NodePath, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event type or clear that a later user-event clear of the same target undoes, with no check between. */
+/** A user-event type or clear that the next interaction, a user-event clear of the same target, undoes with no check between. */
 function isClearedLater(path: NodePath, t: BabelTypes): boolean {
   const current = userEventCall(path);
 
@@ -48,20 +48,17 @@ function isClearedLater(path: NodePath, t: BabelTypes): boolean {
     return false;
   }
 
-  const { target } = current;
+  const next = nextSiblings(path).find(
+    (sibling) =>
+      checksIn(sibling).length > 0 || isInteractionStatement(sibling),
+  );
+  const later = next === undefined ? undefined : userEventCall(next);
 
-  return before(
-    nextSiblings(path),
-    (sibling) => checksIn(sibling).length > 0,
-  ).some((sibling) => {
-    const later = userEventCall(sibling);
-
-    return (
-      later?.method === 'clear' &&
-      later.target !== undefined &&
-      t.isNodesEquivalent(target, later.target)
-    );
-  });
+  return (
+    later?.method === 'clear' &&
+    later.target !== undefined &&
+    t.isNodesEquivalent(current.target, later.target)
+  );
 }
 
 /** A user-event click or hover directly before a user-event type or clear of the same target, which clicks it first. */

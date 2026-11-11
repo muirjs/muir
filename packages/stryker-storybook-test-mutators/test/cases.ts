@@ -301,4 +301,20 @@ export const cases: readonly Case[] = [
     source: `export default {\n  afterEach: [\n    () => {\n      button.blur();\n    },\n  ],\n};\n`,
     expect: [],
   },
+  {
+    id: 'type-used-before-clear',
+    title:
+      'a type that another interaction uses before a later clear of the same target is removed',
+    source: inPlay(
+      "await userEvent.type(input, 'a');",
+      'await userEvent.click(submit);',
+      'await userEvent.clear(input);',
+      "await expect(args.onSubmit).toHaveBeenCalledWith('a');",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
 ];
