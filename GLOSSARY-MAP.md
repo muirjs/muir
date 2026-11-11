@@ -35,8 +35,9 @@
 - **Storybook mutators -> Storybook**: they read story files with `csf.ts` from `@layzee/storybook-csf`, and
   mutate story data, so they belong in the Stryker configuration for the components,
   where the CSF ignorer's play mode is `ignore`.
-- **Storybook test mutators -> Storybook**: they mutate story test code, whose mutants the CSF ignorer reports as
-  Ignored unless its play mode is `mutate`, so they belong in the Stryker configuration that sets that mode.
+- **Storybook test mutators -> Storybook**: they read story test code with `csf.ts` from `@layzee/storybook-csf`
+  and mutate it, and the CSF ignorer reports those mutants as Ignored unless its play mode is `mutate`, so they
+  belong in the Stryker configuration that sets that mode.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
   the name check keeps their mutator names distinct.
 - **JSX mutators -> Playwright runner**: JSX mutants are meant for Playwright tests, which the runner runs; the
@@ -45,6 +46,6 @@
   reports as Ignored the mutants of callbacks that Playwright sends to another realm; the runner's page helpers
   make such callbacks work in pages, but not in workers, service workers or Electron.
 - **Storybook**: shares no plugin with the other contexts, and no code apart from `@layzee/storybook-csf`, which
-  the Storybook mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
+  the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
   Playwright runner. Inside it, the mock transformer writes the transformer record that the `lz-storybook` reporter
   reads, and both take the stub shape from `@layzee/storybook-csf`.

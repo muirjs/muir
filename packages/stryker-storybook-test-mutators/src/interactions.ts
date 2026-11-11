@@ -1,4 +1,5 @@
 import type { NodePath, types } from '@babel/core';
+import { csfShapes } from '@layzee/storybook-csf';
 
 import type { BabelTypes } from './mutator.ts';
 
@@ -31,6 +32,8 @@ export type Interaction = InteractionSite &
 
 /** The interaction at `path`, when `path` is an interaction site whose call is an interaction. */
 export function interactionAt(path: NodePath): Interaction | undefined {
+  readStoryFileAt(path);
+
   const site = siteAt(path);
 
   if (site === undefined) {
@@ -103,11 +106,14 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
     return undefined;
   }
 
-  const kind = composedPlayMethods.has(name)
-    ? callee.object.type === 'Identifier' && 'composedPlay'
-    : rawDomArguments.get(name) === call.arguments.length && 'rawDom';
+  const isComposedPlay = composedPlayMethods.has(name);
+  const matches = isComposedPlay
+    ? callee.object.type === 'Identifier'
+    : rawDomArguments.get(name) === call.arguments.length;
 
-  return kind !== false && isInStoryTestCode(path) ? { kind } : undefined;
+  return matches && isInStoryTestCode(path)
+    ? { kind: isComposedPlay ? 'composedPlay' : 'rawDom' }
+    : undefined;
 }
 
 function isMember(
@@ -209,6 +215,8 @@ function hasSkipClick(options: types.Node | undefined): boolean {
 
 /** The interaction whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
 export function targetInteraction(path: NodePath): Interaction | undefined {
+  readStoryFileAt(path);
+
   const query = path.findParent((parent) => parent.isCallExpression());
   const site = path.findParent(
     (parent) => parent.isStatement() || isStepBody(parent),
@@ -407,33 +415,46 @@ export function hasZeroCallsCheck(path: NodePath): boolean {
 
 const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);
 
-const storyTestProperties: ReadonlySet<string> = new Set(['play', ...hooks]);
-
 function isHook(path: NodePath): boolean {
   return isPropertyFunction(path, hooks);
 }
 
-/** Whether `path` lies in story test code: a play function, a hook or a `.test()` body. */
-function isInStoryTestCode(path: NodePath): boolean {
-  return (
-    path.findParent(
-      (parent) =>
-        isPropertyFunction(parent, storyTestProperties) ||
-        isStoryTestBody(parent),
-    ) !== null
-  );
+const testCodeByProgram = new WeakMap<object, ReadonlySet<unknown>>();
+
+/** The story test code of the file around `path`, as `csfShapes` reads it the first time it is asked. */
+function storyTestCode(path: NodePath): ReadonlySet<unknown> {
+  const program = path.isProgram()
+    ? path
+    : path.findParent((parent) => parent.isProgram());
+
+  if (program === null) {
+    return new Set();
+  }
+
+  const read = testCodeByProgram.get(program.node);
+
+  if (read !== undefined) {
+    return read;
+  }
+
+  const { testCode } = csfShapes(program.node);
+
+  testCodeByProgram.set(program.node, testCode);
+
+  return testCode;
 }
 
-/** A function passed to `<Story>.test(...)`. */
-function isStoryTestBody(path: NodePath): boolean {
-  const call = path.parent;
+/** Reads the file's story test code at its program: Stryker places a statement's mutants when it leaves the statement, so a later read could find a story replaced by a mutant switch. */
+function readStoryFileAt(path: NodePath): void {
+  if (path.isProgram()) {
+    storyTestCode(path);
+  }
+}
 
-  return (
-    path.isFunction() &&
-    call?.type === 'CallExpression' &&
-    call.callee.type === 'MemberExpression' &&
-    nameOf(call.callee.property) === 'test'
-  );
+function isInStoryTestCode(path: NodePath): boolean {
+  const testCode = storyTestCode(path);
+
+  return path.findParent((parent) => testCode.has(parent.node)) !== null;
 }
 
 /** A function that is the value of a property named in `names` or an element of its array, a method of such a name, or a function declared in the file and given there by its name. */

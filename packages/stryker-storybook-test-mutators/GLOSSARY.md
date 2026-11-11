@@ -1,8 +1,9 @@
 # Storybook test mutators
 
 Mutators that change story test code instead of the components, so that a surviving mutant shows a step of a play
-function that no check depends on. Story test code is the Storybook context's term; install, tier and built-in
-mutator terms belong to the Mutator install context.
+function that no check depends on. Story test code is the Storybook context's term, read as `@layzee/storybook-csf`
+reads it: the plays and hooks of the meta and the stories, including ones assigned as `Story.play = ...`, and the
+`.test()` bodies of exported stories. Install, tier and built-in mutator terms belong to the Mutator install context.
 
 ## Language
 

@@ -1,9 +1,10 @@
 # The code the Storybook packages share lives in one package, `@layzee/storybook-csf`
 
-`@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer` and `@layzee/stryker-storybook-mutators` need the
-same code to read story files (`csf.ts`), find definition-time spy stubs (`stub-shape.ts`), write and read the
-transformer record (`stryker-record.ts`), and read values of unknown shape (`is-record.ts`, `node-field.ts`). That
-code lives in the internal package `@layzee/storybook-csf`, which the three depend on as a regular dependency. It has
+`@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer`, `@layzee/stryker-storybook-mutators` and
+`@layzee/stryker-storybook-test-mutators` need the same code to read story files (`csf.ts`), find definition-time spy
+stubs (`stub-shape.ts`), write and read the transformer record (`stryker-record.ts`), and read values of unknown shape
+(`is-record.ts`, `node-field.ts`). That code lives in the internal package `@layzee/storybook-csf`, which the four
+depend on as a regular dependency. It has
 no Stryker peer, so the mock transformer, a Vite plugin, still depends on no Stryker package. Lars ruled: "CSF
 reader/shared code: Approve recommendation." The recommendation he approved: shared code reaches its consumers as a
 published dependency, in one package with no Stryker peer, rather than as copies.
