@@ -120,6 +120,48 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'story-globals-unknown-play-over-meta-play',
+    title:
+      "a story whose play a spread of an imported object may set over the meta's play gets its own and the meta's globals mutants, as a play runs whatever that spread sets",
+    source: [
+      "import { Shared } from './shared';",
+      '',
+      "export default { title: 'Probe', globals: { locale: 'de' }, play: async () => {} };",
+      '',
+      "export const Story = { ...Shared, globals: { locale: 'fr' } };",
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-unknown-play-over-base-play',
+    title:
+      "an .extend() story whose play a spread of an imported object may set over its base's play gets its globals mutant",
+    source: factoryFile(
+      "import { Shared } from './shared';",
+      'export const Base = meta.story({ play: async () => {} });',
+      "export const Story = Base.extend({ ...Shared, globals: { locale: 'fr' } });",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-unknown-play-over-own-play',
+    title:
+      'a story whose own play comes before a spread of an imported object gets its globals mutant, as a play runs whatever that spread sets',
+    source: [
+      "import { Shared } from './shared';",
+      '',
+      "export default { title: 'Probe' };",
+      '',
+      "export const Story = { play: async () => {}, ...Shared, globals: { locale: 'fr' } };",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-test-options-over-unresolved-spread',
     title:
       "the options of a .test() call get a mutant of a default value when the story's globals come before a spread of an imported object, which may set that global",
