@@ -31,6 +31,8 @@ mutators from there, so build first (the Nx targets below do).
   `@layzee/stryker-storybook`.
 - `packages/storybook-mock-transformer`: the Vite plugin that keeps Storybook's definition-time spy stubs through the
   default mock reset, package `@layzee/storybook-mock-transformer`.
+- `packages/storybook-csf`: the private code that the Storybook packages share, such as the story file reader,
+  package `@layzee/storybook-csf`.
 - `packages/<package>/stryker.config.mjs`: in each of the six packages, a Stryker config that mutates the
   package's own source. The runner's hooks' tests install the hooks under test on their own global,
   `__stryker_hook_test__`, named by `LZ_STRYKER_PLAYWRIGHT_HOOK_TEST_NAMESPACE`, so an instrumented copy of a hook
@@ -84,8 +86,8 @@ npx nx run @layzee/stryker-jsx-mutators:test
 
 Neither do the Playwright mutators' tests nor the install code's. To check that a package's tests catch a change to
 its source, run Stryker on it with the package's own config, where `<package>` is `stryker-jsx-mutators`,
-`stryker-playwright-mutators`, `stryker-mutator-install`, `stryker-playwright-runner`, `stryker-storybook` or
-`storybook-mock-transformer`:
+`stryker-playwright-mutators`, `stryker-mutator-install`, `stryker-playwright-runner`, `stryker-storybook`,
+`storybook-mock-transformer` or `storybook-csf`:
 
 ```sh
 npx nx run @layzee/stryker-playwright-mutators:test
