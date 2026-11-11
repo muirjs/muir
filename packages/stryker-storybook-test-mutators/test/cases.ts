@@ -82,6 +82,45 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-setup-let',
+    title: 'a call on a let bound to userEvent.setup() is removed',
+    source: inPlay(
+      'let user = userEvent.setup();',
+      "await user.click(canvas.getByRole('button'));",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-setup-from-helper',
+    title:
+      "a call on a setup instance from a helper's return value makes no mutant",
+    source: inPlay(
+      'const { user } = await openMenu(canvas);',
+      "await user.click(canvas.getByRole('button'));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'user-event-setup-let-assigned',
+    title: 'a call on a let assigned userEvent.setup() once is removed',
+    source: inPlay(
+      'let user;',
+      'user = userEvent.setup();',
+      "await user.keyboard('{Enter}');",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-setup-let-reassigned',
+    title: 'a call on a let reassigned after userEvent.setup() makes no mutant',
+    source: inPlay(
+      'let user = userEvent.setup();',
+      'user = createDriver();',
+      "await user.keyboard('{Enter}');",
+    ),
+    expect: [],
+  },
+  {
     id: 'user-event-not-interaction',
     title: 'a userEvent call that interacts with nothing makes no mutant',
     source: inPlay('userEvent.setup();'),

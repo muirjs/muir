@@ -540,7 +540,7 @@ function isUserEvent(node: types.Node, path: NodePath): boolean {
   );
 }
 
-function isSetupCall(node: types.Node | null | undefined): boolean {
+function isSetupCall(node: types.Node | undefined): boolean {
   return (
     node?.type === 'CallExpression' &&
     node.callee.type === 'MemberExpression' &&
@@ -549,15 +549,22 @@ function isSetupCall(node: types.Node | null | undefined): boolean {
   );
 }
 
-function boundValue(
-  path: NodePath,
-  name: string,
-): types.Node | null | undefined {
-  const declarator = path.scope.getBinding(name)?.path.node;
+/** The one value a local `name` is ever given, by its declaration or a later assignment. */
+function boundValue(path: NodePath, name: string): types.Node | undefined {
+  const binding = path.scope.getBinding(name);
 
-  return declarator?.type === 'VariableDeclarator'
-    ? declarator.init
-    : undefined;
+  if (binding === undefined || !binding.path.isVariableDeclarator()) {
+    return undefined;
+  }
+
+  const values = [
+    binding.path.node.init,
+    ...binding.constantViolations.map(({ node }) =>
+      node.type === 'AssignmentExpression' ? node.right : node,
+    ),
+  ].filter((value) => value !== null && value !== undefined);
+
+  return values.length === 1 ? values[0] : undefined;
 }
 
 function nameOf(node: types.Node): string | undefined {
