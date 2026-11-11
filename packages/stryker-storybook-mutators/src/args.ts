@@ -124,7 +124,7 @@ function sitesOf(program: NodePath): Sites {
   return sites;
 }
 
-/** The `args` objects of stories and `.test()` options that a play or test function runs for, each with the keys those functions read. */
+/** The `args` objects of stories and `.test()` options that a play or test function runs for, each with the keys that stay. In a file with a meta object, for each story Storybook 10.6.5's Vitest transform tests and whose static tags do not end in `!test`, the play is the last one assigned to the story, else its own or the one it spreads or `.extend()` takes from its base, else the meta's. */
 function argsSites(
   body: readonly unknown[],
   readsOf: (fn: unknown) => Reads,
@@ -149,9 +149,12 @@ function argsSites(
         ({ tested, init }) =>
           tested && isTaggedTest([...metaObjects, storyArgument(unwrap(init))]),
       )
-      .flatMap(({ init, local }) => {
+      .flatMap(({ init, local, runtimeAssignments }) => {
+        const assignedPlay = runtimeAssignments
+          .filter(({ path }) => path.length === 1 && path[0] === 'play')
+          .at(-1)?.value;
         const play = topLevelValueOrSelf(
-          ownOrBasePlay(init, bindings) ?? metaPlay,
+          assignedPlay ?? ownOrBasePlay(init, bindings) ?? metaPlay,
           bindings,
         );
         const plays = play === undefined ? [] : [play];
@@ -411,7 +414,7 @@ function ownOrBasePlay(
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
   const call = unwrap(init);
-  const own = propertyValue(storyArgument(call), 'play');
+  const own = playIn(storyArgument(call), bindings);
   const base = field(call, 'callee', 'object', 'name');
 
   return own === undefined &&
@@ -419,6 +422,24 @@ function ownOrBasePlay(
     typeof base === 'string'
     ? ownOrBasePlay(bindings.get(base), withoutBinding(bindings, base))
     : own;
+}
+
+/** The play an object literal sets: its last `play` key, or the play of a top-level object it spreads after that key. */
+function playIn(
+  object: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+): unknown {
+  return list(field(object, 'properties'))
+    .toReversed()
+    .map((property) => {
+      const spread = field(property, 'argument', 'name');
+
+      return field(property, 'type') === 'SpreadElement' &&
+        typeof spread === 'string'
+        ? playIn(unwrap(bindings.get(spread)), withoutBinding(bindings, spread))
+        : propertyValue({ properties: [property] }, 'play');
+    })
+    .find((play) => play !== undefined);
 }
 
 /** The keys of `args` that a play or test function reads through its context parameter. */

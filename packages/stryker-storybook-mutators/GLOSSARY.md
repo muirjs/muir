@@ -17,10 +17,9 @@ _Avoid_: story mutator, Storybook operator
 ### Args
 
 **Args site**:
-An `args` object literal in a story file (one with a CSF meta) that `LzStorybookArgs` mutates: a story's own `args` (a CSF3 story object, `.story()` or
-`.extend()`) or the `args` in a `.test(name, options, fn)` options object, when a play or test function runs for it:
-the story's own play, the play `.extend()` takes from its base story, the meta's play, or a `.test()` call on the
-story. The story must be one Storybook's Vitest transform tests, and its static tags must not end in `!test`.
+An `args` object literal in a story file that `LzStorybookArgs` mutates because a play or test function runs for it:
+a story's own `args` (a CSF3 story object, `.story()` or `.extend()`) or the `args` in a `.test(name, options, fn)`
+options object.
 _Avoid_: args target, story args (the meta's `args` are no args site)
 
 **Read key**:

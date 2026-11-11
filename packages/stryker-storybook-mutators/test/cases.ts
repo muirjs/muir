@@ -358,6 +358,26 @@ export const cases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'spread-base-play',
+    title:
+      "a key read by the play of a story spread into the story stays, as that play replaces the meta's",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'export const A = { play: async ({ args }) => { args.label; } };\n' +
+      "export const B = { ...A, args: { label: 'a', disabled: true } };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'assigned-play',
+    title:
+      'a play assigned to the story after its declaration runs for its args, and a key it reads stays',
+    source:
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n" +
+      'Primary.play = async ({ args }) => { args.label; };\n',
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
     id: 'play-call-result',
     title: 'a play made by a call makes every key stay',
     source: inStory(
