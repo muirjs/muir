@@ -81,11 +81,14 @@ function isClearedLater(path: NodePath, t: BabelTypes): boolean {
     return false;
   }
 
-  const next = nextSiblings(path).find(
-    (sibling) =>
-      checksIn(sibling).length > 0 || isInteractionStatement(sibling),
-  );
-  const later = next === undefined ? undefined : userEventCall(next);
+  const siblings = nextSiblings(path);
+  const between = untilNextInteraction(siblings);
+  const next = siblings[between.length];
+  const later =
+    next === undefined ||
+    between.some((sibling) => checksIn(sibling).length > 0)
+      ? undefined
+      : userEventCall(next);
 
   return (
     later?.method === 'clear' &&

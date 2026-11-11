@@ -484,6 +484,17 @@ export const interactionCases: readonly Case[] = [
     ],
   },
   {
+    id: 'type-used-in-step-before-clear',
+    title:
+      'a type that an interaction in a step uses before a later clear of the same target is removed',
+    source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await userEvent.type(input, 'a');\n    await step('Submit', async () => {\n      await userEvent.click(submit);\n    });\n    await userEvent.clear(input);\n    await expect(args.onSubmit).toHaveBeenCalledWith('a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'click-before-type-skip-click',
     title:
       'a click directly before a type of the same target with skipClick is removed, as that type does not click',
