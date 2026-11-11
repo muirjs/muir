@@ -119,4 +119,11 @@ export const spyStubCases: readonly Case[] = [
       [spyStub, 'mocked(save)?.mockRejectedValue(new Error("Stryker"))'],
     ],
   },
+  {
+    id: 'spy-stub-computed-member',
+    title:
+      'a call on a computed member named by a variable is no stub statement, as the variable may hold any method name',
+    source: inPlay('obj[mockResolvedValue](note);'),
+    expect: [],
+  },
 ];

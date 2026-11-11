@@ -63,7 +63,6 @@ function* stubCallMutants(
     const flippedCallee = t.cloneNode(callee);
     const flipped = t.cloneNode(node);
 
-    flippedCallee.computed = false;
     flippedCallee.property = t.identifier(
       `${outcome.method}${stub.once ? 'Once' : ''}`,
     );
@@ -88,7 +87,7 @@ function isStubStatement(path: NodePath): boolean {
 function stubOf(node: types.Node): StubMethodCall | undefined {
   const member = memberCall(node);
 
-  return member === undefined
+  return member === undefined || member.callee.computed
     ? undefined
     : stubMethodOf(nameOf(member.callee.property));
 }
