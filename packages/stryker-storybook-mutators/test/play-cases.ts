@@ -50,12 +50,16 @@ export const playCases: readonly Case[] = [
   },
   {
     id: 'not-a-story',
-    title: 'args in an object that is no story make no mutant',
+    title:
+      'args in an object that is no story are mutated when a played story spreads it, as its play runs over them',
     source:
       "export default { title: 'Button' };\n" +
       "const settings = { args: { label: 'a', disabled: true }, play: async () => {} };\n" +
       'export const Primary = { ...settings };\n',
-    expect: [],
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
   },
   {
     id: 'no-meta',

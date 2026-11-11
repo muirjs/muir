@@ -18,8 +18,9 @@ _Avoid_: story mutator, Storybook operator
 
 **Args site**:
 An `args` object literal in a story file that `LzStorybookArgs` mutates because a play or test function runs for it:
-a story's own `args` (a CSF3 story object, `.story()` or `.extend()`), unless a later spread of an object that sets
-`args` replaces them (a later spread or computed key the file cannot resolve does not count), or the `args` in a
+the `args` a story's own object ends up with (a CSF3 story object, `.story()` or `.extend()`): its own, or those of a
+later spread of an object that sets `args` and that the file resolves, story or not (a later spread or computed key
+the file cannot resolve does not count), or the `args` in a
 `.test(name, options, fn)` options object, written inline or as a top-level constant the call names that the file
 leaves unchanged, unless a later
 spread in the options sets `args` (here too a spread or computed key the file cannot resolve does not count). An unknown play (see Played story),

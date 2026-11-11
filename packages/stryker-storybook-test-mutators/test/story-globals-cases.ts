@@ -223,12 +223,12 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-replaced-by-spread',
     title:
-      "a story's globals before a spread that sets globals make no mutant, as the spread replaces them",
+      "a story's globals before a spread that sets globals make no mutant, as the spread replaces them, and the spread object's globals get theirs",
     source: storyFile(
       "const Base = { globals: { locale: 'de' }, play: async () => {} };",
       "export const Story = { globals: { locale: 'fr' }, ...Base };",
     ),
-    expect: [],
+    expect: [[storyGlobals, '{}']],
   },
   {
     id: 'story-globals-assigned-play',
