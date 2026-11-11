@@ -169,6 +169,21 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-over-unresolved-spread',
+    title:
+      "a key in .test() options whose literal value equals the meta's is removed when the story's args come before a spread of an imported object, which may set them",
+    source: inFactoryFile(
+      "import { Shared } from './shared';",
+      "const meta = preview.meta({ args: { label: 'a' } });",
+      "export const Primary = meta.story({ args: { size: 'm' }, ...Shared, play: async () => {} });",
+      "Primary.test('t', { args: { label: 'a', disabled: true } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'test-options-named-same-literal',
     title:
       "a key in .test() options named by a top-level constant whose literal value equals the story's makes no mutant",

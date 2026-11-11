@@ -274,6 +274,16 @@ export const playCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'before-unresolved-spread',
+    title:
+      "a story's args before a spread of an imported object make no mutant, as the spread may replace them",
+    source:
+      "import { Shared } from './shared';\n" +
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true }, ...Shared, play: async () => {} };\n",
+    expect: [],
+  },
+  {
     id: 'assigned-play',
     title:
       'a play assigned to the story after its declaration runs for its args, and a key it reads stays',

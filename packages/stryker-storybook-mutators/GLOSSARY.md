@@ -19,7 +19,7 @@ _Avoid_: story mutator, Storybook operator
 **Args site**:
 An `args` object literal in a story file that `LzStorybookArgs` mutates because a play or test function runs for it:
 a story's own `args` (a CSF3 story object, `.story()` or `.extend()`), unless a later spread of an object that sets
-`args` replaces them, or the `args` in a `.test(name, options, fn)` options object, written inline or as a top-level
+`args` replaces them or a later spread the file cannot resolve may, or the `args` in a `.test(name, options, fn)` options object, written inline or as a top-level
 constant the call names. An options object that several stories' `.test()` calls share is one site for all of them:
 its read keys are those of every story, and a key gets no per-key mutant as equal to the value below only when it is
 equal for each story.
@@ -35,7 +35,8 @@ _Avoid_: used arg, checked arg
 **Per-key mutant**:
 An args site with one key that is no read key removed, so the story falls back to the value below it: one that a
 `...Base.args` spread (or `...Base?.args`, `...Base['args']`) before the key sets, then the base story's for `.extend()` or the story's for `.test()`
-options, then the meta's and the project's. A key whose literal value (a negative number and a template literal without expressions
+options, then the meta's and the project's. A layer where a spread the file cannot resolve may set the key last
+leaves that value unknown. A key whose literal value (a negative number and a template literal without expressions
 count) equals that value gets none, and neither
 does a key whose removal leaves only keys like that, as such args behave like ObjectLiteral's `{}`.
 _Avoid_: arg removal

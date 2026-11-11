@@ -105,6 +105,23 @@ describe('playedStories', () => {
     );
   });
 
+  it('gives a spread of an imported object as the play of a story where it may set play last, as only running the file tells', () => {
+    const stories = played(
+      "import { Shared } from './shared';",
+      "export default { title: 'a/b' };",
+      'export const A = { play: async () => {}, ...Shared };',
+      'export const B = { ...Shared, play: async () => {} };',
+    );
+
+    assert.deepEqual(
+      stories.map(({ story, play }) => [story.name, field(play, 'type')]),
+      [
+        ['A', 'SpreadElement'],
+        ['B', 'ArrowFunctionExpression'],
+      ],
+    );
+  });
+
   it("gives an .extend() story its base story's play", () => {
     const stories = played(
       "import preview from '../.storybook/preview';",

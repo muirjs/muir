@@ -75,7 +75,8 @@ _Avoid_: flip mutant, rejection mutant
 
 **Globals site**:
 A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: the own `globals` of a
-played story (the Storybook context's term), unless a later spread of a story that sets `globals` replaces them; the
+played story (the Storybook context's term), unless a later spread of a story that sets `globals` replaces them or a
+later spread the file cannot resolve may; the
 meta's `globals` when the file has a played story; and the `globals` in the options of a played story's `.test()`
 calls, inline or a top-level constant.
 _Avoid_: globals target, story globals (the meta's are sites too)

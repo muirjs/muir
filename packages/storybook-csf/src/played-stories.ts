@@ -17,7 +17,7 @@ import { field, list } from './node-field.ts';
 /** A tested story that runs a play or a `.test()` call. */
 export interface PlayedStory {
   readonly story: StoryExport;
-  /** The play Storybook runs for the story, or a top-level function it names; `undefined` when it has none. */
+  /** The play Storybook runs for the story, or a top-level function it names; `undefined` when it has none, and a spread that does not resolve when that spread may set it. */
   readonly play: unknown;
   /** Its `.test()` calls, `'unmatched'` for a call with a spread argument, whose arguments only running the file tells. */
   readonly tests: readonly TestChild[];
@@ -140,23 +140,52 @@ export function storyLayers(
     : [own];
 }
 
-/** The value of `key` that each of a story's layers sets, the story's own first; `undefined` for a layer that sets none. */
+/**
+ * The value of `key` that each of a story's layers sets, the story's own first; `undefined` for a layer that sets
+ * none, and the spread itself for a layer where a spread that does not resolve may set it last, as only running the
+ * file tells what that spread sets.
+ */
 export function storyValues(
   init: unknown,
   bindings: ReadonlyMap<string, unknown>,
   key: string,
 ): readonly unknown[] {
-  return storyLayers(init, bindings).map((layer) =>
-    layer
-      .map((property) => propertyValue({ properties: [property] }, key))
-      .find((value) => value !== undefined),
+  return storyLayers(init, bindings).map((layer) => {
+    const winner = winningProperty(layer, key);
+
+    return field(winner, 'type') === 'SpreadElement'
+      ? winner
+      : propertyValue({ properties: [winner] }, key);
+  });
+}
+
+/** The value of `key` the story's own object sets when it is the one that runs; `undefined` when a later property replaces it or a later spread that does not resolve may. */
+export function ownStoryValue(
+  init: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+  key: string,
+): unknown {
+  const [own = []] = storyLayers(init, bindings);
+  const winner = winningProperty(own, key);
+
+  return list(field(storyArgument(unwrap(init)), 'properties')).includes(winner)
+    ? propertyValue({ properties: [winner] }, key)
+    : undefined;
+}
+
+/** The first property of a last-wins-first layer that sets `key` or, as a spread that does not resolve, may. */
+function winningProperty(layer: readonly unknown[], key: string): unknown {
+  return layer.find(
+    (property) =>
+      field(property, 'type') === 'SpreadElement' ||
+      propertyValue({ properties: [property] }, key) !== undefined,
   );
 }
 
 /**
  * `properties` last-wins first, each spread whose argument `spreadObject` resolves to an object literal replaced by
  * that object's properties, read the same way without the binding the spread names, so a cycle of spreads ends. A
- * spread it does not resolve stays, as only running the file tells what it sets.
+ * spread it does not resolve stays in its place, for the caller to read as one that may set any key.
  */
 export function lastWinsProperties(
   properties: readonly unknown[],

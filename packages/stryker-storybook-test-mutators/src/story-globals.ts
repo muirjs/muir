@@ -2,12 +2,11 @@ import {
   csfFile,
   field,
   list,
+  ownStoryValue,
   playedStories,
   propertyValue,
-  storyArgument,
   storyValues,
   topLevelBindings,
-  unwrap,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
@@ -35,10 +34,6 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   return bySite(
     [
       ...played.flatMap(({ story: { init }, tests }) => {
-        const ownGlobals = propertyValue(
-          storyArgument(unwrap(init)),
-          'globals',
-        );
         const [runs, ...bases] = storyValues(init, bindings, 'globals');
         const storyParameters = [
           ...storyValues(init, bindings, 'parameters'),
@@ -55,7 +50,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
 
         return [
           [
-            runs === ownGlobals ? ownGlobals : undefined,
+            ownStoryValue(init, bindings, 'globals'),
             { globals, parameters: everyRunParameters },
           ] as const,
           ...matched.map(

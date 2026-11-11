@@ -4,9 +4,9 @@ import {
   field,
   lastWinsProperties,
   list,
+  ownStoryValue,
   playedStories,
   propertyValue,
-  storyArgument,
   storyValues,
   topLevelBindings,
   unwrap,
@@ -148,11 +148,10 @@ function argsSites(
       ({ story: { init }, play, tests }) => {
         const plays = play === undefined ? [] : [play];
         const [storyArgs, ...baseArgs] = storyValues(init, bindings, 'args');
-        const ownArgs = propertyValue(storyArgument(unwrap(init)), 'args');
 
         return [
           ...site(
-            storyArgs === ownArgs ? ownArgs : undefined,
+            ownStoryValue(init, bindings, 'args'),
             [
               ...plays.map(readsOf),
               ...tests.map((test) =>
@@ -191,7 +190,7 @@ const literalTypes: readonly unknown[] = [
   'BooleanLiteral',
 ];
 
-/** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it. */
+/** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it, where a layer that is a spread that does not resolve may set any key. */
 function sameLiteralKeys(
   args: unknown,
   below: readonly unknown[],
@@ -209,7 +208,11 @@ function sameLiteralKeys(
           : valueIn(
               [
                 properties.slice(0, index),
-                ...below.map((layer) => list(field(layer, 'properties'))),
+                ...below.map((layer) =>
+                  field(layer, 'type') === 'SpreadElement'
+                    ? [layer]
+                    : list(field(layer, 'properties')),
+                ),
               ],
               key,
               bindings,

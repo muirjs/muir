@@ -92,6 +92,36 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{}']],
   },
   {
+    id: 'story-globals-own-before-unresolved-spread',
+    title:
+      "a story's globals before a spread of an imported object make no mutant, as the spread may replace them",
+    source: [
+      "import { Shared } from './shared';",
+      '',
+      "export default { title: 'Probe' };",
+      '',
+      "export const Story = { globals: { locale: 'fr' }, ...Shared, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [],
+  },
+  {
+    id: 'story-globals-test-options-over-unresolved-spread',
+    title:
+      "the options of a .test() call get a mutant of a default value when the story's globals come before a spread of an imported object, which may set that global",
+    source: [
+      "import { Shared } from './shared';",
+      "import preview from '../.storybook/preview';",
+      '',
+      "const meta = preview.meta({ title: 'Probe' });",
+      '',
+      "export const Story = meta.story({ globals: { locale: 'fr' }, ...Shared });",
+      "Story.test('t', { globals: { outline: false } }, async () => {});",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-test-options',
     title: 'the globals in the options of a .test() call get mutants',
     source: factoryFile(
