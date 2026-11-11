@@ -572,13 +572,13 @@ function keyOf(member: unknown): unknown {
     : field(member, 'property', 'name');
 }
 
-interface TestCall {
+export interface TestCall {
   readonly statement: unknown;
   readonly target: unknown;
   readonly args: readonly unknown[];
 }
 
-function testCallOf(statement: unknown): readonly TestCall[] {
+export function testCallOf(statement: unknown): readonly TestCall[] {
   const callee = field(statement, 'expression', 'callee');
 
   return field(callee, 'property', 'name') === 'test'
@@ -593,7 +593,7 @@ function testCallOf(statement: unknown): readonly TestCall[] {
 }
 
 /** Storybook 10.6.5 CsfFile indexes a `B.test('name', ...)` statement that is a plain call with a string-literal name and two or more arguments; this check also needs no spread argument, as only running the file tells which argument a spread fills. */
-function isIndexedTestCall(statement: unknown): boolean {
+export function isIndexedTestCall(statement: unknown): boolean {
   const call = field(statement, 'expression');
   const args = list(field(call, 'arguments'));
 
@@ -789,7 +789,7 @@ function nodesIn(node: object): readonly unknown[] {
   return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
 }
 
-function propertyValue(object: unknown, key: string): unknown {
+export function propertyValue(object: unknown, key: string): unknown {
   const property = list(field(object, 'properties')).find(
     (candidate) => field(candidate, 'key', 'name') === key,
   );
