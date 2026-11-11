@@ -27,7 +27,8 @@ interface Below {
   readonly bindings: ReadonlyMap<string, unknown>;
 }
 
-const defined = (value: unknown): boolean => value !== undefined;
+const defined = (value: LayerValue): value is NonNullable<LayerValue> =>
+  value !== undefined;
 
 /** The `globals` object literals of the stories that a play or `.test()` call runs for, each with what may set it below. */
 const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
@@ -93,18 +94,22 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
           ),
         ];
       }),
-    ].filter(([globals]) => defined(globals)),
+    ],
     unchanged,
   );
 }, new Map<unknown, Below>());
 
-/** Each site with what may set it below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. */
+/** Each site with what may set it below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. No `globals` object, or one the file does not show, is no site. */
 function bySite(
-  entries: readonly (readonly [unknown, Omit<Below, 'bindings'>])[],
+  entries: readonly (readonly [LayerValue, Omit<Below, 'bindings'>])[],
   bindings: ReadonlyMap<string, unknown>,
 ): ReadonlyMap<unknown, Below> {
+  const sites = entries.filter(
+    ([site]) => defined(site) && site !== unknownValue,
+  );
+
   return new Map(
-    [...Map.groupBy(entries, ([site]) => site)].map(([site, all]) => [
+    [...Map.groupBy(sites, ([site]) => site)].map(([site, all]) => [
       site,
       {
         globals: all.flatMap(([, below]) => below.globals),
