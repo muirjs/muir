@@ -16,7 +16,7 @@ export function resetModuleMockSpies(): void {
         );
       }
 
-      Reflect.apply(mockReset, spy, []);
+      mockReset.call(spy);
     }
   }
 }
