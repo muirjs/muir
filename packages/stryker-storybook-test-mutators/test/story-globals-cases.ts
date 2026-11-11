@@ -172,6 +172,31 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'story-globals-viewport-spread-after-value',
+    title:
+      'a viewport object with a spread after its responsive value gets a mutant, as the spread may set the value',
+    source: storyFile(
+      "const phone = { value: 'mobile1' };",
+      'export const Story = {',
+      "  globals: { viewport: { value: 'responsive', ...phone } },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-viewport-over-parameters',
+    title:
+      "a responsive viewport global under the meta's viewport parameters gets a mutant, as setViewport falls back to their defaultViewport",
+    source: [
+      "export default { title: 'Probe', parameters: { viewport: { defaultViewport: 'mobile1' } } };",
+      '',
+      "export const Story = { globals: { viewport: { value: 'responsive' } }, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-default-backgrounds',
     title:
       "Storybook's initial backgrounds global, no value and no grid, makes no mutant",

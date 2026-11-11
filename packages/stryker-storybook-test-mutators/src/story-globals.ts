@@ -13,13 +13,23 @@ import {
 import type { LzStorybookTestMutator } from './mutator.ts';
 import { perFile, readStoryFileAt } from './story-file.ts';
 
-/** The `globals` object literals of the stories that a play or `.test()` call runs for, each with the `globals` objects below it in the file, whose value of a key comes back when the site's is removed. */
-const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
+/** What may set a site's globals when one of its keys is removed: the `globals` objects below it, and the `parameters` objects of the stories it runs for, whose `viewport.defaultViewport` the Vitest addon's `setViewport` falls back to. */
+interface Below {
+  readonly globals: readonly unknown[];
+  readonly parameters: readonly unknown[];
+}
+
+const defined = (value: unknown): boolean => value !== undefined;
+
+/** The `globals` object literals of the stories that a play or `.test()` call runs for, each with what may set it below. */
+const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   const body = list(program.body);
   const bindings = topLevelBindings(body);
-  const metaGlobals = csfFile(body, bindings)
-    .metaObjects.map((meta) => propertyValue(meta, 'globals'))
-    .filter((globals) => globals !== undefined);
+  const { metaObjects } = csfFile(body, bindings);
+  const metaValues = (key: string) =>
+    metaObjects.map((meta) => propertyValue(meta, key)).filter(defined);
+  const metaGlobals = metaValues('globals');
+  const metaParameters = metaValues('parameters');
   const played = playedStories(body, bindings);
 
   return bySite(
@@ -30,9 +40,14 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
           'globals',
         );
         const [runs, ...bases] = storyValues(init, bindings, 'globals');
-        const below = [...bases, ...metaGlobals].filter(
-          (globals) => globals !== undefined,
-        );
+        const parameters = [
+          ...storyValues(init, bindings, 'parameters'),
+          ...metaParameters,
+        ].filter(defined);
+        const below = {
+          globals: [...bases, ...metaGlobals].filter(defined),
+          parameters,
+        };
 
         return [
           [runs === ownGlobals ? ownGlobals : undefined, below] as const,
@@ -42,42 +57,57 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
               : [
                   [
                     propertyValue(test.options, 'globals'),
-                    runs === undefined ? below : [runs, ...below],
+                    {
+                      ...below,
+                      globals: [runs, ...below.globals].filter(defined),
+                    },
                   ] as const,
                 ],
           ),
         ];
       }),
       ...(played.length > 0
-        ? metaGlobals.map((globals) => [globals, []] as const)
+        ? metaGlobals.map(
+            (globals) =>
+              [globals, { globals: [], parameters: metaParameters }] as const,
+          )
         : []),
     ].filter(([globals]) => globals !== undefined),
   );
-}, new Map<unknown, readonly unknown[]>());
+}, new Map<unknown, Below>());
 
-/** Each site with the layers below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. */
+/** Each site with what may set it below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. */
 function bySite(
-  entries: readonly (readonly [unknown, readonly unknown[]])[],
-): ReadonlyMap<unknown, readonly unknown[]> {
+  entries: readonly (readonly [unknown, Below])[],
+): ReadonlyMap<unknown, Below> {
   return new Map(
-    entries.map(([site]) => [
-      site,
-      entries.filter(([other]) => other === site).flatMap(([, below]) => below),
-    ]),
+    entries.map(([site]) => {
+      const all = entries
+        .filter(([other]) => other === site)
+        .map(([, below]) => below);
+
+      return [
+        site,
+        {
+          globals: all.flatMap(({ globals }) => globals),
+          parameters: all.flatMap(({ parameters }) => parameters),
+        },
+      ];
+    }),
   );
 }
 
 // Storybook 10.6.5's own default globals (`initialGlobals` of its viewport, backgrounds, measure and outline
 // addons, and its `DEFAULT_VIEWPORT` name). A project's preview `initialGlobals` can differ; the mutator cannot see them.
+// The Vitest addon's `setViewport` reads only a viewport global's `value`, and without one falls back to
+// `parameters.viewport.defaultViewport`, so a viewport under `parameters.viewport` the file sets is no default.
 const viewportDefaults: readonly unknown[] = ['responsive', '100pct-100pct'];
 
 const defaultGlobals: Readonly<Record<string, (value: unknown) => boolean>> = {
   viewport: (value) =>
     viewportDefaults.includes(literalOf(value)) ||
     (field(value, 'type') === 'ObjectExpression' &&
-      [undefined, ...viewportDefaults].includes(
-        literalOf(propertyValue(value, 'value')),
-      )),
+      [undefined, ...viewportDefaults].includes(lastLiteralOf(value, 'value'))),
   backgrounds: (value) =>
     isObjectOf(value, { value: [undefined], grid: [false] }),
   measureEnabled: isFalse,
@@ -120,6 +150,21 @@ function literalOf(node: unknown): unknown {
     : unknownValue;
 }
 
+/** The literal of the last property of an object that may set `key`; `undefined` when none does, and no literal when a spread or computed key may. */
+function lastLiteralOf(object: unknown, key: string): unknown {
+  const property = list(field(object, 'properties'))
+    .toReversed()
+    .find((candidate) => maySet(candidate, key));
+
+  if (property === undefined) {
+    return undefined;
+  }
+
+  return keyOf(property) === key
+    ? literalOf(field(property, 'value'))
+    : unknownValue;
+}
+
 /** The name of a `key: value` property; `undefined` for a computed key, which only running the file resolves. */
 function keyOf(property: unknown): unknown {
   return field(property, 'computed') === true
@@ -127,11 +172,11 @@ function keyOf(property: unknown): unknown {
     : field(property, 'key', 'name');
 }
 
-/** A default value of a key that nothing before it in the site, and no `globals` object below the site, may set, so that removing it changes nothing the mutator can see. */
+/** A default value of a key that nothing before it in the site, and nothing below the site, may set, so that removing it changes nothing the mutator can see. */
 function isDefaultGlobal(
   property: unknown,
   before: readonly unknown[],
-  below: readonly unknown[],
+  below: Below,
 ): boolean {
   const key = keyOf(property);
 
@@ -139,12 +184,21 @@ function isDefaultGlobal(
     typeof key === 'string' &&
     defaultGlobals[key]?.(field(property, 'value')) === true &&
     !before.some((earlier) => maySet(earlier, key)) &&
-    !below.some((globals) =>
-      field(globals, 'type') === 'ObjectExpression'
-        ? list(field(globals, 'properties')).some((set) => maySet(set, key))
-        : true,
+    !below.globals.some((globals) => maySetIn(globals, key)) &&
+    !(
+      key === 'viewport' &&
+      below.parameters.some((parameters) => maySetIn(parameters, key))
     )
   );
+}
+
+/** An object that may set `key`: one with a property that may, or no object literal. */
+function maySetIn(object: unknown, key: string): boolean {
+  return field(object, 'type') === 'ObjectExpression'
+    ? list(field(object, 'properties')).some((property) =>
+        maySet(property, key),
+      )
+    : true;
 }
 
 /** A property of that key, a spread or a computed key, which only running the file resolves. */

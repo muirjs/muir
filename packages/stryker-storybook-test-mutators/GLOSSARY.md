@@ -82,14 +82,16 @@ _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:
 A property of a globals site whose value is Storybook 10.6.5's own initial value for that global: `viewport` as
-`'responsive'` or `'100pct-100pct'`, or as an object whose `value` is such a value or `undefined`, whatever else it
-holds, as the Vitest addon's `setViewport` reads only `value`;
+`'responsive'` or `'100pct-100pct'`, or as an object whose last `value` is such a value or `undefined`, with no spread
+or computed key after it, whatever else it holds, as the Vitest addon's `setViewport` reads only `value`;
 `backgrounds` with an `undefined` value and `grid: false`; `measureEnabled: false`; `outline: false`. It gets no
 mutant only when nothing in the file may set that key below it: no earlier property of the site, spread or computed
 key, and no `globals` of the meta or of the story's `.extend()` bases, which Storybook merges key by key, and for a
 `.test()` call's options none of the story itself, spread stories included. A story it spreads before its own
-`globals` sets nothing below them, as object spread replaces `globals` whole. The table is fixed; a project's own `initialGlobals` in its
-preview are not read, so a default value that overrides them still gets no mutant.
+`globals` sets nothing below them, as object spread replaces `globals` whole. A `viewport` is no default under
+`parameters.viewport` that the meta, the story or a base sets, as `setViewport` falls back to its `defaultViewport`
+without a global value. The table is fixed; a project's own `initialGlobals` and parameters in its preview are not
+read, so a default value that overrides them still gets no mutant.
 _Avoid_: initial global, preset global
 
 ### Waits
