@@ -17,65 +17,71 @@ export function spyStubMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookSpyStub',
     sample: `import { fn } from 'storybook/test';\nexport const Story = {\n  args: { onSave: fn().mockReturnValue(1) },\n};\n`,
     *mutate(path, t) {
-      readStoryFileAt(path);
-
-      const { node } = path;
+      readStoryFileAt(path, sitesOf);
 
       if (isStubStatement(path)) {
         yield t.emptyStatement();
-
-        return;
-      }
-
-      if (
-        node.type !== 'CallExpression' &&
-        node.type !== 'OptionalCallExpression'
-      ) {
-        return;
-      }
-
-      const { callee } = node;
-
-      if (
-        callee.type !== 'MemberExpression' &&
-        callee.type !== 'OptionalMemberExpression'
-      ) {
-        return;
-      }
-
-      const site = sitesOf(path).find(
-        ({ start, end }) => start === node.start && end === node.end,
-      );
-      const parent = path.parentPath;
-      const stub =
-        site ??
-        (parent !== null && isStubStatement(parent) ? stubOf(node) : undefined);
-
-      if (stub === undefined) {
-        return;
-      }
-
-      if (site !== undefined) {
-        yield t.cloneNode(callee.object);
-      }
-
-      const outcome = outcomeOf(stub.method, t);
-
-      if (outcome !== undefined) {
-        const flippedCallee = t.cloneNode(callee);
-        const flipped = t.cloneNode(node);
-
-        flippedCallee.computed = false;
-        flippedCallee.property = t.identifier(
-          `${outcome.method}${stub.once ? 'Once' : ''}`,
-        );
-        flipped.callee = flippedCallee;
-        flipped.arguments = [outcome.argument];
-
-        yield flipped;
+      } else {
+        yield* stubCallMutants(path, t);
       }
     },
   };
+}
+
+/** The removal mutant of a definition-time stub, and the outcome mutant of any stub that settles a promise. */
+function* stubCallMutants(
+  path: NodePath,
+  t: BabelTypes,
+): Generator<types.Node> {
+  const { node } = path;
+
+  if (
+    node.type !== 'CallExpression' &&
+    node.type !== 'OptionalCallExpression'
+  ) {
+    return;
+  }
+
+  const { callee } = node;
+
+  if (
+    callee.type !== 'MemberExpression' &&
+    callee.type !== 'OptionalMemberExpression'
+  ) {
+    return;
+  }
+
+  const site = sitesOf(path).find(
+    ({ start, end }) => start === node.start && end === node.end,
+  );
+  const parent = path.parentPath;
+  const stub =
+    site ??
+    (parent !== null && isStubStatement(parent) ? stubOf(node) : undefined);
+
+  if (stub === undefined) {
+    return;
+  }
+
+  if (site !== undefined) {
+    yield t.cloneNode(callee.object);
+  }
+
+  const outcome = outcomeOf(stub.method, t);
+
+  if (outcome !== undefined) {
+    const flippedCallee = t.cloneNode(callee);
+    const flipped = t.cloneNode(node);
+
+    flippedCallee.computed = false;
+    flippedCallee.property = t.identifier(
+      `${outcome.method}${stub.once ? 'Once' : ''}`,
+    );
+    flipped.callee = flippedCallee;
+    flipped.arguments = [outcome.argument];
+
+    yield flipped;
+  }
 }
 
 /** An expression statement in story test code whose call sets a spy stub, such as `mocked(save).mockResolvedValue(note);`. */
@@ -103,7 +109,7 @@ function outcomeOf(
   method: StubMethod,
   t: BabelTypes,
 ):
-  | { readonly method: string; readonly argument: types.Expression }
+  | { readonly method: StubMethod; readonly argument: types.Expression }
   | undefined {
   switch (method) {
     case 'mockResolvedValue': {

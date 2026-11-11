@@ -35,14 +35,18 @@ export function perFile<T>(
   };
 }
 
-export const storyTestCode = perFile(
+const storyTestCode = perFile(
   (program): ReadonlySet<unknown> => csfShapes(program).testCode,
   new Set(),
 );
 
-export function readStoryFileAt(path: NodePath): void {
+/** Reads the story test code, and what each of a mutator's own per-file `readers` gives, on entering the Program. Every mutator calls it first. */
+export function readStoryFileAt(
+  path: NodePath,
+  ...readers: readonly ((path: NodePath) => unknown)[]
+): void {
   if (path.isProgram()) {
-    storyTestCode(path);
+    [storyTestCode, ...readers].forEach((read) => read(path));
   }
 }
 

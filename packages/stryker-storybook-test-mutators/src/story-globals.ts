@@ -11,7 +11,7 @@ import {
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
-import { perFile } from './story-file.ts';
+import { perFile, readStoryFileAt } from './story-file.ts';
 
 /** The `globals` object literals of the stories that a play or `.test()` call runs for, each with the `globals` objects below it in the file, whose value of a key comes back when the site's is removed. */
 const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
@@ -175,10 +175,17 @@ export function storyGlobalsMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookStoryGlobals',
     sample: `export default { title: 'Sample' };\nexport const Story = {\n  globals: { viewport: { value: 'mobile1' } },\n  play: async () => {},\n};\n`,
     *mutate(path, t) {
+      readStoryFileAt(path, sitesOf);
+
       const { node } = path;
+
+      if (node.type !== 'ObjectExpression') {
+        return;
+      }
+
       const below = sitesOf(path).get(node);
 
-      if (node.type !== 'ObjectExpression' || below === undefined) {
+      if (below === undefined) {
         return;
       }
 
