@@ -199,6 +199,21 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-over-named-story-args',
+    title:
+      "a key in .test() options whose literal value equals the one in the top-level object that the story's args name makes no mutant",
+    source: inFactoryFile(
+      'const shared = { a: 1 };',
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({ args: shared });',
+      "Primary.test('t', { args: { a: 1, b: 2, c: 3 } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ a: 1, b: 2 }'],
+      [args, '{ a: 1, c: 3 }'],
+    ],
+  },
+  {
     id: 'test-options-named-same-literal',
     title:
       "a key in .test() options named by a top-level constant whose literal value equals the story's makes no mutant",

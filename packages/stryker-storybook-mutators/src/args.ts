@@ -11,6 +11,7 @@ import {
   propertyKey,
   storyValues,
   topLevelBindings,
+  topLevelValueOrSelf,
   unknownOverAPlay,
   unknownValue,
   unwrap,
@@ -249,22 +250,24 @@ function fallbackValue(
   ][0];
 }
 
-/** Every value a layer below gives `key`, the one that runs first, with a spread of a top-level object's `args` (`...Base.args`) replaced by that object's properties. */
+/** Every value a layer below gives `key`, the one that runs first: a name the file binds at the top level read as its value, and a spread of a top-level object's `args` (`...Base.args`) replaced by that object's properties. */
 function layerValues(
   layer: LayerValue,
   key: Key,
   bindings: ReadonlyMap<string, unknown>,
 ): readonly LayerValue[] {
-  return field(layer, 'type') === 'ObjectExpression'
+  const object = topLevelValueOrSelf(layer, bindings);
+
+  return field(object, 'type') === 'ObjectExpression'
     ? valuesIn(
         lastWinsProperties(
-          list(field(layer, 'properties')),
+          list(field(object, 'properties')),
           bindings,
           spreadArgs,
         ),
         key,
       )
-    : objectValues(layer, key);
+    : objectValues(object, key);
 }
 
 /** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */

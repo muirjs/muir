@@ -112,7 +112,7 @@ function knownPlay(
 }
 
 /** A name's top-level value; a name the file does not bind, or any other node, as it is. */
-function topLevelValueOrSelf(
+export function topLevelValueOrSelf(
   node: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
