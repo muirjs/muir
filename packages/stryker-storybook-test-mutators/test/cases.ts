@@ -317,4 +317,17 @@ export const cases: readonly Case[] = [
       [interaction, ';'],
     ],
   },
+  {
+    id: 'click-before-type-skip-click',
+    title:
+      'a click directly before a type of the same target with skipClick is removed, as that type does not click',
+    source: inPlay(
+      'await userEvent.click(input);',
+      "await userEvent.type(input, 'a', { skipClick: true });",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
 ];

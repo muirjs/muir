@@ -72,13 +72,27 @@ function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
     following?.target !== undefined &&
     ['click', 'hover'].includes(current.method) &&
     ['type', 'clear'].includes(following.method) &&
+    !hasSkipClick(following.args[2]) &&
     t.isNodesEquivalent(current.target, following.target)
+  );
+}
+
+/** user-event 14's `type(element, text, { skipClick })`, which then types without clicking first. */
+function hasSkipClick(options: types.Node | undefined): boolean {
+  return (
+    options?.type === 'ObjectExpression' &&
+    options.properties.some(
+      (property) =>
+        property.type === 'ObjectProperty' &&
+        nameOf(property.key) === 'skipClick',
+    )
   );
 }
 
 interface UserEventCall {
   readonly method: string;
   readonly target: types.Node | undefined;
+  readonly args: readonly types.Node[];
 }
 
 /** The method and first argument of a `<userEvent>.<method>(...)` statement. */
@@ -93,7 +107,7 @@ function userEventCall(path: NodePath): UserEventCall | undefined {
   const method = userEventMethod(call, path);
 
   return method !== undefined && call.type === 'CallExpression'
-    ? { method, target: call.arguments[0] }
+    ? { method, target: call.arguments[0], args: call.arguments }
     : undefined;
 }
 
