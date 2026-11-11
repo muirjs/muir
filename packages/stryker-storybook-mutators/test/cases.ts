@@ -504,6 +504,87 @@ export const cases: readonly Case[] = [
       [args, "{ label: 'a' }"],
     ],
   },
+  {
+    id: 'shadowed-args',
+    title: 'a read of an inner variable that shadows args reads no key',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ args }) => {',
+      '  const f = (args) => args.label;',
+      '},',
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'initial-args-read',
+    title: 'a key the play reads as initialArgs.<key> stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ initialArgs }) => { initialArgs.label; },',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'context-key-read',
+    title:
+      'a key the play reads as context.args.<key> from its context key stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ context }) => { context.args.label; },',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'step-callback-read',
+    title: 'a key a step callback reads from the context step passes it stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      "play: async ({ step }) => { await step('s', async ({ args }) => { args.label; }); },",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'this-parameter',
+    title:
+      'a key the play reads through the context parameter after a TypeScript this parameter stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async function (this: void, { args }) { args.label; },',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'args-alias',
+    title: 'a key the play reads through a variable that holds args stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ args }) => { const a = args; a.label; },',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'context-args-alias',
+    title:
+      'a key the play reads through a variable that holds context.args stays',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async (context) => { const args = context.args; args.label; },',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'computed-pattern-key',
+    title:
+      'a play that destructures args with a computed key makes every key stay',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ args: { [key]: value } }) => { value; },',
+    ),
+    expect: [],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {

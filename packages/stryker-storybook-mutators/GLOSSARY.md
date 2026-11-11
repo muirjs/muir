@@ -24,9 +24,10 @@ story. The story must be one Storybook's Vitest transform tests, and its static 
 _Avoid_: args target, story args (the meta's `args` are no args site)
 
 **Read key**:
-A key of an args site that a function that runs for it reads, as `args.<key>`, `context.args.<key>` or by
-destructuring. Every key is a read key when such a function hands `args` or its context on whole, or is one the file
-cannot read.
+A key of an args site that a function that runs for it, or a `step()` callback in it, reads from its context: as
+`args.<key>`, `initialArgs.<key>`, `context.args.<key>`, through a variable that holds one of these, or by
+destructuring. Every key is a read key when such a function hands `args` or its context on whole, reads a key that
+only running it names, or is one the file cannot read.
 _Avoid_: used arg, checked arg
 
 **Per-key mutant**:

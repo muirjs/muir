@@ -1,7 +1,7 @@
+import type { NodePath } from '@babel/core';
 import {
   csfFile,
   field,
-  isRecord,
   list,
   storyArgument,
   topLevelBindings,
@@ -11,22 +11,20 @@ import {
 
 import type { LzStorybookMutator } from './mutator.ts';
 
-/** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
-type Reads = ReadonlySet<unknown> | 'whole';
+type Key = string | number;
 
-type Sites = ReadonlyMap<unknown, ReadonlySet<unknown>>;
+/** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
+type Reads = ReadonlySet<Key> | 'whole';
+
+type Sites = ReadonlyMap<unknown, ReadonlySet<Key>>;
+
+/** What a read evaluates to: the `args` object, or the story context that holds it. */
+type Read = 'args' | 'context';
 
 const sitesByProgram = new WeakMap<object, Sites>();
 
-const functionTypes: readonly unknown[] = [
-  'ArrowFunctionExpression',
-  'FunctionExpression',
-  'FunctionDeclaration',
-  'ObjectMethod',
-];
-
-/** The context parameters whose reads of `args` can be followed. */
-const contextTypes: readonly unknown[] = ['Identifier', 'ObjectPattern'];
+/** The keys of the story context that hold the args: Storybook 10.6.5 passes `args` and `initialArgs`. */
+const argsKeys: readonly Key[] = ['args', 'initialArgs'];
 
 export function argsMutator(): LzStorybookMutator & {
   readonly name: 'LzStorybookArgs';
@@ -38,16 +36,16 @@ export function argsMutator(): LzStorybookMutator & {
     *mutate(path, t) {
       // Stryker places the mutants of a statement when it leaves it, so the file is read before any statement changes.
       if (path.isProgram()) {
-        sitesOf(path.node);
+        sitesOf(path);
       }
 
       if (!path.isObjectExpression() || path.node.properties.length < 2) {
         return;
       }
 
-      const program = path.findParent((parent) => parent.isProgram())?.node;
+      const program = path.findParent((parent) => parent.isProgram());
       const read =
-        program === undefined ? undefined : sitesOf(program).get(path.node);
+        program === null ? undefined : sitesOf(program).get(path.node);
 
       if (read === undefined) {
         return;
@@ -60,12 +58,16 @@ export function argsMutator(): LzStorybookMutator & {
             .filter((kept) => !removed.includes(kept))
             .map((kept) => t.cloneNode(kept, true)),
         );
-      const eligible = properties.filter(
-        (property) =>
+      const eligible = properties.filter((property) => {
+        const key = keyName(property);
+
+        return (
           property.type === 'ObjectProperty' &&
           !property.computed &&
-          !read.has(keyName(property)),
-      );
+          key !== undefined &&
+          !read.has(key)
+        );
+      });
 
       yield* eligible.map((removed) => without([removed]));
 
@@ -76,22 +78,32 @@ export function argsMutator(): LzStorybookMutator & {
   };
 }
 
-function sitesOf(program: object): Sites {
-  const cached = sitesByProgram.get(program);
+function sitesOf(program: NodePath): Sites {
+  const cached = sitesByProgram.get(program.node);
 
   if (cached !== undefined) {
     return cached;
   }
 
-  const sites = argsSites(list(field(program, 'body')));
+  const functions: ReadonlyMap<unknown, NodePath> = new Map(
+    descendants(program)
+      .filter((path) => path.isFunction())
+      .map((path) => [path.node, path] as const),
+  );
+  const sites = argsSites(list(field(program.node, 'body')), (fn) =>
+    keysRead(functions.get(fn)),
+  );
 
-  sitesByProgram.set(program, sites);
+  sitesByProgram.set(program.node, sites);
 
   return sites;
 }
 
 /** The `args` objects of stories and `.test()` options that a play or test function runs for, each with the keys those functions read. */
-function argsSites(body: readonly unknown[]): Sites {
+function argsSites(
+  body: readonly unknown[],
+  readsOf: (fn: unknown) => Reads,
+): Sites {
   const bindings = topLevelBindings(body);
   const { metaObjects, stories } = csfFile(body, bindings);
   const metaPlay = metaObjects
@@ -123,11 +135,16 @@ function argsSites(body: readonly unknown[]): Sites {
         return [
           site(
             storyArgs,
-            [...plays, ...tests.map(({ testFunction }) => testFunction)],
+            [...plays, ...tests.map(({ testFunction }) => testFunction)].map(
+              readsOf,
+            ),
             sameLiteralKeys(storyArgs, metaArgs),
           ),
           ...tests.map(({ options, testFunction }) =>
-            site(propertyValue(options, 'args'), [...plays, testFunction]),
+            site(
+              propertyValue(options, 'args'),
+              [...plays, testFunction].map(readsOf),
+            ),
           ),
         ].flatMap((found) => (found === undefined ? [] : [found]));
       }),
@@ -153,10 +170,7 @@ const literalTypes: readonly unknown[] = [
 ];
 
 /** The keys whose literal value in `args` equals the meta's, so that removing one falls back to the same value. */
-function sameLiteralKeys(
-  args: unknown,
-  metaArgs: unknown,
-): ReadonlySet<unknown> {
+function sameLiteralKeys(args: unknown, metaArgs: unknown): ReadonlySet<Key> {
   const metaValues = new Map(
     list(field(metaArgs, 'properties')).map(
       (property) => [keyName(property), field(property, 'value')] as const,
@@ -164,19 +178,19 @@ function sameLiteralKeys(
   );
 
   return new Set(
-    list(field(args, 'properties'))
-      .filter((property) => {
-        const value = field(property, 'value');
-        const metaValue = metaValues.get(keyName(property));
+    list(field(args, 'properties')).flatMap((property) => {
+      const key = keyName(property);
+      const value = field(property, 'value');
+      const metaValue = metaValues.get(key);
 
-        return (
-          field(property, 'computed') !== true &&
-          literalTypes.includes(field(value, 'type')) &&
-          field(value, 'type') === field(metaValue, 'type') &&
-          field(value, 'value') === field(metaValue, 'value')
-        );
-      })
-      .map(keyName),
+      return key !== undefined &&
+        field(property, 'computed') !== true &&
+        literalTypes.includes(field(value, 'type')) &&
+        field(value, 'type') === field(metaValue, 'type') &&
+        field(value, 'value') === field(metaValue, 'value')
+        ? [key]
+        : [];
+    }),
   );
 }
 
@@ -193,10 +207,10 @@ function followed(
 /** An `args` object literal with the keys that stay: those the functions that run for it read, and `kept`; when one runs and none reads it whole. */
 function site(
   argsObject: unknown,
-  readers: readonly unknown[],
-  kept: ReadonlySet<unknown> = new Set(),
-): readonly [unknown, ReadonlySet<unknown>] | undefined {
-  const reads = union([...readers.map(keysRead), kept]);
+  readers: readonly Reads[],
+  kept: ReadonlySet<Key> = new Set(),
+): readonly [unknown, ReadonlySet<Key>] | undefined {
+  const reads = union([...readers, kept]);
 
   return field(argsObject, 'type') !== 'ObjectExpression' ||
     readers.length === 0 ||
@@ -255,133 +269,169 @@ function ownOrBasePlay(
     : own;
 }
 
-/** The keys of `args` that a play function reads. */
-function keysRead(play: unknown): Reads {
-  if (!functionTypes.includes(field(play, 'type'))) {
+/** The keys of `args` that a play or test function reads through its context parameter. */
+function keysRead(fn: NodePath | undefined): Reads {
+  if (fn === undefined || !fn.isFunction()) {
     return 'whole';
   }
 
-  const context = list(field(play, 'params'))[0];
+  // A TypeScript `this` parameter types `this`; the context is the first argument after it.
+  const [context] = fn
+    .get('params')
+    .filter((param) => !(param.isIdentifier() && param.node.name === 'this'));
+  const inner = descendants(fn);
 
-  if (context !== undefined && !contextTypes.includes(field(context, 'type'))) {
-    return 'whole';
-  }
-
-  const value = propertyValue(context, 'args');
-  const binding =
-    field(value, 'type') === 'AssignmentPattern' ? field(value, 'left') : value;
-
-  if (field(binding, 'type') === 'ObjectPattern') {
-    return patternKeys(binding);
-  }
-
-  if (hasRest(context)) {
-    return 'whole';
-  }
-
-  const parents = new Map(
-    childrenIn(field(play, 'body'), undefined).map(
-      ({ node, parent }) => [node, parent] as const,
-    ),
-  );
-  const readsOf = (name: unknown): readonly unknown[] =>
-    [...parents].flatMap(([node, parent]) =>
-      field(node, 'type') === 'Identifier' &&
-      typeof name === 'string' &&
-      field(node, 'name') === name &&
-      !isPropertyName(node, parent)
-        ? [node]
-        : [],
-    );
-  if (readsOf('arguments').length > 0) {
-    return 'whole';
-  }
-
-  const keysAt = (node: unknown): Reads => keysReadAt(node, parents.get(node));
-  const reads =
-    field(context, 'type') === 'Identifier'
-      ? readsOf(field(context, 'name')).map((node): Reads => {
-          const member = parents.get(node);
-
-          if (!isMemberOf(member, node)) {
-            return 'whole';
-          }
-
-          return field(member, 'property', 'name') === 'args'
-            ? keysAt(member)
-            : new Set();
-        })
-      : readsOf(field(binding, 'name')).map(keysAt);
-
-  return union(reads);
-}
-
-/** `node` names a member or an object key rather than a variable. */
-function isPropertyName(node: unknown, parent: unknown): boolean {
-  return (
-    field(parent, 'computed') !== true &&
-    (field(parent, 'property') === node || field(parent, 'key') === node)
-  );
-}
-
-/** The keys of `args` that one read of it, `node` under `parent`, reads; `'whole'` when it hands the object on. */
-function keysReadAt(node: unknown, parent: unknown): Reads {
   if (
-    field(parent, 'type') === 'VariableDeclarator' &&
-    field(parent, 'init') === node
+    context?.isAssignmentPattern() === true ||
+    inner.some(
+      (path) =>
+        path.isIdentifier() &&
+        path.node.name === 'arguments' &&
+        path.isReferencedIdentifier(),
+    )
   ) {
-    return patternKeys(field(parent, 'id'));
+    return 'whole';
   }
 
-  return isMemberOf(parent, node)
-    ? new Set([field(parent, 'property', 'name')])
-    : 'whole';
+  return union([
+    context === undefined ? new Set() : boundReads(context, 'context'),
+    ...inner.flatMap(stepCallbacks).map(keysRead),
+  ]);
 }
 
-/** `parent` is `node.<name>`. */
-function isMemberOf(parent: unknown, node: unknown): boolean {
-  return (
-    field(parent, 'type') === 'MemberExpression' &&
-    field(parent, 'object') === node &&
-    field(parent, 'computed') !== true
-  );
-}
-
-function patternKeys(pattern: unknown): Reads {
-  return hasRest(pattern)
-    ? 'whole'
-    : new Set(
-        list(field(pattern, 'properties')).map((property) => keyName(property)),
-      );
-}
-
-function hasRest(pattern: unknown): boolean {
-  return list(field(pattern, 'properties')).some(
-    (property) => field(property, 'type') === 'RestElement',
-  );
-}
-
-interface Child {
-  readonly node: unknown;
-  readonly parent: unknown;
-}
-
-function childrenIn(node: unknown, parent: unknown): readonly Child[] {
-  if (Array.isArray(node)) {
-    return node.flatMap((item) => childrenIn(item, parent));
+/** The functions passed to a `step()` call, which Storybook 10.6.5 runs with the story context. */
+function stepCallbacks(path: NodePath): readonly NodePath[] {
+  if (!path.isCallExpression()) {
+    return [];
   }
 
-  return isRecord(node)
-    ? [
-        { node, parent },
-        ...Object.values(node).flatMap((value) => childrenIn(value, node)),
-      ]
+  const { callee } = path.node;
+  const name =
+    callee.type === 'MemberExpression'
+      ? field(callee, 'property', 'name')
+      : field(callee, 'name');
+
+  return name === 'step'
+    ? path.get('arguments').filter((argument) => argument.isFunction())
     : [];
 }
 
-/** The key of `label: ...` or `'label': ...`. */
-function keyName(property: unknown): unknown {
-  return field(property, 'key', 'name') ?? field(property, 'key', 'value');
+/** The keys that the reads of a variable or pattern bound to `read` read. */
+function boundReads(target: NodePath, read: Read): Reads {
+  if (target.isAssignmentPattern()) {
+    return boundReads(target.get('left'), read);
+  }
+
+  if (target.isIdentifier()) {
+    const binding = target.scope.getBinding(target.node.name);
+
+    return binding === undefined
+      ? 'whole'
+      : union(binding.referencePaths.map((path) => readsAt(path, read)));
+  }
+
+  if (!target.isObjectPattern()) {
+    return 'whole';
+  }
+
+  return union(
+    target.get('properties').map((property): Reads => {
+      const key = keyName(property.node);
+
+      if (!property.isObjectProperty() || key === undefined) {
+        return 'whole';
+      }
+
+      return keyReads(key, read, (inner) =>
+        boundReads(property.get('value'), inner),
+      );
+    }),
+  );
+}
+
+/** The keys that one read, a path that evaluates to `read`, reads. */
+function readsAt(path: NodePath, read: Read): Reads {
+  const parent = path.parentPath;
+
+  if (
+    parent?.isMemberExpression() === true &&
+    parent.node.object === path.node
+  ) {
+    const key = memberKey(parent.node);
+
+    return key === undefined
+      ? 'whole'
+      : keyReads(key, read, (inner) => readsAt(parent, inner));
+  }
+
+  if (
+    parent?.isVariableDeclarator() === true &&
+    parent.node.init === path.node
+  ) {
+    return boundReads(parent.get('id'), read);
+  }
+
+  return 'whole';
+}
+
+/** The keys that reading `key` of `read` reads: that key of `args`, or what the reads of the context's args or context read. */
+function keyReads(
+  key: Key,
+  read: Read,
+  readsOfValue: (value: Read) => Reads,
+): Reads {
+  if (read === 'args') {
+    return new Set([key]);
+  }
+
+  if (argsKeys.includes(key)) {
+    return readsOfValue('args');
+  }
+
+  return key === 'context' ? readsOfValue('context') : new Set();
+}
+
+/** The key of `object.key` or `object['key']`; `undefined` when only running the code gives it. */
+function memberKey(member: unknown): Key | undefined {
+  const property = field(member, 'property');
+
+  if (field(member, 'computed') !== true) {
+    const name = field(property, 'name');
+
+    return typeof name === 'string' ? name : undefined;
+  }
+
+  const value = field(property, 'value');
+
+  return typeof value === 'string' || typeof value === 'number'
+    ? value
+    : undefined;
+}
+
+/** The key of `label: ...`, `'label': ...` or `0: ...`; `undefined` for a computed key or a rest element. */
+function keyName(property: unknown): Key | undefined {
+  if (field(property, 'computed') === true) {
+    return undefined;
+  }
+
+  const name =
+    field(property, 'key', 'name') ?? field(property, 'key', 'value');
+
+  return typeof name === 'string' || typeof name === 'number'
+    ? name
+    : undefined;
+}
+
+function descendants(path: NodePath): readonly NodePath[] {
+  const found: NodePath[] = [];
+
+  path.traverse({
+    enter(inner) {
+      found.push(inner);
+    },
+  });
+
+  return found;
 }
 
 function propertyValue(object: unknown, key: string): unknown {
