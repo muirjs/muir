@@ -197,26 +197,32 @@ export const playCases: readonly Case[] = [
   {
     id: 'test-options-args-before-unresolved-spread',
     title:
-      'the args in .test() options before a spread of an imported object make no mutant, as the spread may replace them',
+      'the args in .test() options before a spread of an imported object are mutated, as the file does not prove that the spread replaces them',
     source: inFactoryFile(
       "import { shared } from './shared';",
       'const meta = preview.meta({});',
       'export const Primary = meta.story({});',
       "Primary.test('t', { args: { label: 'a', disabled: true }, ...shared }, async () => {});",
     ),
-    expect: [],
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
   },
   {
     id: 'test-options-args-before-computed-key',
     title:
-      'the args in .test() options before a computed key of an imported name make no mutant, as that key may replace them',
+      'the args in .test() options before a computed key of an imported name are mutated, as the file does not prove that the key replaces them',
     source: inFactoryFile(
       "import { k } from './k';",
       'const meta = preview.meta({});',
       'export const Primary = meta.story({});',
       "Primary.test('t', { args: { label: 'a', disabled: true }, [k]: {} }, async () => {});",
     ),
-    expect: [],
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
   },
   {
     id: 'test-name-not-literal',

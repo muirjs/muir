@@ -1,7 +1,12 @@
 import { isMember, keyOf, unwrap, withoutBinding } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { unknownValue, valuesIn, type LayerValue } from './object-value.ts';
+import {
+  propertyKey,
+  unknownValue,
+  valuesIn,
+  type LayerValue,
+} from './object-value.ts';
 
 type Bindings = ReadonlyMap<string, unknown>;
 
@@ -33,6 +38,27 @@ export function resolvedValue(
   bindings: Bindings,
 ): LayerValue {
   return resolvedValues(object, key, bindings)[0];
+}
+
+/** The value the last property of exactly `key` gives it, as `resolvedValues` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. */
+export function ownValue(
+  object: unknown,
+  key: string | number,
+  bindings: Bindings,
+): LayerValue {
+  if (object === undefined) {
+    return undefined;
+  }
+
+  const properties =
+    object === unknownValue ? undefined : propertiesOf(object, bindings);
+
+  return properties === undefined
+    ? unknownValue
+    : valuesIn(
+        properties.filter((property) => propertyKey(property) === key),
+        key,
+      )[0];
 }
 
 /** An object that may set `key`, as `resolvedValues` reads it: one with a property that may, or one the file does not show; `undefined`, no object, sets nothing. */

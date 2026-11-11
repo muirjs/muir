@@ -22,7 +22,7 @@ a story's own `args` (a CSF3 story object, `.story()` or `.extend()`), unless a 
 `args` replaces them (a later spread or computed key the file cannot resolve does not count), or the `args` in a
 `.test(name, options, fn)` options object, written inline or as a top-level constant the call names that the file
 leaves unchanged, unless a later
-spread or computed key the file cannot resolve in the options may replace them. An unknown play (see Played story),
+spread in the options sets `args` (here too a spread or computed key the file cannot resolve does not count). An unknown play (see Played story),
 with or without a play under it, reads every key, so neither the story's args nor the args of its `.test()` options
 give a site. An options object that several stories' `.test()` calls share is one site for all of them: its read
 keys are those of every story, and a key gets no per-key mutant as equal to the value below only when it is equal

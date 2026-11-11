@@ -5,6 +5,7 @@ import {
   isUnknownPlay,
   list,
   ownStoryValue,
+  ownValue,
   playedStories,
   propertyKey,
   resolvedPropertyValues,
@@ -177,7 +178,7 @@ function argsSites(
             }
 
             const { options, testFunction } = test;
-            const testArgs = resolvedValue(options, 'args', unchanged);
+            const testArgs = ownValue(options, 'args', unchanged);
 
             return site(
               testArgs,
