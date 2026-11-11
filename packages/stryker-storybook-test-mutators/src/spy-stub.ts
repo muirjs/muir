@@ -3,6 +3,7 @@ import {
   definitionTimeStubs,
   stubMethodOf,
   type StubMethod,
+  type StubMethodCall,
   type StubSite,
 } from '@layzee/storybook-csf';
 
@@ -33,24 +34,13 @@ function* stubCallMutants(
   path: NodePath,
   t: BabelTypes,
 ): Generator<types.Node> {
-  const { node } = path;
+  const member = memberCall(path.node);
 
-  if (
-    node.type !== 'CallExpression' &&
-    node.type !== 'OptionalCallExpression'
-  ) {
+  if (member === undefined) {
     return;
   }
 
-  const { callee } = node;
-
-  if (
-    callee.type !== 'MemberExpression' &&
-    callee.type !== 'OptionalMemberExpression'
-  ) {
-    return;
-  }
-
+  const { call: node, callee } = member;
   const site = sitesOf(path).find(
     ({ start, end }) => start === node.start && end === node.end,
   );
@@ -95,12 +85,33 @@ function isStubStatement(path: NodePath): boolean {
   );
 }
 
-function stubOf(node: types.Node): ReturnType<typeof stubMethodOf> {
-  return (node.type === 'CallExpression' ||
-    node.type === 'OptionalCallExpression') &&
-    (node.callee.type === 'MemberExpression' ||
-      node.callee.type === 'OptionalMemberExpression')
-    ? stubMethodOf(nameOf(node.callee.property))
+function stubOf(node: types.Node): StubMethodCall | undefined {
+  const member = memberCall(node);
+
+  return member === undefined
+    ? undefined
+    : stubMethodOf(nameOf(member.callee.property));
+}
+
+/** A call, optional or not, on a member such as `x.y()` or `x?.y()`, with that member. */
+function memberCall(node: types.Node):
+  | {
+      readonly call: types.CallExpression | types.OptionalCallExpression;
+      readonly callee: types.MemberExpression | types.OptionalMemberExpression;
+    }
+  | undefined {
+  if (
+    node.type !== 'CallExpression' &&
+    node.type !== 'OptionalCallExpression'
+  ) {
+    return undefined;
+  }
+
+  const { callee } = node;
+
+  return callee.type === 'MemberExpression' ||
+    callee.type === 'OptionalMemberExpression'
+    ? { call: node, callee }
     : undefined;
 }
 

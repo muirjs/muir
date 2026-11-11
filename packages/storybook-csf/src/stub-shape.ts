@@ -10,10 +10,14 @@ const stubMethods = [
 
 export type StubMethod = (typeof stubMethods)[number];
 
-/** The stub method a spy method name calls, and whether it is the `Once` form; `undefined` for any other name. */
-export function stubMethodOf(
-  name: unknown,
-): { readonly method: StubMethod; readonly once: boolean } | undefined {
+/** The stub method a spy method call calls, and whether it is the `Once` form. */
+export interface StubMethodCall {
+  readonly method: StubMethod;
+  readonly once: boolean;
+}
+
+/** The stub method call of a spy method name; `undefined` for any other name. */
+export function stubMethodOf(name: unknown): StubMethodCall | undefined {
   const method = stubMethods.find(
     (candidate) => name === candidate || name === `${candidate}Once`,
   );
@@ -21,10 +25,8 @@ export function stubMethodOf(
   return method === undefined ? undefined : { method, once: name !== method };
 }
 
-export interface StubSite {
+export interface StubSite extends StubMethodCall {
   readonly spy: string;
-  readonly method: StubMethod;
-  readonly once: boolean;
   readonly start: number;
   readonly end: number;
   readonly line: number;

@@ -110,10 +110,10 @@ function survivedStubMutant(replacement: string) {
   } as const;
 }
 
-function uncheckedFindings(findings: readonly unknown[]): readonly unknown[] {
-  return findings.filter(
-    (finding) => isRecord(finding) && finding['verdict'] === 'unchecked',
-  );
+function uncheckedFindings(findings: readonly unknown[]) {
+  return findings
+    .filter(isRecord)
+    .filter((finding) => finding['verdict'] === 'unchecked');
 }
 
 function ignoredAt(source: string, text: string, mutatorName: string) {
@@ -415,9 +415,10 @@ describe('storybookReporter', () => {
     });
 
     assert.deepEqual(
-      uncheckedFindings(findings()).map(
-        (finding) => isRecord(finding) && [finding['file'], finding['line']],
-      ),
+      uncheckedFindings(findings()).map((finding) => [
+        finding['file'],
+        finding['line'],
+      ]),
       [['src/Resolved.stories.tsx', 3]],
     );
   });

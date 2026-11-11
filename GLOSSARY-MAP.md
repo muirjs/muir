@@ -45,8 +45,12 @@
   where the CSF ignorer's play mode is `ignore`.
 - **Storybook test mutators -> Storybook**: they read story test code with `csf.ts` from `@layzee/storybook-csf`
   and mutate it, and the CSF ignorer reports those mutants as Ignored unless its play mode is `mutate`, so they
-  belong in the Stryker configuration that sets that mode. `LzStorybookSpyStub` reads definition-time stubs from
+  belong in the Stryker configuration that sets that mode. `LzStorybookStoryGlobals` and the Storybook mutators'
+  `LzStorybookArgs` take the played stories and each story's layers from the same `@layzee/storybook-csf` rule.
+  `LzStorybookSpyStub` reads definition-time stubs from
   the same `@layzee/storybook-csf` reader as the stub ignorer, which reports its mutants at erased stubs as Ignored;
+  the `lz-storybook` reporter tells its outcome mutants from its removal mutants by the stub method that
+  `@layzee/storybook-csf` names, and keeps them out of the unchecked stubs;
   `@layzee/stryker-storybook`'s tests (a devDependency only) check that, and that its `LzStorybookSpyStub` name is an
   experimental mutator name of this package.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
