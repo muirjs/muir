@@ -72,7 +72,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
               [globals, { globals: [], parameters: metaParameters }] as const,
           )
         : []),
-    ].filter(([globals]) => globals !== undefined),
+    ].filter(([globals]) => defined(globals)),
   );
 }, new Map<unknown, Below>());
 

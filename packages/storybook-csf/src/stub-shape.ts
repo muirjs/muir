@@ -10,7 +10,7 @@ const stubMethods = [
 
 export type StubMethod = (typeof stubMethods)[number];
 
-/** The stub method a spy method call calls, and whether it is the `Once` form. */
+/** The stub method a spy call names, and whether it is the `Once` form. */
 export interface StubMethodCall {
   readonly method: StubMethod;
   readonly once: boolean;
