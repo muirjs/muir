@@ -1,10 +1,10 @@
 import {
   firstTestCalls,
   isIndexedTestCall,
-  writtenValue,
   storyArgument,
   testArguments,
   testCallOf,
+  topLevelValueOrSelf,
   unwrap,
   type CsfFile,
   type StoryExport,
@@ -12,7 +12,7 @@ import {
 } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { objectValues, unknownValue } from './object-value.ts';
+import { objectValues, unknownValue, writtenValue } from './object-value.ts';
 import { storyValueChain } from './story-layers.ts';
 
 /** An unknown play with a play the file reads under it, which runs when the unknown one sets none: an earlier own play, an `.extend()` base's or the meta's. */
@@ -109,16 +109,6 @@ function knownPlay(
   const play = topLevelValueOrSelf(node, bindings);
 
   return isRecord(play) ? play : undefined;
-}
-
-/** A name's top-level value; a name the file does not bind, or any other node, as it is. */
-export function topLevelValueOrSelf(
-  node: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): unknown {
-  const name = field(node, 'name');
-
-  return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
 }
 
 /** The top-level `<story>.test(name, [options,] fn)` calls on a story that Storybook 10.6.5 indexes and runs, the first of each name; a call with a spread argument is `'unmatched'`. */

@@ -35,18 +35,29 @@ export function valuesIn(
 ): readonly LayerValue[] {
   return properties
     .filter((property) => maySet(property, key))
-    .map((property): LayerValue => {
-      if (propertyKey(property) !== key) {
-        return unknownValue;
-      }
+    .map(
+      (property): LayerValue =>
+        propertyKey(property) === key ? propertyValue(property) : unknownValue,
+    );
+}
 
-      const value =
-        field(property, 'type') === 'ObjectMethod'
-          ? property
-          : field(property, 'value');
+/** The value node of a property, a method being its own value; `undefined` for none. */
+function propertyValue(property: unknown): object | undefined {
+  const value =
+    field(property, 'type') === 'ObjectMethod'
+      ? property
+      : field(property, 'value');
 
-      return isRecord(value) ? value : undefined;
-    });
+  return isRecord(value) ? value : undefined;
+}
+
+/** The value node the file writes for `key` in an object literal: the last property of that key, whether or not a later spread or computed key may replace it when the file runs. It tells what role a node has, such as test code or a tag list, not which value runs; `objectValue` reads that. */
+export function writtenValue(object: unknown, key: string): object | undefined {
+  return propertyValue(
+    list(field(object, 'properties')).findLast(
+      (candidate) => propertyKey(candidate) === key,
+    ),
+  );
 }
 
 /** Every value a property of `object` gives `key`, the one JavaScript keeps first; none for no object, and one `unknownValue` for a value that is no object literal. */

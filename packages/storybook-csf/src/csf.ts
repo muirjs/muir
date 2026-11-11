@@ -2,7 +2,7 @@ import { dirname, extname, resolve } from 'node:path';
 
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { propertyKey } from './object-value.ts';
+import { writtenValue } from './object-value.ts';
 
 export interface IndexedStory {
   /** The story's static tags, the meta's first. */
@@ -492,6 +492,16 @@ function followed(value: unknown, bindings: Bindings): unknown {
   return typeof name === 'string' ? bindings.get(name) : value;
 }
 
+/** A name's top-level value; a name the file does not bind, or any other node, as it is. */
+export function topLevelValueOrSelf(
+  node: unknown,
+  bindings: Bindings,
+): unknown {
+  const name = field(node, 'name');
+
+  return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
+}
+
 /** The bindings a name's init reads, so that following a cycle of names ends. */
 export function withoutBinding(bindings: Bindings, name: unknown): Bindings {
   return new Map([...bindings].filter(([bound]) => bound !== name));
@@ -808,19 +818,6 @@ export function mayImportItself(
 
 function nodesIn(node: object): readonly unknown[] {
   return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
-}
-
-/** The value node the file writes for `key` in an object literal: the last property of that key, whether or not a later spread or computed key may replace it when the file runs. It tells what role a node has, such as test code or a tag list, not which value runs; `objectValue` reads that. */
-export function writtenValue(object: unknown, key: string): object | undefined {
-  const property = list(field(object, 'properties')).findLast(
-    (candidate) => propertyKey(candidate) === key,
-  );
-  const value =
-    field(property, 'type') === 'ObjectMethod'
-      ? property
-      : field(property, 'value');
-
-  return isRecord(value) ? value : undefined;
 }
 
 function storyNode(init: unknown, bindings: Bindings): unknown {
