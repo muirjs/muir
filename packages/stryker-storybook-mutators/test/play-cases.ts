@@ -550,4 +550,40 @@ export const playCases: readonly Case[] = [
       "export const Primary = { args: { label: 'a', disabled: true }, play: null };\n",
     expect: [[args, "{ label: 'a' }"]],
   },
+  {
+    id: 'test-function-second-argument',
+    title:
+      'a key read by a .test() function given as the second argument stays, as Storybook 10.6.5 runs that one and ignores a third',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true } });",
+      "Primary.test('t', async ({ args }) => { args.label; }, async () => {});",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'test-function-ignored-third-argument',
+    title:
+      'a key read only by a .test() function after a function second argument is removed, as Storybook 10.6.5 never runs it',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true } });",
+      "Primary.test('t', async () => {}, async ({ args }) => { args.label; });",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'test-function-after-options',
+    title:
+      'a key read by the .test() function right after the options stays, as Storybook 10.6.5 runs that one and ignores a fourth argument',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true } });",
+      "Primary.test('t', {}, async ({ args }) => { args.label; }, async () => {});",
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
 ];

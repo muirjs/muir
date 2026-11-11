@@ -304,14 +304,18 @@ export interface TestArguments {
   readonly testFunction: unknown;
 }
 
-/** The options and test function of a `.test(name, [options,] fn)` call. */
-export function testArguments({ args }: TestCall): TestArguments {
-  const [, ...rest] = args;
+const functionTypes: readonly unknown[] = [
+  'ArrowFunctionExpression',
+  'FunctionExpression',
+];
 
-  return {
-    options: rest.length > 1 ? rest[0] : undefined,
-    testFunction: rest.at(-1),
-  };
+/** The options and test function of a `.test(name, [options,] fn)` call, as Storybook 10.6.5 `test()` reads them: the second argument is the test function when it is the last or a function, else the options, and any later argument is ignored. */
+export function testArguments({ args }: TestCall): TestArguments {
+  const [, second, third] = args;
+
+  return third === undefined || functionTypes.includes(field(second, 'type'))
+    ? { options: undefined, testFunction: second }
+    : { options: second, testFunction: third };
 }
 
 /** The first `.test()` call of each name, as Storybook 10.6.5 test-utils.ts `testStory` runs the first child that has the row's name. */
