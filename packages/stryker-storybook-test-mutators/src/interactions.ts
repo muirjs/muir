@@ -138,16 +138,14 @@ export function targetStatement(path: NodePath): NodePath | undefined {
 
 /** The first statement after `path` in its block that holds an `expect(...)` check, before the next interaction. */
 export function firstCheckAfter(path: NodePath): NodePath | undefined {
-  return before(
-    nextSiblings(path),
-    (statement) =>
-      isInteractionStatement(statement) || isStepWithInteraction(statement),
-  ).find((sibling) => checksIn(sibling).length > 0);
+  return untilNextInteraction(nextSiblings(path)).find(
+    (sibling) => checksIn(sibling).length > 0,
+  );
 }
 
 /** Whether `path` holds an `expect(...)` check with `.not` in its matcher chain. */
 export function hasNegativeCheck(path: NodePath): boolean {
-  return checksIn(path).some(Boolean);
+  return checksIn(path).some(isNegative);
 }
 
 /** `expect(...).<matcher>(...);`, awaited or not. */
@@ -207,13 +205,11 @@ function userEventMethod(call: types.Node, path: NodePath): string | undefined {
 
 /** The statements after `path`, up to the next interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
-  const negations = before(
-    followingStatements(path),
-    (statement) =>
-      isInteractionStatement(statement) || isStepWithInteraction(statement),
-  ).flatMap(checksIn);
+  const checks = untilNextInteraction(followingStatements(path)).flatMap(
+    checksIn,
+  );
 
-  return negations.length > 0 && negations.every(Boolean);
+  return checks.length > 0 && checks.every(isNegative);
 }
 
 /** A `step(...)` statement whose callback holds an interaction. */
@@ -241,12 +237,14 @@ function isStepWithInteraction(statement: NodePath): boolean {
   return found;
 }
 
-/** The statements before the first one that `stop` matches. */
-function before(
+/** The statements before the first interaction statement or step with an interaction among them. */
+function untilNextInteraction(
   statements: readonly NodePath[],
-  stop: (statement: NodePath) => boolean,
 ): readonly NodePath[] {
-  const end = statements.findIndex(stop);
+  const end = statements.findIndex(
+    (statement) =>
+      isInteractionStatement(statement) || isStepWithInteraction(statement),
+  );
 
   return end === -1 ? statements : statements.slice(0, end);
 }
@@ -284,14 +282,21 @@ function isStepCall(node: types.Node): boolean {
   return node.type === 'CallExpression' && nameOf(node.callee) === 'step';
 }
 
-/** Whether each `expect(...)` check in `path` is negated. */
-function checksIn(path: NodePath): readonly boolean[] {
-  const checks: boolean[] = [];
+interface Check {
+  /** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
+  readonly chain: readonly (string | undefined)[];
+  /** The arguments of the matcher call at the end of the chain. */
+  readonly args: readonly types.Node[];
+}
+
+/** The `expect(...)` checks in `path`. */
+function checksIn(path: NodePath): readonly Check[] {
+  const checks: Check[] = [];
 
   path.traverse({
     CallExpression(call) {
       if (nameOf(call.node.callee) === 'expect') {
-        checks.push(matcherChain(call).includes('not'));
+        checks.push(checkOf(call));
       }
     },
   });
@@ -299,14 +304,44 @@ function checksIn(path: NodePath): readonly boolean[] {
   return checks;
 }
 
-/** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
-function matcherChain(expectCall: NodePath): readonly (string | undefined)[] {
+function checkOf(expectCall: NodePath): Check {
+  const members = matcherChain(expectCall);
+  const last = members.at(-1);
+  const matcherCall = last?.parentPath?.node;
+
+  return {
+    chain: members.map((member) => nameOf(member.node.property)),
+    args:
+      matcherCall?.type === 'CallExpression' &&
+      matcherCall.callee === last?.node
+        ? matcherCall.arguments
+        : [],
+  };
+}
+
+function isNegative(check: Check): boolean {
+  return check.chain.includes('not');
+}
+
+/** The member expressions after `expect(...)`, nearest first. */
+function matcherChain(
+  expectCall: NodePath,
+): readonly NodePath<types.MemberExpression>[] {
   const member = expectCall.parentPath;
 
-  return member?.node.type === 'MemberExpression' &&
-    member.node.object === expectCall.node
-    ? [nameOf(member.node.property), ...matcherChain(member)]
+  return member?.isMemberExpression() && member.node.object === expectCall.node
+    ? [member, ...matcherChain(member)]
     : [];
+}
+
+/** Whether `path` holds an `expect(...).toHaveBeenCalledTimes(0)` check. */
+export function hasZeroCallsCheck(path: NodePath): boolean {
+  return checksIn(path).some(
+    ({ chain, args: [count] }) =>
+      chain.at(-1) === 'toHaveBeenCalledTimes' &&
+      count?.type === 'NumericLiteral' &&
+      count.value === 0,
+  );
 }
 
 const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);

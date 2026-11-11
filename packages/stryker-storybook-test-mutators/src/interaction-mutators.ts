@@ -7,11 +7,11 @@ import {
 } from '@layzee/stryker-mutator-install';
 
 import {
-  awaited,
   elementQueryPrefixes,
   fireEventMethod,
   firstCheckAfter,
   hasNegativeCheck,
+  hasZeroCallsCheck,
   isExpectStatement,
   isInteractionBody,
   isInteractionStatement,
@@ -186,21 +186,6 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
   };
 }
 
-/** `expect(...).toHaveBeenCalledTimes(0);`, awaited or not. */
-function isZeroCallsCheck(statement: types.ExpressionStatement): boolean {
-  const call = awaited(statement.expression);
-  const [count] = call.type === 'CallExpression' ? call.arguments : [];
-
-  return (
-    call.type === 'CallExpression' &&
-    call.callee.type === 'MemberExpression' &&
-    call.callee.property.type === 'Identifier' &&
-    call.callee.property.name === 'toHaveBeenCalledTimes' &&
-    count?.type === 'NumericLiteral' &&
-    count.value === 0
-  );
-}
-
 /** Whether `check` reads a name declared after the interaction and before the check, which a copy before the interaction could not read. */
 function readsNameDeclaredBetween(
   interaction: NodePath,
@@ -287,7 +272,7 @@ function checkToCopy(
   return check !== undefined &&
     isExpectStatement(check) &&
     !hasNegativeCheck(check) &&
-    !isZeroCallsCheck(check.node) &&
+    !hasZeroCallsCheck(check) &&
     !readsNameDeclaredBetween(interaction, check) &&
     !standsEarlier(check, interaction, t)
     ? check.node

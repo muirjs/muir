@@ -46,8 +46,9 @@ check.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
-The first `expect(...)` statement after an interaction, before the next one, that `LzStorybookAssertionBefore` also
-runs before the interaction; a negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declared
+The first `expect(...)` statement after an interaction in the interaction's own block, before the next interaction,
+that `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that holds
+the interaction is not looked at. A negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declared
 after the interaction, and one that already stands earlier in the play are not copied.
 _Avoid_: duplicated assertion, moved check
 
