@@ -34,7 +34,7 @@ describe('assertBabelTypes', () => {
   it('lists every member a value lacks, comma-separated', () => {
     assert.throws(() => assertBabelTypes(undefined, missing), {
       message:
-        'no Babel types with arrowFunctionExpression, awaitExpression, blockStatement, callExpression, cloneNode, emptyStatement, expressionStatement, identifier, isNode, isNodesEquivalent, memberExpression, newExpression, stringLiteral',
+        'no Babel types with arrowFunctionExpression, awaitExpression, blockStatement, callExpression, cloneNode, emptyStatement, expressionStatement, identifier, isNode, isNodesEquivalent, memberExpression, newExpression, objectExpression, stringLiteral',
     });
   });
 });
@@ -288,6 +288,20 @@ describe('roster', () => {
     assert.deepEqual(
       await namesWith({ experimental: { LzStorybookAssertionBefore: true } }),
       [...defaults, 'LzStorybookAssertionBefore'],
+    );
+  });
+
+  it('turns LzStorybookSpyStub on by its name inside experimental', async () => {
+    assert.deepEqual(
+      await namesWith({ experimental: { LzStorybookSpyStub: true } }),
+      [...defaults, 'LzStorybookSpyStub'],
+    );
+  });
+
+  it('turns LzStorybookStoryGlobals on by its name inside experimental', async () => {
+    assert.deepEqual(
+      await namesWith({ experimental: { LzStorybookStoryGlobals: true } }),
+      [...defaults, 'LzStorybookStoryGlobals'],
     );
   });
 

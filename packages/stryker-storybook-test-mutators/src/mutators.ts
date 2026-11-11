@@ -13,6 +13,7 @@ import {
 } from './interaction-mutators.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
 import { spyStubMutator } from './spy-stub.ts';
+import { storyGlobalsMutator } from './story-globals.ts';
 import { waitForMutator } from './wait-for.ts';
 
 // In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave the roster out of a
@@ -30,7 +31,12 @@ export const mutatorSets = roster({
     interactionTargetMutator(),
   ],
   optIn: [interactionRepeatMutator()],
-  experimental: [waitForMutator(), assertionBeforeMutator(), spyStubMutator()],
+  experimental: [
+    waitForMutator(),
+    assertionBeforeMutator(),
+    spyStubMutator(),
+    storyGlobalsMutator(),
+  ],
 });
 
 type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];

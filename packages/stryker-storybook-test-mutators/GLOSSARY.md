@@ -71,6 +71,23 @@ and a `mockRejectedValue` stub into `mockResolvedValue(undefined)`, keeping a `O
 no check tells success from failure of that call.
 _Avoid_: flip mutant, rejection mutant
 
+### Globals
+
+**Globals site**:
+A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: a story's own `globals`
+when the story sets a play, takes one from its `.extend()` base or the meta, or has a `.test()` call; the meta's
+`globals` when such a story exists; and the `globals` in the options of a `.test()` call on a story. A story that
+gets its play only through a spread of another story is not read as having one.
+_Avoid_: globals target, story globals (the meta's are sites too)
+
+**Default global**:
+A property of a globals site whose value is Storybook 10.6.5's own initial value for that global, which gets no
+mutant because the story runs the same without it: `viewport` as `'responsive'` or `'100pct-100pct'`, or as an
+object of such a value or `undefined` with `isRotated: false`; `backgrounds` with an `undefined` value and
+`grid: false`; `measureEnabled: false`; `outline: false`. The table is fixed; a project's own `initialGlobals` are
+not read.
+_Avoid_: initial global, preset global
+
 ### Waits
 
 **Retrying wait**:

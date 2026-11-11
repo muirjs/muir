@@ -15,6 +15,7 @@ export const babelTypeMembers = [
   'isNodesEquivalent',
   'memberExpression',
   'newExpression',
+  'objectExpression',
   'stringLiteral',
 ] as const satisfies readonly (keyof typeof types)[];
 

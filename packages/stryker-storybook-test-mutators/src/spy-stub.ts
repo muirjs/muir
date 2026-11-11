@@ -6,11 +6,9 @@ import {
   type StubSite,
 } from '@layzee/storybook-csf';
 
-import { isInStoryTestCode, readStoryFileAt } from './interactions.ts';
 import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
 import { nameOf } from './nodes.ts';
-
-const sitesByProgram = new WeakMap<object, readonly StubSite[]>();
+import { isInStoryTestCode, perFile, readStoryFileAt } from './story-file.ts';
 
 export function spyStubMutator(): LzStorybookTestMutator & {
   readonly name: 'LzStorybookSpyStub';
@@ -121,24 +119,7 @@ function outcomeOf(
   }
 }
 
-function sitesOf(path: NodePath): readonly StubSite[] {
-  const program = path.isProgram()
-    ? path
-    : path.findParent((parent) => parent.isProgram());
-
-  if (program === null) {
-    return [];
-  }
-
-  const read = sitesByProgram.get(program.node);
-
-  if (read !== undefined) {
-    return read;
-  }
-
-  const sites = definitionTimeStubs(program.node);
-
-  sitesByProgram.set(program.node, sites);
-
-  return sites;
-}
+const sitesOf = perFile(
+  (program): readonly StubSite[] => definitionTimeStubs(program),
+  [],
+);
