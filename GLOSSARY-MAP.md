@@ -22,7 +22,8 @@
 - **JSX mutators -> Mutator install**: the JSX mutators are installed through Mutator install, which gives them
   the Layzee mark, the self-check on samples and the name check.
 - **Playwright mutators -> Mutator install**: installed the same way; only the Playwright mutators have opt-in and
-  experimental tiers so far, and they use built-in removal.
+  experimental tiers so far, and they use built-in removal. Their Locator and MountStory mutators make each
+  same-file swap through the swap engine that Mutator install holds.
 - **Storybook test mutators -> Mutator install**: installed the same way, with built-in removal.
 - **Storybook test mutators -> Storybook**: they mutate story test code, whose mutants the CSF ignorer reports as
   Ignored unless its play mode is `mutate`, so they belong in the Stryker configuration that sets that mode.

@@ -34,6 +34,15 @@ export {
 } from './install.ts';
 export { fieldOf, isRecord } from './is-record.ts';
 export {
+  literalText,
+  literalValue,
+  swapMutator,
+  type Site,
+  type SiteReader,
+  type SwapMutator,
+  type SwapTypes,
+} from './same-file-swap.ts';
+export {
   selectMutators,
   type MutatorOptions,
   type MutatorSets,

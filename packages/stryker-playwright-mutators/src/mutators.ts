@@ -1,12 +1,12 @@
-import type {
-  MutatorOptions,
-  MutatorSets,
-  SampledMutator,
+import {
+  swapMutator,
+  type MutatorOptions,
+  type MutatorSets,
+  type SampledMutator,
 } from '@layzee/stryker-mutator-install';
 
 import type { BabelTypes } from './install.ts';
 import { fulfillMutator, outcomeMutator } from './route-mocks.ts';
-import { swapMutator } from './same-file-swap.ts';
 import { requestDataMutator } from './request-data.ts';
 import { requestUrlMutator } from './request-url.ts';
 import {

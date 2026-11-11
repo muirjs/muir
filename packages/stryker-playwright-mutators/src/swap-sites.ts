@@ -1,4 +1,10 @@
-import { fieldOf } from '@layzee/stryker-mutator-install';
+import {
+  fieldOf,
+  literalText,
+  literalValue,
+  type Site,
+  type SiteReader,
+} from '@layzee/stryker-mutator-install';
 
 import {
   argumentOf,
@@ -6,62 +12,16 @@ import {
   isNamedReceiver,
   memberNameOf,
 } from './ast.ts';
-import type { Site, SiteReader } from './same-file-swap.ts';
-
-/**
- * What tells two locator values apart: a string literal and an expression-free template literal by their text, a
- * regex literal by pattern and flags. A string and a regex never compare equal.
- */
-function valueOf(node: unknown): string | undefined {
-  switch (fieldOf(node, 'type')) {
-    case 'StringLiteral':
-    case 'TemplateLiteral': {
-      const text = textOf(node);
-
-      return text === undefined ? undefined : `string:${text}`;
-    }
-    case 'RegExpLiteral':
-      return `regex:/${String(fieldOf(node, 'pattern'))}/${String(fieldOf(node, 'flags'))}`;
-    default:
-      return undefined;
-  }
-}
-
-/** The text of a string literal or of an expression-free template literal. */
-function textOf(node: unknown): string | undefined {
-  switch (fieldOf(node, 'type')) {
-    case 'StringLiteral': {
-      const text = fieldOf(node, 'value');
-
-      return typeof text === 'string' ? text : undefined;
-    }
-    case 'TemplateLiteral': {
-      const quasis = fieldOf(node, 'quasis');
-      const text = fieldOf(
-        fieldOf(Array.isArray(quasis) ? quasis[0] : undefined, 'value'),
-        'cooked',
-      );
-
-      return Array.isArray(quasis) &&
-        quasis.length === 1 &&
-        typeof text === 'string'
-        ? text
-        : undefined;
-    }
-    default:
-      return undefined;
-  }
-}
 
 export function roleSite(call: unknown): Site | undefined {
   const role = argumentOf(call, 0);
   const name = fieldOf(findProperty(argumentOf(call, 1), 'name'), 'value');
-  const value = valueOf(name);
+  const value = literalValue(name);
 
   return memberNameOf(fieldOf(call, 'callee')) === 'getByRole' &&
     fieldOf(role, 'type') === 'StringLiteral' &&
     value !== undefined
-    ? { key: `getByRole:${valueOf(role)}`, value, node: name }
+    ? { key: `getByRole:${literalValue(role)}`, value, node: name }
     : undefined;
 }
 
@@ -70,7 +30,7 @@ function firstArgumentSite(methods: readonly string[]): SiteReader {
   return (call) => {
     const method = memberNameOf(fieldOf(call, 'callee'));
     const argument = argumentOf(call, 0);
-    const value = valueOf(argument);
+    const value = literalValue(argument);
 
     return typeof method === 'string' &&
       methods.includes(method) &&
@@ -90,7 +50,7 @@ export function isSameStory(one: string, other: string): boolean {
 export function mountStorySite(call: unknown): Site | undefined {
   const receiver = 'mount';
   const argument = argumentOf(call, 0);
-  const value = textOf(argument);
+  const value = literalText(argument);
 
   return isNamedReceiver(fieldOf(call, 'callee'), receiver) &&
     value !== undefined
