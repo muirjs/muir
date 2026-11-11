@@ -27,8 +27,8 @@
   experimental tiers so far, and they use built-in removal.
 - **Storybook test mutators -> Mutator install**: installed the same way, with built-in removal.
 - **Storybook mutators -> Mutator install**: installed the same way, keeping Stryker's built-in mutators.
-- **Storybook mutators -> Storybook**: they read story files with a byte copy of the Storybook package's `csf.ts`,
-  and mutate story data, so they belong in the Stryker configuration for the components, where the CSF ignorer's
+- **Storybook mutators -> Storybook**: they read story files with byte copies of the Storybook package's `csf.ts`
+  and the two files it imports, `is-record.ts` and `node-field.ts`, and mutate story data, so they belong in the Stryker configuration for the components, where the CSF ignorer's
   play mode is `ignore`.
 - **Storybook test mutators -> Storybook**: they mutate story test code, whose mutants the CSF ignorer reports as
   Ignored unless its play mode is `mutate`, so they belong in the Stryker configuration that sets that mode.
@@ -39,7 +39,7 @@
 - **Playwright mutators -> Playwright runner**: the runner runs test-code mutants. The serialized-callback ignorer
   reports as Ignored the mutants of callbacks that Playwright sends to another realm; the runner's page helpers
   make such callbacks work in pages, but not in workers, service workers or Electron.
-- **Storybook**: shares no plugin with the other contexts, and no code apart from the `csf.ts` copy in the Storybook
-  mutators. It works with Stryker's Vitest runner and
+- **Storybook**: shares no plugin with the other contexts, and no code apart from the copies of `csf.ts`,
+  `is-record.ts` and `node-field.ts` in the Storybook mutators. It works with Stryker's Vitest runner and
   Storybook's Vitest addon, not with the Playwright runner. Inside it, the mock transformer writes the transformer
   record that the `lz-storybook` reporter reads, and both packages hold the same stub shape.

@@ -7,8 +7,7 @@ terms; install, tier and built-in mutator terms belong to the Mutator install co
 ## Language
 
 **Story data**:
-What a story file says a story renders with, such as its `args`, rather than its story test code. It goes in the
-components Stryker configuration, beside the components and with Stryker's built-in mutators on.
+What a story file says a story renders with, such as its `args`, rather than its story test code.
 _Avoid_: story config, story setup
 
 **LzStorybook mutator**:
@@ -26,18 +25,15 @@ _Avoid_: args target, story args (the meta's `args` are no args site)
 
 **Read key**:
 A key of an args site that a function that runs for it reads, as `args.<key>`, `context.args.<key>` or by
-destructuring. A function that hands `args` or its context on whole, or collects a rest of either, may read any key,
-so its args sites make no mutant.
+destructuring. Every key is a read key when such a function hands `args` or its context on whole, or is one the file
+cannot read.
 _Avoid_: used arg, checked arg
 
 **Per-key mutant**:
 An args site with one key that is no read key removed, so the story falls back to the meta's and the project's
-value for it. None is made when the object would be left empty, as Stryker's built-in ObjectLiteral already makes
-`{}`.
+value for it.
 _Avoid_: arg removal
 
 **Coarse mutant**:
-An args site with every key that is no read key removed at once, made only when that leaves something and differs
-from each per-key mutant. It is the folded-in form of the story-level args mutant first proposed as
-`LzStorybookStoryArgs`.
+An args site with every key that is no read key removed at once.
 _Avoid_: story args mutant, StoryArgs
