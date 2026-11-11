@@ -404,11 +404,11 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-story-viewport-under-unmatched-test',
     title:
-      "a story's responsive viewport global gets a mutant when an unmatched .test(...testArgs) call runs it, as its options may set viewport parameters",
+      "a story's responsive viewport global gets a mutant when an unmatched .test('t', ...testArgs) call runs it, as its options may set viewport parameters",
     source: factoryFile(
       "import { testArgs } from './shared';",
       "export const Story = meta.story({ globals: { viewport: { value: 'responsive' } } });",
-      'Story.test(...testArgs);',
+      "Story.test('t', ...testArgs);",
     ),
     expect: [[storyGlobals, '{}']],
   },

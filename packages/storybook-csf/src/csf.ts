@@ -318,13 +318,17 @@ export function testArguments({ args }: TestCall): TestArguments {
     : { options: second, testFunction: third };
 }
 
-/** The first `.test()` call of each name, as Storybook 10.6.5 test-utils.ts `testStory` runs the first child that has the row's name. */
+/** The first `.test()` call of each name, as Storybook 10.6.5 test-utils.ts `testStory` runs the first child that has the row's name; its CsfFile indexes only a call whose name is a string literal. */
 export function firstTestCalls(
   calls: readonly TestCall[],
 ): readonly TestCall[] {
-  return calls.filter(
+  const named = calls.filter(
+    ({ args: [name] }) => field(name, 'type') === 'StringLiteral',
+  );
+
+  return named.filter(
     ({ args: [name] }, index) =>
-      calls.findIndex(
+      named.findIndex(
         ({ args: [other] }) => field(other, 'value') === field(name, 'value'),
       ) === index,
   );

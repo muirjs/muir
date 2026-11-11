@@ -586,4 +586,28 @@ export const playCases: readonly Case[] = [
     ),
     expect: [[args, "{ label: 'a' }"]],
   },
+  {
+    id: 'test-call-of-spread-only',
+    title:
+      'a .test(...all) call is no test, as Storybook 10.6.5 CsfFile indexes a .test() call only when its first argument is a string literal',
+    source: inFactoryFile(
+      "import { all } from './all';",
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true }, play: async ({ args }) => { args.label; } });",
+      'Primary.test(...all);',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'test-call-of-template-literal-name',
+    title:
+      'a .test() call named by a template literal is no test, even with a spread argument',
+    source: inFactoryFile(
+      "import { all } from './all';",
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a', disabled: true }, play: async ({ args }) => { args.label; } });",
+      'Primary.test(`t`, ...all);',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
 ];

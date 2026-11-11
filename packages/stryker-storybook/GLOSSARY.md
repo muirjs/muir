@@ -48,8 +48,9 @@ a meta spread follows), which runs when the unknown one sets none. The file reso
 of a top-level name bound to one (or a member of such a name with a key it can read) when the file leaves that name
 unchanged: it writes to no member of it, does not reassign it, and hands it to no code it does not read. It cannot
 resolve any other spread.
-Its `.test()` children are the first indexed call
-of each name; one with a spread argument is unmatched. The Storybook mutators and the Storybook test mutators mutate
+Its `.test()` children are the first `.test()` call
+of each string-literal name, when Storybook indexes it (two or more arguments); one with a spread argument is
+unmatched, and a call with any other first argument, such as `.test(...all)`, is none. The Storybook mutators and the Storybook test mutators mutate
 only played stories.
 _Avoid_: run story, story with a play
 
