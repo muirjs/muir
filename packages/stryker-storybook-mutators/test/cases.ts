@@ -469,11 +469,12 @@ export const cases: readonly Case[] = [
   },
   {
     id: 'meta-same-literal',
-    title: "a key whose literal value equals the meta's makes no mutant",
+    title:
+      "a key whose literal value equals the meta's makes no mutant, nor does removing the other key, which leaves args that behave like ObjectLiteral's {}",
     source:
       "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
       "export const Primary = { args: { label: 'a', disabled: true } };\n",
-    expect: [[args, "{ label: 'a' }"]],
+    expect: [],
   },
   {
     id: 'meta-other-literal',
@@ -626,9 +627,12 @@ export const cases: readonly Case[] = [
     source: inFactoryFile(
       'const meta = preview.meta({});',
       "export const Primary = meta.story({ args: { label: 'a' }, play: async () => {} });",
-      "export const Small = Primary.extend({ args: { label: 'a', size: 's' } });",
+      "export const Small = Primary.extend({ args: { label: 'a', size: 's', disabled: true } });",
     ),
-    expect: [[args, "{ label: 'a' }"]],
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 's' }"],
+    ],
   },
   {
     id: 'test-options-same-literal',
@@ -637,9 +641,12 @@ export const cases: readonly Case[] = [
     source: inFactoryFile(
       'const meta = preview.meta({});',
       "export const Primary = meta.story({ args: { label: 'a' } });",
-      "Primary.test('t', { args: { label: 'a', size: 's' } }, async () => {});",
+      "Primary.test('t', { args: { label: 'a', size: 's', disabled: true } }, async () => {});",
     ),
-    expect: [[args, "{ label: 'a' }"]],
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 's' }"],
+    ],
   },
   {
     id: 'extend-other-literal-than-base',

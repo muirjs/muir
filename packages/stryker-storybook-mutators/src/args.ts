@@ -19,9 +19,17 @@ type Key = string | number;
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<Key> | 'whole';
 
-type Site = readonly [argsObject: unknown, kept: ReadonlySet<Key>];
+/** The keys of an args site that stay in every mutant. */
+interface Kept {
+  /** The keys a function that runs for the site reads. */
+  readonly read: ReadonlySet<Key>;
+  /** The keys whose literal value equals the one they fall back to when removed. */
+  readonly sameAsBelow: ReadonlySet<Key>;
+}
 
-type Sites = ReadonlyMap<unknown, ReadonlySet<Key>>;
+type Site = readonly [argsObject: unknown, kept: Kept];
+
+type Sites = ReadonlyMap<unknown, Kept>;
 
 /** What a read evaluates to: the `args` object, or the story context that holds it. */
 type Read = 'args' | 'context';
@@ -44,15 +52,15 @@ export function argsMutator(): LzStorybookMutator & {
         sitesOf(path);
       }
 
-      if (!path.isObjectExpression() || path.node.properties.length < 2) {
+      if (!path.isObjectExpression()) {
         return;
       }
 
       const program = path.findParent((parent) => parent.isProgram());
-      const read =
+      const kept =
         program === null ? undefined : sitesOf(program).get(path.node);
 
-      if (read === undefined) {
+      if (kept === undefined) {
         return;
       }
 
@@ -60,8 +68,8 @@ export function argsMutator(): LzStorybookMutator & {
       const without = (removed: readonly unknown[]) =>
         t.objectExpression(
           properties
-            .filter((kept) => !removed.includes(kept))
-            .map((kept) => t.cloneNode(kept, true)),
+            .filter((property) => !removed.includes(property))
+            .map((property) => t.cloneNode(property, true)),
         );
       const eligible = properties.filter((property) => {
         const key = keyName(property);
@@ -70,15 +78,27 @@ export function argsMutator(): LzStorybookMutator & {
           property.type === 'ObjectProperty' &&
           !property.computed &&
           key !== undefined &&
-          !read.has(key)
+          !kept.read.has(key) &&
+          !kept.sameAsBelow.has(key)
         );
       });
+      // A mutant whose keys left all equal the value they fall back to behaves like Stryker's ObjectLiteral `{}`.
+      const differsFromEmpty = (removed: readonly unknown[]) =>
+        properties.some((property) => {
+          const key = keyName(property);
 
-      yield* eligible.map((removed) => without([removed]));
+          return (
+            !removed.includes(property) &&
+            (key === undefined || !kept.sameAsBelow.has(key))
+          );
+        });
 
-      if (eligible.length > 1 && eligible.length < properties.length) {
-        yield without(eligible);
-      }
+      yield* [
+        ...eligible.map((removed) => [removed]),
+        ...(eligible.length > 1 ? [eligible] : []),
+      ]
+        .filter(differsFromEmpty)
+        .map(without);
     },
   };
 }
@@ -296,15 +316,15 @@ function topLevelValueOrSelf(
 function site(
   argsObject: unknown,
   readers: readonly Reads[],
-  kept: ReadonlySet<Key>,
+  sameAsBelow: ReadonlySet<Key>,
 ): readonly Site[] {
-  const reads = union([...readers, kept]);
+  const read = union(readers);
 
   return field(argsObject, 'type') !== 'ObjectExpression' ||
     readers.length === 0 ||
-    reads === 'whole'
+    read === 'whole'
     ? []
-    : [[argsObject, reads]];
+    : [[argsObject, { read, sameAsBelow }]];
 }
 
 function union(reads: readonly Reads[]): Reads {
