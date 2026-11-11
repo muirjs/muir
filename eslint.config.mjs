@@ -222,7 +222,10 @@ export default withWarningsAsErrors([
     },
   },
   {
-    files: ['packages/stryker-jsx-mutators/package.json'],
+    files: [
+      'packages/stryker-jsx-mutators/package.json',
+      'packages/stryker-storybook-test-mutators/package.json',
+    ],
     rules: {
       // The mutators import Babel for types only.
       '@nx/dependency-checks': dependencyChecks([
