@@ -289,4 +289,16 @@ export const cases: readonly Case[] = [
     source: inPlay('(await userEvent.click(button)) as unknown;'),
     expect: [[interaction, ';']],
   },
+  {
+    id: 'skip-before-each-array',
+    title: 'an interaction in a beforeEach given in an array makes no mutant',
+    source: `export const Story = {\n  beforeEach: [\n    async ({ userEvent }) => {\n      await userEvent.click(button);\n    },\n  ],\n};\n`,
+    expect: [],
+  },
+  {
+    id: 'skip-after-each-array',
+    title: 'an interaction in an afterEach given in an array makes no mutant',
+    source: `export default {\n  afterEach: [\n    () => {\n      button.blur();\n    },\n  ],\n};\n`,
+    expect: [],
+  },
 ];

@@ -199,18 +199,22 @@ function matcherChain(expectCall: NodePath): readonly unknown[] {
 
 const hooks: readonly unknown[] = ['beforeEach', 'afterEach'];
 
-/** A function that is the value of a `beforeEach` or `afterEach` property, or a method of that name. */
+/** A function that is the value of a `beforeEach` or `afterEach` property or an element of its array, or a method of that name. */
 function isHook(path: NodePath): boolean {
-  const { node, parent } = path;
+  const { node } = path;
 
   if (node.type === 'ObjectMethod') {
     return hooks.includes(nameOf(node.key));
   }
 
+  const value =
+    path.parentPath?.node.type === 'ArrayExpression' ? path.parentPath : path;
+  const property = value.parent;
+
   return (
     path.isFunction() &&
-    parent?.type === 'ObjectProperty' &&
-    hooks.includes(nameOf(parent.key))
+    property?.type === 'ObjectProperty' &&
+    hooks.includes(nameOf(property.key))
   );
 }
 
