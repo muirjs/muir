@@ -7,20 +7,24 @@ import {
 } from '@layzee/stryker-mutator-install';
 
 import {
-  awaited,
-  elementQueryPrefixes,
-  firstCheckAfter,
   hasNegativeCheck,
   hasZeroCallsCheck,
-  interactionAt,
   isExpectStatement,
-  isQueryCall,
+} from './checks.ts';
+import {
+  firstCheckAfter,
+  interactionAt,
   isSkipped,
-  queryKinds,
-  queryMethods,
   targetInteraction,
   type Interaction,
 } from './interactions.ts';
+import { awaited } from './nodes.ts';
+import {
+  elementQueryPrefixes,
+  isQueryCall,
+  queryKinds,
+  queryMethods,
+} from './queries.ts';
 import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
 
 function sampleOf(statement: string): string {

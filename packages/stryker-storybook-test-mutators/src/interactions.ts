@@ -1,9 +1,16 @@
 import type { NodePath, types } from '@babel/core';
 import { csfShapes } from '@layzee/storybook-csf';
 
+import { checksIn, isNegative } from './checks.ts';
 import type { BabelTypes } from './mutator.ts';
-
-type Binding = NonNullable<ReturnType<NodePath['scope']['getBinding']>>;
+import {
+  awaited,
+  type Binding,
+  keyName,
+  nameOf,
+  withoutTypeWrappers,
+} from './nodes.ts';
+import { readUserEvent, userEventMethods } from './user-event.ts';
 
 type CallNode = types.CallExpression | types.OptionalCallExpression;
 
@@ -236,29 +243,6 @@ export function firstCheckAfter(path: NodePath): NodePath | undefined {
   );
 }
 
-/** Whether `path` holds an `expect(...)` check with `.not` in its matcher chain. */
-export function hasNegativeCheck(path: NodePath): boolean {
-  return checksIn(path).some(isNegative);
-}
-
-/** `expect(...).<matcher>(...);`, awaited or not. */
-export function isExpectStatement(
-  path: NodePath,
-): path is NodePath<types.ExpressionStatement> {
-  return (
-    path.isExpressionStatement() &&
-    startsWithExpect(awaited(path.node.expression))
-  );
-}
-
-function startsWithExpect(node: types.Node): boolean {
-  if (node.type === 'CallExpression') {
-    return nameOf(node.callee) === 'expect' || startsWithExpect(node.callee);
-  }
-
-  return node.type === 'MemberExpression' && startsWithExpect(node.object);
-}
-
 /** The statements after `path`, up to the next interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
   const checks = untilNextInteraction(followingStatements(path)).flatMap(
@@ -348,68 +332,6 @@ function isStepCall(node: types.Node): boolean {
     (callee.type === 'MemberExpression' &&
       callee.object.type === 'Identifier' &&
       nameOf(callee.property) === 'step')
-  );
-}
-
-interface Check {
-  /** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
-  readonly chain: readonly (string | undefined)[];
-  /** The arguments of the matcher call at the end of the chain. */
-  readonly args: readonly types.Node[];
-}
-
-/** The `expect(...)` checks in `path`. */
-function checksIn(path: NodePath): readonly Check[] {
-  const checks: Check[] = [];
-
-  path.traverse({
-    CallExpression(call) {
-      if (nameOf(call.node.callee) === 'expect') {
-        checks.push(checkOf(call));
-      }
-    },
-  });
-
-  return checks;
-}
-
-function checkOf(expectCall: NodePath): Check {
-  const members = matcherChain(expectCall);
-  const last = members.at(-1);
-  const matcherCall = last?.parentPath?.node;
-
-  return {
-    chain: members.map((member) => nameOf(member.node.property)),
-    args:
-      matcherCall?.type === 'CallExpression' &&
-      matcherCall.callee === last?.node
-        ? matcherCall.arguments
-        : [],
-  };
-}
-
-function isNegative(check: Check): boolean {
-  return check.chain.includes('not');
-}
-
-/** The member expressions after `expect(...)`, nearest first. */
-function matcherChain(
-  expectCall: NodePath,
-): readonly NodePath<types.MemberExpression>[] {
-  const member = expectCall.parentPath;
-
-  return member?.isMemberExpression() && member.node.object === expectCall.node
-    ? [member, ...matcherChain(member)]
-    : [];
-}
-
-/** Whether `path` holds an `expect(...).toHaveBeenCalledTimes(0)` check. */
-export function hasZeroCallsCheck(path: NodePath): boolean {
-  return checksIn(path).some(
-    ({ chain, args: [count] }) =>
-      chain.at(-1) === 'toHaveBeenCalledTimes' &&
-      count?.type === 'NumericLiteral' &&
-      count.value === 0,
   );
 }
 
@@ -513,64 +435,6 @@ function functionBinding(path: NodePath): Binding | undefined {
   return name === undefined ? undefined : parentPath?.scope.getBinding(name);
 }
 
-/** The expression inside `<x>!`, `<x> as T`, `<x> satisfies T`, `<T><x>` and parentheses. */
-function withoutTypeWrappers(node: types.Node): types.Node {
-  return node.type === 'TSNonNullExpression' ||
-    node.type === 'TSAsExpression' ||
-    node.type === 'TSSatisfiesExpression' ||
-    node.type === 'TSTypeAssertion' ||
-    node.type === 'ParenthesizedExpression'
-    ? withoutTypeWrappers(node.expression)
-    : node;
-}
-
-/** The expression inside `await <x>` and any type wrappers around either. */
-export function awaited(node: types.Node): types.Node {
-  const expression = withoutTypeWrappers(node);
-
-  return withoutTypeWrappers(
-    expression.type === 'AwaitExpression' ? expression.argument : expression,
-  );
-}
-
-// The Testing Library queries, by what they match.
-export const queryKinds: readonly string[] = [
-  'Role',
-  'LabelText',
-  'PlaceholderText',
-  'Text',
-  'DisplayValue',
-  'AltText',
-  'Title',
-  'TestId',
-];
-
-/** The Testing Library query methods with one of the prefixes, such as `getBy` or `findAllBy`, and one of the kinds. */
-export function queryMethods(
-  prefixes: readonly string[],
-  kinds: readonly string[] = queryKinds,
-): readonly string[] {
-  return prefixes.flatMap((prefix) => kinds.map((kind) => `${prefix}${kind}`));
-}
-
-/** The prefixes of the queries for one element. */
-export const elementQueryPrefixes: readonly string[] = [
-  'getBy',
-  'findBy',
-  'queryBy',
-];
-
-/** `<x>.getBy<Query>(...)`, `<x>.findBy<Query>(...)` or `<x>.queryBy<Query>(...)`: a Testing Library query for one element. */
-export function isQueryCall(node: types.Node): boolean {
-  return (
-    node.type === 'CallExpression' &&
-    node.callee.type === 'MemberExpression' &&
-    elementQueries.includes(nameOf(node.callee.property) ?? '')
-  );
-}
-
-const elementQueries = queryMethods(elementQueryPrefixes);
-
 /** `<Story>.play`. */
 function isStoryPlay(argument: types.Node | undefined): boolean {
   const node =
@@ -593,207 +457,3 @@ const rawDomArguments: ReadonlyMap<string, number> = new Map([
 
 // `<Story>.play(context)`, and `<Story>.run()` on a CSF factory story.
 const composedPlayMethods: ReadonlySet<string> = new Set(['play', 'run']);
-
-// The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
-// storybook/test re-exports) and those only Vitest browser's userEvent has.
-const userEventMethods: ReadonlySet<string> = new Set([
-  'fill',
-  'dragAndDrop',
-  'wheel',
-  'click',
-  'dblClick',
-  'tripleClick',
-  'hover',
-  'unhover',
-  'tab',
-  'keyboard',
-  'pointer',
-  'type',
-  'clear',
-  'selectOptions',
-  'deselectOptions',
-  'upload',
-  'copy',
-  'cut',
-  'paste',
-]);
-
-interface UserEventReading {
-  readonly isUserEvent: boolean;
-  readonly mayBeVitestBrowser: boolean;
-}
-
-const noUserEvent: UserEventReading = {
-  isUserEvent: false,
-  mayBeVitestBrowser: false,
-};
-
-/** Reads `userEvent`, `<x>.userEvent` such as the play context's, or a local that `userEventBinding` reads as a user-event. `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
-function readUserEvent(
-  node: types.Node,
-  path: NodePath,
-  seen: ReadonlySet<Binding> = new Set(),
-): UserEventReading {
-  if (node.type === 'MemberExpression') {
-    return {
-      isUserEvent: nameOf(node.property) === 'userEvent',
-      mayBeVitestBrowser:
-        isVitestBrowserNamespace(node.object, path) ||
-        isVitestBrowserImport(awaited(node.object)),
-    };
-  }
-
-  const name = nameOf(node);
-  const binding = name === undefined ? undefined : path.scope.getBinding(name);
-  const bound =
-    binding === undefined || seen.has(binding)
-      ? noUserEvent
-      : userEventBinding(binding, path, new Set([...seen, binding]));
-
-  return {
-    isUserEvent: name === 'userEvent' || bound.isUserEvent,
-    mayBeVitestBrowser: bound.mayBeVitestBrowser,
-  };
-}
-
-/** Reads what a binding holds: Vitest browser's userEvent imported or destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
-function userEventBinding(
-  binding: Binding,
-  path: NodePath,
-  seen: ReadonlySet<Binding>,
-): UserEventReading {
-  const { name } = binding.identifier;
-  const declaration = binding.path;
-
-  if (declaration.isImportSpecifier()) {
-    const { parent } = declaration;
-    const fromVitestBrowser =
-      nameOf(declaration.node.imported) === 'userEvent' &&
-      parent.type === 'ImportDeclaration' &&
-      vitestBrowserSources.has(parent.source.value);
-
-    return {
-      isUserEvent: fromVitestBrowser,
-      mayBeVitestBrowser: fromVitestBrowser,
-    };
-  }
-
-  if (binding.kind === 'param') {
-    return {
-      isUserEvent:
-        declaration.node.type === 'ObjectPattern' &&
-        takesUserEventAs(declaration.node, name),
-      mayBeVitestBrowser: false,
-    };
-  }
-
-  if (!declaration.isVariableDeclarator()) {
-    return noUserEvent;
-  }
-
-  const { id, init } = declaration.node;
-
-  if (
-    id.type === 'ObjectPattern' &&
-    takesUserEventAs(id, name) &&
-    init !== null &&
-    init !== undefined &&
-    isVitestBrowserImport(awaited(init))
-  ) {
-    return { isUserEvent: true, mayBeVitestBrowser: true };
-  }
-
-  const value = boundValue(init, binding);
-
-  if (value?.type === 'ConditionalExpression') {
-    const consequent = readUserEvent(value.consequent, path, seen);
-    const alternate = readUserEvent(value.alternate, path, seen);
-
-    return {
-      isUserEvent: consequent.isUserEvent && alternate.isUserEvent,
-      mayBeVitestBrowser:
-        consequent.mayBeVitestBrowser || alternate.mayBeVitestBrowser,
-    };
-  }
-
-  const receiver = setupReceiver(value);
-
-  return receiver === undefined
-    ? noUserEvent
-    : readUserEvent(receiver, path, seen);
-}
-
-/** `{ userEvent: <name> }`, among other properties. */
-function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
-  return pattern.properties.some(
-    (property) =>
-      property.type === 'ObjectProperty' &&
-      nameOf(property.key) === 'userEvent' &&
-      nameOf(property.value) === name,
-  );
-}
-
-/** `<name>` from `import * as <name> from 'vitest/browser'`. */
-function isVitestBrowserNamespace(node: types.Node, path: NodePath): boolean {
-  const name = nameOf(node);
-  const binding = name === undefined ? undefined : path.scope.getBinding(name);
-  const declaration = binding?.path.parent;
-
-  return (
-    binding?.path.node.type === 'ImportNamespaceSpecifier' &&
-    declaration?.type === 'ImportDeclaration' &&
-    vitestBrowserSources.has(declaration.source.value)
-  );
-}
-
-/** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */
-function isVitestBrowserImport(node: types.Node): boolean {
-  return (
-    node.type === 'ImportExpression' &&
-    node.source.type === 'StringLiteral' &&
-    vitestBrowserSources.has(node.source.value)
-  );
-}
-
-const vitestBrowserSources: ReadonlySet<string> = new Set([
-  'vitest/browser',
-  '@vitest/browser/context',
-]);
-
-/** The receiver of `<x>.setup()`. */
-function setupReceiver(node: types.Node | undefined): types.Node | undefined {
-  return node?.type === 'CallExpression' &&
-    node.callee.type === 'MemberExpression' &&
-    nameOf(node.callee.property) === 'setup'
-    ? node.callee.object
-    : undefined;
-}
-
-/** The one value a local is ever given, by its declaration's `init` or a later assignment; none when something else, such as `++` or a `for...of` head, also changes it. */
-function boundValue(
-  init: types.Node | null | undefined,
-  binding: Binding,
-): types.Node | undefined {
-  const assigned = binding.constantViolations.flatMap(({ node }) =>
-    node.type === 'AssignmentExpression' ? [node.right] : [],
-  );
-
-  if (assigned.length < binding.constantViolations.length) {
-    return undefined;
-  }
-
-  const values = [init, ...assigned].filter(
-    (value) => value !== null && value !== undefined,
-  );
-
-  return values.length === 1 ? values[0] : undefined;
-}
-
-/** The name of an object key, quoted or not. */
-function keyName(key: types.Node): string | undefined {
-  return key.type === 'StringLiteral' ? key.value : nameOf(key);
-}
-
-function nameOf(node: types.Node): string | undefined {
-  return node.type === 'Identifier' ? node.name : undefined;
-}

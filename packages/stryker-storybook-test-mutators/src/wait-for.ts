@@ -1,6 +1,7 @@
 import type { types } from '@babel/core';
 
-import { awaited, queryMethods } from './interactions.ts';
+import { awaited } from './nodes.ts';
+import { queryMethods } from './queries.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
 
 const findQueries = queryMethods(['findBy', 'findAllBy']);
