@@ -163,11 +163,11 @@ function argsSites(
                   ? 'whole'
                   : readsOf(play),
               ];
-        const [storyArgs, ...baseArgs] = storyValues(init, bindings, 'args');
+        const [storyArgs, ...baseArgs] = storyValues(init, unchanged, 'args');
 
         return [
           ...site(
-            ownStoryValue(init, bindings, 'args'),
+            ownStoryValue(init, unchanged, 'args'),
             [
               ...playReads,
               ...tests.map((test) =>

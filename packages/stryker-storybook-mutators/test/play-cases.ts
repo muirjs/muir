@@ -311,6 +311,17 @@ export const playCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'before-written-spread',
+    title:
+      "a story's args before a spread of an object the file writes args to make no mutant, as the spread may replace them",
+    source:
+      "export default { title: 'Button' };\n" +
+      'const Base = { parameters: {} };\n' +
+      "Base.args = { label: 'b' };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true }, ...Base, play: async () => {} };\n",
+    expect: [],
+  },
+  {
     id: 'before-unresolved-spread',
     title:
       "a story's args before a spread of an imported object make no mutant, as the spread may replace them",
