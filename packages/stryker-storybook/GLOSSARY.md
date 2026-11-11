@@ -43,7 +43,11 @@ spread or computed key the file cannot resolve may set its play last, the play i
 such a spread in any position in the story's own object gives one, and for a story with no play of its own or from a
 base, so does one in the meta after the meta's play, or in any position when the meta has none. An unknown play may
 have a play the file reads under it (an earlier own play, the `.extend()` base's or the meta's, including a meta play
-a meta spread follows), which runs when the unknown one sets none. Its `.test()` children are the first indexed call
+a meta spread follows), which runs when the unknown one sets none. The file resolves a spread of an object literal, or
+of a top-level name bound to one (or a member of such a name with a key it can read) when the file leaves that name
+unchanged: it writes to no member of it, does not reassign it, and hands it to no code it does not read. It cannot
+resolve any other spread.
+Its `.test()` children are the first indexed call
 of each name; one with a spread argument is unmatched. The Storybook mutators and the Storybook test mutators mutate
 only played stories.
 _Avoid_: run story, story with a play
