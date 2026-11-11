@@ -306,6 +306,70 @@ export const cases: readonly Case[] = [
     ),
     expect: [[args, "{ label: 'a' }"]],
   },
+  {
+    id: 'play-member-of-other-story',
+    title: 'a play that is no function the file declares makes every key stay',
+    source:
+      "export default { title: 'Button' };\n" +
+      'export const A = { play: async ({ args }) => { args.label; } };\n' +
+      "export const B = { args: { label: 'a', disabled: true }, play: A.play };\n",
+    expect: [],
+  },
+  {
+    id: 'play-call-result',
+    title: 'a play made by a call makes every key stay',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: compose(async ({ args }) => { args.label; }),',
+    ),
+    expect: [],
+  },
+  {
+    id: 'function-declaration-play',
+    title: 'a play declared as a function in the file reads args like an arrow',
+    source:
+      "export default { title: 'Button' };\n" +
+      'async function play({ args }) { args.label; }\n' +
+      "export const A = { args: { label: 'a', disabled: true }, play };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'context-default',
+    title: 'a context parameter with a default makes every key stay',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async (context = {}) => { context.args.label; },',
+    ),
+    expect: [],
+  },
+  {
+    id: 'pattern-default',
+    title:
+      'a destructured context parameter with a default makes every key stay',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async ({ args } = {}) => { args.label; },',
+    ),
+    expect: [],
+  },
+  {
+    id: 'rest-parameter',
+    title: 'a rest parameter makes every key stay',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async (...context) => { context[0].args.label; },',
+    ),
+    expect: [],
+  },
+  {
+    id: 'arguments',
+    title: 'a play that reads arguments makes every key stay',
+    source: inStory(
+      "args: { label: 'a', disabled: true },",
+      'play: async function () { arguments[0].args.label; },',
+    ),
+    expect: [],
+  },
 ];
 
 function inFactoryFile(...statements: readonly string[]): string {

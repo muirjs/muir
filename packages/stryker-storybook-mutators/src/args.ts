@@ -16,6 +16,16 @@ type Sites = ReadonlyMap<unknown, ReadonlySet<unknown>>;
 
 const sitesByProgram = new WeakMap<object, Sites>();
 
+const functionTypes: readonly unknown[] = [
+  'ArrowFunctionExpression',
+  'FunctionExpression',
+  'FunctionDeclaration',
+  'ObjectMethod',
+];
+
+/** The context parameters whose reads of `args` can be followed. */
+const contextTypes: readonly unknown[] = ['Identifier', 'ObjectPattern'];
+
 export function argsMutator(): LzStorybookMutator & {
   readonly name: 'LzStorybookArgs';
 } {
@@ -175,7 +185,16 @@ function ownOrBasePlay(
 
 /** The keys of `args` that a play function reads. */
 function keysRead(play: unknown): Reads {
+  if (!functionTypes.includes(field(play, 'type'))) {
+    return 'whole';
+  }
+
   const context = list(field(play, 'params'))[0];
+
+  if (context !== undefined && !contextTypes.includes(field(context, 'type'))) {
+    return 'whole';
+  }
+
   const binding = propertyValue(context, 'args');
 
   if (field(binding, 'type') === 'ObjectPattern') {
@@ -200,6 +219,10 @@ function keysRead(play: unknown): Reads {
         ? [node]
         : [],
     );
+  if (readsOf('arguments').length > 0) {
+    return 'whole';
+  }
+
   const keysAt = (node: unknown): Reads => keysReadAt(node, parents.get(node));
   const reads =
     field(context, 'type') === 'Identifier'
