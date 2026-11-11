@@ -124,7 +124,8 @@ function userEventMethod(call: types.Node, path: NodePath): string | undefined {
 
   const method = nameOf(call.callee.property);
 
-  return userEventMethods.includes(method) &&
+  return method !== undefined &&
+    userEventMethods.has(method) &&
     isUserEvent(call.callee.object, path)
     ? method
     : undefined;
@@ -225,7 +226,7 @@ function checksIn(path: NodePath): readonly boolean[] {
 }
 
 /** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
-function matcherChain(expectCall: NodePath): readonly unknown[] {
+function matcherChain(expectCall: NodePath): readonly (string | undefined)[] {
   const member = expectCall.parentPath;
 
   return member?.node.type === 'MemberExpression' &&
@@ -234,25 +235,29 @@ function matcherChain(expectCall: NodePath): readonly unknown[] {
     : [];
 }
 
-const hooks: readonly unknown[] = ['beforeEach', 'afterEach'];
+const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);
 
 /** A function that is the value of a `beforeEach` or `afterEach` property or an element of its array, or a method of that name. */
 function isHook(path: NodePath): boolean {
   const { node } = path;
 
   if (node.type === 'ObjectMethod') {
-    return hooks.includes(nameOf(node.key));
+    const name = nameOf(node.key);
+
+    return name !== undefined && hooks.has(name);
   }
 
   const value =
     path.parentPath?.node.type === 'ArrayExpression' ? path.parentPath : path;
   const property = value.parent;
 
-  return (
-    path.isFunction() &&
-    property?.type === 'ObjectProperty' &&
-    hooks.includes(nameOf(property.key))
-  );
+  if (!path.isFunction() || property?.type !== 'ObjectProperty') {
+    return false;
+  }
+
+  const name = nameOf(property.key);
+
+  return name !== undefined && hooks.has(name);
 }
 
 /** The expression inside `<x>!`, `<x> as T`, `<x> satisfies T`, `<T><x>` and parentheses. */
@@ -299,7 +304,8 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
   return (
     userEventMethod(call, path) !== undefined ||
     nameOf(callee.object) === 'fireEvent' ||
-    (composedPlayMethods.includes(method) &&
+    (method !== undefined &&
+      composedPlayMethods.has(method) &&
       callee.object.type === 'Identifier') ||
     (method !== undefined &&
       rawDomArguments.get(method) === call.arguments.length)
@@ -327,10 +333,10 @@ const rawDomArguments: ReadonlyMap<string, number> = new Map([
 ]);
 
 // `<Story>.play(context)`, and `<Story>.run()` on a CSF factory story.
-const composedPlayMethods: readonly unknown[] = ['play', 'run'];
+const composedPlayMethods: ReadonlySet<string> = new Set(['play', 'run']);
 
 // The user-event 14 methods that act on the page (@testing-library/user-event, which storybook/test re-exports).
-const userEventMethods: readonly unknown[] = [
+const userEventMethods: ReadonlySet<string> = new Set([
   'click',
   'dblClick',
   'tripleClick',
@@ -347,7 +353,7 @@ const userEventMethods: readonly unknown[] = [
   'copy',
   'cut',
   'paste',
-];
+]);
 
 /** `userEvent`, `<x>.userEvent` such as the play context's, or a local bound to `userEvent.setup()`. */
 function isUserEvent(node: types.Node, path: NodePath): boolean {
