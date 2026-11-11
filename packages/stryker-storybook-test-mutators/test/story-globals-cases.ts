@@ -106,6 +106,20 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'story-globals-unknown-play',
+    title:
+      "a story whose play only a spread of an imported object may set makes no mutant, its own globals nor the meta's, as that spread may set no play",
+    source: [
+      "import { Shared } from './shared';",
+      '',
+      "export default { title: 'Probe', globals: { locale: 'de' } };",
+      '',
+      "export const Story = { ...Shared, globals: { locale: 'fr' } };",
+      '',
+    ].join('\n'),
+    expect: [],
+  },
+  {
     id: 'story-globals-test-options-over-unresolved-spread',
     title:
       "the options of a .test() call get a mutant of a default value when the story's globals come before a spread of an imported object, which may set that global",
