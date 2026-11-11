@@ -425,6 +425,60 @@ export const clickFocusCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'click-focus-skip-label-text',
+    title:
+      'a click of an element found by its label makes no mutant, as such an element is a form field',
+    source: inPlay("await userEvent.click(canvas.getByLabelText('Email'));"),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-placeholder-text',
+    title: 'a click of an element found by its placeholder makes no mutant',
+    source: inPlay(
+      "await userEvent.click(canvas.getByPlaceholderText('Search'));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-found-label-text',
+    title:
+      'a click of an element that an awaited findByLabelText query finds makes no mutant',
+    source: inPlay(
+      "await userEvent.click(await canvas.findByLabelText('Email'));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-bound-label-text',
+    title:
+      'a click of a const that a getByLabelText query in the play bound makes no mutant',
+    source: inPlay(
+      "const email = canvas.getByLabelText('Email');",
+      'await userEvent.click(email);',
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-bound-found-textbox',
+    title:
+      'a click of a const that an awaited findByRole query of a textbox bound makes no mutant',
+    source: inPlay(
+      "const name = await canvas.findByRole('textbox');",
+      'await userEvent.click(name);',
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-let-bound-label-text',
+    title:
+      'a click of a let that a getByLabelText query bound still focuses it, as the let may be reassigned',
+    source: inPlay(
+      "let email = canvas.getByLabelText('Email');",
+      'await userEvent.click(email);',
+    ),
+    expect: [[clickFocus, 'await email.focus();']],
+  },
+  {
     id: 'click-focus-skip-negative-only',
     title:
       'a click whose following checks are all negative makes no mutant, as focusing also leaves them true',

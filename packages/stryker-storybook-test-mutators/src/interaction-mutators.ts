@@ -7,6 +7,7 @@ import {
 } from '@layzee/stryker-mutator-install';
 
 import {
+  awaited,
   elementQueryPrefixes,
   fireEventMethod,
   firstCheckAfter,
@@ -35,9 +36,19 @@ const clickMethods: readonly string[] = ['click', 'dblClick'];
 /** A click target with no effects of its own: an identifier, a query, or an awaited query. */
 function focusTarget(
   target: types.Node | undefined,
+  path: NodePath,
 ): types.Expression | undefined {
   if (target?.type === 'Identifier') {
-    return target;
+    const binding = path.scope.getBinding(target.name);
+    const init =
+      binding?.kind === 'const' &&
+      binding.path.node.type === 'VariableDeclarator'
+        ? binding.path.node.init
+        : undefined;
+
+    return init != null && isTextFieldQuery(awaited(init))
+      ? undefined
+      : target;
   }
 
   if (target?.type !== 'AwaitExpression' && target?.type !== 'CallExpression') {
@@ -46,13 +57,36 @@ function focusTarget(
 
   const query = target.type === 'AwaitExpression' ? target.argument : target;
 
-  return isQueryCall(query) && !textFieldRoles.includes(queryRole(query))
-    ? target
+  return isQueryCall(query) && !isTextFieldQuery(query) ? target : undefined;
+}
+
+// Queries that find form fields, which a click is meant to focus.
+const fieldQueries = queryMethods(elementQueryPrefixes, [
+  'LabelText',
+  'PlaceholderText',
+]);
+
+/** A query for a text field: by a text field role, by label or by placeholder. */
+function isTextFieldQuery(query: types.Node): boolean {
+  const role = queryRole(query);
+
+  return (
+    (role !== undefined && textFieldRoles.includes(role)) ||
+    fieldQueries.includes(methodOf(query) ?? '')
+  );
+}
+
+/** The method name of `<x>.<method>(...)`. */
+function methodOf(call: types.Node): string | undefined {
+  return call.type === 'CallExpression' &&
+    call.callee.type === 'MemberExpression' &&
+    call.callee.property.type === 'Identifier'
+    ? call.callee.property.name
     : undefined;
 }
 
 // Clicking an element of these roles is meant to focus it.
-const textFieldRoles: readonly (string | undefined)[] = [
+const textFieldRoles: readonly string[] = [
   'textbox',
   'searchbox',
   'combobox',
@@ -64,9 +98,7 @@ const roleQueries = queryMethods(elementQueryPrefixes, ['Role']);
 function queryRole(query: types.Node): string | undefined {
   if (
     query.type !== 'CallExpression' ||
-    query.callee.type !== 'MemberExpression' ||
-    query.callee.property.type !== 'Identifier' ||
-    !roleQueries.includes(query.callee.property.name)
+    !roleQueries.includes(methodOf(query) ?? '')
   ) {
     return undefined;
   }
@@ -84,7 +116,7 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
       const call = userEventCall(path);
-      const target = focusTarget(call?.target);
+      const target = focusTarget(call?.target, path);
 
       if (
         call !== undefined &&
