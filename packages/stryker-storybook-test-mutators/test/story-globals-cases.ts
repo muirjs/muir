@@ -258,6 +258,18 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{}']],
   },
   {
+    id: 'story-globals-named-test-options-written',
+    title:
+      'the globals in .test() options named by a top-level constant get no mutant when the file writes to that constant, as the globals that run may be others',
+    source: factoryFile(
+      'export const Story = meta.story({});',
+      "const onPhone = { globals: { viewport: { value: 'phone' } } };",
+      "onPhone.globals = { locale: 'de' };",
+      "Story.test('on a phone', onPhone, async () => {});",
+    ),
+    expect: [],
+  },
+  {
     id: 'story-globals-default-viewport-name',
     title:
       "Storybook's default viewport name makes no mutant, as removing it changes nothing",

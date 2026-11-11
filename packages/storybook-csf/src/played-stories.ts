@@ -63,7 +63,7 @@ export function playedStories(
           test === 'unmatched'
             ? test
             : {
-                options: topLevelValueOrSelf(test.options, bindings),
+                options: test.options,
                 testFunction: topLevelValueOrSelf(test.testFunction, bindings),
               },
         ),

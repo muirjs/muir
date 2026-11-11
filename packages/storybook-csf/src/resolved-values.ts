@@ -26,6 +26,15 @@ export function resolvedValues(
   return properties === undefined ? [unknownValue] : valuesIn(properties, key);
 }
 
+/** The value `object` gives `key` as JavaScript reads it, as `resolvedValues` reads the object. */
+export function resolvedValue(
+  object: unknown,
+  key: string | number,
+  bindings: Bindings,
+): LayerValue {
+  return resolvedValues(object, key, bindings)[0];
+}
+
 /** Every value that `properties`, in source order, give `key`, the one JavaScript keeps first, each spread read as `resolvedValues` reads it. */
 export function resolvedPropertyValues(
   properties: readonly unknown[],

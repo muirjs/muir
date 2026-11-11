@@ -150,7 +150,7 @@ describe('playedStories', () => {
     );
   });
 
-  it('follows .test() options named by a top-level constant to its object', () => {
+  it('gives .test() options named by a top-level constant as the name, for resolvedValues to follow', () => {
     const [story] = played(
       "import preview from '../.storybook/preview';",
       "const meta = preview.meta({ title: 'a/b' });",
@@ -161,7 +161,7 @@ describe('playedStories', () => {
 
     assert.deepEqual(
       story?.tests.map((test) => field(test, 'options', 'type')),
-      ['ObjectExpression'],
+      ['Identifier'],
     );
   });
 });

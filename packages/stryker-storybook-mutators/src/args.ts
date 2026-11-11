@@ -3,11 +3,11 @@ import {
   csfFile,
   field,
   list,
-  objectValue,
   ownStoryValue,
   playedStories,
   propertyKey,
   resolvedPropertyValues,
+  resolvedValue,
   resolvedValues,
   storyValues,
   topLevelBindings,
@@ -148,7 +148,7 @@ function argsSites(
   const file = csfFile(body, bindings);
   const unchanged = unchangedBindings(bindings, file.written);
   const metaArgs = file.metaObjects
-    .map((meta) => objectValue(meta, 'args'))
+    .map((meta) => resolvedValue(meta, 'args', unchanged))
     .find((args) => args !== undefined);
 
   return sitesFrom(
@@ -182,7 +182,7 @@ function argsSites(
             }
 
             const { options, testFunction } = test;
-            const testArgs = objectValue(options, 'args');
+            const testArgs = resolvedValue(options, 'args', unchanged);
 
             return site(
               testArgs,

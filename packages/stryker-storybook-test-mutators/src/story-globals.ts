@@ -8,8 +8,10 @@ import {
   ownStoryValue,
   playedStories,
   propertyKey,
+  resolvedValue,
   storyValues,
   topLevelBindings,
+  unchangedBindings,
   unknownValue,
   type LayerValue,
 } from '@layzee/storybook-csf';
@@ -30,6 +32,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   const body = list(program.body);
   const bindings = topLevelBindings(body);
   const file = csfFile(body, bindings);
+  const unchanged = unchangedBindings(bindings, file.written);
   const metaValues = (key: string) =>
     file.metaObjects.map((meta) => objectValue(meta, key)).filter(defined);
   const metaGlobals = metaValues('globals');
@@ -56,7 +59,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
             .map((test) =>
               test === 'unmatched'
                 ? unknownValue
-                : objectValue(test.options, 'parameters'),
+                : resolvedValue(test.options, 'parameters', unchanged),
             )
             .filter(defined),
         ];
@@ -70,11 +73,11 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
           ...matched.map(
             (options) =>
               [
-                objectValue(options, 'globals'),
+                resolvedValue(options, 'globals', unchanged),
                 {
                   globals: [runs, ...globals].filter(defined),
                   parameters: [
-                    objectValue(options, 'parameters'),
+                    resolvedValue(options, 'parameters', unchanged),
                     ...storyParameters,
                   ].filter(defined),
                 },

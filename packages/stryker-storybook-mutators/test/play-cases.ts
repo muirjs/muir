@@ -169,6 +169,19 @@ export const playCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-named-written',
+    title:
+      'the args in .test() options named by a top-level constant make no mutant when the file writes to that constant, as the args that run may be others',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      "const disabledOptions = { args: { label: 'a', disabled: true } };",
+      "disabledOptions.args = { label: 'b' };",
+      "Primary.test('disabled', disabledOptions, async () => {});",
+    ),
+    expect: [],
+  },
+  {
     id: 'test-options-args-before-unresolved-spread',
     title:
       'the args in .test() options before a spread of an imported object make no mutant, as the spread may replace them',

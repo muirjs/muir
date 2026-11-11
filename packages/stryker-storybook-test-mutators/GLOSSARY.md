@@ -77,7 +77,8 @@ _Avoid_: flip mutant, rejection mutant
 A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: the own `globals` of a
 played story (the Storybook context's term), unless a later spread of a story that sets `globals` replaces them or a
 later spread or computed key the file cannot resolve may; the meta's `globals` when the file has a played story; and
-the `globals` in the options of a played story's `.test()` calls, inline or a top-level constant. The meta's and the
+the `globals` in the options of a played story's `.test()` calls, inline or a top-level constant the file leaves
+unchanged. The meta's and the
 options' `globals` are no site either where a later spread or computed key the file cannot resolve in that object
 may replace them. A story whose play is an unknown one (see Played story) with no play the file reads under it counts
 as no played story here unless it has a `.test()` call; an unknown play with such a play under it, the meta's

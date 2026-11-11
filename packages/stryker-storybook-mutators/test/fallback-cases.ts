@@ -490,6 +490,16 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'meta-spread-same-literal',
+    title:
+      'a key whose literal value equals the one in the args of a top-level object the meta spreads makes no mutant, nor does removing the other key',
+    source:
+      "const common = { args: { label: 'a' } };\n" +
+      "export default { title: 'Button', ...common, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n",
+    expect: [],
+  },
+  {
     id: 'meta-args-before-unresolved-spread',
     title:
       "a key whose literal value equals the meta's is removed when the meta's args come before a spread of an imported object, which may replace them",
