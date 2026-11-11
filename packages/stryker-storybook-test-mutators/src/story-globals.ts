@@ -5,9 +5,9 @@ import {
   playedStories,
   propertyValue,
   storyArgument,
+  storyValues,
   topLevelBindings,
   unwrap,
-  withoutBinding,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
@@ -25,22 +25,24 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
   return new Map<unknown, readonly unknown[]>(
     [
       ...played.flatMap(({ story: { init }, tests }) => {
-        const [storyGlobals, ...inherited] = globalsIn(init, bindings);
-        const below = [...inherited, ...metaGlobals].filter(
+        const ownGlobals = propertyValue(
+          storyArgument(unwrap(init)),
+          'globals',
+        );
+        const [runs, ...bases] = storyValues(init, bindings, 'globals');
+        const below = [...bases, ...metaGlobals].filter(
           (globals) => globals !== undefined,
         );
 
         return [
-          [storyGlobals, below] as const,
+          [runs === ownGlobals ? ownGlobals : undefined, below] as const,
           ...tests.flatMap((test) =>
             test === 'unmatched'
               ? []
               : [
                   [
                     propertyValue(test.options, 'globals'),
-                    storyGlobals === undefined
-                      ? below
-                      : [storyGlobals, ...below],
+                    runs === undefined ? below : [runs, ...below],
                   ] as const,
                 ],
           ),
@@ -52,44 +54,6 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, readonly unknown[]> => {
     ].filter(([globals]) => globals !== undefined),
   );
 }, new Map<unknown, readonly unknown[]>());
-
-/** The `globals` objects a story takes from the top-level stories it spreads and from its `.extend()` bases. */
-function inheritedGlobals(
-  init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): readonly unknown[] {
-  const call = unwrap(init);
-  const base = field(call, 'callee', 'object', 'name');
-  const spreads = list(field(storyArgument(call), 'properties')).flatMap(
-    (property) => {
-      const spread = field(property, 'argument', 'name');
-
-      return field(property, 'type') === 'SpreadElement' &&
-        typeof spread === 'string'
-        ? globalsIn(bindings.get(spread), withoutBinding(bindings, spread))
-        : [];
-    },
-  );
-
-  return field(call, 'callee', 'property', 'name') === 'extend' &&
-    typeof base === 'string'
-    ? [
-        ...spreads,
-        ...globalsIn(bindings.get(base), withoutBinding(bindings, base)),
-      ]
-    : spreads;
-}
-
-/** A story's own `globals`, then those it takes from the stories it spreads and its `.extend()` bases; `undefined` where one sets none. */
-function globalsIn(
-  init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): readonly unknown[] {
-  return [
-    propertyValue(storyArgument(unwrap(init)), 'globals'),
-    ...inheritedGlobals(init, bindings),
-  ];
-}
 
 // Storybook 10.6.5's own default globals (`initialGlobals` of its viewport, backgrounds, measure and outline
 // addons, and its `DEFAULT_VIEWPORT` name). A project's preview `initialGlobals` can differ; the mutator cannot see them.

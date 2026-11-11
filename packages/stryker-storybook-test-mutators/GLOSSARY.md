@@ -75,10 +75,9 @@ _Avoid_: flip mutant, rejection mutant
 
 **Globals site**:
 A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: the own `globals` of a
-story that a play or a `.test()` call runs for, as `@layzee/storybook-csf` reads it (a play of its own, assigned as
-`Story.play = ...`, from a top-level story it spreads, from its `.extend()` base or from the meta, and no `!test` tag
-last); the meta's `globals` when such a story exists; and the `globals` in the options of such a story's `.test()`
-calls, inline or a top-level constant. A file with no meta object has none, as Storybook indexes no story in it.
+played story (the Storybook context's term), unless a later spread of a story that sets `globals` replaces them; the
+meta's `globals` when the file has a played story; and the `globals` in the options of a played story's `.test()`
+calls, inline or a top-level constant.
 _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:
@@ -87,8 +86,9 @@ A property of a globals site whose value is Storybook 10.6.5's own initial value
 holds, as the Vitest addon's `setViewport` reads only `value`;
 `backgrounds` with an `undefined` value and `grid: false`; `measureEnabled: false`; `outline: false`. It gets no
 mutant only when nothing in the file may set that key below it: no earlier property of the site, spread or computed
-key, and no `globals` of the meta, of a top-level story the story spreads or of its `.extend()` base, and for a
-`.test()` call's options none of the story itself. The table is fixed; a project's own `initialGlobals` in its
+key, and no `globals` of the meta or of the story's `.extend()` bases, which Storybook merges key by key, and for a
+`.test()` call's options none of the story itself, spread stories included. A story it spreads before its own
+`globals` sets nothing below them, as object spread replaces `globals` whole. The table is fixed; a project's own `initialGlobals` in its
 preview are not read, so a default value that overrides them still gets no mutant.
 _Avoid_: initial global, preset global
 
