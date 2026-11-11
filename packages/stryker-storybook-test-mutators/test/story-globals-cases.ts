@@ -119,6 +119,59 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{}']],
   },
   {
+    id: 'story-globals-spread-play',
+    title:
+      'a story that spreads a story with a play gets mutants of its globals',
+    source: storyFile(
+      'export const Base = { play: async () => {} };',
+      "export const Phone = { ...Base, globals: { viewport: { value: 'phone' } } };",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-replaced-by-spread',
+    title:
+      "a story's globals before a spread that sets globals make no mutant, as the spread replaces them",
+    source: storyFile(
+      "const Base = { globals: { locale: 'de' }, play: async () => {} };",
+      "export const Story = { globals: { locale: 'fr' }, ...Base };",
+    ),
+    expect: [],
+  },
+  {
+    id: 'story-globals-assigned-play',
+    title:
+      'a story whose play is assigned after it gets mutants of its globals',
+    source: storyFile(
+      "export const Story = { globals: { viewport: { value: 'phone' } } };",
+      'Story.play = async () => {};',
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
+    id: 'story-globals-not-tested',
+    title: 'a story tagged !test makes no mutant, as no test runs it',
+    source: storyFile(
+      'export const Story = {',
+      "  tags: ['!test'],",
+      "  globals: { viewport: { value: 'phone' } },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [],
+  },
+  {
+    id: 'story-globals-named-test-options',
+    title:
+      'the globals in .test() options named by a top-level constant get mutants',
+    source: factoryFile(
+      'export const Story = meta.story({});',
+      "const onPhone = { globals: { viewport: { value: 'phone' } } };",
+      "Story.test('on a phone', onPhone, async () => {});",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
+  {
     id: 'story-globals-default-viewport-name',
     title:
       "Storybook's default viewport name makes no mutant, as removing it changes nothing",
@@ -233,69 +286,6 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{ outline: false }']],
   },
   {
-    id: 'story-globals-spread-play',
-    title:
-      'a story that spreads a story with a play gets mutants of its globals',
-    source: storyFile(
-      'export const Base = { play: async () => {} };',
-      "export const Phone = { ...Base, globals: { viewport: { value: 'phone' } } };",
-    ),
-    expect: [[storyGlobals, '{}']],
-  },
-  {
-    id: 'story-globals-replaced-by-spread',
-    title:
-      "a story's globals before a spread that sets globals make no mutant, as the spread replaces them",
-    source: storyFile(
-      "const Base = { globals: { locale: 'de' }, play: async () => {} };",
-      "export const Story = { globals: { locale: 'fr' }, ...Base };",
-    ),
-    expect: [],
-  },
-  {
-    id: 'story-globals-default-over-spread',
-    title:
-      "a default value of a global that a spread story sets makes no mutant, as the story's globals replace the spread's whole",
-    source: storyFile(
-      'export const Base = { globals: { outline: true }, play: async () => {} };',
-      'export const Story = { ...Base, globals: { outline: false } };',
-    ),
-    expect: [[storyGlobals, '{}']],
-  },
-  {
-    id: 'story-globals-assigned-play',
-    title:
-      'a story whose play is assigned after it gets mutants of its globals',
-    source: storyFile(
-      "export const Story = { globals: { viewport: { value: 'phone' } } };",
-      'Story.play = async () => {};',
-    ),
-    expect: [[storyGlobals, '{}']],
-  },
-  {
-    id: 'story-globals-not-tested',
-    title: 'a story tagged !test makes no mutant, as no test runs it',
-    source: storyFile(
-      'export const Story = {',
-      "  tags: ['!test'],",
-      "  globals: { viewport: { value: 'phone' } },",
-      '  play: async () => {},',
-      '};',
-    ),
-    expect: [],
-  },
-  {
-    id: 'story-globals-named-test-options',
-    title:
-      'the globals in .test() options named by a top-level constant get mutants',
-    source: factoryFile(
-      'export const Story = meta.story({});',
-      "const onPhone = { globals: { viewport: { value: 'phone' } } };",
-      "Story.test('on a phone', onPhone, async () => {});",
-    ),
-    expect: [[storyGlobals, '{}']],
-  },
-  {
     id: 'story-globals-default-over-meta',
     title:
       "a story's default value of a global the meta sets gets a mutant, as removing it brings the meta's value back",
@@ -314,6 +304,44 @@ export const storyGlobalsCases: readonly Case[] = [
       [storyGlobals, "{ viewport: { value: 'mobile1' } }"],
       [storyGlobals, "{ viewport: { value: 'responsive' } }"],
     ],
+  },
+  {
+    id: 'story-globals-default-over-base',
+    title:
+      'an .extend() story gets a mutant of a default value of a global its base sets',
+    source: factoryFile(
+      'export const Base = meta.story({ globals: { outline: true }, play: async () => {} });',
+      "export const Plain = Base.extend({ globals: { outline: false, locale: 'de' } });",
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-default-over-story',
+    title:
+      'the options of a .test() call get a mutant of a default value of a global the story sets',
+    source: factoryFile(
+      'export const Story = meta.story({ globals: { outline: true } });',
+      "Story.test('plain', { globals: { outline: false, locale: 'de' } }, async () => {});",
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-default-over-spread',
+    title:
+      "a default value of a global that a spread story sets makes no mutant, as the story's globals replace the spread's whole",
+    source: storyFile(
+      'export const Base = { globals: { outline: true }, play: async () => {} };',
+      'export const Story = { ...Base, globals: { outline: false } };',
+    ),
+    expect: [[storyGlobals, '{}']],
   },
   {
     id: 'story-globals-shared-test-options',
@@ -343,33 +371,5 @@ export const storyGlobalsCases: readonly Case[] = [
       '};',
     ),
     expect: [[storyGlobals, '{}']],
-  },
-  {
-    id: 'story-globals-default-over-base',
-    title:
-      'an .extend() story gets a mutant of a default value of a global its base sets',
-    source: factoryFile(
-      'export const Base = meta.story({ globals: { outline: true }, play: async () => {} });',
-      "export const Plain = Base.extend({ globals: { outline: false, locale: 'de' } });",
-    ),
-    expect: [
-      [storyGlobals, "{ locale: 'de' }"],
-      [storyGlobals, '{ outline: false }'],
-      [storyGlobals, '{}'],
-    ],
-  },
-  {
-    id: 'story-globals-default-over-story',
-    title:
-      'the options of a .test() call get a mutant of a default value of a global the story sets',
-    source: factoryFile(
-      'export const Story = meta.story({ globals: { outline: true } });',
-      "Story.test('plain', { globals: { outline: false, locale: 'de' } }, async () => {});",
-    ),
-    expect: [
-      [storyGlobals, "{ locale: 'de' }"],
-      [storyGlobals, '{ outline: false }'],
-      [storyGlobals, '{}'],
-    ],
   },
 ];
