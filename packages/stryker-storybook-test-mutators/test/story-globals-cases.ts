@@ -517,4 +517,28 @@ export const storyGlobalsCases: readonly Case[] = [
     ),
     expect: [[storyGlobals, '{}']],
   },
+  {
+    id: 'story-globals-replaced-by-computed-key',
+    title:
+      "a story's own globals before a computed key of an imported name make no mutant, as that key may replace them",
+    source: [
+      "import { k } from './k';",
+      '',
+      "export default { title: 'Probe' };",
+      '',
+      "export const Story = { globals: { locale: 'fr' }, [k]: {}, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [],
+  },
+  {
+    id: 'story-globals-computed-key-named-globals',
+    title:
+      'an object under a computed key [globals] makes no mutant, as the constant it names gives another key',
+    source: storyFile(
+      "const globals = 'x';",
+      "export const Story = { [globals]: { locale: 'de' }, play: async () => {} };",
+    ),
+    expect: [],
+  },
 ];

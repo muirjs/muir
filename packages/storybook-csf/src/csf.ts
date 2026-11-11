@@ -818,9 +818,9 @@ export function propertyValue(object: unknown, key: string): unknown {
   );
 }
 
-/** The value a property of `key` gives, a method being its own value; `undefined` for a property of another key or a spread. */
+/** The value a property of `key` gives, a method being its own value; `undefined` for a property of another key, a computed key or a spread. */
 export function propertyKeyValue(property: unknown, key: string): unknown {
-  if (field(property, 'key', 'name') !== key) {
+  if (propertyKey(property) !== key) {
     return undefined;
   }
 

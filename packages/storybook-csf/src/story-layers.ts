@@ -1,4 +1,6 @@
 import {
+  maySet,
+  propertyKey,
   propertyKeyValue,
   storyArgument,
   unwrap,
@@ -35,7 +37,7 @@ export function ownStoryValue(
   key: string,
 ): unknown {
   const [own = []] = storyLayers(init, bindings);
-  const winner = own.find((property) => setsOrMay(property, key));
+  const winner = own.find((property) => maySet(property, key));
 
   return list(field(storyArgument(unwrap(init)), 'properties')).includes(winner)
     ? propertyKeyValue(winner, key)
@@ -102,15 +104,15 @@ function storyLayers(
     : [own];
 }
 
-/** The values the properties of a last-wins-first layer that set `key`, or as a spread that does not resolve may, give it. */
+/** The values the properties of a last-wins-first layer that may set `key` give it: `'unknown'` for a spread that does not resolve or a computed key. */
 function valuesIn(
   layer: readonly unknown[],
   key: string,
 ): readonly LayerValue[] {
   return layer
-    .filter((property) => setsOrMay(property, key))
+    .filter((property) => maySet(property, key))
     .map((property): LayerValue => {
-      if (field(property, 'type') === 'SpreadElement') {
+      if (propertyKey(property) !== key) {
         return 'unknown';
       }
 
@@ -118,11 +120,4 @@ function valuesIn(
 
       return isRecord(value) ? value : undefined;
     });
-}
-
-function setsOrMay(property: unknown, key: string): boolean {
-  return (
-    field(property, 'type') === 'SpreadElement' ||
-    propertyKeyValue(property, key) !== undefined
-  );
 }

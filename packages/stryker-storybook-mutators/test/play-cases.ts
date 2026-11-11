@@ -284,6 +284,26 @@ export const playCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'before-computed-key',
+    title:
+      "a story's args before a computed key of an imported name make no mutant, as that key may replace them",
+    source:
+      "import { k } from './k';\n" +
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true }, [k]: {}, play: async () => {} };\n",
+    expect: [],
+  },
+  {
+    id: 'computed-key-named-args',
+    title:
+      'an object under a computed key [args] makes no mutant, as the constant it names gives another key',
+    source:
+      "const args = 'x';\n" +
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { [args]: { label: 'a', disabled: true }, play: async () => {} };\n",
+    expect: [],
+  },
+  {
     id: 'assigned-play',
     title:
       'a play assigned to the story after its declaration runs for its args, and a key it reads stays',
