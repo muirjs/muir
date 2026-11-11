@@ -43,14 +43,9 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
       .filter(defined);
   const metaGlobals = metaValues('globals');
   const metaParameters = metaValues('parameters');
-  // An unknown play with no play under it is no play here: when what may set it sets none, the story's globals mutants can only survive.
-  const played = playedStories(body, bindings, file).filter(
-    ({ play, tests }) => play !== unknownValue || tests.length > 0,
-  );
-
   return bySite(
     [
-      ...played.flatMap(({ story: { init }, tests }) => {
+      ...playedStories(body, bindings, file).flatMap(({ story: { init }, tests }) => {
         const [runs, ...bases] = storyValues(init, unchanged, 'globals');
         const storyParameters = [
           ...storyValues(init, unchanged, 'parameters'),

@@ -108,7 +108,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-unknown-play',
     title:
-      "a story whose play only a spread of an imported object may set makes no mutant, its own globals nor the meta's, as that spread may set no play",
+      "a story whose play only a spread of an imported object may set gets its own and the meta's globals mutants, as the file does not prove that the spread sets no play",
     source: [
       "import { Shared } from './shared';",
       '',
@@ -117,7 +117,10 @@ export const storyGlobalsCases: readonly Case[] = [
       "export const Story = { ...Shared, globals: { locale: 'fr' } };",
       '',
     ].join('\n'),
-    expect: [],
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, '{}'],
+    ],
   },
   {
     id: 'story-globals-unknown-play-over-meta-play',
