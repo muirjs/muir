@@ -23,6 +23,8 @@ import { perFile, readStoryFileAt } from './story-file.ts';
 interface Below {
   readonly globals: readonly LayerValue[];
   readonly parameters: readonly LayerValue[];
+  /** The bindings the file leaves unchanged, which `maySetIn` reads these objects through. */
+  readonly bindings: ReadonlyMap<string, unknown>;
 }
 
 const defined = (value: unknown): boolean => value !== undefined;
@@ -92,12 +94,14 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
         ];
       }),
     ].filter(([globals]) => defined(globals)),
+    unchanged,
   );
 }, new Map<unknown, Below>());
 
 /** Each site with what may set it below every story it runs for, as a `.test()` options object can serve several stories, so a key any of them may set keeps its mutant. */
 function bySite(
-  entries: readonly (readonly [unknown, Below])[],
+  entries: readonly (readonly [unknown, Omit<Below, 'bindings'>])[],
+  bindings: ReadonlyMap<string, unknown>,
 ): ReadonlyMap<unknown, Below> {
   return new Map(
     [...Map.groupBy(entries, ([site]) => site)].map(([site, all]) => [
@@ -105,6 +109,7 @@ function bySite(
       {
         globals: all.flatMap(([, below]) => below.globals),
         parameters: all.flatMap(([, below]) => below.parameters),
+        bindings,
       },
     ]),
   );
@@ -115,12 +120,12 @@ function bySite(
 const viewportDefaults: readonly unknown[] = ['responsive', '100pct-100pct'];
 
 const defaultGlobals: Readonly<
-  Record<string, (value: unknown, parameters: readonly LayerValue[]) => boolean>
+  Record<string, (value: unknown, below: Below) => boolean>
 > = {
   // The Vitest addon's `setViewport` uses a viewport global's `value`, else `parameters.viewport.defaultViewport`,
   // so a viewport is no default where a `parameters` object of the site's runs may set `viewport`.
-  viewport: (value, parameters) =>
-    !parameters.some((object) => maySetIn(object, 'viewport')) &&
+  viewport: (value, { parameters, bindings }) =>
+    !parameters.some((object) => maySetIn(object, 'viewport', bindings)) &&
     (viewportDefaults.includes(literalOf(value)) ||
       (field(value, 'type') === 'ObjectExpression' &&
         isDefaultViewportValue(objectValue(value, 'value')))),
@@ -184,10 +189,9 @@ function isDefaultGlobal(
 
   return (
     typeof key === 'string' &&
-    defaultGlobals[key]?.(field(property, 'value'), below.parameters) ===
-      true &&
+    defaultGlobals[key]?.(field(property, 'value'), below) === true &&
     !before.some((earlier) => maySet(earlier, key)) &&
-    !below.globals.some((globals) => maySetIn(globals, key))
+    !below.globals.some((globals) => maySetIn(globals, key, below.bindings))
   );
 }
 

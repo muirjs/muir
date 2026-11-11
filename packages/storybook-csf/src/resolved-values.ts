@@ -35,6 +35,15 @@ export function resolvedValue(
   return resolvedValues(object, key, bindings)[0];
 }
 
+/** An object that may set `key`, as `resolvedValues` reads it: one with a property that may, or one the file does not show; `undefined`, no object, sets nothing. */
+export function maySetIn(
+  object: unknown,
+  key: string | number,
+  bindings: Bindings,
+): boolean {
+  return resolvedValue(object, key, bindings) !== undefined;
+}
+
 /** Every value that `properties`, in source order, give `key`, the one JavaScript keeps first, each spread read as `resolvedValues` reads it. */
 export function resolvedPropertyValues(
   properties: readonly unknown[],

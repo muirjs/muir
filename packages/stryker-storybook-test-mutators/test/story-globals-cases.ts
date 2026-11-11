@@ -526,6 +526,38 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-default-under-named-meta-globals',
+    title:
+      "a story's default value of a global gets no mutant when the meta's globals name a top-level object that does not set it",
+    source: [
+      "const metaGlobals = { locale: 'de' };",
+      "export default { title: 'Probe', globals: metaGlobals };",
+      '',
+      'export const Story = {',
+      "  globals: { outline: false, locale: 'fr' },",
+      '  play: async () => {},',
+      '};',
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{ outline: false }']],
+  },
+  {
+    id: 'story-globals-viewport-under-named-meta-parameters',
+    title:
+      "a story's default viewport gets no mutant when the meta's parameters name a top-level object that does not set viewport",
+    source: [
+      "const metaParameters = { layout: 'centered' };",
+      "export default { title: 'Probe', parameters: metaParameters };",
+      '',
+      'export const Story = {',
+      "  globals: { viewport: 'responsive', locale: 'fr' },",
+      '  play: async () => {},',
+      '};',
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, "{ viewport: 'responsive' }"]],
+  },
+  {
     id: 'story-globals-viewport-under-meta-spread-parameters',
     title:
       "a story's default viewport gets no mutant when the parameters of a top-level object the meta spreads do not set viewport",

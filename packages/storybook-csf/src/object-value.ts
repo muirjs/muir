@@ -80,8 +80,3 @@ export function objectValues(
 export function objectValue(object: unknown, key: string | number): LayerValue {
   return objectValues(object, key)[0];
 }
-
-/** An object that may set `key`: an object literal with a property that may, or anything the file cannot read. */
-export function maySetIn(object: unknown, key: string | number): boolean {
-  return objectValue(object, key) !== undefined;
-}
