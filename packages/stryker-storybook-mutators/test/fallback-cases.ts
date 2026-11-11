@@ -184,6 +184,21 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'over-unread-base-args',
+    title:
+      "a key of an .extend() story's args whose literal value equals the meta's is removed when the base's args are an imported object, which may set it",
+    source: inFactoryFile(
+      "import { shared } from './shared';",
+      'const meta = preview.meta({ args: { a: 1 } });',
+      'export const Base = meta.story({ args: shared });',
+      'export const Primary = Base.extend({ args: { a: 1, b: 2 }, play: async () => {} });',
+    ),
+    expect: [
+      [args, '{ a: 1 }'],
+      [args, '{ b: 2 }'],
+    ],
+  },
+  {
     id: 'test-options-named-same-literal',
     title:
       "a key in .test() options named by a top-level constant whose literal value equals the story's makes no mutant",

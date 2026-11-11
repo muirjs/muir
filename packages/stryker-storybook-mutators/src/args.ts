@@ -198,7 +198,7 @@ const literalTypes: readonly unknown[] = [
   'BooleanLiteral',
 ];
 
-/** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it, where a layer that is a spread that does not resolve may set any key. */
+/** The keys whose literal value in `args` equals the value they fall back to when removed: the one the properties before the key set, else the first layer below that sets it, where a layer that is no object literal may set any key. */
 function sameLiteralKeys(
   args: unknown,
   below: readonly unknown[],
@@ -214,14 +214,7 @@ function sameLiteralKeys(
         key === undefined
           ? undefined
           : valueIn(
-              [
-                properties.slice(0, index),
-                ...below.map((layer) =>
-                  layer === 'unknown'
-                    ? [layer]
-                    : list(field(layer, 'properties')),
-                ),
-              ],
+              [properties.slice(0, index), ...below.map(belowProperties)],
               key,
               bindings,
             );
@@ -237,6 +230,17 @@ function sameLiteralKeys(
         : [];
     }),
   );
+}
+
+/** The properties a layer below gives: none for no layer, an object literal's own, and for anything else, which only running the file reads, one entry that may set any key. */
+function belowProperties(layer: unknown): readonly unknown[] {
+  if (layer === undefined) {
+    return [];
+  }
+
+  return field(layer, 'type') === 'ObjectExpression'
+    ? list(field(layer, 'properties'))
+    : ['unknown'];
 }
 
 /** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */
