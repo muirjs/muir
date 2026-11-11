@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { types } from '@babel/core';
+
 import { builtInNames } from '@layzee/stryker-mutator-install';
 
-import { install } from '../src/install.ts';
+import { assertBabelTypes, install } from '../src/install.ts';
 import { defined } from './support/defined.ts';
 import {
   fakeInstrumenter,
@@ -13,6 +15,28 @@ import {
 } from './support/fake-instrumenter.ts';
 
 const silent = (): undefined => undefined;
+
+describe('assertBabelTypes', () => {
+  const missing = (name: string) => new Error(`no ${name}`);
+
+  it("accepts Babel's types", () => {
+    assert.doesNotThrow(() => assertBabelTypes(types, missing));
+  });
+
+  it('names the member an object lacks, through the missing-member error', () => {
+    assert.throws(
+      () => assertBabelTypes({ ...types, identifier: 1 }, missing),
+      { message: 'no Babel types with identifier' },
+    );
+  });
+
+  it('lists every member a value lacks, comma-separated', () => {
+    assert.throws(() => assertBabelTypes(undefined, missing), {
+      message:
+        'no Babel types with emptyStatement, identifier, isNodesEquivalent',
+    });
+  });
+});
 
 describe('install', () => {
   it("removes Stryker's 17 built-ins and appends the default mutators, marked", async () => {

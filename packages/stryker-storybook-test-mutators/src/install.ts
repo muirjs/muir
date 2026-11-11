@@ -33,7 +33,7 @@ export function resolveFromCore(
   return resolveInstrumenter(packageName, assertBabelTypes, corePackage);
 }
 
-function assertBabelTypes(
+export function assertBabelTypes(
   value: unknown,
   missing: (name: string) => Error,
 ): asserts value is BabelTypes {
