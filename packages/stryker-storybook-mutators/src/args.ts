@@ -2,6 +2,7 @@ import type { NodePath } from '@babel/core';
 import {
   csfFile,
   field,
+  lastWinsProperties,
   list,
   playedStories,
   propertyValue,
@@ -273,17 +274,7 @@ function byPriority(
   bindings: ReadonlyMap<string, unknown>,
 ): readonly unknown[] {
   return layers.flatMap((properties) =>
-    properties.toReversed().flatMap((property) => {
-      const object = field(property, 'argument', 'object', 'name');
-      const spread = spreadArgs(property, bindings);
-
-      return field(spread, 'type') === 'ObjectExpression'
-        ? byPriority(
-            [list(field(spread, 'properties'))],
-            withoutBinding(bindings, object),
-          )
-        : [property];
-    }),
+    lastWinsProperties(properties, bindings, spreadArgs),
   );
 }
 
@@ -294,14 +285,12 @@ const memberTypes: readonly unknown[] = [
 
 /** The `args` of the top-level object that a `...Base.args`, `...Base?.args` or `...Base['args']` spread names. */
 function spreadArgs(
-  property: unknown,
+  argument: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
-  const argument = field(property, 'argument');
   const object = field(argument, 'object', 'name');
 
-  return field(property, 'type') === 'SpreadElement' &&
-    memberTypes.includes(field(argument, 'type')) &&
+  return memberTypes.includes(field(argument, 'type')) &&
     memberKey(argument) === 'args' &&
     typeof object === 'string'
     ? propertyValue(unwrap(bindings.get(object)), 'args')

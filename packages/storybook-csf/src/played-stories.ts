@@ -110,31 +110,78 @@ function ownOrBasePlay(
   init: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
-  const call = unwrap(init);
-  const own = playIn(storyArgument(call), bindings);
-  const base = field(call, 'callee', 'object', 'name');
-
-  return own === undefined &&
-    field(call, 'callee', 'property', 'name') === 'extend' &&
-    typeof base === 'string'
-    ? ownOrBasePlay(bindings.get(base), withoutBinding(bindings, base))
-    : own;
+  return storyValues(init, bindings, 'play').find((play) => play !== undefined);
 }
 
-/** The play an object literal sets: its last `play` key, or the play of a top-level object it spreads after that key. */
-function playIn(
-  object: unknown,
+/**
+ * The properties a story ends up with, one layer each for the story and then each `.extend()` base, as Storybook
+ * 10.6.5 `extend()` merges a base story in key by key. Each layer lists its properties last-wins first, with the
+ * properties of a top-level object it spreads in place of the spread, as object spread replaces a key whole.
+ */
+export function storyLayers(
+  init: unknown,
   bindings: ReadonlyMap<string, unknown>,
-): unknown {
-  return list(field(object, 'properties'))
-    .toReversed()
-    .map((property) => {
-      const spread = field(property, 'argument', 'name');
+): readonly (readonly unknown[])[] {
+  const call = unwrap(init);
+  const own = lastWinsProperties(
+    list(field(storyArgument(call), 'properties')),
+    bindings,
+    (argument, inner) => {
+      const name = field(argument, 'name');
 
-      return field(property, 'type') === 'SpreadElement' &&
-        typeof spread === 'string'
-        ? playIn(unwrap(bindings.get(spread)), withoutBinding(bindings, spread))
-        : propertyValue({ properties: [property] }, 'play');
-    })
-    .find((play) => play !== undefined);
+      return typeof name === 'string' ? unwrap(inner.get(name)) : undefined;
+    },
+  );
+  const base = field(call, 'callee', 'object', 'name');
+
+  return field(call, 'callee', 'property', 'name') === 'extend' &&
+    typeof base === 'string'
+    ? [own, ...storyLayers(bindings.get(base), withoutBinding(bindings, base))]
+    : [own];
+}
+
+/** The value of `key` that each of a story's layers sets, the story's own first; `undefined` for a layer that sets none. */
+export function storyValues(
+  init: unknown,
+  bindings: ReadonlyMap<string, unknown>,
+  key: string,
+): readonly unknown[] {
+  return storyLayers(init, bindings).map((layer) =>
+    layer
+      .map((property) => propertyValue({ properties: [property] }, key))
+      .find((value) => value !== undefined),
+  );
+}
+
+/**
+ * `properties` last-wins first, each spread whose argument `spreadObject` resolves to an object literal replaced by
+ * that object's properties, read the same way without the binding the spread names, so a cycle of spreads ends. A
+ * spread it does not resolve stays, as only running the file tells what it sets.
+ */
+export function lastWinsProperties(
+  properties: readonly unknown[],
+  bindings: ReadonlyMap<string, unknown>,
+  spreadObject: (
+    argument: unknown,
+    bindings: ReadonlyMap<string, unknown>,
+  ) => unknown,
+): readonly unknown[] {
+  return properties.toReversed().flatMap((property) => {
+    const argument = field(property, 'argument');
+    const spread =
+      field(property, 'type') === 'SpreadElement'
+        ? spreadObject(argument, bindings)
+        : undefined;
+
+    return field(spread, 'type') === 'ObjectExpression'
+      ? lastWinsProperties(
+          list(field(spread, 'properties')),
+          withoutBinding(
+            bindings,
+            field(argument, 'name') ?? field(argument, 'object', 'name'),
+          ),
+          spreadObject,
+        )
+      : [property];
+  });
 }
