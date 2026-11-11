@@ -2,9 +2,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { field } from '@layzee/storybook-csf';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
-
-import { field } from '../../src/node-field.ts';
 
 export interface Instrumented {
   readonly code: string;

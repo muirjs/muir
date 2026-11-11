@@ -5,15 +5,15 @@ import { describe, it } from 'node:test';
 const copies = [
   {
     file: 'csf.ts',
-    source: '../../stryker-storybook/src/csf.ts',
+    source: '../../storybook-csf/src/csf.ts',
   },
   {
     file: 'is-record.ts',
-    source: '../../stryker-storybook/src/is-record.ts',
+    source: '../../storybook-csf/src/is-record.ts',
   },
   {
     file: 'node-field.ts',
-    source: '../../stryker-storybook/src/node-field.ts',
+    source: '../../storybook-csf/src/node-field.ts',
   },
 ];
 
@@ -27,7 +27,7 @@ describe('copied files', () => {
       assert.equal(
         read(`../src/${file}`),
         read(source),
-        `src/${file} differs from packages/stryker-storybook/src/${file}; copy the owner's file over it`,
+        `src/${file} differs from packages/storybook-csf/src/${file}; copy the owner's file over it`,
       );
     });
   });

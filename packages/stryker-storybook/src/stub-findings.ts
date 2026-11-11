@@ -1,5 +1,5 @@
-import { isRecord } from './is-record.ts';
-import { field, list } from './node-field.ts';
+import { field, isRecord, list } from '@layzee/storybook-csf';
+
 import { parseProgram } from './parse.ts';
 import type { StorybookProject } from './storybook-project.ts';
 import {

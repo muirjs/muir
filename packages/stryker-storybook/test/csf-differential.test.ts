@@ -2,11 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { csfFile, field, list, topLevelBindings } from '@layzee/storybook-csf';
 import { vitestTransform } from 'storybook/internal/csf-tools';
 
-import { csfFile, topLevelBindings } from '../src/csf.ts';
 import { storyIndex } from '../src/story-index.ts';
-import { field, list } from '../src/node-field.ts';
 import { parseProgram } from '../src/parse.ts';
 import { classifyStubs, type TestTags } from '../src/reset-setting.ts';
 import { untaggedPreviewTestTags } from './support/test-tags.ts';

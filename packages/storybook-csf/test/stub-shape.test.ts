@@ -1,13 +1,23 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseProgram } from '../src/parse.ts';
+import { parse } from '@babel/parser';
+
 import { definitionTimeStubs } from '../src/stub-shape.ts';
 
+function parseTs(source: string) {
+  return parse(source, {
+    sourceType: 'module',
+    plugins: ['typescript', 'decorators-legacy'],
+  }).program;
+}
+
 function stubsOf(source: string) {
-  return definitionTimeStubs(parseProgram(source, 'X.stories.ts')).map(
-    ({ spy, method, once }) => ({ spy, method, once }),
-  );
+  return definitionTimeStubs(parseTs(source)).map(({ spy, method, once }) => ({
+    spy,
+    method,
+    once,
+  }));
 }
 
 describe('definitionTimeStubs', () => {
@@ -79,19 +89,16 @@ describe('definitionTimeStubs', () => {
     const source =
       "import { fn } from 'storybook/test';\nexport const A = { args: { g: fn().mockReturnValue('x') } };";
 
-    assert.deepEqual(
-      definitionTimeStubs(parseProgram(source, 'A.stories.ts')),
-      [
-        {
-          spy: 'fn',
-          method: 'mockReturnValue',
-          once: false,
-          start: source.indexOf('fn()'),
-          end: source.lastIndexOf(')') + 1,
-          line: 2,
-          argumentStart: source.indexOf("'x'"),
-        },
-      ],
-    );
+    assert.deepEqual(definitionTimeStubs(parseTs(source)), [
+      {
+        spy: 'fn',
+        method: 'mockReturnValue',
+        once: false,
+        start: source.indexOf('fn()'),
+        end: source.lastIndexOf(')') + 1,
+        line: 2,
+        argumentStart: source.indexOf("'x'"),
+      },
+    ]);
   });
 });

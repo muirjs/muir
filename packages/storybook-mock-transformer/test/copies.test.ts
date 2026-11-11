@@ -5,11 +5,11 @@ import { describe, it } from 'node:test';
 const copies = [
   {
     file: 'stub-shape.ts',
-    source: '../../stryker-storybook/src/stub-shape.ts',
+    source: '../../storybook-csf/src/stub-shape.ts',
   },
   {
     file: 'stryker-record.ts',
-    source: '../../stryker-storybook/src/stryker-record.ts',
+    source: '../../storybook-csf/src/stryker-record.ts',
   },
 ];
 
@@ -23,7 +23,7 @@ describe('copied files', () => {
       assert.equal(
         read(`../src/${file}`),
         read(source),
-        `src/${file} differs from packages/stryker-storybook/src/${file}; copy the owner's file over it`,
+        `src/${file} differs from packages/storybook-csf/src/${file}; copy the owner's file over it`,
       );
     });
   });

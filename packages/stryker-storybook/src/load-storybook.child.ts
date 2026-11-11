@@ -3,13 +3,13 @@ import { register } from 'node:module';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { isRecord } from './is-record.ts';
+import { field, isRecord } from '@layzee/storybook-csf';
+
 import type {
   LoaderResult,
   LoaderTestTags,
   LoadResult,
 } from './loader-result.ts';
-import { field } from './node-field.ts';
 
 const [configDir, resultFile, vitestConfigFile] = process.argv.slice(2);
 

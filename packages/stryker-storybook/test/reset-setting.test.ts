@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { isRecord } from '../src/is-record.ts';
-import { field } from '../src/node-field.ts';
+import { definitionTimeStubs, field, isRecord } from '@layzee/storybook-csf';
+
 import { parseProgram } from '../src/parse.ts';
 import {
   classifyStubs,
@@ -13,7 +13,6 @@ import {
   type StoryReset,
   type StubVerdict,
 } from '../src/reset-setting.ts';
-import { definitionTimeStubs } from '../src/stub-shape.ts';
 import { storyFile, verdictsOf } from './support/reset-setting.ts';
 import { untaggedPreviewTestTags } from './support/test-tags.ts';
 

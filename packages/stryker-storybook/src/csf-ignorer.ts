@@ -1,9 +1,13 @@
+import {
+  csfShapes,
+  field,
+  isRecord,
+  list,
+  type CsfShapes,
+} from '@layzee/storybook-csf';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { csfShapes, type CsfShapes } from './csf.ts';
-import { isRecord } from './is-record.ts';
-import { field, list } from './node-field.ts';
 import {
   isStoryFile,
   strykerStorybookProject,

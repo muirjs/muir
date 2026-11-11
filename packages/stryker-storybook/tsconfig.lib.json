@@ -9,5 +9,10 @@
     "importHelpers": false,
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../storybook-csf/tsconfig.lib.json"
+    }
+  ]
 }

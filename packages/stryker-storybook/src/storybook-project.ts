@@ -8,11 +8,15 @@ import {
   getInterpretedFile,
   STORY_FILE_TEST_REGEXP,
 } from 'storybook/internal/common';
+import {
+  field,
+  isRecord,
+  isStringArray,
+  mockTransformerPluginName,
+} from '@layzee/storybook-csf';
 import { loadConfig } from 'storybook/internal/csf-tools';
 
-import { isRecord, isStringArray } from './is-record.ts';
 import type { LoadResult } from './loader-result.ts';
-import { field } from './node-field.ts';
 import { lzStorybookOptions, vitestConfigFile } from './options.ts';
 import { packageName } from './package-name.ts';
 import { parseProgram } from './parse.ts';
@@ -24,7 +28,6 @@ import {
   type TagFilter,
   type TestTags,
 } from './reset-setting.ts';
-import { mockTransformerPluginName } from './stryker-record.ts';
 
 export interface ProjectLog {
   readonly info: (message: string) => void;

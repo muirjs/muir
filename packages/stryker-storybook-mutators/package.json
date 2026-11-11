@@ -68,9 +68,9 @@
         "inputs": [
           "default",
           "^default",
-          "{workspaceRoot}/packages/stryker-storybook/src/csf.ts",
-          "{workspaceRoot}/packages/stryker-storybook/src/is-record.ts",
-          "{workspaceRoot}/packages/stryker-storybook/src/node-field.ts"
+          "{workspaceRoot}/packages/storybook-csf/src/csf.ts",
+          "{workspaceRoot}/packages/storybook-csf/src/is-record.ts",
+          "{workspaceRoot}/packages/storybook-csf/src/node-field.ts"
         ]
       },
       "lint": {
