@@ -214,14 +214,30 @@ export const cases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
-    id: 'skip-hover-before-clear',
+    id: 'hover-before-clear',
     title:
-      'a hover directly before a clear on the same target gets no mutant and the clear gets one',
+      'a hover directly before a clear on the same target is removed, as clear only focuses',
     source: inPlay(
       'await userEvent.hover(input);',
       'await userEvent.clear(input);',
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'click-before-clear',
+    title:
+      'a click directly before a clear on the same target is removed, as clear only focuses',
+    source: inPlay(
+      'await userEvent.click(input);',
+      'await userEvent.clear(input);',
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'click-before-type-elsewhere',

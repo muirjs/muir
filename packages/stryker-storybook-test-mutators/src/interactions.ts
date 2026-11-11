@@ -61,7 +61,7 @@ function isClearedLater(path: NodePath, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event click or hover directly before a user-event type or clear of the same target, which clicks it first. */
+/** A user-event click or hover directly before a user-event type of the same target, which clicks it first. */
 function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
   const current = userEventCall(path);
   const [next] = nextSiblings(path);
@@ -71,7 +71,7 @@ function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
     current?.target !== undefined &&
     following?.target !== undefined &&
     ['click', 'hover'].includes(current.method) &&
-    ['type', 'clear'].includes(following.method) &&
+    following.method === 'type' &&
     !hasSkipClick(following.args[2]) &&
     t.isNodesEquivalent(current.target, following.target)
   );
