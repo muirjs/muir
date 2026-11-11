@@ -513,8 +513,12 @@ const rawDomArguments: ReadonlyMap<string, number> = new Map([
 // `<Story>.play(context)`, and `<Story>.run()` on a CSF factory story.
 const composedPlayMethods: ReadonlySet<string> = new Set(['play', 'run']);
 
-// The user-event 14 methods that act on the page (@testing-library/user-event, which storybook/test re-exports).
+// The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
+// storybook/test re-exports) and those only Vitest browser's userEvent has.
 const userEventMethods: ReadonlySet<string> = new Set([
+  'fill',
+  'dragAndDrop',
+  'wheel',
   'click',
   'dblClick',
   'tripleClick',

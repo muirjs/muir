@@ -33,6 +33,13 @@ const userEventCalls: readonly (readonly [string, string])[] = [
   ['paste', "'a'"],
 ];
 
+// The methods that only Vitest browser's userEvent has, with arguments.
+const vitestBrowserCalls: readonly (readonly [string, string])[] = [
+  ['fill', "input, 'a'"],
+  ['dragAndDrop', 'card, column'],
+  ['wheel', "list, { direction: 'down' }"],
+];
+
 const rawDomCalls: readonly string[] = [
   'blur()',
   'click()',
@@ -50,6 +57,12 @@ export const interactionCases: readonly Case[] = [
     id: `raw-dom-${call.slice(0, call.indexOf('('))}`,
     title: `a raw DOM element's ${call} statement is removed`,
     source: inPlay(`button.${call};`),
+    expect: [[interaction, ';'] as const],
+  })),
+  ...vitestBrowserCalls.map(([method, args]) => ({
+    id: `vitest-browser-method-${method}`,
+    title: `an awaited Vitest browser userEvent.${method} statement is removed`,
+    source: `import { userEvent } from 'vitest/browser';\n${inPlay(`await userEvent.${method}(${args});`)}`,
     expect: [[interaction, ';'] as const],
   })),
   {
