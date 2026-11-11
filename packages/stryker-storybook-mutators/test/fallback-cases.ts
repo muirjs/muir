@@ -169,6 +169,21 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-named-same-literal',
+    title:
+      "a key in .test() options named by a top-level constant whose literal value equals the story's makes no mutant",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a' } });",
+      "const sameLabel = { args: { label: 'a', size: 's', disabled: true } };",
+      "Primary.test('t', sameLabel, async () => {});",
+    ),
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 's' }"],
+    ],
+  },
+  {
     id: 'extend-other-literal-than-base',
     title:
       "a key in .extend() whose literal value equals the meta's but not the base story's is removed",

@@ -154,6 +154,21 @@ export const playCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-named',
+    title:
+      'the args in .test() options named by a top-level constant are mutated',
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      'export const Primary = meta.story({});',
+      "const disabledOptions = { args: { label: 'a', disabled: true } };",
+      "Primary.test('disabled', disabledOptions, async () => {});",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'test-name-not-literal',
     title:
       "the args in the options of a .test() call whose name is no string literal make no mutant, as Storybook's index lists no such call",
