@@ -309,6 +309,13 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, 'undefined']],
   },
   {
+    id: 'context-step-expression-body',
+    title:
+      'an interaction that is the expression body of a context.step callback becomes undefined',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.step('Submit', () => context.userEvent.click(button));\n  },\n};\n`,
+    expect: [[interaction, 'undefined']],
+  },
+  {
     id: 'skip-before-each',
     title: 'an interaction in a beforeEach makes no mutant',
     source: `export const Story = {\n  beforeEach: async ({ userEvent }) => {\n    await userEvent.click(button);\n  },\n};\n`,
@@ -526,6 +533,20 @@ export const interactionCases: readonly Case[] = [
       'the checks that decide a skip end at a step holding an interaction, so only the click in the step is skipped',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      await userEvent.click(second);\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
     expect: [[interaction, ';']],
+  },
+  {
+    id: 'negative-only-until-context-step-interaction',
+    title:
+      'the checks that decide a skip end at a context.step holding an interaction, so only the click in the step is skipped',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(first);\n    await context.step('Second', async () => {\n      await context.userEvent.click(second);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'negative-only-after-context-step',
+    title:
+      'an interaction in a context.step whose following checks in the play are all negative makes no mutant',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.step('Click', async () => {\n      await context.userEvent.click(button);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+    expect: [],
   },
   {
     id: 'skip-negative-only-in-step',

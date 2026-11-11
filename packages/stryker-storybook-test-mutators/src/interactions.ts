@@ -308,8 +308,20 @@ function nextSiblings(path: NodePath): readonly NodePath[] {
     : [];
 }
 
+/** `step(...)`, or `<context>.step(...)` on a play context that is not destructured. */
 function isStepCall(node: types.Node): boolean {
-  return node.type === 'CallExpression' && nameOf(node.callee) === 'step';
+  if (node.type !== 'CallExpression') {
+    return false;
+  }
+
+  const { callee } = node;
+
+  return (
+    nameOf(callee) === 'step' ||
+    (callee.type === 'MemberExpression' &&
+      callee.object.type === 'Identifier' &&
+      nameOf(callee.property) === 'step')
+  );
 }
 
 interface Check {
