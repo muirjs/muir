@@ -1,3 +1,6 @@
+import { isRecord } from './is-record.ts';
+import { field, list } from './node-field.ts';
+
 const stubMethods = [
   'mockReturnValue',
   'mockResolvedValue',
@@ -106,20 +109,4 @@ function isCall(node: unknown): boolean {
   const type = field(node, 'type');
 
   return type === 'CallExpression' || type === 'OptionalCallExpression';
-}
-
-function field(node: unknown, ...keys: readonly string[]): unknown {
-  return keys.reduce<unknown>(
-    (value, key) => (isRecord(value) ? value[key] : undefined),
-    node,
-  );
-}
-
-function list(value: unknown): readonly unknown[] {
-  // Stryker disable next-line ArrayDeclaration: the only non-array input is a missing specifiers list, and a string element has no imported name
-  return Array.isArray(value) ? value : [];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
