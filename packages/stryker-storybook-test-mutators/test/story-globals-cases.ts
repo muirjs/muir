@@ -206,4 +206,14 @@ export const storyGlobalsCases: readonly Case[] = [
     ),
     expect: [[storyGlobals, '{ outline: false }']],
   },
+  {
+    id: 'story-globals-spread-play',
+    title:
+      'a story that spreads a story with a play gets mutants of its globals',
+    source: storyFile(
+      'export const Base = { play: async () => {} };',
+      "export const Phone = { ...Base, globals: { viewport: { value: 'phone' } } };",
+    ),
+    expect: [[storyGlobals, '{}']],
+  },
 ];

@@ -2,12 +2,12 @@ import {
   csfFile,
   field,
   list,
+  ownOrBasePlay,
   propertyValue,
   storyArgument,
   testCallOf,
   topLevelBindings,
   unwrap,
-  withoutBinding,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
@@ -33,7 +33,9 @@ const sitesOf = perFile((program): ReadonlySet<unknown> => {
   const played = stories
     .filter(
       ({ init, local }) =>
-        metaPlays || hasPlay(init, bindings) || testTargets.includes(local),
+        metaPlays ||
+        ownOrBasePlay(init, bindings) !== undefined ||
+        testTargets.includes(local),
     )
     .map(({ init }) => storyArgument(unwrap(init)));
 
@@ -103,25 +105,6 @@ function isDefaultGlobal(property: unknown): boolean {
   return (
     typeof key === 'string' &&
     defaultGlobals[key]?.(field(property, 'value')) === true
-  );
-}
-
-/** The story sets a play, or it is an `.extend()` of a story that has one. */
-function hasPlay(
-  init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): boolean {
-  const call = unwrap(init);
-  const base = field(call, 'callee', 'object', 'name');
-
-  if (propertyValue(storyArgument(call), 'play') !== undefined) {
-    return true;
-  }
-
-  return (
-    field(call, 'callee', 'property', 'name') === 'extend' &&
-    typeof base === 'string' &&
-    hasPlay(bindings.get(base), withoutBinding(bindings, base))
   );
 }
 

@@ -75,9 +75,9 @@ _Avoid_: flip mutant, rejection mutant
 
 **Globals site**:
 A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: a story's own `globals`
-when the story sets a play, takes one from its `.extend()` base or the meta, or has a `.test()` call; the meta's
-`globals` when such a story exists; and the `globals` in the options of a `.test()` call on a story. A story that
-gets its play only through a spread of another story is not read as having one.
+when the story has a play of its own, from a top-level story it spreads, from its `.extend()` base or from the meta,
+or has a `.test()` call; the meta's `globals` when such a story exists; and the `globals` in the options of a
+`.test()` call on a story.
 _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:
