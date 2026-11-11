@@ -525,7 +525,7 @@ export const cases: readonly Case[] = [
       "export default { title: 'Button', args: { size: -1 }, play: async () => {} };\n" +
       "export const Primary = { args: { size: -1, label: 'a', disabled: true } };\n",
     expect: [
-      [args, "{ size: -1, disabled: true }"],
+      [args, '{ size: -1, disabled: true }'],
       [args, "{ size: -1, label: 'a' }"],
     ],
   },
@@ -539,6 +539,19 @@ export const cases: readonly Case[] = [
     expect: [
       [args, '{ size: `small`, disabled: true }'],
       [args, "{ size: `small`, label: 'a' }"],
+    ],
+  },
+  {
+    id: 'undefined-without-meta-value',
+    title:
+      "a key set to undefined that the meta does not set is removed, as the project's args may set it",
+    source: inStory(
+      'args: { label: undefined, disabled: true },',
+      'play: async () => {},',
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, '{ label: undefined }'],
     ],
   },
   {

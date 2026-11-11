@@ -47,7 +47,7 @@ export function argsMutator(): LzStorybookMutator & {
     sample:
       "export default { title: 'Sample' };\nexport const Story = {\n  args: { label: 'a', disabled: true },\n  play: async () => {},\n};\n",
     *mutate(path, t) {
-      // Stryker places the mutants of a statement when it leaves it, so the file is read before any statement changes.
+      // Stryker places a statement's mutants as it leaves the statement, so the file is read on entering the Program, or, under a line-range `mutate` that skips the Program, on entering the first object in range.
       if (path.isProgram()) {
         sitesOf(path);
       }
@@ -356,7 +356,7 @@ function topLevelValueOrSelf(
   return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
 }
 
-/** An `args` object literal with the keys that stay: those the functions that run for it read, and `kept`; when one runs and none reads it whole. */
+/** The args site of `argsObject` when it is an object literal, at least one function runs for it and none reads it whole; none otherwise. */
 function site(
   argsObject: unknown,
   readers: readonly Reads[],
