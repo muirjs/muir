@@ -569,6 +569,21 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-before-written-spread',
+    title:
+      "a story's own globals get no mutant when a later spread names a story the file writes globals to, as that spread may replace them",
+    source: storyFile(
+      'export const Base = { args: {} };',
+      "Base.globals = { locale: 'fr' };",
+      'export const Story = {',
+      "  globals: { outline: false, locale: 'de' },",
+      '  ...Base,',
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [],
+  },
+  {
     id: 'story-globals-default-over-story',
     title:
       'the options of a .test() call get a mutant of a default value of a global the story sets',

@@ -47,9 +47,9 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
   return bySite(
     [
       ...played.flatMap(({ story: { init }, tests }) => {
-        const [runs, ...bases] = storyValues(init, bindings, 'globals');
+        const [runs, ...bases] = storyValues(init, unchanged, 'globals');
         const storyParameters = [
-          ...storyValues(init, bindings, 'parameters'),
+          ...storyValues(init, unchanged, 'parameters'),
           ...metaParameters,
         ].filter(defined);
         const matched = tests.flatMap((test) =>
@@ -69,7 +69,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
 
         return [
           [
-            ownStoryValue(init, bindings, 'globals'),
+            ownStoryValue(init, unchanged, 'globals'),
             { globals, parameters: everyRunParameters },
           ] as const,
           ...matched.map(
