@@ -89,14 +89,14 @@ function hasSkipClick(options: types.Node | undefined): boolean {
   );
 }
 
-interface UserEventCall {
+export interface UserEventCall {
   readonly method: string;
   readonly target: types.Node | undefined;
   readonly args: readonly types.Node[];
 }
 
 /** The method and first argument of a `<userEvent>.<method>(...)` statement. */
-function userEventCall(path: NodePath): UserEventCall | undefined {
+export function userEventCall(path: NodePath): UserEventCall | undefined {
   const statement = path.node;
 
   if (statement.type !== 'ExpressionStatement') {
@@ -309,6 +309,15 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
       callee.object.type === 'Identifier') ||
     (method !== undefined &&
       rawDomArguments.get(method) === call.arguments.length)
+  );
+}
+
+/** `<x>.getBy<Query>(...)`, `<x>.findBy<Query>(...)` or `<x>.queryBy<Query>(...)`: a Testing Library query for one element. */
+export function isQueryCall(node: types.Node): boolean {
+  return (
+    node.type === 'CallExpression' &&
+    node.callee.type === 'MemberExpression' &&
+    /^(get|find|query)By[A-Z]/.test(nameOf(node.callee.property) ?? '')
   );
 }
 

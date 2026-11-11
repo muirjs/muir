@@ -1,4 +1,5 @@
-import { cases } from './cases.ts';
+import { clickFocusCases, interactionCases } from './cases.ts';
 import { runCases } from './support/run-cases.ts';
 
-runCases(cases);
+runCases('LzStorybookInteraction', interactionCases);
+runCases('LzStorybookClickFocus', clickFocusCases);

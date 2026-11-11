@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { builtInNames } from '@layzee/stryker-mutator-install';
 
 import { install } from '../src/install.ts';
+import { mutatorSets } from '../src/mutators.ts';
 import { defined } from './support/defined.ts';
 import {
   fakeInstrumenter,
@@ -216,6 +217,29 @@ describe('install', () => {
     assert.deepEqual(warnings, [
       '@layzee/stryker-storybook-test-mutators was tested with @stryker-mutator/instrumenter 10.1.1, not 10.2.0 in ' +
         '/stryker/instrumenter; its self-check passed.',
+    ]);
+  });
+});
+
+describe('roster', () => {
+  async function namesWith(options: unknown): Promise<readonly string[]> {
+    const { instrumenter, names } = fakeInstrumenter();
+
+    await install(
+      mutatorSets,
+      options,
+      async () => instrumenter,
+      silent,
+      silent,
+    );
+
+    return names();
+  }
+
+  it('installs the default mutators with no options', async () => {
+    assert.deepEqual(await namesWith(undefined), [
+      'LzStorybookInteraction',
+      'LzStorybookClickFocus',
     ]);
   });
 });

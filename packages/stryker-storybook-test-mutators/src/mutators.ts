@@ -4,7 +4,10 @@ import type {
   SampledMutator,
 } from '@layzee/stryker-mutator-install';
 
-import { interactionMutator } from './interaction-mutators.ts';
+import {
+  clickFocusMutator,
+  interactionMutator,
+} from './interaction-mutators.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
 
 // In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave the roster out of a
@@ -16,7 +19,7 @@ function roster<const T extends MutatorSets<LzStorybookTestMutator>>(
 }
 
 export const mutatorSets = roster({
-  defaults: [interactionMutator()],
+  defaults: [interactionMutator(), clickFocusMutator()],
   optIn: [],
   experimental: [],
 });

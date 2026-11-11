@@ -39,7 +39,7 @@ const rawDomCalls: readonly string[] = [
   "dispatchEvent(new Event('input'))",
 ];
 
-export const cases: readonly Case[] = [
+export const interactionCases: readonly Case[] = [
   ...userEventCalls.map(([method, args]) => ({
     id: `user-event-method-${method}`,
     title: `an awaited userEvent.${method} statement is removed`,
@@ -359,6 +359,95 @@ export const cases: readonly Case[] = [
     title:
       'an interaction followed only by a step of negative checks makes no mutant',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(button);\n    await step('Check', async () => {\n      await expect(args.onClick).not.toHaveBeenCalled();\n    });\n  },\n};\n`,
+    expect: [],
+  },
+];
+
+const clickFocus = 'LzStorybookClickFocus';
+
+export const clickFocusCases: readonly Case[] = [
+  {
+    id: 'click-focus-click',
+    title:
+      'an awaited userEvent.click of an element becomes a focus() call on it',
+    source: inPlay('await userEvent.click(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-query',
+    title: 'a click of a queried element focuses the element the query returns',
+    source: inPlay("await userEvent.click(canvas.getByRole('button'));"),
+    expect: [[clickFocus, "await canvas.getByRole('button').focus();"]],
+  },
+  {
+    id: 'click-focus-other-call',
+    title:
+      'a click of an element that a call other than a query returns makes no mutant, as that call may have effects',
+    source: inPlay('await userEvent.click(openMenu());'),
+    expect: [],
+  },
+  {
+    id: 'click-focus-awaited-query',
+    title: 'a click of an awaited findBy query focuses the element it finds',
+    source: inPlay("await userEvent.click(await canvas.findByRole('button'));"),
+    expect: [
+      [clickFocus, "await (await canvas.findByRole('button')).focus();"],
+    ],
+  },
+  {
+    id: 'click-focus-dbl-click',
+    title: 'a userEvent.dblClick becomes a focus() call on its element',
+    source: inPlay('await userEvent.dblClick(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-not-awaited',
+    title:
+      'a click that is not awaited becomes a focus() call that is not awaited',
+    source: inPlay('userEvent.click(button);'),
+    expect: [[clickFocus, 'button.focus();']],
+  },
+  {
+    id: 'click-focus-skip-textbox',
+    title:
+      'a click of a textbox makes no mutant, as clicking a text field is meant to focus it',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox', { name: 'Name' }));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-found-combobox',
+    title: 'a click of a combobox that a findBy query finds makes no mutant',
+    source: inPlay(
+      "await userEvent.click(await canvas.findByRole('combobox'));",
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-negative-only',
+    title:
+      'a click whose following checks are all negative makes no mutant, as focusing also leaves them true',
+    source: inPlay(
+      'await userEvent.click(button);',
+      'await expect(args.onClick).not.toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-click-before-type',
+    title:
+      'a click directly before a type on the same target makes no mutant, as type clicks first',
+    source: inPlay(
+      'await userEvent.click(input);',
+      "await userEvent.type(input, 'a');",
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-before-each',
+    title: 'a click in a beforeEach makes no mutant',
+    source: `export const Story = {\n  beforeEach: async ({ userEvent }) => {\n    await userEvent.click(button);\n  },\n};\n`,
     expect: [],
   },
 ];

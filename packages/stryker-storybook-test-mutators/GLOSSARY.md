@@ -31,7 +31,7 @@ An `expect(...)` check with `.not` in its matcher chain, which passes when the i
 _Avoid_: absence check, negated assertion
 
 **Skipped interaction**:
-An interaction that `LzStorybookInteraction` makes no mutant of: one in a `beforeEach` or `afterEach`, one whose
+An interaction that `LzStorybookInteraction` and `LzStorybookClickFocus` make no mutant of: one in a `beforeEach` or `afterEach`, one whose
 following checks are all negative checks, a click or hover that a `type` of the same target repeats (`type` clicks
 first unless given `skipClick`), and a `type` or `clear` that a later `clear` of the same target undoes before any
 check.
