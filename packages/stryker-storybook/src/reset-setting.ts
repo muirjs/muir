@@ -7,13 +7,13 @@ import {
   mayImportItself,
   namedExports,
   storyArgument,
-  storyIndex,
   topLevelBindings,
   unwrap,
   withoutBinding,
 } from './csf.ts';
 import { isRecord, isStringArray } from './is-record.ts';
 import { field, list } from './node-field.ts';
+import { storyIndex } from './story-index.ts';
 import { definitionTimeStubs } from './stub-shape.ts';
 
 export type ResetBranch = 'reset' | 'clear' | 'restore' | 'none' | 'unknown';

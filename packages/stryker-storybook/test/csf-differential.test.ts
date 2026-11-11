@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import { vitestTransform } from 'storybook/internal/csf-tools';
 
-import { csfFile, storyIndex, topLevelBindings } from '../src/csf.ts';
+import { csfFile, topLevelBindings } from '../src/csf.ts';
+import { storyIndex } from '../src/story-index.ts';
 import { field, list } from '../src/node-field.ts';
 import { parseProgram } from '../src/parse.ts';
 import { classifyStubs, type TestTags } from '../src/reset-setting.ts';
