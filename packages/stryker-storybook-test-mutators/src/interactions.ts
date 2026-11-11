@@ -111,6 +111,23 @@ export function userEventCall(path: NodePath): UserEventCall | undefined {
     : undefined;
 }
 
+/** The event of a `fireEvent.<event>(...)` statement. */
+export function fireEventMethod(path: NodePath): string | undefined {
+  const statement = path.node;
+
+  if (statement.type !== 'ExpressionStatement') {
+    return undefined;
+  }
+
+  const call = awaited(statement.expression);
+
+  return call.type === 'CallExpression' &&
+    call.callee.type === 'MemberExpression' &&
+    nameOf(call.callee.object) === 'fireEvent'
+    ? nameOf(call.callee.property)
+    : undefined;
+}
+
 /** The method of a `<userEvent>.<method>(...)` call that acts on the page. */
 function userEventMethod(call: types.Node, path: NodePath): string | undefined {
   if (

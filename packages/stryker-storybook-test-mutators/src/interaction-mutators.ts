@@ -1,11 +1,13 @@
 import type { types } from '@babel/core';
 
 import {
+  fireEventMethod,
   isInteractionBody,
   isInteractionStatement,
   isQueryCall,
   isSkipped,
   userEventCall,
+  type UserEventCall,
 } from './interactions.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
 
@@ -89,6 +91,47 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
         yield t.expressionStatement(
           isAwaited(path.node) ? t.awaitExpression(focus) : focus,
         );
+      }
+    },
+  };
+}
+
+const repeatedMethods: readonly string[] = ['click', 'dblClick', 'keyboard'];
+
+/** A click, a dblClick, or a key press other than one that a second press repeats with no change. */
+function isRepeatedUserEvent(call: UserEventCall | undefined): boolean {
+  return (
+    call !== undefined &&
+    repeatedMethods.includes(call.method) &&
+    !(
+      call.method === 'keyboard' &&
+      call.target?.type === 'StringLiteral' &&
+      idempotentKeys.includes(call.target.value)
+    )
+  );
+}
+
+const idempotentKeys: readonly string[] = ['{Home}', '{End}'];
+
+export function interactionRepeatMutator(): LzStorybookTestMutator & {
+  readonly name: 'LzStorybookInteractionRepeat';
+} {
+  return {
+    name: 'LzStorybookInteractionRepeat',
+    sample: sampleOf('await userEvent.click(button);'),
+    *mutate(path, t) {
+      const statement = path.node;
+
+      if (
+        (isRepeatedUserEvent(userEventCall(path)) ||
+          fireEventMethod(path) === 'click') &&
+        statement.type === 'ExpressionStatement' &&
+        !isSkipped(path, t)
+      ) {
+        yield t.blockStatement([
+          t.cloneNode(statement),
+          t.cloneNode(statement),
+        ]);
       }
     },
   };
