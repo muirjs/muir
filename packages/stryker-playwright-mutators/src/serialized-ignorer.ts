@@ -1,7 +1,7 @@
-import { fieldOf } from '@layzee/stryker-mutator-install';
+import { fieldOf, memberNameOf } from '@layzee/stryker-mutator-install';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
-import { isFunctionNode, memberNameOf } from './ast.ts';
+import { isFunctionNode } from './ast.ts';
 
 const serializingMethods: readonly unknown[] = [
   'evaluate',

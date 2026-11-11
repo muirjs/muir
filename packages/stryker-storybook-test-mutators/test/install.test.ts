@@ -6,6 +6,7 @@ import { types } from '@babel/core';
 import { builtInNames } from '@layzee/stryker-mutator-install';
 
 import { assertBabelTypes, install } from '../src/install.ts';
+import { mutatorSets } from '../src/mutators.ts';
 import { defined } from './support/defined.ts';
 import {
   fakeInstrumenter,
@@ -240,6 +241,87 @@ describe('install', () => {
     assert.deepEqual(warnings, [
       '@layzee/stryker-storybook-test-mutators was tested with @stryker-mutator/instrumenter 10.1.1, not 10.2.0 in ' +
         '/stryker/instrumenter; its self-check passed.',
+    ]);
+  });
+});
+
+describe('roster', () => {
+  async function namesWith(options: unknown): Promise<readonly string[]> {
+    const { instrumenter, names } = fakeInstrumenter();
+
+    await install(
+      mutatorSets,
+      options,
+      async () => instrumenter,
+      silent,
+      silent,
+    );
+
+    return names();
+  }
+
+  const defaults = [
+    'LzStorybookInteraction',
+    'LzStorybookClickFocus',
+    'LzStorybookInteractionTarget',
+  ];
+
+  it('installs the default mutators with no options', async () => {
+    assert.deepEqual(await namesWith(undefined), defaults);
+  });
+
+  it('turns LzStorybookInteractionRepeat on by its name, after the defaults', async () => {
+    assert.deepEqual(await namesWith({ LzStorybookInteractionRepeat: true }), [
+      ...defaults,
+      'LzStorybookInteractionRepeat',
+    ]);
+  });
+
+  it('turns LzStorybookWaitFor on by its name inside experimental', async () => {
+    assert.deepEqual(
+      await namesWith({ experimental: { LzStorybookWaitFor: true } }),
+      [...defaults, 'LzStorybookWaitFor'],
+    );
+  });
+
+  it('turns LzStorybookAssertionBefore on by its name inside experimental', async () => {
+    assert.deepEqual(
+      await namesWith({ experimental: { LzStorybookAssertionBefore: true } }),
+      [...defaults, 'LzStorybookAssertionBefore'],
+    );
+  });
+
+  it('refuses LzStorybookWaitFor as an opt-in key, as it is experimental', async () => {
+    await assert.rejects(namesWith({ LzStorybookWaitFor: true }), {
+      message:
+        '@layzee/stryker-storybook-test-mutators: no opt-in mutator is named LzStorybookWaitFor; it is ' +
+        'experimental, so it goes inside experimental.',
+    });
+  });
+
+  it('refuses LzStorybookAssertionBefore as an opt-in key, as it is experimental', async () => {
+    await assert.rejects(namesWith({ LzStorybookAssertionBefore: true }), {
+      message:
+        '@layzee/stryker-storybook-test-mutators: no opt-in mutator is named LzStorybookAssertionBefore; it is ' +
+        'experimental, so it goes inside experimental.',
+    });
+  });
+
+  it('refuses LzStorybookInteractionRepeat inside experimental, as it is opt-in', async () => {
+    await assert.rejects(
+      namesWith({ experimental: { LzStorybookInteractionRepeat: true } }),
+      {
+        message:
+          '@layzee/stryker-storybook-test-mutators: no experimental mutator is named LzStorybookInteractionRepeat; ' +
+          'it is opt-in, so it goes outside experimental.',
+      },
+    );
+  });
+
+  it('turns every opt-in mutator on with extended', async () => {
+    assert.deepEqual(await namesWith({ extended: true }), [
+      ...defaults,
+      'LzStorybookInteractionRepeat',
     ]);
   });
 });

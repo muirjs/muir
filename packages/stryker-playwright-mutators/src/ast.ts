@@ -2,7 +2,9 @@ import {
   bindingOf,
   callTypes,
   fieldOf,
-  memberTypes,
+  findProperty,
+  isMember,
+  memberNameOf,
 } from '@layzee/stryker-mutator-install';
 
 // Stryker's instrumenter visits nothing inside `as`, but it visits inside these wrappers.
@@ -34,18 +36,6 @@ export function isCall(node: unknown): boolean {
   return callTypes.includes(fieldOf(node, 'type'));
 }
 
-/** `<x>.<y>`, `<x>[<y>]`, or either through `?.`. */
-function isMember(node: unknown): boolean {
-  return memberTypes.includes(fieldOf(node, 'type'));
-}
-
-/** The property name of `<x>.<name>` or `<x>?.<name>`. */
-export function memberNameOf(member: unknown): unknown {
-  return isMember(member) && fieldOf(member, 'computed') === false
-    ? fieldOf(fieldOf(member, 'property'), 'name')
-    : undefined;
-}
-
 /** The row of `table` under `key`, or undefined when `key` is no string or no own key of it. */
 export function rowOf<T>(
   table: Readonly<Record<string, T>>,
@@ -53,30 +43,6 @@ export function rowOf<T>(
 ): T | undefined {
   return typeof key === 'string' && Object.hasOwn(table, key)
     ? table[key]
-    : undefined;
-}
-
-export function argumentOf(call: unknown, index: number): unknown {
-  const args = fieldOf(call, 'arguments');
-
-  return Array.isArray(args) ? args[index] : undefined;
-}
-
-/** The key of a non-computed property: the name of an identifier key, or the value of a literal key. */
-export function propertyKey(property: unknown): unknown {
-  const key = fieldOf(property, 'key');
-
-  return fieldOf(property, 'computed') === false
-    ? (fieldOf(key, 'name') ?? fieldOf(key, 'value'))
-    : undefined;
-}
-
-/** The property of the object literal whose key, by `propertyKey`, is `key`. */
-export function findProperty(object: unknown, key: string): unknown {
-  const properties = fieldOf(object, 'properties');
-
-  return Array.isArray(properties)
-    ? properties.find((property) => propertyKey(property) === key)
     : undefined;
 }
 

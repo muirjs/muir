@@ -10,7 +10,8 @@
 - [JSX mutators](./packages/stryker-jsx-mutators/GLOSSARY.md): mutate the parts of JSX that Playwright tests look
   at, and ignore the mutants such tests cannot see.
 - [Mutator install](./packages/stryker-mutator-install/GLOSSARY.md): puts a mutator package's mutators into
-  Stryker and checks them before a run starts.
+  Stryker and checks them before a run starts, and holds the swap engine and the site readers that more than one
+  mutator package uses.
 - [Storybook](./packages/stryker-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
   Covers `packages/stryker-storybook` and `packages/storybook-mock-transformer`.
@@ -23,9 +24,12 @@
 
 - **JSX mutators -> Mutator install**: the JSX mutators are installed through Mutator install, which gives them
   the Layzee mark, the self-check on samples and the name check.
-- **Playwright mutators -> Mutator install**: installed the same way; only the Playwright mutators have opt-in and
-  experimental tiers so far, and they use built-in removal.
-- **Storybook test mutators -> Mutator install**: installed the same way, with built-in removal.
+- **Playwright mutators -> Mutator install**: installed the same way, with opt-in and experimental tiers and
+  built-in removal. Their Locator and MountStory mutators make each same-file swap through the swap engine and,
+  for role, text and test id locators, the site readers that Mutator install holds.
+- **Storybook test mutators -> Mutator install**: installed the same way, with opt-in and experimental tiers and
+  built-in removal; `LzStorybookInteractionTarget` makes its same-file swaps through the same swap engine and site
+  readers.
 - **Storybook mutators -> Mutator install**: installed the same way, keeping Stryker's built-in mutators.
 - **Storybook mutators -> Storybook**: they read story files with byte copies of the Storybook package's `csf.ts`
   and the two files it imports, `is-record.ts` and `node-field.ts`, and mutate story data, so they belong in the Stryker configuration for the components, where the CSF ignorer's

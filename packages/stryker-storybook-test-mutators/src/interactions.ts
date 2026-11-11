@@ -3,28 +3,59 @@ import type { NodePath, types } from '@babel/core';
 import type { BabelTypes } from './mutator.ts';
 
 /** `<call>;` or `await <call>;`, where the call is an interaction. */
-export function isInteractionStatement(path: NodePath): boolean {
-  const statement = path.node;
+export function isInteractionStatement(
+  path: NodePath,
+): path is NodePath<types.ExpressionStatement> {
+  return (
+    path.isExpressionStatement() &&
+    isInteractionCall(awaited(path.node.expression), path)
+  );
+}
 
-  if (statement.type !== 'ExpressionStatement') {
-    return false;
-  }
-
-  return isInteractionCall(awaited(statement.expression), path);
+/** An interaction statement that is no skipped interaction. */
+export function isUnskippedInteraction(
+  path: NodePath,
+  t: BabelTypes,
+): path is NodePath<types.ExpressionStatement> {
+  return isInteractionStatement(path) && !isSkipped(path, t);
 }
 
 /** The expression body of an arrow passed to `step(...)`, `<call>` or `await <call>`, where the call is an interaction. */
-export function isInteractionBody(path: NodePath): boolean {
+export function isInteractionBody(
+  path: NodePath,
+): path is NodePath<types.Expression> {
+  return isStepBody(path) && isInteractionCall(awaited(path.node), path);
+}
+
+/** An interaction body that is no skipped interaction. */
+export function isUnskippedInteractionBody(
+  path: NodePath,
+  t: BabelTypes,
+): path is NodePath<types.Expression> {
+  return isInteractionBody(path) && !isSkipped(path, t);
+}
+
+/** The expression body of an arrow passed to `step(...)`. */
+function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   const arrow = path.parentPath;
   const owner = arrow?.parentPath?.node;
 
   return (
     arrow?.node.type === 'ArrowFunctionExpression' &&
     arrow.node.body === path.node &&
+    path.isExpression() &&
     owner !== undefined &&
-    isStepCall(owner) &&
-    isInteractionCall(awaited(path.node), path)
+    isStepCall(owner)
   );
+}
+
+/** The expression of an expression statement or of a step callback's expression body. */
+function interactionExpression(path: NodePath): types.Node | undefined {
+  if (path.isExpressionStatement()) {
+    return path.node.expression;
+  }
+
+  return isStepBody(path) ? path.node : undefined;
 }
 
 /** An interaction that makes no mutant: one in a story hook, one whose following checks are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
@@ -89,25 +120,91 @@ function hasSkipClick(options: types.Node | undefined): boolean {
   );
 }
 
-interface UserEventCall {
+export interface UserEventCall {
   readonly method: string;
   readonly target: types.Node | undefined;
   readonly args: readonly types.Node[];
 }
 
-/** The method and first argument of a `<userEvent>.<method>(...)` statement. */
-function userEventCall(path: NodePath): UserEventCall | undefined {
-  const statement = path.node;
+/** The method and first argument of a `<userEvent>.<method>(...)` statement or step callback body. */
+export function userEventCall(path: NodePath): UserEventCall | undefined {
+  const expression = interactionExpression(path);
 
-  if (statement.type !== 'ExpressionStatement') {
+  if (expression === undefined) {
     return undefined;
   }
 
-  const call = awaited(statement.expression);
+  const call = awaited(expression);
   const method = userEventMethod(call, path);
 
   return method !== undefined && call.type === 'CallExpression'
     ? { method, target: call.arguments[0], args: call.arguments }
+    : undefined;
+}
+
+/** The interaction statement or step callback body whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
+export function targetInteraction(path: NodePath): NodePath | undefined {
+  const query = path.findParent((parent) => parent.isCallExpression());
+  const interaction = path.findParent(
+    (parent) => parent.isStatement() || isStepBody(parent),
+  );
+  const expression =
+    interaction === null ? undefined : interactionExpression(interaction);
+  const call = expression === undefined ? undefined : awaited(expression);
+  const [argument] = call?.type === 'CallExpression' ? call.arguments : [];
+
+  return interaction !== null &&
+    (isInteractionStatement(interaction) || isInteractionBody(interaction)) &&
+    argument !== undefined &&
+    awaited(argument) === query?.node
+    ? interaction
+    : undefined;
+}
+
+/** The first statement after `path` in its block that holds an `expect(...)` check, before the next interaction. */
+export function firstCheckAfter(path: NodePath): NodePath | undefined {
+  return untilNextInteraction(nextSiblings(path)).find(
+    (sibling) => checksIn(sibling).length > 0,
+  );
+}
+
+/** Whether `path` holds an `expect(...)` check with `.not` in its matcher chain. */
+export function hasNegativeCheck(path: NodePath): boolean {
+  return checksIn(path).some(isNegative);
+}
+
+/** `expect(...).<matcher>(...);`, awaited or not. */
+export function isExpectStatement(
+  path: NodePath,
+): path is NodePath<types.ExpressionStatement> {
+  return (
+    path.isExpressionStatement() &&
+    startsWithExpect(awaited(path.node.expression))
+  );
+}
+
+function startsWithExpect(node: types.Node): boolean {
+  if (node.type === 'CallExpression') {
+    return nameOf(node.callee) === 'expect' || startsWithExpect(node.callee);
+  }
+
+  return node.type === 'MemberExpression' && startsWithExpect(node.object);
+}
+
+/** The event of a `fireEvent.<event>(...)` statement or step callback body. */
+export function fireEventMethod(path: NodePath): string | undefined {
+  const expression = interactionExpression(path);
+
+  if (expression === undefined) {
+    return undefined;
+  }
+
+  const call = awaited(expression);
+
+  return call.type === 'CallExpression' &&
+    call.callee.type === 'MemberExpression' &&
+    nameOf(call.callee.object) === 'fireEvent'
+    ? nameOf(call.callee.property)
     : undefined;
 }
 
@@ -133,13 +230,11 @@ function userEventMethod(call: types.Node, path: NodePath): string | undefined {
 
 /** The statements after `path`, up to the next interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
-  const negations = before(
-    followingStatements(path),
-    (statement) =>
-      isInteractionStatement(statement) || isStepWithInteraction(statement),
-  ).flatMap(checksIn);
+  const checks = untilNextInteraction(followingStatements(path)).flatMap(
+    checksIn,
+  );
 
-  return negations.length > 0 && negations.every(Boolean);
+  return checks.length > 0 && checks.every(isNegative);
 }
 
 /** A `step(...)` statement whose callback holds an interaction. */
@@ -167,12 +262,14 @@ function isStepWithInteraction(statement: NodePath): boolean {
   return found;
 }
 
-/** The statements before the first one that `stop` matches. */
-function before(
+/** The statements before the first interaction statement or step with an interaction among them. */
+function untilNextInteraction(
   statements: readonly NodePath[],
-  stop: (statement: NodePath) => boolean,
 ): readonly NodePath[] {
-  const end = statements.findIndex(stop);
+  const end = statements.findIndex(
+    (statement) =>
+      isInteractionStatement(statement) || isStepWithInteraction(statement),
+  );
 
   return end === -1 ? statements : statements.slice(0, end);
 }
@@ -210,14 +307,21 @@ function isStepCall(node: types.Node): boolean {
   return node.type === 'CallExpression' && nameOf(node.callee) === 'step';
 }
 
-/** Whether each `expect(...)` check in `path` is negated. */
-function checksIn(path: NodePath): readonly boolean[] {
-  const checks: boolean[] = [];
+interface Check {
+  /** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
+  readonly chain: readonly (string | undefined)[];
+  /** The arguments of the matcher call at the end of the chain. */
+  readonly args: readonly types.Node[];
+}
+
+/** The `expect(...)` checks in `path`. */
+function checksIn(path: NodePath): readonly Check[] {
+  const checks: Check[] = [];
 
   path.traverse({
     CallExpression(call) {
       if (nameOf(call.node.callee) === 'expect') {
-        checks.push(matcherChain(call).includes('not'));
+        checks.push(checkOf(call));
       }
     },
   });
@@ -225,14 +329,44 @@ function checksIn(path: NodePath): readonly boolean[] {
   return checks;
 }
 
-/** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
-function matcherChain(expectCall: NodePath): readonly (string | undefined)[] {
+function checkOf(expectCall: NodePath): Check {
+  const members = matcherChain(expectCall);
+  const last = members.at(-1);
+  const matcherCall = last?.parentPath?.node;
+
+  return {
+    chain: members.map((member) => nameOf(member.node.property)),
+    args:
+      matcherCall?.type === 'CallExpression' &&
+      matcherCall.callee === last?.node
+        ? matcherCall.arguments
+        : [],
+  };
+}
+
+function isNegative(check: Check): boolean {
+  return check.chain.includes('not');
+}
+
+/** The member expressions after `expect(...)`, nearest first. */
+function matcherChain(
+  expectCall: NodePath,
+): readonly NodePath<types.MemberExpression>[] {
   const member = expectCall.parentPath;
 
-  return member?.node.type === 'MemberExpression' &&
-    member.node.object === expectCall.node
-    ? [nameOf(member.node.property), ...matcherChain(member)]
+  return member?.isMemberExpression() && member.node.object === expectCall.node
+    ? [member, ...matcherChain(member)]
     : [];
+}
+
+/** Whether `path` holds an `expect(...).toHaveBeenCalledTimes(0)` check. */
+export function hasZeroCallsCheck(path: NodePath): boolean {
+  return checksIn(path).some(
+    ({ chain, args: [count] }) =>
+      chain.at(-1) === 'toHaveBeenCalledTimes' &&
+      count?.type === 'NumericLiteral' &&
+      count.value === 0,
+  );
 }
 
 const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);
@@ -271,7 +405,8 @@ function withoutTypeWrappers(node: types.Node): types.Node {
     : node;
 }
 
-function awaited(node: types.Node): types.Node {
+/** The expression inside `await <x>` and any type wrappers around either. */
+export function awaited(node: types.Node): types.Node {
   const expression = withoutTypeWrappers(node);
 
   return withoutTypeWrappers(
@@ -311,6 +446,44 @@ function isInteractionCall(call: types.Node, path: NodePath): boolean {
       rawDomArguments.get(method) === call.arguments.length)
   );
 }
+
+// The Testing Library queries, by what they match.
+export const queryKinds: readonly string[] = [
+  'Role',
+  'LabelText',
+  'PlaceholderText',
+  'Text',
+  'DisplayValue',
+  'AltText',
+  'Title',
+  'TestId',
+];
+
+/** The Testing Library query methods with one of the prefixes, such as `getBy` or `findAllBy`, and one of the kinds. */
+export function queryMethods(
+  prefixes: readonly string[],
+  kinds: readonly string[] = queryKinds,
+): readonly string[] {
+  return prefixes.flatMap((prefix) => kinds.map((kind) => `${prefix}${kind}`));
+}
+
+/** The prefixes of the queries for one element. */
+export const elementQueryPrefixes: readonly string[] = [
+  'getBy',
+  'findBy',
+  'queryBy',
+];
+
+/** `<x>.getBy<Query>(...)`, `<x>.findBy<Query>(...)` or `<x>.queryBy<Query>(...)`: a Testing Library query for one element. */
+export function isQueryCall(node: types.Node): boolean {
+  return (
+    node.type === 'CallExpression' &&
+    node.callee.type === 'MemberExpression' &&
+    elementQueries.includes(nameOf(node.callee.property) ?? '')
+  );
+}
+
+const elementQueries = queryMethods(elementQueryPrefixes);
 
 /** `<Story>.play`. */
 function isStoryPlay(argument: types.Node | undefined): boolean {

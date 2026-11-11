@@ -1,12 +1,13 @@
-import type {
-  MutatorOptions,
-  MutatorSets,
-  SampledMutator,
+import {
+  roleSite,
+  swapMutator,
+  type MutatorOptions,
+  type MutatorSets,
+  type SampledMutator,
 } from '@layzee/stryker-mutator-install';
 
 import type { BabelTypes } from './install.ts';
 import { fulfillMutator, outcomeMutator } from './route-mocks.ts';
-import { swapMutator } from './same-file-swap.ts';
 import { requestDataMutator } from './request-data.ts';
 import { requestUrlMutator } from './request-url.ts';
 import {
@@ -23,7 +24,6 @@ import {
 import {
   isSameStory,
   mountStorySite,
-  roleSite,
   testIdSite,
   textSite,
 } from './swap-sites.ts';
@@ -61,7 +61,7 @@ export const mutatorSets = roster({
       sampleOf(
         "page.getByRole('button', { name: 'a' });\n  page.getByRole('button', { name: 'b' });",
       ),
-      roleSite,
+      roleSite(['getByRole']),
     ),
     swapMutator(
       'LzPlaywrightTextLocator',
