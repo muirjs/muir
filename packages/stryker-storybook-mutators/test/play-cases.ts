@@ -533,4 +533,21 @@ export const playCases: readonly Case[] = [
       [args, "{ label: 'a' }"],
     ],
   },
+  {
+    id: 'play-undefined-falls-back-to-meta',
+    title:
+      "a story whose play is undefined runs the meta's play, as Storybook 10.6.5 prepareStory reads the story's play ?? the meta's",
+    source:
+      "export default { title: 'Button', play: async ({ args }) => { args.label; } };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true }, play: undefined };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'play-null-falls-back-to-meta',
+    title: "a story whose play is null runs the meta's play",
+    source:
+      "export default { title: 'Button', play: async ({ args }) => { args.label; } };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true }, play: null };\n",
+    expect: [[args, "{ label: 'a' }"]],
+  },
 ];

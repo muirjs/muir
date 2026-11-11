@@ -65,7 +65,8 @@ export function playedStories(
         story,
         play: storyPlay(
           assignedPlay,
-          [...storyValueChain(story.init, unchanged, 'play'), ...metaPlays],
+          storyValueChain(story.init, unchanged, 'play'),
+          metaPlays,
           unchanged,
         ),
         tests: testCallsOn(body, story.local).map((test) =>
@@ -92,19 +93,35 @@ function isTaggedTest(owners: readonly unknown[]): boolean {
   );
 }
 
-/** The play Storybook runs: the last one assigned to the story, else the first of `chain` (the story's layers, then the meta), an unknown one over a play when a play the file reads follows it. */
+/** The play Storybook runs: the last one assigned to the story, else the first of the story's layers, then the meta's, an unknown one over a play when a play the file reads follows it. A story play of `undefined` or `null` runs the meta's, as Storybook 10.6.5 prepareStory runs the story's play `??` the meta's. */
 function storyPlay(
   assignedPlay: unknown,
-  chain: readonly unknown[],
+  storyChain: readonly unknown[],
+  metaPlays: readonly unknown[],
   bindings: ReadonlyMap<string, unknown>,
 ): object | UnknownPlay | undefined {
-  const [first, ...under] = chain;
+  const own = assignedPlay ?? storyChain[0];
+
+  if (isNullish(own)) {
+    return storyPlay(undefined, metaPlays, [], bindings);
+  }
+
+  const [first, ...under] = [...storyChain, ...metaPlays];
 
   if (assignedPlay === undefined && first === unknownValue) {
     return unknownPlay(under.some(isRecord));
   }
 
   return knownPlay(assignedPlay ?? first, bindings);
+}
+
+/** `null` or `undefined` written as a value. */
+function isNullish(node: unknown): boolean {
+  return (
+    field(node, 'type') === 'NullLiteral' ||
+    (field(node, 'type') === 'Identifier' &&
+      field(node, 'name') === 'undefined')
+  );
 }
 
 function unknownPlay(overAPlay: boolean): UnknownPlay {

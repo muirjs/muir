@@ -778,4 +778,13 @@ export const storyGlobalsCases: readonly Case[] = [
     ),
     expect: [],
   },
+  {
+    id: 'story-globals-play-undefined-no-meta-play',
+    title:
+      'a story whose play is undefined under a meta with no play makes no mutant, as Storybook 10.6.5 runs no play for it',
+    source: storyFile(
+      "export const Story = { globals: { locale: 'de' }, play: undefined };",
+    ),
+    expect: [],
+  },
 ];
