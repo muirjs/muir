@@ -71,7 +71,7 @@ const sitesOf = perFile((program): ReadonlyMap<unknown, Below> => {
           ...matched.map(
             (options) =>
               [
-                propertyValue(options, 'globals'),
+                objectValue(options, 'globals'),
                 {
                   globals: [runs, ...globals].filter(defined),
                   parameters: [

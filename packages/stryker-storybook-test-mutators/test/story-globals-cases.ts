@@ -588,6 +588,38 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{}']],
   },
   {
+    id: 'story-globals-test-options-before-unresolved-spread',
+    title:
+      'the globals in .test() options before a spread of an imported object make no mutant, as the spread may replace them',
+    source: [
+      "import { shared } from './shared';",
+      '',
+      "export default { title: 'Probe' };",
+      '',
+      'export const Story = {};',
+      '',
+      "Story.test('t', { globals: { locale: 'fr' }, ...shared }, async () => {});",
+      '',
+    ].join('\n'),
+    expect: [],
+  },
+  {
+    id: 'story-globals-test-options-before-computed-key',
+    title:
+      'the globals in .test() options before a computed key of an imported name make no mutant, as that key may replace them',
+    source: [
+      "import { k } from './k';",
+      '',
+      "export default { title: 'Probe' };",
+      '',
+      'export const Story = {};',
+      '',
+      "Story.test('t', { globals: { locale: 'fr' }, [k]: {} }, async () => {});",
+      '',
+    ].join('\n'),
+    expect: [],
+  },
+  {
     id: 'story-globals-computed-key-named-globals',
     title:
       'an object under a computed key [globals] makes no mutant, as the constant it names gives another key',
