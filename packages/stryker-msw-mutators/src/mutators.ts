@@ -5,6 +5,7 @@ import type {
 } from '@layzee/stryker-mutator-install';
 
 import type { LzMswMutator } from './mutator.ts';
+import { mswResponseMutator } from './msw-response.ts';
 
 // In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave the roster out of a
 // mutation run. The literal names are what the option type reads.
@@ -15,7 +16,7 @@ function roster<const T extends MutatorSets<LzMswMutator>>(sets: T): T {
 export const mutatorSets = roster({
   defaults: [],
   optIn: [],
-  experimental: [],
+  experimental: [mswResponseMutator()],
 });
 
 type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];

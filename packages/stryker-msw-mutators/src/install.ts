@@ -83,7 +83,7 @@ function startLine(
   const line = `${packageName}: ${mutators.length} LzMsw mutators on, beside Stryker's built-in mutators.`;
 
   if (mutators.length === 0) {
-    return `${line} ${namesOf(sets.experimental)} are experimental: lzMswMutators({ experimental: true }) turns them on.`;
+    return `${line} Off as experimental: ${namesOf(sets.experimental)}; lzMswMutators({ experimental: true }) turns them on.`;
   }
 
   return optional.length > 0

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { install } from '../src/install.ts';
+import { mutatorSets } from '../src/mutators.ts';
 import {
   builtIns,
   fakeInstrumenter,
@@ -12,6 +13,24 @@ import {
 const silent = (): undefined => undefined;
 
 describe('install', () => {
+  it('ships LzMswResponse as experimental, so that no option installs nothing', async () => {
+    const { instrumenter, names } = fakeInstrumenter();
+
+    await install(
+      mutatorSets,
+      undefined,
+      async () => instrumenter,
+      silent,
+      silent,
+    );
+
+    assert.deepEqual(
+      mutatorSets.experimental.map(({ name }) => name),
+      ['LzMswResponse'],
+    );
+    assert.deepEqual(names(), builtIns);
+  });
+
   it("appends the experimental mutators that experimental turns on after Stryker's built-ins, marked", async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
@@ -57,8 +76,8 @@ describe('install', () => {
     );
 
     assert.deepEqual(lines, [
-      "@layzee/stryker-msw-mutators: 0 LzMsw mutators on, beside Stryker's built-in mutators. LzOne, LzTwo " +
-        'are experimental: lzMswMutators({ experimental: true }) turns them on.',
+      "@layzee/stryker-msw-mutators: 0 LzMsw mutators on, beside Stryker's built-in mutators. Off as " +
+        'experimental: LzOne, LzTwo; lzMswMutators({ experimental: true }) turns them on.',
     ]);
   });
 
