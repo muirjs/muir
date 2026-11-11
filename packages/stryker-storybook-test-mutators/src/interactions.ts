@@ -1,0 +1,327 @@
+import type { NodePath, types } from '@babel/core';
+
+import type { BabelTypes } from './mutator.ts';
+
+/** `<call>;` or `await <call>;`, where the call is an interaction. */
+export function isInteractionStatement(path: NodePath): boolean {
+  const statement = path.node;
+
+  if (statement.type !== 'ExpressionStatement') {
+    return false;
+  }
+
+  return isInteractionCall(awaited(statement.expression), path);
+}
+
+/** The expression body of an arrow passed to `step(...)`, `<call>` or `await <call>`, where the call is an interaction. */
+export function isInteractionBody(path: NodePath): boolean {
+  const arrow = path.parentPath;
+  const owner = arrow?.parentPath?.node;
+
+  return (
+    arrow?.node.type === 'ArrowFunctionExpression' &&
+    arrow.node.body === path.node &&
+    owner !== undefined &&
+    isStepCall(owner) &&
+    isInteractionCall(awaited(path.node), path)
+  );
+}
+
+/** An interaction that makes no mutant: one in a story hook, one whose following checks are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
+export function isSkipped(path: NodePath, t: BabelTypes): boolean {
+  return (
+    path.findParent(isHook) !== null ||
+    hasOnlyNegativeChecks(path) ||
+    isRepeatedByNext(path, t) ||
+    isClearedLater(path, t)
+  );
+}
+
+/** A user-event type or clear that a later user-event clear of the same target undoes, with no check between. */
+function isClearedLater(path: NodePath, t: BabelTypes): boolean {
+  const current = userEventCall(path);
+
+  if (
+    current?.target === undefined ||
+    !['type', 'clear'].includes(current.method)
+  ) {
+    return false;
+  }
+
+  const { target } = current;
+
+  return before(
+    nextSiblings(path),
+    (sibling) => checksIn(sibling).length > 0,
+  ).some((sibling) => {
+    const later = userEventCall(sibling);
+
+    return (
+      later?.method === 'clear' &&
+      later.target !== undefined &&
+      t.isNodesEquivalent(target, later.target)
+    );
+  });
+}
+
+/** A user-event click or hover directly before a user-event type or clear of the same target, which clicks it first. */
+function isRepeatedByNext(path: NodePath, t: BabelTypes): boolean {
+  const current = userEventCall(path);
+  const [next] = nextSiblings(path);
+  const following = next === undefined ? undefined : userEventCall(next);
+
+  return (
+    current?.target !== undefined &&
+    following?.target !== undefined &&
+    ['click', 'hover'].includes(current.method) &&
+    ['type', 'clear'].includes(following.method) &&
+    t.isNodesEquivalent(current.target, following.target)
+  );
+}
+
+interface UserEventCall {
+  readonly method: string;
+  readonly target: types.Node | undefined;
+}
+
+/** The method and first argument of a `<userEvent>.<method>(...)` statement. */
+function userEventCall(path: NodePath): UserEventCall | undefined {
+  const statement = path.node;
+
+  if (statement.type !== 'ExpressionStatement') {
+    return undefined;
+  }
+
+  const call = awaited(statement.expression);
+  const method = userEventMethod(call, path);
+
+  return method !== undefined && call.type === 'CallExpression'
+    ? { method, target: call.arguments[0] }
+    : undefined;
+}
+
+/** The method of a `<userEvent>.<method>(...)` call that acts on the page. */
+function userEventMethod(call: types.Node, path: NodePath): string | undefined {
+  if (
+    (call.type !== 'CallExpression' &&
+      call.type !== 'OptionalCallExpression') ||
+    (call.callee.type !== 'MemberExpression' &&
+      call.callee.type !== 'OptionalMemberExpression')
+  ) {
+    return undefined;
+  }
+
+  const method = nameOf(call.callee.property);
+
+  return userEventMethods.includes(method) &&
+    isUserEvent(call.callee.object, path)
+    ? method
+    : undefined;
+}
+
+/** The statements after `path`, up to the next interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
+function hasOnlyNegativeChecks(path: NodePath): boolean {
+  const negations = before(
+    followingStatements(path),
+    isInteractionStatement,
+  ).flatMap(checksIn);
+
+  return negations.length > 0 && negations.every(Boolean);
+}
+
+/** The statements before the first one that `stop` matches. */
+function before(
+  statements: readonly NodePath[],
+  stop: (statement: NodePath) => boolean,
+): readonly NodePath[] {
+  const end = statements.findIndex(stop);
+
+  return end === -1 ? statements : statements.slice(0, end);
+}
+
+/** The statements that run after `path` in its function, and after the step call when that function is a step callback. */
+function followingStatements(path: NodePath): readonly NodePath[] {
+  const siblings = nextSiblings(path);
+  const parent = path.parentPath;
+
+  if (parent === null) {
+    return siblings;
+  }
+
+  if (!parent.isFunction()) {
+    return [...siblings, ...followingStatements(parent)];
+  }
+
+  const owner = parent.parentPath;
+
+  return owner !== null && isStepCall(owner.node)
+    ? [...siblings, ...followingStatements(owner)]
+    : siblings;
+}
+
+/** The statements after `path` in its block. */
+function nextSiblings(path: NodePath): readonly NodePath[] {
+  return path.inList
+    ? path
+        .getAllNextSiblings()
+        .flatMap((sibling) => (sibling.isStatement() ? [sibling] : []))
+    : [];
+}
+
+function isStepCall(node: types.Node): boolean {
+  return node.type === 'CallExpression' && nameOf(node.callee) === 'step';
+}
+
+/** Whether each `expect(...)` check in `path` is negated. */
+function checksIn(path: NodePath): readonly boolean[] {
+  const checks: boolean[] = [];
+
+  path.traverse({
+    CallExpression(call) {
+      if (nameOf(call.node.callee) === 'expect') {
+        checks.push(matcherChain(call).includes('not'));
+      }
+    },
+  });
+
+  return checks;
+}
+
+/** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
+function matcherChain(expectCall: NodePath): readonly unknown[] {
+  const member = expectCall.parentPath;
+
+  return member?.node.type === 'MemberExpression' &&
+    member.node.object === expectCall.node
+    ? [nameOf(member.node.property), ...matcherChain(member)]
+    : [];
+}
+
+const hooks: readonly unknown[] = ['beforeEach', 'afterEach'];
+
+/** A function that is the value of a `beforeEach` or `afterEach` property, or a method of that name. */
+function isHook(path: NodePath): boolean {
+  const { node, parent } = path;
+
+  if (node.type === 'ObjectMethod') {
+    return hooks.includes(nameOf(node.key));
+  }
+
+  return (
+    path.isFunction() &&
+    parent?.type === 'ObjectProperty' &&
+    hooks.includes(nameOf(parent.key))
+  );
+}
+
+function awaited(node: types.Node): types.Node {
+  return node.type === 'AwaitExpression' ? node.argument : node;
+}
+
+function isInteractionCall(call: types.Node, path: NodePath): boolean {
+  if (
+    call.type !== 'CallExpression' &&
+    call.type !== 'OptionalCallExpression'
+  ) {
+    return false;
+  }
+
+  const { callee } = call;
+
+  if (
+    callee.type !== 'MemberExpression' &&
+    callee.type !== 'OptionalMemberExpression'
+  ) {
+    return (
+      nameOf(callee) === 'fireEvent' ||
+      (nameOf(callee) === 'step' && isStoryPlay(call.arguments[1]))
+    );
+  }
+
+  const method = nameOf(callee.property);
+
+  return (
+    userEventMethod(call, path) !== undefined ||
+    nameOf(callee.object) === 'fireEvent' ||
+    (composedPlayMethods.includes(method) &&
+      callee.object.type === 'Identifier') ||
+    (method !== undefined &&
+      rawDomArguments.get(method) === call.arguments.length)
+  );
+}
+
+/** `<Story>.play`. */
+function isStoryPlay(node: types.Node | undefined): boolean {
+  return (
+    node?.type === 'MemberExpression' &&
+    node.object.type === 'Identifier' &&
+    nameOf(node.property) === 'play'
+  );
+}
+
+// The DOM element methods that interact, with their number of arguments.
+const rawDomArguments: ReadonlyMap<string, number> = new Map([
+  ['focus', 0],
+  ['blur', 0],
+  ['click', 0],
+  ['dispatchEvent', 1],
+]);
+
+// `<Story>.play(context)`, and `<Story>.run()` on a CSF factory story.
+const composedPlayMethods: readonly unknown[] = ['play', 'run'];
+
+// The user-event 14 methods that act on the page (@testing-library/user-event, which storybook/test re-exports).
+const userEventMethods: readonly unknown[] = [
+  'click',
+  'dblClick',
+  'tripleClick',
+  'hover',
+  'unhover',
+  'tab',
+  'keyboard',
+  'pointer',
+  'type',
+  'clear',
+  'selectOptions',
+  'deselectOptions',
+  'upload',
+  'copy',
+  'cut',
+  'paste',
+];
+
+/** `userEvent`, `<x>.userEvent` such as the play context's, or a local bound to `userEvent.setup()`. */
+function isUserEvent(node: types.Node, path: NodePath): boolean {
+  const name = nameOf(node);
+
+  return (
+    name === 'userEvent' ||
+    (node.type === 'MemberExpression' &&
+      nameOf(node.property) === 'userEvent') ||
+    (name !== undefined && isSetupCall(boundValue(path, name)))
+  );
+}
+
+function isSetupCall(node: types.Node | null | undefined): boolean {
+  return (
+    node?.type === 'CallExpression' &&
+    node.callee.type === 'MemberExpression' &&
+    nameOf(node.callee.property) === 'setup' &&
+    nameOf(node.callee.object) === 'userEvent'
+  );
+}
+
+function boundValue(
+  path: NodePath,
+  name: string,
+): types.Node | null | undefined {
+  const declarator = path.scope.getBinding(name)?.path.node;
+
+  return declarator?.type === 'VariableDeclarator'
+    ? declarator.init
+    : undefined;
+}
+
+function nameOf(node: types.Node): string | undefined {
+  return node.type === 'Identifier' ? node.name : undefined;
+}

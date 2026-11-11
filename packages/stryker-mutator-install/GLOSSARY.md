@@ -8,8 +8,8 @@ Stryker has no public way to add a mutator or to turn a built-in one off, and th
 ### Installing
 
 **Mutator package**:
-A `@layzee` package whose mutators reach Stryker through an install: `@layzee/stryker-jsx-mutators` and
-`@layzee/stryker-playwright-mutators`.
+A `@layzee` package whose mutators reach Stryker through an install: `@layzee/stryker-jsx-mutators`,
+`@layzee/stryker-playwright-mutators` and `@layzee/stryker-storybook-test-mutators`.
 _Avoid_: mutator plugin
 
 **Install**:

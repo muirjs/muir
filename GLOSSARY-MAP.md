@@ -14,13 +14,18 @@
 - [Storybook](./packages/stryker-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
   Covers `packages/stryker-storybook` and `packages/storybook-mock-transformer`.
+- [Storybook test mutators](./packages/stryker-storybook-test-mutators/GLOSSARY.md): mutate story test code, so
+  a test-code run shows which steps of a play function no check depends on.
 
 ## Relationships
 
 - **JSX mutators -> Mutator install**: the JSX mutators are installed through Mutator install, which gives them
   the Layzee mark, the self-check on samples and the name check.
 - **Playwright mutators -> Mutator install**: installed the same way; only the Playwright mutators have opt-in and
-  experimental tiers and use built-in removal.
+  experimental tiers so far, and they use built-in removal.
+- **Storybook test mutators -> Mutator install**: installed the same way, with built-in removal.
+- **Storybook test mutators -> Storybook**: they mutate story test code, whose mutants the CSF ignorer reports as
+  Ignored unless its play mode is `mutate`, so they belong in the Stryker configuration that sets that mode.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
   the name check keeps their mutator names distinct.
 - **JSX mutators -> Playwright runner**: JSX mutants are meant for Playwright tests, which the runner runs; the

@@ -1,3 +1,4 @@
+import { types } from '@babel/core';
 import {
   builtInNames,
   markOf,
@@ -7,12 +8,8 @@ import {
 } from '@layzee/stryker-mutator-install';
 
 import { testedVersion, type Instrumenter } from '../../src/install.ts';
-import type { BabelTypes, LzStorybookTestMutator } from '../../src/mutator.ts';
+import type { LzStorybookTestMutator } from '../../src/mutator.ts';
 import { packageName } from '../../src/package-name.ts';
-
-export const fakeTypes: BabelTypes = {
-  emptyStatement: () => ({ type: 'EmptyStatement' }),
-};
 
 export const ownMark = markOf(packageName);
 
@@ -56,7 +53,7 @@ export function fakeInstrumenter({
   const instrumenter: Instrumenter = {
     dir: '/stryker/instrumenter',
     version,
-    types: fakeTypes,
+    types,
     allMutators,
     async instrument() {
       return [

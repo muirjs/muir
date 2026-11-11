@@ -3,8 +3,11 @@ import {
   builtInNames,
   checkBuiltInsRemoved,
   checkNames,
+  corePackageJson,
+  fieldOf,
   register,
   removeBuiltIns,
+  resolveInstrumenter,
   selectMutators,
   selfCheck,
   undoOnThrow,
@@ -13,12 +16,35 @@ import {
   type MutatorSets,
 } from '@layzee/stryker-mutator-install';
 
-import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
+import {
+  babelTypeMembers,
+  type BabelTypes,
+  type LzStorybookTestMutator,
+} from './mutator.ts';
 import { packageName } from './package-name.ts';
 
 export type Instrumenter = CoreInstrumenter<BabelTypes>;
 
 export const testedVersion = '10.1.1';
+
+export function resolveFromCore(
+  corePackage: string = corePackageJson(),
+): Promise<Instrumenter> {
+  return resolveInstrumenter(packageName, assertBabelTypes, corePackage);
+}
+
+function assertBabelTypes(
+  value: unknown,
+  missing: (name: string) => Error,
+): asserts value is BabelTypes {
+  const absent = babelTypeMembers.filter(
+    (member) => typeof fieldOf(value, member) !== 'function',
+  );
+
+  if (absent.length > 0) {
+    throw missing(`Babel types with ${absent.join(', ')}`);
+  }
+}
 
 export async function install(
   sets: MutatorSets<LzStorybookTestMutator>,
