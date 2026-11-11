@@ -34,7 +34,7 @@ describe('assertBabelTypes', () => {
   it('lists every member a value lacks, comma-separated', () => {
     assert.throws(() => assertBabelTypes(undefined, missing), {
       message:
-        'no Babel types with emptyStatement, identifier, isNodesEquivalent',
+        'no Babel types with arrowFunctionExpression, awaitExpression, blockStatement, callExpression, cloneNode, emptyStatement, expressionStatement, identifier, isNode, isNodesEquivalent, memberExpression',
     });
   });
 });
