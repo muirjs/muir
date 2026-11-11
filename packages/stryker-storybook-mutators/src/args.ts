@@ -7,9 +7,9 @@ import {
   playedStories,
   propertyValue,
   storyArgument,
+  storyValues,
   topLevelBindings,
   unwrap,
-  withoutBinding,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookMutator } from './mutator.ts';
@@ -140,11 +140,12 @@ function argsSites(
     playedStories(body, bindings).flatMap(
       ({ story: { init }, play, tests }) => {
         const plays = play === undefined ? [] : [play];
-        const [storyArgs, ...baseArgs] = argsLayers(init, bindings);
+        const [storyArgs, ...baseArgs] = storyValues(init, bindings, 'args');
+        const ownArgs = propertyValue(storyArgument(unwrap(init)), 'args');
 
         return [
           ...site(
-            storyArgs,
+            storyArgs === ownArgs ? ownArgs : undefined,
             [
               ...plays.map(readsOf),
               ...tests.map((test) =>
@@ -295,21 +296,6 @@ function spreadArgs(
     typeof object === 'string'
     ? propertyValue(unwrap(bindings.get(object)), 'args')
     : undefined;
-}
-
-/** A story's own `args`, then for `Base.extend({...})` those of `Base` and its own base, as Storybook 10.6.5 `extend()` merges the base story in. */
-function argsLayers(
-  init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): readonly unknown[] {
-  const call = unwrap(init);
-  const own = propertyValue(storyArgument(call), 'args');
-  const base = field(call, 'callee', 'object', 'name');
-
-  return field(call, 'callee', 'property', 'name') === 'extend' &&
-    typeof base === 'string'
-    ? [own, ...argsLayers(bindings.get(base), withoutBinding(bindings, base))]
-    : [own];
 }
 
 /** The args site of `argsObject` when it is an object literal, at least one function runs for it and none reads it whole; none otherwise. */
