@@ -287,7 +287,7 @@ export interface StoryExport {
   readonly children: readonly TestChild[];
   /** Storybook 10.6.5's Vitest transform tests a story only when the file's meta object is not exported by specifier and the story's export declares it or names a local variable. */
   readonly tested: boolean;
-  /** The file names the story outside its declaration, its export, the `.test()` calls Storybook 10.6.5 CsfFile indexes, member assignments and the values of top-level objects, or writes to a top-level object that shares nested objects with it or with the meta, so what runs can differ from what the package reads. */
+  /** The file names the story outside its declaration, its export, the `.test()` calls Storybook 10.6.5 CsfFile indexes and their arguments, member assignments and the values of top-level objects and `.story()` or `.extend()` calls, or writes to a top-level object that shares nested objects with it or with the meta, so what runs can differ from what the package reads. */
   readonly referencedElsewhere: boolean;
   readonly assignments: readonly Assignment[];
   /** The writes that the story Storybook runs is composed from, with a factory story's `input` stripped from the path. */
@@ -656,9 +656,12 @@ function identifiersInReadForms(statement: unknown): readonly unknown[] {
       field(specifier, 'local'),
       field(specifier, 'exported'),
     ]),
-    isIndexedTestCall(statement)
-      ? field(statement, 'expression', 'callee', 'object')
-      : undefined,
+    ...(isIndexedTestCall(statement)
+      ? [
+          field(statement, 'expression', 'callee', 'object'),
+          ...list(field(statement, 'expression', 'arguments')),
+        ]
+      : []),
     field(statement, 'expression', 'operator') === '='
       ? rootObject(field(statement, 'expression', 'left', 'object'))
       : undefined,
@@ -671,7 +674,7 @@ function rootObject(node: unknown): unknown {
     : node;
 }
 
-/** `elsewhere` holds the names the file uses outside the forms the package reads, plus every name in a family of two or more that has a written member; `written` holds every name in a written family. A shadowing local or an object key counts too, as no scopes are resolved. The meta joins the families as the default export and as each factory meta. */
+/** `elsewhere` holds the names the file uses outside the forms the package reads, plus every name in a family of two or more that has a written member; `written` holds every name in a written family. A shadowing local counts too, as no scopes are resolved; the key of a property does not. The meta joins the families as the default export and as each factory meta. */
 function namesReadElsewhere(
   body: readonly unknown[],
   bindings: Bindings,
@@ -742,12 +745,25 @@ function reachesOf(
   );
 }
 
-/** The identifiers `evaluate` in reset-setting.ts follows from a value. */
+const memberTypes: readonly unknown[] = [
+  'MemberExpression',
+  'OptionalMemberExpression',
+];
+
+/** The identifiers whose objects a value shares: those `evaluate` in reset-setting.ts follows, those of a `.story()` or `.extend()` argument, which Storybook 10.6.5 keeps as the story's `input`, and the object of a member such as `Base.args`. */
 function identifiersReachedFrom(node: unknown): readonly unknown[] {
   const current = unwrap(node);
 
   if (field(current, 'type') === 'Identifier') {
     return [current];
+  }
+
+  if (isStoryFactoryCall(current)) {
+    return identifiersReachedFrom(storyArgument(current));
+  }
+
+  if (memberTypes.includes(field(current, 'type'))) {
+    return identifiersReachedFrom(field(current, 'object'));
   }
 
   return list(field(current, 'properties')).flatMap((property) =>
@@ -772,6 +788,10 @@ function identifiersIn(node: unknown): readonly unknown[] {
 
   if (node['type'] === 'MemberExpression' && node['computed'] === false) {
     return identifiersIn(node['object']);
+  }
+
+  if (node['type'] === 'ObjectProperty' && node['computed'] === false) {
+    return identifiersIn(node['value']);
   }
 
   return Object.values(node).flatMap(identifiersIn);
