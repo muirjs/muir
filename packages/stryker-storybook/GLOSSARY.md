@@ -38,20 +38,19 @@ _Avoid_: test story, story test
 
 **Played story**:
 A tested story in a file with a meta object whose static tags do not end in `!test`, and that runs a play (its own,
-one assigned later, one from a story it spreads or its `.extend()` base, or the meta's, which also runs where the story's play is
-`undefined` or `null`) or a `.test()` call. When a
-spread or computed key the file cannot resolve may set its play last, the play is an unknown play: with no own play,
-such a spread in any position in the story's own object gives one, and for a story with no play of its own or from a
-base, so does one in the meta after the meta's play, or in any position when the meta has none. An unknown play may
-have a play the file reads under it (an earlier own play, the `.extend()` base's or the meta's, including a meta play
-a meta spread follows), which runs when the unknown one sets none. The file resolves a spread of an object literal, or
-of a top-level name bound to one (or a member of such a name with a key it can read) when the file leaves that name
-unchanged: it writes to no member of it, does not reassign it, and hands it to no code it does not read. It cannot
-resolve any other spread.
-Its `.test()` children are the first `.test()` call
-of each string-literal name, when Storybook indexes it (two or more arguments); one with a spread argument is
-unmatched, and a call with any other first argument, such as `.test(...all)`, is none. The Storybook mutators and the Storybook test mutators mutate
-only played stories.
+one assigned later, one from a story it spreads or its `.extend()` base, or the meta's, which also runs where the
+story's play is `undefined` or `null`) or a `.test()` call. When a spread or computed key the file cannot resolve may
+set its play last, the play is an unknown play: with no own play, such a spread in any position in the story's own
+object gives one, and for a story with no play of its own or from a base, so does one in the meta after the meta's
+play, or in any position when the meta has none. An unknown play may have a play the file reads under it (an earlier
+own play, the `.extend()` base's or the meta's, including a meta play a meta spread follows), which runs when the
+unknown one sets none. The file resolves a spread of an object literal, or of a top-level name bound to one (or a
+member of such a name with a key it can read) when the file leaves that name unchanged: it writes to no member of it,
+also not through a member it assigns the name to (`A.args = shared; A.args.a = 2`), does not reassign it, and hands
+it, or a story it assigns it to, to no code it does not read. It cannot resolve any other spread. Its `.test()`
+children are the first `.test()` call of each string-literal name, when Storybook indexes it (two or more arguments);
+one with a spread argument is unmatched, and a call with any other first argument, such as `.test(...all)`, is none.
+The Storybook mutators and the Storybook test mutators mutate only played stories.
 _Avoid_: run story, story with a play
 
 **Tag filter**:

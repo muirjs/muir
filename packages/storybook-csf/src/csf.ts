@@ -171,7 +171,7 @@ const defaultExportName = Symbol('export default');
 export interface CsfFile {
   readonly metaObjects: readonly unknown[];
   readonly stories: readonly StoryExport[];
-  /** The top-level names in a family with a written member, so what the file declares for them is not what runs. */
+  /** The top-level names in a family with a written member, a name assigned to a member the file writes below or whose object it hands on included, so what the file declares for them is not what runs. */
   readonly written: ReadonlySet<unknown>;
 }
 
@@ -708,10 +708,12 @@ function namesReadElsewhere(
   const referenced = identifiersIn(body)
     .filter((identifier) => !read.has(identifier))
     .map((identifier) => field(identifier, 'name'));
+  const assignments = body.flatMap(assignmentOf);
   const written = withFamilies(
     new Set([
       ...referenced,
-      ...body.flatMap(assignmentOf).map(({ target }) => target),
+      ...assignments.map(({ target }) => target),
+      ...writtenThrough(assignments, referenced),
     ]),
     reaches,
   );
@@ -725,6 +727,27 @@ function namesReadElsewhere(
     ]),
     written,
   };
+}
+
+/** The names that `A.args = shared` assigns where the file also writes below that member, as `A.args.a = 2` then writes to `shared`, or hands `A` to code it does not read. */
+function writtenThrough(
+  assignments: readonly Assignment[],
+  referenced: readonly unknown[],
+): readonly string[] {
+  return assignments.flatMap(({ target, path, value }) => {
+    const name = field(value, 'name');
+
+    return typeof name === 'string' &&
+      (referenced.includes(target) ||
+        assignments.some(
+          (other) =>
+            other.target === target &&
+            other.path.length > path.length &&
+            path.every((key, index) => other.path[index] === key),
+        ))
+      ? [name]
+      : [];
+  });
 }
 
 function withFamilies(

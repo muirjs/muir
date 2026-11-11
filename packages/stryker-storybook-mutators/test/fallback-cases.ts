@@ -539,6 +539,55 @@ export const fallbackCases: readonly Case[] = [
       [args, "{ [k]: 'b' }"],
     ],
   },
+  {
+    id: 'spread-of-object-written-through-story-args',
+    title:
+      "a key whose literal value equals the one in an object spread before it is removed when the file writes to that object through a story's args it assigns it to",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'const shared = { a: 2 };\n' +
+      'export const Base = {};\n' +
+      'Base.args = shared;\n' +
+      'Base.args.a = 1;\n' +
+      'export const Primary = { args: { ...shared, a: 2, b: 2 } };\n',
+    expect: [
+      [args, '{ ...shared, a: 2 }'],
+      [args, '{ ...shared, b: 2 }'],
+      [args, '{ ...shared }'],
+    ],
+  },
+  {
+    id: 'spread-of-reassigned-let',
+    title:
+      'a key whose literal value equals the one in an object spread before it is removed when the file reassigns the let that names the object',
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'let shared = { a: 2 };\n' +
+      'shared = { a: 1 };\n' +
+      'export const Primary = { args: { ...shared, a: 2, b: 2 } };\n',
+    expect: [
+      [args, '{ ...shared, a: 2 }'],
+      [args, '{ ...shared, b: 2 }'],
+      [args, '{ ...shared }'],
+    ],
+  },
+  {
+    id: 'spread-of-object-assigned-to-story-handed-on',
+    title:
+      "a key whose literal value equals the one in an object spread before it is removed when the file assigns that object to a story's args and hands the story to code it does not read",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'const shared = { a: 2 };\n' +
+      'export const Base = {};\n' +
+      'Base.args = shared;\n' +
+      'mutate(Base);\n' +
+      'export const Primary = { args: { ...shared, a: 2, b: 2 } };\n',
+    expect: [
+      [args, '{ ...shared, a: 2 }'],
+      [args, '{ ...shared, b: 2 }'],
+      [args, '{ ...shared }'],
+    ],
+  },
 ];
 
 export const crashCases: readonly Case[] = [
