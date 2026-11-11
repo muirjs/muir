@@ -3,14 +3,21 @@ import type { NodePath, types } from '@babel/core';
 import type { BabelTypes } from './mutator.ts';
 
 /** `<call>;` or `await <call>;`, where the call is an interaction. */
-export function isInteractionStatement(path: NodePath): boolean {
-  const statement = path.node;
+export function isInteractionStatement(
+  path: NodePath,
+): path is NodePath<types.ExpressionStatement> {
+  return (
+    path.isExpressionStatement() &&
+    isInteractionCall(awaited(path.node.expression), path)
+  );
+}
 
-  if (statement.type !== 'ExpressionStatement') {
-    return false;
-  }
-
-  return isInteractionCall(awaited(statement.expression), path);
+/** An interaction statement that is no skipped interaction. */
+export function isUnskippedInteraction(
+  path: NodePath,
+  t: BabelTypes,
+): path is NodePath<types.ExpressionStatement> {
+  return isInteractionStatement(path) && !isSkipped(path, t);
 }
 
 /** The expression body of an arrow passed to `step(...)`, `<call>` or `await <call>`, where the call is an interaction. */
@@ -144,12 +151,12 @@ export function hasNegativeCheck(path: NodePath): boolean {
 }
 
 /** `expect(...).<matcher>(...);`, awaited or not. */
-export function isExpectStatement(path: NodePath): boolean {
-  const statement = path.node;
-
+export function isExpectStatement(
+  path: NodePath,
+): path is NodePath<types.ExpressionStatement> {
   return (
-    statement.type === 'ExpressionStatement' &&
-    startsWithExpect(awaited(statement.expression))
+    path.isExpressionStatement() &&
+    startsWithExpect(awaited(path.node.expression))
   );
 }
 

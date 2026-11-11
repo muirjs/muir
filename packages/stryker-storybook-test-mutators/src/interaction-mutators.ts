@@ -17,6 +17,7 @@ import {
   isInteractionStatement,
   isQueryCall,
   isSkipped,
+  isUnskippedInteraction,
   queryKinds,
   queryMethods,
   targetStatement,
@@ -30,13 +31,6 @@ function sampleOf(statement: string): string {
 }
 
 const clickMethods: readonly string[] = ['click', 'dblClick'];
-
-function isAwaited(statement: types.Node): boolean {
-  return (
-    statement.type === 'ExpressionStatement' &&
-    statement.expression.type === 'AwaitExpression'
-  );
-}
 
 /** A click target with no effects of its own: an identifier, a query, or an awaited query. */
 function focusTarget(
@@ -96,7 +90,7 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
         call !== undefined &&
         clickMethods.includes(call.method) &&
         target !== undefined &&
-        !isSkipped(path, t)
+        isUnskippedInteraction(path, t)
       ) {
         const focus = t.callExpression(
           t.memberExpression(t.cloneNode(target), t.identifier('focus')),
@@ -104,7 +98,9 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
         );
 
         yield t.expressionStatement(
-          isAwaited(path.node) ? t.awaitExpression(focus) : focus,
+          path.node.expression.type === 'AwaitExpression'
+            ? t.awaitExpression(focus)
+            : focus,
         );
       }
     },
@@ -135,17 +131,14 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookInteractionRepeat',
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
-      const statement = path.node;
-
       if (
         (isRepeatedUserEvent(userEventCall(path)) ||
           fireEventMethod(path) === 'click') &&
-        statement.type === 'ExpressionStatement' &&
-        !isSkipped(path, t)
+        isUnskippedInteraction(path, t)
       ) {
         yield t.blockStatement([
-          t.cloneNode(statement),
-          t.cloneNode(statement),
+          t.cloneNode(path.node),
+          t.cloneNode(path.node),
         ]);
       }
     },
@@ -182,15 +175,13 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       const statement = targetStatement(path);
 
-      if (statement === undefined || isSkipped(statement, t)) {
+      if (statement === undefined || !isUnskippedInteraction(statement, t)) {
         return;
       }
 
-      yield* [
-        ...swap.mutate(path, {
-          cloneNode: (node) => (t.isNode(node) ? t.cloneNode(node) : node),
-        }),
-      ].filter((node) => t.isNode(node));
+      yield* [...swap.mutate(path, { cloneNode: (node) => node })]
+        .filter((node) => t.isNode(node))
+        .map((node) => t.cloneNode(node));
     },
   };
 }
@@ -275,17 +266,12 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
       'await userEvent.click(button);\n    await expect(args.onClick).toHaveBeenCalled();',
     ),
     *mutate(path, t) {
-      const statement = path.node;
       const check = isInteractionStatement(path)
         ? checkToCopy(path, t)
         : undefined;
 
-      if (
-        check !== undefined &&
-        statement.type === 'ExpressionStatement' &&
-        !isSkipped(path, t)
-      ) {
-        yield t.blockStatement([t.cloneNode(check), t.cloneNode(statement)]);
+      if (check !== undefined && isUnskippedInteraction(path, t)) {
+        yield t.blockStatement([t.cloneNode(check), t.cloneNode(path.node)]);
       }
     },
   };
@@ -299,7 +285,6 @@ function checkToCopy(
   const check = firstCheckAfter(interaction);
 
   return check !== undefined &&
-    check.node.type === 'ExpressionStatement' &&
     isExpectStatement(check) &&
     !hasNegativeCheck(check) &&
     !isZeroCallsCheck(check.node) &&
@@ -316,7 +301,7 @@ export function interactionMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookInteraction',
     sample: sampleOf("await userEvent.click(canvas.getByRole('button'));"),
     *mutate(path, t) {
-      if (isInteractionStatement(path) && !isSkipped(path, t)) {
+      if (isUnskippedInteraction(path, t)) {
         yield t.emptyStatement();
       } else if (isInteractionBody(path) && !isSkipped(path, t)) {
         yield t.identifier('undefined');
