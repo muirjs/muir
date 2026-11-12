@@ -119,7 +119,8 @@ function userEventBinding(
     }
 
     return property.value.type !== 'AssignmentPattern' &&
-      isPlayParameter(binding)
+      isPlayParameter(binding) &&
+      isContextLeftAsSet(binding)
       ? 'provenUserEvent14'
       : 'unprovenUserEvent';
   }
@@ -270,15 +271,15 @@ function userEventProperty(
   );
 }
 
-/** A play's context parameter, not destructured, that the play only reads members of. */
+/** A play's context parameter, not destructured, that holds what Storybook set. */
 function isPlayContext(node: types.Node, path: NodePath): boolean {
   const binding = bindingOf(node, path.scope);
 
   return (
     binding?.kind === 'param' &&
     binding.path.isIdentifier() &&
-    binding.referencePaths.every(isContextRead) &&
-    isPlayParameter(binding)
+    isPlayParameter(binding) &&
+    isContextLeftAsSet(binding)
   );
 }
 
@@ -329,28 +330,38 @@ function isMemberObject(path: NodePath): boolean {
   );
 }
 
-/** A parameter that the file never reassigns, of a play that Storybook calls: a `play` method, or a function given as a `play` property, under a key that is not computed, which is story test code and inside none, in a file that only reads the play context's userEvent. */
+/** The first parameter of a play that Storybook calls: a `play` method, or a function given as a `play` property, under a key that is not computed, which is story test code and inside none. */
 function isPlayParameter(binding: Binding): boolean {
   const parameter = binding.path;
   const play = parameter.parentPath;
-  const parent = play?.parent;
-  const keyed =
-    play?.node.type === 'ObjectMethod'
-      ? play.node
-      : parent?.type === 'ObjectProperty'
-        ? parent
-        : undefined;
+  const keyed = play === null ? undefined : keyedBy(play);
 
   return (
-    binding.constantViolations.length === 0 &&
     parameter.key === 0 &&
     play !== null &&
     keyed !== undefined &&
     !keyed.computed &&
     keyName(keyed.key) === 'play' &&
     isInStoryTestCode(parameter) &&
-    !isInStoryTestCode(play) &&
-    contextsOnlyRead(parameter)
+    !isInStoryTestCode(play)
+  );
+}
+
+/** The method `fn` is, or the property whose value it is. */
+function keyedBy(
+  fn: NodePath,
+): types.ObjectMethod | types.ObjectProperty | undefined {
+  if (fn.node.type === 'ObjectMethod') {
+    return fn.node;
+  }
+
+  return fn.parent?.type === 'ObjectProperty' ? fn.parent : undefined;
+}
+
+/** A play's context parameter, or a local it destructures, that the play never reassigns, in a file where every context is only read, so it holds what Storybook set. */
+function isContextLeftAsSet(binding: Binding): boolean {
+  return (
+    binding.constantViolations.length === 0 && contextsOnlyRead(binding.path)
   );
 }
 
