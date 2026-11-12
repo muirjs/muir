@@ -23,10 +23,10 @@ _Avoid_: action (the Playwright mutators' term), user action
 A call that runs another story's play inside this one: `Other.play(context)`, `meta.play?.(context)`, `Other.run()` on a
 CSF factory story, or `step(label, Other.play)`. The story may come from a namespace import, as in
 `Stories.Other.play(context)`. A `.play()` or `.run()` call, or a `.play` given to `step(...)`, counts when its receiver
-is an identifier or a member chain that starts at one, computed members included, and optional ones in a call
-(`Stories['Other'].play(context)`, `Stories?.Other.play(context)`), not a call result such as
-`canvas.getByTestId('video').play()`. A call counts only inside story test code, so `video.play()` in a `render` is
-none.
+is an identifier or a member chain that starts at one, computed and optional members included
+(`Stories['Other'].play(context)`, `Stories?.Other.play(context)`, `step(label, Stories?.Other.play)`), not a call
+result such as `canvas.getByTestId('video').play()`. A call counts only inside story test code, so `video.play()` in a
+`render` is none.
 _Avoid_: nested play, reused play
 
 **Raw DOM interaction**:

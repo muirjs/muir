@@ -279,7 +279,7 @@ function holdsInteraction(statement: NodePath): boolean {
   );
 }
 
-/** Whether an interaction stands inside `path`, `path` itself included, looking into a function only when `entersFunction` holds for it. */
+/** Whether an interaction stands inside `path`, looking into a function, `path` itself included, only when `entersFunction` holds for it. */
 function hasInteractionIn(
   path: NodePath,
   entersFunction: (fn: NodePath) => boolean,
@@ -431,13 +431,14 @@ function functionBinding(path: NodePath): Binding | undefined {
   return name === undefined ? undefined : parentPath?.scope.getBinding(name);
 }
 
-/** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other` or `Stories.Other`. */
+/** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other`, `Stories.Other` or `Stories?.Other`. */
 function isStoryPlay(argument: types.Node | undefined): boolean {
   const node =
     argument === undefined ? undefined : withoutTypeWrappers(argument);
 
   return (
-    node?.type === 'MemberExpression' &&
+    node !== undefined &&
+    isMember(node) &&
     startsAtIdentifier(node.object) &&
     nameOf(node.property) === 'play'
   );

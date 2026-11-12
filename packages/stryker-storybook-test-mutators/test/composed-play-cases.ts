@@ -71,6 +71,13 @@ export const composedPlayCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'composed-step-optional-member',
+    title:
+      'a step that runs the play of a story through an optional member, step(label, Stories?.Other.play), is removed',
+    source: `import * as Stories from './Other.stories';\nexport const Story = {\n  play: async ({ step }) => {\n    await step('Enter value', Stories?.Other.play);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'composed-step-non-null',
     title:
       "a step that runs another story's play through a non-null assertion is removed",
