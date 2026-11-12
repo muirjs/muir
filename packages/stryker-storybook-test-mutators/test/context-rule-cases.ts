@@ -260,6 +260,13 @@ export const contextRuleCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-assigned-from-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when an assignment copies the meta's beforeEach into a local, as only the member an assignment writes gives Storybook a hook",
+    source: `const meta = {};\nlet copy;\ncopy = meta.beforeEach;\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-destructured-hook-key-onto-local-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a destructuring assignment writes an imported object's beforeEach to a local, as only the member a pattern writes gives Storybook a hook",
