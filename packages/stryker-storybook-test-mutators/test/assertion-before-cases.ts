@@ -259,6 +259,37 @@ export const assertionBeforeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'assertion-before-skip-past-if-with-interaction',
+    title:
+      'an interaction makes no mutant when an if that holds another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'if (open) {',
+      '  await userEvent.click(second);',
+      '}',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-past-wait-for-with-interaction',
+    title:
+      'an interaction makes no mutant when a waitFor whose callback holds another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await waitFor(async () => { await userEvent.click(second); });',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-past-step-defining-interaction',
+    title:
+      'an interaction makes no mutant when a step whose callback defines a function holding another interaction stands before the next check, as that check is none of its following checks',
+    source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      const clickSecond = async () => {\n        await userEvent.click(second);\n      };\n      await clickSecond();\n    });\n    await expect(args.onClick).toHaveBeenCalled();\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'assertion-before-skip-step-body',
     title:
       'an interaction that is the expression body of a step makes no mutant, as no check follows it in its own block',

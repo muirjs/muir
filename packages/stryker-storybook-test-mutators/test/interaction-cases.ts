@@ -283,6 +283,13 @@ const interactionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'other-module-named-import',
+    title:
+      'a call on userEvent imported under another name from a module that is no user-event module makes no mutant',
+    source: `import { userEvent as u } from './test-utils';\n${inPlayWith(['canvas'], "await u.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
+  {
     id: 'context-user-event-renamed',
     title:
       "a call on the play context's userEvent destructured under another name is removed",
