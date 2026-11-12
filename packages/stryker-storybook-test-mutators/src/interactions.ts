@@ -166,22 +166,15 @@ export function firstCheckAfter(path: NodePath): NodePath | undefined {
   return statementsBefore(nextSiblings(path), holdsInteraction).find(hasCheck);
 }
 
-/** Whether `statement` is an interaction, or a `step(...)` whose callback holds one. */
-function isNextInteraction(statement: NodePath): boolean {
+/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; outside a step callback, only step and `waitFor` callbacks are looked into, while a `step(...)` holds every interaction in its callback, including one in a function the callback defines. */
+function holdsInteraction(statement: NodePath): boolean {
   const { node } = statement;
+  const isStep =
+    node.type === 'ExpressionStatement' && isStepCall(awaited(node.expression));
 
   return (
     interactionAt(statement) !== undefined ||
-    (node.type === 'ExpressionStatement' &&
-      isStepCall(awaited(node.expression)) &&
-      hasInteractionIn(statement, () => true))
-  );
-}
-
-/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; outside a step callback, only step and `waitFor` callbacks are looked into, while a `step(...)` holds every interaction in its callback, including one in a function the callback defines. */
-function holdsInteraction(statement: NodePath): boolean {
-  return (
-    isNextInteraction(statement) || hasInteractionIn(statement, runsWhereGiven)
+    hasInteractionIn(statement, isStep ? () => true : runsWhereGiven)
   );
 }
 

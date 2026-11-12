@@ -54,7 +54,7 @@ function isUserEventUnseen(
   );
 }
 
-/** Whether a binding holds a user-event: a userEvent import, Vitest browser's userEvent destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
+/** Whether a binding holds a user-event: a userEvent import, Vitest browser's userEvent destructured under another name, a `userEvent` destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
 function isUserEventBinding(
   binding: Binding,
   seen: ReadonlySet<Binding>,
@@ -70,7 +70,7 @@ function isUserEventBinding(
   if (binding.kind === 'param') {
     return (
       declaration.node.type === 'ObjectPattern' &&
-      userEventProperty(declaration.node, name) !== undefined
+      hasUserEventProperty(declaration.node, name)
     );
   }
 
@@ -82,7 +82,7 @@ function isUserEventBinding(
 
   if (
     id.type === 'ObjectPattern' &&
-    userEventProperty(id, name) !== undefined &&
+    hasUserEventProperty(id, name) &&
     init !== null &&
     init !== undefined &&
     isVitestBrowserImport(awaited(init))
@@ -126,13 +126,13 @@ function userEventImportSource(declaration: NodePath): string | undefined {
   return importsUserEvent ? source : undefined;
 }
 
-/** The `userEvent: <name>` or `userEvent: <name> = <default>` among a pattern's properties. */
-function userEventProperty(
+/** Whether a pattern's properties hold `userEvent: <name>` or `userEvent: <name> = <default>`. */
+function hasUserEventProperty(
   pattern: types.ObjectPattern,
   name: string,
-): types.ObjectProperty | undefined {
-  return pattern.properties.find(
-    (property): property is types.ObjectProperty =>
+): boolean {
+  return pattern.properties.some(
+    (property) =>
       property.type === 'ObjectProperty' &&
       nameOf(property.key) === 'userEvent' &&
       nameOf(
