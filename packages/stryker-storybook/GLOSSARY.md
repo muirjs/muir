@@ -76,7 +76,8 @@ _Avoid_: test tags
 
 **Spy stub**:
 A call that sets what a spy made with `fn()` from `storybook/test` returns or does: `mockReturnValue`,
-`mockResolvedValue`, `mockRejectedValue`, `mockImplementation`, or their `Once` forms, chained on the spy.
+`mockResolvedValue`, `mockRejectedValue`, `mockImplementation`, or their `Once` forms, chained on the spy. In a
+chain such as `fn().mockResolvedValueOnce(1).mockRejectedValue(error)`, each of these calls is a spy stub of its own.
 _Avoid_: mock setup, stub (alone), mock implementation
 
 **Definition-time stub**:
@@ -125,7 +126,9 @@ _Avoid_: lost stub, reset stub
 A spy stub at whose line an `LzStorybookSpyStub` mutant, which removes a stub, survived; the `lz-storybook` report
 lists it once as a stub finding, because no test fails without the stub. A surviving outcome mutant (the test
 mutators' term), which `LzStorybookSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
-success from failure, not that none reads the stub.
+success from failure, not that none reads the stub. A later stub of a chain whose first stub the mock transformer
+keeps is erased all the same, so its removal survives and the report lists an unchecked stub on the line of its
+`chain-not-rewritten` or `once-not-rewritten` finding; the fix of that finding clears both.
 _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:
@@ -141,7 +144,9 @@ _Avoid_: slow mutant
 
 **Mock transformer**:
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
-form, which survives the mock reset. It leaves the `Once` forms as they are.
+form, which survives the mock reset. It rewrites a stub only when it is the first of its chain and not one of the
+`Once` forms. The `lz-storybook` report gives an erased `Once` stub the verdict `once-not-rewritten`, and an erased
+stub after the first of a chain that is not a `Once` stub the verdict `chain-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:
@@ -171,7 +176,8 @@ _Avoid_: story ignorer, Storybook ignorer
 
 **Stub ignorer**:
 The `lz-storybook` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
-erase, or cannot be told to keep.
+erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call holds the stubs
+before it in its chain, so when one of those is kept the ignorer reports only the stub's own arguments as Ignored.
 _Avoid_: reset ignorer
 
 **Play mode**:

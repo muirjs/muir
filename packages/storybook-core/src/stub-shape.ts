@@ -84,7 +84,8 @@ function stubSite(
   const start = field(node, 'start');
   const end = field(node, 'end');
   const line = field(node, 'loc', 'start', 'line');
-  const spy = field(node, 'callee', 'object', 'callee', 'name');
+  const spyCall = chainStart(field(node, 'callee', 'object'));
+  const spy = field(spyCall, 'callee', 'name');
   const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
 
   if (
@@ -93,7 +94,7 @@ function stubSite(
     typeof end !== 'number' ||
     typeof line !== 'number' ||
     field(node, 'callee', 'computed') === true ||
-    !isCall(field(node, 'callee', 'object')) ||
+    !isCall(spyCall) ||
     typeof spy !== 'string' ||
     !spies.has(spy) ||
     stub === undefined
@@ -112,6 +113,16 @@ function stubSite(
     argumentStart:
       typeof argumentStart === 'number' ? argumentStart : undefined,
   };
+}
+
+/** The call a chain of stub calls starts from, such as `fn()` in `fn().mockResolvedValueOnce(1)`. */
+function chainStart(node: unknown): unknown {
+  const isStubCall =
+    isCall(node) &&
+    field(node, 'callee', 'computed') !== true &&
+    stubMethodOf(field(node, 'callee', 'property', 'name')) !== undefined;
+
+  return isStubCall ? chainStart(field(node, 'callee', 'object')) : node;
 }
 
 function isCall(node: unknown): boolean {

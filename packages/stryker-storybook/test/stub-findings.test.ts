@@ -41,6 +41,79 @@ describe('siteFindings', () => {
     );
   });
 
+  it('gives a stub after the first of a chain the chain-not-rewritten finding, and the rewritten first stub none', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export default {',
+      '  args: { g: fn().mockReturnValue(1).mockReturnValue(2) },',
+      '};',
+      'export const Primary = {};',
+    ].join('\n');
+
+    const findings = siteFindings(
+      code,
+      'Meta.stories.tsx',
+      project('seen'),
+      () => undefined,
+    );
+
+    assert.deepEqual(
+      findings.map(({ line, verdict }) => [line, verdict]),
+      [[3, 'chain-not-rewritten']],
+    );
+  });
+
+  it('gives a stub chained after a *Once stub the chain-not-rewritten finding, beside the *Once finding', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export default {',
+      '  args: {',
+      '    g: fn()',
+      '      .mockResolvedValueOnce(1)',
+      '      .mockResolvedValue(2),',
+      '  },',
+      '};',
+      'export const Primary = {};',
+    ].join('\n');
+
+    const findings = siteFindings(
+      code,
+      'Meta.stories.tsx',
+      project('seen'),
+      () => undefined,
+    );
+
+    assert.deepEqual(
+      findings.map(({ line, verdict }) => [line, verdict]),
+      [
+        [4, 'chain-not-rewritten'],
+        [4, 'once-not-rewritten'],
+      ],
+    );
+  });
+
+  it('silences every stub of a chain under a Stryker disable comment', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export default {',
+      '  args: {',
+      '    // Stryker disable next-line all',
+      '    g: fn().mockResolvedValueOnce(1).mockResolvedValue(2),',
+      '  },',
+      '};',
+      'export const Primary = {};',
+    ].join('\n');
+
+    const findings = siteFindings(
+      code,
+      'Meta.stories.tsx',
+      project('seen'),
+      () => undefined,
+    );
+
+    assert.deepEqual(findings, []);
+  });
+
   [
     { comment: '//Stryker disable next-line all', lines: [] },
     { comment: '// see Stryker disable next-line all', lines: [4] },

@@ -3,6 +3,7 @@ import {
   appendRecord,
   definitionTimeStubs,
   type StubMethod,
+  type StubSite,
 } from '@layzee/storybook-core';
 import MagicString, { type SourceMap } from 'magic-string';
 
@@ -31,12 +32,14 @@ export function transform(
     return undefined;
   }
 
-  const edits = definitionTimeStubs(parseModule(code, file)).flatMap(
-    ({ spy, method, once, start, argumentStart }) =>
+  const stubs = definitionTimeStubs(parseModule(code, file));
+  const edits = stubs
+    .filter((stub) => !followsAStub(stub, stubs))
+    .flatMap(({ spy, method, once, start, argumentStart }) =>
       once || argumentStart === undefined
         ? []
         : [{ start, end: argumentStart, text: replacements[method](spy) }],
-  );
+    );
 
   if (edits.length === 0) {
     return undefined;
@@ -50,6 +53,13 @@ export function transform(
     code: output.toString(),
     map: output.generateMap({ source: file, hires: true }),
   };
+}
+
+/** Whether another stub of the chain comes before this one: it starts at the same call and ends earlier. */
+function followsAStub(stub: StubSite, stubs: readonly StubSite[]): boolean {
+  return stubs.some(
+    (inner) => inner.start === stub.start && inner.end < stub.end,
+  );
 }
 
 function parseModule(code: string, file: string): unknown {

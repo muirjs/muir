@@ -5,7 +5,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { stubIgnorer } from '../src/stub-ignorer.ts';
-import { spyStubReason } from '../src/stub-verdict.ts';
+import { spyStubReason, unrewrittenChainReason } from '../src/stub-verdict.ts';
 import { instrument } from './support/instrument.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -103,6 +103,22 @@ describe('stubIgnorer', () => {
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [undefined]);
   });
 
+  it('gives every stub of a chain the reset erases the erased reason', async () => {
+    const { reasonsOf } = await setup(
+      'no-main',
+      'F01AllDefault.stories.tsx',
+      resetCase('F01AllDefault').replace(
+        "mockReturnValue('stubbed')",
+        "mockReturnValue('first').mockReturnValue('second')",
+      ),
+    );
+
+    assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
+      spyStubReason('erased'),
+      spyStubReason('erased'),
+    ]);
+  });
+
   it('leaves a stub the reset keeps placed', async () => {
     const { reasonsOf } = await setup(
       'no-main',
@@ -151,6 +167,70 @@ describe('stubIgnorer', () => {
 
       assert.deepEqual(reasonsOf("mockReturnValueOnce('stubbed')"), [
         undefined,
+      ]);
+    });
+
+    it('leaves the mutants of a rewritten first stub placed under a later stub of its chain', async () => {
+      const { reasonsOf } = await setup(
+        'transformer',
+        'Stub.stories.tsx',
+        resetCase('F01AllDefault').replace(
+          "mockReturnValue('stubbed')",
+          "mockReturnValue('first').mockReturnValue('second')",
+        ),
+      );
+
+      assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
+        undefined,
+        spyStubReason('chain-not-rewritten'),
+      ]);
+    });
+
+    it('gives every stub of a chain that starts with a *Once stub the reason for the whole chain', async () => {
+      const { reasonsOf } = await setup(
+        'transformer',
+        'Stub.stories.tsx',
+        resetCase('F01AllDefault').replace(
+          "mockReturnValue('stubbed')",
+          "mockReturnValueOnce('first').mockReturnValue('second')",
+        ),
+      );
+
+      assert.deepEqual(reasonsOf("mockReturnValueOnce('first')"), [
+        unrewrittenChainReason,
+        unrewrittenChainReason,
+      ]);
+    });
+
+    it('gives only the arguments of a *Once stub its reason when the rewritten first stub of its chain is kept', async () => {
+      const { reasonsOf } = await setup(
+        'transformer',
+        'Stub.stories.tsx',
+        resetCase('F01AllDefault').replace(
+          "mockReturnValue('stubbed')",
+          "mockReturnValue('first').mockReturnValueOnce('second')",
+        ),
+      );
+
+      assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
+        undefined,
+        spyStubReason('once-not-rewritten'),
+      ]);
+    });
+
+    it('gives every stub of a chain of *Once stubs the once-not-rewritten reason', async () => {
+      const { reasonsOf } = await setup(
+        'transformer',
+        'Stub.stories.tsx',
+        resetCase('F01AllDefault').replace(
+          "mockReturnValue('stubbed')",
+          "mockReturnValueOnce('first').mockReturnValueOnce('second')",
+        ),
+      );
+
+      assert.deepEqual(reasonsOf("mockReturnValueOnce('first')"), [
+        spyStubReason('once-not-rewritten'),
+        spyStubReason('once-not-rewritten'),
       ]);
     });
   });
