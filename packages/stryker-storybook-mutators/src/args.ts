@@ -98,7 +98,7 @@ export function argsMutator(): LzStorybookMutator & {
   };
 }
 
-function sitesIn(program: NodePath): Sites {
+export function sitesIn(program: NodePath): Sites {
   const cached = sitesByProgram.get(program.node);
 
   if (cached !== undefined) {
