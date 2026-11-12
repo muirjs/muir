@@ -4,7 +4,6 @@ import { field, list } from './node-field.ts';
 /** What something the file cannot read gives a key: a spread of an imported object, a computed key, or a value that is not an object literal. */
 export const unknownValue = 'unknown';
 
-/** An object literal node, `{ ... }`. */
 export interface ObjectLiteral {
   readonly type: 'ObjectExpression';
   readonly [key: string]: unknown;
