@@ -30,7 +30,7 @@ type InteractionKind =
       readonly kind: 'userEvent';
       readonly method: string;
       /** Whether the file proves the receiver is user-event 14, whose `type` clicks first; Vitest browser's does not. */
-      readonly isUserEvent14: boolean;
+      readonly isProvenUserEvent14: boolean;
     }
   | { readonly kind: 'fireEvent'; readonly method: string | undefined }
   | { readonly kind: 'composedPlay' | 'rawDom' };
@@ -91,7 +91,7 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
       return {
         kind: 'userEvent',
         method,
-        isUserEvent14: receiver === 'provenUserEvent14',
+        isProvenUserEvent14: receiver === 'provenUserEvent14',
       };
     }
   }
@@ -213,7 +213,7 @@ function isRepeatedByNext(current: Interaction, t: BabelTypes): boolean {
     followingTarget !== undefined &&
     ['click', 'hover'].includes(current.method) &&
     following.method === 'type' &&
-    following.isUserEvent14 &&
+    following.isProvenUserEvent14 &&
     !hasSkipClick(options) &&
     t.isNodesEquivalent(target, followingTarget)
   );

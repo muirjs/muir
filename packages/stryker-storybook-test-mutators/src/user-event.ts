@@ -27,7 +27,7 @@ export const userEventMethods: ReadonlySet<string> = new Set([
 ]);
 
 /** What a receiver is: no user-event, a user-event that may be Vitest browser's, whose `type` does not click, or a proven user-event 14, whose `type` clicks first. */
-type UserEventReading = 'none' | 'userEvent' | 'provenUserEvent14';
+type UserEventReading = 'none' | 'unprovenUserEvent' | 'provenUserEvent14';
 
 /** Reads `userEvent`, `<x>.userEvent` such as the play context's, or a local that `userEventBinding` reads as a user-event. `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
 export function readUserEvent(
@@ -43,7 +43,9 @@ export function readUserEvent(
       return 'none';
     }
 
-    return isPlayContext(node.object, path) ? 'provenUserEvent14' : 'userEvent';
+    return isPlayContext(node.object, path)
+      ? 'provenUserEvent14'
+      : 'unprovenUserEvent';
   }
 
   const binding = bindingOf(node, path.scope);
@@ -52,7 +54,9 @@ export function readUserEvent(
       ? 'none'
       : userEventBinding(binding, new Set([...seen, binding]));
 
-  return bound === 'none' && nameOf(node) === 'userEvent' ? 'userEvent' : bound;
+  return bound === 'none' && nameOf(node) === 'userEvent'
+    ? 'unprovenUserEvent'
+    : bound;
 }
 
 /** The weaker of two readings, as a choice between them is only as proven as its weaker side. */
@@ -64,7 +68,7 @@ function weaker(
     return 'none';
   }
 
-  return first === second ? first : 'userEvent';
+  return first === second ? first : 'unprovenUserEvent';
 }
 
 /** Reads what a binding holds: a userEvent import, Vitest browser's userEvent destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
@@ -77,11 +81,7 @@ function userEventBinding(
   const source = userEventImportSource(declaration);
 
   if (source !== undefined) {
-    return userEvent14Sources.has(source)
-      ? 'provenUserEvent14'
-      : vitestBrowserSources.has(source)
-        ? 'userEvent'
-        : 'none';
+    return importReadings.get(source) ?? 'none';
   }
 
   if (binding.kind === 'param') {
@@ -97,7 +97,7 @@ function userEventBinding(
     return property.value.type !== 'AssignmentPattern' &&
       isPlayParameter(binding)
       ? 'provenUserEvent14'
-      : 'userEvent';
+      : 'unprovenUserEvent';
   }
 
   if (!declaration.isVariableDeclarator()) {
@@ -113,7 +113,7 @@ function userEventBinding(
     init !== undefined &&
     isVitestBrowserImport(awaited(init))
   ) {
-    return 'userEvent';
+    return 'unprovenUserEvent';
   }
 
   const value = boundValue(declaration, binding);
@@ -307,9 +307,13 @@ const vitestBrowserSources: ReadonlySet<string> = new Set([
   '@vitest/browser/context',
 ]);
 
-const userEvent14Sources: ReadonlySet<string> = new Set([
-  'storybook/test',
-  '@testing-library/user-event',
+/** What a `userEvent` import from each user-event module is. */
+const importReadings: ReadonlyMap<string, UserEventReading> = new Map([
+  ['storybook/test', 'provenUserEvent14'],
+  ['@testing-library/user-event', 'provenUserEvent14'],
+  ...[...vitestBrowserSources].map(
+    (source) => [source, 'unprovenUserEvent'] as const,
+  ),
 ]);
 
 /** The receiver of `<x>.setup()`. */
