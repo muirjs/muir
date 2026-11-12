@@ -84,13 +84,13 @@ receiver or a side of a choice given to a local that is only ever a method call'
 string. A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read
 where the local is given that value. Any other receiver may be Vitest browser's userEvent, whose `type` does not click:
 another import, a `userEvent` the file does not bind, the `userEvent` of another object, a call result or another
-function's parameter, a `.test()` function's or a step callback's context, the context of a play given by its name,
-assigned as `Story.play` or under a computed key, a play context the play passes on or reads with a computed member,
-and every play context in a file that names `userEvent` any other way, as a `beforeEach` or the play may replace the
-context's userEvent or its methods. The play
-context's proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()` and runs the `beforeEach` hooks
-on the same context before the play, as the default global's proof rests on Storybook's initial values; a play that
-other code calls with a context of its own is not read.
+function's parameter, a play context's `userEvent` destructured with a default, a `.test()` function's or a step
+callback's context, the context of a play given by its name, assigned as `Story.play` or under a computed key, a play
+context the play passes on or reads with a computed member, and every play context in a file that names `userEvent`
+any other way, as a `beforeEach` or the play may replace the context's userEvent or its methods. The play context's
+proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()` and runs the `beforeEach` hooks on the same
+context before the play, as the default global's proof rests on Storybook's initial values; a play that other code
+calls with a context of its own is not read.
 _Avoid_: real userEvent, Storybook userEvent
 
 **Copied check**:

@@ -85,14 +85,19 @@ function userEventBinding(
   }
 
   if (binding.kind === 'param') {
-    if (
-      declaration.node.type !== 'ObjectPattern' ||
-      !takesUserEventAs(declaration.node, name)
-    ) {
+    const property =
+      declaration.node.type === 'ObjectPattern'
+        ? userEventProperty(declaration.node, name)
+        : undefined;
+
+    if (property === undefined) {
       return 'none';
     }
 
-    return isPlayParameter(binding) ? 'provenUserEvent14' : 'userEvent';
+    return property.value.type !== 'AssignmentPattern' &&
+      isPlayParameter(binding)
+      ? 'provenUserEvent14'
+      : 'userEvent';
   }
 
   if (!declaration.isVariableDeclarator()) {
@@ -103,7 +108,7 @@ function userEventBinding(
 
   if (
     id.type === 'ObjectPattern' &&
-    takesUserEventAs(id, name) &&
+    userEventProperty(id, name) !== undefined &&
     init !== null &&
     init !== undefined &&
     isVitestBrowserImport(awaited(init))
@@ -145,13 +150,20 @@ function userEventImportSource(declaration: NodePath): string | undefined {
   return importsUserEvent ? source : undefined;
 }
 
-/** `{ userEvent: <name> }`, among other properties. */
-function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
-  return pattern.properties.some(
-    (property) =>
+/** The `userEvent: <name>` or `userEvent: <name> = <default>` among a pattern's properties. */
+function userEventProperty(
+  pattern: types.ObjectPattern,
+  name: string,
+): types.ObjectProperty | undefined {
+  return pattern.properties.find(
+    (property): property is types.ObjectProperty =>
       property.type === 'ObjectProperty' &&
       nameOf(property.key) === 'userEvent' &&
-      nameOf(property.value) === name,
+      nameOf(
+        property.value.type === 'AssignmentPattern'
+          ? property.value.left
+          : property.value,
+      ) === name,
   );
 }
 

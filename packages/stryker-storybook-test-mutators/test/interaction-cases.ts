@@ -72,6 +72,13 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'defaulted-context-user-event',
+    title:
+      "a call on the context's userEvent destructured under another name with a default is removed",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent: user = browserUserEvent }) => {\n    await user.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'user-event-setup',
     title: 'a call on a local bound to userEvent.setup() is removed',
     source: inPlay(

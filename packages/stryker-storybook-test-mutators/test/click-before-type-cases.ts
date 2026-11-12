@@ -679,6 +679,16 @@ export const clickBeforeTypeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'defaulted-context-user-event-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent destructured under another name with a default, is removed, as the default may be Vitest browser's",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent: user = browserUserEvent }) => {\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'named-play-click-before-type',
     title:
       'a click directly before a type on the same target, both on the userEvent of the context of a play given by its name, is removed, as only a play given inline is read',
