@@ -53,6 +53,13 @@ one with a spread argument is unmatched, and a call with any other first argumen
 The Storybook mutators and the Storybook test mutators mutate only played stories.
 _Avoid_: run story, story with a play
 
+**Proven**:
+The proof, made only in `@layzee/storybook-csf`, that removing one property of an args site (the Storybook mutators'
+term) changes nothing in any run of it: a later property or a spread the file resolves sets its key, or its literal
+equals the value it falls back to. What a meta or story the file writes gives proves nothing. A mutator skips a
+property as equivalent only through one.
+_Avoid_: proof (alone), equivalence check, safe key
+
 **Tag filter**:
 The `include`, `exclude` and `skip` tag lists of Storybook's Vitest addon, which pick the tested stories. Without
 one, stories tagged `test` are tested.

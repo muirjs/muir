@@ -170,9 +170,16 @@ const defaultExportName = Symbol('export default');
 
 export interface CsfFile {
   readonly metaObjects: readonly unknown[];
+  /** Each meta object with the family name a write to it marks in `written`: the default export's, or the factory meta's local name. */
+  readonly metas: readonly MetaObject[];
   readonly stories: readonly StoryExport[];
   /** The top-level names in a family with a written member, a name assigned to a member the file writes below or whose object it hands on included, so what the file declares for them is not what runs. */
   readonly written: ReadonlySet<unknown>;
+}
+
+export interface MetaObject {
+  readonly object: unknown;
+  readonly owner: unknown;
 }
 
 /** `index` gives the stories and their `.test()` children, as Storybook's story index lists them, in place of the package's own reading of the exports. */
@@ -181,20 +188,20 @@ export function csfFile(
   bindings: Bindings,
   index?: ReadonlyMap<string, IndexedStory>,
 ): CsfFile {
-  const metas = factoryMetas(body, bindings);
-  const metaObjects = [
-    defaultExport(body),
-    ...metas.map((init) => list(field(init, 'arguments'))[0]),
-  ].flatMap((meta) => objectOf(meta, bindings));
-  const isFactoryFile = metas.length > 0;
+  const factories = factoryMetas(body, bindings);
+  const isFactoryFile = factories.length > 0;
   const metaBindings: readonly (readonly [unknown, unknown])[] = [
     [defaultExportName, defaultExport(body)],
     ...[...bindings]
-      .filter(([, init]) => metas.includes(init))
+      .filter(([, init]) => factories.includes(init))
       .map(
         ([name, init]) => [name, list(field(init, 'arguments'))[0]] as const,
       ),
   ];
+  const metas = metaBindings.flatMap(([owner, meta]) =>
+    objectOf(meta, bindings).map((object) => ({ object, owner })),
+  );
+  const metaObjects = metas.map(({ object }) => object);
   const { elsewhere, written } = namesReadElsewhere(
     body,
     bindings,
@@ -203,6 +210,7 @@ export function csfFile(
 
   return {
     metaObjects,
+    metas,
     stories: storyExports(
       body,
       bindings,

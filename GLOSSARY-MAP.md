@@ -40,8 +40,9 @@
 - **msw mutators <-> Storybook**: neither uses the other. The CSF ignorer hides the handlers in a story's
   `parameters.msw` where its play mode is `ignore`, so the msw mutators reach them in the configuration that sets
   `mutate`.
-- **Storybook mutators -> Storybook**: they read story files with `@layzee/storybook-csf`, and
-  mutate story data, so they belong in the Stryker configuration for the components,
+- **Storybook mutators -> Storybook**: they read story files with `@layzee/storybook-csf`, which gives
+  `LzStorybookArgs` its args sites with a Proven for each property whose removal the file proves changes nothing,
+  and mutate story data, so they belong in the Stryker configuration for the components,
   where the CSF ignorer's play mode is `ignore`.
 - **Storybook test mutators -> Storybook**: they read story test code with `@layzee/storybook-csf`
   and mutate it, and the CSF ignorer reports those mutants as Ignored unless its play mode is `mutate`, so they

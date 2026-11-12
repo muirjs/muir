@@ -40,18 +40,23 @@ _Avoid_: used arg, checked arg
 **Per-key mutant**:
 An args site with one key that is no read key removed, so the story falls back to the value below it: one that a
 `...Base.args` spread (or `...Base?.args`, `...Base['args']`) before the key sets, then the base story's for
-`.extend()` or the story's for `.test()` options, then the meta's and the project's. A layer's `args` that name a
-top-level object, and a spread of such a name or of a member of one, are read as that object when the file leaves it
-unchanged (see Played story). A layer that
+`.extend()` or the story's for `.test()` options, then the meta's (in a file with more than one meta, the literal
+every meta that sets the key gives) and the project's. A layer's `args` that name a top-level object, and a spread
+of such a name or of a member of one, are read as that object when the file leaves it unchanged (see Played story).
+A layer that
 is no object literal (such as a base's `args` that are an imported object), whose `args` a later spread or computed
-key the file cannot resolve (see Played story) may replace (in the story, the
+key the file cannot resolve (see Played story) may replace (in the story, the `.test()` options, the
 meta, or a story that `...Base.args` names), or where such a spread or computed key may set the key last, leaves that
-value unknown. A key whose literal value (a negative number and a template literal without expressions count) equals
-that value gets none, and neither does a key whose removal leaves only keys like that, as such args behave like
-ObjectLiteral's `{}`. Any other key keeps its mutant even where no test can kill it (ADR 0006), as in these known
-shapes: a story whose `args` a runtime assignment such as `S.args = { ... }` or `S.args.label = 'b'` replaces; a
-key that a later spread in the same object sets; and, on a story with no play, a key that the options of every
-`.test()` call on it set, as only the story's own run, which only renders, sees it.
+value unknown, and so do a meta or story the file writes to (such as `meta.args.label = 'b'`) and a layer that is
+the args site itself, as when the meta and the story spread one object. A key whose literal value (a negative number
+and a template literal without expressions count) equals that value gets none, and neither does a key whose removal
+leaves only keys like that, as such args behave like ObjectLiteral's `{}`, nor a key that a later property of the
+same key or a later spread the file resolves sets, as removing it changes nothing. Each of these holds for the
+property, so a later `label: 'c'` after a `label: 'a'` equal to the value below keeps its mutant. Any other key
+keeps its mutant even where no test can kill it (ADR 0006), as in these known shapes: a story whose `args` a runtime
+assignment such as `S.args = { ... }` or `S.args.label = 'b'` replaces; a key that a later spread the file cannot
+resolve may set; and, on a story with no play, a key that the options of every `.test()` call on it set, as only the
+story's own run, which only renders, sees it.
 _Avoid_: arg removal
 
 **Coarse mutant**:

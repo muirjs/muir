@@ -66,6 +66,28 @@ export const shapeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'key-before-spread-that-sets-it',
+    title:
+      'a key that a later spread of a story args the file shows sets makes no mutant, as removing it changes nothing',
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Base = { args: { label: 'b' } };\n" +
+      "export const Primary = { args: { label: 'a', ...Base.args, disabled: true } };\n",
+    expect: [[args, "{ label: 'a', ...Base.args }"]],
+  },
+  {
+    id: 'duplicate-key-later-differs',
+    title:
+      "a key that overrides an earlier one equal to the meta's is removed, as its own value differs from what it falls back to",
+    source:
+      "export default { title: 'Button', args: { label: 'a' } };\n" +
+      "export const Primary = { args: { label: 'a', label: 'c', size: 1 }, play: async () => {} };\n",
+    expect: [
+      [args, "{ label: 'a', size: 1 }"],
+      [args, "{ label: 'a', label: 'c' }"],
+    ],
+  },
+  {
     id: 'computed-key',
     title: 'a computed key in args stays in every mutant',
     source: inStory(

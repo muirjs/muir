@@ -1,20 +1,12 @@
 import type { NodePath } from '@babel/core';
 import {
-  csfFile,
   field,
   isUnknownPlay,
   list,
-  ownStoryValue,
-  ownValue,
-  playedStories,
   propertyKey,
-  resolvedPropertyValues,
-  resolvedValue,
-  resolvedValues,
-  storyValues,
-  topLevelBindings,
-  unchangedBindings,
-  type LayerValue,
+  sitesOf,
+  type Proven,
+  type SiteRun,
 } from '@layzee/storybook-csf';
 
 import type { LzStorybookMutator } from './mutator.ts';
@@ -24,22 +16,13 @@ type Key = NonNullable<ReturnType<typeof propertyKey>>;
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<Key> | 'whole';
 
-/** The keys of an args site that stay in every mutant. */
+/** What stays in every mutant of an args site. */
 interface Kept {
   /** The keys a function that runs for the site reads. */
   readonly read: ReadonlySet<Key>;
-  /** The keys whose literal value equals the one they fall back to when removed. */
-  readonly sameAsBelow: ReadonlySet<Key>;
+  /** The properties whose removal the file proves changes nothing. */
+  readonly proofs: readonly Proven[];
 }
-
-type Site = readonly [argsObject: unknown, kept: Kept];
-
-/** One story's use of an args object: what the functions that run for it read, and its keys equal to the value below. */
-type Use = readonly [
-  argsObject: unknown,
-  reads: Reads,
-  sameAsBelow: ReadonlySet<Key>,
-];
 
 type Sites = ReadonlyMap<unknown, Kept>;
 
@@ -61,7 +44,7 @@ export function argsMutator(): LzStorybookMutator & {
     *mutate(path, t) {
       // Stryker places a statement's mutants as it leaves the statement, so the file is read on entering the Program, or, under a line-range `mutate` that skips the Program, on entering the first object in range.
       if (path.isProgram()) {
-        sitesOf(path);
+        sitesIn(path);
       }
 
       if (!path.isObjectExpression()) {
@@ -70,7 +53,7 @@ export function argsMutator(): LzStorybookMutator & {
 
       const program = path.findParent((parent) => parent.isProgram());
       const kept =
-        program === null ? undefined : sitesOf(program).get(path.node);
+        program === null ? undefined : sitesIn(program).get(path.node);
 
       if (kept === undefined) {
         return;
@@ -83,7 +66,7 @@ export function argsMutator(): LzStorybookMutator & {
             .filter((property) => !removed.includes(property))
             .map((property) => t.cloneNode(property, true)),
         );
-      const eligible = properties.filter((property, index) => {
+      const eligible = properties.filter((property) => {
         const key = propertyKey(property);
 
         return (
@@ -91,22 +74,19 @@ export function argsMutator(): LzStorybookMutator & {
           !property.computed &&
           key !== undefined &&
           !kept.read.has(key) &&
-          !kept.sameAsBelow.has(key) &&
-          !properties
-            .slice(index + 1)
-            .some((later) => propertyKey(later) === key)
+          !kept.proofs.some((proof) => proof.property === property)
         );
       });
       // A mutant whose keys left all equal the value they fall back to behaves like Stryker's ObjectLiteral `{}`.
       const differsFromEmpty = (removed: readonly unknown[]) =>
-        properties.some((property) => {
-          const key = propertyKey(property);
-
-          return (
+        properties.some(
+          (property) =>
             !removed.includes(property) &&
-            (key === undefined || !kept.sameAsBelow.has(key))
-          );
-        });
+            !kept.proofs.some(
+              (proof) =>
+                proof.property === property && proof.reason === 'same-as-below',
+            ),
+        );
 
       yield* [
         ...eligible.map((removed) => [removed]),
@@ -118,7 +98,7 @@ export function argsMutator(): LzStorybookMutator & {
   };
 }
 
-function sitesOf(program: NodePath): Sites {
+function sitesIn(program: NodePath): Sites {
   const cached = sitesByProgram.get(program.node);
 
   if (cached !== undefined) {
@@ -139,183 +119,43 @@ function sitesOf(program: NodePath): Sites {
   return sites;
 }
 
-/** The `args` objects of stories and `.test()` options that a play or test function runs for, each with the keys that stay. In a file with a meta object, for each story Storybook 10.6.5's Vitest transform tests and whose static tags do not end in `!test`, the play is the last one assigned to the story, else its own or the one it spreads or `.extend()` takes from its base, else the meta's. */
+/** The `args` sites of stories and `.test()` options that a play or test function runs for, each with what stays. The meta's args are no args site, and an object a function reads whole is none. */
 function argsSites(
   body: readonly unknown[],
   readsOf: (fn: unknown) => Reads,
 ): Sites {
-  const bindings = topLevelBindings(body);
-  const file = csfFile(body, bindings);
-  const unchanged = unchangedBindings(bindings, file.written);
-  const metaArgs = file.metaObjects
-    .map((meta) => resolvedValue(meta, 'args', unchanged))
-    .find((args) => args !== undefined);
+  return new Map(
+    sitesOf(body, 'args').flatMap(({ node, runs, proofs }) => {
+      const read = union(runs.flatMap((run) => readersOf(run, readsOf)));
 
-  return sitesFrom(
-    playedStories(body, bindings, file).flatMap(
-      ({ story: { init }, play, tests }) => {
-        // An unknown play may read any key.
-        const playReads: readonly Reads[] =
-          play === undefined
-            ? []
-            : [isUnknownPlay(play) ? 'whole' : readsOf(play)];
-        const [storyArgs, ...baseArgs] = storyValues(init, unchanged, 'args');
-
-        return [
-          ...site(
-            ownStoryValue(init, unchanged, 'args'),
-            [
-              ...playReads,
-              ...tests.map((test) =>
-                test === 'unmatched' ? 'whole' : readsOf(test.testFunction),
-              ),
-            ],
-            sameLiteralKeys(storyArgs, [...baseArgs, metaArgs], unchanged),
-          ),
-          ...tests.flatMap((test) => {
-            if (test === 'unmatched') {
-              return [];
-            }
-
-            const { options, testFunction } = test;
-            const testArgs = ownValue(options, 'args', unchanged);
-
-            return site(
-              testArgs,
-              [...playReads, readsOf(testFunction)],
-              sameLiteralKeys(
-                testArgs,
-                [storyArgs, ...baseArgs, metaArgs],
-                unchanged,
-              ),
-            );
-          }),
-        ];
-      },
-    ),
-  );
-}
-
-const literalTypes: readonly unknown[] = [
-  'StringLiteral',
-  'NumericLiteral',
-  'BooleanLiteral',
-];
-
-/** The keys whose literal value in `args` equals the value they fall back to when removed. */
-function sameLiteralKeys(
-  args: LayerValue,
-  below: readonly LayerValue[],
-  bindings: ReadonlyMap<string, unknown>,
-): ReadonlySet<Key> {
-  const properties = list(field(args, 'properties'));
-
-  return new Set(
-    properties.flatMap((property, index) => {
-      const key = propertyKey(property);
-      const value = field(property, 'value');
-      const fallback =
-        key === undefined
-          ? undefined
-          : fallbackValue(properties.slice(0, index), below, key, bindings);
-
-      const literal = literalOf(value);
-      const fallbackLiteral = literalOf(fallback);
-
-      return key !== undefined &&
-        literal !== undefined &&
-        fallbackLiteral !== undefined &&
-        Object.is(literal.value, fallbackLiteral.value)
-        ? [key]
-        : [];
+      return runs.every(({ owner }) => owner === 'meta') || read === 'whole'
+        ? []
+        : [[node, { read, proofs }] as const];
     }),
   );
 }
 
-/** The value `key` falls back to when removed: the one the properties before it set, else the first layer below that sets it; `unknownValue` when a spread or computed key that only running the file resolves, or a layer that is no object literal, comes first. */
-function fallbackValue(
-  before: readonly unknown[],
-  below: readonly LayerValue[],
-  key: Key,
-  bindings: ReadonlyMap<string, unknown>,
-): LayerValue {
-  return [
-    ...resolvedPropertyValues(before, key, bindings),
-    ...below.flatMap((layer) => resolvedValues(layer, key, bindings)),
-  ][0];
-}
-
-/** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */
-function literalOf(node: unknown): { readonly value: unknown } | undefined {
-  const type = field(node, 'type');
-
-  if (type === 'NullLiteral') {
-    return { value: null };
+/** What the functions that run for one run of a site read: the play, and every `.test()` call for the story's own args or that call's for its options. An unknown play may read any key. */
+function readersOf(
+  run: SiteRun,
+  readsOf: (fn: unknown) => Reads,
+): readonly Reads[] {
+  if (run.owner === 'meta') {
+    return [];
   }
 
-  if (literalTypes.includes(type)) {
-    return { value: field(node, 'value') };
-  }
+  const { play, tests } = run.story;
+  const playReads: readonly Reads[] =
+    play === undefined ? [] : [isUnknownPlay(play) ? 'whole' : readsOf(play)];
 
-  const [quasi, ...more] = list(field(node, 'quasis'));
-  const cooked = field(quasi, 'value', 'cooked');
-
-  if (
-    type === 'TemplateLiteral' &&
-    more.length === 0 &&
-    typeof cooked === 'string'
-  ) {
-    return { value: cooked };
-  }
-
-  const negated = field(node, 'argument', 'value');
-
-  return type === 'UnaryExpression' &&
-    field(node, 'operator') === '-' &&
-    field(node, 'argument', 'type') === 'NumericLiteral' &&
-    typeof negated === 'number'
-    ? { value: -negated }
-    : undefined;
-}
-
-/** One story's use of `argsObject` when it is an object literal that at least one function runs for; none otherwise. */
-function site(
-  argsObject: unknown,
-  readers: readonly Reads[],
-  sameAsBelow: ReadonlySet<Key>,
-): readonly Use[] {
-  return field(argsObject, 'type') !== 'ObjectExpression' ||
-    readers.length === 0
-    ? []
-    : [[argsObject, union(readers), sameAsBelow]];
-}
-
-/** The args sites of every story's uses, as a `.test()` options object can serve several stories: the keys any of them reads stay, a key stays as equal to the value below only when it is for all of them, and an object one of them reads whole is no site. */
-function sitesFrom(uses: readonly Use[]): Sites {
-  return new Map(
-    [...Map.groupBy(uses, ([argsObject]) => argsObject)].flatMap(
-      ([argsObject, all]): readonly Site[] => {
-        const read = union(all.map(([, reads]) => reads));
-
-        return read === 'whole'
-          ? []
-          : [
-              [
-                argsObject,
-                {
-                  read,
-                  sameAsBelow: all
-                    .map(([, , sameAsBelow]) => sameAsBelow)
-                    .reduce(
-                      (kept, same) =>
-                        new Set([...kept].filter((key) => same.has(key))),
-                    ),
-                },
-              ],
-            ];
-      },
-    ),
-  );
+  return run.owner === 'test'
+    ? [...playReads, readsOf(run.test.testFunction)]
+    : [
+        ...playReads,
+        ...tests.map((test) =>
+          test === 'unmatched' ? 'whole' : readsOf(test.testFunction),
+        ),
+      ];
 }
 
 function union(reads: readonly Reads[]): Reads {

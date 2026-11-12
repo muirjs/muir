@@ -9,7 +9,7 @@ import {
 import { lastWinsProperties } from './resolved-values.ts';
 
 /** A layer's properties last-wins first, or `unknownValue` for an `.extend()` base the file does not bind. */
-type Layer = readonly unknown[] | typeof unknownValue;
+type LayerProperties = readonly unknown[] | typeof unknownValue;
 
 /** The value of `key` that each of a story's layers sets, the story's own first. */
 export function storyValues(
@@ -20,7 +20,10 @@ export function storyValues(
   return storyLayers(init, bindings).map((layer) => layerValues(layer, key)[0]);
 }
 
-function layerValues(layer: Layer, key: string): readonly LayerValue[] {
+function layerValues(
+  layer: LayerProperties,
+  key: string,
+): readonly LayerValue[] {
   return layer === unknownValue ? [unknownValue] : valuesIn(layer, key);
 }
 
@@ -58,7 +61,7 @@ export function ownStoryValue(
 function storyLayers(
   init: unknown,
   bindings: ReadonlyMap<string, unknown>,
-): readonly [readonly unknown[], ...Layer[]] {
+): readonly [readonly unknown[], ...LayerProperties[]] {
   const call = unwrap(init);
   const own = lastWinsProperties(
     list(field(storyArgument(call), 'properties')),

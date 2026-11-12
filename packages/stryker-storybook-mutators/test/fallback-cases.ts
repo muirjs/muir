@@ -169,6 +169,21 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'test-options-args-before-unresolved-spread-same-literal',
+    title:
+      "a key in .test() options args before a spread of an imported object is removed, even when its literal value equals the story's, as the spread may set the args the test runs with",
+    source: inFactoryFile(
+      "import { shared } from './shared';",
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a' } });",
+      "Primary.test('t', { args: { label: 'a', disabled: true }, ...shared }, async () => {});",
+    ),
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'test-options-over-unresolved-spread',
     title:
       "a key in .test() options whose literal value equals the meta's is removed when the story's args come before a spread of an imported object, which may set them",
@@ -586,6 +601,104 @@ export const fallbackCases: readonly Case[] = [
       [args, '{ ...shared, a: 2 }'],
       [args, '{ ...shared, b: 2 }'],
       [args, '{ ...shared }'],
+    ],
+  },
+  {
+    id: 'test-options-over-written-story',
+    title:
+      "a key in .test() options whose literal value equals the story's is removed when the file writes to the story's args",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "export const Primary = meta.story({ args: { label: 'a' }, play: async () => {} });",
+      "Primary.input.args.label = 'b';",
+      "Primary.test('t', { args: { label: 'a', size: 1 } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'written-meta',
+    title:
+      "a key whose literal value equals the meta's is removed when the file writes to the meta's args",
+    source:
+      "const meta = { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      'export default meta;\n' +
+      "meta.args.label = 'b';\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n",
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'written-story',
+    title:
+      "a key whose literal value equals the meta's is removed when the file writes to the story's args, as it may read the key when it loads",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n" +
+      'Primary.args.text = Primary.args.label;\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'test-options-over-written-factory-meta',
+    title:
+      "a key in .test() options whose literal value equals the factory meta's is removed when the file writes to the meta's args",
+    source: inFactoryFile(
+      "const meta = preview.meta({ args: { label: 'a' } });",
+      "meta.input.args.label = 'b';",
+      'export const Primary = meta.story({});',
+      "Primary.test('t', { args: { label: 'a', size: 1 } }, async () => {});",
+    ),
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'two-metas-disagree',
+    title:
+      "a key whose literal value equals one meta's is removed when another meta of the file sets it to another value",
+    source: inFactoryFile(
+      "export default { title: 'Button', args: { label: 'a' } };",
+      "const meta = preview.meta({ args: { label: 'b' }, play: async () => {} });",
+      "export const Primary = meta.story({ args: { label: 'a', size: 1 } });",
+    ),
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'two-metas-agree',
+    title:
+      "a key whose literal value equals every meta's that sets it makes no mutant, though the metas set other keys apart",
+    source: inFactoryFile(
+      "export default { title: 'Button', args: { label: 'a', size: 2 } };",
+      "const meta = preview.meta({ args: { label: 'a' }, play: async () => {} });",
+      "export const Primary = meta.story({ args: { label: 'a', size: 1, disabled: true } });",
+    ),
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 1 }"],
+    ],
+  },
+  {
+    id: 'meta-shares-story-args',
+    title:
+      'a key of args that the meta and the story both take from one object is removed, as removing it removes the value it would fall back to',
+    source:
+      "const common = { args: { label: 'a', size: 1 } };\n" +
+      "export default { title: 'Button', ...common, play: async () => {} };\n" +
+      'export const Primary = { ...common };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
     ],
   },
 ];
