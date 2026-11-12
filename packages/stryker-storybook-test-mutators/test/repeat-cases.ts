@@ -125,6 +125,26 @@ export const repeatCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'repeat-click-of-home-text',
+    title:
+      'the {Home} and {End} rule covers only keyboard, so a click given the text {Home} runs twice',
+    source: inPlay("await userEvent.click('{Home}');"),
+    expect: [
+      [
+        repeat,
+        "{ await userEvent.click('{Home}'); await userEvent.click('{Home}'); }",
+      ],
+    ],
+  },
+  {
+    id: 'repeat-keyboard-no-argument',
+    title: 'a userEvent.keyboard press with no argument runs twice',
+    source: inPlay('await userEvent.keyboard();'),
+    expect: [
+      [repeat, '{ await userEvent.keyboard(); await userEvent.keyboard(); }'],
+    ],
+  },
+  {
     id: 'repeat-hover',
     title: 'a hover makes no mutant, as a second hover changes nothing',
     source: inPlay('await userEvent.hover(button);'),

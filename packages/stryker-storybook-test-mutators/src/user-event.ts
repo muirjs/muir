@@ -112,7 +112,7 @@ function isUserEventBinding(
 function userEventImportSource(declaration: NodePath): string | undefined {
   const { node, parent } = declaration;
 
-  if (parent?.type !== 'ImportDeclaration') {
+  if (parent.type !== 'ImportDeclaration') {
     return undefined;
   }
 
