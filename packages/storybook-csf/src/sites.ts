@@ -89,6 +89,7 @@ export interface Site {
 }
 
 interface Layers<TRun extends SiteRun> {
+  readonly owner: TRun['owner'];
   readonly run: TRun;
   readonly node: unknown;
   readonly own: Layer;
@@ -106,10 +107,6 @@ interface MetaRunLayers extends Layers<MetaRun> {
 }
 
 type RunLayers = StoryRunLayers | MetaRunLayers;
-
-function isMetaRun(layers: RunLayers): layers is MetaRunLayers {
-  return layers.run.owner === 'meta';
-}
 
 /**
  * Every `key` site of the file. A site is chosen as the story's own object, its `.test()` options or the meta give
@@ -170,6 +167,7 @@ export function sitesOf(
 
       return [
         {
+          owner: 'story',
           run: { owner: 'story', story },
           node: ownValueOf(
             asWrittenLayer(levels[0].argument, levels[0].bindings),
@@ -194,6 +192,7 @@ export function sitesOf(
 
           return [
             {
+              owner: 'test',
               run: { owner: 'test', story, test },
               node: ownValue(test.options, key, unchanged),
               own: layerOf(optionsOwnRoot, key),
@@ -209,6 +208,7 @@ export function sitesOf(
         }),
         ...metas.map(
           (meta): RunLayers => ({
+            owner: 'meta',
             run: { owner: 'meta', story },
             node: ownValue(meta.object, key, unchanged),
             own: layerOf(meta.ownRoot, key),
@@ -303,9 +303,10 @@ function isDefaultGlobal(
   key: string,
 ): boolean {
   const rootMaySetKey = layers.root === unknownValue;
-  const mayGiveKey = isMetaRun(layers)
-    ? layers.otherMetas
-    : [...layers.below, ...layers.metas];
+  const mayGiveKey =
+    layers.owner === 'meta'
+      ? layers.otherMetas
+      : [...layers.below, ...layers.metas];
 
   return (
     isInitialGlobal(key, field(property, 'value'), layers.parameters) &&
@@ -360,7 +361,7 @@ function isSameAsBelow(
     typeof layer === 'object' && layer.node === site ? unknownValue : layer;
   const fallback = [
     ...resolvedPropertyValues(before, key, bindings),
-    ...(isMetaRun(layers)
+    ...(layers.owner === 'meta'
       ? []
       : [
           ...layers.below.flatMap((layer) =>
