@@ -93,7 +93,8 @@ Vitest browser's userEvent, whose `type` does not click.
   function, both of these for a value under a computed key or assigned to a computed member, the first of a callback
   given to a context's `step`, and a call of `useStoryContext` under its own or its imported name. Such a hook counts
   given inline, as a plain method, in an array, or by the name of a local function the file never reassigns, as an
-  object's property or assigned to `<x>.<key>`. Any other hook value drops the proof: an import, a member or a call
+  object's property or assigned to `<x>.<key>`. A hook that reaches itself through a `step` is read once, as reading it
+  again finds nothing new. Any other hook value drops the proof: an import, a member or a call
   result, a getter, a hook that reads `arguments` or has a rest parameter at or before its context, a spread into a meta or story object
   of anything but a local object literal that the file never reassigns and that spreads nothing, and an `assign` call
   onto anything but a fresh object literal.

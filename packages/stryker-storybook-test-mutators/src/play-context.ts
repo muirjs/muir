@@ -306,7 +306,30 @@ const contextPositions: ReadonlyMap<string, number> = new Map([
   ['render', 1],
 ]);
 
+const contextParameterReads = new WeakMap<types.Node, Map<number, boolean>>();
+
+/** Whether a hook reads the context it takes at `position`, once per hook and position. A hook that reaches itself, through `step`, counts as read while it is being read, as walking it again finds no read the first walk does not. */
 function isContextParameterRead(
+  hook: NodePath<types.Function>,
+  position: number,
+): boolean {
+  const reads =
+    contextParameterReads.get(hook.node) ?? new Map<number, boolean>();
+  const known = reads.get(position);
+
+  if (known !== undefined) {
+    return known;
+  }
+
+  contextParameterReads.set(hook.node, reads);
+  reads.set(position, true);
+  const read = readsContextParameter(hook, position);
+  reads.set(position, read);
+
+  return read;
+}
+
+function readsContextParameter(
   hook: NodePath<types.Function>,
   position: number,
 ): boolean {

@@ -239,6 +239,27 @@ export const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-recursive-step-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a step callback hands itself to its context's step",
+    source: `const fillIn = async (context) => {\n  await context.step('Again', fillIn);\n};\nexport const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Fill in', fillIn);\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-self-stepping-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a beforeEach hands itself to its context's step",
+    source: `function prepare(context) {\n  context.step('Again', prepare);\n}\nexport default { beforeEach: prepare };\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-mutually-stepping-hooks-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a beforeEach and a function hand each other to their contexts' step",
+    source: `function prepare(context) {\n  context.step('Fill', fill);\n}\nfunction fill(context) {\n  context.step('Prepare', prepare);\n}\nexport default { beforeEach: prepare };\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-spread-local-meta-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when the meta spreads a local object whose hooks only read their contexts",
