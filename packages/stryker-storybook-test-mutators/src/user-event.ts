@@ -20,6 +20,7 @@ import {
   isContextLeftAsSet,
   isPlayContext,
   isPlayParameter,
+  namesOnlyReadUserEvent,
 } from './play-context.ts';
 import { perFile } from './story-file.ts';
 
@@ -280,6 +281,7 @@ function userEventProperty(
 /** What the user-event proofs read once per file, at the Program. */
 export const userEventFileReaders: readonly ((path: NodePath) => boolean)[] = [
   contextsOnlyRead,
+  namesOnlyReadUserEvent,
   importsOnlyCallUserEvent,
 ];
 

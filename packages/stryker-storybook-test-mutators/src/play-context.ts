@@ -83,8 +83,64 @@ function keyedBy(
 /** A play's context parameter, or a local it destructures, that the play never reassigns, in a file where every context is only read, so it holds what Storybook set. */
 export function isContextLeftAsSet(binding: Binding): boolean {
   return (
-    binding.constantViolations.length === 0 && contextsOnlyRead(binding.path)
+    binding.constantViolations.length === 0 &&
+    contextsOnlyRead(binding.path) &&
+    namesOnlyReadUserEvent(binding.path)
   );
+}
+
+/** Whether the file names userEvent only where the rules read it: an import's name, a key or local in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` only called on; never as a string or a template's text. It backs up `contextsOnlyRead`, which reads only the hooks it knows. */
+export const namesOnlyReadUserEvent = perFile((program) => {
+  let onlyRead = true;
+
+  const check = (path: NodePath, read: boolean): void => {
+    if (!read) {
+      onlyRead = false;
+      path.stop();
+    }
+  };
+
+  program.traverse({
+    Identifier(path) {
+      check(path, path.node.name !== 'userEvent' || readsUserEvent(path));
+    },
+    StringLiteral(path) {
+      check(path, path.node.value !== 'userEvent');
+    },
+    TemplateElement(path) {
+      check(path, path.node.value.cooked !== 'userEvent');
+    },
+  });
+
+  return onlyRead;
+}, false);
+
+function readsUserEvent(path: NodePath<types.Identifier>): boolean {
+  const { parentPath } = path;
+
+  if (parentPath === null) {
+    return false;
+  }
+
+  if (
+    parentPath.isImportSpecifier() ||
+    parentPath.isImportDefaultSpecifier() ||
+    (parentPath.isObjectProperty() &&
+      parentPath.parentPath.isObjectPattern() &&
+      parentPath.parentPath.listKey === 'params')
+  ) {
+    return true;
+  }
+
+  const read =
+    (parentPath.isMemberExpression() ||
+      parentPath.isOptionalMemberExpression()) &&
+    path.key === 'property' &&
+    !parentPath.node.computed
+      ? parentPath
+      : path;
+
+  return isMethodCallReceiver(read) || isChoiceSide(read);
 }
 
 /** Whether every context the file can reach is only read: as `<context>.<name>` or destructured under plain keys, in hooks whose code the file holds. A context's userEvent is held to the binding rule (`isOnlyCalledOn`), as a hook that changes that object changes the play's. */

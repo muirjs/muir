@@ -86,7 +86,10 @@ local function, or assigned as `<x>.beforeEach` and the like. Each context is us
 destructured under plain keys in a parameter or a declaration, with its `userEvent`, as a member or a local, only a
 method call's receiver or a side of a choice given to such a local. A hook the file cannot read, such as an imported
 decorator, or one that may reach its context through `arguments` or a rest parameter, counts as one that does not.
-A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read where the
+As a backstop for hooks given in ways these rules do not read, the file must also name `userEvent` only as an import's
+name, a key or local in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` that is a method call's
+receiver or such a choice side, and never spell it as a string or a template's text; a type literal's `userEvent` key
+or an unrelated object's counts against it. A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read where the
 local is given that value. A local
 that holds one of these, whether an import, a destructured `userEvent`, a `setup()` or a choice, keeps its proof only
 when every reference to it is a method call's receiver or a side of a choice that is the one value, by declaration or

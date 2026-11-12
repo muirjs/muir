@@ -293,4 +293,34 @@ export const userEventProofCases: readonly Case[] = [
       [interaction, ';'],
     ],
   },
+  {
+    id: 'computed-assigned-hook-written-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach assigned under a computed member writes the context's userEvent type, as the file names userEvent outside a read",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\nStory['beforeEach'] = (context) => {\n  context.userEvent.type = browserUserEvent.type;\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'defined-hook-template-key-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach given by Object.defineProperty sets the context's member under a template key, as the file names userEvent outside a read",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\nObject.defineProperty(Story, 'beforeEach', {\n  value: (context) => {\n    Reflect.set(context, \`userEvent\`, browserUserEvent);\n  },\n});\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'pushed-decorator-written-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a decorator pushed onto Story.decorators writes the context's userEvent type, as the file names userEvent outside a read",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  decorators: [],\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\nStory.decorators.push((S, context) => {\n  context.userEvent.type = browserUserEvent.type;\n  return S();\n});\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
 ];
