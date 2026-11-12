@@ -307,6 +307,27 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [[5, 'click-before-type', [interaction]]],
   },
   {
+    id: 'local-function-user-event-type',
+    title:
+      "gives no hint for a click before a type on a userEvent destructured from a local function's parameter, which may be Vitest browser's",
+    source: [
+      "import { userEvent as vitestUserEvent } from 'vitest/browser';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    const fill = async ({ userEvent }) => {',
+      "      await userEvent.click(canvas.getByRole('textbox'));",
+      "      await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '    };',
+      '    await fill({ userEvent: vitestUserEvent });',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
     id: 'vitest-browser-import-expression-type',
     title:
       "gives no hint for a click before a type on Vitest browser's userEvent from an import expression",

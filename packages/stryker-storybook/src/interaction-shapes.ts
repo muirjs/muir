@@ -236,8 +236,8 @@ function keyName(property: unknown): unknown {
 }
 
 /**
- * Whether `receiver` names a `userEvent` destructured from a parameter, such as the play context's, or imported from
- * `storybook/test`: both are user-event 14.
+ * Whether `receiver` names a `userEvent` destructured from the first parameter of a `play` function, the play
+ * context's, or imported from `storybook/test`: both are user-event 14.
  */
 function isUserEvent14(
   receiver: unknown,
@@ -248,11 +248,12 @@ function isUserEvent14(
     name === undefined ? undefined : declarationOf(name, ancestors);
 
   return (
-    list(field(declaration, 'properties')).some(
-      (property) =>
-        nameOf(field(property, 'key')) === 'userEvent' &&
-        nameOf(field(property, 'value')) === name,
-    ) ||
+    (isPlayContext(declaration, ancestors) &&
+      list(field(declaration, 'properties')).some(
+        (property) =>
+          nameOf(field(property, 'key')) === 'userEvent' &&
+          nameOf(field(property, 'value')) === name,
+      )) ||
     (field(declaration, 'source', 'value') === 'storybook/test' &&
       list(field(declaration, 'specifiers')).some(
         (specifier) =>
@@ -260,6 +261,19 @@ function isUserEvent14(
           nameOf(field(specifier, 'local')) === name,
       ))
   );
+}
+
+/** Whether `parameter` is the first parameter of a function that is the value of a `play` property. */
+function isPlayContext(
+  parameter: AstNode | undefined,
+  ancestors: readonly AstNode[],
+): boolean {
+  const owner = ancestors.findIndex(
+    (ancestor) =>
+      isFunction(ancestor) && list(ancestor['params'])[0] === parameter,
+  );
+
+  return owner !== -1 && keyName(ancestors[owner + 1]) === 'play';
 }
 
 /** The parameter or statement nearest to a node with these ancestors that declares `name`. */
