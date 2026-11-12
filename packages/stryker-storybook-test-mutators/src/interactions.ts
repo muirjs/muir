@@ -153,7 +153,7 @@ function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   );
 }
 
-/** An interaction that makes no mutant: one in a story hook, one whose following checks are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
+/** An interaction that makes no mutant: one in a story hook, one with following checks whose checks before the next interaction are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
 export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
   const { path } = interaction;
 
@@ -248,7 +248,7 @@ export function firstCheckAfter(path: NodePath): NodePath | undefined {
   return statementsBefore(nextSiblings(path), holdsInteraction).find(hasCheck);
 }
 
-/** Whether the following checks of `path`, past the end of its block and of a step callback that holds it, are all negative: there is one, and every check up to the next interaction statement is negative. */
+/** Whether `path` has a following check and its checks before the next interaction are all negative, both looked for past the end of its block and of a step callback that holds it. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
   const following = followingStatements(path);
 
