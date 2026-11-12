@@ -276,15 +276,22 @@ function isPlayContext(
   return owner !== -1 && keyName(ancestors[owner + 1]) === 'play';
 }
 
-/** The parameter or statement nearest to a node with these ancestors that declares `name`. */
+/**
+ * The parameter or statement nearest to a node with these ancestors that declares `name`, a `for` head, a `catch`
+ * parameter and a `switch` case's statements included.
+ */
 function declarationOf(
   name: string,
   ancestors: readonly AstNode[],
 ): AstNode | undefined {
   return ancestors
-    .flatMap((ancestor) =>
-      list(isFunction(ancestor) ? ancestor['params'] : ancestor['body']),
-    )
+    .flatMap((ancestor) => [
+      ...list(isFunction(ancestor) ? ancestor['params'] : ancestor['body']),
+      ancestor['left'],
+      ancestor['init'],
+      ancestor['param'],
+      ...list(ancestor['consequent']),
+    ])
     .filter(isNode)
     .find((declaration) => declares(declaration, name));
 }

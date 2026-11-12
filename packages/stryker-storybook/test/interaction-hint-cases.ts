@@ -328,6 +328,19 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'for-of-user-event-shadows-context',
+    title:
+      "gives no hint for a click before a type on a userEvent that a for...of head declares, which shadows the play context's",
+    source: inPlay(
+      'for (const userEvent of [vitestUserEvent]) {',
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '}',
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
     id: 'vitest-browser-import-expression-type',
     title:
       "gives no hint for a click before a type on Vitest browser's userEvent from an import expression",
