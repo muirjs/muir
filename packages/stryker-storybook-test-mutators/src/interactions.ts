@@ -140,7 +140,7 @@ function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   );
 }
 
-/** An interaction that makes no mutant: one in a story hook. */
+/** An interaction that makes no mutant: one in a `beforeEach` or `afterEach`. */
 export function isSkipped({ path }: Interaction): boolean {
   return path.findParent(isHook) !== null;
 }
