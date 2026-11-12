@@ -168,6 +168,42 @@ export const assertionBeforeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'assertion-before-past-function-with-interaction',
+    title:
+      'the copied check is the first one past a function that is only defined, even when the function holds an interaction',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'const later = async () => {',
+      '  await userEvent.click(b);',
+      '};',
+      'await expect(dialog).toBeVisible();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(dialog).toBeVisible(); await userEvent.click(a); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-past-function-declaration-with-interaction',
+    title:
+      'the copied check is the first one past a function declaration, even when the function holds an interaction',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'async function later() {',
+      '  await userEvent.click(b);',
+      '}',
+      'await expect(dialog).toBeVisible();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(dialog).toBeVisible(); await userEvent.click(a); }',
+      ],
+    ],
+  },
+  {
     id: 'assertion-before-skip-step-body',
     title:
       'an interaction that is the expression body of a step makes no mutant, as no check follows it in its own block',

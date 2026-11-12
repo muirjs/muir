@@ -273,21 +273,30 @@ function isInteractionStatement(statement: NodePath): boolean {
     interactionAt(statement) !== undefined ||
     (node.type === 'ExpressionStatement' &&
       isStepCall(awaited(node.expression)) &&
-      holdsInteraction(statement))
+      hasInteractionIn(statement, () => true))
   );
 }
 
-/** Whether `statement` is an interaction or holds one, such as a `step(...)` or an `if` around one. */
+/** Whether `statement` is an interaction or holds one that runs there, such as an `if` around one; of the functions in it, only step and `waitFor` callbacks run there. */
 function holdsInteraction(statement: NodePath): boolean {
-  if (interactionAt(statement) !== undefined) {
-    return true;
-  }
+  return (
+    isInteractionStatement(statement) ||
+    (!statement.isFunction() && hasInteractionIn(statement, runsWhereGiven))
+  );
+}
 
+/** Whether an interaction stands inside `path`, looking into a function only when `entersFunction` holds for it. */
+function hasInteractionIn(
+  path: NodePath,
+  entersFunction: (fn: NodePath) => boolean,
+): boolean {
   let found = false;
 
-  statement.traverse({
+  path.traverse({
     enter(inner) {
-      if (interactionAt(inner) !== undefined) {
+      if (inner.isFunction() && !entersFunction(inner)) {
+        inner.skip();
+      } else if (interactionAt(inner) !== undefined) {
         found = true;
         inner.stop();
       }
@@ -295,6 +304,16 @@ function holdsInteraction(statement: NodePath): boolean {
   });
 
   return found;
+}
+
+/** A function given to `step(...)` or `waitFor(...)`, which calls it. */
+function runsWhereGiven(fn: NodePath): boolean {
+  const owner = fn.parentPath?.node;
+
+  return (
+    owner?.type === 'CallExpression' &&
+    (isStepCall(owner) || nameOf(owner.callee) === 'waitFor')
+  );
 }
 
 /** The statements before the first one among them that is or holds an interaction. */

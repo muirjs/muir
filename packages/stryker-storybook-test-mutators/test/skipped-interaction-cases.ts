@@ -114,6 +114,16 @@ const negativeOnlyCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'negative-only-until-step-defining-interaction',
+    title:
+      'the checks that decide a skip end at a step that defines a function holding an interaction, as the step may call it',
+    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      const clickSecond = async () => {\n        await userEvent.click(second);\n      };\n      await clickSecond();\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'negative-only-until-if-with-interaction',
     title:
       'the checks that decide a skip end at an if statement that holds an interaction, so only the click in the if is skipped',
@@ -509,6 +519,35 @@ const clearedLaterCases: readonly Case[] = [
     title:
       'a type that an interaction in a step uses before a later clear of the same target is removed',
     source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await userEvent.type(input, 'a');\n    await step('Submit', async () => {\n      await userEvent.click(submit);\n    });\n    await userEvent.clear(input);\n    await expect(args.onSubmit).toHaveBeenCalledWith('a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'type-used-in-step-function-before-clear',
+    title:
+      'a type that a step may use through a function it defines before a later clear of the same target is removed',
+    source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await userEvent.type(input, 'a');\n    await step('Submit', async () => {\n      const submitForm = async () => {\n        await userEvent.click(submit);\n      };\n      await submitForm();\n    });\n    await userEvent.clear(input);\n    await expect(args.onSubmit).toHaveBeenCalledWith('a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'type-used-in-wait-for-before-clear',
+    title:
+      'a type that an interaction in a waitFor callback uses before a later clear of the same target is removed',
+    source: inPlay(
+      "await userEvent.type(input, 'a');",
+      'await waitFor(async () => {',
+      '  await userEvent.click(submit);',
+      '});',
+      'await userEvent.clear(input);',
+      "await expect(args.onSubmit).toHaveBeenCalledWith('a');",
+    ),
     expect: [
       [interaction, ';'],
       [interaction, ';'],

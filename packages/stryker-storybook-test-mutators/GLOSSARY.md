@@ -54,7 +54,9 @@ first unless given a `skipClick` other than `false`; Vitest browser's does not c
 later `clear` of the same target undoes before any check, with no statement between them that holds an
 interaction. Its following checks are all negative when a check comes before the next statement that is or holds an
 interaction, such as an `if` around one, and every check is negative up to the next statement that is itself an
-interaction or a `step(...)` that holds one, as an `if` may not run.
+interaction or a `step(...)` that holds one, as an `if` may not run. A statement holds an interaction that runs
+within it, so not one in a function it only defines unless that function is given to `step(...)` or `waitFor(...)`;
+a `step(...)` holds every interaction in its callback.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
