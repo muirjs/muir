@@ -92,6 +92,28 @@ describe('siteFindings', () => {
     );
   });
 
+  it('silences every stub of a chain under a Stryker disable comment', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export default {',
+      '  args: {',
+      '    // Stryker disable next-line all',
+      '    g: fn().mockResolvedValueOnce(1).mockResolvedValue(2),',
+      '  },',
+      '};',
+      'export const Primary = {};',
+    ].join('\n');
+
+    const findings = siteFindings(
+      code,
+      'Meta.stories.tsx',
+      project('seen'),
+      () => undefined,
+    );
+
+    assert.deepEqual(findings, []);
+  });
+
   [
     { comment: '//Stryker disable next-line all', lines: [] },
     { comment: '// see Stryker disable next-line all', lines: [4] },

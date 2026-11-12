@@ -60,12 +60,12 @@ function silencedSites(
     }
 
     rules.push(...directiveRules(node['leadingComments'], startLine(node)));
-    // Nodes are visited outermost first, a directive comment sits on the outermost node that starts where a site starts, and each site has a unique start, so the first node matched by start alone already has that site's rules.
-    const site = sites.find(({ start }) => node['start'] === start);
-
-    if (site !== undefined && isSilenced(rules, site.line)) {
-      silenced.add(site);
-    }
+    // Nodes are visited outermost first and a directive comment sits on the outermost node that starts where a site starts, so the first node matched by start already has the rules of every site there, each stub of a chain included.
+    sites
+      .filter(
+        ({ start, line }) => node['start'] === start && isSilenced(rules, line),
+      )
+      .forEach((site) => silenced.add(site));
 
     Object.values(node).forEach((value) => {
       (Array.isArray(value) ? value : [value]).forEach(visit);
