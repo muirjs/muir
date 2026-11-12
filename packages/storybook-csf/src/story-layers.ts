@@ -3,25 +3,23 @@ import { storyArgument, unwrap } from './csf-nodes.ts';
 import { field } from './node-field.ts';
 import { unknownValue } from './object-value.ts';
 
-/** One level of a story's `.extend()` chain: the object it gives, the name that owns it, and the bindings it reads. */
 export interface ExtendLevel {
   readonly argument: unknown;
   readonly owner: unknown;
   readonly bindings: Bindings;
 }
 
-/**
- * The levels a story ends up with, one for the story and then one for each `.extend()` base, as Storybook 10.6.5
- * `extend()` merges a base story in key by key. A base the bindings do not hold, imported or one the file changes, is
- * an unknown level.
- */
 export function extendLevels(
   init: unknown,
   owner: unknown,
-  bindings: Bindings,
+  unchangedBindings: Bindings,
 ): readonly [ExtendLevel, ...(ExtendLevel | typeof unknownValue)[]] {
   const call = unwrap(init);
-  const own = { argument: storyArgument(call), owner, bindings };
+  const own = {
+    argument: storyArgument(call),
+    owner,
+    bindings: unchangedBindings,
+  };
   const base = field(call, 'callee', 'object', 'name');
 
   if (
@@ -31,13 +29,13 @@ export function extendLevels(
     return [own];
   }
 
-  return bindings.has(base)
+  return unchangedBindings.has(base)
     ? [
         own,
         ...extendLevels(
-          bindings.get(base),
+          unchangedBindings.get(base),
           base,
-          withoutBinding(bindings, base),
+          withoutBinding(unchangedBindings, base),
         ),
       ]
     : [own, unknownValue];

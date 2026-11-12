@@ -158,7 +158,7 @@ function reachesOf(
   return inits.flatMap(([from, init]) => {
     const wholeHeld = wholeHeldIdentifiers(init);
 
-    return identifiersReachedFrom(init).flatMap((identifier) => {
+    return identifiersSharedBy(init).flatMap((identifier) => {
       const to = field(identifier, 'name');
 
       return typeof to === 'string' &&
@@ -199,8 +199,7 @@ const primitiveTypes: readonly unknown[] = [
   'TemplateLiteral',
 ];
 
-/** The identifiers whose objects a value shares: the value itself, its property values and spread arguments, those of a `.story()` or `.extend()` argument, which Storybook 10.6.5 keeps as the story's `input`, and the object of a member such as `Base.args`. */
-function identifiersReachedFrom(node: unknown): readonly unknown[] {
+function identifiersSharedBy(node: unknown): readonly unknown[] {
   const current = unwrap(node);
 
   if (field(current, 'type') === 'Identifier') {
@@ -208,15 +207,15 @@ function identifiersReachedFrom(node: unknown): readonly unknown[] {
   }
 
   if (isStoryFactoryCall(current)) {
-    return identifiersReachedFrom(storyArgument(current));
+    return identifiersSharedBy(storyArgument(current));
   }
 
   if (isMember(current)) {
-    return identifiersReachedFrom(field(current, 'object'));
+    return identifiersSharedBy(field(current, 'object'));
   }
 
   return list(field(current, 'properties')).flatMap((property) =>
-    identifiersReachedFrom(
+    identifiersSharedBy(
       field(
         property,
         field(property, 'type') === 'SpreadElement' ? 'argument' : 'value',

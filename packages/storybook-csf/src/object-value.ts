@@ -28,7 +28,6 @@ export function maySet(property: unknown, key: string | number): boolean {
   return name === undefined || sameKey(name, key);
 }
 
-/** JavaScript's rule: `1` and `'1'` name one key. */
 export function sameKey(
   name: string | number | undefined,
   key: string | number,

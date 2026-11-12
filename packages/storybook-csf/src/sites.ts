@@ -32,11 +32,7 @@ type Key = string | number;
 /** Why removing a property changes nothing: its literal equals the value it falls back to, the object gives its key the same value without it, or it is a global at Storybook 10.6.5's initial value that nothing below it may set. */
 export type ProofReason = 'same-as-below' | 'overridden' | 'default-global';
 
-/**
- * The proof that removing one property of a site changes nothing in any run of the site (ADR 0006). Only `sitesOf`
- * makes one; it is exported as a type only, and its `#` fields keep a literal with the same members from passing as
- * one. A spread copy of one is none either, as TypeScript drops the getters from a spread type.
- */
+/** The proof that removing one property of a site changes nothing in any run of the site (ADR 0006). Only `sitesOf` makes one. */
 class Proven {
   readonly #property: object;
   readonly #reason: ProofReason;
