@@ -66,6 +66,12 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'context-optional-user-event',
+    title: 'a context?.userEvent.click statement is removed',
+    source: `export const Story = {\n  play: async (context) => {\n    await context?.userEvent.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'user-event-setup',
     title: 'a call on a local bound to userEvent.setup() is removed',
     source: inPlay(

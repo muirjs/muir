@@ -37,7 +37,10 @@ export function readUserEvent(
   path: NodePath,
   seen: ReadonlySet<Binding> = new Set(),
 ): UserEventReading {
-  if (node.type === 'MemberExpression') {
+  if (
+    node.type === 'MemberExpression' ||
+    node.type === 'OptionalMemberExpression'
+  ) {
     if (nameOf(node.property) !== 'userEvent') {
       return 'none';
     }
@@ -73,7 +76,6 @@ function userEventBinding(
 ): UserEventReading {
   const { name } = binding.identifier;
   const declaration = binding.path;
-
   const source = userEventImportSource(declaration);
 
   if (source !== undefined) {

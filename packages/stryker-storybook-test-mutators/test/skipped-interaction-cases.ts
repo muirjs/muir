@@ -410,6 +410,13 @@ const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-optional-context-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the userEvent of a play context read through ?., makes no mutant',
+    source: `export const Story = {\n  play: async (context) => {\n    await context?.userEvent.click(input);\n    await context?.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-testing-library-import-click-before-type',
     title:
       "a click directly before a type on the same target, both on userEvent imported from '@testing-library/user-event', makes no mutant",
