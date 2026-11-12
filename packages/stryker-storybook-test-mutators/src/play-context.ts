@@ -163,8 +163,8 @@ function readsUserEvent(path: NodePath<types.Identifier>): boolean {
 export const contextsOnlyRead = perFile((program) => {
   let onlyRead = true;
   const reads: FileReads = {
-    contextLocals: new WeakMap(),
-    argumentReaders: new WeakMap(),
+    reachedLocals: new Set(),
+    argumentReaders: new Map(),
   };
 
   const check = (path: NodePath, read: boolean): void => {
@@ -494,29 +494,25 @@ function isStepCall(step: NodePath, reads: FileReads): boolean {
   );
 }
 
-/** What one file's read has found so far. A context local that reaches itself is held as read while its read is in progress, so these live only as long as that file's read, which stops at the first context not read. */
+/** What one file's read has found so far, kept only for that read, which stops at the first context not read. So a context local already reached counts as read: had its read found otherwise, nothing would be read after it. */
 interface FileReads {
-  readonly contextLocals: WeakMap<types.Node, boolean>;
-  readonly argumentReaders: WeakMap<types.Node, boolean>;
+  readonly reachedLocals: Set<types.Node>;
+  readonly argumentReaders: Map<types.Node, boolean>;
 }
 
-/** A local or pattern that a context is given to, read as a context, once per local or pattern. One that reaches itself counts as read while it is being read, as reading it again finds nothing the first read does not. */
+/** A local or pattern that a context is given to, read as a context, once per local or pattern. One reached again, itself included, counts as read, as reading it again finds nothing the first read does not. */
 function isContextLocal(
   local: types.Node,
   scope: NodePath['scope'],
   reads: FileReads,
 ): boolean {
-  const known = reads.contextLocals.get(local);
-
-  if (known !== undefined) {
-    return known;
+  if (reads.reachedLocals.has(local)) {
+    return true;
   }
 
-  reads.contextLocals.set(local, true);
-  const read = readsAsContext(local, scope, reads);
-  reads.contextLocals.set(local, read);
+  reads.reachedLocals.add(local);
 
-  return read;
+  return readsAsContext(local, scope, reads);
 }
 
 function readsAsContext(
