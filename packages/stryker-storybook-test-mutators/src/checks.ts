@@ -55,7 +55,7 @@ function checksIn(path: NodePath): readonly Check[] {
 function checkOf(expectCall: NodePath): Check {
   const members = matcherChain(expectCall);
   const last = members.at(-1);
-  const matcherCall = last?.parentPath?.node;
+  const matcherCall = last?.parent;
 
   return {
     chain: members.map((member) => nameOf(member.node.property)),
@@ -77,7 +77,7 @@ function matcherChain(
 ): readonly NodePath<types.MemberExpression>[] {
   const member = expectCall.parentPath;
 
-  return member?.isMemberExpression() && member.node.object === expectCall.node
+  return member.isMemberExpression() && member.node.object === expectCall.node
     ? [member, ...matcherChain(member)]
     : [];
 }
