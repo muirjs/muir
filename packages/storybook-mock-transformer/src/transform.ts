@@ -3,7 +3,7 @@ import {
   appendRecord,
   definitionTimeStubs,
   type StubMethod,
-} from '@layzee/storybook-csf';
+} from '@layzee/storybook-core';
 import MagicString, { type SourceMap } from 'magic-string';
 
 import { packageName } from './package-name.ts';

@@ -4,7 +4,7 @@ import {
   isRecord,
   list,
   type CsfShapes,
-} from '@layzee/storybook-csf';
+} from '@layzee/storybook-core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 

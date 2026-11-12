@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { csfFile, field, list, topLevelBindings } from '@layzee/storybook-csf';
+import { csfFile, field, list, topLevelBindings } from '@layzee/storybook-core';
 import { vitestTransform } from 'storybook/internal/csf-tools';
 
 import { storyIndex } from '../src/story-index.ts';

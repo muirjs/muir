@@ -1,5 +1,5 @@
 {
-  "name": "@layzee/storybook-csf",
+  "name": "@layzee/storybook-core",
   "version": "0.0.0",
   "private": true,
   "description": "Reads Storybook story files and spy stubs for the @layzee Storybook packages",
@@ -8,11 +8,11 @@
     "csf",
     "stories"
   ],
-  "homepage": "https://github.com/LayZeeDK/lz-playwright-test/tree/main/packages/storybook-csf#readme",
+  "homepage": "https://github.com/LayZeeDK/lz-playwright-test/tree/main/packages/storybook-core#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/LayZeeDK/lz-playwright-test.git",
-    "directory": "packages/storybook-csf"
+    "directory": "packages/storybook-core"
   },
   "license": "MIT",
   "type": "module",

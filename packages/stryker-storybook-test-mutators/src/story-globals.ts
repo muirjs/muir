@@ -1,4 +1,4 @@
-import { list, sitesOf, type Proven } from '@layzee/storybook-csf';
+import { list, sitesOf, type Proven } from '@layzee/storybook-core';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
 import { perFile, readStoryFileAt } from './story-file.ts';

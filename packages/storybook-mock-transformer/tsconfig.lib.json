@@ -12,7 +12,7 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../storybook-csf/tsconfig.lib.json"
+      "path": "../storybook-core/tsconfig.lib.json"
     }
   ]
 }

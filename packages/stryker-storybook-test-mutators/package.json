@@ -40,7 +40,7 @@
     "@stryker-mutator/core": "~10.1.0"
   },
   "dependencies": {
-    "@layzee/storybook-csf": "0.0.0",
+    "@layzee/storybook-core": "0.0.0",
     "@layzee/stryker-mutator-install": "0.0.0"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
-import type * as csf from '@layzee/storybook-csf';
-import type { ProofReason, Proven, Site } from '@layzee/storybook-csf';
+import type * as csf from '@layzee/storybook-core';
+import type { ProofReason, Proven, Site } from '@layzee/storybook-core';
 
 type Assignable<TFrom, TTo> = [TFrom] extends [TTo] ? true : false;
 

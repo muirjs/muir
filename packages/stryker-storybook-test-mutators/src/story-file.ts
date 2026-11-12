@@ -1,5 +1,5 @@
 import type { NodePath, types } from '@babel/core';
-import { csfShapes } from '@layzee/storybook-csf';
+import { csfShapes } from '@layzee/storybook-core';
 
 /**
  * What `read` gives for the file around a path, read once per file. A mutator calls it at the Program: Stryker places

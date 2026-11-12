@@ -37,7 +37,7 @@
       "path": "./packages/storybook-mock-transformer"
     },
     {
-      "path": "./packages/storybook-csf"
+      "path": "./packages/storybook-core"
     }
   ]
 }

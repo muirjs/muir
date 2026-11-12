@@ -14,7 +14,7 @@ import {
   unchangedBindings,
   unwrap,
   withoutBinding,
-} from '@layzee/storybook-csf';
+} from '@layzee/storybook-core';
 import { combineTags } from 'storybook/internal/csf';
 
 import { storyIndex } from './story-index.ts';

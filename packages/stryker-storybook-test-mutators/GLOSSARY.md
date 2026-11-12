@@ -1,7 +1,7 @@
 # Storybook test mutators
 
 Mutators that change story test code instead of the components, so that a surviving mutant shows a step of a play
-function that no check depends on. Story test code is the Storybook context's term, read as `@layzee/storybook-csf`
+function that no check depends on. Story test code is the Storybook context's term, read as `@layzee/storybook-core`
 reads it: the plays and hooks of the meta and the stories, including ones assigned as `Story.play = ...`, and the
 `.test()` bodies of exported stories that Storybook runs. Install, tier and built-in mutator terms belong to the Mutator install context.
 
@@ -116,7 +116,7 @@ file cannot read (options that are an imported object, or a spread or computed k
 options, the story or the meta, and those of a story or meta the file writes to) and an unmatched `.test()` call count
 as ones that may set `viewport`. The meta's
 `globals` below a site are read the same way, so a spread or computed key that may replace them may set any global.
-The table is fixed and lives in `@layzee/storybook-csf`, which proves each default global (the Storybook context's
+The table is fixed and lives in `@layzee/storybook-core`, which proves each default global (the Storybook context's
 Proven); a project's own `initialGlobals` and parameters in its preview are not read, so a default value that
 overrides them still gets no mutant.
 _Avoid_: initial global, preset global

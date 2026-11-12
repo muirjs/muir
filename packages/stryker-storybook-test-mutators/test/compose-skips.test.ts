@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 
-import { field, isRecord } from '@layzee/storybook-csf';
+import { field, isRecord } from '@layzee/storybook-core';
 
 import { proofsBySite } from '../src/story-globals.ts';
 import { assertionBeforeCases } from './assertion-before-cases.ts';

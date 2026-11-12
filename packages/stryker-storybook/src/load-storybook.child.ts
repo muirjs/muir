@@ -3,7 +3,7 @@ import { register } from 'node:module';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { field, isRecord } from '@layzee/storybook-csf';
+import { field, isRecord } from '@layzee/storybook-core';
 
 import type {
   LoaderResult,

@@ -1,4 +1,4 @@
-# @layzee/storybook-csf
+# @layzee/storybook-core
 
 The code that `@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer`,
 `@layzee/stryker-storybook-mutators` and `@layzee/stryker-storybook-test-mutators` share: reading story files (CSF) from a parsed program, finding definition-time

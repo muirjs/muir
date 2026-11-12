@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { definitionTimeStubs, field, isRecord } from '@layzee/storybook-csf';
+import { definitionTimeStubs, field, isRecord } from '@layzee/storybook-core';
 
 import { parseProgram } from '../src/parse.ts';
 import {
