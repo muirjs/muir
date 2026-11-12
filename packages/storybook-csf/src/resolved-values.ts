@@ -1,4 +1,5 @@
-import { isMember, keyOf, unwrap, withoutBinding } from './csf.ts';
+import { isMember, keyOf, unwrap } from './csf-nodes.ts';
+import { withoutBinding } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import {

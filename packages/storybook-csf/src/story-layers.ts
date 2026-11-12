@@ -1,4 +1,5 @@
-import { storyArgument, unwrap, withoutBinding } from './csf.ts';
+import { storyArgument, unwrap } from './csf-nodes.ts';
+import { withoutBinding } from './csf.ts';
 import { field } from './node-field.ts';
 import { unknownValue, type LayerValue } from './object-value.ts';
 import {

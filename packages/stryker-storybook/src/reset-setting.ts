@@ -138,13 +138,13 @@ export function classifyStubs(
   const topLevel = topLevelBindings(body);
   const index = storyIndex(code, fileName);
   const {
-    metaObjects: [meta],
+    metas: [meta],
     stories: exported,
     written: writtenNames,
   } = csfFile(body, topLevel, index);
   const bindings = unchangedBindings(topLevel, writtenNames);
   const isSelfImported = mayImportItself(body, fileName);
-  const metaValue = evaluate(meta, bindings);
+  const metaValue = evaluate(meta?.object, bindings);
   const metaTest = testSettings(member(metaValue, 'parameters'));
   const declared = exported
     .filter(({ name, tested }) => {

@@ -5,14 +5,13 @@ export {
   isTemplateBind,
   mayImportItself,
   namedExports,
-  storyArgument,
   topLevelBindings,
   unchangedBindings,
-  unwrap,
   withoutBinding,
   type CsfShapes,
   type IndexedStory,
 } from './csf.ts';
+export { storyArgument, unwrap } from './csf-nodes.ts';
 export * from './is-record.ts';
 export * from './node-field.ts';
 export { propertyKey } from './object-value.ts';

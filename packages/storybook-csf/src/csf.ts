@@ -1,6 +1,15 @@
 import { dirname, extname, resolve } from 'node:path';
 
+import {
+  assignmentOf,
+  declarationOf,
+  isStoryFactoryCall,
+  storyArgument,
+  unwrap,
+  type Assignment,
+} from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
+import { namesReadElsewhere } from './names-read-elsewhere.ts';
 import { field, list } from './node-field.ts';
 import { writtenValue } from './object-value.ts';
 
@@ -41,7 +50,8 @@ export function csfShapes(program: unknown): CsfShapes {
   const specifiers = body.flatMap((statement) =>
     list(field(statement, 'specifiers')),
   );
-  const { metaObjects, stories: exported } = csfFile(body, bindings);
+  const { metas, stories: exported } = csfFile(body, bindings);
+  const metaObjects = metas.map(({ object }) => object);
   const assignments = exported.flatMap((story) => story.assignments);
   const runtime = exported.flatMap((story) => story.runtimeAssignments);
   const stories = [
@@ -175,14 +185,13 @@ function isMetaObjectExportedBySpecifier(
 const defaultExportName = Symbol('export default');
 
 export interface CsfFile {
-  readonly metaObjects: readonly unknown[];
   /** Each meta object with the family name a write to it marks in `written`: the default export's, or the factory meta's local name. */
   readonly metas: readonly MetaObject[];
   readonly stories: readonly StoryExport[];
   /** The top-level names in a family with a written member, a name assigned to a member the file writes below or whose object it hands on included, so what the file declares for them is not what runs. */
   readonly written: ReadonlySet<unknown>;
   /** The top-level names another top-level object or meta reads when the file loads, so what they hold also reaches code outside their own runs. */
-  readonly readElsewhere: ReadonlySet<unknown>;
+  readonly readByOtherObjects: ReadonlySet<unknown>;
 }
 
 export interface MetaObject {
@@ -209,30 +218,28 @@ export function csfFile(
   const metas = metaBindings.flatMap(([owner, meta]) =>
     objectOf(meta, bindings).map((object) => ({ object, owner })),
   );
-  const metaObjects = metas.map(({ object }) => object);
-  const { elsewhere, written, readElsewhere } = namesReadElsewhere(
-    body,
-    bindings,
-    metaBindings,
-  );
+  const { referencedElsewhere, written, readByOtherObjects } =
+    namesReadElsewhere(body, bindings, metaBindings);
 
   return {
-    metaObjects,
     metas,
     stories: storyExports(
       body,
       bindings,
       isFactoryFile,
       index === undefined
-        ? storyFilter(metaObjects, isFactoryFile)
+        ? storyFilter(
+            metas.map(({ object }) => object),
+            isFactoryFile,
+          )
         : ({ name }) => index.has(name),
       (name) => list(index?.get(name)?.tests),
       (local) =>
         metaBindings.some(([name]) => written.has(name)) ||
-        elsewhere.has(local),
+        referencedElsewhere.has(local),
     ),
     written,
-    readElsewhere,
+    readByOtherObjects,
   };
 }
 
@@ -261,7 +268,7 @@ function storyExports(
   isFactoryFile: boolean,
   isStory: (named: NamedExport) => boolean,
   testNames: (name: string) => readonly unknown[],
-  isReadElsewhere: (local: unknown) => boolean,
+  isReferencedElsewhere: (local: unknown) => boolean,
 ): readonly StoryExport[] {
   const assignments = body.flatMap(assignmentOf);
   const testCalls = body.flatMap(testCallOf);
@@ -287,7 +294,7 @@ function storyExports(
           (form === 'declaration' ||
             (init !== undefined &&
               field(init, 'type') !== 'FunctionDeclaration')),
-        referencedElsewhere: isReadElsewhere(local),
+        referencedElsewhere: isReferencedElsewhere(local),
         assignments: storyAssignments,
         runtimeAssignments: runtimeAssignments(storyAssignments, isFactoryFile),
         extendsBase:
@@ -357,16 +364,6 @@ function childOf(testName: unknown, calls: readonly TestCall[]): TestChild {
   );
 
   return call === undefined ? 'unmatched' : testArguments(call);
-}
-
-const storyFactories: readonly unknown[] = ['story', 'extend'];
-
-/** Storybook 10.6.5 `isCsfFactoryCall`: a `.story()` or `.extend()` call on a plain name. */
-function isStoryFactoryCall(node: unknown): boolean {
-  return (
-    field(node, 'callee', 'object', 'type') === 'Identifier' &&
-    storyFactories.includes(field(node, 'callee', 'property', 'name'))
-  );
 }
 
 const previewPath = /\/preview(.(js|jsx|mjs|ts|tsx))?$/;
@@ -498,26 +495,6 @@ export function unchangedBindings(
   return new Map([...bindings].filter(([name]) => !written.has(name)));
 }
 
-function declarationOf(statement: unknown): unknown {
-  return field(statement, 'type') === 'ExportNamedDeclaration'
-    ? field(statement, 'declaration')
-    : statement;
-}
-
-const wrappers: readonly unknown[] = [
-  'TSSatisfiesExpression',
-  'TSAsExpression',
-  'TSNonNullExpression',
-  'TSTypeAssertion',
-  'ParenthesizedExpression',
-];
-
-export function unwrap(node: unknown): unknown {
-  return wrappers.includes(field(node, 'type'))
-    ? unwrap(field(node, 'expression'))
-    : node;
-}
-
 /** `value` is an export specifier's local, a call argument, a property or assigned value, or a `.bind()` callee's object; of these only an Identifier has a string `name`. */
 function followed(value: unknown, bindings: Bindings): unknown {
   const name = field(value, 'name');
@@ -576,13 +553,6 @@ function matchesStories(name: unknown, descriptor: unknown): boolean {
   );
 }
 
-export interface Assignment {
-  readonly statement: unknown;
-  readonly target: unknown;
-  readonly path: readonly unknown[];
-  readonly value: unknown;
-}
-
 /** Storybook 10.6.5 composes a factory story from the keys of the `input` that `defineStory` closed over, so only writes below `input` count. */
 function runtimeAssignments(
   assignments: readonly Assignment[],
@@ -597,43 +567,6 @@ function runtimeAssignments(
       ? [{ ...assignment, path: assignment.path.slice(1) }]
       : [],
   );
-}
-
-function assignmentOf(statement: unknown): readonly Assignment[] {
-  const [target, ...path] = memberChain(field(statement, 'expression', 'left'));
-
-  if (
-    field(statement, 'expression', 'operator') !== '=' ||
-    typeof target !== 'string'
-  ) {
-    return [];
-  }
-
-  return [
-    {
-      statement,
-      target,
-      path,
-      value: field(statement, 'expression', 'right'),
-    },
-  ];
-}
-
-function memberChain(node: unknown): readonly unknown[] {
-  return field(node, 'type') === 'MemberExpression'
-    ? [...memberChain(field(node, 'object')), keyOf(node)]
-    : [field(node, 'name')];
-}
-
-/** Storybook 10.6.5 `keyOf`: a member's name, or `undefined` when only running the file gives it. */
-export function keyOf(member: unknown): unknown {
-  if (field(member, 'property', 'type') === 'StringLiteral') {
-    return field(member, 'property', 'value');
-  }
-
-  return field(member, 'computed') === true
-    ? undefined
-    : field(member, 'property', 'name');
 }
 
 export interface TestCall {
@@ -654,266 +587,6 @@ export function testCallOf(statement: unknown): readonly TestCall[] {
         },
       ]
     : [];
-}
-
-/** Storybook 10.6.5 CsfFile indexes a `B.test('name', ...)` statement that is a plain call with a string-literal name and two or more arguments; this check also needs no spread argument, as only running the file tells which argument a spread fills. */
-export function isIndexedTestCall(statement: unknown): boolean {
-  const call = field(statement, 'expression');
-  const args = list(field(call, 'arguments'));
-
-  return (
-    field(call, 'type') === 'CallExpression' &&
-    field(call, 'callee', 'property', 'name') === 'test' &&
-    args.length >= 2 &&
-    field(args[0], 'type') === 'StringLiteral' &&
-    !args.some((arg) => field(arg, 'type') === 'SpreadElement')
-  );
-}
-
-function identifiersInReadForms(statement: unknown): readonly unknown[] {
-  const declaration = declarationOf(statement);
-
-  return [
-    field(declaration, 'id'),
-    ...list(field(declaration, 'declarations')).flatMap((declarator) => {
-      const init = unwrap(field(declarator, 'init'));
-
-      return [
-        field(declarator, 'id'),
-        isStoryFactoryCall(init) ? field(init, 'callee', 'object') : undefined,
-      ];
-    }),
-    ...list(field(statement, 'specifiers')).flatMap((specifier) => [
-      field(specifier, 'local'),
-      field(specifier, 'exported'),
-    ]),
-    ...(isIndexedTestCall(statement)
-      ? [
-          field(statement, 'expression', 'callee', 'object'),
-          ...list(field(statement, 'expression', 'arguments')),
-        ]
-      : []),
-    ...(field(statement, 'expression', 'operator') === '='
-      ? [
-          rootObject(field(statement, 'expression', 'left', 'object')),
-          field(statement, 'expression', 'right'),
-        ]
-      : []),
-  ];
-}
-
-function rootObject(node: unknown): unknown {
-  return field(node, 'type') === 'MemberExpression'
-    ? rootObject(field(node, 'object'))
-    : node;
-}
-
-/** `elsewhere` holds the names the file uses outside the forms the package reads, plus every name in a family of two or more that has a written member; `written` holds every name in a written family. A shadowing local counts too, as no scopes are resolved; the key of a property does not. The meta joins the families as the default export and as each factory meta. */
-function namesReadElsewhere(
-  body: readonly unknown[],
-  bindings: Bindings,
-  metaBindings: readonly (readonly [unknown, unknown])[],
-): {
-  readonly elsewhere: ReadonlySet<unknown>;
-  readonly written: ReadonlySet<unknown>;
-  readonly readElsewhere: ReadonlySet<unknown>;
-} {
-  const reaches = reachesOf([...bindings, ...metaBindings], bindings);
-  const read = new Set([
-    ...body.flatMap(identifiersInReadForms),
-    ...reaches.map(({ identifier }) => identifier),
-  ]);
-  const referenced = identifiersIn(body)
-    .filter((identifier) => !read.has(identifier))
-    .map((identifier) => field(identifier, 'name'));
-  const assignments = body.flatMap(assignmentOf);
-  const written = withFamilies(
-    new Set([
-      ...referenced,
-      ...assignments.map(({ target }) => target),
-      ...writtenThrough(assignments, referenced),
-    ]),
-    reaches,
-  );
-
-  return {
-    elsewhere: new Set([
-      ...referenced,
-      ...reaches
-        .filter(({ from }) => written.has(from))
-        .flatMap(({ from, to }) => [from, to]),
-    ]),
-    written,
-    readElsewhere: withReadThrough(
-      new Set(
-        reaches
-          .filter(({ from, to, shares }) => from !== to && !shares)
-          .map(({ to }) => to),
-      ),
-      reaches,
-    ),
-  };
-}
-
-function withReadThrough(
-  names: ReadonlySet<unknown>,
-  reaches: readonly Reach[],
-): ReadonlySet<unknown> {
-  const added = reaches.flatMap(({ from, to, shares }) => [
-    ...(names.has(from) && !names.has(to) ? [to] : []),
-    ...(shares && names.has(to) && !names.has(from) ? [from] : []),
-  ]);
-
-  return added.length === 0
-    ? names
-    : withReadThrough(new Set([...names, ...added]), reaches);
-}
-
-/** The names that `A.args = shared` assigns where the file also writes below that member, as `A.args.a = 2` then writes to `shared`, or hands `A` to code it does not read. */
-function writtenThrough(
-  assignments: readonly Assignment[],
-  referenced: readonly unknown[],
-): readonly string[] {
-  return assignments.flatMap(({ target, path, value }) => {
-    const name = field(value, 'name');
-
-    return typeof name === 'string' &&
-      (referenced.includes(target) ||
-        assignments.some(
-          (other) =>
-            other.target === target &&
-            other.path.length > path.length &&
-            path.every((key, index) => other.path[index] === key),
-        ))
-      ? [name]
-      : [];
-  });
-}
-
-function withFamilies(
-  names: ReadonlySet<unknown>,
-  reaches: readonly Reach[],
-): ReadonlySet<unknown> {
-  const reached = reaches
-    .filter(({ from, to }) => names.has(from) !== names.has(to))
-    .flatMap(({ from, to }) => [from, to]);
-
-  return reached.length === 0
-    ? names
-    : withFamilies(new Set([...names, ...reached]), reaches);
-}
-
-interface Reach {
-  readonly from: unknown;
-  readonly to: string;
-  readonly identifier: unknown;
-  readonly shares: boolean;
-}
-
-/** A top-level `const C = { ...A, b: { c: B } }` or `const C = A` shares A's and B's nested objects with C, so a write through any of them changes what the others run with; a name bound to a literal shares none. */
-function reachesOf(
-  inits: readonly (readonly [unknown, unknown])[],
-  bindings: Bindings,
-): readonly Reach[] {
-  return inits.flatMap(([from, init]) => {
-    const shared = sharedIdentifiers(init);
-
-    return identifiersReachedFrom(init).flatMap((identifier) => {
-      const to = field(identifier, 'name');
-
-      return typeof to === 'string' &&
-        bindings.has(to) &&
-        !primitiveTypes.includes(field(unwrap(bindings.get(to)), 'type'))
-        ? [{ from, to, identifier, shares: shared.includes(identifier) }]
-        : [];
-    });
-  });
-}
-
-function sharedIdentifiers(init: unknown): readonly unknown[] {
-  const current = unwrap(init);
-
-  if (field(current, 'type') === 'Identifier') {
-    return [current];
-  }
-
-  return list(field(storyArgument(current), 'properties'))
-    .filter((property) => field(property, 'type') === 'SpreadElement')
-    .map((spread) => memberRoot(field(spread, 'argument')))
-    .filter((argument) => field(argument, 'type') === 'Identifier');
-}
-
-function memberRoot(node: unknown): unknown {
-  const current = unwrap(node);
-
-  return isMember(current) ? memberRoot(field(current, 'object')) : current;
-}
-
-/** A literal or template literal holds no object, so two names that read one share nothing a write could change. */
-const primitiveTypes: readonly unknown[] = [
-  'StringLiteral',
-  'NumericLiteral',
-  'BooleanLiteral',
-  'NullLiteral',
-  'BigIntLiteral',
-  'TemplateLiteral',
-];
-
-const memberTypes: readonly unknown[] = [
-  'MemberExpression',
-  'OptionalMemberExpression',
-];
-
-/** `object.key`, `object?.key` or `object[key]`. */
-export function isMember(node: unknown): boolean {
-  return memberTypes.includes(field(node, 'type'));
-}
-
-/** The identifiers whose objects a value shares: those `evaluate` in reset-setting.ts follows, those of a `.story()` or `.extend()` argument, which Storybook 10.6.5 keeps as the story's `input`, and the object of a member such as `Base.args`. */
-function identifiersReachedFrom(node: unknown): readonly unknown[] {
-  const current = unwrap(node);
-
-  if (field(current, 'type') === 'Identifier') {
-    return [current];
-  }
-
-  if (isStoryFactoryCall(current)) {
-    return identifiersReachedFrom(storyArgument(current));
-  }
-
-  if (isMember(current)) {
-    return identifiersReachedFrom(field(current, 'object'));
-  }
-
-  return list(field(current, 'properties')).flatMap((property) =>
-    identifiersReachedFrom(
-      field(
-        property,
-        field(property, 'type') === 'SpreadElement' ? 'argument' : 'value',
-      ),
-    ),
-  );
-}
-
-function identifiersIn(node: unknown): readonly unknown[] {
-  if (!isRecord(node) || node['type'] === 'TSTypeQuery') {
-    // Stryker disable next-line ArrayDeclaration: a string in this list gives namesReadElsewhere an undefined name, which marks only a story whose local is undefined: a namespace re-export, which Storybook 10.6.5's index never lists, or a re-export by string name, which its Vitest transform does not test; classifyStubs drops both, and csfShapes never reads the flag
-    return [];
-  }
-
-  if (node['type'] === 'Identifier') {
-    return [node];
-  }
-
-  if (node['type'] === 'MemberExpression' && node['computed'] === false) {
-    return identifiersIn(node['object']);
-  }
-
-  if (node['type'] === 'ObjectProperty' && node['computed'] === false) {
-    return identifiersIn(node['value']);
-  }
-
-  return Object.values(node).flatMap(identifiersIn);
 }
 
 /** The file holds a string literal that names this file, or loads a module whose specifier is not a string literal. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
@@ -965,14 +638,6 @@ function storyNode(init: unknown, bindings: Bindings): unknown {
   }
 
   return storyArgument(init);
-}
-
-export function storyArgument(init: unknown): unknown {
-  const current = unwrap(init);
-
-  return isStoryFactoryCall(current)
-    ? list(field(current, 'arguments'))[0]
-    : current;
 }
 
 export function isTemplateBind(init: unknown): boolean {

@@ -1,9 +1,8 @@
+import { storyArgument, unwrap } from './csf-nodes.ts';
 import {
   csfFile,
-  storyArgument,
   topLevelBindings,
   unchangedBindings,
-  unwrap,
   type TestArguments,
 } from './csf.ts';
 import { isInitialGlobal } from './initial-globals.ts';
@@ -106,7 +105,7 @@ export function sitesOf(
   const root = (expression: unknown, owner: unknown): Layer =>
     rootLayer(expression, owner, file.written, unchanged);
   const ownRoot = (layer: Layer, name: unknown): Layer =>
-    file.readElsewhere.has(name) ? unknownValue : layer;
+    file.readByOtherObjects.has(name) ? unknownValue : layer;
   const metas = file.metas.map(({ object, owner }) => {
     const metaRoot = root(object, owner);
 

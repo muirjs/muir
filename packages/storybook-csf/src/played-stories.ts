@@ -1,12 +1,10 @@
+import { isIndexedTestCall, storyArgument, unwrap } from './csf-nodes.ts';
 import {
   firstTestCalls,
-  isIndexedTestCall,
-  storyArgument,
   testArguments,
   testCallOf,
   topLevelValueOrSelf,
   unchangedBindings,
-  unwrap,
   type CsfFile,
   type StoryExport,
   type TestChild,
@@ -40,12 +38,13 @@ export interface PlayedStory {
 export function playedStories(
   body: readonly unknown[],
   bindings: ReadonlyMap<string, unknown>,
-  { metaObjects, stories, written }: CsfFile,
+  { metas, stories, written }: CsfFile,
 ): readonly PlayedStory[] {
-  if (metaObjects.length === 0) {
+  if (metas.length === 0) {
     return [];
   }
 
+  const metaObjects = metas.map(({ object }) => object);
   const unchanged = unchangedBindings(bindings, written);
   const metaPlays = metaObjects.flatMap((meta) =>
     resolvedValues(meta, 'play', unchanged),
