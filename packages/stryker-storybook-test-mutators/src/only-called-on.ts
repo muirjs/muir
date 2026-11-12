@@ -69,8 +69,7 @@ function isChoiceSideUnseen(
   return (
     local !== undefined &&
     value?.node === choice.node &&
-    (seen.has(local) ||
-      isOnlyCalledOnUnseen(local, new Set([...seen, local])))
+    (seen.has(local) || isOnlyCalledOnUnseen(local, new Set([...seen, local])))
   );
 }
 
