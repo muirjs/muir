@@ -1,11 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parse } from '@babel/parser';
-
 import { topLevelBindings } from '../src/csf.ts';
 import { isRecord } from '../src/is-record.ts';
-import { field, list } from '../src/node-field.ts';
+import { field } from '../src/node-field.ts';
 import { objectValue, unknownValue } from '../src/object-value.ts';
 import {
   asWrittenLayer,
@@ -14,6 +12,7 @@ import {
   type Layer,
 } from '../src/resolved-values.ts';
 import { extendLevels } from '../src/story-layers.ts';
+import { bodyOf } from './support/body-of.ts';
 
 function rootLayers(
   bindings: ReadonlyMap<string, unknown>,
@@ -27,17 +26,7 @@ function rootLayers(
 }
 
 function storyGlobals(source: readonly string[]): readonly unknown[] {
-  const body = list(
-    field(
-      parse(source.join('\n'), {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      }),
-      'program',
-      'body',
-    ),
-  );
-  const bindings = topLevelBindings(body);
+  const bindings = topLevelBindings(bodyOf(...source));
 
   return rootLayers(bindings, new Set()).map(
     (layer) => valuesOf(layer, 'globals')[0],
@@ -75,20 +64,12 @@ describe('extendLevels', () => {
   });
 
   it('reads a story the file writes as unknown through its root, and as its literal as written', () => {
-    const body = list(
-      field(
-        parse(
-          [
-            "export const B = { globals: { locale: 'de' } };",
-            "B.globals.locale = 'fr';",
-          ].join('\n'),
-          { sourceType: 'module', plugins: ['typescript'] },
-        ),
-        'program',
-        'body',
+    const bindings = topLevelBindings(
+      bodyOf(
+        "export const B = { globals: { locale: 'de' } };",
+        "B.globals.locale = 'fr';",
       ),
     );
-    const bindings = topLevelBindings(body);
     const typesOf = (layers: readonly Layer[]) =>
       layers.map((layer) => field(valuesOf(layer, 'globals')[0], 'type'));
     const [own] = extendLevels(bindings.get('B'), 'B', bindings);

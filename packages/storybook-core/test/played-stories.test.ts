@@ -1,27 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parse } from '@babel/parser';
-
 import { csfFile, topLevelBindings } from '../src/csf.ts';
-import { field, list } from '../src/node-field.ts';
+import { field } from '../src/node-field.ts';
 import {
   isUnknownPlay,
   playedStories,
   unknownOverAPlay,
 } from '../src/played-stories.ts';
+import { bodyOf } from './support/body-of.ts';
 
 function played(...lines: readonly string[]) {
-  const body = list(
-    field(
-      parse(lines.join('\n'), {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      }),
-      'program',
-      'body',
-    ),
-  );
+  const body = bodyOf(...lines);
   const bindings = topLevelBindings(body);
 
   return playedStories(body, bindings, csfFile(body, bindings));

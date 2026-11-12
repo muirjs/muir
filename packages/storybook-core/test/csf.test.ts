@@ -5,20 +5,19 @@ import { parse } from '@babel/parser';
 
 import { csfFile, csfShapes, topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
+import { sitesOf } from '../src/sites.ts';
+import { bodyOf, programOf } from './support/body-of.ts';
 
 function fileOf(...lines: readonly string[]) {
-  const body = list(
-    field(
-      parse(lines.join('\n'), {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      }),
-      'program',
-      'body',
-    ),
-  );
+  const body = bodyOf(...lines);
 
   return csfFile(body, topLevelBindings(body));
+}
+
+function testFunctionOf(statement: unknown): unknown {
+  const [, testFunction] = list(field(statement, 'expression', 'arguments'));
+
+  return testFunction;
 }
 
 function writtenNames(...lines: readonly string[]): readonly unknown[] {
@@ -99,21 +98,7 @@ describe('csfFile written', () => {
     );
   });
 
-  it('leaves out a story that shares only a string constant with a name the file hands on', () => {
-    assert.equal(
-      writtenNames(
-        "import { mutate } from './mutate';",
-        "const ROUTE = '/a';",
-        "const meta = { title: 'a/b', parameters: { routePath: ROUTE } };",
-        'mutate(meta);',
-        'export default meta;',
-        'export const A = { parameters: { routePath: ROUTE } };',
-      ).includes('A'),
-      false,
-    );
-  });
-
-  ['1', 'true', 'null', '1n', '`/a`'].forEach((literal) => {
+  ["'/a'", '1', 'true', 'null', '1n', '`/a`'].forEach((literal) => {
     it(`leaves out a story that shares only the constant ${literal} with a name the file hands on`, () => {
       assert.equal(
         writtenNames(
@@ -153,15 +138,27 @@ describe('csfFile written', () => {
     );
   });
 
-  it('leaves out a name assigned to a member when the file writes only below other members', () => {
+  it('leaves out a name assigned to a member when the file writes only below another member', () => {
     assert.equal(
       writtenNames(
         "export default { title: 'a/b' };",
         'const options = { args: { a: 1 } };',
         'const holder = { a: {}, b: { box: {} } };',
-        'const other = { a: { box: {} } };',
         'holder.a.box = options;',
         'holder.b.box.x = 1;',
+      ).includes('options'),
+      false,
+    );
+  });
+
+  it('leaves out a name assigned to a member when the file writes only below the same member of another object', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'const options = { args: { a: 1 } };',
+        'const holder = { a: {} };',
+        'const other = { a: { box: {} } };',
+        'holder.a.box = options;',
         'other.a.box.x = 1;',
       ).includes('options'),
       false,
@@ -181,54 +178,52 @@ describe('csfFile written', () => {
 });
 
 describe('csfFile readByOtherObjects', () => {
-  it('leaves out a story that only its own object names when the file loads', () => {
-    assert.equal(
-      fileOf(
-        "export default { title: 'a/b' };",
-        "export var A = { args: { label: 'a', self: A?.args } };",
-      ).readByOtherObjects.has('A'),
-      false,
+  it('keeps the same-as-below proof of a story that only its own object names when the file loads', () => {
+    assert.deepEqual(
+      sitesOf(
+        bodyOf(
+          "export default { title: 'a/b', args: { label: 'a' } };",
+          "export var A = { args: { label: 'a', self: A?.args }, play: async () => {} };",
+        ),
+        'args',
+      ).map(({ proofs }) => proofs.map(({ reason }) => reason)),
+      [['same-as-below'], []],
     );
   });
 });
 
 describe('csfShapes', () => {
   it('counts the .test() function of each story as test code when two stories have a .test() call of the same name', () => {
-    const program = parse(
-      "import preview from '../.storybook/preview';\n" +
-        "const meta = preview.meta({ title: 'a/b' });\n" +
-        'export const A = meta.story({});\n' +
-        'export const B = meta.story({});\n' +
-        "A.test('t', () => {});\n" +
-        "B.test('t', () => {});\n",
-      { sourceType: 'module' },
-    ).program;
+    const program = programOf(
+      "import preview from '../.storybook/preview';",
+      "const meta = preview.meta({ title: 'a/b' });",
+      'export const A = meta.story({});',
+      'export const B = meta.story({});',
+      "A.test('t', () => {});",
+      "B.test('t', () => {});",
+    );
+    const [, , , , testOfA, testOfB] = program.body;
     const shapes = csfShapes(program);
 
     assert.deepEqual(
-      program.body
-        .slice(4)
-        .map((statement) =>
-          shapes.testCode.has(field(statement, 'expression', 'arguments', '1')),
-        ),
+      [testOfA, testOfB].map((statement) =>
+        shapes.testCode.has(testFunctionOf(statement)),
+      ),
       [true, true],
     );
   });
 
   it('counts a function expression as the test function when an argument follows it', () => {
-    const program = parse(
-      "import preview from '../.storybook/preview';\n" +
-        "const meta = preview.meta({ title: 'a/b' });\n" +
-        'export const A = meta.story({});\n' +
-        "A.test('t', function () {}, {});\n",
-      { sourceType: 'module' },
-    ).program;
-    const [, , , call] = program.body;
+    const program = programOf(
+      "import preview from '../.storybook/preview';",
+      "const meta = preview.meta({ title: 'a/b' });",
+      'export const A = meta.story({});',
+      "A.test('t', function () {}, {});",
+    );
+    const [, , , testOfA] = program.body;
 
     assert.equal(
-      csfShapes(program).testCode.has(
-        field(call, 'expression', 'arguments', '1'),
-      ),
+      csfShapes(program).testCode.has(testFunctionOf(testOfA)),
       true,
     );
   });
