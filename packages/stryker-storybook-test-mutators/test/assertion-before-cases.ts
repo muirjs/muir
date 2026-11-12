@@ -58,6 +58,16 @@ export const assertionBeforeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'assertion-before-skip-wait-for-check-outside-callback',
+    title:
+      'an interaction whose first check is in a waitFor argument other than its callback makes no mutant, as the copy would run the callback before the interaction and check nothing',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'await waitFor(() => args.onPing(), { onTimeout: (error) => { expect(dialog).toBeVisible(); return error; } });',
+    ),
+    expect: [],
+  },
+  {
     id: 'assertion-before-skip-other-call-holding-check',
     title:
       'an interaction whose first check is inside a call other than waitFor makes no mutant, as a copy of the call would run its other effects twice',

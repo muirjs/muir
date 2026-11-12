@@ -28,8 +28,8 @@ export function isCheckStatement(
   );
 }
 
-/** `waitFor(...);`, awaited or not. */
-export function isWaitForStatement(
+/** `waitFor(<callback>, ...);`, awaited or not, whose callback holds a check. */
+export function isWaitForCheckStatement(
   path: NodePath,
 ): path is NodePath<types.ExpressionStatement> {
   if (!path.isExpressionStatement()) {
@@ -38,7 +38,24 @@ export function isWaitForStatement(
 
   const call = awaited(path.node.expression);
 
-  return call.type === 'CallExpression' && nameOf(call.callee) === 'waitFor';
+  if (call.type !== 'CallExpression' || nameOf(call.callee) !== 'waitFor') {
+    return false;
+  }
+
+  let holds = false;
+
+  path.traverse({
+    CallExpression(inner) {
+      if (inner.node === call) {
+        const [callback] = inner.get('arguments');
+
+        holds = callback !== undefined && hasCheck(callback);
+        inner.stop();
+      }
+    },
+  });
+
+  return holds;
 }
 
 function startsWithCheck(node: types.Node): boolean {

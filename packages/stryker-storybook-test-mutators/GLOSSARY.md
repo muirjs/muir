@@ -72,8 +72,8 @@ _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 The first statement in an interaction's own block that holds one of its following checks, which
 `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that holds the
 interaction is not looked at, so an interaction that is a step callback's expression body has none. A statement that
-is neither a check nor a `waitFor(...)` holding one, one that reads a name declared or assigned after the
-interaction, and one that already stands earlier in the play are not copied. A negative check and a
+is not a check statement, nor a `waitFor(...)` whose callback holds a check, one that reads a name declared or
+assigned after the interaction, and one that already stands earlier in the play are not copied. A negative check and a
 `toHaveBeenCalledTimes(0)` check are copied like any other.
 _Avoid_: duplicated assertion, moved check
 
