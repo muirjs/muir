@@ -754,6 +754,19 @@ export const fallbackCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'story-spread-with-play-in-other-story',
+    title:
+      "a key whose literal value equals the meta's makes no mutant when the only played story spreads the whole story and adds its play",
+    source:
+      "export default { title: 'Button', args: { label: 'a' } };\n" +
+      "export const Primary = { args: { label: 'a', size: 1, disabled: true } };\n" +
+      'export const Other = { ...Primary, play: async () => {} };\n',
+    expect: [
+      [args, "{ label: 'a', disabled: true }"],
+      [args, "{ label: 'a', size: 1 }"],
+    ],
+  },
+  {
     id: 'test-options-over-written-factory-meta',
     title:
       "a key in .test() options whose literal value equals the factory meta's is removed when the file writes to the meta's args",
