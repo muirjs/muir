@@ -84,6 +84,16 @@ export const contextRuleCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'leaked-context-locals-cycle-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach gives two locals its context and then each other, and passes one of them on",
+    source: `export default {\n  beforeEach: function (context) {\n    var first = context;\n    var second = first;\n    var first = second;\n    globalThis.leaked = second;\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'skip-self-given-story-context-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a decorator gives a local useStoryContext() and then the local itself",
