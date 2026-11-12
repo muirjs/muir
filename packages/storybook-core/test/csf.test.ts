@@ -5,20 +5,23 @@ import { parse } from '@babel/parser';
 
 import { csfFile, csfShapes, topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
+import { sitesOf } from '../src/sites.ts';
+import { bodyOf, programOf } from './support/parse-module.ts';
+
+function fileOf(...lines: readonly string[]) {
+  const body = bodyOf(...lines);
+
+  return csfFile(body, topLevelBindings(body));
+}
+
+function testFunctionOf(statement: unknown): unknown {
+  const [, testFunction] = list(field(statement, 'expression', 'arguments'));
+
+  return testFunction;
+}
 
 function writtenNames(...lines: readonly string[]): readonly unknown[] {
-  const body = list(
-    field(
-      parse(lines.join('\n'), {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      }),
-      'program',
-      'body',
-    ),
-  );
-
-  return [...csfFile(body, topLevelBindings(body)).written];
+  return [...fileOf(...lines).written];
 }
 
 describe('csfFile written', () => {
@@ -95,16 +98,69 @@ describe('csfFile written', () => {
     );
   });
 
-  it('leaves out a story that shares only a string constant with a name the file hands on', () => {
+  ["'/a'", '1', 'true', 'null', '1n', '`/a`'].forEach((literal) => {
+    it(`leaves out a story that shares only the constant ${literal} with a name the file hands on`, () => {
+      assert.equal(
+        writtenNames(
+          "import { mutate } from './mutate';",
+          `const ROUTE = ${literal};`,
+          "const meta = { title: 'a/b', parameters: { routePath: ROUTE } };",
+          'mutate(meta);',
+          'export default meta;',
+          'export const A = { parameters: { routePath: ROUTE } };',
+        ).includes('A'),
+        false,
+      );
+    });
+  });
+
+  it('holds a story that the body of an object method hands on', () => {
     assert.equal(
       writtenNames(
         "import { mutate } from './mutate';",
-        "const ROUTE = '/a';",
-        "const meta = { title: 'a/b', parameters: { routePath: ROUTE } };",
-        'mutate(meta);',
-        'export default meta;',
-        'export const A = { parameters: { routePath: ROUTE } };',
-      ).includes('A'),
+        "export default { title: 'a/b' };",
+        'export const B = { args: { a: 1 } };',
+        'export const A = { play() { mutate(B); } };',
+      ).includes('B'),
+      true,
+    );
+  });
+
+  it('holds a story that a computed key hands on', () => {
+    assert.equal(
+      writtenNames(
+        "import { keyOf } from './key-of';",
+        "export default { title: 'a/b' };",
+        'export const B = { args: { a: 1 } };',
+        'export const A = { args: { [keyOf(B)]: 1 } };',
+      ).includes('B'),
+      true,
+    );
+  });
+
+  it('leaves out a name assigned to a member when the file writes only below another member', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'const options = { args: { a: 1 } };',
+        'const holder = { a: {}, b: { box: {} } };',
+        'holder.a.box = options;',
+        'holder.b.box.x = 1;',
+      ).includes('options'),
+      false,
+    );
+  });
+
+  it('leaves out a name assigned to a member when the file writes only below the same member of another object', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'const options = { args: { a: 1 } };',
+        'const holder = { a: {} };',
+        'const other = { a: { box: {} } };',
+        'holder.a.box = options;',
+        'other.a.box.x = 1;',
+      ).includes('options'),
       false,
     );
   });
@@ -121,7 +177,57 @@ describe('csfFile written', () => {
   });
 });
 
+describe('csfFile readByOtherObjects', () => {
+  it('keeps the same-as-below proof of a story that only its own object names when the file loads', () => {
+    assert.deepEqual(
+      sitesOf(
+        bodyOf(
+          "export default { title: 'a/b', args: { label: 'a' } };",
+          "export var A = { args: { label: 'a', self: A?.args }, play: async () => {} };",
+        ),
+        'args',
+      ).map(({ proofs }) => proofs.map(({ reason }) => reason)),
+      [['same-as-below'], []],
+    );
+  });
+});
+
 describe('csfShapes', () => {
+  it('counts the .test() function of each story as test code when two stories have a .test() call of the same name', () => {
+    const program = programOf(
+      "import preview from '../.storybook/preview';",
+      "const meta = preview.meta({ title: 'a/b' });",
+      'export const A = meta.story({});',
+      'export const B = meta.story({});',
+      "A.test('t', () => {});",
+      "B.test('t', () => {});",
+    );
+    const [testOfA, testOfB] = program.body.slice(-2);
+    const shapes = csfShapes(program);
+
+    assert.deepEqual(
+      [testOfA, testOfB].map((statement) =>
+        shapes.testCode.has(testFunctionOf(statement)),
+      ),
+      [true, true],
+    );
+  });
+
+  it('counts a function expression as the test function when an argument follows it', () => {
+    const program = programOf(
+      "import preview from '../.storybook/preview';",
+      "const meta = preview.meta({ title: 'a/b' });",
+      'export const A = meta.story({});',
+      "A.test('t', function () {}, {});",
+    );
+    const [testOfA] = program.body.slice(-1);
+
+    assert.equal(
+      csfShapes(program).testCode.has(testFunctionOf(testOfA)),
+      true,
+    );
+  });
+
   it('reads a parenthesized story object when the parser keeps parentheses as nodes', () => {
     const shapes = csfShapes(
       parse(
@@ -148,7 +254,7 @@ describe('csfShapes', () => {
         "A.test('plain', () => {});\n",
       { sourceType: 'module' },
     ).program;
-    const [, , , withOptions, plain] = program.body;
+    const [withOptions, plain] = program.body.slice(-2);
     const shapes = csfShapes(program);
 
     it('lists only the statement whose call has options', () => {

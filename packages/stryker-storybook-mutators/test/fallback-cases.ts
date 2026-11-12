@@ -809,6 +809,34 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'meta-equal-key-before-getter',
+    title:
+      "a key whose literal value equals the meta's is removed while a getter of the same key is in the object, as the proofs do not read accessors",
+    source:
+      "export default { title: 'Button', args: { label: 'a' } };\n" +
+      "export const Primary = { args: { label: 'a', get label() { return 'g'; }, size: 1 }, play: async () => {} };\n",
+    expect: [
+      [args, "{ get label() { return 'g'; }, size: 1 }"],
+      [args, "{ label: 'a', get label() { return 'g'; } }"],
+      [args, "{ get label() { return 'g'; } }"],
+    ],
+  },
+  {
+    id: 'extend-args-same-as-base',
+    title:
+      "each key of an .extend() story's args is removed when its base story has the same object as its args, as removing the key removes it from the base too",
+    source: inFactoryFile(
+      'const meta = preview.meta({});',
+      "const shared = { args: { label: 'a', size: 's' } };",
+      'export const Primary = meta.story({ ...shared });',
+      'export const Small = Primary.extend({ ...shared, play: async () => {} });',
+    ),
+    expect: [
+      [args, "{ size: 's' }"],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'member-spread-read-in-other-story',
     title:
       "a key whose literal value equals the meta's is removed when the story spreads a member of a top-level object that another story reads when the file loads",

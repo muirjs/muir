@@ -13,7 +13,7 @@ import {
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import { unknownValue, writtenValue } from './object-value.ts';
-import { asWrittenLayer, resolvedValues, valuesOf } from './resolved-values.ts';
+import { asWrittenLayer, valuesOf } from './resolved-values.ts';
 import { extendLevels } from './story-layers.ts';
 
 /** An unknown play with a play the file reads under it, which runs when the unknown one sets none: an earlier own play, an `.extend()` base's or the meta's. */
@@ -48,7 +48,7 @@ export function playedStories(
   const metaObjects = metas.map(({ object }) => object);
   const unchanged = unchangedBindings(bindings, written);
   const metaPlays = metaObjects.flatMap((meta) =>
-    resolvedValues(meta, 'play', unchanged),
+    valuesOf(asWrittenLayer(meta, unchanged), 'play'),
   );
 
   return stories

@@ -13,6 +13,7 @@ import {
   storyGlobalsCases,
   storyGlobalsCrashCases,
 } from './story-globals-cases.ts';
+import { storyGlobalsDefaultCases } from './story-globals-default-cases.ts';
 import { composeSkips } from './support/compose-skips.ts';
 import { targetCases } from './target-cases.ts';
 import { waitForCases } from './wait-for-cases.ts';
@@ -45,6 +46,7 @@ function effect(globals: unknown): unknown {
 composeSkips({
   cases: [
     ...storyGlobalsCases,
+    ...storyGlobalsDefaultCases,
     ...storyGlobalsCrashCases,
     ...assertionBeforeCases,
     ...clickFocusCases,

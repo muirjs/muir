@@ -1,23 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parse } from '@babel/parser';
-
 import { csfFile, topLevelBindings } from '../src/csf.ts';
-import { field, list } from '../src/node-field.ts';
-import { playedStories, unknownOverAPlay } from '../src/played-stories.ts';
+import { field } from '../src/node-field.ts';
+import {
+  isUnknownPlay,
+  playedStories,
+  unknownOverAPlay,
+} from '../src/played-stories.ts';
+import { bodyOf } from './support/parse-module.ts';
 
 function played(...lines: readonly string[]) {
-  const body = list(
-    field(
-      parse(lines.join('\n'), {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      }),
-      'program',
-      'body',
-    ),
-  );
+  const body = bodyOf(...lines);
   const bindings = topLevelBindings(body);
 
   return playedStories(body, bindings, csfFile(body, bindings));
@@ -134,6 +128,40 @@ describe('playedStories', () => {
     );
   });
 
+  it('gives an unknown play with no play under it to a story whose only play a spread of an imported object may set', () => {
+    const [story] = played(
+      "import { Shared } from './shared';",
+      "export default { title: 'a/b' };",
+      'export const A = { ...Shared };',
+    );
+
+    assert.equal(story?.play, 'unknown');
+  });
+
+  it('tells both unknown plays from a play the file reads', () => {
+    assert.deepEqual(
+      played(
+        "import { Shared } from './shared';",
+        "export default { title: 'a/b' };",
+        'export const A = { ...Shared };',
+        'export const B = { play: async () => {}, ...Shared };',
+        'export const C = { play: async () => {} };',
+      ).map(({ play }) => isUnknownPlay(play)),
+      [true, true, false],
+    );
+  });
+
+  it('gives the play assigned to a story whose own play a spread of an imported object may set', () => {
+    const [story] = played(
+      "import { Shared } from './shared';",
+      "export default { title: 'a/b' };",
+      'export const A = { ...Shared };',
+      'A.play = async () => {};',
+    );
+
+    assert.equal(field(story?.play, 'type'), 'ArrowFunctionExpression');
+  });
+
   it('gives an unknown play over a play to a story under a meta whose play a later spread of an imported object may replace', () => {
     const [story] = played(
       "import { Shared } from './shared';",
@@ -187,7 +215,21 @@ describe('playedStories', () => {
     );
   });
 
-  it('gives .test() options named by a top-level constant as the name, for resolvedValues to follow', () => {
+  it('lists no story whose only .test() call has a name and no other argument, which Storybook does not index', () => {
+    assert.deepEqual(
+      namesOf(
+        played(
+          "import preview from '../.storybook/preview';",
+          "const meta = preview.meta({ title: 'a/b' });",
+          'export const A = meta.story({});',
+          "A.test('one');",
+        ),
+      ),
+      [],
+    );
+  });
+
+  it('gives .test() options named by a top-level constant as the name, for sitesOf to follow', () => {
     const [story] = played(
       "import preview from '../.storybook/preview';",
       "const meta = preview.meta({ title: 'a/b' });",

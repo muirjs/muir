@@ -3,37 +3,16 @@ import { isMember, keyOf, memberRoot, unwrap } from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import {
+  isObjectLiteral,
   propertyKey,
   sameKey,
   unknownValue,
   valuesIn,
   type LayerValue,
+  type ObjectLiteral,
 } from './object-value.ts';
 
-/**
- * Every value `object` gives `key`, the one JavaScript keeps first, as far as the file shows it: an object literal,
- * read through `as const`, `satisfies` and parentheses, a name `bindings` holds, a member with a static key such as
- * `Base.args`, and a spread of any of these. None for no object; one `unknownValue` for an object the file does not
- * show. Given `unchangedBindings`, a name the file may change reads as one it does not show.
- */
-export function resolvedValues(
-  object: unknown,
-  key: string | number,
-  bindings: Bindings,
-): readonly LayerValue[] {
-  if (object === undefined) {
-    return [];
-  }
-
-  const properties =
-    object === unknownValue
-      ? undefined
-      : shownObject(object, bindings)?.lastWinsProperties;
-
-  return properties === undefined ? [unknownValue] : valuesIn(properties, key);
-}
-
-/** The value the last property of exactly `key` gives it, as `resolvedValues` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. */
+/** The value the last property of exactly `key` gives it, as `shownObject` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. */
 export function ownValue(
   object: unknown,
   key: string | number,
@@ -58,7 +37,7 @@ export function ownValueOf(layer: Layer, key: string | number): LayerValue {
     : layer;
 }
 
-/** Every value that `properties`, in source order, give `key`, the one JavaScript keeps first, each spread read as `resolvedValues` reads it. */
+/** Every value that `properties`, in source order, give `key`, the one JavaScript keeps first, each spread read as `shownObject` reads it. */
 export function resolvedPropertyValues(
   properties: readonly unknown[],
   key: string | number,
@@ -68,15 +47,15 @@ export function resolvedPropertyValues(
 }
 
 class ResolvedObject {
-  readonly #node: object;
+  readonly #node: ObjectLiteral;
   readonly #bindings: Bindings;
 
-  constructor(node: object, bindings: Bindings) {
+  constructor(node: ObjectLiteral, bindings: Bindings) {
     this.#node = node;
     this.#bindings = bindings;
   }
 
-  get node(): object {
+  get node(): ObjectLiteral {
     return this.#node;
   }
 
@@ -116,7 +95,7 @@ export function rootLayer(
 }
 
 export function asWrittenLayer(expression: unknown, bindings: Bindings): Layer {
-  return isRecord(expression) && expression['type'] === 'ObjectExpression'
+  return isObjectLiteral(expression)
     ? new ResolvedObject(expression, bindings)
     : undefined;
 }
@@ -138,6 +117,11 @@ export function valuesOf(
     : valuesIn(layer.lastWinsProperties, key);
 }
 
+/**
+ * The object literal `node` shows, read through `as const`, `satisfies` and parentheses, a name `bindings` holds,
+ * and a member with a static key such as `Base.args`; `undefined` for one the file does not show. Given
+ * `unchangedBindings`, a name the file may change reads as one it does not show.
+ */
 function shownObject(
   node: unknown,
   bindings: Bindings,
@@ -145,7 +129,7 @@ function shownObject(
   const current = unwrap(node);
   const name = field(current, 'name');
 
-  if (isRecord(current) && current['type'] === 'ObjectExpression') {
+  if (isObjectLiteral(current)) {
     return new ResolvedObject(current, bindings);
   }
 
@@ -173,7 +157,7 @@ function shownObject(
     : undefined;
 }
 
-/** `properties` last-wins first, each spread of an object `resolvedValues` reads replaced by that object's properties; a spread it does not read stays in place, for `valuesIn` to read as one that may set any key. */
+/** `properties` last-wins first, each spread of an object `shownObject` reads replaced by that object's properties; a spread it does not read stays in place, for `valuesIn` to read as one that may set any key. */
 function inLastWinsOrder(
   properties: readonly unknown[],
   bindings: Bindings,

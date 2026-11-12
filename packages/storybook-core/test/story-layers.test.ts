@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parse } from '@babel/parser';
-
 import { topLevelBindings } from '../src/csf.ts';
-import { field, list } from '../src/node-field.ts';
-import { objectValue, unknownValue } from '../src/object-value.ts';
+import { field } from '../src/node-field.ts';
+import {
+  isObjectLiteral,
+  objectValue,
+  unknownValue,
+} from '../src/object-value.ts';
 import {
   asWrittenLayer,
   rootLayer,
@@ -13,6 +15,7 @@ import {
   type Layer,
 } from '../src/resolved-values.ts';
 import { extendLevels } from '../src/story-layers.ts';
+import { bodyOf } from './support/parse-module.ts';
 
 function rootLayers(
   bindings: ReadonlyMap<string, unknown>,
@@ -26,21 +29,17 @@ function rootLayers(
 }
 
 function storyGlobals(source: readonly string[]): readonly unknown[] {
-  const body = list(
-    field(
-      parse(source.join('\n'), {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      }),
-      'program',
-      'body',
-    ),
-  );
-  const bindings = topLevelBindings(body);
+  const bindings = topLevelBindings(bodyOf(...source));
 
   return rootLayers(bindings, new Set()).map(
     (layer) => valuesOf(layer, 'globals')[0],
   );
+}
+
+function localeOf(globals: unknown): unknown {
+  return isObjectLiteral(globals)
+    ? field(objectValue(globals, 'locale'), 'value')
+    : globals;
 }
 
 describe('extendLevels', () => {
@@ -52,7 +51,7 @@ describe('extendLevels', () => {
         "const shared = { globals: { locale: 'de' } };",
         "export const A = meta.story({ globals: { locale: 'en' } });",
         "export const B = A.extend({ globals: { locale: 'fr' }, ...shared });",
-      ]).map((globals) => field(objectValue(globals, 'locale'), 'value')),
+      ]).map(localeOf),
       ['de', 'en'],
     );
   });
@@ -62,26 +61,18 @@ describe('extendLevels', () => {
       storyGlobals([
         "const Common = { story: { globals: { locale: 'de' } } };",
         'export const B = { ...Common.story };',
-      ]).map((globals) => field(objectValue(globals, 'locale'), 'value')),
+      ]).map(localeOf),
       ['de'],
     );
   });
 
   it('reads a story the file writes as unknown through its root, and as its literal as written', () => {
-    const body = list(
-      field(
-        parse(
-          [
-            "export const B = { globals: { locale: 'de' } };",
-            "B.globals.locale = 'fr';",
-          ].join('\n'),
-          { sourceType: 'module', plugins: ['typescript'] },
-        ),
-        'program',
-        'body',
+    const bindings = topLevelBindings(
+      bodyOf(
+        "export const B = { globals: { locale: 'de' } };",
+        "B.globals.locale = 'fr';",
       ),
     );
-    const bindings = topLevelBindings(body);
     const typesOf = (layers: readonly Layer[]) =>
       layers.map((layer) => field(valuesOf(layer, 'globals')[0], 'type'));
     const [own] = extendLevels(bindings.get('B'), 'B', bindings);
