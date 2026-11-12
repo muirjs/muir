@@ -1,7 +1,7 @@
 // The hints read the interaction sites from the LzStorybookInteraction mutants in the report, so every case runs the
 // real instrumenter with the real test mutators.
 import assert from 'node:assert/strict';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -242,7 +242,7 @@ describe('interactionHints', () => {
     ]);
   });
 
-  it('gives no hint for a file a line-range glob matches', async () => {
+  it('gives no hint for a file a line-range pattern names by its absolute path', async () => {
     assert.ok(negativeOnly !== undefined);
 
     const warnings: string[] = [];
@@ -250,7 +250,7 @@ describe('interactionHints', () => {
     assert.deepEqual(
       interactionHints(
         await reportOf(negativeOnly.source, negativeOnly.survived),
-        ['src/**/*.stories.tsx:1-20'],
+        [`${resolve(file)}:1-20`],
         (message) => warnings.push(message),
       ),
       [],

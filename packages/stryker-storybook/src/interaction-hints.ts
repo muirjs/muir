@@ -1,4 +1,4 @@
-import { matchesGlob, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import { field, isRecord, list, unwrap } from '@layzee/storybook-core';
 import type { schema } from '@stryker-mutator/api/core';
@@ -91,10 +91,11 @@ export function interactionHints(
 // StrykerJS 10.1.1 core, src/fs/mutate-pattern-constants.ts
 const mutationRange = /(.*?):((\d+)(?::(\d+))?-(\d+)(?::(\d+))?)$/;
 
+/** StrykerJS 10.1.1 refuses a line range on a glob (src/config/options-validator.ts), so a ranged pattern names one file. */
 function namesWithLineRange(pattern: string, file: string): boolean {
-  const glob = mutationRange.exec(pattern)?.[1];
+  const path = mutationRange.exec(pattern)?.[1];
 
-  return glob !== undefined && matchesGlob(resolve(file), resolve(glob));
+  return path !== undefined && resolve(path) === resolve(file);
 }
 
 function isInteractionSurvivor({ mutatorName, status }: ReportMutant): boolean {
