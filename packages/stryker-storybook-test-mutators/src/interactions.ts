@@ -272,7 +272,7 @@ function isNextInteraction(statement: NodePath): boolean {
   );
 }
 
-/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; of the functions in it, only step and `waitFor` callbacks run there. */
+/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; outside a step callback, only step and `waitFor` callbacks are looked into, while a `step(...)` holds every interaction in its callback, including one in a function the callback defines. */
 function holdsInteraction(statement: NodePath): boolean {
   return (
     isNextInteraction(statement) || hasInteractionIn(statement, runsWhereGiven)
