@@ -92,13 +92,15 @@ Vitest browser's userEvent, whose `type` does not click.
   context itself, read the same way. A context is the first parameter of a `play`, `beforeEach` or loader, the second
   of a decorator or `render` function, both of these for a value under a computed key or assigned to a computed member,
   the first of a callback given to a context's `step`, and a call of `useStoryContext` under its own or its imported
-  name. Such a hook counts given inline, as a plain method, in an array, or by the name of a local function, or a
-  function expression's own name, that the file never reassigns, as an object literal's property, not a pattern's, or
-  assigned to `<x>.<key>`. A context that reaches itself, through a `step`, a local given itself or a `context` member,
-  is read once, as reading it again finds nothing new. Any other hook value drops the proof: an import, a member or a
-  call result, a getter, a `<x>.<key>` a destructuring writes to, a hook that reads `arguments` or has a rest parameter
-  at or before its context, and a spread into a meta or story object, or an argument of an `assign` call, that is not an
-  object literal that spreads nothing, given inline or as a local the file never reassigns.
+  name. A hook counts when it is given inline, as a plain method or in an array, or by a name the file never reassigns:
+  a local function's, or a function expression's own. It counts where it is given under a hook key: as an object
+  literal's property, or assigned to `<x>.<key>`. A pattern's property names what a destructuring reads, so a hook key
+  there gives Storybook nothing. A context that reaches itself, through a `step`, a local given itself or a `context`
+  member, is read once, as reading it again finds nothing new. Any other hook value drops the proof: an import, a
+  member or a call result, a getter, a `<x>.<key>` under a hook key that a destructuring writes to (an array element, a
+  property's value, a default's target or a rest), a hook that reads `arguments` or has a rest parameter at or before
+  its context, and a spread into a meta or story object, or an argument of an `assign` call, that is not an object
+  literal that spreads nothing, given inline or as a local the file never reassigns.
 - _Backstop._ Every play context's proof also needs the file to name `userEvent` only as an import's name, a key or a
   local without a default in a parameter's destructuring, a `userEvent` or `<x>.userEvent` that is a method call's
   receiver or a choice side as above, or inside a type or an interface, and never as a string or a template's text. An
