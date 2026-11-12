@@ -41,12 +41,17 @@ The Testing Library query that an interaction acts on as its first argument, awa
 `findBy` or `queryBy` query of the same string-literal role, or the text of a query of the same method.
 _Avoid_: target (alone), locator (the Playwright mutators' term)
 
+**Check**:
+A matcher chain on `expect(...)`, `expect.soft(...)`, `expect.element(...)` or `expect.poll(...)`, such as
+`await expect.element(dialog).toBeVisible()`. `expect.assertions(...)` and other `expect` members are none.
+_Avoid_: assertion (alone)
+
 **Negative check**:
-An `expect(...)` check with `.not` in its matcher chain, which passes when the interaction before it did nothing.
+A check with `.not` in its matcher chain, which passes when the interaction before it did nothing.
 _Avoid_: absence check, negated assertion
 
 **Following checks**:
-The `expect(...)` checks after an interaction, up to the next statement that is or holds an interaction. A statement
+The checks after an interaction, up to the next statement that is or holds an interaction. A statement
 holds an interaction that runs within it, such as one in an `if` or in a `waitFor(...)` callback; a `step(...)` holds
 every interaction in its callback, including one in a function the callback defines. Outside a step callback, an
 interaction is looked for only in `step` and `waitFor` callbacks: every other function counts as not run, even one

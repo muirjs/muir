@@ -379,4 +379,101 @@ export const assertionBeforeCases: readonly Case[] = [
       ],
     ],
   },
+  {
+    id: 'assertion-before-expect-soft',
+    title:
+      'an expect.soft check is the first check after an interaction, so it is the one copied',
+    source: inPlay(
+      'await userEvent.click(save);',
+      "expect.soft(canvas.getByRole('status')).toHaveTextContent('Saved');",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ expect.soft(canvas.getByRole('status')).toHaveTextContent('Saved'); await userEvent.click(save); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-expect-element',
+    title:
+      'an awaited expect.element check is the first check after an interaction, so it is the one copied',
+    source: inPlay(
+      'await userEvent.click(open);',
+      "await expect.element(page.getByRole('dialog')).toBeVisible();",
+      'await expect(args.onOpen).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ await expect.element(page.getByRole('dialog')).toBeVisible(); await userEvent.click(open); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-expect-poll',
+    title:
+      'an awaited expect.poll check is the first check after an interaction, so it is the one copied',
+    source: inPlay(
+      'await userEvent.click(save);',
+      "await expect.poll(() => status.textContent).toBe('Saved');",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ await expect.poll(() => status.textContent).toBe('Saved'); await userEvent.click(save); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-skip-negative-expect-soft',
+    title:
+      'an interaction whose first check is a negative expect.soft check makes no mutant, as a negative check mostly holds before too',
+    source: inPlay(
+      'await userEvent.click(save);',
+      "expect.soft(canvas.queryByRole('alert')).not.toBeInTheDocument();",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-negative-expect-element',
+    title:
+      'an interaction whose first check is a negative expect.element check makes no mutant, as a negative check mostly holds before too',
+    source: inPlay(
+      'await userEvent.click(close);',
+      "await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();",
+      'await expect(args.onClose).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-negative-expect-poll',
+    title:
+      'an interaction whose first check is a negative expect.poll check makes no mutant, as a negative check mostly holds before too',
+    source: inPlay(
+      'await userEvent.click(save);',
+      "await expect.poll(() => status.textContent).not.toBe('Error');",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-past-expect-assertions',
+    title:
+      'an expect.assertions call is no check, so the copied check is the first one past it',
+    source: inPlay(
+      'await userEvent.click(save);',
+      'expect.assertions(1);',
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent.click(save); }',
+      ],
+    ],
+  },
 ];

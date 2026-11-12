@@ -2,17 +2,17 @@ import type { NodePath, types } from '@babel/core';
 
 import { awaited, nameOf } from './nodes.ts';
 
-/** Whether `path` holds an `expect(...)` check. */
+/** Whether `path` holds a check: a matcher chain on a call of what `isExpect` names. */
 export function hasCheck(path: NodePath): boolean {
   return checksIn(path).length > 0;
 }
 
-/** Whether `path` holds an `expect(...)` check with `.not` in its matcher chain. */
+/** Whether `path` holds a check with `.not` in its matcher chain. */
 export function hasNegativeCheck(path: NodePath): boolean {
   return checksIn(path).some(isNegative);
 }
 
-/** `expect(...).<matcher>(...);`, awaited or not. */
+/** A statement that is a check, such as `expect(...).<matcher>(...);`, awaited or not. */
 export function isExpectStatement(
   path: NodePath,
 ): path is NodePath<types.ExpressionStatement> {
@@ -24,11 +24,23 @@ export function isExpectStatement(
 
 function startsWithExpect(node: types.Node): boolean {
   if (node.type === 'CallExpression') {
-    return nameOf(node.callee) === 'expect' || startsWithExpect(node.callee);
+    return isExpect(node.callee) || startsWithExpect(node.callee);
   }
 
   return node.type === 'MemberExpression' && startsWithExpect(node.object);
 }
+
+/** `expect`, or `expect.soft`, `expect.element` or `expect.poll`, each of which starts a check. */
+function isExpect(callee: types.Node): boolean {
+  return (
+    nameOf(callee) === 'expect' ||
+    (callee.type === 'MemberExpression' &&
+      nameOf(callee.object) === 'expect' &&
+      expectMethods.has(nameOf(callee.property) ?? ''))
+  );
+}
+
+const expectMethods: ReadonlySet<string> = new Set(['soft', 'element', 'poll']);
 
 interface Check {
   /** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
@@ -37,13 +49,13 @@ interface Check {
   readonly args: readonly types.Node[];
 }
 
-/** The `expect(...)` checks in `path`. */
+/** The checks in `path`. */
 function checksIn(path: NodePath): readonly Check[] {
   const checks: Check[] = [];
 
   path.traverse({
     CallExpression(call) {
-      if (nameOf(call.node.callee) === 'expect') {
+      if (isExpect(call.node.callee)) {
         checks.push(checkOf(call));
       }
     },
