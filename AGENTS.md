@@ -33,5 +33,5 @@ add or change a skip, name its row.
 - Site rules: `packages/stryker-storybook-mutators/docs/adr/0001-args-mutated-only-where-a-play-or-test-runs.md`.
 - Equivalence skips: `docs/adr/0006-place-a-mutant-unless-the-file-proves-it-changes-nothing.md`, and
   `packages/stryker-storybook/docs/adr/0005-every-equivalence-skip-carries-a-proven.md` for how a `Proven` is made.
-- `LzStorybookStoryGlobals` still decides its default-global skip itself (`isDefaultGlobal`); move it under the
-  equivalence row before adding another skip to it.
+- A default global (`LzStorybookStoryGlobals`) is an equivalence skip too: its `default-global` `Proven` rests on
+  Storybook 10.6.5's initial values, which `@layzee/storybook-csf` holds, as well as on the file.

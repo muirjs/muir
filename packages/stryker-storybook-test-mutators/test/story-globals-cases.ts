@@ -354,6 +354,36 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, '{}']],
   },
   {
+    id: 'story-globals-viewport-under-written-meta-parameters',
+    title:
+      "a story's responsive viewport global gets a mutant when the file writes viewport parameters to the meta",
+    source: [
+      "const meta = { title: 'Probe' };",
+      'export default meta;',
+      "meta.parameters = { viewport: { defaultViewport: 'mobile1' } };",
+      '',
+      "export const Primary = { globals: { viewport: 'responsive', locale: 'de' }, play: async () => {} };",
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, "{ viewport: 'responsive' }"],
+    ],
+  },
+  {
+    id: 'story-globals-viewport-under-written-story-parameters',
+    title:
+      "a story's responsive viewport global gets a mutant when the file writes viewport parameters to the story, as setViewport falls back to their defaultViewport",
+    source: storyFile(
+      "export const Primary = { globals: { viewport: 'responsive', locale: 'de' }, play: async () => {} };",
+      "Primary.parameters = { viewport: { defaultViewport: 'mobile1' } };",
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, "{ viewport: 'responsive' }"],
+    ],
+  },
+  {
     id: 'story-globals-meta-viewport-over-story-parameters',
     title:
       "a responsive viewport global in the meta gets a mutant when a story it runs for sets viewport parameters, which merge over the meta's",
@@ -513,6 +543,88 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-default-in-written-story',
+    title:
+      "a story's default value of a global gets a mutant when the file writes the story, as a write such as ??= may read that global",
+    source: storyFile(
+      "export const Primary = { globals: { outline: false, locale: 'de' }, play: async () => {} };",
+      'Primary.globals.outline ??= true;',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+    ],
+  },
+  {
+    id: 'story-globals-default-over-written-meta',
+    title:
+      "a story's default value of a global gets a mutant when the file writes that global to the meta, as removing it brings the written value back",
+    source: [
+      "const meta = { title: 'Probe', globals: { locale: 'de' }, play: async () => {} };",
+      'export default meta;',
+      'meta.globals.outline = true;',
+      '',
+      "export const Primary = { globals: { outline: false, locale: 'fr' } };",
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, "{ locale: 'fr' }"],
+      [storyGlobals, '{ outline: false }'],
+    ],
+  },
+  {
+    id: 'story-globals-default-over-written-factory-meta',
+    title:
+      "a factory story's default value of a global gets a mutant when the file writes that global to the factory meta's input",
+    source: [
+      "import preview from '../.storybook/preview';",
+      '',
+      "const meta = preview.meta({ title: 'Probe', globals: { locale: 'de' } });",
+      'meta.input.globals.outline = true;',
+      '',
+      "export const Primary = meta.story({ globals: { outline: false, locale: 'fr' }, play: async () => {} });",
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, "{ locale: 'fr' }"],
+      [storyGlobals, '{ outline: false }'],
+    ],
+  },
+  {
+    id: 'story-globals-default-in-written-meta',
+    title:
+      "the meta's default value of a global gets a mutant when the file writes the meta, as a write such as ??= may read that global",
+    source: [
+      "const meta = { title: 'Probe', globals: { outline: false, locale: 'de' } };",
+      'export default meta;',
+      'meta.globals.outline ??= true;',
+      '',
+      'export const Primary = { play: async () => {} };',
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+    ],
+  },
+  {
+    id: 'story-globals-meta-default-beside-other-meta',
+    title:
+      "a meta's default value of a global gets a mutant when another meta of the file sets that global, as either meta may be the one below the story",
+    source: factoryFile(
+      "export default { title: 'Other', globals: { outline: true } };",
+      "const second = preview.meta({ globals: { outline: false, locale: 'de' } });",
+      'export const Primary = second.story({ play: async () => {} });',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
     id: 'story-globals-default-under-meta-spread',
     title:
       "a story's default value of a global gets no mutant when the globals of a top-level object the meta spreads do not set it, and those globals are the meta's site",
@@ -609,7 +721,7 @@ export const storyGlobalsCases: readonly Case[] = [
   {
     id: 'story-globals-before-written-spread',
     title:
-      "a story's own globals are a site when a later spread names a story the file writes globals to, as the file does not prove that the spread replaces them; the default outline still gets none",
+      "a story's own globals are a site when a later spread names a story the file writes globals to, as the file does not prove that the spread replaces them, and the default outline gets its mutant, as that write reaches the story",
     source: storyFile(
       'export const Base = { args: {} };',
       "Base.globals = { locale: 'fr' };",
@@ -619,7 +731,10 @@ export const storyGlobalsCases: readonly Case[] = [
       '  play: async () => {},',
       '};',
     ),
-    expect: [[storyGlobals, '{ outline: false }']],
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+    ],
   },
   {
     id: 'story-globals-default-over-story',
@@ -633,6 +748,21 @@ export const storyGlobalsCases: readonly Case[] = [
       [storyGlobals, "{ locale: 'de' }"],
       [storyGlobals, '{ outline: false }'],
       [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-test-options-over-written-story',
+    title:
+      'the options of a .test() call get a mutant of a default value of a global when the file writes that global to the story, as removing it brings the written value back',
+    source: storyFile(
+      "export const Primary = { globals: { locale: 'de' }, play: async () => {} };",
+      'Primary.globals.outline = true;',
+      "Primary.test('t', { globals: { outline: false, locale: 'fr' } }, async () => {});",
+    ),
+    expect: [
+      [storyGlobals, '{}'],
+      [storyGlobals, "{ locale: 'fr' }"],
+      [storyGlobals, '{ outline: false }'],
     ],
   },
   {

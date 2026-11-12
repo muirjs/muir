@@ -47,7 +47,9 @@
 - **Storybook test mutators -> Storybook**: they read story test code with `@layzee/storybook-csf`
   and mutate it, and the CSF ignorer reports those mutants as Ignored unless its play mode is `mutate`, so they
   belong in the Stryker configuration that sets that mode. `LzStorybookStoryGlobals` and the Storybook mutators'
-  `LzStorybookArgs` take the played stories and each story's layers from the same `@layzee/storybook-csf` rule.
+  `LzStorybookArgs` take the played stories and each story's layers from the same `@layzee/storybook-csf` rule, and
+  `LzStorybookStoryGlobals` takes its globals sites with a Proven for each default global, whose table of Storybook's
+  initial globals `@layzee/storybook-csf` holds.
   `LzStorybookSpyStub` and `LzStorybookSpyStubOutcome` read definition-time stubs from
   the same `@layzee/storybook-csf` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
   the `lz-storybook` reporter makes unchecked stubs of surviving `LzStorybookSpyStub` mutants only, so the outcome

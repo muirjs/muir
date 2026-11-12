@@ -29,3 +29,7 @@ skip.
 - `Object.assign({}, proven, { property: node })` still type-checks as a `Proven`, as TypeScript types
   `Object.assign` as the intersection of its arguments; the type stops a literal, a spread copy and construction.
 - The site rules stay outside `Proven`: they skip when the file cannot tell, the opposite default.
+- `LzStorybookStoryGlobals` skips a default global only through a `default-global` `Proven`, so Storybook 10.6.5's
+  initial-globals table moved into `@layzee/storybook-csf`: a table in the mutator would let the mutator decide the
+  skip. A story or meta the file writes, or another meta of the file, may set the global, so such a default keeps
+  its mutant.

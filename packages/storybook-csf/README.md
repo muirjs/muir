@@ -10,8 +10,8 @@ declares it as a regular dependency, so installing one of them installs this one
 - `csfShapes`, `csfFile`, `defaultExport`, `namedExports`, `topLevelBindings`, `unwrap`, `withoutBinding`,
   `mayImportItself`, `storyArgument`, `isTemplateBind`: read the meta, the stories and their bindings from a story
   file's program.
-- `sitesOf`, with the types `Site`, `SiteRun`, `Proven` and `ProofReason`: the `args` objects that played stories
-  run with, each with a `Proven` for every property whose removal the file proves changes nothing.
+- `sitesOf`, with the types `Site`, `SiteRun`, `Proven` and `ProofReason`: the `args` or `globals` objects that
+  played stories run with, each with a `Proven` for every property whose removal the file proves changes nothing.
 - `definitionTimeStubs`: the definition-time spy stubs in a program, with their positions.
 - `appendRecord`, `hasRecords`, `recordVariable`, `mockTransformerPluginName`: write and read the transformer record.
 - `isRecord`, `isStringArray`, `field`, `list`: read values of unknown shape, such as Babel nodes.

@@ -7,9 +7,15 @@ import {
   withoutBinding,
   type TestArguments,
 } from './csf.ts';
+import { isInitialGlobal } from './initial-globals.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { propertyKey, unknownValue, type LayerValue } from './object-value.ts';
+import {
+  maySet,
+  propertyKey,
+  unknownValue,
+  type LayerValue,
+} from './object-value.ts';
 import { playedStories, type PlayedStory } from './played-stories.ts';
 import {
   layerOf,
@@ -25,8 +31,8 @@ type Bindings = ReadonlyMap<string, unknown>;
 
 type Key = string | number;
 
-/** Why removing a property changes nothing: its literal equals the value it falls back to, or the object gives its key the same value without it. */
-export type ProofReason = 'same-as-below' | 'overridden';
+/** Why removing a property changes nothing: its literal equals the value it falls back to, the object gives its key the same value without it, or it is a global at Storybook 10.6.5's initial value that nothing below it may set. */
+export type ProofReason = 'same-as-below' | 'overridden' | 'default-global';
 
 /**
  * The proof that removing one property of a site changes nothing in any run of the site (ADR 0006). Only `sitesOf`
@@ -80,6 +86,12 @@ interface RunLayers {
   readonly own: Layer;
   readonly below: readonly Layer[];
   readonly metas: readonly Layer[];
+  /** The root object the run reads the site from: the story's own object, the `.test()` options or the meta. */
+  readonly root: Layer;
+  /** The `parameters` layers of every run of the story, or of this `.test()` call's run. */
+  readonly parameters: readonly Layer[];
+  /** For a meta's run, the key's layers of the file's other metas. */
+  readonly otherMetas: readonly Layer[];
 }
 
 /**
@@ -96,20 +108,30 @@ export function sitesOf(
   const unchanged = unchangedBindings(bindings, file.written);
   const root = (expression: unknown, owner: unknown): Layer =>
     rootLayer(expression, owner, file.written, unchanged);
-  const metas = file.metas.map(({ object, owner }) => ({
-    object,
-    layer: layerOf(root(object, owner), key),
-  }));
+  const metas = file.metas.map(({ object, owner }) => {
+    const metaRoot = root(object, owner);
+
+    return { object, root: metaRoot, layer: layerOf(metaRoot, key) };
+  });
   const metaLayers = metas.map(({ layer }) => layer);
+  const metaParameters = metas.map((meta) => layerOf(meta.root, 'parameters'));
   const runs = playedStories(body, bindings, file).flatMap(
     (story): readonly RunLayers[] => {
       const { init, local } = story.story;
-      const [own, ...bases] = storyRoots(
-        init,
-        local,
-        file.written,
-        unchanged,
-      ).map((layer) => layerOf(layer, key));
+      const roots = storyRoots(init, local, file.written, unchanged);
+      const [own, ...bases] = roots.map((layer) => layerOf(layer, key));
+      const storyParameters = [
+        ...roots.map((layer) => layerOf(layer, 'parameters')),
+        ...metaParameters,
+      ];
+      const everyRunParameters = [
+        ...storyParameters,
+        ...story.tests.map((test) =>
+          test === 'unmatched'
+            ? unknownValue
+            : layerOf(root(test.options, undefined), 'parameters'),
+        ),
+      ];
 
       return [
         {
@@ -118,27 +140,45 @@ export function sitesOf(
           own,
           below: bases,
           metas: metaLayers,
+          root: roots[0],
+          parameters: everyRunParameters,
+          otherMetas: [],
         },
-        ...story.tests.flatMap((test): readonly RunLayers[] =>
-          test === 'unmatched'
-            ? []
-            : [
-                {
-                  run: { owner: 'test', story, test },
-                  node: ownValue(test.options, key, unchanged),
-                  own: layerOf(root(test.options, undefined), key),
-                  below: [own, ...bases],
-                  metas: metaLayers,
-                },
+        ...story.tests.flatMap((test): readonly RunLayers[] => {
+          if (test === 'unmatched') {
+            return [];
+          }
+
+          const optionsRoot = root(test.options, undefined);
+
+          return [
+            {
+              run: { owner: 'test', story, test },
+              node: ownValue(test.options, key, unchanged),
+              own: layerOf(optionsRoot, key),
+              below: [own, ...bases],
+              metas: metaLayers,
+              root: optionsRoot,
+              parameters: [
+                layerOf(optionsRoot, 'parameters'),
+                ...storyParameters,
               ],
-        ),
+              otherMetas: [],
+            },
+          ];
+        }),
         ...metas.map(
-          ({ object, layer }): RunLayers => ({
+          (meta): RunLayers => ({
             run: { owner: 'meta', story },
-            node: ownValue(object, key, unchanged),
-            own: layer,
+            node: ownValue(meta.object, key, unchanged),
+            own: meta.layer,
             below: [],
             metas: [],
+            root: meta.root,
+            parameters: everyRunParameters,
+            otherMetas: metas
+              .filter((other) => other !== meta)
+              .map(({ layer }) => layer),
           }),
         ),
       ];
@@ -152,7 +192,10 @@ export function sitesOf(
             {
               node,
               runs: all.map(({ run }) => run),
-              proofs: key === 'args' ? argsProofs(node, all, unchanged) : [],
+              proofs:
+                key === 'args'
+                  ? argsProofs(node, all, unchanged)
+                  : globalsProofs(node, all),
             },
           ]
         : [],
@@ -223,6 +266,44 @@ function argsProofs(
         : []),
     ];
   });
+}
+
+/** The proofs of a `globals` site: a property at Storybook 10.6.5's initial value of its global, which no earlier property of the site may set, nor anything below the site in any run. */
+function globalsProofs(
+  site: object,
+  runs: readonly RunLayers[],
+): readonly Proven[] {
+  const properties = list(field(site, 'properties'));
+
+  return properties.flatMap((property, index): readonly Proven[] => {
+    const key = propertyKey(property);
+
+    return isRecord(property) &&
+      typeof key === 'string' &&
+      !properties.slice(0, index).some((earlier) => maySet(earlier, key)) &&
+      runs.every((run) => isDefaultGlobal(run, property, key))
+      ? [new Proven(property, 'default-global')]
+      : [];
+  });
+}
+
+/** In this run, `property` holds the initial value of global `key`, and no layer below the site, no other meta, and no root the file writes may set `key`. */
+function isDefaultGlobal(
+  { root, below, metas, otherMetas, parameters }: RunLayers,
+  property: object,
+  key: string,
+): boolean {
+  const mayGiveKey: readonly Layer[] = [
+    root === unknownValue ? unknownValue : undefined,
+    ...below,
+    ...metas,
+    ...otherMetas,
+  ];
+
+  return (
+    isInitialGlobal(key, field(property, 'value'), parameters) &&
+    mayGiveKey.every((layer) => valuesOf(layer, key)[0] === undefined)
+  );
 }
 
 /** The object gives `key` the same value node without `property`. */
