@@ -66,19 +66,23 @@ An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStoryb
 `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or `afterEach`,
 given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`); one with at least one
 following check, whose checks before the next interaction are all negative checks; a click or hover that a `type` of
-the same target in the next statement repeats, when the file proves that `type`'s receiver is user-event 14 (whose
-`type` clicks first unless given a `skipClick` other than `false`); and a `type` or `clear` with no following checks,
-when the statement that ends them is a `clear` of the same target, which undoes it. The file proves user-event 14
-for a `userEvent` imported from `storybook/test` or `@testing-library/user-event` (named, or the default import), for
-the `userEvent` of a play's context, destructured in its first parameter or read as `<context>.userEvent` on that
-parameter itself, where the
-play is a `play` property or method that is story test code and inside none, and for a `setup()` of one of these or a
-local that is a choice between them. Any other receiver may be Vitest browser's userEvent, whose `type` does not
-click, so its click keeps its mutant: another import, a `userEvent` the file does not bind, the `userEvent` of another
-object, a call result or another function's parameter, and a `.test()` function's context. The play context's proof
-rests on Storybook 10.6.5, which sets it to user-event 14's `setup()`, as the default global's proof rests on
-Storybook's initial values; a play that other code calls with a context of its own is not read.
+the same target in the next statement repeats, when that `type`'s receiver is a proven user-event 14 (whose `type`
+clicks first unless given a `skipClick` other than `false`); and a `type` or `clear` with no following checks, when
+the statement that ends them is a `clear` of the same target, which undoes it.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
+
+**Proven user-event 14**:
+A user-event receiver that the file proves is user-event 14, whose `type` clicks first: a named `userEvent` import
+from `storybook/test` or `@testing-library/user-event`, or the default import of `@testing-library/user-event`; the
+`userEvent` of a play's context, destructured in its first parameter or read as `<context>.userEvent` on that
+parameter itself, where the play is a `play` property or method given inline that is story test code and inside none,
+such as the meta's play or a CSF factory story's; and a `setup()` of one of these, or a local that is a choice between
+them. Any other receiver may be Vitest browser's userEvent, whose `type` does not click: another import, a `userEvent`
+the file does not bind, the `userEvent` of another object, a call result or another function's parameter, a `.test()`
+function's or a step callback's context, and the context of a play given by its name or assigned as `Story.play`. The
+play context's proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()`, as the default global's
+proof rests on Storybook's initial values; a play that other code calls with a context of its own is not read.
+_Avoid_: real userEvent, Storybook userEvent
 
 **Copied check**:
 The first statement in an interaction's own block that holds one of its following checks, which
