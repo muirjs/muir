@@ -5,12 +5,17 @@ import type { BabelTypes } from './mutator.ts';
 import {
   awaited,
   type Binding,
+  bindingOf,
   keyName,
   nameOf,
   withoutTypeWrappers,
 } from './nodes.ts';
 import { isInStoryTestCode, readStoryFileAt } from './story-file.ts';
-import { readUserEvent, userEventMethods } from './user-event.ts';
+import {
+  readUserEvent,
+  userEventFileReaders,
+  userEventMethods,
+} from './user-event.ts';
 
 type CallNode = types.CallExpression | types.OptionalCallExpression;
 
@@ -24,8 +29,8 @@ type InteractionKind =
   | {
       readonly kind: 'userEvent';
       readonly method: string;
-      /** Whether the receiver is or may be Vitest browser's userEvent, whose `type` does not click first. */
-      readonly mayBeVitestBrowser: boolean;
+      /** Whether the file proves the receiver is user-event 14, whose `type` clicks first; Vitest browser's does not. */
+      readonly isProvenUserEvent14: boolean;
     }
   | { readonly kind: 'fireEvent'; readonly method: string | undefined }
   | { readonly kind: 'composedPlay' | 'rawDom' };
@@ -39,7 +44,7 @@ export type Interaction = InteractionSite &
 
 /** The interaction at `path`, when `path` is an interaction site whose call is an interaction. */
 export function interactionAt(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path);
+  readStoryFileAt(path, ...userEventFileReaders);
 
   const site = siteAt(path);
 
@@ -82,11 +87,11 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
   ) {
     const receiver = readUserEvent(withoutTypeWrappers(member.object), path);
 
-    if (receiver.isUserEvent) {
+    if (receiver !== 'none') {
       return {
         kind: 'userEvent',
         method,
-        mayBeVitestBrowser: receiver.mayBeVitestBrowser,
+        isProvenUserEvent14: receiver === 'provenUserEvent14',
       };
     }
   }
@@ -194,7 +199,7 @@ function isClearedLater(current: Interaction, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event click or hover directly before a user-event 14 type of the same target, which clicks it first; Vitest browser's type does not. */
+/** A user-event click or hover directly before a type of the same target on a receiver the file proves to be user-event 14, which clicks it first; Vitest browser's type does not. */
 function isRepeatedByNext(current: Interaction, t: BabelTypes): boolean {
   const [next] = nextSiblings(current.path);
   const following = next === undefined ? undefined : interactionAt(next);
@@ -208,7 +213,7 @@ function isRepeatedByNext(current: Interaction, t: BabelTypes): boolean {
     followingTarget !== undefined &&
     ['click', 'hover'].includes(current.method) &&
     following.method === 'type' &&
-    !following.mayBeVitestBrowser &&
+    following.isProvenUserEvent14 &&
     !hasSkipClick(options) &&
     t.isNodesEquivalent(target, followingTarget)
   );
@@ -229,7 +234,7 @@ function hasSkipClick(options: types.Node | undefined): boolean {
 
 /** The interaction whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
 export function targetInteraction(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path);
+  readStoryFileAt(path, ...userEventFileReaders);
 
   const query = path.findParent((parent) => parent.isCallExpression());
   const site = path.findParent(
@@ -426,9 +431,10 @@ function functionBinding(path: NodePath): Binding | undefined {
       : parent?.type === 'VariableDeclarator' && parent.init === node
         ? parent.id
         : undefined;
-  const name = id === null || id === undefined ? undefined : nameOf(id);
 
-  return name === undefined ? undefined : parentPath?.scope.getBinding(name);
+  return id === null || id === undefined || parentPath === null
+    ? undefined
+    : bindingOf(id, parentPath.scope);
 }
 
 /** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other`, `Stories.Other` or `Stories?.Other`. */

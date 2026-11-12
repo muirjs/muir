@@ -1,9 +1,9 @@
 import type { NodePath, types } from '@babel/core';
-import { csfShapes } from '@layzee/storybook-core';
+import { type CsfShapes, csfShapes } from '@layzee/storybook-core';
 
 /** What `read` gives for the Program around a path, read once per Program; `outsideProgram` when there is none. */
 export function perFile<T>(
-  read: (program: types.Program) => T,
+  read: (program: NodePath<types.Program>) => T,
   outsideProgram: T,
 ): (path: NodePath) => T {
   const byProgram = new WeakMap<object, T>();
@@ -13,7 +13,7 @@ export function perFile<T>(
       ? path
       : path.findParent((parent) => parent.isProgram());
 
-    if (program === null || program.node.type !== 'Program') {
+    if (program === null || !program.isProgram()) {
       return outsideProgram;
     }
 
@@ -23,7 +23,7 @@ export function perFile<T>(
       return cached;
     }
 
-    const value = read(program.node);
+    const value = read(program);
 
     byProgram.set(program.node, value);
 
@@ -31,10 +31,24 @@ export function perFile<T>(
   };
 }
 
-const storyTestCode = perFile(
-  (program): ReadonlySet<unknown> => csfShapes(program).testCode,
-  new Set(),
+const shapesOf = perFile<CsfShapes | undefined>(
+  (program) => csfShapes(program.node),
+  undefined,
 );
+
+const storyTestCode = (path: NodePath): ReadonlySet<unknown> =>
+  shapesOf(path)?.testCode ?? new Set();
+
+/** A meta object, or a story object or function, as storybook-core reads the file. */
+export function isMetaOrStory(path: NodePath): boolean {
+  const shapes = shapesOf(path);
+
+  return (
+    shapes !== undefined &&
+    (shapes.metaObjects.has(path.node) ||
+      shapes.literalContainers.has(path.node))
+  );
+}
 
 /**
  * Reads the story test code, and what each of a mutator's own per-file `readers` gives, unless already read for this

@@ -66,6 +66,19 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'context-optional-user-event',
+    title: 'a context?.userEvent.click statement is removed',
+    source: `export const Story = {\n  play: async (context) => {\n    await context?.userEvent.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'defaulted-context-user-event',
+    title:
+      "a call on the context's userEvent destructured under another name with a default is removed",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent: user = browserUserEvent }) => {\n    await user.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'user-event-setup',
     title: 'a call on a local bound to userEvent.setup() is removed',
     source: inPlay(
@@ -111,6 +124,13 @@ const interactionCases: readonly Case[] = [
       'user = userEvent.setup();',
       "await user.keyboard('{Enter}');",
     ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-setup-let-assigned-in-play',
+    title:
+      "a call on a let declared outside the play and assigned there the setup() of the context's userEvent destructured under another name is removed",
+    source: `let user;\nexport const Story = {\n  play: async ({ userEvent: pointer }) => {\n    user = pointer.setup();\n    await user.click(button);\n  },\n};\n`,
     expect: [[interaction, ';']],
   },
   {
@@ -183,6 +203,20 @@ const interactionCases: readonly Case[] = [
     title:
       "a call on userEvent imported under another name from 'vitest/browser' is removed",
     source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay("await browserUserEvent.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'storybook-test-named-import',
+    title:
+      "a call on userEvent imported under another name from 'storybook/test' is removed",
+    source: `import { userEvent as ue } from 'storybook/test';\n${inPlay("await ue.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-default-import',
+    title:
+      "a call on the default import of '@testing-library/user-event' under another name is removed",
+    source: `import ue from '@testing-library/user-event';\n${inPlay("await ue.click(canvas.getByRole('button'));")}`,
     expect: [[interaction, ';']],
   },
   {

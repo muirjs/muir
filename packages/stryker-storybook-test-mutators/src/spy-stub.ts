@@ -176,6 +176,6 @@ function outcomeOf(
 }
 
 const sitesOf = perFile(
-  (program): readonly StubSite[] => definitionTimeStubs(program),
+  (program): readonly StubSite[] => definitionTimeStubs(program.node),
   [],
 );

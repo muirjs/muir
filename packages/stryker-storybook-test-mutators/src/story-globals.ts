@@ -6,7 +6,7 @@ import { perFile, readStoryFileAt } from './story-file.ts';
 export const proofsBySite = perFile(
   (program): ReadonlyMap<unknown, readonly Proven[]> =>
     new Map(
-      sitesOf(list(program.body), 'globals').map(({ node, proofs }) => [
+      sitesOf(list(program.node.body), 'globals').map(({ node, proofs }) => [
         node,
         proofs,
       ]),
