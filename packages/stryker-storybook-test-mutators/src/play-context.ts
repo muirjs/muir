@@ -8,7 +8,6 @@ import {
   memberName,
   nameOf,
   outsideTypeWrappers,
-  withoutTypeWrappers,
 } from './nodes.ts';
 import {
   isChoiceSide,
@@ -175,20 +174,6 @@ export const contextsOnlyRead = perFile((program) => {
   };
 
   program.traverse({
-    AssignmentExpression(path) {
-      const left = withoutTypeWrappers(path.node.left);
-
-      check(
-        path,
-        left.type !== 'MemberExpression' ||
-          isKeyedHookRead(
-            left.property,
-            left.computed,
-            path.get('right'),
-            reads,
-          ),
-      );
-    },
     CallExpression(path) {
       const name = calleeName(path.node.callee, path.scope);
 
@@ -202,11 +187,7 @@ export const contextsOnlyRead = perFile((program) => {
       );
     },
     MemberExpression(path) {
-      check(
-        path,
-        !isPatternOrLoopTarget(outsideTypeWrappers(path)) ||
-          hookPositions(path.node.property, path.node.computed).length === 0,
-      );
+      check(path, isWrittenMemberRead(path, reads));
     },
     ObjectMethod(path) {
       check(
@@ -242,18 +223,37 @@ export const contextsOnlyRead = perFile((program) => {
   return onlyRead;
 }, false);
 
-/** A member a destructuring or a loop writes to: a pattern's element, rest, default's target or property value, or a `for...of` or `for...in` target. */
-function isPatternOrLoopTarget(member: NodePath): boolean {
-  const { parentPath } = member;
+/** A member, bare or inside type wrappers, whose hook key the file writes only with a value read as that hook: an assignment's, never a destructuring's or a loop's. */
+function isWrittenMemberRead(
+  member: NodePath<types.MemberExpression>,
+  reads: FileReads,
+): boolean {
+  const target = outsideTypeWrappers(member);
+  const { parentPath } = target;
+  const { property, computed } = member.node;
+
+  if (parentPath?.isAssignmentExpression() && target.key === 'left') {
+    return isKeyedHookRead(property, computed, parentPath.get('right'), reads);
+  }
+
+  return (
+    !isPatternOrLoopTarget(target) ||
+    hookPositions(property, computed).length === 0
+  );
+}
+
+/** A node a destructuring or a loop writes to: a pattern's element, rest, default's target or property value, or a `for...of` or `for...in` target. */
+function isPatternOrLoopTarget(target: NodePath): boolean {
+  const { parentPath } = target;
 
   return (
     parentPath !== null &&
     (parentPath.isArrayPattern() ||
-      (parentPath.isForXStatement() && member.key === 'left') ||
+      (parentPath.isForXStatement() && target.key === 'left') ||
       parentPath.isRestElement() ||
-      (parentPath.isAssignmentPattern() && member.key === 'left') ||
+      (parentPath.isAssignmentPattern() && target.key === 'left') ||
       (parentPath.isObjectProperty() &&
-        member.key === 'value' &&
+        target.key === 'value' &&
         parentPath.parentPath.isObjectPattern()))
   );
 }
@@ -494,13 +494,13 @@ function isStepCall(step: NodePath, reads: FileReads): boolean {
   );
 }
 
-/** What one file's read has found so far, kept only for that read, which stops at the first context not read. So a context local already reached counts as read: had its read found otherwise, nothing would be read after it. */
+/** What one file's read has found so far, kept only for that read, which stops at the first context not read. */
 interface FileReads {
   readonly reachedLocals: Set<types.Node>;
   readonly argumentReaders: Map<types.Node, boolean>;
 }
 
-/** A local or pattern that a context is given to, read as a context, once per local or pattern. One reached again, itself included, counts as read, as reading it again finds nothing the first read does not. */
+/** A local or pattern that a context is given to, read as a context, once per local or pattern. One reached again, itself included, counts as read: reading it again finds nothing the first read does not, and had the first read failed, the file's read would have stopped. So a caller combines this only with `every` or `&&`, never with `some`, `||` or a negation. */
 function isContextLocal(
   local: types.Node,
   scope: NodePath['scope'],
