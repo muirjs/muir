@@ -49,3 +49,10 @@ skip.
   shows as a change. A row with a proof that cannot load fails the test unless the test lists it as one Storybook
   cannot load either. Each test names the proof reasons its rows must exercise, and fails when one of them, or any
   proof at all, gets no cut. The check covers the case rows only, not every story file.
+- Storybook's composition does not check a `viewport` default: composed with and without `viewport: 'responsive'`,
+  the globals differ, and the test calls them the same through a hand-copied oracle of the Vitest addon's
+  `setViewport` rule, the rule the `default-global` proof copies, so a mistake in that copy would pass both.
+- A `Proven` is bound to the property node in the body a mutator passes to `sitesOf`, not to the file: a mutator
+  that passed a body it built itself, holding the real property node, would get a real `Proven` for it. Both
+  mutators pass Stryker's `program.body`; if one ever needs another body, binding the proofs to the Program is the
+  way to close this.
