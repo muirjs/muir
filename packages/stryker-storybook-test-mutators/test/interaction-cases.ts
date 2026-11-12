@@ -186,6 +186,20 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'storybook-test-named-import',
+    title:
+      "a call on userEvent imported under another name from 'storybook/test' is removed",
+    source: `import { userEvent as ue } from 'storybook/test';\n${inPlay("await ue.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-default-import',
+    title:
+      "a call on the default import of '@testing-library/user-event' under another name is removed",
+    source: `import ue from '@testing-library/user-event';\n${inPlay("await ue.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'vitest-browser-namespace-import',
     title:
       "a call on the userEvent of a namespace import of 'vitest/browser' is removed",

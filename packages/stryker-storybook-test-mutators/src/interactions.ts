@@ -83,11 +83,11 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
   ) {
     const receiver = readUserEvent(withoutTypeWrappers(member.object), path);
 
-    if (receiver.isUserEvent) {
+    if (receiver !== 'none') {
       return {
         kind: 'userEvent',
         method,
-        isUserEvent14: receiver.isUserEvent14,
+        isUserEvent14: receiver === 'provenUserEvent14',
       };
     }
   }

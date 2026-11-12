@@ -72,16 +72,17 @@ the statement that ends them is a `clear` of the same target, which undoes it.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Proven user-event 14**:
-A user-event receiver that the file proves is user-event 14, whose `type` clicks first: a named `userEvent` import
-from `storybook/test` or `@testing-library/user-event`, or the default import of `@testing-library/user-event`; the
-`userEvent` of a play's context, destructured in its first parameter or read as `<context>.userEvent` on that
-parameter itself, where the play is a `play` property or method given inline that is story test code and inside none,
-such as the meta's play or a CSF factory story's; and a `setup()` of one of these, or a local that is a choice between
-them. Any other receiver may be Vitest browser's userEvent, whose `type` does not click: another import, a `userEvent`
-the file does not bind, the `userEvent` of another object, a call result or another function's parameter, a `.test()`
-function's or a step callback's context, and the context of a play given by its name or assigned as `Story.play`. The
-play context's proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()`, as the default global's
-proof rests on Storybook's initial values; a play that other code calls with a context of its own is not read.
+A user-event receiver that the file proves is user-event 14, whose `type` clicks first: `userEvent` imported by name
+from `storybook/test` or `@testing-library/user-event`, or the default import of `@testing-library/user-event`, under
+any local name; the `userEvent` of a play's context, destructured in its first parameter or read as
+`<context>.userEvent` on that parameter itself, where the play is a `play` property or method given inline that is
+story test code and inside none, such as the meta's play or a CSF factory story's; and a `setup()` of one of these, or
+a local that is a choice between them. Any other receiver may be Vitest browser's userEvent, whose `type` does not
+click: another import, a `userEvent` the file does not bind, the `userEvent` of another object, a call result or
+another function's parameter, a `.test()` function's or a step callback's context, and the context of a play given by
+its name or assigned as `Story.play`. The play context's proof rests on Storybook 10.6.5, which sets it to user-event
+14's `setup()`, as the default global's proof rests on Storybook's initial values; a play that other code calls with a
+context of its own is not read.
 _Avoid_: real userEvent, Storybook userEvent
 
 **Copied check**:

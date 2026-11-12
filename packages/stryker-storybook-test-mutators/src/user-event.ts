@@ -27,16 +27,8 @@ export const userEventMethods: ReadonlySet<string> = new Set([
   'paste',
 ]);
 
-interface UserEventReading {
-  readonly isUserEvent: boolean;
-  /** The file proves it is user-event 14, whose `type` clicks first; anything else may be Vitest browser's, whose `type` does not. */
-  readonly isUserEvent14: boolean;
-}
-
-const noUserEvent: UserEventReading = {
-  isUserEvent: false,
-  isUserEvent14: false,
-};
+/** What a receiver is: no user-event, a user-event that may be Vitest browser's, whose `type` does not click, or a proven user-event 14, whose `type` clicks first. */
+type UserEventReading = 'none' | 'userEvent' | 'provenUserEvent14';
 
 /** Reads `userEvent`, `<x>.userEvent` such as the play context's, or a local that `userEventBinding` reads as a user-event. `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
 export function readUserEvent(
@@ -45,22 +37,32 @@ export function readUserEvent(
   seen: ReadonlySet<Binding> = new Set(),
 ): UserEventReading {
   if (node.type === 'MemberExpression') {
-    return {
-      isUserEvent: nameOf(node.property) === 'userEvent',
-      isUserEvent14: isPlayContext(node.object, path),
-    };
+    if (nameOf(node.property) !== 'userEvent') {
+      return 'none';
+    }
+
+    return isPlayContext(node.object, path) ? 'provenUserEvent14' : 'userEvent';
   }
 
   const binding = bindingOf(node, path.scope);
   const bound =
     binding === undefined || seen.has(binding)
-      ? noUserEvent
+      ? 'none'
       : userEventBinding(binding, path, new Set([...seen, binding]));
 
-  return {
-    isUserEvent: nameOf(node) === 'userEvent' || bound.isUserEvent,
-    isUserEvent14: bound.isUserEvent14,
-  };
+  return bound === 'none' && nameOf(node) === 'userEvent' ? 'userEvent' : bound;
+}
+
+/** The weaker of two readings, as a choice between them is only as proven as its weaker side. */
+function weaker(
+  first: UserEventReading,
+  second: UserEventReading,
+): UserEventReading {
+  if (first === 'none' || second === 'none') {
+    return 'none';
+  }
+
+  return first === second ? first : 'userEvent';
 }
 
 /** Reads what a binding holds: a userEvent import, Vitest browser's userEvent destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
@@ -79,39 +81,37 @@ function userEventBinding(
       parent.type === 'ImportDeclaration'
         ? parent.source.value
         : undefined;
-    const fromVitestBrowser =
-      source !== undefined && vitestBrowserSources.has(source);
+    if (source !== undefined && userEvent14Sources.has(source)) {
+      return 'provenUserEvent14';
+    }
 
-    return {
-      isUserEvent: fromVitestBrowser,
-      isUserEvent14: source !== undefined && userEvent14Sources.has(source),
-    };
+    return source !== undefined && vitestBrowserSources.has(source)
+      ? 'userEvent'
+      : 'none';
   }
 
   if (declaration.isImportDefaultSpecifier()) {
     const { parent } = declaration;
 
-    return {
-      isUserEvent: false,
-      isUserEvent14:
-        parent.type === 'ImportDeclaration' &&
-        parent.source.value === '@testing-library/user-event',
-    };
+    return parent.type === 'ImportDeclaration' &&
+      parent.source.value === '@testing-library/user-event'
+      ? 'provenUserEvent14'
+      : 'none';
   }
 
   if (binding.kind === 'param') {
-    const takesUserEvent =
-      declaration.node.type === 'ObjectPattern' &&
-      takesUserEventAs(declaration.node, name);
+    if (
+      declaration.node.type !== 'ObjectPattern' ||
+      !takesUserEventAs(declaration.node, name)
+    ) {
+      return 'none';
+    }
 
-    return {
-      isUserEvent: takesUserEvent,
-      isUserEvent14: takesUserEvent && isPlayParameter(declaration),
-    };
+    return isPlayParameter(declaration) ? 'provenUserEvent14' : 'userEvent';
   }
 
   if (!declaration.isVariableDeclarator()) {
-    return noUserEvent;
+    return 'none';
   }
 
   const { id, init } = declaration.node;
@@ -123,26 +123,21 @@ function userEventBinding(
     init !== undefined &&
     isVitestBrowserImport(awaited(init))
   ) {
-    return { isUserEvent: true, isUserEvent14: false };
+    return 'userEvent';
   }
 
   const value = boundValue(init, binding);
 
   if (value?.type === 'ConditionalExpression') {
-    const consequent = readUserEvent(value.consequent, path, seen);
-    const alternate = readUserEvent(value.alternate, path, seen);
-
-    return {
-      isUserEvent: consequent.isUserEvent && alternate.isUserEvent,
-      isUserEvent14: consequent.isUserEvent14 && alternate.isUserEvent14,
-    };
+    return weaker(
+      readUserEvent(value.consequent, path, seen),
+      readUserEvent(value.alternate, path, seen),
+    );
   }
 
   const receiver = setupReceiver(value);
 
-  return receiver === undefined
-    ? noUserEvent
-    : readUserEvent(receiver, path, seen);
+  return receiver === undefined ? 'none' : readUserEvent(receiver, path, seen);
 }
 
 /** `{ userEvent: <name> }`, among other properties. */
