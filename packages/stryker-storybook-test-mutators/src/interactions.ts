@@ -1,6 +1,6 @@
 import type { NodePath, types } from '@babel/core';
 
-import { checksIn, isNegative } from './checks.ts';
+import { checksIn, hasCheck, isNegative } from './checks.ts';
 import type { BabelTypes } from './mutator.ts';
 import {
   awaited,
@@ -181,8 +181,7 @@ function isClearedLater(current: Interaction, t: BabelTypes): boolean {
   const between = statementsBefore(siblings, holdsInteraction);
   const next = siblings[between.length];
   const later =
-    next === undefined ||
-    between.some((sibling) => checksIn(sibling).length > 0)
+    next === undefined || between.some(hasCheck)
       ? undefined
       : interactionAt(next);
   const [laterTarget] = later?.call.arguments ?? [];
@@ -246,9 +245,7 @@ export function targetInteraction(path: NodePath): Interaction | undefined {
 
 /** The first statement after `path` in its block that holds one of its following checks. */
 export function firstCheckAfter(path: NodePath): NodePath | undefined {
-  return statementsBefore(nextSiblings(path), holdsInteraction).find(
-    (sibling) => checksIn(sibling).length > 0,
-  );
+  return statementsBefore(nextSiblings(path), holdsInteraction).find(hasCheck);
 }
 
 /** Whether the following checks of `path`, past the end of its block and of a step callback that holds it, are all negative: there is one, and every check up to the next interaction statement is negative. */
@@ -256,17 +253,15 @@ function hasOnlyNegativeChecks(path: NodePath): boolean {
   const following = followingStatements(path);
 
   return (
-    statementsBefore(following, holdsInteraction).some(
-      (statement) => checksIn(statement).length > 0,
-    ) &&
-    statementsBefore(following, isInteractionStatement)
+    statementsBefore(following, holdsInteraction).some(hasCheck) &&
+    statementsBefore(following, isNextInteraction)
       .flatMap(checksIn)
       .every(isNegative)
   );
 }
 
-/** Whether `statement` is an interaction, or a `step(...)` whose callback holds one. */
-function isInteractionStatement(statement: NodePath): boolean {
+/** Whether `statement` ends the checks before the next interaction: it is an interaction, or a `step(...)` whose callback holds one. */
+function isNextInteraction(statement: NodePath): boolean {
   const { node } = statement;
 
   return (
@@ -280,16 +275,19 @@ function isInteractionStatement(statement: NodePath): boolean {
 /** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; of the functions in it, only step and `waitFor` callbacks run there. */
 function holdsInteraction(statement: NodePath): boolean {
   return (
-    isInteractionStatement(statement) ||
-    (!statement.isFunction() && hasInteractionIn(statement, runsWhereGiven))
+    isNextInteraction(statement) || hasInteractionIn(statement, runsWhereGiven)
   );
 }
 
-/** Whether an interaction stands inside `path`, looking into a function only when `entersFunction` holds for it. */
+/** Whether an interaction stands inside `path`, `path` itself included, looking into a function only when `entersFunction` holds for it. */
 function hasInteractionIn(
   path: NodePath,
   entersFunction: (fn: NodePath) => boolean,
 ): boolean {
+  if (path.isFunction() && !entersFunction(path)) {
+    return false;
+  }
+
   let found = false;
 
   path.traverse({

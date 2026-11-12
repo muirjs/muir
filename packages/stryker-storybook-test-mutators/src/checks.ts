@@ -2,6 +2,11 @@ import type { NodePath, types } from '@babel/core';
 
 import { awaited, nameOf } from './nodes.ts';
 
+/** Whether `path` holds an `expect(...)` check. */
+export function hasCheck(path: NodePath): boolean {
+  return checksIn(path).length > 0;
+}
+
 /** Whether `path` holds an `expect(...)` check with `.not` in its matcher chain. */
 export function hasNegativeCheck(path: NodePath): boolean {
   return checksIn(path).some(isNegative);
