@@ -35,6 +35,31 @@ export const spyStubCases: readonly Case[] = [
     expect: [[spyStub, 'fn()']],
   },
   {
+    id: 'spy-stub-chain',
+    title:
+      'each stub in a chain on fn() is removed on its own, leaving the stubs before it',
+    source: withFnImport(
+      'export const Story = {',
+      "  args: { save: fn().mockResolvedValueOnce(1).mockRejectedValueOnce(new Error('x')) },",
+      '};',
+    ),
+    expect: [
+      [spyStub, 'fn()'],
+      [spyStub, 'fn().mockResolvedValueOnce(1)'],
+    ],
+  },
+  {
+    id: 'spy-stub-chain-on-unknown-spy',
+    title:
+      'a chain of stubs on a spy that fn() from storybook/test did not make makes no mutant',
+    source: withFnImport(
+      'export const Story = {',
+      '  args: { load: vi.fn().mockReturnValueOnce(1).mockReturnValue(2) },',
+      '};',
+    ),
+    expect: [],
+  },
+  {
     id: 'spy-stub-named-after-stub',
     title:
       'a stub chained on fn() and then named leaves the bare fn() call, and the mockName call around it makes no mutant',

@@ -34,6 +34,23 @@ export const spyStubOutcomeCases: readonly Case[] = [
     expect: [[outcome, 'fn().mockRejectedValueOnce(new Error("Stryker"))']],
   },
   {
+    id: 'spy-stub-outcome-chain',
+    title:
+      'each stub in a chain on fn() flips on its own, keeping the stubs around it',
+    source: withFnImport(
+      'export const Story = {',
+      "  args: { save: fn().mockResolvedValueOnce(1).mockRejectedValueOnce(new Error('x')) },",
+      '};',
+    ),
+    expect: [
+      [outcome, 'fn().mockRejectedValueOnce(new Error("Stryker"))'],
+      [
+        outcome,
+        'fn().mockResolvedValueOnce(1).mockResolvedValueOnce(undefined)',
+      ],
+    ],
+  },
+  {
     id: 'spy-stub-outcome-statement',
     title: 'a resolved stub statement in a play rejects with an Error instead',
     source: inPlay('mocked(save).mockResolvedValue(note);'),

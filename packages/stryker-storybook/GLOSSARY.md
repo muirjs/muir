@@ -76,7 +76,8 @@ _Avoid_: test tags
 
 **Spy stub**:
 A call that sets what a spy made with `fn()` from `storybook/test` returns or does: `mockReturnValue`,
-`mockResolvedValue`, `mockRejectedValue`, `mockImplementation`, or their `Once` forms, chained on the spy.
+`mockResolvedValue`, `mockRejectedValue`, `mockImplementation`, or their `Once` forms, chained on the spy. In a
+chain such as `fn().mockResolvedValueOnce(1).mockRejectedValue(error)`, each of these calls is a spy stub of its own.
 _Avoid_: mock setup, stub (alone), mock implementation
 
 **Definition-time stub**:
@@ -141,7 +142,9 @@ _Avoid_: slow mutant
 
 **Mock transformer**:
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
-form, which survives the mock reset. It leaves the `Once` forms as they are.
+form, which survives the mock reset. It leaves the `Once` forms as they are, and rewrites only the first stub of a
+chain, leaving the stubs after it as they are; the `lz-storybook` report gives an erased stub of either kind the verdict
+`once-not-rewritten` or `chain-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:

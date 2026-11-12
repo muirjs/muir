@@ -11,7 +11,10 @@ export const storybookPluginName = 'lz-storybook';
 /** The mutator whose surviving mutants make unchecked stubs: it removes a stub, where `LzStorybookSpyStubOutcome` only flips how a stub settles. */
 export const spyStubName = 'LzStorybookSpyStub';
 
-export type ReasonVerdict = Exclude<StubVerdict, 'kept'> | 'once-not-rewritten';
+export type ReasonVerdict =
+  | Exclude<StubVerdict, 'kept'>
+  | 'once-not-rewritten'
+  | 'chain-not-rewritten';
 
 export interface ReasonSite extends Omit<ClassifiedStub, 'verdict' | 'once'> {
   readonly verdict: ReasonVerdict;
@@ -26,6 +29,8 @@ const reasons: Readonly<Record<ReasonVerdict, string>> = {
     "the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown",
   'once-not-rewritten':
     'the mock transformer does not rewrite *Once stubs, so the mock reset still erases this stub',
+  'chain-not-rewritten':
+    'the mock transformer rewrites only the first stub of a chain, so the mock reset still erases this stub',
 };
 
 const fix =
@@ -47,18 +52,34 @@ export function reasonSites(
   file: StoryFile,
   { previewTest, testTags, transformer }: StorybookProject,
 ): readonly ReasonSite[] {
-  return classifyStubs(file, previewTest, testTags).stubs.flatMap(
-    ({ once, verdict, ...site }): readonly ReasonSite[] => {
-      if (verdict === 'kept') {
-        return [];
+  const { stubs } = classifyStubs(file, previewTest, testTags);
+
+  return stubs.flatMap(({ once, verdict, ...site }): readonly ReasonSite[] => {
+    if (verdict === 'kept') {
+      return [];
+    }
+
+    if (transformer === 'seen') {
+      if (once) {
+        return [{ ...site, verdict: 'once-not-rewritten' }];
       }
 
-      if (transformer === 'seen') {
-        return once ? [{ ...site, verdict: 'once-not-rewritten' }] : [];
-      }
+      return followsAStub(site, stubs)
+        ? [{ ...site, verdict: 'chain-not-rewritten' }]
+        : [];
+    }
 
-      return [{ ...site, verdict }];
-    },
+    return [{ ...site, verdict }];
+  });
+}
+
+/** Whether the stub comes after another in its chain, which the mock transformer leaves as it is. */
+function followsAStub(
+  stub: Pick<ClassifiedStub, 'start' | 'end'>,
+  stubs: readonly ClassifiedStub[],
+): boolean {
+  return stubs.some(
+    (inner) => inner.start === stub.start && inner.end < stub.end,
   );
 }
 

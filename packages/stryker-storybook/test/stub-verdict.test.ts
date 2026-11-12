@@ -34,4 +34,11 @@ describe('spyStubReason', () => {
       `lz-storybook: once-not-rewritten: the mock transformer does not rewrite *Once stubs, so the mock reset still erases this stub; ${fix}`,
     );
   });
+
+  it('says why a stub after the first of a chain stays erased with the mock transformer on', () => {
+    assert.equal(
+      spyStubReason('chain-not-rewritten'),
+      `lz-storybook: chain-not-rewritten: the mock transformer rewrites only the first stub of a chain, so the mock reset still erases this stub; ${fix}`,
+    );
+  });
 });

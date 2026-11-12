@@ -188,6 +188,33 @@ describe('transform', () => {
     assert.equal(transform(code, storyFile), undefined);
   });
 
+  it('leaves a stub chained after a *Once stub alone, so the *Once stub still runs first', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Chain = { args: { save: fn().mockResolvedValueOnce(1).mockResolvedValue(2) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(transform(code, storyFile), undefined);
+  });
+
+  it('rewrites only the first stub of a chain', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Chain = { args: { load: fn().mockReturnValue(1).mockReturnValue(2) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Chain = { args: { load: ((value) => fn(() => value))(1).mockReturnValue(2) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('leaves a stub inside a function alone', () => {
     const code = [
       "import { fn } from 'storybook/test';",

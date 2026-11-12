@@ -43,6 +43,24 @@ describe('definitionTimeStubs', () => {
       [{ spy: 'fn', method: 'mockResolvedValue', once: false }],
     ],
     [
+      'finds each stub of a chain on fn, under the spy the chain starts at',
+      "import { fn as spy } from 'storybook/test';\nspy().mockResolvedValueOnce(1).mockRejectedValue(2);",
+      [
+        { spy: 'spy', method: 'mockRejectedValue', once: false },
+        { spy: 'spy', method: 'mockResolvedValue', once: true },
+      ],
+    ],
+    [
+      'finds no stub after a mock method that is not a stub in a chain',
+      "import { fn } from 'storybook/test';\nfn().mockName('load').mockReturnValue(1);",
+      [],
+    ],
+    [
+      'finds no stub in a chain whose first call is a computed member call',
+      "import { fn } from 'storybook/test';\nconst mockReturnValue = 'mockName';\nfn()[mockReturnValue]('load').mockReturnValue(1);",
+      [],
+    ],
+    [
       'finds no stub in a call to a mock method that is not a stub',
       "import { fn } from 'storybook/test';\nfn().mockName('load');",
       [],
