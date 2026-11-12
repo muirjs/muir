@@ -8,15 +8,20 @@ import {
 } from './nodes.ts';
 
 /** A binding whose every reference is a method call's receiver, a side of a choice given to such a local, or inside a type. */
-export function isOnlyCalledOn(
+export function isOnlyCalledOn(binding: Binding): boolean {
+  return isOnlyCalledOnUnseen(binding, new Set());
+}
+
+/** `isOnlyCalledOn`, where `seen` holds the locals already followed, so a local given a choice of itself ends the search. */
+function isOnlyCalledOnUnseen(
   binding: Binding,
-  seen: ReadonlySet<Binding> = new Set(),
+  seen: ReadonlySet<Binding>,
 ): boolean {
   return binding.referencePaths.every(
     (reference) =>
       isInType(reference) ||
       isMethodCallReceiver(reference) ||
-      isChoiceSide(reference, seen),
+      isChoiceSideUnseen(reference, seen),
   );
 }
 
@@ -41,9 +46,13 @@ export function isMethodCallReceiver(path: NodePath): boolean {
 }
 
 /** A side of `<test> ? <a> : <b>` that is the one value of a local only called on. */
-export function isChoiceSide(
+export function isChoiceSide(path: NodePath): boolean {
+  return isChoiceSideUnseen(path, new Set());
+}
+
+function isChoiceSideUnseen(
   path: NodePath,
-  seen: ReadonlySet<Binding> = new Set(),
+  seen: ReadonlySet<Binding>,
 ): boolean {
   const choice = path.parentPath;
 
@@ -60,7 +69,8 @@ export function isChoiceSide(
   return (
     local !== undefined &&
     value?.node === choice.node &&
-    (seen.has(local) || isOnlyCalledOn(local, new Set([...seen, local])))
+    (seen.has(local) ||
+      isOnlyCalledOnUnseen(local, new Set([...seen, local])))
   );
 }
 
@@ -78,7 +88,7 @@ function localGiven(value: NodePath): Binding | undefined {
 }
 
 /** A value and where it is given, whose scope its names are read in. */
-export interface GivenValue {
+interface GivenValue {
   readonly node: types.Node;
   readonly at: NodePath;
 }

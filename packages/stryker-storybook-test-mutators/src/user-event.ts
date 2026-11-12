@@ -50,11 +50,19 @@ export const userEventMethods: ReadonlySet<string> = new Set([
 /** What a receiver is: no user-event, a user-event that may be Vitest browser's, whose `type` does not click, or a proven user-event 14, whose `type` clicks first. */
 type UserEventReading = 'none' | 'unprovenUserEvent' | 'provenUserEvent14';
 
-/** Reads `userEvent`, `<x>.userEvent` such as the play context's, or a local that `userEventBinding` reads as a user-event. `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
+/** Reads `userEvent`, `<x>.userEvent` such as the play context's, or a local that `userEventBinding` reads as a user-event. */
 export function readUserEvent(
   node: types.Node,
   path: NodePath,
-  seen: ReadonlySet<Binding> = new Set(),
+): UserEventReading {
+  return readUnseenUserEvent(node, path, new Set());
+}
+
+/** `readUserEvent`, where `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
+function readUnseenUserEvent(
+  node: types.Node,
+  path: NodePath,
+  seen: ReadonlySet<Binding>,
 ): UserEventReading {
   if (
     node.type === 'MemberExpression' ||
@@ -150,8 +158,8 @@ function userEventBinding(
 
   if (value?.node.type === 'ConditionalExpression') {
     return weaker(
-      readUserEvent(value.node.consequent, value.at, seen),
-      readUserEvent(value.node.alternate, value.at, seen),
+      readUnseenUserEvent(value.node.consequent, value.at, seen),
+      readUnseenUserEvent(value.node.alternate, value.at, seen),
     );
   }
 
@@ -159,7 +167,7 @@ function userEventBinding(
 
   return value === undefined || receiver === undefined
     ? 'none'
-    : readUserEvent(receiver, value.at, seen);
+    : readUnseenUserEvent(receiver, value.at, seen);
 }
 
 /** The module an import declaration names when `declaration` imports `userEvent` by name from it, or is the default import of `@testing-library/user-event`, the one user-event module with a default export. */

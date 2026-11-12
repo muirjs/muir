@@ -1,5 +1,5 @@
 import type { NodePath, types } from '@babel/core';
-import { csfShapes } from '@layzee/storybook-core';
+import { type CsfShapes, csfShapes } from '@layzee/storybook-core';
 
 /** What `read` gives for the Program around a path, read once per Program; `outsideProgram` when there is none. */
 export function perFile<T>(
@@ -31,7 +31,7 @@ export function perFile<T>(
   };
 }
 
-const shapesOf = perFile<ReturnType<typeof csfShapes> | undefined>(
+const shapesOf = perFile<CsfShapes | undefined>(
   (program) => csfShapes(program.node),
   undefined,
 );
