@@ -16,6 +16,7 @@ import { field, list } from './node-field.ts';
 
 interface NamesReadElsewhere {
   readonly referencedElsewhere: ReadonlySet<unknown>;
+  readonly sharingWithWritten: ReadonlySet<unknown>;
   readonly written: ReadonlySet<unknown>;
   readonly readByOtherObjects: ReadonlySet<unknown>;
 }
@@ -30,7 +31,7 @@ export function namesReadElsewhere(
     ...body.flatMap(identifiersInReadForms),
     ...reaches.map(({ identifier }) => identifier),
   ]);
-  const referenced = identifiersIn(body)
+  const referenced = identifiersIgnoringScopes(body)
     .filter((identifier) => !read.has(identifier))
     .map((identifier) => field(identifier, 'name'));
   const assignments = body.flatMap(assignmentOf);
@@ -44,12 +45,12 @@ export function namesReadElsewhere(
   );
 
   return {
-    referencedElsewhere: new Set([
-      ...referenced,
-      ...reaches
+    referencedElsewhere: new Set(referenced),
+    sharingWithWritten: new Set(
+      reaches
         .filter(({ from }) => written.has(from))
         .flatMap(({ from, to }) => [from, to]),
-    ]),
+    ),
     written,
     readByOtherObjects: withReachedAndWholeHolders(
       new Set(
@@ -224,7 +225,7 @@ function identifiersReachedFrom(node: unknown): readonly unknown[] {
   );
 }
 
-function identifiersIn(node: unknown): readonly unknown[] {
+function identifiersIgnoringScopes(node: unknown): readonly unknown[] {
   if (!isRecord(node) || node['type'] === 'TSTypeQuery') {
     // Stryker disable next-line ArrayDeclaration: a string in this list gives namesReadElsewhere an undefined name, which marks only a story whose local is undefined: a namespace re-export, which Storybook 10.6.5's index never lists, or a re-export by string name, which its Vitest transform does not test; classifyStubs drops both, and csfShapes never reads the flag
     return [];
@@ -235,12 +236,12 @@ function identifiersIn(node: unknown): readonly unknown[] {
   }
 
   if (node['type'] === 'MemberExpression' && node['computed'] === false) {
-    return identifiersIn(node['object']);
+    return identifiersIgnoringScopes(node['object']);
   }
 
   if (node['type'] === 'ObjectProperty' && node['computed'] === false) {
-    return identifiersIn(node['value']);
+    return identifiersIgnoringScopes(node['value']);
   }
 
-  return Object.values(node).flatMap(identifiersIn);
+  return Object.values(node).flatMap(identifiersIgnoringScopes);
 }

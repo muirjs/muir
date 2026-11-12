@@ -217,8 +217,12 @@ export function csfFile(
   const metas = metaBindings.flatMap(([owner, meta]) =>
     objectOf(meta, bindings).map((object) => ({ object, owner })),
   );
-  const { referencedElsewhere, written, readByOtherObjects } =
-    namesReadElsewhere(body, bindings, metaBindings);
+  const {
+    referencedElsewhere,
+    sharingWithWritten,
+    written,
+    readByOtherObjects,
+  } = namesReadElsewhere(body, bindings, metaBindings);
 
   return {
     metas,
@@ -235,7 +239,8 @@ export function csfFile(
       (name) => list(index?.get(name)?.tests),
       (local) =>
         metaBindings.some(([name]) => written.has(name)) ||
-        referencedElsewhere.has(local),
+        referencedElsewhere.has(local) ||
+        sharingWithWritten.has(local),
     ),
     written,
     readByOtherObjects,
