@@ -210,7 +210,7 @@ export const contextsOnlyRead = perFile((program) => {
     ObjectProperty(path) {
       check(
         path,
-        isDeclaredPattern(path.parentPath) ||
+        path.parentPath.isObjectPattern() ||
           isKeyedHookRead(path.node.key, path.node.computed, path.get('value')),
       );
     },
@@ -238,23 +238,6 @@ function isPatternTarget(member: NodePath): boolean {
       (parentPath.isObjectProperty() &&
         member.key === 'value' &&
         parentPath.parentPath.isObjectPattern()))
-  );
-}
-
-/** An object pattern that a declaration or a parameter destructures into locals, alone or nested, which gives Storybook no hook, unlike an assignment's, which may write one to a member. */
-function isDeclaredPattern(pattern: NodePath): boolean {
-  const destructuring = pattern.isObjectPattern()
-    ? pattern.findParent(
-        (parent) =>
-          !parent.isPattern() &&
-          !parent.isObjectProperty() &&
-          !parent.isRestElement(),
-      )
-    : null;
-
-  return (
-    destructuring !== null &&
-    (destructuring.isVariableDeclarator() || destructuring.isFunction())
   );
 }
 

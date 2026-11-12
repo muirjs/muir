@@ -162,6 +162,20 @@ export const contextRuleCases: readonly Case[] = [
     ],
   },
   {
+    id: 'skip-destructured-hook-key-onto-local-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a destructuring assignment writes an imported object's beforeEach to a local, as only the member a pattern writes gives Storybook a hook",
+    source: `import { sharedHooks } from './support';\nlet local;\n({ beforeEach: local } = sharedHooks);\nexport const Story = {\n  play: async ({ userEvent }) => {\n    local;\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-catch-destructured-hook-name-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a catch clause destructures a local named beforeEach, as a pattern gives Storybook no hook",
+    source: `try {\n  prepare();\n} catch ({ beforeEach }) {\n  beforeEach;\n}\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-parameter-destructured-hook-name-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a decorator destructures its context's loaders in its parameter, as a parameter's pattern gives Storybook no hook",
