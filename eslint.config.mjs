@@ -171,6 +171,8 @@ export default withWarningsAsErrors([
       // Deprecated; their replacements, no-empty-object-type and no-global-assign, are on.
       '@typescript-eslint/no-empty-interface': 'off',
       'no-native-reassign': 'off',
+      // Object.assign({}, proven, ...) types as a Proven (T & U) without being one; a spread does not.
+      'prefer-object-spread': 'error',
     },
   },
   {

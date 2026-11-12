@@ -1,5 +1,4 @@
 import type { NodePath, types } from '@babel/core';
-import { csfShapes } from '@layzee/storybook-csf';
 
 import { checksIn, isNegative } from './checks.ts';
 import type { BabelTypes } from './mutator.ts';
@@ -10,6 +9,7 @@ import {
   nameOf,
   withoutTypeWrappers,
 } from './nodes.ts';
+import { isInStoryTestCode, readStoryFileAt } from './story-file.ts';
 import { readUserEvent, userEventMethods } from './user-event.ts';
 
 type CallNode = types.CallExpression | types.OptionalCallExpression;
@@ -339,44 +339,6 @@ const hooks: ReadonlySet<string> = new Set(['beforeEach', 'afterEach']);
 
 function isHook(path: NodePath): boolean {
   return isPropertyFunction(path, hooks);
-}
-
-const testCodeByProgram = new WeakMap<object, ReadonlySet<unknown>>();
-
-/** The story test code of the file around `path`, as `csfShapes` reads it the first time it is asked. */
-function storyTestCode(path: NodePath): ReadonlySet<unknown> {
-  const program = path.isProgram()
-    ? path
-    : path.findParent((parent) => parent.isProgram());
-
-  if (program === null) {
-    return new Set();
-  }
-
-  const read = testCodeByProgram.get(program.node);
-
-  if (read !== undefined) {
-    return read;
-  }
-
-  const { testCode } = csfShapes(program.node);
-
-  testCodeByProgram.set(program.node, testCode);
-
-  return testCode;
-}
-
-/** Reads the file's story test code at its program: Stryker places a statement's mutants when it leaves the statement, so a later read could find a story replaced by a mutant switch. */
-function readStoryFileAt(path: NodePath): void {
-  if (path.isProgram()) {
-    storyTestCode(path);
-  }
-}
-
-function isInStoryTestCode(path: NodePath): boolean {
-  const testCode = storyTestCode(path);
-
-  return path.findParent((parent) => testCode.has(parent.node)) !== null;
 }
 
 /** A function that is the value of a property named in `names` or an element of its array, a method of such a name, or a function declared in the file and given there by its name. */

@@ -8,6 +8,7 @@ import type { StorybookProject } from './storybook-project.ts';
 
 export const storybookPluginName = 'lz-storybook';
 
+/** The mutator whose surviving mutants make unchecked stubs: it removes a stub, where `LzStorybookSpyStubOutcome` only flips how a stub settles. */
 export const spyStubName = 'LzStorybookSpyStub';
 
 export type ReasonVerdict = Exclude<StubVerdict, 'kept'> | 'once-not-rewritten';

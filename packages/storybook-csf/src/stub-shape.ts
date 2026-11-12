@@ -10,10 +10,23 @@ const stubMethods = [
 
 export type StubMethod = (typeof stubMethods)[number];
 
-export interface StubSite {
-  readonly spy: string;
+/** The stub method a spy call names, and whether it is the `Once` form. */
+export interface StubMethodCall {
   readonly method: StubMethod;
   readonly once: boolean;
+}
+
+/** The stub method call of a spy method name; `undefined` for any other name. */
+export function stubMethodOf(name: unknown): StubMethodCall | undefined {
+  const method = stubMethods.find(
+    (candidate) => name === candidate || name === `${candidate}Once`,
+  );
+
+  return method === undefined ? undefined : { method, once: name !== method };
+}
+
+export interface StubSite extends StubMethodCall {
+  readonly spy: string;
   readonly start: number;
   readonly end: number;
   readonly line: number;
@@ -72,10 +85,7 @@ function stubSite(
   const end = field(node, 'end');
   const line = field(node, 'loc', 'start', 'line');
   const spy = field(node, 'callee', 'object', 'callee', 'name');
-  const name = field(node, 'callee', 'property', 'name');
-  const method = stubMethods.find(
-    (candidate) => name === candidate || name === `${candidate}Once`,
-  );
+  const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
 
   if (
     !isCall(node) ||
@@ -86,7 +96,7 @@ function stubSite(
     !isCall(field(node, 'callee', 'object')) ||
     typeof spy !== 'string' ||
     !spies.has(spy) ||
-    method === undefined
+    stub === undefined
   ) {
     return undefined;
   }
@@ -95,8 +105,7 @@ function stubSite(
 
   return {
     spy,
-    method,
-    once: name !== method,
+    ...stub,
     start,
     end,
     line,

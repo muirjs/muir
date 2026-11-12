@@ -22,17 +22,49 @@ _Avoid_: Storybook config, project config
 
 **Static CSF value**:
 A value in a story file that Storybook reads from the source without running the file, such as `title`, `id`,
-`tags`, `name` or an export name. A mutant there cannot change what Storybook reads.
+`tags`, `name` or an export name. A mutant there cannot change what Storybook reads. Storybook reads a property of
+the meta or a story only when its key is an identifier, so `'tags': ['!test']` sets no static tags, while the story
+that runs gets every key as JavaScript reads it, a string-literal one included.
 _Avoid_: static annotation, index value
 
 **Story test code**:
 The code in a story file that tests a story rather than renders it: `play` functions, `beforeEach` and
-`afterEach`, and `.test()` bodies.
+`afterEach`, and the bodies of the `.test()` calls Storybook runs: the first call of each string-literal name with
+two or more arguments, whose function is the second argument when that is a function or the only one after the
+name, else the third.
 _Avoid_: play code (too narrow), interaction test
 
 **Tested story**:
 A story whose test Storybook's Vitest addon runs, because its tags pass the tag filter and none of them skips it.
 _Avoid_: test story, story test
+
+**Played story**:
+A tested story in a file with a meta object whose static tags do not end in `!test`, and that runs a play (its own,
+one assigned later, one from a story it spreads or its `.extend()` base, or the meta's, which also runs where the
+story's play is `undefined` or `null`) or a `.test()` call. When a spread or computed key the file cannot resolve may
+set its play last, the play is an unknown play: with no own play, such a spread in any position in the story's own
+object gives one, and for a story with no play of its own or from a base, so does one in the meta after the meta's
+play, or in any position when the meta has none. An unknown play may have a play the file reads under it (an earlier
+own play, the `.extend()` base's or the meta's, including a meta play a meta spread follows), which runs when the
+unknown one sets none. The file resolves a spread of an object literal, or of a top-level name bound to one (or a
+member of such a name with a key it can read) when the file leaves that name unchanged: it writes to no member of it,
+also not through a member it assigns the name to (`A.args = shared; A.args.a = 2`), does not reassign it, and hands
+it, or a story it assigns it to, to no code it does not read. It cannot resolve any other spread. Its `.test()`
+children are the first `.test()` call of each string-literal name, when Storybook indexes it (two or more arguments);
+one with a spread argument is unmatched, and a call with any other first argument, such as `.test(...all)`, is none.
+The Storybook mutators and the Storybook test mutators mutate only played stories.
+_Avoid_: run story, story with a play
+
+**Proven**:
+The proof, made only in `@layzee/storybook-csf`, that removing one property of an args site (the Storybook mutators'
+term) or a globals site (the Storybook test mutators' term) changes nothing in any run of it: a later property or a
+spread the file resolves sets its key, its literal equals the value it falls back to, or it is a default global (the
+Storybook test mutators' term). What a meta or story the file writes gives proves nothing, and neither does a site
+whose story, meta or `.test()` options constant, or a top-level object one of them spreads whole or through a
+member (`...lib.story`), another top-level object reads when the file loads, other than through such a spread at the
+top level, nor a key that a getter or setter in the same object also defines or may define (a computed key). A mutator skips a property as
+equivalent only through one.
+_Avoid_: proof (alone), equivalence check, safe key
 
 **Tag filter**:
 The `include`, `exclude` and `skip` tag lists of Storybook's Vitest addon, which pick the tested stories. Without
@@ -89,8 +121,10 @@ returns `undefined` or the original implementation.
 _Avoid_: lost stub, reset stub
 
 **Unchecked stub**:
-A spy stub at whose line an `LzStorybookSpyStub` mutant survived; the `lz-storybook` report lists it as a stub
-finding, because no test fails without the stub.
+A spy stub at whose line an `LzStorybookSpyStub` mutant, which removes a stub, survived; the `lz-storybook` report
+lists it once as a stub finding, because no test fails without the stub. A surviving outcome mutant (the test
+mutators' term), which `LzStorybookSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
+success from failure, not that none reads the stub.
 _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:

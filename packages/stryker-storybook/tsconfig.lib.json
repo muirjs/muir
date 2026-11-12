@@ -13,6 +13,9 @@
   "references": [
     {
       "path": "../storybook-csf/tsconfig.lib.json"
+    },
+    {
+      "path": "../stryker-storybook-test-mutators/tsconfig.lib.json"
     }
   ]
 }

@@ -194,11 +194,15 @@ function stubFindings(
       ).map((finding) => ({ file, ...finding })),
     ),
     ...Object.entries(files).flatMap(([file, { mutants }]) =>
-      mutants.flatMap(({ mutatorName, status, location }) =>
-        mutatorName === spyStubName && status === 'Survived'
-          ? [{ file, line: location.start.line, ...uncheckedFinding }]
-          : [],
-      ),
+      [
+        ...new Set(
+          mutants.flatMap(({ mutatorName, status, location }) =>
+            mutatorName === spyStubName && status === 'Survived'
+              ? [location.start.line]
+              : [],
+          ),
+        ),
+      ].map((line) => ({ file, line, ...uncheckedFinding })),
     ),
   ];
 }

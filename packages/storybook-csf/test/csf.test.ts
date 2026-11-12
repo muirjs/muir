@@ -3,8 +3,123 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { csfShapes } from '../src/csf.ts';
-import { field } from '../src/node-field.ts';
+import { csfFile, csfShapes, topLevelBindings } from '../src/csf.ts';
+import { field, list } from '../src/node-field.ts';
+
+function writtenNames(...lines: readonly string[]): readonly unknown[] {
+  const body = list(
+    field(
+      parse(lines.join('\n'), {
+        sourceType: 'module',
+        plugins: ['typescript'],
+      }),
+      'program',
+      'body',
+    ),
+  );
+
+  return [...csfFile(body, topLevelBindings(body)).written];
+}
+
+describe('csfFile written', () => {
+  it("leaves out a name that only a story factory call's argument reads", () => {
+    assert.equal(
+      writtenNames(
+        "import preview from '../.storybook/preview';",
+        'const shared = { a: 1 };',
+        'const meta = preview.meta({});',
+        'export const Primary = meta.story({ args: shared });',
+      ).includes('shared'),
+      false,
+    );
+  });
+
+  it("holds a name a story factory call's argument reads when the file writes through the story's input", () => {
+    assert.equal(
+      writtenNames(
+        "import preview from '../.storybook/preview';",
+        'const shared = { a: 1 };',
+        'const meta = preview.meta({});',
+        'export const Primary = meta.story({ args: shared });',
+        'Primary.input.args.a = 2;',
+      ).includes('shared'),
+      true,
+    );
+  });
+
+  it('leaves out a story that only a spread of its args in another story reads', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'export const Base = { args: { a: 1 } };',
+        'export const Primary = { args: { ...Base.args, b: 2 } };',
+      ).includes('Base'),
+      false,
+    );
+  });
+
+  it('leaves out the options a .test() call that Storybook indexes names', () => {
+    assert.equal(
+      writtenNames(
+        "import preview from '../.storybook/preview';",
+        'const meta = preview.meta({});',
+        'export const Primary = meta.story({});',
+        'const options = { args: { a: 1 } };',
+        "Primary.test('t', options, async () => {});",
+      ).includes('options'),
+      false,
+    );
+  });
+
+  it('leaves out the base story of an .extend() call', () => {
+    assert.equal(
+      writtenNames(
+        "import preview from '../.storybook/preview';",
+        'const meta = preview.meta({});',
+        'export const Primary = meta.story({});',
+        'export const Small = Primary.extend({});',
+      ).includes('Primary'),
+      false,
+    );
+  });
+
+  it('leaves out a name a member assignment assigns', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'const assigned = async () => {};',
+        'export const A = {};',
+        'A.play = assigned;',
+      ).includes('assigned'),
+      false,
+    );
+  });
+
+  it('leaves out a story that shares only a string constant with a name the file hands on', () => {
+    assert.equal(
+      writtenNames(
+        "import { mutate } from './mutate';",
+        "const ROUTE = '/a';",
+        "const meta = { title: 'a/b', parameters: { routePath: ROUTE } };",
+        'mutate(meta);',
+        'export default meta;',
+        'export const A = { parameters: { routePath: ROUTE } };',
+      ).includes('A'),
+      false,
+    );
+  });
+
+  it('leaves out a name that is also the key of a shorthand property', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'const args = { a: 1 };',
+        'export const Primary = { args };',
+      ).includes('args'),
+      false,
+    );
+  });
+});
 
 describe('csfShapes', () => {
   it('reads a parenthesized story object when the parser keeps parentheses as nodes', () => {

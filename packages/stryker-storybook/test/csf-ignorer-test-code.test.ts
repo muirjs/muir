@@ -361,6 +361,79 @@ describe('lz-storybook-csf', () => {
     );
   });
 
+  it('places a .test() call on a story with a name alone, which Storybook does not index', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "export default { title: 'a/b' };\nexport const A = {};\nA.test('name');",
+        )
+      ).filter((outcome) => outcome.startsWith('3 ')),
+      ['3 StringLiteral placed'],
+    );
+  });
+
+  it('places the body of a .test() call whose name is not a string literal, which Storybook does not index', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "export default { title: 'a/b' };\nexport const A = {};\nconst name = 'name';\nA.test(name, async () => {\n  await x(1 + 1);\n});",
+        )
+      ).filter((outcome) =>
+        /^[45] (BlockStatement|ArithmeticOperator)/.test(outcome),
+      ),
+      ['4 BlockStatement placed', '5 ArithmeticOperator placed'],
+    );
+  });
+
+  it('places the body of a later .test() call with the same name, which Storybook does not run', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "export default { title: 'a/b' };\nexport const A = {};\nA.test('name', async () => {\n  await x(1);\n});\nA.test('name', async () => {\n  await x(1 + 1);\n});",
+        )
+      ).filter((outcome) =>
+        /^[67] (BlockStatement|ArithmeticOperator)/.test(outcome),
+      ),
+      ['6 BlockStatement placed', '7 ArithmeticOperator placed'],
+    );
+  });
+
+  it('ignores the body of a function second argument of a .test() call, which Storybook runs whatever follows it', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "export default { title: 'a/b' };\nexport const A = {};\nA.test('name', async () => {\n  await x(1 + 1);\n}, extra);",
+        )
+      ).filter((outcome) =>
+        /^[34] (BlockStatement|ArithmeticOperator)/.test(outcome),
+      ),
+      [`3 BlockStatement ${testReason}`, `4 ArithmeticOperator ${testReason}`],
+    );
+  });
+
+  it('ignores the body of the third argument of a .test() call with options, which Storybook runs whatever follows it', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "export default { title: 'a/b' };\nexport const A = {};\nA.test('name', {}, async () => {\n  await x(1 + 1);\n}, extra);",
+        )
+      ).filter((outcome) =>
+        /^[34] (BlockStatement|ArithmeticOperator)/.test(outcome),
+      ),
+      [`3 BlockStatement ${testReason}`, `4 ArithmeticOperator ${testReason}`],
+    );
+  });
+
   it('places a .test() call on an object that is not a story', async () => {
     const { outcomes } = setup();
 
