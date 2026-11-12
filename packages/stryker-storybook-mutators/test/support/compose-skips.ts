@@ -26,6 +26,8 @@ export interface ComposeSkips {
   readonly layer: 'args' | 'globals';
   readonly same: (withProperty: unknown, withoutProperty: unknown) => boolean;
   readonly unloadable: ReadonlyMap<string, string>;
+  /** The proof reasons the case rows must cut at least once, so a mutator that stops proving fails the check. */
+  readonly reasons: readonly string[];
 }
 
 /** Keys Storybook reads as story structure; a stub that claimed them would break composition of every row. */
@@ -73,6 +75,7 @@ export function composeSkips({
   layer,
   same,
   unloadable,
+  reasons,
 }: ComposeSkips): void {
   test('removing a property the mutator skips leaves every composed story the same', async (t) => {
     const root = tempRoot(t, 'compose-skips-');
@@ -183,6 +186,14 @@ export function composeSkips({
       [],
       'the unloadable list names rows no case table has',
     );
+    assert.notEqual(cuts.length, 0, 'no row cut a property the mutator skips');
+    assert.deepEqual(
+      reasons.filter(
+        (reason) => !cuts.some((cut) => cut.reasons.includes(reason)),
+      ),
+      [],
+      'proof reasons no row cut',
+    );
   });
 }
 
@@ -196,7 +207,7 @@ async function checkRow(
   testCase: Case,
   row: Row,
   files: RowFiles,
-  { skipsOf, layer, same, unloadable }: Omit<ComposeSkips, 'cases'>,
+  { skipsOf, layer, same, unloadable }: Omit<ComposeSkips, 'cases' | 'reasons'>,
 ): Promise<RowResult> {
   const { id } = testCase;
   const skips = [...skipsOf(row.program)];

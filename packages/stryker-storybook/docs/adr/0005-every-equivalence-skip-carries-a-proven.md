@@ -47,4 +47,5 @@ skip.
   and `grid`), a rule copied from the Vitest addon as the `default-global` proof copies it. A name the row leaves
   unbound and a module it imports get a stub that claims every key the row names, so a skip over an unknown value
   shows as a change. A row with a proof that cannot load fails the test unless the test lists it as one Storybook
-  cannot load either. The check covers the case rows only, not every story file.
+  cannot load either. Each test names the proof reasons its rows must exercise, and fails when one of them, or any
+  proof at all, gets no cut. The check covers the case rows only, not every story file.

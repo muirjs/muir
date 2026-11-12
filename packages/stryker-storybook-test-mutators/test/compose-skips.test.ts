@@ -61,4 +61,5 @@ composeSkips({
   same: (withProperty, withoutProperty) =>
     isDeepStrictEqual(effect(withProperty), effect(withoutProperty)),
   unloadable: new Map(),
+  reasons: ['default-global'],
 });
