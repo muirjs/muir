@@ -15,7 +15,8 @@ _Avoid_: play mutator, Storybook operator
 
 **Interaction**:
 A call in story test code that acts on the rendered story: a user-event method such as `click` or `type`, a
-`fireEvent` call, a composed play, or a raw DOM interaction.
+`fireEvent` call, a composed play, or a raw DOM interaction. It is a statement, or the expression body of an arrow
+given to `step(...)`; the same call elsewhere, such as in an arrow given to `forEach`, is none.
 _Avoid_: action (the Playwright mutators' term), user action
 
 **Composed play**:
@@ -46,7 +47,8 @@ _Avoid_: absence check, negated assertion
 **Skipped interaction**:
 An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`,
 `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or
-`afterEach`, given inline or as a function declared in the file, one whose following checks are all negative checks,
+`afterEach`, given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`), one
+whose following checks are all negative checks,
 a click or hover that a user-event 14 `type` of the same target in the next statement repeats (that `type` clicks
 first unless given a `skipClick` other than `false`; Vitest browser's does not click), and a `type` or `clear` that a
 later `clear` of the same target undoes before any check, with no statement between them that holds an
@@ -59,8 +61,8 @@ The first `expect(...)` statement after an interaction in the interaction's own 
 is or holds an interaction,
 that `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that
 holds the interaction is not looked at, so an interaction that is a step callback's expression body has none. A
-negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or assigned after the interaction,
-and one that already stands earlier in the play are not copied.
+check that is or holds a negative check or a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or
+assigned after the interaction, and one that already stands earlier in the play are not copied.
 _Avoid_: duplicated assertion, moved check
 
 ### Spy stubs

@@ -69,7 +69,7 @@ export const assertionBeforeCases: readonly Case[] = [
   {
     id: 'assertion-before-to-have-length-zero',
     title:
-      'an interaction whose first check expects a 0 from a matcher other than toHaveBeenCalledTimes gets a copy',
+      'the first check after an interaction is copied when it expects a 0 from a matcher other than toHaveBeenCalledTimes',
     source: inPlay(
       'await userEvent.click(dismiss);',
       "await expect(canvas.queryAllByRole('alert')).toHaveLength(0);",
@@ -104,7 +104,7 @@ export const assertionBeforeCases: readonly Case[] = [
   {
     id: 'assertion-before-uncalled-matcher',
     title:
-      'a toHaveBeenCalledTimes matcher that a check passes on rather than calls takes no count, so the check gets a copy',
+      'a toHaveBeenCalledTimes matcher that a check passes on rather than calls takes no count, so the check is copied',
     source: inPlay(
       'await userEvent.click(cancel);',
       'await expect(times(0, expect(args.onSave).toHaveBeenCalledTimes)).toBeUndefined();',

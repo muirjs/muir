@@ -844,13 +844,13 @@ export const interactionCases: readonly Case[] = [
   {
     id: 'before-each-wrapped',
     title:
-      'an interaction in a function that a call wraps before it is given as a beforeEach is removed, as only a hook given inline or by name is skipped',
+      'an interaction in a beforeEach that a call wraps is removed, as only a hook given inline or as a function declared in the file is skipped',
     source: `export const Story = {\n  beforeEach: withUser(async ({ userEvent }) => {\n    await userEvent.click(button);\n  }),\n};\n`,
     expect: [[interaction, ';']],
   },
   {
     id: 'top-level-interaction',
-    title: 'a user-event interaction at the top level of the file is removed',
+    title: 'a user-event call outside any function is removed',
     source: 'await userEvent.click(button);\nexport const Story = {};\n',
     expect: [[interaction, ';']],
   },
@@ -929,7 +929,7 @@ export const interactionCases: readonly Case[] = [
   {
     id: 'skip-type-cleared-later-past-statements',
     title:
-      'a type that a later clear of the same target undoes, past statements that check nothing, makes no mutant',
+      'a type that a later clear of the same target undoes, past a statement that reads nothing such as a sleep, makes no mutant',
     source: inPlay(
       "await userEvent.type(input, 'a');",
       'await sleep(10);',
@@ -974,7 +974,7 @@ export const interactionCases: readonly Case[] = [
   {
     id: 'computed-expect-not-negative',
     title:
-      'a check whose expect(...) is the key of a computed member reads no matcher chain, so it is no negative check',
+      'an expect(...) given as the key of a computed member rather than called through a matcher chain is no negative check, so the interaction is removed',
     source: inPlay(
       'await userEvent.click(button);',
       'await matchers[expect(args.onClick)].not;',
