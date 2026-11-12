@@ -128,17 +128,27 @@ function userEventImportSource(declaration: NodePath): string | undefined {
   }
 
   const source = parent.source.value;
-  const imported =
-    node.type === 'ImportSpecifier'
-      ? nameOf(node.imported)
-      : node.type === 'ImportDefaultSpecifier'
-        ? 'default'
-        : undefined;
+  const imported = importedName(node);
   const importsUserEvent =
     imported === 'userEvent' ||
     (imported === 'default' && source === userEventDefaultExportModule);
 
   return importsUserEvent ? source : undefined;
+}
+
+/** The export name an import specifier imports: `default` for a default import, or a named import's identifier or string name. */
+function importedName(specifier: types.Node): string | undefined {
+  if (specifier.type === 'ImportDefaultSpecifier') {
+    return 'default';
+  }
+
+  if (specifier.type !== 'ImportSpecifier') {
+    return undefined;
+  }
+
+  return specifier.imported.type === 'StringLiteral'
+    ? specifier.imported.value
+    : nameOf(specifier.imported);
 }
 
 /** The one user-event module with a default export. */

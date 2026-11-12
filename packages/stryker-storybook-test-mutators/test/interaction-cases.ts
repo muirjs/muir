@@ -240,6 +240,13 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'testing-library-default-string-named-import',
+    title:
+      "a call on the default export of '@testing-library/user-event' imported by the string name 'default' is removed",
+    source: `import { 'default' as ev } from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ev.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'storybook-test-default-import-other-name',
     title:
       "a call on the default import of 'storybook/test' under another name makes no mutant, as only '@testing-library/user-event' has a user-event default export",
