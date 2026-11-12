@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { field } from '@layzee/storybook-core';
+import type { schema } from '@stryker-mutator/api/core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
 export interface Instrumented {
@@ -14,6 +15,8 @@ export interface Instrumented {
 export interface InstrumentedMutant {
   readonly mutatorName: string;
   readonly line: number;
+  /** As the mutation report gives it: line and column both 1-based. */
+  readonly location: schema.Location;
   readonly replacement: string;
   readonly ignoreReason: string | undefined;
 }
@@ -75,13 +78,15 @@ export async function instrument(
     warnings,
     mutants: mutants.map((mutant: unknown) => {
       const mutatorName = field(mutant, 'mutatorName');
-      const line = field(mutant, 'location', 'start', 'line');
+      const start = schemaPosition(field(mutant, 'location', 'start'));
+      const end = schemaPosition(field(mutant, 'location', 'end'));
       const replacement = field(mutant, 'replacement');
       const statusReason = field(mutant, 'statusReason');
 
       if (
         typeof mutatorName !== 'string' ||
-        typeof line !== 'number' ||
+        start === undefined ||
+        end === undefined ||
         typeof replacement !== 'string'
       ) {
         throw new Error(
@@ -91,7 +96,8 @@ export async function instrument(
 
       return {
         mutatorName,
-        line: line + 1,
+        line: start.line,
+        location: { start, end },
         replacement,
         ignoreReason:
           field(mutant, 'status') === 'Ignored' &&
@@ -101,4 +107,14 @@ export async function instrument(
       };
     }),
   };
+}
+
+/** StrykerJS 10.1.1 `objectUtils.toSchemaPosition`: its 0-based position, 1-based as in the report. */
+function schemaPosition(position: unknown): schema.Position | undefined {
+  const line = field(position, 'line');
+  const column = field(position, 'column');
+
+  return typeof line === 'number' && typeof column === 'number'
+    ? { line: line + 1, column: column + 1 }
+    : undefined;
 }
