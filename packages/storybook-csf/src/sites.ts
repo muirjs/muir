@@ -1,3 +1,4 @@
+import type { Bindings } from './bindings.ts';
 import {
   csfFile,
   topLevelBindings,
@@ -25,8 +26,6 @@ import {
   type Layer,
 } from './resolved-values.ts';
 import { extendLevels } from './story-layers.ts';
-
-type Bindings = ReadonlyMap<string, unknown>;
 
 type Key = string | number;
 

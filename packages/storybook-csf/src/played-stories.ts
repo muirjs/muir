@@ -1,3 +1,4 @@
+import type { Bindings } from './bindings.ts';
 import { isIndexedTestCall, storyArgument, unwrap } from './csf-nodes.ts';
 import {
   firstTestCalls,
@@ -37,7 +38,7 @@ export interface PlayedStory {
 /** The stories Storybook 10.6.5's Vitest transform tests that run a play or a `.test()` call. In a file with no meta object Storybook indexes no story, so there are none. */
 export function playedStories(
   body: readonly unknown[],
-  bindings: ReadonlyMap<string, unknown>,
+  bindings: Bindings,
   { metas, stories, written }: CsfFile,
 ): readonly PlayedStory[] {
   if (metas.length === 0) {
@@ -104,7 +105,7 @@ function storyPlay(
   assignedPlay: unknown,
   storyChain: readonly unknown[],
   metaPlays: readonly unknown[],
-  bindings: ReadonlyMap<string, unknown>,
+  bindings: Bindings,
 ): object | UnknownPlay | undefined {
   const own = assignedPlay ?? storyChain[0];
 
@@ -134,10 +135,7 @@ function unknownPlay(overAPlay: boolean): UnknownPlay {
   return overAPlay ? unknownOverAPlay : unknownValue;
 }
 
-function knownPlay(
-  node: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): object | undefined {
+function knownPlay(node: unknown, bindings: Bindings): object | undefined {
   const play = topLevelValueOrSelf(node, bindings);
 
   return isRecord(play) ? play : undefined;

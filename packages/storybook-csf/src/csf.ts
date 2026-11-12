@@ -1,5 +1,6 @@
 import { dirname, extname, resolve } from 'node:path';
 
+import { withoutBinding, type Bindings } from './bindings.ts';
 import {
   assignmentOf,
   declarationOf,
@@ -30,8 +31,6 @@ export interface CsfShapes {
   readonly mswValues: ReadonlySet<unknown>;
   readonly staticValues: ReadonlySet<unknown>;
 }
-
-type Bindings = ReadonlyMap<string, unknown>;
 
 const testKeys: readonly string[] = ['play', 'beforeEach', 'afterEach'];
 const staticKeys: readonly string[] = [
@@ -510,11 +509,6 @@ export function topLevelValueOrSelf(
   const name = field(node, 'name');
 
   return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
-}
-
-/** The bindings a name's init reads, so that following a cycle of names ends. */
-export function withoutBinding(bindings: Bindings, name: unknown): Bindings {
-  return new Map([...bindings].filter(([bound]) => bound !== name));
 }
 
 function withInit(value: unknown, bindings: Bindings): readonly unknown[] {

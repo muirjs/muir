@@ -1,5 +1,5 @@
+import { withoutBinding, type Bindings } from './bindings.ts';
 import { isMember, keyOf, memberRoot, unwrap } from './csf-nodes.ts';
-import { withoutBinding } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import {
@@ -9,8 +9,6 @@ import {
   valuesIn,
   type LayerValue,
 } from './object-value.ts';
-
-type Bindings = ReadonlyMap<string, unknown>;
 
 /**
  * Every value `object` gives `key`, the one JavaScript keeps first, as far as the file shows it: an object literal,

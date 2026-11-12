@@ -1,3 +1,4 @@
+export { withoutBinding } from './bindings.ts';
 export {
   csfFile,
   csfShapes,
@@ -7,7 +8,6 @@ export {
   namedExports,
   topLevelBindings,
   unchangedBindings,
-  withoutBinding,
   type CsfShapes,
   type IndexedStory,
 } from './csf.ts';

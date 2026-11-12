@@ -1,3 +1,4 @@
+import type { Bindings } from './bindings.ts';
 import {
   assignmentOf,
   assignmentRootWithoutUnwrap,
@@ -12,8 +13,6 @@ import {
 } from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-
-type Bindings = ReadonlyMap<string, unknown>;
 
 interface NamesReadElsewhere {
   readonly referencedElsewhere: ReadonlySet<unknown>;

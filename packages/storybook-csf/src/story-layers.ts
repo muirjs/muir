@@ -1,9 +1,7 @@
+import { withoutBinding, type Bindings } from './bindings.ts';
 import { storyArgument, unwrap } from './csf-nodes.ts';
-import { withoutBinding } from './csf.ts';
 import { field } from './node-field.ts';
 import { unknownValue } from './object-value.ts';
-
-type Bindings = ReadonlyMap<string, unknown>;
 
 /** One level of a story's `.extend()` chain: the object it gives, the name that owns it, and the bindings it reads. */
 export interface ExtendLevel {
