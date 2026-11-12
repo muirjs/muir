@@ -31,21 +31,21 @@ export function namesReadElsewhere(
     ...body.flatMap(identifiersInReadForms),
     ...reaches.map(({ identifier }) => identifier),
   ]);
-  const referenced = identifiersIgnoringScopes(body)
+  const usedOutsideReadForms = identifiersIgnoringScopes(body)
     .filter((identifier) => !read.has(identifier))
     .map((identifier) => field(identifier, 'name'));
   const assignments = body.flatMap(assignmentOf);
   const written = withFamilies(
     new Set([
-      ...referenced,
+      ...usedOutsideReadForms,
       ...assignments.map(({ target }) => target),
-      ...writtenThrough(assignments, referenced),
+      ...writtenThrough(assignments, usedOutsideReadForms),
     ]),
     reaches,
   );
 
   return {
-    usedOutsideReadForms: new Set(referenced),
+    usedOutsideReadForms: new Set(usedOutsideReadForms),
     sharingWithWritten: new Set(
       reaches
         .filter(({ from }) => written.has(from))
@@ -113,13 +113,13 @@ function withReachedAndWholeHolders(
 
 function writtenThrough(
   assignments: readonly Assignment[],
-  referenced: readonly unknown[],
+  usedOutsideReadForms: readonly unknown[],
 ): readonly string[] {
   return assignments.flatMap(({ target, path, value }) => {
     const name = field(value, 'name');
 
     return typeof name === 'string' &&
-      (referenced.includes(target) ||
+      (usedOutsideReadForms.includes(target) ||
         assignments.some(
           (other) =>
             other.target === target &&
