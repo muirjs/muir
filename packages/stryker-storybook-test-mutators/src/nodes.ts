@@ -30,3 +30,13 @@ export function keyName(key: types.Node): string | undefined {
 export function nameOf(node: types.Node): string | undefined {
   return node.type === 'Identifier' ? node.name : undefined;
 }
+
+/** The binding that the identifier `node` refers to in `scope`. */
+export function bindingOf(
+  node: types.Node,
+  scope: NodePath['scope'],
+): Binding | undefined {
+  const name = nameOf(node);
+
+  return name === undefined ? undefined : scope.getBinding(name);
+}

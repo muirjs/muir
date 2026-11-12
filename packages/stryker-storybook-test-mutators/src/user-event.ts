@@ -1,6 +1,6 @@
 import type { NodePath, types } from '@babel/core';
 
-import { awaited, type Binding, nameOf } from './nodes.ts';
+import { awaited, type Binding, bindingOf, nameOf } from './nodes.ts';
 
 // The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
 // storybook/test re-exports) and those only Vitest browser's userEvent has.
@@ -51,15 +51,14 @@ export function readUserEvent(
     };
   }
 
-  const name = nameOf(node);
-  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+  const binding = bindingOf(node, path.scope);
   const bound =
     binding === undefined || seen.has(binding)
       ? noUserEvent
       : userEventBinding(binding, path, new Set([...seen, binding]));
 
   return {
-    isUserEvent: name === 'userEvent' || bound.isUserEvent,
+    isUserEvent: nameOf(node) === 'userEvent' || bound.isUserEvent,
     mayBeVitestBrowser: bound.mayBeVitestBrowser,
   };
 }
@@ -143,8 +142,7 @@ function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
 
 /** `<name>` from `import * as <name> from 'vitest/browser'`. */
 function isVitestBrowserNamespace(node: types.Node, path: NodePath): boolean {
-  const name = nameOf(node);
-  const binding = name === undefined ? undefined : path.scope.getBinding(name);
+  const binding = bindingOf(node, path.scope);
   const declaration = binding?.path.parent;
 
   return (

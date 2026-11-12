@@ -5,6 +5,7 @@ import type { BabelTypes } from './mutator.ts';
 import {
   awaited,
   type Binding,
+  bindingOf,
   keyName,
   nameOf,
   withoutTypeWrappers,
@@ -426,9 +427,10 @@ function functionBinding(path: NodePath): Binding | undefined {
       : parent?.type === 'VariableDeclarator' && parent.init === node
         ? parent.id
         : undefined;
-  const name = id === null || id === undefined ? undefined : nameOf(id);
 
-  return name === undefined ? undefined : parentPath?.scope.getBinding(name);
+  return id === null || id === undefined || parentPath === null
+    ? undefined
+    : bindingOf(id, parentPath.scope);
 }
 
 /** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other`, `Stories.Other` or `Stories?.Other`. */
