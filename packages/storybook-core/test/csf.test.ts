@@ -6,7 +6,7 @@ import { parse } from '@babel/parser';
 import { csfFile, csfShapes, topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
 
-function writtenNames(...lines: readonly string[]): readonly unknown[] {
+function fileOf(...lines: readonly string[]) {
   const body = list(
     field(
       parse(lines.join('\n'), {
@@ -18,7 +18,11 @@ function writtenNames(...lines: readonly string[]): readonly unknown[] {
     ),
   );
 
-  return [...csfFile(body, topLevelBindings(body)).written];
+  return csfFile(body, topLevelBindings(body));
+}
+
+function writtenNames(...lines: readonly string[]): readonly unknown[] {
+  return [...fileOf(...lines).written];
 }
 
 describe('csfFile written', () => {
@@ -109,6 +113,61 @@ describe('csfFile written', () => {
     );
   });
 
+  ['1', 'true', 'null', '1n', '`/a`'].forEach((literal) => {
+    it(`leaves out a story that shares only the constant ${literal} with a name the file hands on`, () => {
+      assert.equal(
+        writtenNames(
+          "import { mutate } from './mutate';",
+          `const ROUTE = ${literal};`,
+          "const meta = { title: 'a/b', parameters: { routePath: ROUTE } };",
+          'mutate(meta);',
+          'export default meta;',
+          'export const A = { parameters: { routePath: ROUTE } };',
+        ).includes('A'),
+        false,
+      );
+    });
+  });
+
+  it('holds a story that the body of an object method hands on', () => {
+    assert.equal(
+      writtenNames(
+        "import { mutate } from './mutate';",
+        "export default { title: 'a/b' };",
+        'export const B = { args: { a: 1 } };',
+        'export const A = { play() { mutate(B); } };',
+      ).includes('B'),
+      true,
+    );
+  });
+
+  it('holds a story that a computed key hands on', () => {
+    assert.equal(
+      writtenNames(
+        "import { keyOf } from './key-of';",
+        "export default { title: 'a/b' };",
+        'export const B = { args: { a: 1 } };',
+        'export const A = { args: { [keyOf(B)]: 1 } };',
+      ).includes('B'),
+      true,
+    );
+  });
+
+  it('leaves out a name assigned to a member when the file writes only below other members', () => {
+    assert.equal(
+      writtenNames(
+        "export default { title: 'a/b' };",
+        'const options = { args: { a: 1 } };',
+        'const holder = { a: {}, b: { box: {} } };',
+        'const other = { a: { box: {} } };',
+        'holder.a.box = options;',
+        'holder.b.box.x = 1;',
+        'other.a.box.x = 1;',
+      ).includes('options'),
+      false,
+    );
+  });
+
   it('leaves out a name that is also the key of a shorthand property', () => {
     assert.equal(
       writtenNames(
@@ -121,7 +180,59 @@ describe('csfFile written', () => {
   });
 });
 
+describe('csfFile readByOtherObjects', () => {
+  it('leaves out a story that only its own object names when the file loads', () => {
+    assert.equal(
+      fileOf(
+        "export default { title: 'a/b' };",
+        "export var A = { args: { label: 'a', self: A?.args } };",
+      ).readByOtherObjects.has('A'),
+      false,
+    );
+  });
+});
+
 describe('csfShapes', () => {
+  it('counts the .test() function of each story as test code when two stories have a .test() call of the same name', () => {
+    const program = parse(
+      "import preview from '../.storybook/preview';\n" +
+        "const meta = preview.meta({ title: 'a/b' });\n" +
+        'export const A = meta.story({});\n' +
+        'export const B = meta.story({});\n' +
+        "A.test('t', () => {});\n" +
+        "B.test('t', () => {});\n",
+      { sourceType: 'module' },
+    ).program;
+    const shapes = csfShapes(program);
+
+    assert.deepEqual(
+      program.body
+        .slice(4)
+        .map((statement) =>
+          shapes.testCode.has(field(statement, 'expression', 'arguments', '1')),
+        ),
+      [true, true],
+    );
+  });
+
+  it('counts a function expression as the test function when an argument follows it', () => {
+    const program = parse(
+      "import preview from '../.storybook/preview';\n" +
+        "const meta = preview.meta({ title: 'a/b' });\n" +
+        'export const A = meta.story({});\n' +
+        "A.test('t', function () {}, {});\n",
+      { sourceType: 'module' },
+    ).program;
+    const [, , , call] = program.body;
+
+    assert.equal(
+      csfShapes(program).testCode.has(
+        field(call, 'expression', 'arguments', '1'),
+      ),
+      true,
+    );
+  });
+
   it('reads a parenthesized story object when the parser keeps parentheses as nodes', () => {
     const shapes = csfShapes(
       parse(
