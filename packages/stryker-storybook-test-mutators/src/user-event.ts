@@ -48,7 +48,7 @@ export function readUserEvent(
   const bound =
     binding === undefined || seen.has(binding)
       ? 'none'
-      : userEventBinding(binding, path, new Set([...seen, binding]));
+      : userEventBinding(binding, new Set([...seen, binding]));
 
   return bound === 'none' && nameOf(node) === 'userEvent' ? 'userEvent' : bound;
 }
@@ -68,7 +68,6 @@ function weaker(
 /** Reads what a binding holds: a userEvent import, Vitest browser's userEvent destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
 function userEventBinding(
   binding: Binding,
-  path: NodePath,
   seen: ReadonlySet<Binding>,
 ): UserEventReading {
   const { name } = binding.identifier;
@@ -111,18 +110,20 @@ function userEventBinding(
     return 'userEvent';
   }
 
-  const value = boundValue(init, binding);
+  const value = boundValue(declaration, binding);
 
-  if (value?.type === 'ConditionalExpression') {
+  if (value?.node.type === 'ConditionalExpression') {
     return weaker(
-      readUserEvent(value.consequent, path, seen),
-      readUserEvent(value.alternate, path, seen),
+      readUserEvent(value.node.consequent, value.at, seen),
+      readUserEvent(value.node.alternate, value.at, seen),
     );
   }
 
-  const receiver = setupReceiver(value);
+  const receiver = setupReceiver(value?.node);
 
-  return receiver === undefined ? 'none' : readUserEvent(receiver, path, seen);
+  return value === undefined || receiver === undefined
+    ? 'none'
+    : readUserEvent(receiver, value.at, seen);
 }
 
 /** The module an import declaration names when `declaration` imports `userEvent` by name from it, or is the default import of `@testing-library/user-event`, the one user-event module with a default export. */
@@ -213,22 +214,33 @@ function setupReceiver(node: types.Node | undefined): types.Node | undefined {
     : undefined;
 }
 
+/** A value and where it is given, whose scope its names are read in. */
+interface GivenValue {
+  readonly node: types.Node;
+  readonly at: NodePath;
+}
+
 /** The one value a local is ever given, by its declaration's `init` or a later assignment; none when something else, such as `++` or a `for...of` head, also changes it. */
 function boundValue(
-  init: types.Node | null | undefined,
+  declaration: NodePath<types.VariableDeclarator>,
   binding: Binding,
-): types.Node | undefined {
-  const assigned = binding.constantViolations.flatMap(({ node }) =>
-    node.type === 'AssignmentExpression' ? [node.right] : [],
+): GivenValue | undefined {
+  const assigned = binding.constantViolations.flatMap(
+    (violation): readonly GivenValue[] =>
+      violation.node.type === 'AssignmentExpression'
+        ? [{ node: violation.node.right, at: violation }]
+        : [],
   );
 
   if (assigned.length < binding.constantViolations.length) {
     return undefined;
   }
 
-  const values = [init, ...assigned].filter(
-    (value) => value !== null && value !== undefined,
-  );
+  const { init } = declaration.node;
+  const values: readonly GivenValue[] =
+    init === null || init === undefined
+      ? assigned
+      : [{ node: init, at: declaration }, ...assigned];
 
   return values.length === 1 ? values[0] : undefined;
 }

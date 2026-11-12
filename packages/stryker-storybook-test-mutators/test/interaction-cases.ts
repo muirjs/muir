@@ -114,6 +114,13 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-setup-let-assigned-in-play',
+    title:
+      "a call on a let declared outside the play and assigned there the setup() of the context's userEvent destructured under another name is removed",
+    source: `let user;\nexport const Story = {\n  play: async ({ userEvent: pointer }) => {\n    user = pointer.setup();\n    await user.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'user-event-setup-let-reassigned',
     title: 'a call on a let reassigned after userEvent.setup() makes no mutant',
     source: inPlay(

@@ -714,6 +714,36 @@ const clickBeforeTypeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'shadowed-setup-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on a local given the setup() of Vitest browser's userEvent, is removed, though a play parameter of the same name hides that userEvent where the click is",
+    source: `import { userEvent } from 'vitest/browser';\nconst user = userEvent.setup();\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'shadowed-member-setup-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on a local given the setup() of another object's userEvent, is removed, though a play context of the same name hides that object where the click is",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nconst context = { userEvent: browserUserEvent };\nconst user = context.userEvent.setup();\nexport const Story = {\n  play: async (context) => {\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'shadowed-choice-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on a local that is another object's userEvent on either side of a choice, is removed, though a play context of the same name hides that object where the click is",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nconst context = { userEvent: browserUserEvent };\nconst user = slow ? context.userEvent : context.userEvent;\nexport const Story = {\n  play: async (context) => {\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'named-play-click-before-type',
     title:
       'a click directly before a type on the same target, both on the userEvent of the context of a play given by its name, is removed, as only a play given inline is read',
