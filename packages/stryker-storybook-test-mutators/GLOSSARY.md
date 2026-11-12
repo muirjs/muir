@@ -83,25 +83,25 @@ Vitest browser's userEvent, whose `type` does not click.
   and inside none, and never reassigns that parameter or the local it destructures.
 - _Binding rule._ A local that holds a source keeps its proof only when every reference to it is a method call's
   receiver, under any type assertions, a side of a choice that is the one value of such a local, or inside a type or an
-  interface. An import also needs every import of `storybook/test` or `@testing-library/user-event` in the file to meet that, the
-  `userEvent` and `default` members of a namespace import included, and no `import()` or `require()` of one of those
-  modules or of a module the file does not spell out.
+  interface. An import also needs every import of `storybook/test` or `@testing-library/user-event` in the file to meet
+  that, the `userEvent` and `default` members of a namespace import included, and no `import()` or `require()` of one
+  of those modules or of a module the file does not spell out.
 - _Context rule._ A play context keeps its proof only when every context the file can reach is only read: used as
   `<context>.<name>`, or destructured under plain keys in a parameter or a declaration, with its `userEvent` held to the
-  binding rule, its `step` only called, with no spread argument, and its `context` member, which Storybook sets to the context itself, read the
-  same way. A context is the first parameter of a `play`, `beforeEach` or loader, the second of a decorator or `render`
-  function, both of these for a value under a computed key or assigned to a computed member, the first of a callback
-  given to a context's `step`, and a call of `useStoryContext` under its own or its imported name. Such a hook counts
-  given inline, as a plain method, in an array, or by the name of a local function the file never reassigns, as an
-  object literal's property, not a destructuring's, or assigned to `<x>.<key>`. A hook that reaches itself through a `step` is read once, as reading it
-  again finds nothing new. Any other hook value drops the proof: an import, a member or a call
-  result, a getter, a hook that reads `arguments` or has a rest parameter at or before its context, and a spread into a meta or story object,
-  or an argument of an `assign` call, that is not an object literal that spreads nothing, given inline or as a local the
-  file never reassigns.
-- _Backstop._ Every play context's proof also needs the file to name `userEvent` only as an import's name, a key or local
-  of a parameter's destructuring, a `userEvent` or `<x>.userEvent` that is a method call's receiver or a choice side as
-  above, or inside a type or an interface, and never as a string or a template's text. An unrelated object's `userEvent` key drops the
-  proof too.
+  binding rule, its `step` only called, with no spread argument, and its `context` member, which Storybook sets to the
+  context itself, read the same way. A context is the first parameter of a `play`, `beforeEach` or loader, the second
+  of a decorator or `render` function, both of these for a value under a computed key or assigned to a computed member,
+  the first of a callback given to a context's `step`, and a call of `useStoryContext` under its own or its imported
+  name. Such a hook counts given inline, as a plain method, in an array, or by the name of a local function the file
+  never reassigns, as an object literal's property, not a destructuring's, or assigned to `<x>.<key>`. A hook that
+  reaches itself through a `step` is read once, as reading it again finds nothing new. Any other hook value drops the
+  proof: an import, a member or a call result, a getter, a hook that reads `arguments` or has a rest parameter at or
+  before its context, and a spread into a meta or story object, or an argument of an `assign` call, that is not an
+  object literal that spreads nothing, given inline or as a local the file never reassigns.
+- _Backstop._ Every play context's proof also needs the file to name `userEvent` only as an import's name, a key or a
+  local without a default in a parameter's destructuring, a `userEvent` or `<x>.userEvent` that is a method call's
+  receiver or a choice side as above, or inside a type or an interface, and never as a string or a template's text. An
+  unrelated object's `userEvent` key drops the proof too.
 - _Not read._ Hooks Storybook receives in ways the rules do not read and that do not name `userEvent`, such as a
   decorator pushed onto `Story.decorators` or a hook given by `Object.defineProperty`, keys built at run time inside
   such a hook, and a play that other code calls with a context of its own. The storybook-core proof of the meta and
