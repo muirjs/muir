@@ -144,7 +144,7 @@ export const clickFocusCases: readonly Case[] = [
   {
     id: 'click-focus-skip-negative-only',
     title:
-      'a click whose following checks are all negative makes no mutant, as focusing also leaves them true',
+      'a click whose checks before the next interaction are all negative makes no mutant, as focusing also leaves them true',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',

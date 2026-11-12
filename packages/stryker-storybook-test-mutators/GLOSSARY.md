@@ -14,14 +14,19 @@ _Avoid_: play mutator, Storybook operator
 ### Interactions
 
 **Interaction**:
-A call in story test code that acts on the rendered story: a user-event method such as `click` or `type`, a
-`fireEvent` call, a composed play, or a raw DOM interaction.
+A call in story test code that acts on the rendered story: a user-event method such as `click` or `type`, a `fireEvent`
+call, a composed play, or a raw DOM interaction. It is a statement, or the expression body of an arrow given to
+`step(...)`; the same call elsewhere, such as in an expression-bodied arrow given to `forEach`, is none.
 _Avoid_: action (the Playwright mutators' term), user action
 
 **Composed play**:
-A call that runs another story's play inside this one: `Other.play(context)`, `meta.play?.(context)`, `Other.run()`
-on a CSF factory story, or `step(label, Other.play)`. A `.play()` or `.run()` call on any identifier counts, but only
-inside story test code, so `video.play()` in a `render` is none.
+A call that runs another story's play inside this one: `Other.play(context)`, `meta.play?.(context)`, `Other.run()` on a
+CSF factory story, or `step(label, Other.play)`. The story may come from a namespace import, as in
+`Stories.Other.play(context)`. A `.play()` or `.run()` call, or a `.play` given to `step(...)`, counts when its receiver
+is an identifier or a member chain that starts at one, computed and optional members included
+(`Stories['Other'].play(context)`, `Stories?.Other.play(context)`, `step(label, Stories?.Other.play)`), not a call
+result such as `canvas.getByTestId('video').play()`. A call counts only inside story test code, so `video.play()` in a
+`render` is none.
 _Avoid_: nested play, reused play
 
 **Raw DOM interaction**:
@@ -40,21 +45,38 @@ _Avoid_: target (alone), locator (the Playwright mutators' term)
 An `expect(...)` check with `.not` in its matcher chain, which passes when the interaction before it did nothing.
 _Avoid_: absence check, negated assertion
 
+**Following checks**:
+The `expect(...)` checks after an interaction, up to the next statement that is or holds an interaction. A statement
+holds an interaction that runs within it, such as one in an `if` or in a `waitFor(...)` callback; a `step(...)` holds
+every interaction in its callback, including one in a function the callback defines. Outside a step callback, an
+interaction is looked for only in `step` and `waitFor` callbacks: every other function counts as not run, even one
+that the statement calls. Checks are found in any function. The copied check and a later `clear` that undoes a `type`
+are looked for in the interaction's own block; the following check that a skipped interaction needs is looked for past
+the end of that block and of a step callback that holds the interaction.
+_Avoid_: checks after, assertion window
+
+**Checks before the next interaction**:
+The `expect(...)` checks after an interaction, past the end of its block and of a step callback that holds it, up to
+the next statement that is itself an interaction or a `step(...)` that holds one. A statement that holds an interaction
+only inside an `if` or a `waitFor` callback does not end them, so they include the following checks and may hold more.
+_Avoid_: long window, negative window
+
 **Skipped interaction**:
 An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`,
-`LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or
-`afterEach`, given inline or as a function declared in the file, one whose following checks are all negative checks,
-a click or hover that a user-event 14 `type` of the same target in the next statement repeats (that `type` clicks
-first unless given a `skipClick` other than `false`; Vitest browser's does not click), and a `type` or `clear` that a
-later `clear` of the same target undoes before any check.
+`LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or `afterEach`,
+given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`); one with at least one
+following check, whose checks before the next interaction are all negative checks; a click or hover that a user-event
+14 `type` of the same target in the next statement repeats (that `type` clicks first unless given a `skipClick` other
+than `false`; Vitest browser's does not click); and a `type` or `clear` with no following checks, when the statement
+that ends them is a `clear` of the same target, which undoes it.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
-The first `expect(...)` statement after an interaction in the interaction's own block, before the next interaction,
-that `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that
-holds the interaction is not looked at, so an interaction that is a step callback's expression body has none. A
-negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or assigned after the interaction,
-and one that already stands earlier in the play are not copied.
+The first statement in an interaction's own block that holds one of its following checks, which
+`LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that holds the
+interaction is not looked at, so an interaction that is a step callback's expression body has none. A check that is or
+holds a negative check or a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or assigned after the
+interaction, and one that already stands earlier in the play are not copied.
 _Avoid_: duplicated assertion, moved check
 
 ### Spy stubs

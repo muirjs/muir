@@ -1,4 +1,7 @@
-import { type Case, inPlay } from './support/case.ts';
+import { composedPlayCases } from './composed-play-cases.ts';
+import { rawDomCases } from './raw-dom-cases.ts';
+import { skippedInteractionCases } from './skipped-interaction-cases.ts';
+import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const interaction = 'LzStorybookInteraction';
 
@@ -29,23 +32,11 @@ const vitestBrowserCalls: readonly (readonly [string, string])[] = [
   ['wheel', "list, { direction: 'down' }"],
 ];
 
-const rawDomCalls: readonly string[] = [
-  'blur()',
-  'click()',
-  "dispatchEvent(new Event('input'))",
-];
-
-export const interactionCases: readonly Case[] = [
+const interactionCases: readonly Case[] = [
   ...userEventCalls.map(([method, args]) => ({
     id: `user-event-method-${method}`,
     title: `an awaited userEvent.${method} statement is removed`,
     source: inPlay(`await userEvent.${method}(${args});`),
-    expect: [[interaction, ';'] as const],
-  })),
-  ...rawDomCalls.map((call) => ({
-    id: `raw-dom-${call.slice(0, call.indexOf('('))}`,
-    title: `a raw DOM element's ${call} statement is removed`,
-    source: inPlay(`button.${call};`),
     expect: [[interaction, ';'] as const],
   })),
   ...vitestBrowserCalls.map(([method, args]) => ({
@@ -253,116 +244,16 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
-    id: 'composed-play',
-    title:
-      "a composed play, another story's play called with the context, is removed",
-    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async (context) => {\n    await Other.play(context);\n  },\n};\n`,
+    id: 'play-method',
+    title: 'an interaction in a play method is removed',
+    source: `export const Story = {\n  async play({ userEvent }) {\n    await userEvent.click(button);\n  },\n};\n`,
     expect: [[interaction, ';']],
   },
   {
-    id: 'composed-run',
-    title: "a CSF factory story's run() is removed",
-    source: `export const Other = meta.story({});\nexport const Story = meta.story({\n  play: async () => {\n    await Other.run();\n  },\n});\n`,
+    id: 'top-level-interaction',
+    title: 'a user-event call outside any function is removed',
+    source: 'await userEvent.click(button);\nexport const Story = {};\n',
     expect: [[interaction, ';']],
-  },
-  {
-    id: 'composed-optional-play',
-    title: "an optional call of the meta's play is removed",
-    source: `const meta = {};\nexport default meta;\nexport const Story = {\n  play: async (context) => {\n    await meta.play?.(context);\n  },\n};\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'composed-step',
-    title: "a step that runs another story's play is removed",
-    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async ({ step }) => {\n    await step('Enter value', Other.play);\n  },\n};\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'raw-dom-focus',
-    title: "a raw DOM element's focus() statement is removed",
-    source: inPlay("canvas.getByRole('textbox').focus();"),
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'raw-dom-in-render',
-    title: "a raw DOM element's focus() in a story's render makes no mutant",
-    source: `export const Story = {\n  render: () => {\n    input.focus();\n    return null;\n  },\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'raw-dom-in-story-test',
-    title: "a raw DOM element's click() in a story test's body is removed",
-    source: `export const Story = meta.story({});\nStory.test('clicks', async () => {\n  button.click();\n});\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'raw-dom-in-named-play',
-    title:
-      "a raw DOM element's click() in a play function declared in the file and given by name is removed",
-    source: `const play = async () => {\n  button.click();\n};\nexport const Story = { play };\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'raw-dom-in-assigned-play',
-    title:
-      "a raw DOM element's click() in a play function assigned to the story is removed",
-    source: `export const Story = {};\nStory.play = async () => {\n  button.click();\n};\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'composed-play-in-assigned-play',
-    title:
-      'a composed play in a play function assigned to the story is removed',
-    source: `export const Other = { play: async () => {} };\nexport const Story = {};\nStory.play = async (context) => {\n  await Other.play(context);\n};\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'raw-dom-in-unexported-story-test',
-    title:
-      "a raw DOM element's click() in a .test() body of a story the file does not export makes no mutant",
-    source: `const Story = meta.story({});\nStory.test('clicks', async () => {\n  button.click();\n});\n`,
-    expect: [],
-  },
-  {
-    id: 'raw-dom-in-story-test-of-same-name',
-    title:
-      "a raw DOM element's click() in a later .test() body with the same name makes no mutant, as Storybook runs only the first",
-    source: `export const Story = meta.story({});\nStory.test('clicks', async () => {});\nStory.test('clicks', async () => {\n  button.click();\n});\n`,
-    expect: [],
-  },
-  {
-    id: 'raw-dom-in-excluded-export-play',
-    title:
-      "a raw DOM element's click() in the play of an export that excludeStories leaves out makes no mutant",
-    source: `export default { excludeStories: ['helper'] };\nexport const helper = {\n  play: async () => {\n    button.click();\n  },\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'play-call-in-render-object-play',
-    title:
-      "a video's play() in a play property of an object a render builds makes no mutant",
-    source: `export const Story = {\n  render: () => {\n    const player = {\n      play: () => {\n        video.play();\n      },\n    };\n    return player;\n  },\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'raw-dom-in-decorator',
-    title:
-      "a raw DOM element's dispatchEvent(event) in a decorator makes no mutant",
-    source: `export default {\n  decorators: [\n    (Story) => {\n      window.dispatchEvent(new Event('resize'));\n      return Story();\n    },\n  ],\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'play-call-in-render',
-    title: "a video's play() in a story's render makes no mutant",
-    source: `export const Story = {\n  render: () => {\n    useEffect(() => {\n      video.play();\n    });\n    return null;\n  },\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'raw-dom-arity',
-    title:
-      'a click with an argument on a receiver that is no user-event makes no mutant',
-    source: inPlay("await helper.click(canvas.getByRole('button'));"),
-    expect: [],
   },
   {
     id: 'step-expression-body',
@@ -379,233 +270,45 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, 'undefined']],
   },
   {
-    id: 'skip-before-each',
-    title: 'an interaction in a beforeEach makes no mutant',
-    source: `export const Story = {\n  beforeEach: async ({ userEvent }) => {\n    await userEvent.click(button);\n  },\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'skip-after-each-method',
-    title: 'an interaction in an afterEach method makes no mutant',
-    source: `export default {\n  async afterEach() {\n    button.blur();\n  },\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'skip-before-each-cleanup',
+    id: 'interaction-in-call-given-to-step',
     title:
-      'an interaction in the cleanup function a beforeEach returns makes no mutant',
-    source: `export const Story = {\n  beforeEach: () => () => {\n    button.blur();\n  },\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'skip-negative-only',
-    title:
-      'an interaction whose following checks are all negative makes no mutant',
-    source: inPlay(
-      'await userEvent.click(button);',
-      'await expect(args.onClick).not.toHaveBeenCalled();',
+      'an interaction inside a call given to step, which is no step callback body, makes no mutant',
+    source: inPlayWith(
+      ['step', 'userEvent'],
+      "await step('Submit', wrap(userEvent.click(button)));",
     ),
     expect: [],
   },
   {
-    id: 'negative-only-until-next-interaction',
+    id: 'arrow-body-in-declaration',
     title:
-      'the checks that decide a skip end at the next interaction, so only the last of two clicks is skipped',
+      'an interaction that is the expression body of an arrow held in a local makes no mutant',
     source: inPlay(
-      'await userEvent.click(first);',
-      'await userEvent.click(second);',
-      'await expect(args.onClick).not.toHaveBeenCalled();',
+      'const clickSave = () => userEvent.click(save);',
+      'await clickSave();',
     ),
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'negative-and-positive',
-    title: 'an interaction followed by a positive check is removed',
-    source: inPlay(
-      'await userEvent.click(button);',
-      'await expect(args.onClick).not.toHaveBeenCalledTimes(2);',
-      'await expect(args.onClick).toHaveBeenCalled();',
-    ),
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'negative-only-after-step',
-    title:
-      'an interaction in a step whose following checks in the play are all negative makes no mutant',
-    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Click', async () => {\n      await userEvent.click(button);\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
     expect: [],
   },
   {
-    id: 'skip-click-before-type',
+    id: 'arrow-body-given-to-method',
     title:
-      'a click directly before a type on the same target gets no mutant and the type gets one, as type clicks first',
+      'an interaction that is the expression body of an arrow given to a method other than step makes no mutant',
+    source: inPlay('buttons.forEach((button) => userEvent.click(button));'),
+    expect: [],
+  },
+  {
+    id: 'arrow-body-given-to-nested-step',
+    title:
+      'an interaction that is the expression body of an arrow given to step on a member of a member makes no mutant',
     source: inPlay(
-      "await userEvent.click(canvas.getByRole('textbox'));",
-      "await userEvent.type(canvas.getByRole('textbox'), 'a');",
+      "await story.context.step('Submit', () => userEvent.click(button));",
     ),
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'vitest-browser-click-before-type',
-    title:
-      'a Vitest browser click directly before a type on the same target is removed, as that type does not click',
-    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('await browserUserEvent.click(input);', "await browserUserEvent.type(input, 'a');")}`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'vitest-browser-namespace-click-before-type',
-    title:
-      "a click directly before a type on the same target, both on the userEvent of a namespace import of 'vitest/browser', is removed",
-    source: `import * as browser from 'vitest/browser';\n${inPlay('await browser.userEvent.click(input);', "await browser.userEvent.type(input, 'a');")}`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'vitest-browser-choice-click-before-type',
-    title:
-      "a click directly before a type on the same target, both on a local that is import('vitest/browser')'s userEvent or userEvent, is removed",
-    source: inPlay(
-      "const pointer = '__vitest_browser__' in globalThis ? (await import('vitest/browser')).userEvent : userEvent;",
-      'await pointer.click(input);',
-      "await pointer.type(input, 'a');",
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'vitest-browser-setup-click-before-type',
-    title:
-      'a click directly before a type on the same target, both on the setup() of a Vitest browser userEvent, is removed',
-    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay('const user = browserUserEvent.setup();', 'await user.click(input);', "await user.type(input, 'a');")}`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'vitest-browser-import-click-before-type',
-    title:
-      "a click directly before a type on the same target, both on userEvent imported from 'vitest/browser', is removed",
-    source: `import { userEvent } from 'vitest/browser';\nexport const Story = {\n  play: async () => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'skip-optional-click-before-type',
-    title:
-      'a userEvent?.click directly before a userEvent?.type on the same target gets no mutant, as type clicks first',
-    source: inPlay(
-      'await userEvent?.click(input);',
-      "await userEvent?.type(input, 'a');",
-    ),
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'hover-before-clear',
-    title:
-      'a hover directly before a clear on the same target is removed, as clear only focuses',
-    source: inPlay(
-      'await userEvent.hover(input);',
-      'await userEvent.clear(input);',
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'click-before-clear',
-    title:
-      'a click directly before a clear on the same target is removed, as clear only focuses',
-    source: inPlay(
-      'await userEvent.click(input);',
-      'await userEvent.clear(input);',
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'click-before-type-elsewhere',
-    title: 'a click directly before a type on another target is removed',
-    source: inPlay(
-      'await userEvent.click(button);',
-      "await userEvent.type(input, 'a');",
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'skip-type-cleared-later',
-    title:
-      'a type that a later clear of the same target undoes before any check makes no mutant',
-    source: inPlay(
-      "await userEvent.type(input, 'a');",
-      'await userEvent.clear(input);',
-      "await userEvent.type(input, 'b');",
-      "await expect(input).toHaveValue('b');",
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'type-checked-before-clear',
-    title: 'a type checked before a later clear of the same target is removed',
-    source: inPlay(
-      "await userEvent.type(input, 'a');",
-      "await expect(input).toHaveValue('a');",
-      'await userEvent.clear(input);',
-      "await expect(input).toHaveValue('');",
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'composed-play-non-null',
-    title:
-      'a composed play called through a non-null assertion, Other.play!(context), is removed',
-    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async (context) => {\n    await Other.play!(context);\n  },\n};\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'composed-step-non-null',
-    title:
-      "a step that runs another story's play through a non-null assertion is removed",
-    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async ({ step }) => {\n    await step('Enter value', Other.play!);\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [],
   },
   {
     id: 'awaited-type-assertion',
     title: 'an awaited interaction inside an as expression is removed',
     source: inPlay('await (userEvent.click(button) as Promise<void>);'),
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'user-event-in-type-assertion',
-    title: 'a click on userEvent inside an as expression is removed',
-    source: inPlay('await (userEvent as any).click(button);'),
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'fire-event-in-type-assertion',
-    title: 'a fireEvent.click on fireEvent inside an as expression is removed',
-    source: inPlay('await (fireEvent as any).click(button);'),
     expect: [[interaction, ';']],
   },
   {
@@ -615,115 +318,37 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
-    id: 'skip-named-before-each',
-    title:
-      'an interaction in a function declared in the file and given as a beforeEach makes no mutant',
-    source: `async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  beforeEach: setup,\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'skip-before-each-array',
-    title: 'an interaction in a beforeEach given in an array makes no mutant',
-    source: `export const Story = {\n  beforeEach: [\n    async ({ userEvent }) => {\n      await userEvent.click(button);\n    },\n  ],\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'skip-after-each-array',
-    title: 'an interaction in an afterEach given in an array makes no mutant',
-    source: `export default {\n  afterEach: [\n    () => {\n      button.blur();\n    },\n  ],\n};\n`,
-    expect: [],
-  },
-  {
-    id: 'type-used-before-clear',
-    title:
-      'a type that another interaction uses before a later clear of the same target is removed',
-    source: inPlay(
-      "await userEvent.type(input, 'a');",
-      'await userEvent.click(submit);',
-      'await userEvent.clear(input);',
-      "await expect(args.onSubmit).toHaveBeenCalledWith('a');",
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'type-used-in-step-before-clear',
-    title:
-      'a type that an interaction in a step uses before a later clear of the same target is removed',
-    source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await userEvent.type(input, 'a');\n    await step('Submit', async () => {\n      await userEvent.click(submit);\n    });\n    await userEvent.clear(input);\n    await expect(args.onSubmit).toHaveBeenCalledWith('a');\n  },\n};\n`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'click-before-type-skip-click',
-    title:
-      'a click directly before a type of the same target with skipClick is removed, as that type does not click',
-    source: inPlay(
-      'await userEvent.click(input);',
-      "await userEvent.type(input, 'a', { skipClick: true });",
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'click-before-type-quoted-skip-click',
-    title:
-      "a click directly before a type of the same target with a quoted 'skipClick': true key is removed",
-    source: inPlay(
-      'await userEvent.click(input);',
-      "await userEvent.type(input, 'a', { 'skipClick': true });",
-    ),
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'skip-click-before-type-skip-click-false',
-    title:
-      'a click directly before a type of the same target with skipClick: false makes no mutant, as that type clicks first',
-    source: inPlay(
-      'await userEvent.click(input);',
-      "await userEvent.type(input, 'a', { skipClick: false });",
-    ),
+    id: 'user-event-in-type-assertion',
+    title: 'a click on userEvent inside an as expression is removed',
+    source: inPlay('await (userEvent as any).click(button);'),
     expect: [[interaction, ';']],
   },
   {
-    id: 'negative-only-until-step-interaction',
-    title:
-      'the checks that decide a skip end at a step holding an interaction, so only the click in the step is skipped',
-    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      await userEvent.click(second);\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+    id: 'user-event-in-satisfies',
+    title: 'a click on userEvent inside a satisfies expression is removed',
+    source: inPlay('await (userEvent satisfies object).click(button);'),
     expect: [[interaction, ';']],
   },
   {
-    id: 'negative-only-until-context-step-interaction',
+    id: 'user-event-in-angle-bracket-assertion',
     title:
-      'the checks that decide a skip end at a context.step holding an interaction, so only the click in the step is skipped',
-    source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(first);\n    await context.step('Second', async () => {\n      await context.userEvent.click(second);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
+      'a click on userEvent inside an angle-bracket type assertion is removed',
+    source: inPlay('await (<any>userEvent).click(button);'),
     expect: [[interaction, ';']],
   },
   {
-    id: 'negative-only-after-context-step',
-    title:
-      'an interaction in a context.step whose following checks in the play are all negative makes no mutant',
-    source: `export const Story = {\n  play: async (context) => {\n    await context.step('Click', async () => {\n      await context.userEvent.click(button);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
-    expect: [],
+    id: 'fire-event-in-type-assertion',
+    title: 'a fireEvent.click on fireEvent inside an as expression is removed',
+    source: inPlay('await (fireEvent as any).click(button);'),
+    expect: [[interaction, ';']],
   },
-  {
-    id: 'skip-negative-only-in-step',
-    title:
-      'an interaction followed only by a step of negative checks makes no mutant',
-    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(button);\n    await step('Check', async () => {\n      await expect(args.onClick).not.toHaveBeenCalled();\n    });\n  },\n};\n`,
-    expect: [],
-  },
+];
+
+export const allInteractionCases: readonly Case[] = [
+  ...interactionCases,
+  ...composedPlayCases,
+  ...rawDomCases,
+  ...skippedInteractionCases,
 ];
 
 // Cases that once crashed the instrumenter, which fails every case it instruments together.

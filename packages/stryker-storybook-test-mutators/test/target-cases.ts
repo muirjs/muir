@@ -29,7 +29,7 @@ export const targetCases: readonly Case[] = [
   {
     id: 'target-skip-negative-only',
     title:
-      'an interaction whose following checks are all negative makes no mutant',
+      'an interaction whose checks before the next interaction are all negative makes no mutant',
     source: inPlay(
       "await expect(canvas.getByRole('tab', { name: 'Profile' })).toBeVisible();",
       "await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));",
@@ -113,6 +113,26 @@ export const targetCases: readonly Case[] = [
       "await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible();",
     ),
     expect: [[target, "'Cancel'"]],
+  },
+  {
+    id: 'target-query-by-role',
+    title:
+      'the name of a queryByRole query an interaction acts on is swapped too',
+    source: inPlay(
+      "await userEvent.click(canvas.queryByRole('button', { name: 'Save' }));",
+      "await expect(canvas.queryByRole('button', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [[target, "'Cancel'"]],
+  },
+  {
+    id: 'target-inside-target',
+    title:
+      'a query inside the target query, such as the container a within(...) reads, makes no mutant',
+    source: inPlay(
+      "await userEvent.click(within(canvas.getByRole('dialog', { name: 'Save' })).getByRole('button'));",
+      "await expect(canvas.getByRole('dialog', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [],
   },
   {
     id: 'target-fire-event',

@@ -1,6 +1,6 @@
 import type { NodePath, types } from '@babel/core';
 
-import { checksIn, isNegative } from './checks.ts';
+import { checksIn, hasCheck, isNegative } from './checks.ts';
 import type { BabelTypes } from './mutator.ts';
 import {
   awaited,
@@ -115,12 +115,20 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
 
   const isComposedPlay = composedPlayMethods.has(name);
   const matches = isComposedPlay
-    ? callee.object.type === 'Identifier'
+    ? startsAtIdentifier(callee.object)
     : rawDomArguments.get(name) === call.arguments.length;
 
   return matches && isInStoryTestCode(path)
     ? { kind: isComposedPlay ? 'composedPlay' : 'rawDom' }
     : undefined;
+}
+
+/** An identifier, or a member chain that starts at one, computed or optional members included, such as `Stories.Other`, `Stories['Other']` or `Stories?.Other`. */
+function startsAtIdentifier(node: types.Node): boolean {
+  return (
+    node.type === 'Identifier' ||
+    (isMember(node) && startsAtIdentifier(node.object))
+  );
 }
 
 function isMember(
@@ -145,7 +153,7 @@ function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   );
 }
 
-/** An interaction that makes no mutant: one in a story hook, one whose following checks are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
+/** An interaction that makes no mutant: one in a story hook, one with following checks whose checks before the next interaction are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
 export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
   const { path } = interaction;
 
@@ -157,7 +165,7 @@ export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event type or clear that the next interaction, a user-event clear of the same target, undoes with no check between. */
+/** A user-event type or clear with no following checks, when the statement that ends them is a user-event clear of the same target. */
 function isClearedLater(current: Interaction, t: BabelTypes): boolean {
   const [target] = current.call.arguments;
 
@@ -170,11 +178,10 @@ function isClearedLater(current: Interaction, t: BabelTypes): boolean {
   }
 
   const siblings = nextSiblings(current.path);
-  const between = untilNextInteraction(siblings);
+  const between = statementsBefore(siblings, holdsInteraction);
   const next = siblings[between.length];
   const later =
-    next === undefined ||
-    between.some((sibling) => checksIn(sibling).length > 0)
+    next === undefined || between.some(hasCheck)
       ? undefined
       : interactionAt(next);
   const [laterTarget] = later?.call.arguments ?? [];
@@ -236,38 +243,58 @@ export function targetInteraction(path: NodePath): Interaction | undefined {
     : undefined;
 }
 
-/** The first statement after `path` in its block that holds an `expect(...)` check, before the next interaction. */
+/** The first statement after `path` in its block that holds one of its following checks. */
 export function firstCheckAfter(path: NodePath): NodePath | undefined {
-  return untilNextInteraction(nextSiblings(path)).find(
-    (sibling) => checksIn(sibling).length > 0,
-  );
+  return statementsBefore(nextSiblings(path), holdsInteraction).find(hasCheck);
 }
 
-/** The statements after `path`, up to the next interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
+/** Whether `path` has a following check and its checks before the next interaction are all negative, both looked for past the end of its block and of a step callback that holds it. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
-  const checks = untilNextInteraction(followingStatements(path)).flatMap(
-    checksIn,
-  );
+  const later = laterStatements(path);
 
-  return checks.length > 0 && checks.every(isNegative);
+  return (
+    statementsBefore(later, holdsInteraction).some(hasCheck) &&
+    statementsBefore(later, isNextInteraction)
+      .flatMap(checksIn)
+      .every(isNegative)
+  );
 }
 
-/** A `step(...)` statement whose callback holds an interaction. */
-function isStepWithInteraction(statement: NodePath): boolean {
+/** Whether `statement` ends the checks before the next interaction: it is an interaction, or a `step(...)` whose callback holds one. */
+function isNextInteraction(statement: NodePath): boolean {
   const { node } = statement;
 
-  if (
-    node.type !== 'ExpressionStatement' ||
-    !isStepCall(awaited(node.expression))
-  ) {
+  return (
+    interactionAt(statement) !== undefined ||
+    (node.type === 'ExpressionStatement' &&
+      isStepCall(awaited(node.expression)) &&
+      hasInteractionIn(statement, () => true))
+  );
+}
+
+/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; outside a step callback, only step and `waitFor` callbacks are looked into, while a `step(...)` holds every interaction in its callback, including one in a function the callback defines. */
+function holdsInteraction(statement: NodePath): boolean {
+  return (
+    isNextInteraction(statement) || hasInteractionIn(statement, runsWhereGiven)
+  );
+}
+
+/** Whether an interaction stands inside `path`, looking into a function, `path` itself included, only when `entersFunction` holds for it. */
+function hasInteractionIn(
+  path: NodePath,
+  entersFunction: (fn: NodePath) => boolean,
+): boolean {
+  if (path.isFunction() && !entersFunction(path)) {
     return false;
   }
 
   let found = false;
 
-  statement.traverse({
+  path.traverse({
     enter(inner) {
-      if (interactionAt(inner) !== undefined) {
+      if (inner.isFunction() && !entersFunction(inner)) {
+        inner.skip();
+      } else if (interactionAt(inner) !== undefined) {
         found = true;
         inner.stop();
       }
@@ -277,21 +304,28 @@ function isStepWithInteraction(statement: NodePath): boolean {
   return found;
 }
 
-/** The statements before the first interaction statement or step with an interaction among them. */
-function untilNextInteraction(
-  statements: readonly NodePath[],
-): readonly NodePath[] {
-  const end = statements.findIndex(
-    (statement) =>
-      interactionAt(statement) !== undefined ||
-      isStepWithInteraction(statement),
+/** A function given to `step(...)` or `waitFor(...)`, which calls it. */
+function runsWhereGiven(fn: NodePath): boolean {
+  const owner = fn.parentPath?.node;
+
+  return (
+    owner?.type === 'CallExpression' &&
+    (isStepCall(owner) || nameOf(owner.callee) === 'waitFor')
   );
+}
+
+/** The statements before the first one among them that `ends`. */
+function statementsBefore(
+  statements: readonly NodePath[],
+  ends: (statement: NodePath) => boolean,
+): readonly NodePath[] {
+  const end = statements.findIndex(ends);
 
   return end === -1 ? statements : statements.slice(0, end);
 }
 
 /** The statements that run after `path` in its function, and after the step call when that function is a step callback. */
-function followingStatements(path: NodePath): readonly NodePath[] {
+function laterStatements(path: NodePath): readonly NodePath[] {
   const siblings = nextSiblings(path);
   const parent = path.parentPath;
 
@@ -300,13 +334,13 @@ function followingStatements(path: NodePath): readonly NodePath[] {
   }
 
   if (!parent.isFunction()) {
-    return [...siblings, ...followingStatements(parent)];
+    return [...siblings, ...laterStatements(parent)];
   }
 
   const owner = parent.parentPath;
 
   return owner !== null && isStepCall(owner.node)
-    ? [...siblings, ...followingStatements(owner)]
+    ? [...siblings, ...laterStatements(owner)]
     : siblings;
 }
 
@@ -397,14 +431,17 @@ function functionBinding(path: NodePath): Binding | undefined {
   return name === undefined ? undefined : parentPath?.scope.getBinding(name);
 }
 
-/** `<Story>.play`. */
+/** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other`, `Stories.Other` or `Stories?.Other`. */
 function isStoryPlay(argument: types.Node | undefined): boolean {
-  const node =
-    argument === undefined ? undefined : withoutTypeWrappers(argument);
+  if (argument === undefined) {
+    return false;
+  }
+
+  const node = withoutTypeWrappers(argument);
 
   return (
-    node?.type === 'MemberExpression' &&
-    node.object.type === 'Identifier' &&
+    isMember(node) &&
+    startsAtIdentifier(node.object) &&
     nameOf(node.property) === 'play'
   );
 }

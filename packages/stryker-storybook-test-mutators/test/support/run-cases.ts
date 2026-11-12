@@ -57,8 +57,31 @@ function fileOf(testCase: Case): string {
   return join(import.meta.dirname, '..', 'out', `${testCase.id}.stories.ts`);
 }
 
-function normalize(code: string): string {
-  return code.replace(/\s+/g, ' ').trim();
+function mutantLine(mutatorName: string, replacement: string): string {
+  return `${mutatorName} ${replacement.replace(/\s+/g, ' ').trim()}`;
+}
+
+/** Each file's mutants of `mutatorName` and of every mutator outside this package, as sorted `<mutator> <replacement>` lines. */
+export async function mutantLinesByFile(
+  files: readonly SourceFile[],
+  mutatorName: string,
+): Promise<ReadonlyMap<string, readonly string[]>> {
+  const mutants = await mutantsOf(files);
+
+  return new Map(
+    files.map(({ name }) => [
+      name,
+      mutants
+        .filter(
+          (mutant) =>
+            mutant.fileName === name &&
+            (mutant.mutatorName === mutatorName ||
+              !lzNames.has(mutant.mutatorName)),
+        )
+        .map((mutant) => mutantLine(mutant.mutatorName, mutant.replacement))
+        .sort(),
+    ]),
+  );
 }
 
 export function runCases(
@@ -66,37 +89,26 @@ export function runCases(
   cases: readonly Case[],
   options?: LzStorybookTestMutatorOptions,
 ): void {
-  let mutants: readonly Mutant[];
+  let lines: ReadonlyMap<string, readonly string[]>;
 
   before(async () => {
     await lzStorybookTestMutators(options);
-    mutants = await mutantsOf(
+    lines = await mutantLinesByFile(
       cases.map((testCase) => ({
         name: fileOf(testCase),
         content: testCase.source,
       })),
+      mutatorName,
     );
   });
 
   cases.forEach((testCase) => {
     test(`${testCase.id}: ${testCase.title}`, () => {
-      const actual = mutants
-        .filter(
-          (mutant) =>
-            mutant.fileName === fileOf(testCase) &&
-            (mutant.mutatorName === mutatorName ||
-              !lzNames.has(mutant.mutatorName)),
-        )
-        .map(
-          ({ mutatorName, replacement }) =>
-            `${mutatorName} ${normalize(replacement)}`,
-        )
-        .sort();
       const expected = testCase.expect
-        .map(([mutator, replacement]) => `${mutator} ${normalize(replacement)}`)
+        .map(([mutator, replacement]) => mutantLine(mutator, replacement))
         .sort();
 
-      assert.deepEqual(actual, expected);
+      assert.deepEqual(lines.get(fileOf(testCase)), expected);
     });
   });
 }

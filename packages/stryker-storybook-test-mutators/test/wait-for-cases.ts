@@ -30,6 +30,25 @@ export const waitForCases: readonly Case[] = [
     expect: [[waitFor, "screen.getAllByRole('row')"]],
   },
   {
+    id: 'wait-for-find-by-each-kind',
+    title:
+      'a findBy query of each other kind becomes the getBy query of that kind',
+    source: inPlay(
+      "await canvas.findByLabelText('Name');",
+      "await canvas.findByPlaceholderText('Search');",
+      "await canvas.findByDisplayValue('Ada');",
+      "await canvas.findByAltText('Logo');",
+      "await canvas.findByTitle('Close');",
+    ),
+    expect: [
+      [waitFor, "canvas.getByLabelText('Name')"],
+      [waitFor, "canvas.getByPlaceholderText('Search')"],
+      [waitFor, "canvas.getByDisplayValue('Ada')"],
+      [waitFor, "canvas.getByAltText('Logo')"],
+      [waitFor, "canvas.getByTitle('Close')"],
+    ],
+  },
+  {
     id: 'wait-for-element-removed',
     title: 'a waitForElementToBeRemoved statement is removed',
     source: inPlay(

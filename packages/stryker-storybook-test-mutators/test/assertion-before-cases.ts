@@ -67,6 +67,56 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'assertion-before-to-have-length-zero',
+    title:
+      'the first check after an interaction is copied when it expects a 0 from a matcher other than toHaveBeenCalledTimes',
+    source: inPlay(
+      'await userEvent.click(dismiss);',
+      "await expect(canvas.queryAllByRole('alert')).toHaveLength(0);",
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ await expect(canvas.queryAllByRole('alert')).toHaveLength(0); await userEvent.click(dismiss); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-skip-nested-negative',
+    title:
+      'an interaction whose first check holds a negative check inside a positive one makes no mutant',
+    source: inPlay(
+      'await userEvent.click(save);',
+      'await expect(dialog).toSatisfy(() => expect(args.onSave).not.toHaveBeenCalled());',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-nested-called-zero-times',
+    title:
+      'an interaction whose first check holds a toHaveBeenCalledTimes(0) check inside another check makes no mutant',
+    source: inPlay(
+      'await userEvent.click(cancel);',
+      'await expect(dialog).toSatisfy(() => expect(args.onSave).toHaveBeenCalledTimes(0));',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-uncalled-matcher',
+    title:
+      'a toHaveBeenCalledTimes matcher that a check passes on rather than calls takes no count, so the check is copied',
+    source: inPlay(
+      'await userEvent.click(cancel);',
+      'await expect(times(0, expect(args.onSave).toHaveBeenCalledTimes)).toBeUndefined();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(times(0, expect(args.onSave).toHaveBeenCalledTimes)).toBeUndefined(); await userEvent.click(cancel); }',
+      ],
+    ],
+  },
+  {
     id: 'assertion-before-skip-later-binding',
     title:
       'an interaction whose first check reads a name declared after the interaction makes no mutant',
@@ -114,6 +164,42 @@ export const assertionBeforeCases: readonly Case[] = [
       [
         assertionBefore,
         '{ await expect(args.onClick).toHaveBeenCalledTimes(2); await userEvent.click(second); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-past-function-with-interaction',
+    title:
+      'the copied check is the first one past a function that is only defined, even when the function holds an interaction',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'const later = async () => {',
+      '  await userEvent.click(b);',
+      '};',
+      'await expect(dialog).toBeVisible();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(dialog).toBeVisible(); await userEvent.click(a); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-past-function-declaration-with-interaction',
+    title:
+      'the copied check is the first one past a function declaration, even when the function holds an interaction',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'async function later() {',
+      '  await userEvent.click(b);',
+      '}',
+      'await expect(dialog).toBeVisible();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(dialog).toBeVisible(); await userEvent.click(a); }',
       ],
     ],
   },
