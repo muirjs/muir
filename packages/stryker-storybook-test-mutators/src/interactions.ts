@@ -129,14 +129,12 @@ function isMember(
 /** The expression body of an arrow passed to `step(...)`. */
 function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   const arrow = path.parentPath;
-  const owner = arrow?.parentPath?.node;
 
   return (
     arrow?.node.type === 'ArrowFunctionExpression' &&
     arrow.node.body === path.node &&
     path.isExpression() &&
-    owner !== undefined &&
-    isStepCall(owner)
+    isStepCall(arrow.parent)
   );
 }
 
@@ -205,10 +203,10 @@ function hasInteractionIn(
 
 /** A function given to `step(...)` or `waitFor(...)`, which calls it. */
 function runsWhereGiven(fn: NodePath): boolean {
-  const owner = fn.parentPath?.node;
+  const owner = fn.parent;
 
   return (
-    owner?.type === 'CallExpression' &&
+    owner.type === 'CallExpression' &&
     (isStepCall(owner) || nameOf(owner.callee) === 'waitFor')
   );
 }
@@ -283,11 +281,10 @@ function isPropertyFunction(
 
 /** A value of a property named in `names`, or an element of its array. */
 function isPropertyValue(path: NodePath, names: ReadonlySet<string>): boolean {
-  const value =
-    path.parentPath?.node.type === 'ArrayExpression' ? path.parentPath : path;
+  const value = path.parent.type === 'ArrayExpression' ? path.parentPath : path;
   const property = value.parent;
 
-  if (property?.type !== 'ObjectProperty') {
+  if (property.type !== 'ObjectProperty') {
     return false;
   }
 
@@ -302,11 +299,11 @@ function functionBinding(path: NodePath): Binding | undefined {
   const id =
     node.type === 'FunctionDeclaration'
       ? node.id
-      : parent?.type === 'VariableDeclarator' && parent.init === node
+      : parent.type === 'VariableDeclarator' && parent.init === node
         ? parent.id
         : undefined;
 
-  return id === null || id === undefined || parentPath === null
+  return id === null || id === undefined
     ? undefined
     : bindingOf(id, parentPath.scope);
 }
