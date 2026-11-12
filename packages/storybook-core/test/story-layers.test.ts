@@ -77,7 +77,6 @@ describe('extendLevels', () => {
       layers.map((layer) => field(valuesOf(layer, 'globals')[0], 'type'));
     const [own] = extendLevels(bindings.get('B'), 'B', bindings);
 
-    assert.ok(isObjectLiteral(own.argument));
     assert.deepEqual(
       {
         root: typesOf(rootLayers(bindings, new Set(['B']))),

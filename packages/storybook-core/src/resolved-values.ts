@@ -94,11 +94,10 @@ export function rootLayer(
     : (shownObject(expression, unchanged) ?? unknownValue);
 }
 
-export function asWrittenLayer(
-  object: ObjectLiteral,
-  bindings: Bindings,
-): ResolvedObject {
-  return new ResolvedObject(object, bindings);
+export function asWrittenLayer(expression: unknown, bindings: Bindings): Layer {
+  return isObjectLiteral(expression)
+    ? new ResolvedObject(expression, bindings)
+    : undefined;
 }
 
 export function layerOf(layer: Layer, key: string | number): Layer {

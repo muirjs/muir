@@ -164,9 +164,7 @@ export function sitesOf(
         {
           run: { owner: 'story', story },
           node: ownValueOf(
-            isObjectLiteral(levels[0].argument)
-              ? asWrittenLayer(levels[0].argument, levels[0].bindings)
-              : undefined,
+            asWrittenLayer(levels[0].argument, levels[0].bindings),
             key,
           ),
           own: layerOf(storyRoot, key),
