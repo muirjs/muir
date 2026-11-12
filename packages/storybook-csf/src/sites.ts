@@ -62,7 +62,7 @@ class Proven {
 export type { Proven };
 
 /** The story data key a site holds. */
-export type SiteKey = 'args' | 'globals';
+type SiteKey = 'args' | 'globals';
 
 /** One run of a site, for one played story: its own run, one of its `.test()` calls, or the run that reads the meta's object. */
 export type SiteRun =

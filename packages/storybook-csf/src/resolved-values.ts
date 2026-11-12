@@ -33,15 +33,6 @@ export function resolvedValues(
   return properties === undefined ? [unknownValue] : valuesIn(properties, key);
 }
 
-/** The value `object` gives `key` as JavaScript reads it, as `resolvedValues` reads the object. */
-export function resolvedValue(
-  object: unknown,
-  key: string | number,
-  bindings: Bindings,
-): LayerValue {
-  return resolvedValues(object, key, bindings)[0];
-}
-
 /** The value the last property of exactly `key` gives it, as `resolvedValues` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. */
 export function ownValue(
   object: unknown,
@@ -64,15 +55,6 @@ export function ownValueOf(layer: Layer, key: string | number): LayerValue {
         key,
       )[0]
     : layer;
-}
-
-/** An object that may set `key`, as `resolvedValues` reads it: one with a property that may, or one the file does not show; `undefined`, no object, sets nothing. */
-export function maySetIn(
-  object: unknown,
-  key: string | number,
-  bindings: Bindings,
-): boolean {
-  return resolvedValue(object, key, bindings) !== undefined;
 }
 
 /** Every value that `properties`, in source order, give `key`, the one JavaScript keeps first, each spread read as `resolvedValues` reads it. */
@@ -189,7 +171,7 @@ function shownObject(
 }
 
 /** `properties` last-wins first, each spread of an object `resolvedValues` reads replaced by that object's properties; a spread it does not read stays in place, for `valuesIn` to read as one that may set any key. */
-export function lastWinsProperties(
+function lastWinsProperties(
   properties: readonly unknown[],
   bindings: Bindings,
 ): readonly unknown[] {
