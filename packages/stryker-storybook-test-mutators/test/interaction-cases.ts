@@ -268,6 +268,20 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'testing-library-namespace-default-setup',
+    title:
+      "a call on a local bound to the setup() of the default member of a namespace import of '@testing-library/user-event' is removed",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], 'const user = ue.default.setup();', "await user.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-namespace-shadowed',
+    title:
+      "a call on the default member of a play parameter that shadows a namespace import of '@testing-library/user-event' makes no mutant",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas', 'ue'], "await ue.default.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
+  {
     id: 'testing-library-namespace-other-member',
     title:
       "a call on a member other than default of a namespace import of '@testing-library/user-event' makes no mutant",

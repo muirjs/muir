@@ -2,6 +2,13 @@ import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const assertionBefore = 'LzStorybookAssertionBefore';
 
+// The expect methods that start a check, each with a check statement.
+const expectMethodChecks: readonly (readonly [string, string])[] = [
+  ['soft', "expect.soft(status).toHaveTextContent('Saved');"],
+  ['element', "await expect.element(page.getByRole('dialog')).toBeVisible();"],
+  ['poll', "await expect.poll(() => status.textContent).toBe('Saved');"],
+];
+
 export const assertionBeforeCases: readonly Case[] = [
   {
     id: 'assertion-before-click',
@@ -339,54 +346,18 @@ export const assertionBeforeCases: readonly Case[] = [
       ],
     ],
   },
-  {
-    id: 'assertion-before-expect-soft',
-    title:
-      'an expect.soft check is the first check after an interaction, so it is the one copied',
+  ...expectMethodChecks.map(([method, check]) => ({
+    id: `assertion-before-expect-${method}`,
+    title: `an expect.${method} check is the first check after an interaction, so it is the one copied`,
     source: inPlay(
       'await userEvent.click(save);',
-      "expect.soft(canvas.getByRole('status')).toHaveTextContent('Saved');",
+      check,
       'await expect(args.onSave).toHaveBeenCalled();',
     ),
     expect: [
-      [
-        assertionBefore,
-        "{ expect.soft(canvas.getByRole('status')).toHaveTextContent('Saved'); await userEvent.click(save); }",
-      ],
+      [assertionBefore, `{ ${check} await userEvent.click(save); }`] as const,
     ],
-  },
-  {
-    id: 'assertion-before-expect-element',
-    title:
-      'an awaited expect.element check is the first check after an interaction, so it is the one copied',
-    source: inPlay(
-      'await userEvent.click(open);',
-      "await expect.element(page.getByRole('dialog')).toBeVisible();",
-      'await expect(args.onOpen).toHaveBeenCalled();',
-    ),
-    expect: [
-      [
-        assertionBefore,
-        "{ await expect.element(page.getByRole('dialog')).toBeVisible(); await userEvent.click(open); }",
-      ],
-    ],
-  },
-  {
-    id: 'assertion-before-expect-poll',
-    title:
-      'an awaited expect.poll check is the first check after an interaction, so it is the one copied',
-    source: inPlay(
-      'await userEvent.click(save);',
-      "await expect.poll(() => status.textContent).toBe('Saved');",
-      'await expect(args.onSave).toHaveBeenCalled();',
-    ),
-    expect: [
-      [
-        assertionBefore,
-        "{ await expect.poll(() => status.textContent).toBe('Saved'); await userEvent.click(save); }",
-      ],
-    ],
-  },
+  })),
   {
     id: 'assertion-before-past-expect-assertions',
     title:
