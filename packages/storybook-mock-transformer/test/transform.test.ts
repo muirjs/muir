@@ -215,6 +215,51 @@ describe('transform', () => {
     );
   });
 
+  it('rewrites only the first stub of a chain of three', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Chain = { args: { load: fn().mockReturnValue(1).mockReturnValueOnce(2).mockReturnValue(3) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Chain = { args: { load: ((value) => fn(() => value))(1).mockReturnValueOnce(2).mockReturnValue(3) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('rewrites only the first stub of a chain split over lines', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Chain = {',
+      '  args: {',
+      '    load: fn()',
+      '      .mockReturnValue(1)',
+      '      .mockReturnValue(2),',
+      '  },',
+      '};',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Chain = {',
+        '  args: {',
+        '    load: ((value) => fn(() => value))(1)',
+        '      .mockReturnValue(2),',
+        '  },',
+        '};',
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('leaves a stub inside a function alone', () => {
     const code = [
       "import { fn } from 'storybook/test';",
