@@ -6,11 +6,7 @@ import {
   type Site,
 } from '@layzee/stryker-mutator-install';
 
-import {
-  hasNegativeCheck,
-  hasZeroCallsCheck,
-  isExpectStatement,
-} from './checks.ts';
+import { isExpectStatement, isWaitForStatement } from './checks.ts';
 import {
   firstCheckAfter,
   interactionAt,
@@ -351,7 +347,7 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
   };
 }
 
-/** The first check after the interaction, when it is an expect statement whose copy before the interaction can tell whether it held already. */
+/** The first statement after the interaction that holds a check, when it is a check statement or a `waitFor` whose copy runs nothing but the check, and the copy can run before the interaction. */
 function checkToCopy(
   interaction: NodePath,
   t: BabelTypes,
@@ -359,9 +355,7 @@ function checkToCopy(
   const check = firstCheckAfter(interaction);
 
   return check !== undefined &&
-    isExpectStatement(check) &&
-    !hasNegativeCheck(check) &&
-    !hasZeroCallsCheck(check) &&
+    (isExpectStatement(check) || isWaitForStatement(check)) &&
     !readsNameBoundBetween(interaction, check) &&
     !standsEarlier(check, interaction, t)
     ? check.node
