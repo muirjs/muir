@@ -83,12 +83,11 @@ second of a decorator or `render` function, every parameter of a function under 
 callback, a `useStoryContext()` call, and the `context` member or destructured `context` of any of these, which
 Storybook sets to the context itself; such a function counts given inline, as a method, in an array, by the name of a
 local function, or assigned as `<x>.beforeEach` and the like. Each context is used only as `<context>.<name>`, or
-destructured under plain keys in a parameter or a declaration, its `userEvent` local only called on. A hook the file
-cannot read, such as an imported decorator, or one that may reach its context through `arguments` or a rest
-parameter, counts as one that does not. The file also names `userEvent` only in an import, in a parameter's
-destructuring, or as `userEvent` or `<x>.userEvent` that is a method call's receiver or a side of a choice given to a
-local that is only ever a method call's receiver, with no `'userEvent'` string. A `setup()` of one of these, or a
-local that is a choice between them, is proven too, with its names read where the local is given that value. A local
+destructured under plain keys in a parameter or a declaration, with its `userEvent`, as a member or a local, only a
+method call's receiver or a side of a choice given to such a local. A hook the file cannot read, such as an imported
+decorator, or one that may reach its context through `arguments` or a rest parameter, counts as one that does not.
+A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read where the
+local is given that value. A local
 that holds one of these, whether an import, a destructured `userEvent`, a `setup()` or a choice, keeps its proof only
 when every reference to it is a method call's receiver or a side of a choice given to such a local. An import also
 needs every import of a user-event 14 module in the file to meet that, the `userEvent` and `default` members of a

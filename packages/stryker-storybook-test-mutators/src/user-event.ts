@@ -290,7 +290,19 @@ function isContextRead(path: NodePath): boolean {
     return false;
   }
 
-  return memberName(parentPath.node) !== 'context' || isContextRead(parentPath);
+  switch (memberName(parentPath.node)) {
+    case 'context': {
+      return isContextRead(parentPath);
+    }
+
+    case 'userEvent': {
+      return isMethodCallReceiver(parentPath) || isChoiceSide(parentPath);
+    }
+
+    default: {
+      return true;
+    }
+  }
 }
 
 function memberName(node: types.Node): string | undefined {
@@ -334,7 +346,6 @@ function isPlayParameter(binding: Binding): boolean {
     keyName(keyed.key) === 'play' &&
     isInStoryTestCode(parameter) &&
     !isInStoryTestCode(play) &&
-    !changesUserEvent(parameter) &&
     contextsOnlyRead(parameter)
   );
 }
@@ -541,67 +552,11 @@ function isContextLocal(
   );
 }
 
-/** Whether the file names `userEvent` anywhere it may change it, as a play or a hook given the play's context may replace the user-event that Storybook sets there. */
-export const changesUserEvent = perFile((program) => {
-  let changes = false;
-
-  program.traverse({
-    Identifier(path) {
-      if (path.node.name === 'userEvent' && !readsUserEvent(path)) {
-        changes = true;
-        path.stop();
-      }
-    },
-    StringLiteral(path) {
-      if (path.node.value === 'userEvent') {
-        changes = true;
-        path.stop();
-      }
-    },
-  });
-
-  return changes;
-}, true);
-
 /** What the user-event proofs read once per file, at the Program. */
 export const userEventFileReaders: readonly ((path: NodePath) => boolean)[] = [
-  changesUserEvent,
   contextsOnlyRead,
   importsOnlyCallUserEvent,
 ];
-
-/** `userEvent` as an import's name, a key or binding in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` that is only a method call's receiver or a side of a choice. */
-function readsUserEvent(path: NodePath<types.Identifier>): boolean {
-  const { parentPath } = path;
-
-  if (parentPath === null) {
-    return false;
-  }
-
-  if (
-    parentPath.isImportSpecifier() ||
-    parentPath.isImportDefaultSpecifier() ||
-    (parentPath.isObjectProperty() &&
-      parentPath.parentPath.isObjectPattern() &&
-      parentPath.parentPath.listKey === 'params')
-  ) {
-    return true;
-  }
-
-  const read =
-    (parentPath.isMemberExpression() ||
-      parentPath.isOptionalMemberExpression()) &&
-    path.key === 'property' &&
-    !parentPath.node.computed
-      ? parentPath
-      : path.isReferencedIdentifier()
-        ? path
-        : undefined;
-
-  return (
-    read !== undefined && (isMethodCallReceiver(read) || isChoiceSide(read))
-  );
-}
 
 /** `<path>.<method>(...)`, optional or not. */
 function isMethodCallReceiver(path: NodePath): boolean {
