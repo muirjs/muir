@@ -67,6 +67,56 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'assertion-before-to-have-length-zero',
+    title:
+      'an interaction whose first check expects a 0 from a matcher other than toHaveBeenCalledTimes gets a copy',
+    source: inPlay(
+      'await userEvent.click(dismiss);',
+      "await expect(canvas.queryAllByRole('alert')).toHaveLength(0);",
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ await expect(canvas.queryAllByRole('alert')).toHaveLength(0); await userEvent.click(dismiss); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-skip-nested-negative',
+    title:
+      'an interaction whose first check holds a negative check inside a positive one makes no mutant',
+    source: inPlay(
+      'await userEvent.click(save);',
+      'await expect(dialog).toSatisfy(() => expect(args.onSave).not.toHaveBeenCalled());',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-nested-called-zero-times',
+    title:
+      'an interaction whose first check holds a toHaveBeenCalledTimes(0) check inside another check makes no mutant',
+    source: inPlay(
+      'await userEvent.click(cancel);',
+      'await expect(dialog).toSatisfy(() => expect(args.onSave).toHaveBeenCalledTimes(0));',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-uncalled-matcher',
+    title:
+      'a toHaveBeenCalledTimes matcher that a check passes on rather than calls takes no count, so the check gets a copy',
+    source: inPlay(
+      'await userEvent.click(cancel);',
+      'await expect(times(0, expect(args.onSave).toHaveBeenCalledTimes)).toBeUndefined();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(times(0, expect(args.onSave).toHaveBeenCalledTimes)).toBeUndefined(); await userEvent.click(cancel); }',
+      ],
+    ],
+  },
+  {
     id: 'assertion-before-skip-later-binding',
     title:
       'an interaction whose first check reads a name declared after the interaction makes no mutant',

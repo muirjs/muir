@@ -115,6 +115,26 @@ export const targetCases: readonly Case[] = [
     expect: [[target, "'Cancel'"]],
   },
   {
+    id: 'target-query-by-role',
+    title:
+      'the name of a queryByRole query an interaction acts on is swapped too',
+    source: inPlay(
+      "await userEvent.click(canvas.queryByRole('button', { name: 'Save' }));",
+      "await expect(canvas.queryByRole('button', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [[target, "'Cancel'"]],
+  },
+  {
+    id: 'target-inside-target',
+    title:
+      'a query inside the target query, such as the container a within(...) reads, makes no mutant',
+    source: inPlay(
+      "await userEvent.click(within(canvas.getByRole('dialog', { name: 'Save' })).getByRole('button'));",
+      "await expect(canvas.getByRole('dialog', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [],
+  },
+  {
     id: 'target-fire-event',
     title: 'the target of a fireEvent call is swapped too',
     source: inPlay(
