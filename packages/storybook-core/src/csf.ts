@@ -64,7 +64,7 @@ export function csfShapes(program: unknown): CsfShapes {
     .map((init) => storyNode(unwrap(init), bindings))
     .filter(
       (init) =>
-        (field(init, 'type') === 'ObjectExpression' ||
+        (isObjectLiteral(init) ||
           field(init, 'type') === 'ArrowFunctionExpression') &&
         !metaObjects.includes(init),
     );
@@ -176,11 +176,8 @@ function isMetaObjectExportedBySpecifier(
   body: readonly unknown[],
   bindings: Bindings,
 ): boolean {
-  return (
-    field(
-      unwrap(followed(field(defaultSpecifier(body), 'local'), bindings)),
-      'type',
-    ) === 'ObjectExpression'
+  return isObjectLiteral(
+    unwrap(followed(field(defaultSpecifier(body), 'local'), bindings)),
   );
 }
 
@@ -650,7 +647,7 @@ export function isTemplateBind(init: unknown): boolean {
     field(init, 'callee', 'property', 'name') === 'bind' &&
     more.length === 0 &&
     (context === undefined ||
-      (field(context, 'type') === 'ObjectExpression' &&
+      (isObjectLiteral(context) &&
         list(field(context, 'properties')).length === 0))
   );
 }
