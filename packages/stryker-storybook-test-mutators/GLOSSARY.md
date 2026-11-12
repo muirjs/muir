@@ -82,8 +82,8 @@ Vitest browser's userEvent, whose `type` does not click.
   that value. The play is a `play` property or method given inline under a key that is not computed, is story test code
   and inside none, and never reassigns that parameter or the local it destructures.
 - _Binding rule._ A local that holds a source keeps its proof only when every reference to it is a method call's
-  receiver, under any type assertions, a side of a choice that is the one value of such a local, or inside a type. An
-  import also needs every import of `storybook/test` or `@testing-library/user-event` in the file to meet that, the
+  receiver, under any type assertions, a side of a choice that is the one value of such a local, or inside a type or an
+  interface. An import also needs every import of `storybook/test` or `@testing-library/user-event` in the file to meet that, the
   `userEvent` and `default` members of a namespace import included, and no `import()` or `require()` of one of those
   modules or of a module the file does not spell out.
 - _Context rule._ A play context keeps its proof only when every context the file can reach is only read: used as
@@ -100,7 +100,7 @@ Vitest browser's userEvent, whose `type` does not click.
   file never reassigns.
 - _Backstop._ Every play context's proof also needs the file to name `userEvent` only as an import's name, a key or local
   of a parameter's destructuring, a `userEvent` or `<x>.userEvent` that is a method call's receiver or a choice side as
-  above, or inside a type, and never as a string or a template's text. An unrelated object's `userEvent` key drops the
+  above, or inside a type or an interface, and never as a string or a template's text. An unrelated object's `userEvent` key drops the
   proof too.
 - _Not read._ Hooks Storybook receives in ways the rules do not read and that do not name `userEvent`, such as a
   decorator pushed onto `Story.decorators` or a hook given by `Object.defineProperty`, keys built at run time inside

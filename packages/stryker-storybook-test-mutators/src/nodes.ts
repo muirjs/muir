@@ -25,9 +25,13 @@ export function withoutTypeWrappers(node: types.Node): types.Node {
   return isTypeWrapper(node) ? withoutTypeWrappers(node.expression) : node;
 }
 
-/** Inside a type, such as `typeof <x>`, which does not run. */
+/** Inside a type, such as `typeof <x>`, or an interface body, which do not run. */
 export function isInType(path: NodePath): boolean {
-  return path.findParent((parent) => parent.isTSType()) !== null;
+  return (
+    path.findParent(
+      (parent) => parent.isTSType() || parent.isTSInterfaceBody(),
+    ) !== null
+  );
 }
 
 /** The outermost type wrapper around `path`, or `path` itself. */
