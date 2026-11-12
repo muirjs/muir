@@ -140,6 +140,35 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'assertion-before-name-declared-after-check',
+    title:
+      'the first check is copied when the name it reads is declared only after the check, as a function declaration is',
+    source: inPlay(
+      'await userEvent.click(add);',
+      'await expect(canvas.getByText(itemCount(1))).toBeVisible();',
+      'function itemCount(count) {',
+      "  return count + ' item';",
+      '}',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(canvas.getByText(itemCount(1))).toBeVisible(); await userEvent.click(add); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-skip-assignment-right-after',
+    title:
+      'an interaction whose first check reads a name assigned right after the interaction, with nothing between the two statements, makes no mutant',
+    source: inPlay(
+      'let dialog;',
+      "await userEvent.click(open);dialog = canvas.getByRole('dialog');",
+      'await expect(dialog).toBeVisible();',
+    ),
+    expect: [],
+  },
+  {
     id: 'assertion-before-skip-repeated-check',
     title:
       'an interaction whose first check also stands earlier in the play makes no mutant, as that check states an invariant',
@@ -150,6 +179,32 @@ export const assertionBeforeCases: readonly Case[] = [
       "await expect(canvas.getByRole('form')).toBeVisible();",
     ),
     expect: [],
+  },
+  {
+    id: 'assertion-before-skip-check-ending-at-interaction',
+    title:
+      'an interaction whose first check also stands right before it, with nothing between the two statements, makes no mutant',
+    source: inPlay(
+      'await expect(form).toBeVisible();await userEvent.click(save);',
+      'await expect(form).toBeVisible();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-same-check-in-other-story',
+    title:
+      "the first check is copied when the same check stands earlier only in another story's play",
+    source: `export const Save = {\n  play: async ({ args, userEvent }) => {\n    await userEvent.click(save);\n    await expect(args.onSave).toHaveBeenCalled();\n  },\n};\nexport const SaveAndClose = {\n  play: async ({ args, userEvent }) => {\n    await userEvent.click(saveAndClose);\n    await expect(args.onSave).toHaveBeenCalled();\n  },\n};\n`,
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent.click(save); }',
+      ],
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent.click(saveAndClose); }',
+      ],
+    ],
   },
   {
     id: 'assertion-before-next-interaction',

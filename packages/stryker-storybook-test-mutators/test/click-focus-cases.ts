@@ -88,6 +88,23 @@ export const clickFocusCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'click-focus-skip-non-null-textbox',
+    title:
+      'a click of a textbox query under a non-null assertion makes no mutant',
+    source: inPlay(
+      "await userEvent.click(canvas.queryByRole('textbox', { name: 'Name' })!);",
+    ),
+    expect: [],
+  },
+  {
+    id: 'click-focus-skip-searchbox',
+    title: 'a click of a searchbox makes no mutant',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('searchbox', { name: 'Search' }));",
+    ),
+    expect: [],
+  },
+  {
     id: 'click-focus-skip-label-text',
     title:
       'a click of an element found by its label makes no mutant, as such an element is a form field',

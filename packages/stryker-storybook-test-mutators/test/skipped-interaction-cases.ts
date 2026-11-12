@@ -1,4 +1,4 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const interaction = 'LzStorybookInteraction';
 
@@ -382,6 +382,39 @@ const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-default-import-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on userEvent default-imported from '@testing-library/user-event', makes no mutant",
+    source: `import userEvent from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('textbox'));", "await userEvent.type(canvas.getByRole('textbox'), 'a');")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-storybook-import-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', makes no mutant",
+    source: `import { userEvent } from 'storybook/test';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('textbox'));", "await userEvent.type(canvas.getByRole('textbox'), 'a');")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-context-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the userEvent of a play context that is not destructured, makes no mutant',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-choice-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on a local that is one of two user-event 14 instances, makes no mutant',
+    source: inPlay(
+      'const slowUser = userEvent.setup({ delay: 100 });',
+      'const user = slow ? slowUser : userEvent;',
+      'await user.click(input);',
+      "await user.type(input, 'a');",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'vitest-browser-click-before-type',
     title:
       'a Vitest browser click directly before a type on the same target is removed, as that type does not click',
@@ -409,6 +442,20 @@ const clickBeforeTypeCases: readonly Case[] = [
       "const pointer = '__vitest_browser__' in globalThis ? (await import('vitest/browser')).userEvent : userEvent;",
       'await pointer.click(input);',
       "await pointer.type(input, 'a');",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'vitest-browser-dynamic-import-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on userEvent destructured under another name from import('vitest/browser'), is removed",
+    source: inPlay(
+      "const { userEvent: trustedUserEvent } = await import('vitest/browser');",
+      'await trustedUserEvent.click(input);',
+      "await trustedUserEvent.type(input, 'a');",
     ),
     expect: [
       [interaction, ';'],

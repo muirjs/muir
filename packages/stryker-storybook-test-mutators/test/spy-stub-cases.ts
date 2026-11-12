@@ -35,6 +35,17 @@ export const spyStubCases: readonly Case[] = [
     expect: [[spyStub, 'fn()']],
   },
   {
+    id: 'spy-stub-named-after-stub',
+    title:
+      'a stub chained on fn() and then named leaves the bare fn() call, and the mockName call around it makes no mutant',
+    source: withFnImport(
+      'export const Story = {',
+      "  args: { save: fn().mockResolvedValue({ id: 1 }).mockName('save') },",
+      '};',
+    ),
+    expect: [[spyStub, 'fn()']],
+  },
+  {
     id: 'spy-stub-in-render',
     title:
       'a stub chained on fn() inside a function runs at render, so it makes no mutant',

@@ -40,6 +40,19 @@ export const spyStubOutcomeCases: readonly Case[] = [
     expect: [[outcome, 'mocked(save).mockRejectedValue(new Error("Stryker"))']],
   },
   {
+    id: 'spy-stub-outcome-statement-in-render',
+    title: 'a mockResolvedValue statement in a render makes no outcome mutant',
+    source: withFnImport(
+      'export const Story = {',
+      '  render: () => {',
+      '    mocked(save).mockResolvedValue(note);',
+      '    return Probe();',
+      '  },',
+      '};',
+    ),
+    expect: [],
+  },
+  {
     id: 'spy-stub-outcome-optional-call',
     title: 'an optional-chained stub statement gets the same outcome mutant',
     source: inPlay('mocked(save)?.mockResolvedValue(note);'),

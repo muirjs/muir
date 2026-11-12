@@ -280,7 +280,7 @@ function readsNameBoundBetween(
       if (
         bound.some(
           (start) =>
-            typeof start === 'number' && start > after && start < before,
+            typeof start === 'number' && start >= after && start < before,
         )
       ) {
         found = true;

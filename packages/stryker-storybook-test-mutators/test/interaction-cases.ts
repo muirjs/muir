@@ -94,6 +94,16 @@ const interactionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'user-event-other-method-result',
+    title:
+      'a call on a local bound to the result of a userEvent method other than setup() makes no mutant',
+    source: inPlay(
+      'const user = userEvent.create();',
+      "await user.click(canvas.getByRole('button'));",
+    ),
+    expect: [],
+  },
+  {
     id: 'user-event-setup-let-assigned',
     title: 'a call on a let assigned userEvent.setup() once is removed',
     source: inPlay(
@@ -193,6 +203,13 @@ const interactionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'vitest-browser-other-import',
+    title:
+      "a call on another export of 'vitest/browser' imported under a user-event's name makes no mutant",
+    source: `import { page as user } from 'vitest/browser';\n${inPlay("await user.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
+  {
     id: 'other-module-user-event',
     title:
       "a call on userEvent destructured from another module's import() makes no mutant",
@@ -221,6 +238,23 @@ const interactionCases: readonly Case[] = [
     title:
       "a call on another context key destructured under a user-event's name makes no mutant",
     source: `export const Story = {\n  play: async ({ canvas, driver: user }) => {\n    await user.click(canvas.getByRole('button'));\n  },\n};\n`,
+    expect: [],
+  },
+  {
+    id: 'other-member-user-event-method',
+    title:
+      'a call of a user-event method name on a member other than userEvent, such as window.localStorage.clear(), makes no mutant',
+    source: inPlay('window.localStorage.clear();'),
+    expect: [],
+  },
+  {
+    id: 'context-other-key-beside-user-event',
+    title:
+      "a call on another context key destructured beside the context's userEvent makes no mutant",
+    source: inPlayWith(
+      ['canvas', 'userEvent', 'driver'],
+      "await driver.click(canvas.getByRole('button'));",
+    ),
     expect: [],
   },
   {
