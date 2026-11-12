@@ -48,7 +48,6 @@ export function ownValue(
   );
 }
 
-/** The value the last property of exactly `key` gives it in `layer`, as `ownValue` reads an object. */
 export function ownValueOf(layer: Layer, key: string | number): LayerValue {
   return typeof layer === 'object'
     ? valuesIn(

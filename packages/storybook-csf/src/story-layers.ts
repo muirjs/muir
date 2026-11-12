@@ -18,7 +18,7 @@ type Bindings = ReadonlyMap<string, unknown>;
  * `playedStories` takes a play assigned later from the writes itself, and a write to a story's `args` leaves its play
  * as it is.
  */
-export type LayerReading = 'root' | 'as-written';
+type LayerReading = 'root' | 'as-written';
 
 /**
  * The layers a story ends up with, one each for the story and then each `.extend()` base, as Storybook 10.6.5
