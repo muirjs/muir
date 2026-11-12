@@ -579,6 +579,16 @@ export const contextRuleCases: readonly Case[] = [
     ],
   },
   {
+    id: 'spread-inline-writing-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when the meta spreads an inline object whose beforeEach writes the context's userEvent",
+    source: `export default {\n  ...{\n    beforeEach: (context) => {\n      context.userEvent = undefined;\n    },\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'spread-step-arguments-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, is removed when the play spreads its arguments into the context's step, as the story file cannot show the callback it runs",
