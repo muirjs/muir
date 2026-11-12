@@ -323,4 +323,94 @@ export const userEventProofCases: readonly Case[] = [
       [interaction, ';'],
     ],
   },
+  {
+    id: 'reassigned-hook-declaration-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach names a local function declaration the file reassigns to one that passes its context to a function",
+    source: `import { slowDown } from './support';\nfunction slowDownContext(context) {}\nslowDownContext = (context) => {\n  slowDown(context);\n};\nexport default {\n  beforeEach: slowDownContext,\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'getter-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach getter returns a function that passes its context to a function",
+    source: `import { slowDown } from './support';\nexport default {\n  get beforeEach() {\n    return (context) => {\n      slowDown(context);\n    };\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'hook-parameter-and-arguments-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach that names its context passes its arguments to a function",
+    source: `import { slowDown } from './support';\nexport default {\n  beforeEach: function (context) {\n    context.args;\n    slowDown(arguments[0]);\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'computed-assigned-hook-passed-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a function assigned under a computed member passes its context to a function, as that member may name a hook",
+    source: `import { slowDown } from './support';\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\nStory['beforeEach'] = (context) => {\n  slowDown(context);\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'computed-hook-key-array-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when an array under a computed key that a local holds has a function that passes its context to a function, as that key may name decorators",
+    source: `import { slowDown } from './support';\nconst hooks = 'decorators';\nexport default {\n  [hooks]: [\n    (Story, context) => {\n      slowDown(context);\n      return Story();\n    },\n  ],\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'computed-hook-key-named-function-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a computed key that a local holds names a local function that passes its context to a function",
+    source: `import { slowDown } from './support';\nconst hook = 'beforeEach';\nconst slowDownContext = (context) => {\n  slowDown(context);\n};\nexport default {\n  [hook]: slowDownContext,\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'renamed-story-context-hook-passed-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a decorator passes the context of useStoryContext, imported under another name, to a function",
+    source: `import { useStoryContext as storyContext } from 'storybook/preview-api';\nimport { slowDown } from './support';\nexport default {\n  decorators: [\n    (Story) => {\n      slowDown(storyContext());\n      return Story();\n    },\n  ],\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'renamed-step-passed-context-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a step callback, run through the context's step destructured under another name, passes its context to a function",
+    source: `import { slowDown } from './support';\nexport const Story = {\n  play: async ({ step: runStep, userEvent }) => {\n    await runStep('Slow down', async (context) => {\n      slowDown(context);\n    });\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'step-member-local-passed-context-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a step callback, run through a local the context's step member is given to, passes its context to a function",
+    source: `import { slowDown } from './support';\nexport const Story = {\n  play: async (context) => {\n    const runStep = context.step;\n    await runStep('Slow down', async (stepContext) => {\n      slowDown(stepContext);\n    });\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
 ];

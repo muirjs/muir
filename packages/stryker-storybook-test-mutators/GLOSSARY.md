@@ -79,13 +79,15 @@ any local name; the `userEvent` of a play's context, destructured in its first p
 method given inline under a key that is not computed, that is story test code and inside none, such as the meta's
 play or a CSF factory story's. The play never reassigns that parameter or the local it destructures, and every
 context the file can reach is only read. A context is the first parameter of a `play`, `beforeEach` or loader, the
-second of a decorator or `render` function, every parameter of a function under a computed key, the first of a step
-callback, a `useStoryContext()` call, and the `context` member or destructured `context` of any of these, which
-Storybook sets to the context itself; such a function counts given inline, as a method, in an array, by the name of a
-local function, or assigned as `<x>.beforeEach` and the like. Each context is used only as `<context>.<name>`, or
-destructured under plain keys in a parameter or a declaration, with its `userEvent`, as a member or a local, only a
-method call's receiver or a side of a choice given to such a local. A hook the file cannot read, such as an imported
-decorator, or one that may reach its context through `arguments` or a rest parameter, counts as one that does not.
+second of a decorator or `render` function, every parameter of a value under a computed key or assigned to a computed
+member, the first of a callback given to a context's `step` (as a member or a destructured local, which may only be
+called), a call of `useStoryContext` under its own or its imported name, and the `context` member or destructured
+`context` of any of these, which Storybook sets to the context itself; such a function counts given inline, as a plain
+method, in an array, by the name of a local function the file never reassigns, or assigned as `<x>.beforeEach` and the
+like. Each context is used only as `<context>.<name>`, or destructured under plain keys in a parameter or a
+declaration, with its `userEvent`, as a member or a local, only a method call's receiver or a side of a choice given to
+such a local. A hook the file cannot read, such as an imported decorator or a getter, or one that reads `arguments` or
+may reach its context through a rest parameter, counts as one that does not.
 As a backstop for hooks given in ways these rules do not read, the file must also name `userEvent` only as an import's
 name, a key or local in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` that is a method call's
 receiver or such a choice side, and never spell it as a string or a template's text; a type literal's `userEvent` key

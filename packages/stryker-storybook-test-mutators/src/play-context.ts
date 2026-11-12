@@ -45,6 +45,10 @@ function isContextRead(path: NodePath): boolean {
     return isContextRead(parentPath);
   }
 
+  if (name === 'step') {
+    return isStepRead(parentPath);
+  }
+
   return (
     name !== 'userEvent' ||
     isMethodCallReceiver(parentPath) ||
@@ -157,58 +161,67 @@ export const contextsOnlyRead = perFile((program) => {
   program.traverse({
     AssignmentExpression(path) {
       const { left } = path.node;
-      const positions =
-        left.type === 'MemberExpression' && !left.computed
-          ? hookPositions(left.property, false)
-          : [];
 
       check(
         path,
-        positions.every((position) =>
-          isHookValueRead(path.get('right'), position),
-        ),
+        left.type !== 'MemberExpression' ||
+          isKeyedHookRead(left.property, left.computed, path.get('right')),
       );
     },
     CallExpression(path) {
-      const { callee } = path.node;
-      const name =
-        callee.type === 'MemberExpression' && !callee.computed
-          ? nameOf(callee.property)
-          : nameOf(callee);
-      const [, callback] = path.get('arguments');
-
       check(
         path,
-        name !== 'step' ||
-          callback === undefined ||
-          isHookValueRead(callback, 0),
+        calleeName(path.node.callee, path.scope) !== 'useStoryContext' ||
+          isContextRead(path),
       );
-      check(path, name !== 'useStoryContext' || isContextRead(path));
     },
     ObjectMethod(path) {
       check(
         path,
-        hookPositions(path.node.key, path.node.computed).every((position) =>
-          isContextParameterRead(path, position),
+        hookPositions(path.node.key, path.node.computed).every(
+          (position) =>
+            path.node.kind === 'method' &&
+            isContextParameterRead(path, position),
         ),
       );
     },
     ObjectProperty(path) {
-      const value = path.get('value');
-      const positions =
-        path.node.computed && !value.isFunction()
-          ? []
-          : hookPositions(path.node.key, path.node.computed);
-
       check(
         path,
-        positions.every((position) => isHookValueRead(value, position)),
+        isKeyedHookRead(path.node.key, path.node.computed, path.get('value')),
       );
     },
   });
 
   return onlyRead;
 }, false);
+
+/** The name a call's callee goes by: a member's property, or an identifier's name, or the name it is imported under. */
+function calleeName(
+  callee: types.Node,
+  scope: NodePath['scope'],
+): string | undefined {
+  if (callee.type === 'MemberExpression' && !callee.computed) {
+    return nameOf(callee.property);
+  }
+
+  const declaration = bindingOf(callee, scope)?.path;
+
+  return declaration?.isImportSpecifier()
+    ? keyName(declaration.node.imported)
+    : nameOf(callee);
+}
+
+/** A value given under a key, as an object's property or an assignment to a member, read as the hook that key may name. */
+function isKeyedHookRead(
+  key: types.Node,
+  computed: boolean,
+  value: NodePath,
+): boolean {
+  return hookPositions(key, computed).every((position) =>
+    isHookValueRead(value, position),
+  );
+}
 
 /** A hook value, or an array of them, whose every function the file holds and reads its context in. */
 function isHookValueRead(value: NodePath, position: number): boolean {
@@ -233,6 +246,10 @@ function hookFunction(
     hook.node === null ? undefined : bindingOf(hook.node, hook.scope);
   const declaration = binding?.path;
 
+  if (binding?.constantViolations.length !== 0) {
+    return undefined;
+  }
+
   if (declaration?.isFunctionDeclaration()) {
     return declaration;
   }
@@ -241,9 +258,7 @@ function hookFunction(
     ? declaration.get('init')
     : undefined;
 
-  return binding?.constantViolations.length === 0 && init?.isFunction()
-    ? init
-    : undefined;
+  return init?.isFunction() ? init : undefined;
 }
 
 /** Where a hook given under this key takes the story context: each place a hook may take it under a computed key, as that key may name any hook. */
@@ -271,16 +286,17 @@ function isContextParameterRead(
   hook: NodePath<types.Function>,
   position: number,
 ): boolean {
+  if (readsArguments(hook)) {
+    return false;
+  }
+
   const parameter = hook.node.params[position];
 
   if (parameter !== undefined) {
     return isContextLocal(parameter, hook.scope);
   }
 
-  return (
-    !hook.node.params.some((earlier) => earlier.type === 'RestElement') &&
-    !readsArguments(hook)
-  );
+  return !hook.node.params.some((earlier) => earlier.type === 'RestElement');
 }
 
 function readsArguments(hook: NodePath<types.Function>): boolean {
@@ -319,8 +335,43 @@ function isReadPattern(
       return isOnlyCalledOn(bindingOf(local, scope));
     }
 
+    if (name === 'step') {
+      return isStepLocal(local, scope);
+    }
+
     return name !== 'context' || isContextLocal(local, scope);
   });
+}
+
+/** A context's `step` member, called or given to a local by a declaration. */
+function isStepRead(step: NodePath): boolean {
+  const { parentPath } = step;
+
+  if (parentPath?.isVariableDeclarator() && step.key === 'init') {
+    return isStepLocal(parentPath.node.id, parentPath.scope);
+  }
+
+  return isStepCall(step);
+}
+
+/** A local that a context's `step` is given to, only called with a callback read as a hook taking the context first. */
+function isStepLocal(local: types.Node, scope: NodePath['scope']): boolean {
+  const binding = bindingOf(local, scope);
+
+  return binding !== undefined && binding.referencePaths.every(isStepCall);
+}
+
+/** `<step>(<name>, <callback>)`, whose callback Storybook runs with the context. */
+function isStepCall(step: NodePath): boolean {
+  const call = step.parentPath;
+
+  if (!call?.isCallExpression() || step.key !== 'callee') {
+    return false;
+  }
+
+  const [, callback] = call.get('arguments');
+
+  return callback === undefined || isHookValueRead(callback, 0);
 }
 
 /** A local or pattern that a context is given to, read as a context. */

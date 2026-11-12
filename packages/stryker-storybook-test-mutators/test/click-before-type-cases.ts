@@ -232,6 +232,13 @@ export const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-renamed-step-read-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a step callback, run through the context's step destructured under another name, only reads its context's members",
+    source: `export const Story = {\n  play: async ({ step: runStep, userEvent }) => {\n    await runStep('Read', async ({ args }) => {\n      args.label;\n    });\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'typed-context-click-before-type',
     title:
       'a click directly before a type on the same target, both on the userEvent destructured in a play context typed with a userEvent member, is removed, as the file names userEvent outside a read',
