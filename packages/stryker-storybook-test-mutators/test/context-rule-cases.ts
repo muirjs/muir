@@ -39,6 +39,23 @@ export const contextRuleCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-self-stepping-named-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a beforeEach, a named function expression, hands itself by its own name to its context's step",
+    source: `export default {\n  beforeEach: function prepare(context) {\n    context.step('Again', prepare);\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'self-stepping-named-writing-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach, a named function expression, hands itself by its own name to its context's step and writes the context's userEvent",
+    source: `export default {\n  beforeEach: function prepare(context) {\n    context.step('Again', prepare);\n    context.userEvent = undefined;\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'skip-self-given-context-local-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a beforeEach gives a local its context and then the local itself",

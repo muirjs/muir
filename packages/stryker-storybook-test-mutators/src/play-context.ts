@@ -280,7 +280,7 @@ function isHookValueRead(value: NodePath, position: number): boolean {
   });
 }
 
-/** The function a hook value is: given inline, or by the name of a local function the file never reassigns. */
+/** The function a hook value is: given inline, or by the name of a local function, or a function expression's own name, that the file never reassigns. */
 function hookFunction(
   hook: NodePath<types.Node | null>,
 ): NodePath<types.Function> | undefined {
@@ -296,7 +296,10 @@ function hookFunction(
     return undefined;
   }
 
-  if (declaration?.isFunctionDeclaration()) {
+  if (
+    declaration?.isFunctionDeclaration() ||
+    declaration?.isFunctionExpression()
+  ) {
     return declaration;
   }
 
