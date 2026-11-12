@@ -55,11 +55,11 @@ export function readUserEvent(
   node: types.Node,
   path: NodePath,
 ): UserEventReading {
-  return readUnseenUserEvent(node, path, new Set());
+  return readUserEventUnseen(node, path, new Set());
 }
 
 /** `readUserEvent`, where `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
-function readUnseenUserEvent(
+function readUserEventUnseen(
   node: types.Node,
   path: NodePath,
   seen: ReadonlySet<Binding>,
@@ -158,8 +158,8 @@ function userEventBinding(
 
   if (value?.node.type === 'ConditionalExpression') {
     return weaker(
-      readUnseenUserEvent(value.node.consequent, value.at, seen),
-      readUnseenUserEvent(value.node.alternate, value.at, seen),
+      readUserEventUnseen(value.node.consequent, value.at, seen),
+      readUserEventUnseen(value.node.alternate, value.at, seen),
     );
   }
 
@@ -167,7 +167,7 @@ function userEventBinding(
 
   return value === undefined || receiver === undefined
     ? 'none'
-    : readUnseenUserEvent(receiver, value.at, seen);
+    : readUserEventUnseen(receiver, value.at, seen);
 }
 
 /** The module an import declaration names when `declaration` imports `userEvent` by name from it, or is the default import of `@testing-library/user-event`, the one user-event module with a default export. */

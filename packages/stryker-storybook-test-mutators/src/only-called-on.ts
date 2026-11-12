@@ -50,6 +50,7 @@ export function isChoiceSide(path: NodePath): boolean {
   return isChoiceSideUnseen(path, new Set());
 }
 
+/** `isChoiceSide`, where `seen` holds the locals already followed, so a local given a choice of itself ends the search. */
 function isChoiceSideUnseen(
   path: NodePath,
   seen: ReadonlySet<Binding>,
