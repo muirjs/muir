@@ -190,6 +190,13 @@ export const contextsOnlyRead = perFile((program) => {
           ),
       );
     },
+    MemberExpression(path) {
+      check(
+        path,
+        !isPatternTarget(path) ||
+          hookPositions(path.node.property, path.node.computed).length === 0,
+      );
+    },
     ObjectMethod(path) {
       check(
         path,
@@ -218,6 +225,21 @@ export const contextsOnlyRead = perFile((program) => {
 
   return onlyRead;
 }, false);
+
+/** A member a destructuring writes to: a pattern's element, rest, default's target or property value. */
+function isPatternTarget(member: NodePath): boolean {
+  const { parentPath } = member;
+
+  return (
+    parentPath !== null &&
+    (parentPath.isArrayPattern() ||
+      parentPath.isRestElement() ||
+      (parentPath.isAssignmentPattern() && member.key === 'left') ||
+      (parentPath.isObjectProperty() &&
+        member.key === 'value' &&
+        parentPath.parentPath.isObjectPattern()))
+  );
+}
 
 /** An object pattern that a declaration or a parameter destructures into locals, alone or nested, which gives Storybook no hook, unlike an assignment's, which may write one to a member. */
 function isDeclaredPattern(pattern: NodePath): boolean {

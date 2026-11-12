@@ -96,10 +96,10 @@ Vitest browser's userEvent, whose `type` does not click.
   function expression's own name, that the file never reassigns, as an object literal's property, not a declaration's
   or a parameter's destructuring, or assigned to `<x>.<key>`. A context that reaches itself, through a `step`, a local
   given itself or a `context` member, is read once, as reading it again finds nothing new. Any other hook value drops
-  the proof: an import, a member or a call result, a getter, a hook key in a destructuring assignment, a hook that
-  reads `arguments` or has a rest parameter at or before its context, and a spread into a meta or story object, or an
-  argument of an `assign` call, that is not an object literal that spreads nothing, given inline or as a local the file
-  never reassigns.
+  the proof: an import, a member or a call result, a getter, a hook key in a destructuring assignment, a `<x>.<key>` a
+  destructuring writes to, a hook that reads `arguments` or has a rest parameter at or before its context, and a spread
+  into a meta or story object, or an argument of an `assign` call, that is not an object literal that spreads nothing,
+  given inline or as a local the file never reassigns.
 - _Backstop._ Every play context's proof also needs the file to name `userEvent` only as an import's name, a key or a
   local without a default in a parameter's destructuring, a `userEvent` or `<x>.userEvent` that is a method call's
   receiver or a choice side as above, or inside a type or an interface, and never as a string or a template's text. An
