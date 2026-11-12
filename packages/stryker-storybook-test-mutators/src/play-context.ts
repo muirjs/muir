@@ -7,6 +7,8 @@ import {
   keyName,
   memberName,
   nameOf,
+  outsideTypeWrappers,
+  withoutTypeWrappers,
 } from './nodes.ts';
 import {
   isChoiceSide,
@@ -174,7 +176,7 @@ export const contextsOnlyRead = perFile((program) => {
 
   program.traverse({
     AssignmentExpression(path) {
-      const { left } = path.node;
+      const left = withoutTypeWrappers(path.node.left);
 
       check(
         path,
@@ -202,7 +204,7 @@ export const contextsOnlyRead = perFile((program) => {
     MemberExpression(path) {
       check(
         path,
-        !isPatternTarget(path) ||
+        !isPatternOrLoopTarget(outsideTypeWrappers(path)) ||
           hookPositions(path.node.property, path.node.computed).length === 0,
       );
     },
@@ -240,13 +242,14 @@ export const contextsOnlyRead = perFile((program) => {
   return onlyRead;
 }, false);
 
-/** A member a destructuring writes to: a pattern's element, rest, default's target or property value. */
-function isPatternTarget(member: NodePath): boolean {
+/** A member a destructuring or a loop writes to: a pattern's element, rest, default's target or property value, or a `for...of` or `for...in` target. */
+function isPatternOrLoopTarget(member: NodePath): boolean {
   const { parentPath } = member;
 
   return (
     parentPath !== null &&
     (parentPath.isArrayPattern() ||
+      (parentPath.isForXStatement() && member.key === 'left') ||
       parentPath.isRestElement() ||
       (parentPath.isAssignmentPattern() && member.key === 'left') ||
       (parentPath.isObjectProperty() &&

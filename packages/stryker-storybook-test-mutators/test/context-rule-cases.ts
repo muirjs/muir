@@ -172,6 +172,73 @@ export const contextRuleCases: readonly Case[] = [
     ],
   },
   {
+    id: 'wrapped-destructured-onto-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when an array destructuring assignment writes the meta's beforeEach through a type assertion",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\n[(meta.beforeEach as any)] = sharedHooks;\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'wrapped-assigned-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when an assignment gives the meta's beforeEach an imported hook through a type assertion",
+    source: `import { sharedHook } from './support';\nconst meta = {};\n(meta.beforeEach as any) = sharedHook;\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'looped-onto-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a for...of loop writes each of an imported array's members to the meta's beforeEach",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\nfor (meta.beforeEach of sharedHooks) {}\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'non-null-destructured-onto-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when an array destructuring assignment writes the meta's beforeEach through a non-null assertion",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\n[meta.beforeEach!] = sharedHooks;\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'wrapped-under-other-key-onto-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a destructuring assignment writes an imported object's member under another key to the meta's beforeEach through a type assertion",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\n({ other: meta.beforeEach as any } = sharedHooks);\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'key-looped-onto-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a for...in loop writes each of an imported object's keys to the meta's beforeEach",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\nfor (meta.beforeEach in sharedHooks) {}\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'skip-looped-over-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a for...of loop reads the meta's beforeEach, as only the member a loop writes gives Storybook a hook",
+    source: `const meta = {};\nlet local;\nfor (local of meta.beforeEach) {}\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-destructured-hook-key-onto-local-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a destructuring assignment writes an imported object's beforeEach to a local, as only the member a pattern writes gives Storybook a hook",
