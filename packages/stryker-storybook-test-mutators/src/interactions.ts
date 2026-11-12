@@ -1,21 +1,15 @@
 import type { NodePath, types } from '@babel/core';
 
-import { checksIn, hasCheck, isNegative } from './checks.ts';
-import type { BabelTypes } from './mutator.ts';
+import { hasCheck } from './checks.ts';
 import {
   awaited,
   type Binding,
   bindingOf,
-  keyName,
   nameOf,
   withoutTypeWrappers,
 } from './nodes.ts';
 import { isInStoryTestCode, readStoryFileAt } from './story-file.ts';
-import {
-  readUserEvent,
-  userEventFileReaders,
-  userEventMethods,
-} from './user-event.ts';
+import { isUserEvent, userEventMethods } from './user-event.ts';
 
 type CallNode = types.CallExpression | types.OptionalCallExpression;
 
@@ -26,12 +20,7 @@ type InteractionSite =
 
 /** What an interaction's call is. A fireEvent call's `method` is its event when the call names it as `fireEvent.<event>`. */
 type InteractionKind =
-  | {
-      readonly kind: 'userEvent';
-      readonly method: string;
-      /** Whether the file proves the receiver is user-event 14, whose `type` clicks first; Vitest browser's does not. */
-      readonly isProvenUserEvent14: boolean;
-    }
+  | { readonly kind: 'userEvent'; readonly method: string }
   | { readonly kind: 'fireEvent'; readonly method: string | undefined }
   | { readonly kind: 'composedPlay' | 'rawDom' };
 
@@ -44,7 +33,7 @@ export type Interaction = InteractionSite &
 
 /** The interaction at `path`, when `path` is an interaction site whose call is an interaction. */
 export function interactionAt(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path, ...userEventFileReaders);
+  readStoryFileAt(path);
 
   const site = siteAt(path);
 
@@ -83,17 +72,10 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
   if (
     member !== undefined &&
     method !== undefined &&
-    userEventMethods.has(method)
+    userEventMethods.has(method) &&
+    isUserEvent(withoutTypeWrappers(member.object), path)
   ) {
-    const receiver = readUserEvent(withoutTypeWrappers(member.object), path);
-
-    if (receiver !== 'none') {
-      return {
-        kind: 'userEvent',
-        method,
-        isProvenUserEvent14: receiver === 'provenUserEvent14',
-      };
-    }
+    return { kind: 'userEvent', method };
   }
 
   const callee = withoutTypeWrappers(call.callee);
@@ -158,83 +140,14 @@ function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   );
 }
 
-/** An interaction that makes no mutant: one in a story hook, one with following checks whose checks before the next interaction are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
-export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
-  const { path } = interaction;
-
-  return (
-    path.findParent(isHook) !== null ||
-    hasOnlyNegativeChecks(path) ||
-    isRepeatedByNext(interaction, t) ||
-    isClearedLater(interaction, t)
-  );
-}
-
-/** A user-event type or clear with no following checks, when the statement that ends them is a user-event clear of the same target. */
-function isClearedLater(current: Interaction, t: BabelTypes): boolean {
-  const [target] = current.call.arguments;
-
-  if (
-    current.kind !== 'userEvent' ||
-    target === undefined ||
-    !['type', 'clear'].includes(current.method)
-  ) {
-    return false;
-  }
-
-  const siblings = nextSiblings(current.path);
-  const between = statementsBefore(siblings, holdsInteraction);
-  const next = siblings[between.length];
-  const later =
-    next === undefined || between.some(hasCheck)
-      ? undefined
-      : interactionAt(next);
-  const [laterTarget] = later?.call.arguments ?? [];
-
-  return (
-    later?.kind === 'userEvent' &&
-    later.method === 'clear' &&
-    laterTarget !== undefined &&
-    t.isNodesEquivalent(target, laterTarget)
-  );
-}
-
-/** A user-event click or hover directly before a type of the same target on a receiver the file proves to be user-event 14, which clicks it first; Vitest browser's type does not. */
-function isRepeatedByNext(current: Interaction, t: BabelTypes): boolean {
-  const [next] = nextSiblings(current.path);
-  const following = next === undefined ? undefined : interactionAt(next);
-  const [target] = current.call.arguments;
-  const [followingTarget, , options] = following?.call.arguments ?? [];
-
-  return (
-    current.kind === 'userEvent' &&
-    following?.kind === 'userEvent' &&
-    target !== undefined &&
-    followingTarget !== undefined &&
-    ['click', 'hover'].includes(current.method) &&
-    following.method === 'type' &&
-    following.isProvenUserEvent14 &&
-    !hasSkipClick(options) &&
-    t.isNodesEquivalent(target, followingTarget)
-  );
-}
-
-/** user-event 14's `type(element, text, { skipClick })` with a `skipClick` other than `false`, which may then type without clicking first. */
-function hasSkipClick(options: types.Node | undefined): boolean {
-  return (
-    options?.type === 'ObjectExpression' &&
-    options.properties.some(
-      (property) =>
-        property.type === 'ObjectProperty' &&
-        keyName(property.key) === 'skipClick' &&
-        !(property.value.type === 'BooleanLiteral' && !property.value.value),
-    )
-  );
+/** An interaction that makes no mutant: one in a `beforeEach` or `afterEach`. */
+export function isSkipped({ path }: Interaction): boolean {
+  return path.findParent(isHook) !== null;
 }
 
 /** The interaction whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
 export function targetInteraction(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path, ...userEventFileReaders);
+  readStoryFileAt(path);
 
   const query = path.findParent((parent) => parent.isCallExpression());
   const site = path.findParent(
@@ -253,34 +166,15 @@ export function firstCheckAfter(path: NodePath): NodePath | undefined {
   return statementsBefore(nextSiblings(path), holdsInteraction).find(hasCheck);
 }
 
-/** Whether `path` has a following check and its checks before the next interaction are all negative, both looked for past the end of its block and of a step callback that holds it. */
-function hasOnlyNegativeChecks(path: NodePath): boolean {
-  const later = laterStatements(path);
-
-  return (
-    statementsBefore(later, holdsInteraction).some(hasCheck) &&
-    statementsBefore(later, isNextInteraction)
-      .flatMap(checksIn)
-      .every(isNegative)
-  );
-}
-
-/** Whether `statement` ends the checks before the next interaction: it is an interaction, or a `step(...)` whose callback holds one. */
-function isNextInteraction(statement: NodePath): boolean {
+/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; outside a step callback, only step and `waitFor` callbacks are looked into, while a `step(...)` holds every interaction in its callback, including one in a function the callback defines. */
+function holdsInteraction(statement: NodePath): boolean {
   const { node } = statement;
+  const isStep =
+    node.type === 'ExpressionStatement' && isStepCall(awaited(node.expression));
 
   return (
     interactionAt(statement) !== undefined ||
-    (node.type === 'ExpressionStatement' &&
-      isStepCall(awaited(node.expression)) &&
-      hasInteractionIn(statement, () => true))
-  );
-}
-
-/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; outside a step callback, only step and `waitFor` callbacks are looked into, while a `step(...)` holds every interaction in its callback, including one in a function the callback defines. */
-function holdsInteraction(statement: NodePath): boolean {
-  return (
-    isNextInteraction(statement) || hasInteractionIn(statement, runsWhereGiven)
+    hasInteractionIn(statement, isStep ? () => true : runsWhereGiven)
   );
 }
 
@@ -327,26 +221,6 @@ function statementsBefore(
   const end = statements.findIndex(ends);
 
   return end === -1 ? statements : statements.slice(0, end);
-}
-
-/** The statements that run after `path` in its function, and after the step call when that function is a step callback. */
-function laterStatements(path: NodePath): readonly NodePath[] {
-  const siblings = nextSiblings(path);
-  const parent = path.parentPath;
-
-  if (parent === null) {
-    return siblings;
-  }
-
-  if (!parent.isFunction()) {
-    return [...siblings, ...laterStatements(parent)];
-  }
-
-  const owner = parent.parentPath;
-
-  return owner !== null && isStepCall(owner.node)
-    ? [...siblings, ...laterStatements(owner)]
-    : siblings;
 }
 
 /** The statements after `path` in its block. */

@@ -125,7 +125,7 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
       if (
         interaction === undefined ||
         target === undefined ||
-        isSkipped(interaction, t)
+        isSkipped(interaction)
       ) {
         return;
       }
@@ -181,7 +181,7 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
       if (
         interaction === undefined ||
         !isRepeated(interaction) ||
-        isSkipped(interaction, t)
+        isSkipped(interaction)
       ) {
         return;
       }
@@ -235,7 +235,7 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       const interaction = targetInteraction(path);
 
-      if (interaction === undefined || isSkipped(interaction, t)) {
+      if (interaction === undefined || isSkipped(interaction)) {
         return;
       }
 
@@ -341,7 +341,7 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
 
       const check = checkToCopy(path, t);
 
-      if (check !== undefined && !isSkipped(interaction, t)) {
+      if (check !== undefined && !isSkipped(interaction)) {
         yield t.blockStatement([
           t.cloneNode(check),
           t.cloneNode(interaction.node),
@@ -377,7 +377,7 @@ export function interactionMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       const interaction = interactionAt(path);
 
-      if (interaction !== undefined && !isSkipped(interaction, t)) {
+      if (interaction !== undefined && !isSkipped(interaction)) {
         yield interaction.site === 'statement'
           ? t.emptyStatement()
           : t.identifier('undefined');

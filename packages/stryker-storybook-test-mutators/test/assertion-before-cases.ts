@@ -1,4 +1,4 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const assertionBefore = 'LzStorybookAssertionBefore';
 
@@ -55,6 +55,21 @@ export const assertionBeforeCases: readonly Case[] = [
       'await expect(args.onSave).toHaveBeenCalled();',
     ),
     expect: [],
+  },
+  {
+    id: 'assertion-before-computed-expect',
+    title:
+      'the check after an interaction is copied when it holds an expect(...) given as the key of a computed member followed by .not, as that .not is no matcher of that expect',
+    source: inPlay(
+      'await userEvent.click(save);',
+      'await expect(matchers[expect(args.onSave)].not).toBeDefined();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(matchers[expect(args.onSave)].not).toBeDefined(); await userEvent.click(save); }',
+      ],
+    ],
   },
   {
     id: 'assertion-before-skip-called-zero-times',
@@ -257,6 +272,74 @@ export const assertionBeforeCases: readonly Case[] = [
         '{ await expect(dialog).toBeVisible(); await userEvent.click(a); }',
       ],
     ],
+  },
+  {
+    id: 'assertion-before-skip-past-if-with-interaction',
+    title:
+      'an interaction makes no mutant when an if that holds another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'if (open) {',
+      '  await userEvent.click(second);',
+      '}',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-past-wait-for-with-interaction',
+    title:
+      'an interaction makes no mutant when a waitFor whose callback holds another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await waitFor(async () => { await userEvent.click(second); });',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-skip-past-step-defining-interaction',
+    title:
+      'an interaction makes no mutant when a step whose callback defines a function holding another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(first);',
+      "await step('Second', async () => {",
+      '  const clickSecond = async () => {',
+      '    await userEvent.click(second);',
+      '  };',
+      '  await clickSecond();',
+      '});',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-past-call-with-interaction',
+    title:
+      'the copied check is the first one past a call that is no step or waitFor, even when a function given to it holds an interaction',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await run(async () => { await userEvent.click(second); });',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onClick).toHaveBeenCalled(); await userEvent.click(first); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-skip-past-if-with-step',
+    title:
+      'an interaction makes no mutant when an if that holds a step with another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      "if (open) { await step('Second', async () => { await userEvent.click(second); }); }",
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
   },
   {
     id: 'assertion-before-skip-step-body',

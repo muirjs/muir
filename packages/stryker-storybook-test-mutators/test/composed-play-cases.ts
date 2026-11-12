@@ -103,6 +103,23 @@ export const composedPlayCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'nested-play-user-event',
+    title:
+      "an interaction on a parameter's userEvent in a play property defined inside a play is removed, as is the call of that play",
+    source: inPlay(
+      'const inner = {',
+      '  play: async (page) => {',
+      '    await page.userEvent.click(input);',
+      '  },',
+      '};',
+      'await inner.play({});',
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'play-call-on-query',
     title:
       'a play() call on a receiver that is no identifier or member chain starting at one, such as a queried video, makes no mutant',

@@ -27,15 +27,43 @@ export const targetCases: readonly Case[] = [
     expect: [[target, "'Cancel'"]],
   },
   {
-    id: 'target-skip-negative-only',
+    id: 'target-negative-only',
     title:
-      'an interaction whose checks before the next interaction are all negative makes no mutant',
+      'the target of an interaction whose following checks are all negative checks becomes another target in the file',
     source: inPlay(
       "await expect(canvas.getByRole('tab', { name: 'Profile' })).toBeVisible();",
       "await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));",
       'await expect(args.onChange).not.toHaveBeenCalled();',
     ),
-    expect: [],
+    expect: [[target, "'Profile'"]],
+  },
+  {
+    id: 'target-click-before-type',
+    title:
+      'the target of a click directly before a type on the same target becomes another target in the file',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox', { name: 'Name' }));",
+      "await userEvent.type(canvas.getByRole('textbox', { name: 'Name' }), 'a');",
+      "await expect(canvas.getByRole('textbox', { name: 'Email' })).toBeVisible();",
+    ),
+    expect: [
+      [target, "'Email'"],
+      [target, "'Email'"],
+    ],
+  },
+  {
+    id: 'target-cleared-later',
+    title:
+      'the target of a type that a later clear of the same target undoes becomes another target in the file',
+    source: inPlay(
+      "await userEvent.type(canvas.getByRole('textbox', { name: 'Name' }), 'a');",
+      "await userEvent.clear(canvas.getByRole('textbox', { name: 'Name' }));",
+      "await expect(canvas.getByRole('textbox', { name: 'Email' })).toBeVisible();",
+    ),
+    expect: [
+      [target, "'Email'"],
+      [target, "'Email'"],
+    ],
   },
   {
     id: 'target-text',
