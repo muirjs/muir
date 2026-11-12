@@ -176,7 +176,7 @@ function userEventImportSource(declaration: NodePath): string | undefined {
 }
 
 /** Whether every import of a user-event 14 module in the file uses its userEvent only as a method call's receiver or a choice side: a named or default import of it, or a namespace import read as `<namespace>.<name>`, and no `import()` may load one. */
-export const importsOnlyCallUserEvent = perFile(
+const importsOnlyCallUserEvent = perFile(
   (program) =>
     program
       .get('body')
@@ -295,19 +295,17 @@ function isContextRead(path: NodePath): boolean {
     return false;
   }
 
-  switch (memberName(parentPath.node)) {
-    case 'context': {
-      return isContextRead(parentPath);
-    }
+  const name = memberName(parentPath.node);
 
-    case 'userEvent': {
-      return isMethodCallReceiver(parentPath) || isChoiceSide(parentPath);
-    }
-
-    default: {
-      return true;
-    }
+  if (name === 'context') {
+    return isContextRead(parentPath);
   }
+
+  return (
+    name !== 'userEvent' ||
+    isMethodCallReceiver(parentPath) ||
+    isChoiceSide(parentPath)
+  );
 }
 
 function memberName(node: types.Node): string | undefined {
@@ -365,7 +363,7 @@ function isContextLeftAsSet(binding: Binding): boolean {
   );
 }
 
-/** Whether every context the file's hooks are given is only read as `<context>.<name>`. */
+/** Whether every context the file can reach is only read: as `<context>.<name>` or destructured under plain keys, with its userEvent only called on, in hooks whose code the file holds. */
 const contextsOnlyRead = perFile((program) => {
   let onlyRead = true;
 
@@ -535,36 +533,25 @@ function isReadPattern(
         ? property.value.left
         : property.value;
 
-    switch (keyName(property.key)) {
-      case 'userEvent': {
-        return isOnlyCalledOn(bindingOf(local, scope));
-      }
+    const name = keyName(property.key);
 
-      case 'context': {
-        return isContextLocal(local, scope);
-      }
-
-      default: {
-        return true;
-      }
+    if (name === 'userEvent') {
+      return isOnlyCalledOn(bindingOf(local, scope));
     }
+
+    return name !== 'context' || isContextLocal(local, scope);
   });
 }
 
 /** A local or pattern that a context is given to, read as a context. */
-function isContextLocal(
-  local: types.Node,
-  scope: NodePath['scope'],
-): boolean {
+function isContextLocal(local: types.Node, scope: NodePath['scope']): boolean {
   if (local.type === 'ObjectPattern') {
     return isReadPattern(local, scope);
   }
 
   const binding = bindingOf(local, scope);
 
-  return (
-    binding !== undefined && binding.referencePaths.every(isContextRead)
-  );
+  return binding !== undefined && binding.referencePaths.every(isContextRead);
 }
 
 /** What the user-event proofs read once per file, at the Program. */
@@ -578,7 +565,7 @@ function isMethodCallReceiver(path: NodePath): boolean {
   return isMemberObject(path) && path.parentPath?.key === 'callee';
 }
 
-/** A side of `<test> ? <a> : <b>` given to a local that is only a method call's receiver. */
+/** A side of `<test> ? <a> : <b>` that is the one value of a local only called on. */
 function isChoiceSide(
   path: NodePath,
   seen: ReadonlySet<Binding> = new Set(),

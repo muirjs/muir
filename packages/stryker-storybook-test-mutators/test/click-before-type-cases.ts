@@ -234,7 +234,7 @@ export const clickBeforeTypeCases: readonly Case[] = [
   {
     id: 'skip-typed-context-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the userEvent destructured in a play context typed with a userEvent member, makes no mutant",
+      'a click directly before a type on the same target, both on the userEvent destructured in a play context typed with a userEvent member, makes no mutant',
     source: `import type { UserEvent } from 'storybook/test';\nexport const Story = {\n  play: async ({ userEvent }: { userEvent: UserEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
     expect: [[interaction, ';']],
   },
@@ -905,7 +905,7 @@ export const clickBeforeTypeCases: readonly Case[] = [
   {
     id: 'passed-context-member-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the userEvent of a play context whose context member the play passes to a function, is removed, as Storybook sets that member to the context itself",
+      'a click directly before a type on the same target, both on the userEvent of a play context whose context member the play passes to a function, is removed, as Storybook sets that member to the context itself',
     source: `import { slowDown } from './support';\nexport const Story = {\n  play: async (context) => {\n    slowDown(context.context);\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
     expect: [
       [interaction, ';'],
@@ -915,7 +915,7 @@ export const clickBeforeTypeCases: readonly Case[] = [
   {
     id: 'written-context-member-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the userEvent of a play context, is removed when the play writes the userEvent of its context member under a template key",
+      'a click directly before a type on the same target, both on the userEvent of a play context, is removed when the play writes the userEvent of its context member under a template key',
     source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async (context) => {\n    context.context[\`userEvent\`] = browserUserEvent;\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
     expect: [
       [interaction, ';'],
