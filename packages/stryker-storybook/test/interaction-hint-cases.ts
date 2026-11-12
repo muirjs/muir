@@ -231,6 +231,69 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'storybook-test-type',
+    title:
+      "names a surviving click before a type on storybook/test's userEvent, which is user-event 14",
+    source: [
+      "import { userEvent } from 'storybook/test';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [[5, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'vitest-browser-import-expression-type',
+    title:
+      "gives no hint for a click before a type on Vitest browser's userEvent from an import expression",
+    source: inPlay(
+      "const { userEvent: ue } = await import('vitest/browser');",
+      "await ue.click(canvas.getByRole('textbox'));",
+      "await ue.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'vitest-browser-import-expression-shadows-context',
+    title:
+      "gives no hint for a click before a type on Vitest browser's userEvent from an import expression that shadows the play context's",
+    source: inPlay(
+      "await step('fill', async () => {",
+      "  const { userEvent } = await import('vitest/browser');",
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '});',
+    ),
+    survived: [[interaction, 7]],
+    expect: [],
+  },
+  {
+    id: 'vitest-browser-setup-type',
+    title:
+      "gives no hint for a click before a type on a setup() local of Vitest browser's userEvent",
+    source: [
+      "import { userEvent } from 'vitest/browser';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    const user = userEvent.setup();',
+      "    await user.click(canvas.getByRole('textbox'));",
+      "    await user.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
     id: 'fire-event-click-before-type',
     title:
       'gives no hint for a fireEvent click before a type, as the type repeats only a user-event click',

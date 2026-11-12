@@ -142,7 +142,6 @@ function shapedSurvivors(
   const index: InteractionIndex = {
     located,
     isSite: (node) => sites.has(rangeKey(node)),
-    vitestBrowserNames: vitestBrowserNames(program),
   };
   const siteNodes = new Map<string, Located>();
   located.forEach((entry) => {
@@ -243,26 +242,6 @@ function isBefore(first: schema.Position, second: schema.Position): boolean {
 interface InteractionIndex {
   readonly located: ReadonlyMap<AstNode, Located>;
   readonly isSite: (node: AstNode) => boolean;
-  /** The names a top-level import binds from Vitest browser, whose `userEvent.type` does not click first. */
-  readonly vitestBrowserNames: ReadonlySet<string>;
-}
-
-const vitestBrowserModules: readonly unknown[] = [
-  'vitest/browser',
-  '@vitest/browser/context',
-];
-
-function vitestBrowserNames(program: unknown): ReadonlySet<string> {
-  return new Set(
-    list(field(program, 'body'))
-      .filter(
-        (statement) =>
-          field(statement, 'type') === 'ImportDeclaration' &&
-          vitestBrowserModules.includes(field(statement, 'source', 'value')),
-      )
-      .flatMap((statement) => list(field(statement, 'specifiers')))
-      .flatMap((specifier) => nameOf(field(specifier, 'local')) ?? []),
-  );
 }
 
 /** The identifier a member chain such as `user.keyboard` starts at. */
@@ -311,8 +290,11 @@ function isClearedLater(site: Located, index: InteractionIndex): boolean {
 function isClickBeforeType(site: Located, index: InteractionIndex): boolean {
   const current = callOf(site.node);
   const [next] = nextSiblings(site);
-  const following =
-    next !== undefined && index.isSite(next) ? callOf(next) : undefined;
+  const nextSite =
+    next !== undefined && index.isSite(next)
+      ? index.located.get(next)
+      : undefined;
+  const following = nextSite === undefined ? undefined : callOf(nextSite.node);
 
   return (
     current !== undefined &&
@@ -322,7 +304,78 @@ function isClickBeforeType(site: Located, index: InteractionIndex): boolean {
     following.method === 'type' &&
     actsOnSameTarget(current, following) &&
     !skipsClick(following.args[2]) &&
-    !index.vitestBrowserNames.has(rootName(following.receiver) ?? '')
+    isUserEvent14(following.receiver, nextSite?.ancestors ?? [])
+  );
+}
+
+/**
+ * Whether `receiver` names a `userEvent` destructured from a parameter, such as the play context's, or imported from
+ * `storybook/test`: both are user-event 14.
+ */
+function isUserEvent14(
+  receiver: unknown,
+  ancestors: readonly AstNode[],
+): boolean {
+  const name = nameOf(receiver);
+  const declaration =
+    name === undefined ? undefined : declarationOf(name, ancestors);
+
+  return (
+    list(field(declaration, 'properties')).some(
+      (property) =>
+        nameOf(field(property, 'key')) === 'userEvent' &&
+        nameOf(field(property, 'value')) === name,
+    ) ||
+    (field(declaration, 'source', 'value') === 'storybook/test' &&
+      list(field(declaration, 'specifiers')).some(
+        (specifier) =>
+          nameOf(field(specifier, 'imported')) === 'userEvent' &&
+          nameOf(field(specifier, 'local')) === name,
+      ))
+  );
+}
+
+/** The parameter or statement nearest to a node with these ancestors that declares `name`. */
+function declarationOf(
+  name: string,
+  ancestors: readonly AstNode[],
+): AstNode | undefined {
+  return ancestors
+    .flatMap((ancestor) =>
+      list(isFunction(ancestor) ? ancestor['params'] : ancestor['body']),
+    )
+    .filter(isNode)
+    .find((declaration) => declares(declaration, name));
+}
+
+/** The keys under which a declaration or pattern of each type holds the names it binds. */
+const bindingKeys: Readonly<Record<string, readonly string[]>> = {
+  ImportDeclaration: ['specifiers'],
+  ImportSpecifier: ['local'],
+  VariableDeclaration: ['declarations'],
+  VariableDeclarator: ['id'],
+  FunctionDeclaration: ['id'],
+  ClassDeclaration: ['id'],
+  ObjectPattern: ['properties'],
+  ObjectProperty: ['value'],
+  ArrayPattern: ['elements'],
+  RestElement: ['argument'],
+  AssignmentPattern: ['left'],
+};
+
+function declares(node: unknown, name: string): boolean {
+  const type = field(node, 'type');
+  const keys = typeof type === 'string' ? (bindingKeys[type] ?? []) : [];
+
+  return (
+    nameOf(node) === name ||
+    keys.some((key) => {
+      const value = field(node, key);
+
+      return list(Array.isArray(value) ? value : [value]).some((child) =>
+        declares(child, name),
+      );
+    })
   );
 }
 

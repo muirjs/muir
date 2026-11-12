@@ -149,8 +149,10 @@ _Avoid_: interaction finding, interaction warning
 **Interaction shape**:
 Why a play may pass although a surviving interaction mutant changes the interaction: `negative-only` (a check comes
 after it before the next statement that holds an interaction, and every check before the next interaction is negative),
-`click-before-type` (a user-event click or hover directly before a `type` of the same target, which clicks it first
-unless given `skipClick` or called on Vitest browser's `userEvent`), or `cleared-later` (a `type` or `clear` whose
+`click-before-type` (a user-event click or hover directly before a `type` of the same target on user-event 14's
+`userEvent`, which clicks it first unless given `skipClick`; the reporter takes a `userEvent` for user-event 14 only
+when it is destructured from a parameter, such as the play context's, or imported from `storybook/test`, so Vitest
+browser's `userEvent`, a `setup()` local and every other form get no such hint), or `cleared-later` (a `type` or `clear` whose
 target the next interaction in its block clears, with no check between them). An interaction has at most one shape.
 _Avoid_: skip reason, interaction pattern
 
