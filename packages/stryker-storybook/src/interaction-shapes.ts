@@ -96,17 +96,21 @@ function isClickBeforeType(site: Located, index: InteractionIndex): boolean {
     next !== undefined && index.isSite(next)
       ? index.located.get(next)
       : undefined;
-  const following = nextSite === undefined ? undefined : callOf(nextSite.node);
+
+  if (current === undefined || nextSite === undefined) {
+    return false;
+  }
+
+  const following = callOf(nextSite.node);
 
   return (
-    current !== undefined &&
     following !== undefined &&
     ['click', 'hover'].includes(current.method ?? '') &&
     rootName(current.receiver) !== 'fireEvent' &&
     following.method === 'type' &&
     actsOnSameTarget(current, following) &&
     !maySkipClick(following.args[2]) &&
-    isUserEvent14(following.receiver, nextSite?.ancestors ?? [])
+    isUserEvent14(following.receiver, nextSite.ancestors)
   );
 }
 
@@ -353,7 +357,7 @@ function continuationOf(
     return located.get(parent);
   }
 
-  return isStepCall(grandparent) && grandparent !== undefined
+  return grandparent !== undefined && isStepCall(grandparent)
     ? located.get(grandparent)
     : undefined;
 }
