@@ -459,6 +459,18 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'reassigned-context-user-event-type',
+    title:
+      "gives no hint for a click before a type on the play context's userEvent after the play assigns it another value",
+    source: inPlay(
+      'userEvent = vitestUserEvent;',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
     id: 'vitest-browser-import-expression-type',
     title:
       "gives no hint for a click before a type on Vitest browser's userEvent from an import expression",

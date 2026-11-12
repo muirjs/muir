@@ -256,9 +256,12 @@ function isUserEvent14(
   const name = nameOf(receiver);
   const declaration =
     name === undefined ? undefined : declarationOf(name, ancestors);
+  const play = playOf(declaration, ancestors);
 
   return (
-    (isPlayContext(declaration, ancestors) &&
+    (play !== undefined &&
+      name !== undefined &&
+      !assigns(play['body'], name) &&
       list(field(declaration, 'properties')).some(
         (property) =>
           nameOf(field(property, 'key')) === 'userEvent' &&
@@ -273,11 +276,11 @@ function isUserEvent14(
   );
 }
 
-/** Whether `parameter` is the first parameter of a function that is the `play` property of the meta or a story. */
-function isPlayContext(
+/** The function whose first parameter is `parameter`, when it is the `play` property of the meta or a story. */
+function playOf(
   parameter: AstNode | undefined,
   ancestors: readonly AstNode[],
-): boolean {
+): AstNode | undefined {
   const owner = ancestors.findIndex(
     (ancestor) =>
       isFunction(ancestor) && list(ancestor['params'])[0] === parameter,
@@ -285,12 +288,26 @@ function isPlayContext(
   // A story is `export const <name> = { ... }`: declarator, declaration, export.
   const [property, object, holder, , exported] = ancestors.slice(owner + 1);
 
-  return (
-    owner !== -1 &&
+  return owner !== -1 &&
     keyName(property) === 'play' &&
     (field(holder, 'type') === 'ExportDefaultDeclaration' ||
       (field(holder, 'init') === object &&
         field(exported, 'type') === 'ExportNamedDeclaration'))
+    ? ancestors[owner]
+    : undefined;
+}
+
+/** Whether `node` holds an assignment to `name`, which may give it a value other than the play context's. */
+function assigns(node: unknown, name: string): boolean {
+  return (
+    isNode(node) &&
+    ((node['type'] === 'AssignmentExpression' &&
+      declares(node['left'], name)) ||
+      childEntries(node).some(([, value]) =>
+        list(Array.isArray(value) ? value : [value]).some((child) =>
+          assigns(child, name),
+        ),
+      ))
   );
 }
 

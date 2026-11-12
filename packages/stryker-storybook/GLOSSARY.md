@@ -155,9 +155,10 @@ after it before the next statement that holds an interaction, and every check be
 are absent, or an object literal with no spread, computed key or `__proto__` whose `skipClick`, quoted or not, is
 absent or `false`, and takes a `userEvent` for user-event 14 only when it is destructured from the first parameter of
 the function under a non-computed `play` key of the meta (the default export) or of an exported story, the play
-context, or imported from `storybook/test`, so Vitest browser's `userEvent`, one destructured from another function's
-parameter, a `setup()` local and every other form get no such hint), or `cleared-later` (a `type` or `clear` whose
-target the next interaction in its block clears, with no check between them). An interaction has at most one shape.
+context, and the play assigns it nothing, or when it is imported from `storybook/test`, so Vitest browser's
+`userEvent`, one destructured from another function's parameter, a `setup()` local and every other form get no such
+hint), or `cleared-later` (a `type` or `clear` whose target the next interaction in its block clears, with no check
+between them). An interaction has at most one shape.
 _Avoid_: skip reason, interaction pattern
 
 **Checks before the next interaction**:
