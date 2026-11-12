@@ -60,7 +60,7 @@ removing it changes what that object reads; a spread of the whole story at the t
 (`{ ...Primary }`) runs the same args object, so it does not count. Any other key
 keeps its mutant even where no test can kill it (ADR 0006), as in these known shapes: a story whose `args` a runtime
 assignment such as `S.args = { ... }` or `S.args.label = 'b'` replaces; a key that a later spread the file cannot
-resolve may set; a key that a getter or setter in the same object also defines; and, on a story with no play, a key
+resolve may set; a key that a getter or setter in the same object also defines or may define (a computed key); and, on a story with no play, a key
 that the options of every `.test()` call on it set, as only the story's own run, which only renders, sees it.
 _Avoid_: arg removal
 

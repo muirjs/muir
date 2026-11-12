@@ -91,7 +91,7 @@ whose unknown play turns out to set no play, with none under it; a value equal t
 `globals` that every played story's own `globals` or `.test()` options set; a site that a runtime assignment such as
 `S.globals = { ... }` replaces; on a story with no play, a key that the options of every `.test()` call on it set; a
 property that a later property of the same key in the same object overrides; and a default global that a getter or
-setter in the same object also defines.
+setter in the same object also defines or may define (a computed key).
 _Avoid_: globals target, story globals (the meta's are sites too)
 
 **Default global**:
