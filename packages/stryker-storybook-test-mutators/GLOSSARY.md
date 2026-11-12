@@ -98,8 +98,8 @@ Vitest browser's userEvent, whose `type` does not click.
   pattern's property names what a destructuring reads, so a hook key there gives Storybook nothing. A context that
   reaches itself, through a `step`, a local given itself or a `context` member, is read once, as reading it again finds
   nothing new. Any other hook value drops the proof: an import, a member or a call result, a getter, a `<x>.<key>` with
-  a hook key that a destructuring or a loop writes to, bare or inside those wrappers (an array element, a property's
-  value, a default's target, a rest, or a `for...of` or `for...in` target), a hook that reads `arguments` or has a
+  a hook key that a destructuring or a loop writes to (as an array element, a property's value, a default's target, a
+  rest, or a `for...of` or `for...in` target), bare or inside those wrappers, a hook that reads `arguments` or has a
   rest parameter at or before its context, and a spread into a meta or story object, or an argument of an `assign`
   call, that is not an object literal that spreads nothing, given inline or as a local the file never reassigns.
 - _Backstop._ Every play context's proof also needs the file to name `userEvent` only as an import's name, a key or a
