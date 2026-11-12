@@ -29,7 +29,7 @@ export function resolvedValues(
   const properties =
     object === unknownValue
       ? undefined
-      : shownObject(object, bindings)?.properties;
+      : shownObject(object, bindings)?.lastWinsProperties;
 
   return properties === undefined ? [unknownValue] : valuesIn(properties, key);
 }
@@ -52,7 +52,9 @@ export function ownValue(
 export function ownValueOf(layer: Layer, key: string | number): LayerValue {
   return typeof layer === 'object'
     ? valuesIn(
-        layer.properties.filter((property) => propertyKey(property) === key),
+        layer.lastWinsProperties.filter(
+          (property) => propertyKey(property) === key,
+        ),
         key,
       )[0]
     : layer;
@@ -64,7 +66,7 @@ export function resolvedPropertyValues(
   key: string | number,
   bindings: Bindings,
 ): readonly LayerValue[] {
-  return valuesIn(lastWinsProperties(properties, bindings), key);
+  return valuesIn(inLastWinsOrder(properties, bindings), key);
 }
 
 class ResolvedObject {
@@ -80,15 +82,15 @@ class ResolvedObject {
     return this.#node;
   }
 
-  get properties(): readonly unknown[] {
-    return lastWinsProperties(
+  get lastWinsProperties(): readonly unknown[] {
+    return inLastWinsOrder(
       list(field(this.#node, 'properties')),
       this.#bindings,
     );
   }
 
   layerOf(key: string | number): Layer {
-    const value = valuesIn(this.properties, key)[0];
+    const value = valuesIn(this.lastWinsProperties, key)[0];
 
     return typeof value === 'object'
       ? (shownObject(value, this.#bindings) ?? unknownValue)
@@ -136,7 +138,7 @@ export function valuesOf(
 
   return layer === unknownValue
     ? [unknownValue]
-    : valuesIn(layer.properties, key);
+    : valuesIn(layer.lastWinsProperties, key);
 }
 
 function shownObject(
@@ -163,7 +165,7 @@ function shownObject(
   const value =
     object === undefined || typeof key !== 'string'
       ? undefined
-      : valuesIn(object.properties, key)[0];
+      : valuesIn(object.lastWinsProperties, key)[0];
 
   // Without the member's root name, a value that names the member again, as in `const A = { b: A.b }`, ends.
   return isRecord(value)
@@ -172,7 +174,7 @@ function shownObject(
 }
 
 /** `properties` last-wins first, each spread of an object `resolvedValues` reads replaced by that object's properties; a spread it does not read stays in place, for `valuesIn` to read as one that may set any key. */
-function lastWinsProperties(
+function inLastWinsOrder(
   properties: readonly unknown[],
   bindings: Bindings,
 ): readonly unknown[] {
@@ -181,7 +183,8 @@ function lastWinsProperties(
     .flatMap(
       (property) =>
         (field(property, 'type') === 'SpreadElement'
-          ? shownObject(field(property, 'argument'), bindings)?.properties
+          ? shownObject(field(property, 'argument'), bindings)
+              ?.lastWinsProperties
           : undefined) ?? [property],
     );
 }

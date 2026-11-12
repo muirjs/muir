@@ -23,11 +23,14 @@ const initialGlobals: ReadonlyMap<
       parameters.every(
         (layer) => valuesOf(layer, 'viewport')[0] === undefined,
       ) &&
-      (viewportDefaults.includes(literalOf(value)) ||
+      (viewportDefaults.includes(stringBooleanOrUndefinedOf(value)) ||
         (field(value, 'type') === 'ObjectExpression' &&
           isDefaultViewportValue(objectValue(value, 'value')))),
   ],
-  ['backgrounds', (value: unknown) => isObjectOf(value, defaultBackgrounds)],
+  [
+    'backgrounds',
+    (value: unknown) => isObjectOfAllowedLiterals(value, defaultBackgrounds),
+  ],
   ['measureEnabled', isFalse],
   ['outline', isFalse],
 ]);
@@ -41,10 +44,10 @@ export function isInitialGlobal(
 }
 
 function isFalse(value: unknown): boolean {
-  return literalOf(value) === false;
+  return stringBooleanOrUndefinedOf(value) === false;
 }
 
-function isObjectOf(
+function isObjectOfAllowedLiterals(
   value: unknown,
   allowed: ReadonlyMap<string, readonly unknown[]>,
 ): boolean {
@@ -55,7 +58,10 @@ function isObjectOf(
 
       return (
         typeof key === 'string' &&
-        allowed.get(key)?.includes(literalOf(field(property, 'value'))) === true
+        allowed
+          .get(key)
+          ?.includes(stringBooleanOrUndefinedOf(field(property, 'value'))) ===
+          true
       );
     })
   );
@@ -64,13 +70,13 @@ function isObjectOf(
 function isDefaultViewportValue(value: LayerValue): boolean {
   return (
     value === undefined ||
-    [undefined, ...viewportDefaults].includes(literalOf(value))
+    [undefined, ...viewportDefaults].includes(stringBooleanOrUndefinedOf(value))
   );
 }
 
 const notALiteral = Symbol('not a literal');
 
-function literalOf(node: unknown): unknown {
+function stringBooleanOrUndefinedOf(node: unknown): unknown {
   if (field(node, 'type') === 'Identifier') {
     return field(node, 'name') === 'undefined' ? undefined : notALiteral;
   }

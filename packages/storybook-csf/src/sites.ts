@@ -377,8 +377,8 @@ function metaValue(metas: readonly Layer[], key: Key): LayerValue {
 }
 
 function sameLiteral(node: unknown, other: unknown): boolean {
-  const literal = literalOf(node);
-  const otherLiteral = literalOf(other);
+  const literal = primitiveLiteralOf(node);
+  const otherLiteral = primitiveLiteralOf(other);
 
   return (
     literal !== undefined &&
@@ -393,7 +393,9 @@ const literalTypes: readonly unknown[] = [
   'BooleanLiteral',
 ];
 
-function literalOf(node: unknown): { readonly value: unknown } | undefined {
+function primitiveLiteralOf(
+  node: unknown,
+): { readonly value: unknown } | undefined {
   const type = field(node, 'type');
 
   if (type === 'NullLiteral') {
