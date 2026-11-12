@@ -1,4 +1,4 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const interaction = 'LzStorybookInteraction';
 
@@ -786,20 +786,26 @@ export const interactionCases: readonly Case[] = [
     id: 'step-given-other-member-play',
     title:
       'a step given the play of a receiver that is no identifier or member chain starting at one makes no mutant',
-    source: `export const Story = {\n  play: async ({ canvas, step }) => {\n    await step('Start', canvas.getByTestId('video').play);\n  },\n};\n`,
+    source: inPlayWith(
+      ['canvas', 'step'],
+      "await step('Start', canvas.getByTestId('video').play);",
+    ),
     expect: [],
   },
   {
     id: 'step-given-other-member',
     title: 'a step given a function other than a play makes no mutant',
-    source: `export const Story = {\n  play: async ({ step }) => {\n    await step('Open menu', helpers.openMenu);\n  },\n};\n`,
+    source: inPlayWith(['step'], "await step('Open menu', helpers.openMenu);"),
     expect: [],
   },
   {
     id: 'interaction-in-call-given-to-step',
     title:
       'an interaction inside a call given to step, which is no step callback body, makes no mutant',
-    source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Submit', wrap(userEvent.click(button)));\n  },\n};\n`,
+    source: inPlayWith(
+      ['step', 'userEvent'],
+      "await step('Submit', wrap(userEvent.click(button)));",
+    ),
     expect: [],
   },
   {
