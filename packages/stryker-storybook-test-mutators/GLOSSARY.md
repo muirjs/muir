@@ -88,7 +88,7 @@ Vitest browser's userEvent, whose `type` does not click.
   modules or of a module the file does not spell out.
 - _Context rule._ A play context keeps its proof only when every context the file can reach is only read: used as
   `<context>.<name>`, or destructured under plain keys in a parameter or a declaration, with its `userEvent` held to the
-  binding rule, its `step` only called, and its `context` member, which Storybook sets to the context itself, read the
+  binding rule, its `step` only called, with no spread argument, and its `context` member, which Storybook sets to the context itself, read the
   same way. A context is the first parameter of a `play`, `beforeEach` or loader, the second of a decorator or `render`
   function, both of these for a value under a computed key or assigned to a computed member, the first of a callback
   given to a context's `step`, and a call of `useStoryContext` under its own or its imported name. Such a hook counts

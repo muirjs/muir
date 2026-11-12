@@ -454,6 +454,16 @@ export const userEventProofCases: readonly Case[] = [
     ],
   },
   {
+    id: 'spread-step-arguments-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when the play spreads its arguments into the context's step, as the story file cannot show the callback it runs",
+    source: `import { slowDown } from './support';\nexport const Story = {\n  play: async ({ step, userEvent }) => {\n    const stepArguments = ['Slow down', slowDown];\n    await step(...stepArguments);\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'required-written-click-before-type',
     title:
       "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', is removed when the file also loads that module with require() and writes its userEvent's type",

@@ -423,7 +423,7 @@ function isStepLocal(local: types.Node, scope: NodePath['scope']): boolean {
   return binding !== undefined && binding.referencePaths.every(isStepCall);
 }
 
-/** `<step>(<name>, <callback>)`, whose callback Storybook runs with the context. */
+/** `<step>(<name>, <callback>)`, whose callback Storybook runs with the context, with no spread argument that could hold one. */
 function isStepCall(step: NodePath): boolean {
   const call = step.parentPath;
 
@@ -431,9 +431,13 @@ function isStepCall(step: NodePath): boolean {
     return false;
   }
 
-  const [, callback] = call.get('arguments');
+  const stepArguments = call.get('arguments');
+  const [, callback] = stepArguments;
 
-  return callback === undefined || isHookValueRead(callback, 0);
+  return (
+    !stepArguments.some((argument) => argument.isSpreadElement()) &&
+    (callback === undefined || isHookValueRead(callback, 0))
+  );
 }
 
 /** A local or pattern that a context is given to, read as a context. */
