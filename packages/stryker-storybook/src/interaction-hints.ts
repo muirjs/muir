@@ -602,7 +602,7 @@ function nextSiblings({ node, statements }: Located): readonly AstNode[] {
     : statements.slice(statements.indexOf(node) + 1);
 }
 
-/** The member names after each `expect(...)` call in `node`, nearest first, from the outermost chain around it. */
+/** The member names after each check call in `node`, nearest first, from the outermost chain around it. */
 function checksIn(node: unknown): readonly (readonly string[])[] {
   const checks = new Map<AstNode, readonly string[]>();
   const visit = (current: unknown): void => {
@@ -635,7 +635,7 @@ function chainTo(
   }
 
   if (node['type'] === 'CallExpression') {
-    return field(node, 'callee', 'name') === 'expect'
+    return isCheckCall(node)
       ? { expect: node, names }
       : chainTo(node['callee'], names);
   }
@@ -643,6 +643,17 @@ function chainTo(
   return node['type'] === 'MemberExpression'
     ? chainTo(node['object'], [nameOf(node['property']) ?? '', ...names])
     : undefined;
+}
+
+/** `expect(...)`, `expect.<name>(...)` such as `expect.soft`, `expect.element` or `expect.poll`, or a `findBy` query, which fails when it finds nothing. */
+function isCheckCall(call: AstNode): boolean {
+  const callee = call['callee'];
+
+  return (
+    nameOf(callee) === 'expect' ||
+    nameOf(field(callee, 'object')) === 'expect' ||
+    (nameOf(field(callee, 'property'))?.startsWith('findBy') ?? false)
+  );
 }
 
 function nameOf(node: unknown): string | undefined {

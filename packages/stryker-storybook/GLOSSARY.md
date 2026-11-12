@@ -147,17 +147,19 @@ names, where an interaction outside the range has no such mutant.
 _Avoid_: interaction finding, interaction warning
 
 **Interaction shape**:
-Why a play may pass although a surviving interaction mutant changes the interaction: `negative-only` (it has following
-checks, the Storybook test mutators' term, and every check before the next interaction is negative),
+Why a play may pass although a surviving interaction mutant changes the interaction: `negative-only` (a check comes
+after it before the next statement that holds an interaction, and every check before the next interaction is negative),
 `click-before-type` (a user-event click or hover directly before a `type` of the same target, which clicks it first
 unless given `skipClick` or called on Vitest browser's `userEvent`), or `cleared-later` (a `type` or `clear` whose
 target the next interaction in its block clears, with no check between them). An interaction has at most one shape.
 _Avoid_: skip reason, interaction pattern
 
 **Checks before the next interaction**:
-The `expect(...)` checks after an interaction up to the next statement that is an interaction or a `step(...)` that
-holds one, looked for past the end of the interaction's block and of a step callback that holds it. Unlike the
-following checks, they run past an `if` or a `waitFor(...)` that holds an interaction.
+The checks after an interaction up to the next statement that is an interaction or a `step(...)` that holds one, looked
+for past the end of the interaction's block and of a step callback that holds it. A check is an `expect(...)` call, an
+`expect.<name>(...)` call such as `expect.soft`, `expect.element` or `expect.poll`, or a `findBy` query, which fails
+when it finds nothing; it is negative when its member chain holds `.not`. Unlike the following checks, which count only
+`expect(...)`, they also run past an `if` or a `waitFor(...)` that holds an interaction.
 _Avoid_: later checks
 
 **Static story mutant**:

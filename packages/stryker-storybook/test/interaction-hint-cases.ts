@@ -63,6 +63,54 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'positive-soft-check',
+    title:
+      'gives no hint for an interaction whose following checks include a positive expect.soft one',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "await expect.soft(canvas.getByRole('status')).toBeVisible();",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'positive-element-check',
+    title:
+      'gives no hint for an interaction whose following checks include a positive expect.element one',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "await expect.element(canvas.getByRole('status')).toBeVisible();",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'positive-poll-check',
+    title:
+      'gives no hint for an interaction whose following checks include a positive expect.poll one',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "await expect.poll(() => canvas.getByRole('status')).toBeVisible();",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'positive-find-by',
+    title:
+      'gives no hint for an interaction followed by a findBy query, which fails when nothing is found',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "await canvas.findByRole('dialog');",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
     id: 'ends-at-next-interaction',
     title:
       'reads the following checks only up to the next interaction, whose own checks may be positive',
