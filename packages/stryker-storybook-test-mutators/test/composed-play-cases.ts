@@ -97,6 +97,12 @@ export const composedPlayCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'step-given-label-only',
+    title: 'a step given only its label makes no mutant',
+    source: inPlayWith(['step'], "await step('Open menu');"),
+    expect: [],
+  },
+  {
     id: 'play-call-on-query',
     title:
       'a play() call on a receiver that is no identifier or member chain starting at one, such as a queried video, makes no mutant',
