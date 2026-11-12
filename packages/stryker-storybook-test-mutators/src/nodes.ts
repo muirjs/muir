@@ -25,26 +25,6 @@ export function withoutTypeWrappers(node: types.Node): types.Node {
   return isTypeWrapper(node) ? withoutTypeWrappers(node.expression) : node;
 }
 
-/** Inside a type, such as `typeof <x>`, or an interface body, which do not run. */
-export function isInType(path: NodePath): boolean {
-  return (
-    path.findParent(
-      (parent) => parent.isTSType() || parent.isTSInterfaceBody(),
-    ) !== null
-  );
-}
-
-/** The outermost type wrapper around `path`, or `path` itself. */
-export function outsideTypeWrappers(path: NodePath): NodePath {
-  const { parentPath } = path;
-
-  return parentPath !== null &&
-    isTypeWrapper(parentPath.node) &&
-    path.key === 'expression'
-    ? outsideTypeWrappers(parentPath)
-    : path;
-}
-
 /** The expression inside `await <x>` and any type wrappers around either. */
 export function awaited(node: types.Node): types.Node {
   const expression = withoutTypeWrappers(node);
@@ -54,21 +34,8 @@ export function awaited(node: types.Node): types.Node {
   );
 }
 
-/** The name of an object key, quoted or not. */
-export function keyName(key: types.Node): string | undefined {
-  return key.type === 'StringLiteral' ? key.value : nameOf(key);
-}
-
 export function nameOf(node: types.Node): string | undefined {
   return node.type === 'Identifier' ? node.name : undefined;
-}
-
-/** The property name of `<x>.<name>` or `<x>?.<name>`. */
-export function memberName(node: types.Node): string | undefined {
-  return node.type === 'MemberExpression' ||
-    node.type === 'OptionalMemberExpression'
-    ? nameOf(node.property)
-    : undefined;
 }
 
 /** The binding that the identifier `node` refers to in `scope`. */

@@ -1,27 +1,6 @@
 import type { NodePath, types } from '@babel/core';
 
-import {
-  awaited,
-  type Binding,
-  bindingOf,
-  keyName,
-  memberName,
-  nameOf,
-} from './nodes.ts';
-import {
-  boundValue,
-  isChoiceSide,
-  isMemberObject,
-  isMethodCallReceiver,
-  isOnlyCalledOn,
-} from './only-called-on.ts';
-import {
-  contextsOnlyRead,
-  isPlayContext,
-  isPlayContextAsSet,
-  namesOnlyReadUserEvent,
-} from './play-context.ts';
-import { perFile } from './story-file.ts';
+import { awaited, type Binding, bindingOf, nameOf } from './nodes.ts';
 
 // The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
 // storybook/test re-exports) and those only Vitest browser's userEvent has.
@@ -47,99 +26,56 @@ export const userEventMethods: ReadonlySet<string> = new Set([
   'paste',
 ]);
 
-/** What a receiver is: no user-event, a user-event that may be Vitest browser's, whose `type` does not click, or a proven user-event 14, whose `type` clicks first. */
-type UserEventReading = 'none' | 'unprovenUserEvent' | 'provenUserEvent14';
-
-/** Reads `userEvent`, `<x>.userEvent` such as the play context's, or a local that `userEventBinding` reads as a user-event. */
-export function readUserEvent(
-  node: types.Node,
-  path: NodePath,
-): UserEventReading {
-  return readUserEventUnseen(node, path, new Set());
+/** Whether a receiver is a user-event: `userEvent`, `<x>.userEvent` such as the play context's, or a local that `isUserEventBinding` reads as one. */
+export function isUserEvent(node: types.Node, path: NodePath): boolean {
+  return isUserEventUnseen(node, path, new Set());
 }
 
-/** `readUserEvent`, where `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
-function readUserEventUnseen(
+/** `isUserEvent`, where `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
+function isUserEventUnseen(
   node: types.Node,
   path: NodePath,
   seen: ReadonlySet<Binding>,
-): UserEventReading {
+): boolean {
   if (
     node.type === 'MemberExpression' ||
     node.type === 'OptionalMemberExpression'
   ) {
-    if (nameOf(node.property) !== 'userEvent') {
-      return 'none';
-    }
-
-    return isPlayContext(node.object, path)
-      ? 'provenUserEvent14'
-      : 'unprovenUserEvent';
+    return nameOf(node.property) === 'userEvent';
   }
 
   const binding = bindingOf(node, path.scope);
-  const bound =
-    binding === undefined || seen.has(binding)
-      ? 'none'
-      : userEventBinding(binding, new Set([...seen, binding]));
 
-  if (binding === undefined || bound === 'none') {
-    return nameOf(node) === 'userEvent' ? 'unprovenUserEvent' : 'none';
-  }
-
-  return bound === 'provenUserEvent14' && !isOnlyCalledOn(binding)
-    ? 'unprovenUserEvent'
-    : bound;
+  return (
+    (binding !== undefined &&
+      !seen.has(binding) &&
+      isUserEventBinding(binding, new Set([...seen, binding]))) ||
+    nameOf(node) === 'userEvent'
+  );
 }
 
-/** The weaker of two readings, as a choice between them is only as proven as its weaker side. */
-function weaker(
-  first: UserEventReading,
-  second: UserEventReading,
-): UserEventReading {
-  if (first === 'none' || second === 'none') {
-    return 'none';
-  }
-
-  return first === second ? first : 'unprovenUserEvent';
-}
-
-/** Reads what a binding holds: a userEvent import, Vitest browser's userEvent destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
-function userEventBinding(
+/** Whether a binding holds a user-event: a userEvent import, Vitest browser's userEvent destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
+function isUserEventBinding(
   binding: Binding,
   seen: ReadonlySet<Binding>,
-): UserEventReading {
+): boolean {
   const { name } = binding.identifier;
   const declaration = binding.path;
   const source = userEventImportSource(declaration);
 
   if (source !== undefined) {
-    const reading = importReadings.get(source) ?? 'none';
-
-    return reading === 'provenUserEvent14' &&
-      !importsOnlyCallUserEvent(declaration)
-      ? 'unprovenUserEvent'
-      : reading;
+    return userEventModules.has(source);
   }
 
   if (binding.kind === 'param') {
-    const property =
-      declaration.node.type === 'ObjectPattern'
-        ? userEventProperty(declaration.node, name)
-        : undefined;
-
-    if (property === undefined) {
-      return 'none';
-    }
-
-    return property.value.type !== 'AssignmentPattern' &&
-      isPlayContextAsSet(binding)
-      ? 'provenUserEvent14'
-      : 'unprovenUserEvent';
+    return (
+      declaration.node.type === 'ObjectPattern' &&
+      userEventProperty(declaration.node, name) !== undefined
+    );
   }
 
   if (!declaration.isVariableDeclarator()) {
-    return 'none';
+    return false;
   }
 
   const { id, init } = declaration.node;
@@ -151,23 +87,25 @@ function userEventBinding(
     init !== undefined &&
     isVitestBrowserImport(awaited(init))
   ) {
-    return 'unprovenUserEvent';
+    return true;
   }
 
   const value = boundValue(declaration, binding);
 
   if (value?.node.type === 'ConditionalExpression') {
-    return weaker(
-      readUserEventUnseen(value.node.consequent, value.at, seen),
-      readUserEventUnseen(value.node.alternate, value.at, seen),
+    return (
+      isUserEventUnseen(value.node.consequent, value.at, seen) &&
+      isUserEventUnseen(value.node.alternate, value.at, seen)
     );
   }
 
   const receiver = setupReceiver(value?.node);
 
-  return value === undefined || receiver === undefined
-    ? 'none'
-    : readUserEventUnseen(receiver, value.at, seen);
+  return (
+    value !== undefined &&
+    receiver !== undefined &&
+    isUserEventUnseen(receiver, value.at, seen)
+  );
 }
 
 /** The module an import declaration names when `declaration` imports `userEvent` by name from it, or is the default import of `@testing-library/user-event`, the one user-event module with a default export. */
@@ -188,95 +126,6 @@ function userEventImportSource(declaration: NodePath): string | undefined {
   return importsUserEvent ? source : undefined;
 }
 
-/** Whether every import of a user-event 14 module in the file uses its userEvent only as a method call's receiver or a choice side: a named or default import of it, or a namespace import read as `<namespace>.<name>`, and no `import()` may load one. */
-const importsOnlyCallUserEvent = perFile(
-  (program) =>
-    program
-      .get('body')
-      .every(
-        (statement) =>
-          !statement.isImportDeclaration() ||
-          !isUserEvent14Module(statement.node.source) ||
-          statement.get('specifiers').every(isOnlyCalledImport),
-      ) && !mayImportUserEvent14(program),
-  false,
-);
-
-function isUserEvent14Module(source: types.Node): boolean {
-  return (
-    source.type === 'StringLiteral' &&
-    importReadings.get(source.value) === 'provenUserEvent14'
-  );
-}
-
-/** An `import()` or `require()` of a user-event 14 module, or of a module the file does not spell out. */
-function mayImportUserEvent14(program: NodePath<types.Program>): boolean {
-  let found = false;
-
-  const check = (path: NodePath, source: types.Node | undefined): void => {
-    if (
-      source !== undefined &&
-      (source.type !== 'StringLiteral' || isUserEvent14Module(source))
-    ) {
-      found = true;
-      path.stop();
-    }
-  };
-
-  program.traverse({
-    CallExpression(path) {
-      const { arguments: args, callee } = path.node;
-
-      check(path, nameOf(callee) === 'require' ? args[0] : undefined);
-    },
-    ImportExpression(path) {
-      check(path, path.node.source);
-    },
-  });
-
-  return found;
-}
-
-function isOnlyCalledImport(
-  specifier: NodePath<
-    | types.ImportSpecifier
-    | types.ImportDefaultSpecifier
-    | types.ImportNamespaceSpecifier
-  >,
-): boolean {
-  const binding = bindingOf(specifier.node.local, specifier.scope);
-
-  if (specifier.isImportNamespaceSpecifier()) {
-    return binding !== undefined && binding.referencePaths.every(isModuleRead);
-  }
-
-  const imported = specifier.isImportSpecifier()
-    ? keyName(specifier.node.imported)
-    : 'default';
-
-  return (
-    (imported !== 'userEvent' && imported !== 'default') ||
-    (binding !== undefined && isOnlyCalledOn(binding))
-  );
-}
-
-/** `<namespace>.<name>`, where a `userEvent` or `default` member is only a method call's receiver or a choice side. */
-function isModuleRead(path: NodePath): boolean {
-  const { parentPath } = path;
-
-  if (!isMemberObject(path) || parentPath === null) {
-    return false;
-  }
-
-  const name = memberName(parentPath.node);
-
-  return (
-    (name !== 'userEvent' && name !== 'default') ||
-    isMethodCallReceiver(parentPath) ||
-    isChoiceSide(parentPath)
-  );
-}
-
 /** The `userEvent: <name>` or `userEvent: <name> = <default>` among a pattern's properties. */
 function userEventProperty(
   pattern: types.ObjectPattern,
@@ -294,13 +143,6 @@ function userEventProperty(
   );
 }
 
-/** What the user-event proofs read once per file, at the Program. */
-export const userEventFileReaders: readonly ((path: NodePath) => boolean)[] = [
-  contextsOnlyRead,
-  namesOnlyReadUserEvent,
-  importsOnlyCallUserEvent,
-];
-
 /** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */
 function isVitestBrowserImport(node: types.Node): boolean {
   return (
@@ -315,14 +157,43 @@ const vitestBrowserSources: ReadonlySet<string> = new Set([
   '@vitest/browser/context',
 ]);
 
-/** What a `userEvent` import from each user-event module is. */
-const importReadings: ReadonlyMap<string, UserEventReading> = new Map([
-  ['storybook/test', 'provenUserEvent14'],
-  ['@testing-library/user-event', 'provenUserEvent14'],
-  ...[...vitestBrowserSources].map(
-    (source) => [source, 'unprovenUserEvent'] as const,
-  ),
+/** The modules whose `userEvent` export is a user-event. */
+const userEventModules: ReadonlySet<string> = new Set([
+  'storybook/test',
+  '@testing-library/user-event',
+  ...vitestBrowserSources,
 ]);
+
+/** A value and where it is given, whose scope its names are read in. */
+interface GivenValue {
+  readonly node: types.Node;
+  readonly at: NodePath;
+}
+
+/** The one value a local is ever given, by its declaration's `init` or a later assignment; none when something else, such as `++` or a `for...of` head, also changes it. */
+function boundValue(
+  declaration: NodePath<types.VariableDeclarator>,
+  binding: Binding,
+): GivenValue | undefined {
+  const assigned = binding.constantViolations.flatMap(
+    (violation): readonly GivenValue[] =>
+      violation.node.type === 'AssignmentExpression'
+        ? [{ node: violation.node.right, at: violation }]
+        : [],
+  );
+
+  if (assigned.length < binding.constantViolations.length) {
+    return undefined;
+  }
+
+  const { init } = declaration.node;
+  const values: readonly GivenValue[] =
+    init === null || init === undefined
+      ? assigned
+      : [{ node: init, at: declaration }, ...assigned];
+
+  return values.length === 1 ? values[0] : undefined;
+}
 
 /** The receiver of `<x>.setup()`. */
 function setupReceiver(node: types.Node | undefined): types.Node | undefined {

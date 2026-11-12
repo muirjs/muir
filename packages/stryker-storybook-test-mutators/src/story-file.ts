@@ -39,17 +39,6 @@ const shapesOf = perFile<CsfShapes | undefined>(
 const storyTestCode = (path: NodePath): ReadonlySet<unknown> =>
   shapesOf(path)?.testCode ?? new Set();
 
-/** A meta object, or a story object or function, as storybook-core reads the file. */
-export function isMetaOrStory(path: NodePath): boolean {
-  const shapes = shapesOf(path);
-
-  return (
-    shapes !== undefined &&
-    (shapes.metaObjects.has(path.node) ||
-      shapes.literalContainers.has(path.node))
-  );
-}
-
 /**
  * Reads the story test code, and what each of a mutator's own per-file `readers` gives, unless already read for this
  * file. Every mutator that reads a per-file value calls it first at each node it is given: Stryker places a statement's

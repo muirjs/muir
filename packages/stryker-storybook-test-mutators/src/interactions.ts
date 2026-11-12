@@ -9,11 +9,7 @@ import {
   withoutTypeWrappers,
 } from './nodes.ts';
 import { isInStoryTestCode, readStoryFileAt } from './story-file.ts';
-import {
-  readUserEvent,
-  userEventFileReaders,
-  userEventMethods,
-} from './user-event.ts';
+import { isUserEvent, userEventMethods } from './user-event.ts';
 
 type CallNode = types.CallExpression | types.OptionalCallExpression;
 
@@ -24,12 +20,7 @@ type InteractionSite =
 
 /** What an interaction's call is. A fireEvent call's `method` is its event when the call names it as `fireEvent.<event>`. */
 type InteractionKind =
-  | {
-      readonly kind: 'userEvent';
-      readonly method: string;
-      /** Whether the file proves the receiver is user-event 14, whose `type` clicks first; Vitest browser's does not. */
-      readonly isProvenUserEvent14: boolean;
-    }
+  | { readonly kind: 'userEvent'; readonly method: string }
   | { readonly kind: 'fireEvent'; readonly method: string | undefined }
   | { readonly kind: 'composedPlay' | 'rawDom' };
 
@@ -42,7 +33,7 @@ export type Interaction = InteractionSite &
 
 /** The interaction at `path`, when `path` is an interaction site whose call is an interaction. */
 export function interactionAt(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path, ...userEventFileReaders);
+  readStoryFileAt(path);
 
   const site = siteAt(path);
 
@@ -81,17 +72,10 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
   if (
     member !== undefined &&
     method !== undefined &&
-    userEventMethods.has(method)
+    userEventMethods.has(method) &&
+    isUserEvent(withoutTypeWrappers(member.object), path)
   ) {
-    const receiver = readUserEvent(withoutTypeWrappers(member.object), path);
-
-    if (receiver !== 'none') {
-      return {
-        kind: 'userEvent',
-        method,
-        isProvenUserEvent14: receiver === 'provenUserEvent14',
-      };
-    }
+    return { kind: 'userEvent', method };
   }
 
   const callee = withoutTypeWrappers(call.callee);
@@ -163,7 +147,7 @@ export function isSkipped({ path }: Interaction): boolean {
 
 /** The interaction whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
 export function targetInteraction(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path, ...userEventFileReaders);
+  readStoryFileAt(path);
 
   const query = path.findParent((parent) => parent.isCallExpression());
   const site = path.findParent(

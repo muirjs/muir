@@ -32,6 +32,13 @@ const vitestBrowserCalls: readonly (readonly [string, string])[] = [
   ['wheel', "list, { direction: 'down' }"],
 ];
 
+const userEventModules: readonly string[] = [
+  'storybook/test',
+  '@testing-library/user-event',
+  'vitest/browser',
+  '@vitest/browser/context',
+];
+
 const interactionCases: readonly Case[] = [
   ...userEventCalls.map(([method, args]) => ({
     id: `user-event-method-${method}`,
@@ -218,6 +225,28 @@ const interactionCases: readonly Case[] = [
       "a call on the default import of '@testing-library/user-event' under another name is removed",
     source: `import ue from '@testing-library/user-event';\n${inPlay("await ue.click(canvas.getByRole('button'));")}`,
     expect: [[interaction, ';']],
+  },
+  ...userEventModules.map((module) => ({
+    id: `named-import-${module}`,
+    title: `a call on userEvent imported by name from '${module}' is removed`,
+    source: `import { userEvent } from '${module}';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';'] as const],
+  })),
+  ...userEventModules.map((module) => ({
+    id: `default-import-${module}`,
+    title: `a call on the default import of '${module}' named userEvent is removed`,
+    source: `import userEvent from '${module}';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';'] as const],
+  })),
+  {
+    id: 'choice-with-other-side',
+    title:
+      'a call on a local that is userEvent or something else makes no mutant',
+    source: inPlay(
+      'const pointer = flag ? userEvent : driver;',
+      "await pointer.click(canvas.getByRole('button'));",
+    ),
+    expect: [],
   },
   {
     id: 'vitest-browser-namespace-import',
