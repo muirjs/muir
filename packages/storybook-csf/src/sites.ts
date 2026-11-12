@@ -4,7 +4,6 @@ import {
   topLevelBindings,
   unchangedBindings,
   unwrap,
-  withoutBinding,
   type TestArguments,
 } from './csf.ts';
 import { isInitialGlobal } from './initial-globals.ts';
@@ -19,13 +18,15 @@ import {
 import { playedStories, type PlayedStory } from './played-stories.ts';
 import {
   layerOf,
+  literalLayer,
   ownValue,
+  ownValueOf,
   resolvedPropertyValues,
   rootLayer,
   valuesOf,
   type Layer,
 } from './resolved-values.ts';
-import { ownStoryValue } from './story-layers.ts';
+import { storyRoots } from './story-layers.ts';
 
 type Bindings = ReadonlyMap<string, unknown>;
 
@@ -121,7 +122,7 @@ export function sitesOf(
   const runs = playedStories(body, bindings, file).flatMap(
     (story): readonly RunLayers[] => {
       const { init, local } = story.story;
-      const roots = storyRoots(init, local, file.written, unchanged);
+      const roots = storyRoots(init, local, file.written, unchanged, 'root');
       const [own, ...bases] = roots.map((layer) => layerOf(layer, key));
       const storyRoot = ownRoot(roots[0], local);
       const storyParameters = [
@@ -140,7 +141,10 @@ export function sitesOf(
       return [
         {
           run: { owner: 'story', story },
-          node: ownStoryValue(init, unchanged, key),
+          node: ownValueOf(
+            literalLayer(storyArgument(unwrap(init)), unchanged),
+            key,
+          ),
           own: layerOf(storyRoot, key),
           below: bases,
           metas: metaLayers,
@@ -208,36 +212,6 @@ export function sitesOf(
           ]
         : [],
   );
-}
-
-function storyRoots(
-  init: unknown,
-  owner: unknown,
-  written: ReadonlySet<unknown>,
-  unchanged: Bindings,
-): readonly [Layer, ...Layer[]] {
-  const call = unwrap(init);
-  const own = rootLayer(storyArgument(call), owner, written, unchanged);
-  const base = field(call, 'callee', 'object', 'name');
-
-  if (
-    field(call, 'callee', 'property', 'name') !== 'extend' ||
-    typeof base !== 'string'
-  ) {
-    return [own];
-  }
-
-  return unchanged.has(base)
-    ? [
-        own,
-        ...storyRoots(
-          unchanged.get(base),
-          base,
-          written,
-          withoutBinding(unchanged, base),
-        ),
-      ]
-    : [own, unknownValue];
 }
 
 function argsProofs(

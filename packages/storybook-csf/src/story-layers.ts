@@ -1,72 +1,41 @@
 import { storyArgument, unwrap, withoutBinding } from './csf.ts';
-import { field, list } from './node-field.ts';
+import { field } from './node-field.ts';
+import { unknownValue, type LayerValue } from './object-value.ts';
 import {
-  propertyKey,
-  unknownValue,
-  valuesIn,
-  type LayerValue,
-} from './object-value.ts';
-import { lastWinsProperties } from './resolved-values.ts';
+  literalLayer,
+  rootLayer,
+  valuesOf,
+  type Layer,
+} from './resolved-values.ts';
 
-/** A layer's properties last-wins first, or `unknownValue` for an `.extend()` base the file does not bind. */
-type LayerProperties = readonly unknown[] | typeof unknownValue;
-
-/** The value of `key` that each of a story's layers sets, the story's own first. */
-export function storyValues(
-  init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-  key: string,
-): readonly LayerValue[] {
-  return storyLayers(init, bindings).map((layer) => layerValues(layer, key)[0]);
-}
-
-function layerValues(
-  layer: LayerProperties,
-  key: string,
-): readonly LayerValue[] {
-  return layer === unknownValue ? [unknownValue] : valuesIn(layer, key);
-}
-
-/** Every value that a property of the story's layers gives `key`, the one that runs first, then each it falls back to in turn. */
-export function storyValueChain(
-  init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-  key: string,
-): readonly LayerValue[] {
-  return storyLayers(init, bindings).flatMap((layer) =>
-    layerValues(layer, key),
-  );
-}
-
-/** The value of `key` the story's own object ends up with, from its own property or from a spread the file resolves, the last that sets it: a spread or computed key the file does not resolve may or may not set it, so it does not count; `undefined` when none sets it. */
-export function ownStoryValue(
-  init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-  key: string,
-): LayerValue {
-  const [own] = storyLayers(init, bindings);
-
-  return valuesIn(
-    own.filter((property) => propertyKey(property) === key),
-    key,
-  )[0];
-}
+type Bindings = ReadonlyMap<string, unknown>;
 
 /**
- * The properties a story ends up with, one layer each for the story and then each `.extend()` base, as Storybook
- * 10.6.5 `extend()` merges a base story in key by key. Each layer lists its properties last-wins first, with the
- * properties of an object it spreads that `resolvedValues` reads in place of the spread, as object spread replaces a
- * key whole. A base the bindings do not hold, imported or one the file changes, is an unknown layer.
+ * How `storyRoots` reads the object of each layer: `'root'` through `rootLayer`, so a written owner, or an object the
+ * file does not show, gives an unknown layer; `'as-written'` as the object literal the file writes, whatever it
+ * writes to the owner later, and no layer for any other expression. The play chain reads `'as-written'`, as
+ * `playedStories` takes a play assigned later from the writes itself, and a write to a story's `args` leaves its play
+ * as it is.
  */
-function storyLayers(
+export type LayerReading = 'root' | 'as-written';
+
+/**
+ * The layers a story ends up with, one each for the story and then each `.extend()` base, as Storybook 10.6.5
+ * `extend()` merges a base story in key by key. A base the bindings do not hold, imported or one the file changes, is
+ * an unknown layer.
+ */
+export function storyRoots(
   init: unknown,
-  bindings: ReadonlyMap<string, unknown>,
-): readonly [readonly unknown[], ...LayerProperties[]] {
+  owner: unknown,
+  written: ReadonlySet<unknown>,
+  unchanged: Bindings,
+  reading: LayerReading,
+): readonly [Layer, ...Layer[]] {
   const call = unwrap(init);
-  const own = lastWinsProperties(
-    list(field(storyArgument(call), 'properties')),
-    bindings,
-  );
+  const own =
+    reading === 'root'
+      ? rootLayer(storyArgument(call), owner, written, unchanged)
+      : literalLayer(storyArgument(call), unchanged);
   const base = field(call, 'callee', 'object', 'name');
 
   if (
@@ -76,7 +45,24 @@ function storyLayers(
     return [own];
   }
 
-  return bindings.has(base)
-    ? [own, ...storyLayers(bindings.get(base), withoutBinding(bindings, base))]
+  return unchanged.has(base)
+    ? [
+        own,
+        ...storyRoots(
+          unchanged.get(base),
+          base,
+          written,
+          withoutBinding(unchanged, base),
+          reading,
+        ),
+      ]
     : [own, unknownValue];
+}
+
+/** Every value that a property of the story's layers gives `key`, the one that runs first, then each it falls back to in turn. */
+export function storyValueChain(
+  layers: readonly Layer[],
+  key: string,
+): readonly LayerValue[] {
+  return layers.flatMap((layer) => valuesOf(layer, key));
 }

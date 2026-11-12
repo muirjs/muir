@@ -6,67 +6,58 @@ import { parse } from '@babel/parser';
 import { topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
 import { objectValue, unknownValue } from '../src/object-value.ts';
-import { storyValues } from '../src/story-layers.ts';
+import { valuesOf } from '../src/resolved-values.ts';
+import { storyRoots } from '../src/story-layers.ts';
 
-describe('storyValues', () => {
+function storyGlobals(source: readonly string[]): readonly unknown[] {
+  const body = list(
+    field(
+      parse(source.join('\n'), {
+        sourceType: 'module',
+        plugins: ['typescript'],
+      }),
+      'program',
+      'body',
+    ),
+  );
+  const bindings = topLevelBindings(body);
+
+  return storyRoots(bindings.get('B'), 'B', new Set(), bindings, 'root').map(
+    (layer) => valuesOf(layer, 'globals')[0],
+  );
+}
+
+describe('storyRoots', () => {
   it("gives each layer's last value of a key, a spread object's in place of the spread, and the .extend() base's after", () => {
-    const body = list(
-      field(
-        parse(
-          [
-            "import preview from '../.storybook/preview';",
-            "const meta = preview.meta({ title: 'a/b' });",
-            "const shared = { globals: { locale: 'de' } };",
-            "export const A = meta.story({ globals: { locale: 'en' } });",
-            "export const B = A.extend({ globals: { locale: 'fr' }, ...shared });",
-          ].join('\n'),
-          { sourceType: 'module', plugins: ['typescript'] },
-        ),
-        'program',
-        'body',
-      ),
-    );
-    const bindings = topLevelBindings(body);
-
     assert.deepEqual(
-      storyValues(bindings.get('B'), bindings, 'globals').map((globals) =>
-        field(objectValue(globals, 'locale'), 'value'),
-      ),
+      storyGlobals([
+        "import preview from '../.storybook/preview';",
+        "const meta = preview.meta({ title: 'a/b' });",
+        "const shared = { globals: { locale: 'de' } };",
+        "export const A = meta.story({ globals: { locale: 'en' } });",
+        "export const B = A.extend({ globals: { locale: 'fr' }, ...shared });",
+      ]).map((globals) => field(objectValue(globals, 'locale'), 'value')),
       ['de', 'en'],
     );
   });
 
   it('gives the value of a member of a top-level object the story spreads, in place of the spread', () => {
-    const body = list(
-      field(
-        parse(
-          [
-            "const Common = { story: { globals: { locale: 'de' } } };",
-            'export const B = { ...Common.story };',
-          ].join('\n'),
-          { sourceType: 'module', plugins: ['typescript'] },
-        ),
-        'program',
-        'body',
-      ),
-    );
-    const bindings = topLevelBindings(body);
-
     assert.deepEqual(
-      storyValues(bindings.get('B'), bindings, 'globals').map((globals) =>
-        field(objectValue(globals, 'locale'), 'value'),
-      ),
+      storyGlobals([
+        "const Common = { story: { globals: { locale: 'de' } } };",
+        'export const B = { ...Common.story };',
+      ]).map((globals) => field(objectValue(globals, 'locale'), 'value')),
       ['de'],
     );
   });
 
-  it('gives an unknown value for an .extend() base the file does not bind', () => {
+  it('reads a story the file writes as unknown through its root, and as its literal as written', () => {
     const body = list(
       field(
         parse(
           [
-            "import { A } from './a';",
-            "export const B = A.extend({ globals: { locale: 'fr' } });",
+            "export const B = { globals: { locale: 'de' } };",
+            "B.globals.locale = 'fr';",
           ].join('\n'),
           { sourceType: 'module', plugins: ['typescript'] },
         ),
@@ -75,9 +66,23 @@ describe('storyValues', () => {
       ),
     );
     const bindings = topLevelBindings(body);
+    const read = (reading: 'root' | 'as-written') =>
+      storyRoots(bindings.get('B'), 'B', new Set(['B']), bindings, reading).map(
+        (layer) => field(valuesOf(layer, 'globals')[0], 'type'),
+      );
 
     assert.deepEqual(
-      storyValues(bindings.get('B'), bindings, 'globals').slice(1),
+      { root: read('root'), asWritten: read('as-written') },
+      { root: [undefined], asWritten: ['ObjectExpression'] },
+    );
+  });
+
+  it('gives an unknown value for an .extend() base the file does not bind', () => {
+    assert.deepEqual(
+      storyGlobals([
+        "import { A } from './a';",
+        "export const B = A.extend({ globals: { locale: 'fr' } });",
+      ]).slice(1),
       [unknownValue],
     );
   });

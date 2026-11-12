@@ -48,21 +48,22 @@ export function ownValue(
   key: string | number,
   bindings: Bindings,
 ): LayerValue {
-  if (object === undefined) {
-    return undefined;
-  }
+  return ownValueOf(
+    object === undefined || object === unknownValue
+      ? object
+      : (shownObject(object, bindings) ?? unknownValue),
+    key,
+  );
+}
 
-  const properties =
-    object === unknownValue
-      ? undefined
-      : shownObject(object, bindings)?.properties;
-
-  return properties === undefined
-    ? unknownValue
-    : valuesIn(
-        properties.filter((property) => propertyKey(property) === key),
+/** The value the last property of exactly `key` gives it in `layer`, as `ownValue` reads an object. */
+export function ownValueOf(layer: Layer, key: string | number): LayerValue {
+  return typeof layer === 'object'
+    ? valuesIn(
+        layer.properties.filter((property) => propertyKey(property) === key),
         key,
-      )[0];
+      )[0]
+    : layer;
 }
 
 /** An object that may set `key`, as `resolvedValues` reads it: one with a property that may, or one the file does not show; `undefined`, no object, sets nothing. */
@@ -129,6 +130,13 @@ export function rootLayer(
   return written.has(owner)
     ? unknownValue
     : (shownObject(expression, unchanged) ?? unknownValue);
+}
+
+/** `expression` when it is an object literal, read as the file writes it whatever the file writes to its owner later; no layer for any other expression. */
+export function literalLayer(expression: unknown, bindings: Bindings): Layer {
+  return isRecord(expression) && expression['type'] === 'ObjectExpression'
+    ? new ResolvedObject(expression, bindings)
+    : undefined;
 }
 
 export function layerOf(layer: Layer, key: string | number): Layer {
