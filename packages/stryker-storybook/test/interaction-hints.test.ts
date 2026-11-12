@@ -262,6 +262,47 @@ describe('interactionHints', () => {
     ]);
   });
 
+  it('warns once and gives the file no hint when no parsed node has the range of an LzStorybookInteraction mutant that holds a survivor', async () => {
+    assert.ok(negativeOnly !== undefined);
+
+    const { [file]: placed } = await reportOf(
+      negativeOnly.source,
+      negativeOnly.survived,
+    );
+    const warnings: string[] = [];
+
+    assert.ok(placed !== undefined);
+    assert.deepEqual(
+      interactionHints(
+        {
+          [file]: {
+            ...placed,
+            mutants: placed.mutants.map((mutant) =>
+              mutant.mutatorName === 'LzStorybookInteraction'
+                ? {
+                    ...mutant,
+                    location: {
+                      ...mutant.location,
+                      end: {
+                        ...mutant.location.end,
+                        column: mutant.location.end.column + 1,
+                      },
+                    },
+                  }
+                : mutant,
+            ),
+          },
+        },
+        [],
+        (message) => warnings.push(message),
+      ),
+      [],
+    );
+    assert.deepEqual(warnings, [
+      '@layzee/stryker-storybook: src/Form.stories.tsx has an LzStorybookInteraction mutant whose range no node of the parsed file has, so lz-storybook gave it no interaction hints',
+    ]);
+  });
+
   it('says once that a file a line-range mutate pattern names gets no hint', async () => {
     assert.ok(negativeOnly !== undefined);
 

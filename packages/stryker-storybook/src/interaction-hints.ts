@@ -106,13 +106,22 @@ export function interactionHints(
       return {
         mutant,
         name,
+        site,
         shapes: site === undefined ? undefined : shapesAt(site),
       };
     });
 
-    if (placed.some(({ shapes }) => shapes === undefined)) {
+    if (placed.some(({ site }) => site === undefined)) {
       warn(
         `${packageName}: ${file} has a surviving interaction mutant outside every ${siteMutatorName} mutant, so lz-storybook gave it no interaction hints`,
+      );
+
+      return [];
+    }
+
+    if (placed.some(({ shapes }) => shapes === undefined)) {
+      warn(
+        `${packageName}: ${file} has an ${siteMutatorName} mutant whose range no node of the parsed file has, so lz-storybook gave it no interaction hints`,
       );
 
       return [];
