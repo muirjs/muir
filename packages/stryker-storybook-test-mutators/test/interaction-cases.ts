@@ -260,6 +260,13 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'composed-play-namespace',
+    title:
+      'a composed play of a story from a namespace import, Stories.Other.play(context), is removed',
+    source: `import * as Stories from './Other.stories';\nexport const Story = {\n  play: async (context) => {\n    await Stories.Other.play(context);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'composed-run',
     title: "a CSF factory story's run() is removed",
     source: `export const Other = meta.story({});\nexport const Story = meta.story({\n  play: async () => {\n    await Other.run();\n  },\n});\n`,
@@ -275,6 +282,13 @@ export const interactionCases: readonly Case[] = [
     id: 'composed-step',
     title: "a step that runs another story's play is removed",
     source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async ({ step }) => {\n    await step('Enter value', Other.play);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'composed-step-namespace',
+    title:
+      'a step that runs the play of a story from a namespace import, step(label, Stories.Other.play), is removed',
+    source: `import * as Stories from './Other.stories';\nexport const Story = {\n  play: async ({ step }) => {\n    await step('Enter value', Stories.Other.play);\n  },\n};\n`,
     expect: [[interaction, ';']],
   },
   {
@@ -764,14 +778,14 @@ export const interactionCases: readonly Case[] = [
   {
     id: 'play-call-on-query',
     title:
-      'a play() call on a receiver that is no identifier, such as a queried video, makes no mutant',
+      'a play() call on a receiver that is no identifier or member chain starting at one, such as a queried video, makes no mutant',
     source: inPlay("await canvas.getByTestId('video').play();"),
     expect: [],
   },
   {
     id: 'step-given-other-member-play',
     title:
-      'a step given the play of a receiver that is no identifier makes no mutant',
+      'a step given the play of a receiver that is no identifier or member chain starting at one makes no mutant',
     source: `export const Story = {\n  play: async ({ canvas, step }) => {\n    await step('Start', canvas.getByTestId('video').play);\n  },\n};\n`,
     expect: [],
   },
