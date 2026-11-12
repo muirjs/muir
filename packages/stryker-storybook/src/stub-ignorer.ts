@@ -7,10 +7,10 @@ import {
   strykerStorybookProject,
   type ProjectLog,
 } from './storybook-project.ts';
-import { reasonSites, spyStubReason, type ReasonSite } from './stub-verdict.ts';
+import { stubIgnores, type StubIgnore } from './stub-verdict.ts';
 
 export function stubIgnorer(options: object, log: ProjectLog): Ignorer {
-  let sites: readonly ReasonSite[] = [];
+  let ignores: readonly StubIgnore[] = [];
 
   return {
     shouldIgnore(path) {
@@ -20,22 +20,30 @@ export function stubIgnorer(options: object, log: ProjectLog): Ignorer {
         const fileName = field(path, 'hub', 'file', 'opts', 'filename');
         const code = field(path, 'hub', 'file', 'code');
         const project = strykerStorybookProject(options, log);
-        sites =
+        ignores =
           typeof fileName === 'string' &&
           typeof code === 'string' &&
           isStoryFile(project, fileName)
-            ? reasonSites({ program: node, code, fileName }, project)
+            ? stubIgnores({ program: node, code, fileName }, project)
             : [];
       }
 
-      const site = sites.find(
-        ({ start, end }) =>
-          field(node, 'start') === start && field(node, 'end') === end,
-      );
+      const argumentCall = callOfArgument(path);
+      const ignore = ignores.find(({ start, end, covers }) => {
+        const call = covers === 'call' ? node : argumentCall;
 
-      return site === undefined ? undefined : spyStubReason(site.verdict);
+        return field(call, 'start') === start && field(call, 'end') === end;
+      });
+
+      return ignore?.reason;
     },
   };
+}
+
+function callOfArgument(path: unknown): unknown {
+  return field(path, 'listKey') === 'arguments'
+    ? field(path, 'parent')
+    : undefined;
 }
 
 stubIgnorer.inject = tokens(commonTokens.options, commonTokens.logger);
