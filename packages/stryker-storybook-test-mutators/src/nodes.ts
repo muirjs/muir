@@ -2,15 +2,43 @@ import type { NodePath, types } from '@babel/core';
 
 export type Binding = NonNullable<ReturnType<NodePath['scope']['getBinding']>>;
 
-/** The expression inside `<x>!`, `<x> as T`, `<x> satisfies T`, `<T><x>` and parentheses. */
-export function withoutTypeWrappers(node: types.Node): types.Node {
-  return node.type === 'TSNonNullExpression' ||
+type TypeWrapper =
+  | types.TSNonNullExpression
+  | types.TSAsExpression
+  | types.TSSatisfiesExpression
+  | types.TSTypeAssertion
+  | types.ParenthesizedExpression;
+
+/** `<x>!`, `<x> as T`, `<x> satisfies T`, `<T><x>` or parentheses, which leave the value of `<x>` as it is. */
+function isTypeWrapper(node: types.Node): node is TypeWrapper {
+  return (
+    node.type === 'TSNonNullExpression' ||
     node.type === 'TSAsExpression' ||
     node.type === 'TSSatisfiesExpression' ||
     node.type === 'TSTypeAssertion' ||
     node.type === 'ParenthesizedExpression'
-    ? withoutTypeWrappers(node.expression)
-    : node;
+  );
+}
+
+/** The expression inside any type wrappers. */
+export function withoutTypeWrappers(node: types.Node): types.Node {
+  return isTypeWrapper(node) ? withoutTypeWrappers(node.expression) : node;
+}
+
+/** Inside a type, such as `typeof <x>`, which does not run. */
+export function isInType(path: NodePath): boolean {
+  return path.findParent((parent) => parent.isTSType()) !== null;
+}
+
+/** The outermost type wrapper around `path`, or `path` itself. */
+export function outsideTypeWrappers(path: NodePath): NodePath {
+  const { parentPath } = path;
+
+  return parentPath !== null &&
+    isTypeWrapper(parentPath.node) &&
+    path.key === 'expression'
+    ? outsideTypeWrappers(parentPath)
+    : path;
 }
 
 /** The expression inside `await <x>` and any type wrappers around either. */

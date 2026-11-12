@@ -1,8 +1,13 @@
 import type { NodePath, types } from '@babel/core';
 
-import { type Binding, bindingOf } from './nodes.ts';
+import {
+  type Binding,
+  bindingOf,
+  isInType,
+  outsideTypeWrappers,
+} from './nodes.ts';
 
-/** A binding whose every reference is a method call's receiver or a side of a choice given to such a local. */
+/** A binding whose every reference is a method call's receiver, a side of a choice given to such a local, or inside a type. */
 export function isOnlyCalledOn(
   binding: Binding | undefined,
   seen: ReadonlySet<Binding> = new Set(),
@@ -11,7 +16,9 @@ export function isOnlyCalledOn(
     binding !== undefined &&
     binding.referencePaths.every(
       (reference) =>
-        isMethodCallReceiver(reference) || isChoiceSide(reference, seen),
+        isInType(reference) ||
+        isMethodCallReceiver(reference) ||
+        isChoiceSide(reference, seen),
     )
   );
 }
@@ -29,9 +36,11 @@ export function isMemberObject(path: NodePath): boolean {
   );
 }
 
-/** `<path>.<method>(...)`, optional or not. */
+/** `<path>.<method>(...)`, optional or not, with any type wrappers around `<path>`. */
 export function isMethodCallReceiver(path: NodePath): boolean {
-  return isMemberObject(path) && path.parentPath?.key === 'callee';
+  const receiver = outsideTypeWrappers(path);
+
+  return isMemberObject(receiver) && receiver.parentPath?.key === 'callee';
 }
 
 /** A side of `<test> ? <a> : <b>` that is the one value of a local only called on. */

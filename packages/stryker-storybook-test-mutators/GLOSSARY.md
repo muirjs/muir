@@ -92,12 +92,12 @@ object of anything but a local object literal, never reassigned, with no spread 
 anything but a fresh object literal, as either may bring in hooks the file cannot show.
 As a backstop for hooks given in ways these rules do not read, the file must also name `userEvent` only as an import's
 name, a key or local in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` that is a method call's
-receiver or such a choice side, and never spell it as a string or a template's text; a type literal's `userEvent` key
-or an unrelated object's counts against it. A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read where the
+receiver or such a choice side, or inside a type, and never spell it as a string or a template's text; an unrelated
+object's `userEvent` key counts against it. A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read where the
 local is given that value. A local
 that holds one of these, whether an import, a destructured `userEvent`, a `setup()` or a choice, keeps its proof only
-when every reference to it is a method call's receiver or a side of a choice that is the one value, by declaration or
-by assignment, of such a local. An import also
+when every reference to it is a method call's receiver, under any type assertions, a side of a choice that is the one
+value, by declaration or by assignment, of such a local, or inside a type such as `typeof`. An import also
 needs every import of a user-event 14 module in the file to meet that, the `userEvent` and `default` members of a
 namespace import included, and no `import()` or `require()` that may load one. Any other receiver may be Vitest browser's userEvent,
 whose `type` does not click: another import, a `userEvent` the file does not bind, the `userEvent` of another object,

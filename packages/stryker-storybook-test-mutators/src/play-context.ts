@@ -3,6 +3,7 @@ import type { NodePath, types } from '@babel/core';
 import {
   type Binding,
   bindingOf,
+  isInType,
   keyName,
   memberName,
   nameOf,
@@ -127,6 +128,7 @@ function readsUserEvent(path: NodePath<types.Identifier>): boolean {
   }
 
   if (
+    isInType(path) ||
     parentPath.isImportSpecifier() ||
     parentPath.isImportDefaultSpecifier() ||
     (parentPath.isObjectProperty() &&
