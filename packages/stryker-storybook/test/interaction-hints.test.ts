@@ -85,24 +85,25 @@ describe('interactionHints', () => {
   });
 
   describe('a pasted comment', () => {
-    interactionHintCases
-      .filter(({ expect }) => expect.length > 0)
-      .forEach(({ id, source, survived }) => {
-        it(`${id}: ignores exactly the hinted mutants, with the comment's reason`, async () => {
-          const [hint] = interactionHints(
+    interactionHintCases.forEach(({ id, source, survived, expect }) => {
+      expect.forEach(([line, shape, names]) => {
+        it(`${id}: the comment for line ${line} ignores exactly the survivors the case names there, with its reason`, async () => {
+          const hint = interactionHints(
             await reportOf(source, survived),
             [],
             failOnWarning,
+          ).find(
+            (candidate) => candidate.line === line && candidate.shape === shape,
           );
 
           assert.ok(hint !== undefined);
 
           const lines = source.split('\n');
-          const indent = /^\s*/.exec(lines[hint.line - 1] ?? '')?.[0] ?? '';
+          const indent = /^\s*/.exec(lines[line - 1] ?? '')?.[0] ?? '';
           const commented = [
-            ...lines.slice(0, hint.line - 1),
+            ...lines.slice(0, line - 1),
             `${indent}${hint.comment}`,
-            ...lines.slice(hint.line - 1),
+            ...lines.slice(line - 1),
           ].join('\n');
           const reason = hint.comment.slice(hint.comment.indexOf(': ') + 2);
           const { mutants: before } = await instrument(
@@ -116,26 +117,32 @@ describe('interactionHints', () => {
             [],
           );
 
-          const hinted = before
+          const named = before
             .filter(
-              ({ mutatorName, line }) =>
-                line === hint.line &&
-                hint.mutatorNames.some((name) => name === mutatorName),
+              ({ mutatorName, line: at, ignoreReason }) =>
+                at === line &&
+                ignoreReason === undefined &&
+                names.includes(mutatorName) &&
+                survived.some(
+                  ([name, survivedAt]) =>
+                    name === mutatorName && survivedAt === at,
+                ),
             )
-            .map(({ mutatorName, line }) => [mutatorName, line]);
+            .map(({ mutatorName, line: at }) => [mutatorName, at]);
 
-          assert.notDeepEqual(hinted, []);
+          assert.notDeepEqual(named, []);
           assert.deepEqual(
             after
               .filter(({ ignoreReason }) => ignoreReason === reason)
-              .map(({ mutatorName, line }) => [
+              .map(({ mutatorName, line: at }) => [
                 mutatorName,
-                line > hint.line ? line - 1 : line,
+                at > line ? at - 1 : at,
               ]),
-            hinted,
+            named,
           );
         });
       });
+    });
   });
 
   it('makes at least one mutant of each interaction mutator name, so the list matches the test mutators', async () => {

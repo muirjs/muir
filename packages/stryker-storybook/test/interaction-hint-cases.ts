@@ -351,6 +351,24 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'two-hints',
+    title:
+      'names a click before a type and the type that the next interaction clears, one hint each',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      "await userEvent.clear(canvas.getByRole('textbox'));",
+    ),
+    survived: [
+      [interaction, 5],
+      [interaction, 6],
+    ],
+    expect: [
+      [5, 'click-before-type', [interaction]],
+      [6, 'cleared-later', [interaction]],
+    ],
+  },
+  {
     id: 'several-mutators',
     title:
       'names every interaction mutator that survived on the line in one hint',
