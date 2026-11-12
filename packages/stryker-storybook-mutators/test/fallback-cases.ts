@@ -646,6 +646,114 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'read-in-other-story',
+    title:
+      "a key whose literal value equals the meta's is removed when another story reads it when the file loads",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n" +
+      'export const Other = { args: { text: Primary.args.label } };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'read-in-top-level-constant',
+    title:
+      "a key whose literal value equals the meta's is removed when a top-level constant reads it when the file loads",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n" +
+      'const text = Primary.args.label;\n' +
+      'export const Other = { args: { text } };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'spread-in-other-story-after-key',
+    title:
+      "a key whose literal value equals the meta's is removed when another story spreads the args after a key of its own, which the key then falls back to",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n" +
+      "export const Other = { args: { label: 'q', ...Primary.args } };\n",
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'spread-in-extend-of-other-base',
+    title:
+      "a key whose literal value equals the factory meta's is removed when another story spreads the args over a base that sets the key",
+    source: inFactoryFile(
+      "const meta = preview.meta({ args: { label: 'a' }, play: async () => {} });",
+      "export const Primary = meta.story({ args: { label: 'a', size: 1 } });",
+      "const Base = meta.story({ args: { label: 'z' } });",
+      'export const Other = Base.extend({ args: { ...Primary.input.args } });',
+    ),
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'test-options-constant-read-in-other-story',
+    title:
+      "a key in a .test() options constant whose literal value equals the story's is removed when another story reads it when the file loads",
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a' } };\n" +
+      "const options = { args: { label: 'a', size: 1 } };\n" +
+      "Primary.test('t', options, async () => {});\n" +
+      'export const Other = { args: { text: options.args.label } };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'spread-object-read-in-other-story',
+    title:
+      "a key whose literal value equals the meta's is removed when the story spreads a top-level object that another story reads when the file loads",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "const shared = { args: { label: 'a', size: 1 } };\n" +
+      'export const Primary = { ...shared };\n' +
+      'export const Other = { args: { text: shared.args.label } };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'read-through-spreading-object',
+    title:
+      "a key whose literal value equals the meta's is removed when another story reads it through a top-level object that spreads the story",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n" +
+      'const copy = { ...Primary };\n' +
+      'export const Other = { args: { text: copy.args.label } };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'story-spread-in-other-story',
+    title:
+      "a key whose literal value equals the meta's makes no mutant when another story spreads the whole story, as that story runs the same args object",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n" +
+      'export const Other = { ...Primary };\n',
+    expect: [],
+  },
+  {
     id: 'test-options-over-written-factory-meta',
     title:
       "a key in .test() options whose literal value equals the factory meta's is removed when the file writes to the meta's args",

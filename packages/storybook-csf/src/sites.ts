@@ -108,10 +108,18 @@ export function sitesOf(
   const unchanged = unchangedBindings(bindings, file.written);
   const root = (expression: unknown, owner: unknown): Layer =>
     rootLayer(expression, owner, file.written, unchanged);
+  /** A root `name` holds as its own run reads it: another object the file loads may read what it holds, so removing a property can change more than this run. */
+  const ownRoot = (layer: Layer, name: unknown): Layer =>
+    file.readElsewhere.has(name) ? unknownValue : layer;
   const metas = file.metas.map(({ object, owner }) => {
     const metaRoot = root(object, owner);
 
-    return { object, root: metaRoot, layer: layerOf(metaRoot, key) };
+    return {
+      object,
+      root: metaRoot,
+      layer: layerOf(metaRoot, key),
+      ownRoot: ownRoot(metaRoot, owner),
+    };
   });
   const metaLayers = metas.map(({ layer }) => layer);
   const metaParameters = metas.map((meta) => layerOf(meta.root, 'parameters'));
@@ -120,6 +128,7 @@ export function sitesOf(
       const { init, local } = story.story;
       const roots = storyRoots(init, local, file.written, unchanged);
       const [own, ...bases] = roots.map((layer) => layerOf(layer, key));
+      const storyRoot = ownRoot(roots[0], local);
       const storyParameters = [
         ...roots.map((layer) => layerOf(layer, 'parameters')),
         ...metaParameters,
@@ -137,10 +146,10 @@ export function sitesOf(
         {
           run: { owner: 'story', story },
           node: ownStoryValue(init, unchanged, key),
-          own,
+          own: layerOf(storyRoot, key),
           below: bases,
           metas: metaLayers,
-          root: roots[0],
+          root: storyRoot,
           parameters: everyRunParameters,
           otherMetas: [],
         },
@@ -150,15 +159,19 @@ export function sitesOf(
           }
 
           const optionsRoot = root(test.options, undefined);
+          const optionsOwnRoot = ownRoot(
+            optionsRoot,
+            field(test.options, 'name'),
+          );
 
           return [
             {
               run: { owner: 'test', story, test },
               node: ownValue(test.options, key, unchanged),
-              own: layerOf(optionsRoot, key),
+              own: layerOf(optionsOwnRoot, key),
               below: [own, ...bases],
               metas: metaLayers,
-              root: optionsRoot,
+              root: optionsOwnRoot,
               parameters: [
                 layerOf(optionsRoot, 'parameters'),
                 ...storyParameters,
@@ -171,10 +184,10 @@ export function sitesOf(
           (meta): RunLayers => ({
             run: { owner: 'meta', story },
             node: ownValue(meta.object, key, unchanged),
-            own: meta.layer,
+            own: layerOf(meta.ownRoot, key),
             below: [],
             metas: [],
-            root: meta.root,
+            root: meta.ownRoot,
             parameters: everyRunParameters,
             otherMetas: metas
               .filter((other) => other !== meta)

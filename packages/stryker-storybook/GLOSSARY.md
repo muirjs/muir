@@ -57,8 +57,9 @@ _Avoid_: run story, story with a play
 The proof, made only in `@layzee/storybook-csf`, that removing one property of an args site (the Storybook mutators'
 term) or a globals site (the Storybook test mutators' term) changes nothing in any run of it: a later property or a
 spread the file resolves sets its key, its literal equals the value it falls back to, or it is a default global (the
-Storybook test mutators' term). What a meta or story the file writes gives proves nothing. A mutator skips a
-property as equivalent only through one.
+Storybook test mutators' term). What a meta or story the file writes gives proves nothing, and neither does a site
+whose story, meta or `.test()` options constant another top-level object reads when the file loads, other than
+through a spread of the whole object at the top level. A mutator skips a property as equivalent only through one.
 _Avoid_: proof (alone), equivalence check, safe key
 
 **Tag filter**:

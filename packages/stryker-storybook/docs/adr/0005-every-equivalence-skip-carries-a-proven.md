@@ -26,6 +26,11 @@ skip.
 
 - A site whose own story or meta the file writes gets no `same-as-below` proof, even where removing a key would
   change nothing; such a survivor is a known equivalent the user can disable.
+- A site whose story, meta or `.test()` options constant another top-level object or meta reads when the file
+  loads gets no `same-as-below` or `default-global` proof either, such as `Other = { args: { text: Primary.args.label } }` or `...Primary.args` after a key of
+  `Other`'s own: removing the property changes what that object reads, outside the site's runs. A spread of the
+  whole object at the top level (`{ ...Primary }`, `export default meta`) is not such a read, as the reader then
+  runs the site itself and its run takes part in the proof.
 - `Object.assign({}, proven, { property: node })` still type-checks as a `Proven`, as TypeScript types
   `Object.assign` as the intersection of its arguments; the type stops a literal, a spread copy and construction,
   and ESLint's `prefer-object-spread`, on for the whole repository, rejects the `Object.assign({}, ...)` form.

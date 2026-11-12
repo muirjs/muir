@@ -610,6 +610,68 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-default-read-in-other-story',
+    title:
+      "a story's default value of a global gets a mutant when another story reads it when the file loads",
+    source: storyFile(
+      "export const Primary = { globals: { outline: false, locale: 'de' }, play: async () => {} };",
+      'export const Other = { globals: { outline: Primary.globals.outline }, play: async () => {} };',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-meta-default-read-in-story',
+    title:
+      "the meta's default value of a global gets a mutant when a story reads it when the file loads",
+    source: [
+      "const meta = { title: 'Probe', globals: { outline: false, locale: 'de' } };",
+      'export default meta;',
+      '',
+      'export const Primary = { globals: { outline: meta.globals.outline }, play: async () => {} };',
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-default-spread-in-other-story-after-key',
+    title:
+      "a story's default value of a global gets a mutant when another story spreads its globals after a value of its own, which the global then falls back to",
+    source: storyFile(
+      "export const Primary = { globals: { outline: false, locale: 'de' }, play: async () => {} };",
+      'export const Other = { globals: { outline: true, ...Primary.globals }, play: async () => {} };',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{ ...Primary.globals }'],
+      [storyGlobals, '{ outline: true }'],
+    ],
+  },
+  {
+    id: 'story-globals-test-options-constant-default-read-in-other-story',
+    title:
+      'a default value of a global in a .test() options constant gets a mutant when another story reads it when the file loads',
+    source: storyFile(
+      'export const Primary = { play: async () => {} };',
+      "const options = { globals: { outline: false, locale: 'fr' } };",
+      "Primary.test('t', options, async () => {});",
+      'export const Other = { globals: { outline: options.globals.outline }, play: async () => {} };',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'fr' }"],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
     id: 'story-globals-meta-default-beside-other-meta',
     title:
       "a meta's default value of a global gets a mutant when another meta of the file sets that global, as either meta may be the one below the story",

@@ -175,6 +175,8 @@ export interface CsfFile {
   readonly stories: readonly StoryExport[];
   /** The top-level names in a family with a written member, a name assigned to a member the file writes below or whose object it hands on included, so what the file declares for them is not what runs. */
   readonly written: ReadonlySet<unknown>;
+  /** The top-level names another top-level object or meta reads when the file loads, so what they hold also reaches code outside their own runs. */
+  readonly readElsewhere: ReadonlySet<unknown>;
 }
 
 export interface MetaObject {
@@ -202,7 +204,7 @@ export function csfFile(
     objectOf(meta, bindings).map((object) => ({ object, owner })),
   );
   const metaObjects = metas.map(({ object }) => object);
-  const { elsewhere, written } = namesReadElsewhere(
+  const { elsewhere, written, readElsewhere } = namesReadElsewhere(
     body,
     bindings,
     metaBindings,
@@ -224,6 +226,7 @@ export function csfFile(
         elsewhere.has(local),
     ),
     written,
+    readElsewhere,
   };
 }
 
@@ -707,6 +710,7 @@ function namesReadElsewhere(
 ): {
   readonly elsewhere: ReadonlySet<unknown>;
   readonly written: ReadonlySet<unknown>;
+  readonly readElsewhere: ReadonlySet<unknown>;
 } {
   const reaches = reachesOf([...bindings, ...metaBindings], bindings);
   const read = new Set([
@@ -734,7 +738,30 @@ function namesReadElsewhere(
         .flatMap(({ from, to }) => [from, to]),
     ]),
     written,
+    readElsewhere: withReadThrough(
+      new Set(
+        reaches
+          .filter(({ from, to, shares }) => from !== to && !shares)
+          .map(({ to }) => to),
+      ),
+      reaches,
+    ),
   };
+}
+
+/** `names` with every name a read of one of them may reach, and every name that holds one of them whole, as `export default meta` or `const B = { ...A }` does, so its runs read what the other holds. */
+function withReadThrough(
+  names: ReadonlySet<unknown>,
+  reaches: readonly Reach[],
+): ReadonlySet<unknown> {
+  const added = reaches.flatMap(({ from, to, shares }) => [
+    ...(names.has(from) && !names.has(to) ? [to] : []),
+    ...(shares && names.has(to) && !names.has(from) ? [from] : []),
+  ]);
+
+  return added.length === 0
+    ? names
+    : withReadThrough(new Set([...names, ...added]), reaches);
 }
 
 /** The names that `A.args = shared` assigns where the file also writes below that member, as `A.args.a = 2` then writes to `shared`, or hands `A` to code it does not read. */
@@ -775,6 +802,8 @@ interface Reach {
   readonly from: unknown;
   readonly to: string;
   readonly identifier: unknown;
+  /** The init is the name itself, or its object spreads the name at the top level, so it holds every object the name holds. */
+  readonly shares: boolean;
 }
 
 /** A top-level `const C = { ...A, b: { c: B } }` or `const C = A` shares A's and B's nested objects with C, so a write through any of them changes what the others run with; a name bound to a literal shares none. */
@@ -782,17 +811,33 @@ function reachesOf(
   inits: readonly (readonly [unknown, unknown])[],
   bindings: Bindings,
 ): readonly Reach[] {
-  return inits.flatMap(([from, init]) =>
-    identifiersReachedFrom(init).flatMap((identifier) => {
+  return inits.flatMap(([from, init]) => {
+    const shared = sharedIdentifiers(init);
+
+    return identifiersReachedFrom(init).flatMap((identifier) => {
       const to = field(identifier, 'name');
 
       return typeof to === 'string' &&
         bindings.has(to) &&
         !primitiveTypes.includes(field(unwrap(bindings.get(to)), 'type'))
-        ? [{ from, to, identifier }]
+        ? [{ from, to, identifier, shares: shared.includes(identifier) }]
         : [];
-    }),
-  );
+    });
+  });
+}
+
+/** The names an init holds whole: the init itself, or a spread among the top-level properties of its object or story argument. */
+function sharedIdentifiers(init: unknown): readonly unknown[] {
+  const current = unwrap(init);
+
+  if (field(current, 'type') === 'Identifier') {
+    return [current];
+  }
+
+  return list(field(storyArgument(current), 'properties'))
+    .filter((property) => field(property, 'type') === 'SpreadElement')
+    .map((spread) => unwrap(field(spread, 'argument')))
+    .filter((argument) => field(argument, 'type') === 'Identifier');
 }
 
 /** A literal or template literal holds no object, so two names that read one share nothing a write could change. */

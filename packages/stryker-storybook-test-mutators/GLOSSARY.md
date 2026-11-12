@@ -102,7 +102,10 @@ mutant only when nothing in the file may set that key below it: no earlier prope
 key, and no `globals` of the meta or of the story's `.extend()` bases, which Storybook merges key by key, and for a
 `.test()` call's options none of the story itself, spread stories included; for the meta's `globals`, none of
 another meta in the file. A story or meta the file writes to (such as `meta.globals.outline = true`) may set any
-global, below its own site and every site that falls back to it. A story it spreads before its own
+global, below its own site and every site that falls back to it. A default in a story, meta or `.test()` options
+constant that another top-level object or meta reads when the file loads (such as `outline:
+Primary.globals.outline`) gets its mutant, as removing it changes what that object reads; a spread of the whole
+object at the top level (`{ ...Primary }`, `export default meta`) does not count. A story it spreads before its own
 `globals` sets nothing below them, as object spread replaces `globals` whole. A `viewport` is no default when a
 `parameters` object of any run of its site may set `viewport`: the meta's, the story's and its bases' for every
 story the site runs for, and those of each `.test()` call's options that run it, as Storybook merges them over each
