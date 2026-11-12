@@ -250,11 +250,11 @@ export function firstCheckAfter(path: NodePath): NodePath | undefined {
 
 /** Whether `path` has a following check and its checks before the next interaction are all negative, both looked for past the end of its block and of a step callback that holds it. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
-  const following = followingStatements(path);
+  const later = laterStatements(path);
 
   return (
-    statementsBefore(following, holdsInteraction).some(hasCheck) &&
-    statementsBefore(following, isNextInteraction)
+    statementsBefore(later, holdsInteraction).some(hasCheck) &&
+    statementsBefore(later, isNextInteraction)
       .flatMap(checksIn)
       .every(isNegative)
   );
@@ -325,7 +325,7 @@ function statementsBefore(
 }
 
 /** The statements that run after `path` in its function, and after the step call when that function is a step callback. */
-function followingStatements(path: NodePath): readonly NodePath[] {
+function laterStatements(path: NodePath): readonly NodePath[] {
   const siblings = nextSiblings(path);
   const parent = path.parentPath;
 
@@ -334,13 +334,13 @@ function followingStatements(path: NodePath): readonly NodePath[] {
   }
 
   if (!parent.isFunction()) {
-    return [...siblings, ...followingStatements(parent)];
+    return [...siblings, ...laterStatements(parent)];
   }
 
   const owner = parent.parentPath;
 
   return owner !== null && isStepCall(owner.node)
-    ? [...siblings, ...followingStatements(owner)]
+    ? [...siblings, ...laterStatements(owner)]
     : siblings;
 }
 
@@ -433,11 +433,13 @@ function functionBinding(path: NodePath): Binding | undefined {
 
 /** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other`, `Stories.Other` or `Stories?.Other`. */
 function isStoryPlay(argument: types.Node | undefined): boolean {
-  const node =
-    argument === undefined ? undefined : withoutTypeWrappers(argument);
+  if (argument === undefined) {
+    return false;
+  }
+
+  const node = withoutTypeWrappers(argument);
 
   return (
-    node !== undefined &&
     isMember(node) &&
     startsAtIdentifier(node.object) &&
     nameOf(node.property) === 'play'

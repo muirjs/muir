@@ -61,7 +61,7 @@ const negativeOnlyCases: readonly Case[] = [
   {
     id: 'skip-negative-only',
     title:
-      'an interaction whose following checks are all negative makes no mutant',
+      'an interaction whose checks before the next interaction are all negative makes no mutant',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',
@@ -220,14 +220,14 @@ const negativeOnlyCases: readonly Case[] = [
   {
     id: 'negative-only-after-step',
     title:
-      'an interaction in a step whose following checks in the play are all negative makes no mutant',
+      'an interaction in a step whose checks before the next interaction in the play are all negative makes no mutant',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Click', async () => {\n      await userEvent.click(button);\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
     expect: [],
   },
   {
     id: 'negative-only-after-context-step',
     title:
-      'an interaction in a context.step whose following checks in the play are all negative makes no mutant',
+      'an interaction in a context.step whose checks before the next interaction in the play are all negative makes no mutant',
     source: `export const Story = {\n  play: async (context) => {\n    await context.step('Click', async () => {\n      await context.userEvent.click(button);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
     expect: [],
   },

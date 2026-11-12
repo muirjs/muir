@@ -29,7 +29,7 @@ export const targetCases: readonly Case[] = [
   {
     id: 'target-skip-negative-only',
     title:
-      'an interaction whose following checks are all negative makes no mutant',
+      'an interaction whose checks before the next interaction are all negative makes no mutant',
     source: inPlay(
       "await expect(canvas.getByRole('tab', { name: 'Profile' })).toBeVisible();",
       "await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));",

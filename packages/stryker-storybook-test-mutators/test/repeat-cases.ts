@@ -134,7 +134,8 @@ export const repeatCases: readonly Case[] = [
   },
   {
     id: 'repeat-skip-negative-only',
-    title: 'a click whose following checks are all negative makes no mutant',
+    title:
+      'a click whose checks before the next interaction are all negative makes no mutant',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',
