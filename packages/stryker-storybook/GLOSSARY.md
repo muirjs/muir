@@ -153,9 +153,10 @@ after it before the next statement that holds an interaction, and every check be
 `click-before-type` (a user-event click or hover directly before a `type` of the same target on user-event 14's
 `userEvent`, which clicks it first unless given `skipClick`; the reporter takes the click as kept only when the options
 are absent, or an object literal with no spread or computed key whose `skipClick`, quoted or not, is absent or `false`,
-and takes a `userEvent` for user-event 14 only when it is destructured from the first parameter of a function that is
-a `play` property's value, the play context, or imported from `storybook/test`, so Vitest browser's `userEvent`, one
-destructured from another function's parameter, a `setup()` local and every other form get no such hint), or
+and takes a `userEvent` for user-event 14 only when it is destructured from the first parameter of the function under a
+non-computed `play` key of the meta (the default export) or of an exported story, the play context, or imported from
+`storybook/test`, so Vitest browser's `userEvent`, one destructured from another function's parameter, a `setup()`
+local and every other form get no such hint), or
 `cleared-later` (a `type` or `clear` whose target the next interaction in its block clears, with no check between
 them). An interaction has at most one shape.
 _Avoid_: skip reason, interaction pattern

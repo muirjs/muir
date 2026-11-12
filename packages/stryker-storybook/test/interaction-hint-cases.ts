@@ -365,6 +365,60 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'local-play-property-user-event-type',
+    title:
+      "gives no hint for a click before a type on a userEvent destructured from a local object's play property, which may be Vitest browser's",
+    source: [
+      "import { userEvent as vitestUserEvent } from 'vitest/browser';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    const steps = { play: async ({ userEvent }) => {',
+      "      await userEvent.click(canvas.getByRole('textbox'));",
+      "      await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '    } };',
+      '    await steps.play({ userEvent: vitestUserEvent });',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'meta-play-type',
+    title:
+      "names a surviving click before a type on the userEvent of the meta's play context",
+    source: [
+      "export default { title: 'Form', play: async ({ canvas, userEvent }) => {",
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '} };',
+      'export const Form = {};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 2]],
+    expect: [[2, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'computed-play-key-user-event-type',
+    title:
+      'gives no hint for a click before a type in a function under a computed key, which need not be play',
+    source: [
+      "const play = 'x';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  [play]: async ({ canvas, userEvent }) => {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
     id: 'for-of-user-event-shadows-context',
     title:
       "gives no hint for a click before a type on a userEvent that a for...of head declares, which shadows the play context's",

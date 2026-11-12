@@ -234,9 +234,11 @@ function maySkipClick(options: unknown): boolean {
   );
 }
 
-/** The name of a property's identifier or string-literal key. */
+/** The name of a property's identifier or string-literal key, when it is not computed. */
 function keyName(property: unknown): unknown {
-  return nameOf(field(property, 'key')) ?? field(property, 'key', 'value');
+  return field(property, 'computed') === true
+    ? undefined
+    : (nameOf(field(property, 'key')) ?? field(property, 'key', 'value'));
 }
 
 /**
@@ -267,7 +269,7 @@ function isUserEvent14(
   );
 }
 
-/** Whether `parameter` is the first parameter of a function that is the value of a `play` property. */
+/** Whether `parameter` is the first parameter of a function that is the `play` property of the meta or a story. */
 function isPlayContext(
   parameter: AstNode | undefined,
   ancestors: readonly AstNode[],
@@ -276,8 +278,16 @@ function isPlayContext(
     (ancestor) =>
       isFunction(ancestor) && list(ancestor['params'])[0] === parameter,
   );
+  // A story is `export const <name> = { ... }`: declarator, declaration, export.
+  const [property, object, holder, , exported] = ancestors.slice(owner + 1);
 
-  return owner !== -1 && keyName(ancestors[owner + 1]) === 'play';
+  return (
+    owner !== -1 &&
+    keyName(property) === 'play' &&
+    (field(holder, 'type') === 'ExportDefaultDeclaration' ||
+      (field(holder, 'init') === object &&
+        field(exported, 'type') === 'ExportNamedDeclaration'))
+  );
 }
 
 /**
