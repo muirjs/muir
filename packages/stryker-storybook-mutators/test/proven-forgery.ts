@@ -1,5 +1,6 @@
 // A mutator skips a property only through a Proven that @layzee/storybook-csf mints (ADR 0006). Each export below
 // states that a value made outside storybook-csf is no Proven, so the typecheck target fails when one would be.
+// Object.assign({}, proven, { property }) types as a Proven; ESLint's prefer-object-spread rejects that form.
 import type * as csf from '@layzee/storybook-csf';
 import type { ProofReason, Proven, Site } from '@layzee/storybook-csf';
 
