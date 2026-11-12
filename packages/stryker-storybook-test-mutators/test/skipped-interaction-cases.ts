@@ -428,30 +428,24 @@ const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
-    id: 'local-module-setup-click-before-type',
-    title:
-      'a click directly before a type on the same target, both on the setup() of userEvent imported from a module of the project, is removed',
-    source: `import { userEvent } from './test-utils';\nexport const Story = {\n  play: async () => {\n    const user = userEvent.setup();\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
-    id: 'story-test-context-click-before-type',
-    title:
-      "a click directly before a type on the same target, both on a story test's context userEvent, is removed, as only a play's context is read as user-event 14",
-    source: `export const Story = meta.story({});\nStory.test('types', async ({ userEvent }) => {\n  await userEvent.click(input);\n  await userEvent.type(input, 'a');\n});\n`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
-  },
-  {
     id: 'skip-context-play-method-click-before-type',
     title:
       'a click directly before a type on the same target, both on the userEvent of the context of a play method, makes no mutant',
     source: `export const Story = {\n  async play(context) {\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-meta-play-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the userEvent of the context of the meta's play, makes no mutant",
+    source: `export default {\n  play: async (context) => {\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\nexport const Story = {};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-factory-play-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the userEvent destructured in the context of a CSF factory story's play, makes no mutant",
+    source: `import preview from '../.storybook/preview';\nconst meta = preview.meta({});\nexport const Story = meta.story({\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n});\n`,
     expect: [[interaction, ';']],
   },
   {
@@ -529,6 +523,26 @@ const clickBeforeTypeCases: readonly Case[] = [
     title:
       "a click directly before a type on the same target, both on userEvent imported from 'vitest/browser', is removed",
     source: `import { userEvent } from 'vitest/browser';\nexport const Story = {\n  play: async () => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'local-module-setup-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the setup() of userEvent imported from a module of the project, is removed',
+    source: `import { userEvent } from './test-utils';\nexport const Story = {\n  play: async () => {\n    const user = userEvent.setup();\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'story-test-context-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on a story test's context userEvent, is removed, as only a play's context is read as user-event 14",
+    source: `export const Story = meta.story({});\nStory.test('types', async ({ userEvent }) => {\n  await userEvent.click(input);\n  await userEvent.type(input, 'a');\n});\n`,
     expect: [
       [interaction, ';'],
       [interaction, ';'],
@@ -688,6 +702,36 @@ const clickBeforeTypeCases: readonly Case[] = [
     )}`,
     expect: [
       [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'named-play-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the userEvent of the context of a play given by its name, is removed, as only a play given inline is read',
+    source: `const fillForm = async (context) => {\n  await context.userEvent.click(input);\n  await context.userEvent.type(input, 'a');\n};\nexport const Story = {\n  play: fillForm,\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'assigned-play-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the userEvent of the context of a play assigned as Story.play, is removed, as only a play given inline is read',
+    source: `export const Story = {};\nStory.play = async (context) => {\n  await context.userEvent.click(input);\n  await context.userEvent.type(input, 'a');\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'step-context-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the userEvent of a step callback's context, is removed, as only a play's context is read",
+    source: `export const Story = {\n  play: async ({ step }) => {\n    await step('Fill', async (context) => {\n      await context.userEvent.click(input);\n      await context.userEvent.type(input, 'a');\n    });\n  },\n};\n`,
+    expect: [
       [interaction, ';'],
       [interaction, ';'],
     ],
