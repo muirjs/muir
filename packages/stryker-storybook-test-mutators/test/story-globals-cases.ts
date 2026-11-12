@@ -523,6 +523,118 @@ export const storyGlobalsCases: readonly Case[] = [
     expect: [[storyGlobals, "{ 'outline': false }"]],
   },
   {
+    id: 'story-globals-meta-default',
+    title:
+      "the meta's default value of a global makes no mutant when no other meta of the file sets that global",
+    source: [
+      "export default { title: 'Probe', globals: { outline: false, locale: 'de' } };",
+      '',
+      'export const Story = { play: async () => {} };',
+      '',
+    ].join('\n'),
+    expect: [[storyGlobals, '{ outline: false }']],
+  },
+  {
+    id: 'story-globals-default-after-spread',
+    title:
+      'a default value of a global after a spread in the same globals gets a mutant, as the spread may set that global',
+    source: storyFile(
+      'const base = { outline: true };',
+      'export const Story = {',
+      '  globals: { ...base, outline: false },',
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{ ...base }'],
+    ],
+  },
+  {
+    id: 'story-globals-viewport-method',
+    title:
+      'a viewport global written as a method gets a mutant, as only a value can be a default',
+    source: storyFile(
+      'export const Story = {',
+      "  globals: { viewport() {}, locale: 'de' },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ viewport() {} }'],
+    ],
+  },
+  {
+    id: 'story-globals-default-viewport-no-value',
+    title:
+      "a viewport object with no value makes no mutant, as the Vitest addon's setViewport reads only its value",
+    source: storyFile(
+      'export const Story = {',
+      "  globals: { viewport: { isRotated: true }, locale: 'de' },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [[storyGlobals, '{ viewport: { isRotated: true } }']],
+  },
+  {
+    id: 'story-globals-viewport-named-value',
+    title:
+      'a viewport object whose value names a constant gets a mutant, as only undefined and the default names are defaults',
+    source: storyFile(
+      "const phone = 'mobile1';",
+      'export const Story = {',
+      "  globals: { viewport: { value: phone }, locale: 'de' },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ viewport: { value: phone } }'],
+    ],
+  },
+  {
+    id: 'story-globals-default-viewport-under-test-without-options',
+    title:
+      "a story's default viewport makes no mutant when the .test() call that runs it has no options",
+    source: factoryFile(
+      "export const Story = meta.story({ globals: { viewport: 'responsive', locale: 'de' } });",
+      "Story.test('t', async () => {});",
+    ),
+    expect: [[storyGlobals, "{ viewport: 'responsive' }"]],
+  },
+  {
+    id: 'story-globals-named-backgrounds',
+    title:
+      'a backgrounds global that names a top-level object gets a mutant, as only an object literal of initial values is a default',
+    source: storyFile(
+      "const dark = { value: 'dark' };",
+      'export const Story = {',
+      "  globals: { backgrounds: dark, locale: 'de' },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, '{ backgrounds: dark }'],
+    ],
+  },
+  {
+    id: 'story-globals-backgrounds-value',
+    title:
+      'a backgrounds global with a value gets a mutant, even with grid: false',
+    source: storyFile(
+      'export const Story = {',
+      "  globals: { backgrounds: { value: 'dark', grid: false }, locale: 'de' },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, "{ backgrounds: { value: 'dark', grid: false } }"],
+    ],
+  },
+  {
     id: 'story-globals-default-over-meta',
     title:
       "a story's default value of a global the meta sets gets a mutant, as removing it brings the meta's value back",
