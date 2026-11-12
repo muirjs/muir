@@ -42,8 +42,9 @@ The Testing Library query that an interaction acts on as its first argument, awa
 _Avoid_: target (alone), locator (the Playwright mutators' term)
 
 **Check**:
-A matcher chain on `expect(...)`, `expect.soft(...)`, `expect.element(...)` or `expect.poll(...)`, such as
-`await expect.element(dialog).toBeVisible()`. `expect.assertions(...)` and other `expect` members are none.
+A call of `expect(...)`, `expect.soft(...)`, `expect.element(...)` or `expect.poll(...)`, with any matcher chain on
+it, such as `await expect.element(dialog).toBeVisible()`. `expect['soft'](...)` counts as `expect.soft(...)`; a
+computed member whose key is not a string literal, `expect.assertions(...)` and other `expect` members are none.
 _Avoid_: assertion (alone)
 
 **Negative check**:
