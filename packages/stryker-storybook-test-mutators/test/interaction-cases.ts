@@ -32,7 +32,7 @@ const vitestBrowserCalls: readonly (readonly [string, string])[] = [
   ['wheel', "list, { direction: 'down' }"],
 ];
 
-const userEventModules: readonly string[] = [
+const userEventModuleNames: readonly string[] = [
   'storybook/test',
   '@testing-library/user-event',
   'vitest/browser',
@@ -70,6 +70,12 @@ const interactionCases: readonly Case[] = [
     id: 'context-user-event',
     title: 'a context.userEvent.type statement is removed',
     source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.type(context.canvas.getByRole('textbox'), 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'optional-user-event',
+    title: 'a userEvent?.click statement is removed',
+    source: inPlay('await userEvent?.click(input);'),
     expect: [[interaction, ';']],
   },
   {
@@ -226,13 +232,13 @@ const interactionCases: readonly Case[] = [
     source: `import ue from '@testing-library/user-event';\n${inPlay("await ue.click(canvas.getByRole('button'));")}`,
     expect: [[interaction, ';']],
   },
-  ...userEventModules.map((module) => ({
+  ...userEventModuleNames.map((module) => ({
     id: `named-import-${module}`,
     title: `a call on userEvent imported by name from '${module}' is removed`,
     source: `import { userEvent } from '${module}';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('button'));")}`,
     expect: [[interaction, ';'] as const],
   })),
-  ...userEventModules.map((module) => ({
+  ...userEventModuleNames.map((module) => ({
     id: `default-import-${module}`,
     title: `a call on the default import of '${module}' named userEvent is removed`,
     source: `import userEvent from '${module}';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('button'));")}`,
@@ -448,11 +454,54 @@ const interactionCases: readonly Case[] = [
   },
 ];
 
+const redundantInteractionCases: readonly Case[] = [
+  {
+    id: 'negative-only',
+    title:
+      'an interaction whose following checks are all negative checks is removed',
+    source: inPlay(
+      'await userEvent.click(button);',
+      'await expect(args.onClick).not.toHaveBeenCalled();',
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'click-before-type',
+    title:
+      'a click directly before a type of the same target is removed, as is the type',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'a');",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'type-cleared-later',
+    title:
+      'a type that a later clear of the same target undoes is removed, as are the clear and the type after it',
+    source: inPlay(
+      "await userEvent.type(input, 'a');",
+      'await userEvent.clear(input);',
+      "await userEvent.type(input, 'b');",
+      "await expect(input).toHaveValue('b');",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+];
+
 export const allInteractionCases: readonly Case[] = [
   ...interactionCases,
   ...composedPlayCases,
   ...rawDomCases,
   ...skippedInteractionCases,
+  ...redundantInteractionCases,
 ];
 
 // Cases that once crashed the instrumenter, which fails every case it instruments together.

@@ -29,7 +29,7 @@ export const targetCases: readonly Case[] = [
   {
     id: 'target-negative-only',
     title:
-      'the target of an interaction whose checks before the next interaction are all negative becomes another target in the file',
+      'the target of an interaction whose following checks are all negative checks becomes another target in the file',
     source: inPlay(
       "await expect(canvas.getByRole('tab', { name: 'Profile' })).toBeVisible();",
       "await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));",

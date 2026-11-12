@@ -146,8 +146,7 @@ export const repeatCases: readonly Case[] = [
   },
   {
     id: 'repeat-negative-only',
-    title:
-      'a click whose checks before the next interaction are all negative runs twice',
+    title: 'a click whose following checks are all negative checks runs twice',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',

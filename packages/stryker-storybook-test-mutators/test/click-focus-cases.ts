@@ -161,7 +161,7 @@ export const clickFocusCases: readonly Case[] = [
   {
     id: 'click-focus-negative-only',
     title:
-      'a click whose checks before the next interaction are all negative becomes a focus of its target',
+      'a click whose following checks are all negative checks becomes a focus of its target',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',

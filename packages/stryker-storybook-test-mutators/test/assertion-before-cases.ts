@@ -57,6 +57,21 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'assertion-before-computed-expect',
+    title:
+      'the check after an interaction is copied when it holds an expect(...) given as the key of a computed member followed by .not, as that .not is no matcher of that expect',
+    source: inPlay(
+      'await userEvent.click(save);',
+      'await expect(matchers[expect(args.onSave)].not).toBeDefined();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(matchers[expect(args.onSave)].not).toBeDefined(); await userEvent.click(save); }',
+      ],
+    ],
+  },
+  {
     id: 'assertion-before-skip-called-zero-times',
     title:
       'an interaction whose first check is toHaveBeenCalledTimes(0) makes no mutant, as a fresh spy passes it',
