@@ -125,6 +125,7 @@ export default withWarningsAsErrors([
       '**/out-tsc',
       '**/vite.config.*.timestamp*',
       '**/test-output',
+      '**/test-results',
       // Instrumented bundles that the browser tests write before each run.
       'packages/stryker-playwright-runner/test/**/public/*.js',
       'packages/stryker-playwright-runner/test/browser/load-fixture/pages/unused.js',
