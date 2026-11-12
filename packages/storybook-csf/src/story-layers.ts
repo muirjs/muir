@@ -11,13 +11,6 @@ import {
 
 type Bindings = ReadonlyMap<string, unknown>;
 
-/**
- * How `storyRoots` reads the object of each layer: `'root'` through `rootLayer`, so a written owner, or an object the
- * file does not show, gives an unknown layer; `'as-written'` as the object literal the file writes, whatever it
- * writes to the owner later, and no layer for any other expression. The play chain reads `'as-written'`, as
- * `playedStories` takes a play assigned later from the writes itself, and a write to a story's `args` leaves its play
- * as it is.
- */
 type LayerReading = 'root' | 'as-written';
 
 /**
@@ -60,7 +53,6 @@ export function storyRoots(
     : [own, unknownValue];
 }
 
-/** Every value that a property of the story's layers gives `key`, the one that runs first, then each it falls back to in turn. */
 export function storyValueChain(
   layers: readonly Layer[],
   key: string,

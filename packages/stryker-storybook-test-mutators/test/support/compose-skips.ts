@@ -26,7 +26,6 @@ export interface ComposeSkips {
   readonly layer: 'args' | 'globals';
   readonly same: (withProperty: unknown, withoutProperty: unknown) => boolean;
   readonly unloadable: ReadonlyMap<string, string>;
-  /** The proof reasons the case rows must cut at least once, so a mutator that stops proving fails the check. */
   readonly reasons: readonly string[];
 }
 

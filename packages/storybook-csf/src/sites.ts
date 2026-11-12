@@ -97,13 +97,11 @@ interface Layers<TRun extends SiteRun> {
   readonly parameters: readonly Layer[];
 }
 
-/** A story's or `.test()` run falls back to the layers below its site, then to the metas. */
 interface StoryRunLayers extends Layers<StoryRun | TestRun> {
   readonly below: readonly Layer[];
   readonly metas: readonly Layer[];
 }
 
-/** A meta's run falls back to nothing below it, but the file's other metas may set a global it does not. */
 interface MetaRunLayers extends Layers<MetaRun> {
   readonly otherMetas: readonly Layer[];
 }

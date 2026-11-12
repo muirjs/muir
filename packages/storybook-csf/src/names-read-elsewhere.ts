@@ -15,15 +15,11 @@ import { field, list } from './node-field.ts';
 type Bindings = ReadonlyMap<string, unknown>;
 
 interface NamesReadElsewhere {
-  /** The names the file uses outside the forms the package reads, plus every name in a family of two or more that has a written member. */
   readonly referencedElsewhere: ReadonlySet<unknown>;
-  /** Every name in a written family. */
   readonly written: ReadonlySet<unknown>;
-  /** The names another top-level object or meta reads when the file loads, with the names they reach and the names that hold one of them whole. */
   readonly readByOtherObjects: ReadonlySet<unknown>;
 }
 
-/** How the file uses its top-level names beyond the forms the package reads. A shadowing local counts too, as no scopes are resolved; the key of a property does not. The meta joins the families as the default export and as each factory meta. */
 export function namesReadElsewhere(
   body: readonly unknown[],
   bindings: Bindings,
@@ -118,7 +114,6 @@ function withReachedAndWholeHolders(
     : withReachedAndWholeHolders(new Set([...names, ...added]), reaches);
 }
 
-/** The names that `A.args = shared` assigns where the file also writes below that member, as `A.args.a = 2` then writes to `shared`, or hands `A` to code it does not read. */
 function writtenThrough(
   assignments: readonly Assignment[],
   referenced: readonly unknown[],
@@ -156,11 +151,9 @@ interface Reach {
   readonly from: unknown;
   readonly to: string;
   readonly identifier: unknown;
-  /** `from`'s init is `to`, or spreads `to` (or a member of it) at its top level. */
   readonly holdsWhole: boolean;
 }
 
-/** A top-level `const C = { ...A, b: { c: B } }` or `const C = A` shares A's and B's nested objects with C, so a write through any of them changes what the others run with; a name bound to a literal shares none. */
 function reachesOf(
   inits: readonly (readonly [unknown, unknown])[],
   bindings: Bindings,
@@ -200,7 +193,6 @@ function wholeHeldIdentifiers(init: unknown): readonly unknown[] {
     .filter((argument) => field(argument, 'type') === 'Identifier');
 }
 
-/** A literal or template literal holds no object, so two names that read one share nothing a write could change. */
 const primitiveTypes: readonly unknown[] = [
   'StringLiteral',
   'NumericLiteral',

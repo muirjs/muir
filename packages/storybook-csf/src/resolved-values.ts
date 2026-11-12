@@ -116,7 +116,6 @@ export function rootLayer(
     : (shownObject(expression, unchanged) ?? unknownValue);
 }
 
-/** `expression` when it is an object literal, read as the file writes it whatever the file writes to its owner later; no layer for any other expression. */
 export function literalLayer(expression: unknown, bindings: Bindings): Layer {
   return isRecord(expression) && expression['type'] === 'ObjectExpression'
     ? new ResolvedObject(expression, bindings)
