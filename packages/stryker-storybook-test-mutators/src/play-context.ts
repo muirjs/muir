@@ -21,8 +21,16 @@ export function isPlayContext(node: types.Node, path: NodePath): boolean {
   const binding = bindingOf(node, path.scope);
 
   return (
-    binding?.kind === 'param' &&
+    binding !== undefined &&
     binding.path.isIdentifier() &&
+    isPlayContextAsSet(binding)
+  );
+}
+
+/** A play's context parameter, or a local it destructures, that holds what Storybook set. */
+export function isPlayContextAsSet(binding: Binding): boolean {
+  return (
+    binding.kind === 'param' &&
     isPlayParameter(binding) &&
     isContextLeftAsSet(binding)
   );
@@ -58,7 +66,7 @@ function isContextRead(path: NodePath): boolean {
 }
 
 /** The first parameter of a play that Storybook calls: a `play` method, or a function given as a `play` property, under a key that is not computed, which is story test code and inside none. */
-export function isPlayParameter(binding: Binding): boolean {
+function isPlayParameter(binding: Binding): boolean {
   const parameter = binding.path;
   const play = parameter.parentPath;
   const keyed = play === null ? undefined : keyedBy(play);
@@ -86,7 +94,7 @@ function keyedBy(
 }
 
 /** A play's context parameter, or a local it destructures, that the play never reassigns, in a file where every context is only read, so it holds what Storybook set. */
-export function isContextLeftAsSet(binding: Binding): boolean {
+function isContextLeftAsSet(binding: Binding): boolean {
   return (
     binding.constantViolations.length === 0 &&
     contextsOnlyRead(binding.path) &&

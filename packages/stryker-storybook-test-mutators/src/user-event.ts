@@ -17,9 +17,8 @@ import {
 } from './only-called-on.ts';
 import {
   contextsOnlyRead,
-  isContextLeftAsSet,
   isPlayContext,
-  isPlayParameter,
+  isPlayContextAsSet,
   namesOnlyReadUserEvent,
 } from './play-context.ts';
 import { perFile } from './story-file.ts';
@@ -126,8 +125,7 @@ function userEventBinding(
     }
 
     return property.value.type !== 'AssignmentPattern' &&
-      isPlayParameter(binding) &&
-      isContextLeftAsSet(binding)
+      isPlayContextAsSet(binding)
       ? 'provenUserEvent14'
       : 'unprovenUserEvent';
   }
