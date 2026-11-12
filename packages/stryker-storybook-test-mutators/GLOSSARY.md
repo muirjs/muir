@@ -41,12 +41,18 @@ The Testing Library query that an interaction acts on as its first argument, awa
 `findBy` or `queryBy` query of the same string-literal role, or the text of a query of the same method.
 _Avoid_: target (alone), locator (the Playwright mutators' term)
 
+**Check**:
+A call of `expect(...)`, `expect.soft(...)`, `expect.element(...)` or `expect.poll(...)`, with any matcher chain on
+it, such as `await expect.element(dialog).toBeVisible()`. `expect['soft'](...)` counts as `expect.soft(...)`; a
+computed member whose key is not a string literal, `expect.assertions(...)` and other `expect` members are none.
+_Avoid_: assertion (alone)
+
 **Negative check**:
-An `expect(...)` check with `.not` in its matcher chain, which passes when the interaction before it did nothing.
+A check with `.not` in its matcher chain, which passes when the interaction before it did nothing.
 _Avoid_: absence check, negated assertion
 
 **Following checks**:
-The `expect(...)` checks after an interaction, up to the next statement that is or holds an interaction. A statement
+The checks after an interaction, up to the next statement that is or holds an interaction. A statement
 holds an interaction that runs within it, such as one in an `if` or in a `waitFor(...)` callback; a `step(...)` holds
 every interaction in its callback, including one in a function the callback defines. Outside a step callback, an
 interaction is looked for only in `step` and `waitFor` callbacks: every other function counts as not run, even one
@@ -65,9 +71,10 @@ _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 **Copied check**:
 The first statement in an interaction's own block that holds one of its following checks, which
 `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that holds the
-interaction is not looked at, so an interaction that is a step callback's expression body has none. A check that is or
-holds a negative check or a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or assigned after the
-interaction, and one that already stands earlier in the play are not copied.
+interaction is not looked at, so an interaction that is a step callback's expression body has none. Three kinds of
+statement are not copied: one that is neither a check statement nor a `waitFor(...)` whose callback holds a check, one
+that reads a name declared or assigned after the interaction, and one that already stands earlier in the play. A negative check and a
+`toHaveBeenCalledTimes(0)` check are copied like any other.
 _Avoid_: duplicated assertion, moved check
 
 ### Spy stubs

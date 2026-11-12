@@ -2,92 +2,94 @@ import type { NodePath, types } from '@babel/core';
 
 import { awaited, nameOf } from './nodes.ts';
 
-/** Whether `path` holds an `expect(...)` check. */
+/** Whether `path` holds a check. */
 export function hasCheck(path: NodePath): boolean {
-  return checksIn(path).length > 0;
-}
-
-/** Whether `path` holds an `expect(...)` check with `.not` in its matcher chain. */
-export function hasNegativeCheck(path: NodePath): boolean {
-  return checksIn(path).some(isNegative);
-}
-
-/** `expect(...).<matcher>(...);`, awaited or not. */
-export function isExpectStatement(
-  path: NodePath,
-): path is NodePath<types.ExpressionStatement> {
-  return (
-    path.isExpressionStatement() &&
-    startsWithExpect(awaited(path.node.expression))
-  );
-}
-
-function startsWithExpect(node: types.Node): boolean {
-  if (node.type === 'CallExpression') {
-    return nameOf(node.callee) === 'expect' || startsWithExpect(node.callee);
-  }
-
-  return node.type === 'MemberExpression' && startsWithExpect(node.object);
-}
-
-interface Check {
-  /** The member names after `expect(...)`, such as `not` and `toHaveBeenCalled`. */
-  readonly chain: readonly (string | undefined)[];
-  /** The arguments of the matcher call at the end of the chain. */
-  readonly args: readonly types.Node[];
-}
-
-/** The `expect(...)` checks in `path`. */
-function checksIn(path: NodePath): readonly Check[] {
-  const checks: Check[] = [];
+  let found = false;
 
   path.traverse({
     CallExpression(call) {
-      if (nameOf(call.node.callee) === 'expect') {
-        checks.push(checkOf(call));
+      if (startsCheck(call.node.callee)) {
+        found = true;
+        call.stop();
       }
     },
   });
 
-  return checks;
+  return found;
 }
 
-function checkOf(expectCall: NodePath): Check {
-  const members = matcherChain(expectCall);
-  const last = members.at(-1);
-  const matcherCall = last?.parent;
-
-  return {
-    chain: members.map((member) => nameOf(member.node.property)),
-    args:
-      matcherCall?.type === 'CallExpression' &&
-      matcherCall.callee === last?.node
-        ? matcherCall.arguments
-        : [],
-  };
-}
-
-function isNegative(check: Check): boolean {
-  return check.chain.includes('not');
-}
-
-/** The member expressions after `expect(...)`, nearest first. */
-function matcherChain(
-  expectCall: NodePath,
-): readonly NodePath<types.MemberExpression>[] {
-  const member = expectCall.parentPath;
-
-  return member.isMemberExpression() && member.node.object === expectCall.node
-    ? [member, ...matcherChain(member)]
-    : [];
-}
-
-/** Whether `path` holds an `expect(...).toHaveBeenCalledTimes(0)` check. */
-export function hasZeroCallsCheck(path: NodePath): boolean {
-  return checksIn(path).some(
-    ({ chain, args: [count] }) =>
-      chain.at(-1) === 'toHaveBeenCalledTimes' &&
-      count?.type === 'NumericLiteral' &&
-      count.value === 0,
+/** A statement that is a check, such as `expect(...).<matcher>(...);`, awaited or not. */
+export function isCheckStatement(
+  path: NodePath,
+): path is NodePath<types.ExpressionStatement> {
+  return (
+    path.isExpressionStatement() &&
+    startsWithCheck(awaited(path.node.expression))
   );
 }
+
+/** `waitFor(<callback>, ...);`, awaited or not, whose callback holds a check. */
+export function isWaitForCheckStatement(
+  path: NodePath,
+): path is NodePath<types.ExpressionStatement> {
+  if (!path.isExpressionStatement()) {
+    return false;
+  }
+
+  const call = awaited(path.node.expression);
+
+  if (call.type !== 'CallExpression' || nameOf(call.callee) !== 'waitFor') {
+    return false;
+  }
+
+  let holds = false;
+
+  path.traverse({
+    CallExpression(inner) {
+      if (inner.node === call) {
+        const [callback] = inner.get('arguments');
+
+        holds = callback !== undefined && hasCheck(callback);
+        inner.stop();
+      }
+    },
+  });
+
+  return holds;
+}
+
+function startsWithCheck(node: types.Node): boolean {
+  if (node.type === 'CallExpression') {
+    return startsCheck(node.callee) || startsWithCheck(node.callee);
+  }
+
+  return node.type === 'MemberExpression' && startsWithCheck(node.object);
+}
+
+/** Whether a call of `callee` starts a check: `expect`, or `expect.soft`, `expect.element` or `expect.poll`. */
+function startsCheck(callee: types.Node): boolean {
+  if (callee.type !== 'MemberExpression') {
+    return nameOf(callee) === 'expect';
+  }
+
+  const method = memberName(callee);
+
+  return (
+    nameOf(callee.object) === 'expect' &&
+    method !== undefined &&
+    expectMethods.has(method)
+  );
+}
+
+/** The name a member reads: its identifier, or its string-literal key when computed. */
+function memberName(member: types.MemberExpression): string | undefined {
+  if (member.computed) {
+    return member.property.type === 'StringLiteral'
+      ? member.property.value
+      : undefined;
+  }
+
+  return nameOf(member.property);
+}
+
+const expectMethods: ReadonlySet<string> = new Set(['soft', 'element', 'poll']);

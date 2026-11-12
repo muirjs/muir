@@ -60,7 +60,7 @@ const interactionCases: readonly Case[] = [
   },
   {
     id: 'expect-statement',
-    title: 'an expect statement makes no mutant',
+    title: 'a check statement makes no mutant',
     source: inPlay(
       "await expect(canvas.getByRole('button')).toBeInTheDocument();",
     ),
@@ -233,6 +233,20 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'testing-library-default-named-import',
+    title:
+      "a call on the default export of '@testing-library/user-event' imported by name under another name is removed",
+    source: `import { default as ev } from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ev.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-default-string-named-import',
+    title:
+      "a call on the default export of '@testing-library/user-event' imported by the string name 'default' is removed",
+    source: `import { 'default' as ev } from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ev.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'storybook-test-default-import-other-name',
     title:
       "a call on the default import of 'storybook/test' under another name makes no mutant, as only '@testing-library/user-event' has a user-event default export",
@@ -244,6 +258,48 @@ const interactionCases: readonly Case[] = [
     title:
       "a call on a namespace import of '@testing-library/user-event' makes no mutant, as the namespace is no user-event",
     source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ue.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
+  {
+    id: 'testing-library-namespace-default',
+    title:
+      "a call on the default member of a namespace import of '@testing-library/user-event' is removed",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ue.default.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-namespace-default-in-type-assertion',
+    title:
+      "a call on the default member of a namespace import of '@testing-library/user-event' inside an as expression is removed",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await (ue as any).default.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-namespace-default-setup',
+    title:
+      "a call on a local bound to the setup() of the default member of a namespace import of '@testing-library/user-event' is removed",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], 'const user = ue.default.setup();', "await user.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-namespace-shadowed',
+    title:
+      "a call on the default member of a play parameter that shadows a namespace import of '@testing-library/user-event' makes no mutant",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas', 'ue'], "await ue.default.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
+  {
+    id: 'testing-library-namespace-other-member',
+    title:
+      "a call on a member other than default of a namespace import of '@testing-library/user-event' makes no mutant",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ue.other.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
+  {
+    id: 'storybook-test-namespace-default',
+    title:
+      "a call on the default member of a namespace import of 'storybook/test' makes no mutant, as only '@testing-library/user-event' has a user-event default export",
+    source: `import * as ue from 'storybook/test';\n${inPlayWith(['canvas'], "await ue.default.click(canvas.getByRole('button'));")}`,
     expect: [],
   },
   ...userEventModuleNames.map((module) => ({

@@ -2,6 +2,13 @@ import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const assertionBefore = 'LzStorybookAssertionBefore';
 
+// The expect methods that start a check, each with a check statement.
+const expectMethodChecks: readonly (readonly [string, string])[] = [
+  ['soft', "expect.soft(status).toHaveTextContent('Saved');"],
+  ['element', "await expect.element(page.getByRole('dialog')).toBeVisible();"],
+  ['poll', "await expect.poll(() => status.textContent).toBe('Saved');"],
+];
+
 export const assertionBeforeCases: readonly Case[] = [
   {
     id: 'assertion-before-click',
@@ -21,7 +28,7 @@ export const assertionBeforeCases: readonly Case[] = [
   {
     id: 'assertion-before-first-check',
     title:
-      'the copied check is the first expect statement after the interaction, past statements that check nothing',
+      'the copied check is the first check statement after the interaction, past statements that check nothing',
     source: inPlay(
       'await userEvent.click(save);',
       'await sleep(10);',
@@ -36,98 +43,85 @@ export const assertionBeforeCases: readonly Case[] = [
     ],
   },
   {
-    id: 'assertion-before-skip-wait-for',
+    id: 'assertion-before-wait-for',
     title:
-      'an interaction whose first check is inside a waitFor makes no mutant, as the copy would wait and then fail',
+      'a waitFor that holds the first check is copied, as the copy fails when its check does not hold before the interaction',
     source: inPlay(
       'await userEvent.click(open);',
       "await waitFor(() => expect(canvas.getByRole('dialog')).toBeVisible());",
     ),
+    expect: [
+      [
+        assertionBefore,
+        "{ await waitFor(() => expect(canvas.getByRole('dialog')).toBeVisible()); await userEvent.click(open); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-wait-for-not-awaited',
+    title:
+      'a waitFor that is not awaited and holds the first check is copied as written',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'waitFor(() => expect(dialog).toBeVisible());',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ waitFor(() => expect(dialog).toBeVisible()); await userEvent.click(open); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-skip-wait-for-check-outside-callback',
+    title:
+      'an interaction whose first check is in a waitFor argument other than its callback makes no mutant, as the copy would run the callback before the interaction and check nothing',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'await waitFor(() => args.onPing(), { onTimeout: (error) => { expect(dialog).toBeVisible(); return error; } });',
+    ),
     expect: [],
   },
   {
-    id: 'assertion-before-skip-negative',
+    id: 'assertion-before-skip-step-holding-check',
     title:
-      'an interaction whose first check is negative makes no mutant, as a negative check mostly holds before too',
+      'an interaction whose first following check is inside a step makes no mutant, as a step is no check statement and the later check is not copied in its place',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(open);',
+      "await step('verify', async () => { await expect(dialog).toBeVisible(); });",
+      'await expect(args.onOpen).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-negative',
+    title:
+      'a negative first check is copied too, as it fails before an interaction that removes what it looks for',
     source: inPlay(
       'await userEvent.click(save);',
       "await expect(canvas.queryByRole('alert')).not.toBeInTheDocument();",
       'await expect(args.onSave).toHaveBeenCalled();',
     ),
-    expect: [],
-  },
-  {
-    id: 'assertion-before-computed-expect',
-    title:
-      'the check after an interaction is copied when it holds an expect(...) given as the key of a computed member followed by .not, as that .not is no matcher of that expect',
-    source: inPlay(
-      'await userEvent.click(save);',
-      'await expect(matchers[expect(args.onSave)].not).toBeDefined();',
-    ),
     expect: [
       [
         assertionBefore,
-        '{ await expect(matchers[expect(args.onSave)].not).toBeDefined(); await userEvent.click(save); }',
+        "{ await expect(canvas.queryByRole('alert')).not.toBeInTheDocument(); await userEvent.click(save); }",
       ],
     ],
   },
   {
-    id: 'assertion-before-skip-called-zero-times',
+    id: 'assertion-before-called-zero-times',
     title:
-      'an interaction whose first check is toHaveBeenCalledTimes(0) makes no mutant, as a fresh spy passes it',
+      'a toHaveBeenCalledTimes(0) first check is copied too, as it fails before an interaction when a spy was called earlier',
     source: inPlay(
       'await userEvent.click(cancel);',
       'await expect(args.onSave).toHaveBeenCalledTimes(0);',
     ),
-    expect: [],
-  },
-  {
-    id: 'assertion-before-to-have-length-zero',
-    title:
-      'the first check after an interaction is copied when it expects a 0 from a matcher other than toHaveBeenCalledTimes',
-    source: inPlay(
-      'await userEvent.click(dismiss);',
-      "await expect(canvas.queryAllByRole('alert')).toHaveLength(0);",
-    ),
     expect: [
       [
         assertionBefore,
-        "{ await expect(canvas.queryAllByRole('alert')).toHaveLength(0); await userEvent.click(dismiss); }",
-      ],
-    ],
-  },
-  {
-    id: 'assertion-before-skip-nested-negative',
-    title:
-      'an interaction whose first check holds a negative check inside a positive one makes no mutant',
-    source: inPlay(
-      'await userEvent.click(save);',
-      'await expect(dialog).toSatisfy(() => expect(args.onSave).not.toHaveBeenCalled());',
-    ),
-    expect: [],
-  },
-  {
-    id: 'assertion-before-skip-nested-called-zero-times',
-    title:
-      'an interaction whose first check holds a toHaveBeenCalledTimes(0) check inside another check makes no mutant',
-    source: inPlay(
-      'await userEvent.click(cancel);',
-      'await expect(dialog).toSatisfy(() => expect(args.onSave).toHaveBeenCalledTimes(0));',
-    ),
-    expect: [],
-  },
-  {
-    id: 'assertion-before-uncalled-matcher',
-    title:
-      'a toHaveBeenCalledTimes matcher that a check passes on rather than calls takes no count, so the check is copied',
-    source: inPlay(
-      'await userEvent.click(cancel);',
-      'await expect(times(0, expect(args.onSave).toHaveBeenCalledTimes)).toBeUndefined();',
-    ),
-    expect: [
-      [
-        assertionBefore,
-        '{ await expect(times(0, expect(args.onSave).toHaveBeenCalledTimes)).toBeUndefined(); await userEvent.click(cancel); }',
+        '{ await expect(args.onSave).toHaveBeenCalledTimes(0); await userEvent.click(cancel); }',
       ],
     ],
   },
@@ -363,5 +357,80 @@ export const assertionBeforeCases: readonly Case[] = [
     title: 'an interaction in a beforeEach makes no mutant',
     source: `export const Story = {\n  beforeEach: async ({ userEvent }) => {\n    await userEvent.click(accept);\n    await expect(args.onAccept).toHaveBeenCalled();\n  },\n};\n`,
     expect: [],
+  },
+  {
+    id: 'assertion-before-namespace-default',
+    title:
+      "the check after a click on the default member of a namespace import of '@testing-library/user-event' is copied to run before it too",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlay(
+      'await ue.default.click(save);',
+      'await expect(args.onSave).toHaveBeenCalled();',
+    )}`,
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await ue.default.click(save); }',
+      ],
+    ],
+  },
+  ...expectMethodChecks.map(([method, check]) => ({
+    id: `assertion-before-expect-${method}`,
+    title: `an expect.${method} check is the first check after an interaction, so it is the one copied`,
+    source: inPlay(
+      'await userEvent.click(save);',
+      check,
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [assertionBefore, `{ ${check} await userEvent.click(save); }`] as const,
+    ],
+  })),
+  {
+    id: 'assertion-before-past-expect-assertions',
+    title:
+      'an expect.assertions call is no check, so the copied check is the first one past it',
+    source: inPlay(
+      'await userEvent.click(save);',
+      'expect.assertions(1);',
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent.click(save); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-expect-soft-string-key',
+    title:
+      "an expect['soft'] check is the first check after an interaction, so it is the one copied",
+    source: inPlay(
+      'await userEvent.click(save);',
+      "expect['soft'](status).toHaveTextContent('Saved');",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ expect['soft'](status).toHaveTextContent('Saved'); await userEvent.click(save); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-past-computed-expect-member',
+    title:
+      'an expect member under a computed key that is a name, not a string, is no check, so the copied check is the first one past it',
+    source: inPlay(
+      'await userEvent.click(save);',
+      "expect[soft](status).toHaveTextContent('Saved');",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent.click(save); }',
+      ],
+    ],
   },
 ];

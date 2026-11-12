@@ -1,6 +1,12 @@
 import type { NodePath, types } from '@babel/core';
 
-import { awaited, type Binding, bindingOf, nameOf } from './nodes.ts';
+import {
+  awaited,
+  type Binding,
+  bindingOf,
+  nameOf,
+  withoutTypeWrappers,
+} from './nodes.ts';
 
 // The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
 // storybook/test re-exports) and those only Vitest browser's userEvent has.
@@ -26,7 +32,7 @@ export const userEventMethods: ReadonlySet<string> = new Set([
   'paste',
 ]);
 
-/** Whether a receiver is a user-event: `userEvent`, `<x>.userEvent` such as the play context's, or a local that `isUserEventBinding` reads as one. */
+/** Whether a receiver is a user-event: `userEvent`, `<x>.userEvent` such as the play context's, `<ns>.default` on a namespace import of `@testing-library/user-event`, or a local that `isUserEventBinding` reads as one. */
 export function isUserEvent(node: types.Node, path: NodePath): boolean {
   return isUserEventUnseen(node, path, new Set());
 }
@@ -41,7 +47,12 @@ function isUserEventUnseen(
     node.type === 'MemberExpression' ||
     node.type === 'OptionalMemberExpression'
   ) {
-    return nameOf(node.property) === 'userEvent';
+    const name = nameOf(node.property);
+
+    return (
+      name === 'userEvent' ||
+      (name === 'default' && isUserEventNamespace(node.object, path))
+    );
   }
 
   const binding = bindingOf(node, path.scope);
@@ -108,7 +119,7 @@ function isUserEventBinding(
   );
 }
 
-/** The module an import declaration names when `declaration` imports `userEvent` by name from it, or is the default import of `@testing-library/user-event`, the one user-event module with a default export. */
+/** The module an import declaration names when `declaration` imports `userEvent` by name from it, or imports the default export of `@testing-library/user-event`, the one user-event module with a default export, as a default import or by the name `default`. */
 function userEventImportSource(declaration: NodePath): string | undefined {
   const { node, parent } = declaration;
 
@@ -117,13 +128,41 @@ function userEventImportSource(declaration: NodePath): string | undefined {
   }
 
   const source = parent.source.value;
+  const imported = importedName(node);
   const importsUserEvent =
-    node.type === 'ImportSpecifier'
-      ? nameOf(node.imported) === 'userEvent'
-      : node.type === 'ImportDefaultSpecifier' &&
-        source === '@testing-library/user-event';
+    imported === 'userEvent' ||
+    (imported === 'default' && source === userEventDefaultExportModule);
 
   return importsUserEvent ? source : undefined;
+}
+
+/** The export name an import specifier imports: `default` for a default import, or a named import's identifier or string name. */
+function importedName(specifier: types.Node): string | undefined {
+  if (specifier.type === 'ImportDefaultSpecifier') {
+    return 'default';
+  }
+
+  if (specifier.type !== 'ImportSpecifier') {
+    return undefined;
+  }
+
+  return specifier.imported.type === 'StringLiteral'
+    ? specifier.imported.value
+    : nameOf(specifier.imported);
+}
+
+/** The one user-event module with a default export. */
+const userEventDefaultExportModule = '@testing-library/user-event';
+
+/** Whether `node` names a namespace import of the user-event module with a default export, whose `default` member is a user-event. */
+function isUserEventNamespace(node: types.Node, path: NodePath): boolean {
+  const declaration = bindingOf(withoutTypeWrappers(node), path.scope)?.path;
+
+  return (
+    declaration?.node.type === 'ImportNamespaceSpecifier' &&
+    declaration.parent.type === 'ImportDeclaration' &&
+    declaration.parent.source.value === userEventDefaultExportModule
+  );
 }
 
 /** Whether a pattern's properties hold `userEvent: <name>` or `userEvent: <name> = <default>`. */
@@ -160,7 +199,7 @@ const vitestBrowserSources: ReadonlySet<string> = new Set([
 /** The modules whose `userEvent` export is a user-event. */
 const userEventModules: ReadonlySet<string> = new Set([
   'storybook/test',
-  '@testing-library/user-event',
+  userEventDefaultExportModule,
   ...vitestBrowserSources,
 ]);
 

@@ -178,4 +178,16 @@ export const repeatCases: readonly Case[] = [
       ],
     ],
   },
+  {
+    id: 'repeat-namespace-default',
+    title:
+      "a click on the default member of a namespace import of '@testing-library/user-event' runs twice",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlay('await ue.default.click(button);')}`,
+    expect: [
+      [
+        repeat,
+        '{ await ue.default.click(button); await ue.default.click(button); }',
+      ],
+    ],
+  },
 ];
