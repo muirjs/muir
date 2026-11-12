@@ -195,7 +195,8 @@ export const contextsOnlyRead = perFile((program) => {
     ObjectProperty(path) {
       check(
         path,
-        isKeyedHookRead(path.node.key, path.node.computed, path.get('value')),
+        path.parentPath.isObjectPattern() ||
+          isKeyedHookRead(path.node.key, path.node.computed, path.get('value')),
       );
     },
     SpreadElement(path) {
