@@ -71,22 +71,28 @@ export function csfShapes(program: unknown): CsfShapes {
   const idParameters = stories
     .map((story) => writtenValue(story, 'parameters'))
     .filter((parameters) => writtenValue(parameters, '__id') !== undefined);
-  const testCalls = body
-    .flatMap(testCallOf)
-    .filter(({ target }) => locals.includes(target))
-    .flatMap(({ statement, args: [name, ...rest] }) =>
-      name === undefined
-        ? []
-        : [
-            {
-              statement,
-              name,
-              options:
-                rest.length > 1 ? followed(rest[0], bindings) : undefined,
-              testFunction: followed(rest.at(-1), bindings),
-            },
-          ],
-    );
+  const calls = body.flatMap(testCallOf);
+  const testCalls = locals
+    .flatMap((local) =>
+      firstTestCalls(calls.filter(({ target }) => target === local)),
+    )
+    .flatMap((call) => {
+      // Storybook 10.6.5 CsfFile indexes a .test() call only with two or more arguments; a spread counts as one.
+      if (call.args.length < 2) {
+        return [];
+      }
+
+      const { options, testFunction } = testArguments(call);
+
+      return [
+        {
+          statement: call.statement,
+          name: call.args[0],
+          options: followed(options, bindings),
+          testFunction: followed(testFunction, bindings),
+        },
+      ];
+    });
 
   return {
     metaObjects: new Set(metaObjects),

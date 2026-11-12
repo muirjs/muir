@@ -29,7 +29,9 @@ _Avoid_: static annotation, index value
 
 **Story test code**:
 The code in a story file that tests a story rather than renders it: `play` functions, `beforeEach` and
-`afterEach`, and `.test()` bodies.
+`afterEach`, and the bodies of the `.test()` calls Storybook runs: the first call of each string-literal name with
+two or more arguments, whose function is the second argument when that is a function or the only one after the
+name, else the third.
 _Avoid_: play code (too narrow), interaction test
 
 **Tested story**:

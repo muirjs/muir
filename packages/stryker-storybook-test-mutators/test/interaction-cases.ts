@@ -324,6 +324,13 @@ export const interactionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'raw-dom-in-story-test-of-same-name',
+    title:
+      "a raw DOM element's click() in a later .test() body with the same name makes no mutant, as Storybook runs only the first",
+    source: `export const Story = meta.story({});\nStory.test('clicks', async () => {});\nStory.test('clicks', async () => {\n  button.click();\n});\n`,
+    expect: [],
+  },
+  {
     id: 'raw-dom-in-excluded-export-play',
     title:
       "a raw DOM element's click() in the play of an export that excludeStories leaves out makes no mutant",
