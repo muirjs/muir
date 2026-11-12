@@ -529,8 +529,6 @@ function readsAsContext(
 
   return (
     binding !== undefined &&
-    binding.referencePaths.every((reference) =>
-      isContextRead(reference, reads),
-    )
+    binding.referencePaths.every((reference) => isContextRead(reference, reads))
   );
 }
