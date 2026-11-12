@@ -328,30 +328,8 @@ const contextPositions: ReadonlyMap<string, number> = new Map([
   ['render', 1],
 ]);
 
-const contextParameterReads = new WeakMap<types.Node, Map<number, boolean>>();
-
-/** Whether a hook reads the context it takes at `position`, once per hook and position. A hook that reaches itself, through `step`, counts as read while it is being read, as walking it again finds no read the first walk does not. */
+/** Whether a hook reads the context it takes at `position`. */
 function isContextParameterRead(
-  hook: NodePath<types.Function>,
-  position: number,
-): boolean {
-  const reads =
-    contextParameterReads.get(hook.node) ?? new Map<number, boolean>();
-  const known = reads.get(position);
-
-  if (known !== undefined) {
-    return known;
-  }
-
-  contextParameterReads.set(hook.node, reads);
-  reads.set(position, true);
-  const read = readsContextParameter(hook, position);
-  reads.set(position, read);
-
-  return read;
-}
-
-function readsContextParameter(
   hook: NodePath<types.Function>,
   position: number,
 ): boolean {
@@ -449,8 +427,24 @@ function isStepCall(step: NodePath): boolean {
   );
 }
 
-/** A local or pattern that a context is given to, read as a context. */
+const contextLocalReads = new WeakMap<types.Node, boolean>();
+
+/** A local or pattern that a context is given to, read as a context, once per local or pattern. One that reaches itself counts as read while it is being read, as reading it again finds nothing the first read does not. */
 function isContextLocal(local: types.Node, scope: NodePath['scope']): boolean {
+  const known = contextLocalReads.get(local);
+
+  if (known !== undefined) {
+    return known;
+  }
+
+  contextLocalReads.set(local, true);
+  const read = readsAsContext(local, scope);
+  contextLocalReads.set(local, read);
+
+  return read;
+}
+
+function readsAsContext(local: types.Node, scope: NodePath['scope']): boolean {
   if (local.type === 'ObjectPattern') {
     return isReadPattern(local, scope);
   }

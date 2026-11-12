@@ -39,6 +39,41 @@ export const contextRuleCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-self-given-context-local-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a beforeEach gives a local its context and then the local itself",
+    source: `export default {\n  beforeEach: function (context) {\n    var local = context;\n    var local = local;\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-self-given-context-member-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when the play gives a local its context and then the local's context member",
+    source: `export const Story = {\n  play: async (context) => {\n    var local = context;\n    var local = local.context;\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-self-destructured-context-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when the play destructures its context's context member into a local and then the local's",
+    source: `export const Story = {\n  play: async (context) => {\n    var { context: local } = context;\n    var { context: local } = local;\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-mutually-given-context-locals-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a beforeEach gives two locals its context and then each other",
+    source: `export default {\n  beforeEach: function (context) {\n    var first = context;\n    var second = first;\n    var first = second;\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-self-given-story-context-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a decorator gives a local useStoryContext() and then the local itself",
+    source: `import { useStoryContext } from 'storybook/preview-api';\nexport default {\n  decorators: [\n    (Story) => {\n      var local = useStoryContext();\n      var local = local;\n      return Story();\n    },\n  ],\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-spread-local-meta-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when the meta spreads a local object whose hooks only read their contexts",
