@@ -149,6 +149,13 @@ export const clickFocusCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'click-focus-bound-other-call',
+    title:
+      'a click of a const that a call other than a query bound becomes a focus() call on it',
+    source: inPlay('const menu = openMenu();', 'await userEvent.click(menu);'),
+    expect: [[clickFocus, 'await menu.focus();']],
+  },
+  {
     id: 'click-focus-let-bound-label-text',
     title:
       'a click of a let that a getByLabelText query bound still focuses it, as the let may be reassigned',
