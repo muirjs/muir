@@ -6,16 +6,22 @@ export const backstopCases: readonly Case[] = [
   {
     id: 'skip-typed-context-click-before-type',
     title:
-      'a click directly before a type on the same target, both on the userEvent destructured in a play context typed with a userEvent member, makes no mutant, as a type does not run',
+      'a click directly before a type on the same target, both on the userEvent destructured in a play context typed with a userEvent member, is removed, as a type does not run',
     source: `import type { UserEvent } from 'storybook/test';\nexport const Story = {\n  play: async ({ userEvent }: { userEvent: UserEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-interface-typed-context-click-before-type',
     title:
-      'a click directly before a type on the same target, both on the userEvent destructured in a play context typed by an interface with a userEvent member, makes no mutant, as an interface does not run',
+      'a click directly before a type on the same target, both on the userEvent destructured in a play context typed by an interface with a userEvent member, is removed, as an interface does not run',
     source: `import type { UserEvent } from 'storybook/test';\ninterface PlayContext {\n  userEvent: UserEvent;\n}\nexport const Story = {\n  play: async ({ userEvent }: PlayContext) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'unrelated-user-event-key-click-before-type',

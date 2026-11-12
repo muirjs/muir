@@ -57,9 +57,9 @@ _Avoid_: checks after, assertion window
 **Skipped interaction**:
 An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`,
 `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or `afterEach`,
-given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`); and a click or hover
-that a `type` of the same target in the next statement repeats, when that `type`'s receiver is a proven user-event 14
-(whose `type` clicks first unless given a `skipClick` other than `false`).
+given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`). Every other
+interaction gets its mutants, including one that a later interaction makes redundant, such as a click directly before
+a `type` of the same target.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Proven user-event 14**:

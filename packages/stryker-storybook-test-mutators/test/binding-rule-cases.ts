@@ -6,23 +6,32 @@ export const bindingRuleCases: readonly Case[] = [
   {
     id: 'skip-cast-import-click-before-type',
     title:
-      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test' under a type assertion, makes no mutant, as the assertion does not change the receiver",
+      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test' under a type assertion, is removed, as the assertion does not change the receiver",
     source: `import { type UserEvent, userEvent } from 'storybook/test';\nexport const Story = {\n  play: async () => {\n    await (userEvent as UserEvent).click(input);\n    await (userEvent as UserEvent).type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-non-null-setup-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the setup() of userEvent imported from 'storybook/test' under a non-null assertion, makes no mutant",
+      "a click directly before a type on the same target, both on the setup() of userEvent imported from 'storybook/test' under a non-null assertion, is removed",
     source: `import { userEvent } from 'storybook/test';\nexport const Story = {\n  play: async () => {\n    const user = userEvent.setup();\n    await user!.click(input);\n    await user!.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-type-query-import-click-before-type',
     title:
-      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', makes no mutant when a type reads that import with typeof, as a type does not run",
+      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', is removed when a type reads that import with typeof, as a type does not run",
     source: `import { userEvent } from 'storybook/test';\nexport const Story = {\n  play: async () => {\n    type User = typeof userEvent;\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'written-renamed-context-user-event-click-before-type',

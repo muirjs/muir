@@ -4,34 +4,43 @@ const interaction = 'LzStorybookInteraction';
 
 export const clickBeforeTypeCases: readonly Case[] = [
   {
-    id: 'skip-click-before-type',
+    id: 'click-before-type',
     title:
-      'a click directly before a type on the same target gets no mutant and the type gets one, as type clicks first',
+      'a click directly before a type on the same target is removed, as is the type',
     source: inPlay(
       "await userEvent.click(canvas.getByRole('textbox'));",
       "await userEvent.type(canvas.getByRole('textbox'), 'a');",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
-    id: 'skip-hover-before-type',
+    id: 'hover-before-type',
     title:
-      'a hover directly before a type on the same target gets no mutant and the type gets one, as type clicks first',
+      'a hover directly before a type on the same target is removed, as is the type',
     source: inPlay(
       'await userEvent.hover(input);',
       "await userEvent.type(input, 'a');",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
-    id: 'skip-optional-click-before-type',
+    id: 'optional-click-before-type',
     title:
-      'a userEvent?.click directly before a userEvent?.type on the same target gets no mutant, as type clicks first',
+      'a userEvent?.click directly before a userEvent?.type on the same target is removed, as is the type',
     source: inPlay(
       'await userEvent?.click(input);',
       "await userEvent?.type(input, 'a');",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'click-before-type-elsewhere',
@@ -124,122 +133,164 @@ export const clickBeforeTypeCases: readonly Case[] = [
     ],
   },
   {
-    id: 'skip-click-before-type-skip-click-false',
+    id: 'click-before-type-skip-click-false',
     title:
-      'a click directly before a type of the same target with skipClick: false makes no mutant, as that type clicks first',
+      'a click directly before a type of the same target with skipClick: false is removed',
     source: inPlay(
       'await userEvent.click(input);',
       "await userEvent.type(input, 'a', { skipClick: false });",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
-    id: 'skip-click-before-type-other-options',
+    id: 'click-before-type-other-options',
     title:
-      'a click directly before a type of the same target with options but no skipClick makes no mutant',
+      'a click directly before a type of the same target with options but no skipClick is removed',
     source: inPlay(
       'await userEvent.click(input);',
       "await userEvent.type(input, 'a', { delay: 10 });",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-default-import-click-before-type',
     title:
-      "a click directly before a type on the same target, both on userEvent default-imported from '@testing-library/user-event', makes no mutant",
+      "a click directly before a type on the same target, both on userEvent default-imported from '@testing-library/user-event', is removed",
     source: `import userEvent from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('textbox'));", "await userEvent.type(canvas.getByRole('textbox'), 'a');")}`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-storybook-import-click-before-type',
     title:
-      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', makes no mutant",
+      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', is removed",
     source: `import { userEvent } from 'storybook/test';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('textbox'));", "await userEvent.type(canvas.getByRole('textbox'), 'a');")}`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-renamed-import-click-before-type',
     title:
-      "a click directly before a type on the same target, both on userEvent imported under another name from 'storybook/test', makes no mutant",
+      "a click directly before a type on the same target, both on userEvent imported under another name from 'storybook/test', is removed",
     source: `import { userEvent as ue } from 'storybook/test';\nexport const Story = {\n  play: async () => {\n    await ue.click(input);\n    await ue.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-context-click-before-type',
     title:
-      'a click directly before a type on the same target, both on the userEvent of a play context that is not destructured, makes no mutant',
+      'a click directly before a type on the same target, both on the userEvent of a play context that is not destructured, is removed',
     source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-optional-context-click-before-type',
     title:
-      'a click directly before a type on the same target, both on the userEvent of a play context read through ?., makes no mutant',
+      'a click directly before a type on the same target, both on the userEvent of a play context read through ?., is removed',
     source: `export const Story = {\n  play: async (context) => {\n    await context?.userEvent.click(input);\n    await context?.userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-testing-library-import-click-before-type',
     title:
-      "a click directly before a type on the same target, both on userEvent imported from '@testing-library/user-event', makes no mutant",
+      "a click directly before a type on the same target, both on userEvent imported from '@testing-library/user-event', is removed",
     source: `import { userEvent } from '@testing-library/user-event';\nexport const Story = {\n  play: async () => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-renamed-context-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the play context's userEvent destructured under another name, makes no mutant",
+      "a click directly before a type on the same target, both on the play context's userEvent destructured under another name, is removed",
     source: inPlayWith(
       ['userEvent: user'],
       'await user.click(input);',
       "await user.type(input, 'a');",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-setup-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the setup() of userEvent imported from 'storybook/test', makes no mutant",
+      "a click directly before a type on the same target, both on the setup() of userEvent imported from 'storybook/test', is removed",
     source: `import { userEvent } from 'storybook/test';\nexport const Story = {\n  play: async () => {\n    const user = userEvent.setup();\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-context-play-method-click-before-type',
     title:
-      'a click directly before a type on the same target, both on the userEvent of the context of a play method, makes no mutant',
+      'a click directly before a type on the same target, both on the userEvent of the context of a play method, is removed',
     source: `export const Story = {\n  async play(context) {\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-meta-play-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the userEvent of the context of the meta's play, makes no mutant",
+      "a click directly before a type on the same target, both on the userEvent of the context of the meta's play, is removed",
     source: `export default {\n  play: async (context) => {\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\nexport const Story = {};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-factory-play-click-before-type',
     title:
-      "a click directly before a type on the same target, both on the userEvent destructured in the context of a CSF factory story's play, makes no mutant",
+      "a click directly before a type on the same target, both on the userEvent destructured in the context of a CSF factory story's play, is removed",
     source: `import preview from '../.storybook/preview';\nconst meta = preview.meta({});\nexport const Story = meta.story({\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n});\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-choice-click-before-type',
     title:
-      'a click directly before a type on the same target, both on a local that is one of two user-event 14 instances, makes no mutant',
+      'a click directly before a type on the same target, both on a local that is one of two user-event 14 instances, is removed',
     source: inPlay(
       'const slowUser = userEvent.setup({ delay: 100 });',
       'const user = slow ? slowUser : userEvent;',
       'await user.click(input);',
       "await user.type(input, 'a');",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'skip-assigned-choice-click-before-type',
     title:
-      'a click directly before a type on the same target, both on a local assigned one of two user-event 14 instances after its declaration, makes no mutant',
+      'a click directly before a type on the same target, both on a local assigned one of two user-event 14 instances after its declaration, is removed',
     source: inPlay(
       'const slowUser = userEvent.setup({ delay: 100 });',
       'let user;',
@@ -247,7 +298,10 @@ export const clickBeforeTypeCases: readonly Case[] = [
       'await user.click(input);',
       "await user.type(input, 'a');",
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'vitest-browser-click-before-type',

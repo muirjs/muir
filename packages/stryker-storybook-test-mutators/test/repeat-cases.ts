@@ -131,14 +131,18 @@ export const repeatCases: readonly Case[] = [
     expect: [],
   },
   {
-    id: 'repeat-skip-click-before-type',
-    title:
-      'a click directly before a type on the same target makes no mutant, as type clicks first',
+    id: 'repeat-click-before-type',
+    title: 'a click directly before a type on the same target runs twice',
     source: inPlay(
       'await userEvent.click(input);',
       "await userEvent.type(input, 'a');",
     ),
-    expect: [],
+    expect: [
+      [
+        repeat,
+        '{ await userEvent.click(input); await userEvent.click(input); }',
+      ],
+    ],
   },
   {
     id: 'repeat-negative-only',

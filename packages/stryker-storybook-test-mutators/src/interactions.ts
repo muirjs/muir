@@ -1,12 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
 import { hasCheck } from './checks.ts';
-import type { BabelTypes } from './mutator.ts';
 import {
   awaited,
   type Binding,
   bindingOf,
-  keyName,
   nameOf,
   withoutTypeWrappers,
 } from './nodes.ts';
@@ -158,44 +156,9 @@ function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   );
 }
 
-/** An interaction that makes no mutant: one in a story hook, or a click that a type of its target repeats. */
-export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
-  const { path } = interaction;
-
-  return path.findParent(isHook) !== null || isRepeatedByNext(interaction, t);
-}
-
-/** A user-event click or hover directly before a type of the same target on a receiver the file proves to be user-event 14, which clicks it first; Vitest browser's type does not. */
-function isRepeatedByNext(current: Interaction, t: BabelTypes): boolean {
-  const [next] = nextSiblings(current.path);
-  const following = next === undefined ? undefined : interactionAt(next);
-  const [target] = current.call.arguments;
-  const [followingTarget, , options] = following?.call.arguments ?? [];
-
-  return (
-    current.kind === 'userEvent' &&
-    following?.kind === 'userEvent' &&
-    target !== undefined &&
-    followingTarget !== undefined &&
-    ['click', 'hover'].includes(current.method) &&
-    following.method === 'type' &&
-    following.isProvenUserEvent14 &&
-    !hasSkipClick(options) &&
-    t.isNodesEquivalent(target, followingTarget)
-  );
-}
-
-/** user-event 14's `type(element, text, { skipClick })` with a `skipClick` other than `false`, which may then type without clicking first. */
-function hasSkipClick(options: types.Node | undefined): boolean {
-  return (
-    options?.type === 'ObjectExpression' &&
-    options.properties.some(
-      (property) =>
-        property.type === 'ObjectProperty' &&
-        keyName(property.key) === 'skipClick' &&
-        !(property.value.type === 'BooleanLiteral' && !property.value.value),
-    )
-  );
+/** An interaction that makes no mutant: one in a story hook. */
+export function isSkipped({ path }: Interaction): boolean {
+  return path.findParent(isHook) !== null;
 }
 
 /** The interaction whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
