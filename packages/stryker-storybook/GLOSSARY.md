@@ -163,8 +163,9 @@ _Avoid_: skip reason, interaction pattern
 **Checks before the next interaction**:
 The checks after an interaction up to the next statement that is an interaction or a `step(...)` that holds one, looked
 for past the end of the interaction's block and of a step callback that holds it. A check is an `expect(...)` call, an
-`expect.<name>(...)` call such as `expect.soft`, `expect.element` or `expect.poll`, or a `findBy` query, which fails
-when it finds nothing; it is negative when its member chain holds `.not`. Unlike the following checks, which count only
+`expect.<name>(...)` call such as `expect.soft`, `expect.element` or `expect.poll`, or a call to a `findBy*`,
+`findAllBy*`, `getBy*` or `getAllBy*` query, on a receiver such as `canvas` or destructured from one, which fails when
+it finds nothing (a `queryBy*` query does not); it is negative when its member chain holds `.not`. Unlike the following checks, which count only
 `expect(...)`, they also run past an `if` or a `waitFor(...)` that holds an interaction.
 _Avoid_: later checks
 

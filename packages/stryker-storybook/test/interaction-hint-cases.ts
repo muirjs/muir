@@ -111,6 +111,43 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'positive-find-all-by',
+    title:
+      'gives no hint for an interaction followed by a findAllBy query, which fails when nothing is found',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "await canvas.findAllByRole('row');",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'positive-get-by',
+    title:
+      'gives no hint for an interaction followed by a getBy query statement, which throws when nothing is found',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "canvas.getByRole('dialog');",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'positive-destructured-find-by',
+    title:
+      'gives no hint for an interaction followed by a findBy query destructured from canvas',
+    source: inPlay(
+      'const { findByText } = canvas;',
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "await findByText('Saved');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
     id: 'ends-at-next-interaction',
     title:
       'reads the following checks only up to the next interaction, whose own checks may be positive',

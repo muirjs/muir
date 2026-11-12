@@ -489,16 +489,22 @@ function chainTo(
     : undefined;
 }
 
-/** `expect(...)`, `expect.<name>(...)` such as `expect.soft`, `expect.element` or `expect.poll`, or a `findBy` query, which fails when it finds nothing. */
+/**
+ * `expect(...)`, `expect.<name>(...)` such as `expect.soft`, `expect.element` or `expect.poll`, or a query that fails
+ * when it finds nothing.
+ */
 function isCheckCall(call: AstNode): boolean {
   const callee = call['callee'];
 
   return (
     nameOf(callee) === 'expect' ||
     nameOf(field(callee, 'object')) === 'expect' ||
-    (nameOf(field(callee, 'property'))?.startsWith('findBy') ?? false)
+    failingQuery.test(nameOf(callee) ?? nameOf(field(callee, 'property')) ?? '')
   );
 }
+
+/** `findBy*`, `findAllBy*`, `getBy*` and `getAllBy*`, on any receiver or none; `queryBy*` finds nothing quietly. */
+const failingQuery = /^(find|get)(All)?By/;
 
 function nameOf(node: unknown): string | undefined {
   const name = field(node, 'name');
