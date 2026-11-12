@@ -6,7 +6,13 @@ import { pathToFileURL } from 'node:url';
 import { inspect } from 'node:util';
 
 import { parseSync, traverse, types, type NodePath } from '@babel/core';
-import { field, isRecord, list, propertyKey } from '@layzee/storybook-csf';
+import {
+  field,
+  isRecord,
+  list,
+  propertyKey,
+  type ProofReason,
+} from '@layzee/storybook-csf';
 import { definePreview, getStoryChildren } from 'storybook/internal/csf';
 import { composeStories } from 'storybook/preview-api';
 
@@ -26,7 +32,7 @@ export interface ComposeSkips {
   readonly layer: 'args' | 'globals';
   readonly same: (withProperty: unknown, withoutProperty: unknown) => boolean;
   readonly unloadable: ReadonlyMap<string, string>;
-  readonly reasons: readonly string[];
+  readonly reasonsRowsMustCut: readonly ProofReason[];
 }
 
 /** Keys Storybook reads as story structure; a stub that claimed them would break composition of every row. */
@@ -74,7 +80,7 @@ export function composeSkips({
   layer,
   same,
   unloadable,
-  reasons,
+  reasonsRowsMustCut,
 }: ComposeSkips): void {
   test('removing a property the mutator skips leaves every composed story the same', async (t) => {
     const root = tempRoot(t, 'compose-skips-');
@@ -187,7 +193,7 @@ export function composeSkips({
     );
     assert.notEqual(cuts.length, 0, 'no row cut a property the mutator skips');
     assert.deepEqual(
-      reasons.filter(
+      reasonsRowsMustCut.filter(
         (reason) => !cuts.some((cut) => cut.reasons.includes(reason)),
       ),
       [],
@@ -206,7 +212,12 @@ async function checkRow(
   testCase: Case,
   row: Row,
   files: RowFiles,
-  { skipsOf, layer, same, unloadable }: Omit<ComposeSkips, 'cases' | 'reasons'>,
+  {
+    skipsOf,
+    layer,
+    same,
+    unloadable,
+  }: Omit<ComposeSkips, 'cases' | 'reasonsRowsMustCut'>,
 ): Promise<RowResult> {
   const { id } = testCase;
   const skips = [...skipsOf(row.program)];

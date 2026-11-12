@@ -25,5 +25,5 @@ composeSkips({
       'the story reads its own binding before it is initialized, a ReferenceError on import',
     ],
   ]),
-  reasons: ['same-as-below', 'overridden'],
+  reasonsRowsMustCut: ['same-as-below', 'overridden'],
 });
