@@ -256,7 +256,7 @@ export const contextRuleCases: readonly Case[] = [
     id: 'skip-copied-meta-hook-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when an object literal copies the meta's beforeEach under another key, as only the member a pattern writes gives Storybook a hook",
-    source: `const meta = {};\nconst copy = { other: meta.beforeEach };\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    copy;\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    source: `const meta = {};\nconst copy = { other: meta.beforeEach };\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
     expect: [[interaction, ';']],
   },
   {
