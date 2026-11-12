@@ -14,11 +14,15 @@ import {
   type MutantEarlyResultPlan,
   type MutantRunPlan,
   type MutantTestCoverage,
-  type schema,
 } from '@stryker-mutator/api/core';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 import type { Reporter } from '@stryker-mutator/api/report';
 
+import {
+  interactionHints,
+  type InteractionHint,
+  type ReportFiles,
+} from './interaction-hints.ts';
 import { packageName } from './package-name.ts';
 import {
   isStoryFile,
@@ -36,6 +40,7 @@ import {
 
 export interface LzStorybookReport {
   readonly findings: readonly StubFinding[];
+  readonly interactionHints: readonly InteractionHint[];
   readonly staticStoryMutants: readonly StaticStoryMutant[];
 }
 
@@ -47,20 +52,8 @@ interface StubFinding {
   readonly fix: string;
 }
 
-type ReportMutant = Pick<
-  schema.MutantResult,
-  'mutatorName' | 'status' | 'location'
->;
-
 interface ReportInput {
-  readonly files: Readonly<
-    Record<
-      string,
-      Pick<schema.FileResult, 'source'> & {
-        readonly mutants: readonly ReportMutant[];
-      }
-    >
-  >;
+  readonly files: ReportFiles;
 }
 
 interface StaticStoryMutant {
@@ -135,7 +128,17 @@ export function storybookReporter(options: object, log: ProjectLog) {
       const findings = excludesSpyStub(options)
         ? []
         : stubFindings(files, storybook(), warnUnparsable);
-      const report: LzStorybookReport = { findings, staticStoryMutants };
+      const report: LzStorybookReport = {
+        findings,
+        interactionHints: interactionHints(
+          files,
+          list(field(options, 'mutate')).filter(
+            (pattern) => typeof pattern === 'string',
+          ),
+          (message) => log.warn(message),
+        ),
+        staticStoryMutants,
+      };
       mkdirSync('reports', { recursive: true });
       writeFileSync(
         join('reports', 'lz-storybook.json'),
@@ -153,15 +156,23 @@ storybookReporter.inject = tokens(commonTokens.options, commonTokens.logger);
 
 function consoleBlock({
   findings,
+  interactionHints: hints,
   staticStoryMutants,
 }: LzStorybookReport): string {
-  if (findings.length === 0 && staticStoryMutants.length === 0) {
+  if (
+    findings.length === 0 &&
+    hints.length === 0 &&
+    staticStoryMutants.length === 0
+  ) {
     return `${packageName}: no spy stub findings and no static story mutants`;
   }
 
   const counts = Object.entries(
     Object.groupBy(findings, ({ verdict }) => verdict),
   ).map(([verdict, group]) => `${group.length} ${verdict}`);
+  const shapeCounts = Object.entries(
+    Object.groupBy(hints, ({ shape }) => shape),
+  ).map(([shape, group]) => `${group.length} ${shape}`);
 
   return [
     findings.length === 0
@@ -171,6 +182,15 @@ function consoleBlock({
       ({ verdict, file, line, reason, fix }) =>
         `  ${verdict}  ${file}:${line}  ${reason}; ${fix}`,
     ),
+    ...(hints.length === 0
+      ? []
+      : [
+          `${packageName}: ${hints.length} interaction hints (${shapeCounts.join(', ')})`,
+          ...hints.flatMap(({ shape, file, line, reason, fix, comment }) => [
+            `  ${shape}  ${file}:${line}  ${reason}; ${fix}`,
+            `    ${comment}`,
+          ]),
+        ]),
     ...(staticStoryMutants.length === 0
       ? []
       : [

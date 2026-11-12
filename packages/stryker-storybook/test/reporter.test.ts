@@ -58,6 +58,12 @@ const recordedReport = {
   ),
 };
 
+const emptyReport = {
+  findings: [],
+  interactionHints: [],
+  staticStoryMutants: [],
+};
+
 const erasedStub = [
   "import { fn } from 'storybook/test';",
   '',
@@ -134,6 +140,51 @@ function ignoredAt(source: string, text: string, mutatorName: string) {
     },
   } as const;
 }
+
+const shapedPlay = [
+  "export default { title: 'Form' };",
+  '',
+  'export const Form = {',
+  '  play: async ({ args, canvas, userEvent }) => {',
+  "    await userEvent.click(canvas.getByRole('button'));",
+  '    await expect(args.onSave).not.toHaveBeenCalled();',
+  "    await userEvent.click(canvas.getByRole('textbox'));",
+  "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+  "    await userEvent.clear(canvas.getByRole('textbox'));",
+  '  },',
+  '};',
+  '',
+].join('\n');
+
+/** The LzStorybookInteraction mutant of the statement on `line` of `shapedPlay`, as the report gives it. */
+function interactionMutant(line: number, status: schema.MutantStatus) {
+  const text = (shapedPlay.split('\n')[line - 1] ?? '').trim();
+  const column = (shapedPlay.split('\n')[line - 1] ?? '').indexOf(text) + 1;
+
+  return {
+    mutatorName: 'LzStorybookInteraction',
+    status,
+    location: {
+      start: { line, column },
+      end: { line, column: column + text.length },
+    },
+  };
+}
+
+/** One surviving interaction of each shape: negative-only on line 5, click-before-type on 7, cleared-later on 8. */
+const shapedReport = {
+  files: {
+    'src/Form.stories.tsx': {
+      source: shapedPlay,
+      mutants: [
+        interactionMutant(5, 'Survived'),
+        interactionMutant(7, 'Survived'),
+        interactionMutant(8, 'Survived'),
+        interactionMutant(9, 'Killed'),
+      ],
+    },
+  },
+};
 
 function writeStory(projectDir: string, name: string, content: string): void {
   mkdirSync(join(projectDir, 'src'), { recursive: true });
@@ -229,7 +280,7 @@ describe('storybookReporter', () => {
 
     reporter.onMutationTestReportReady({ files: {} });
 
-    assert.deepEqual(written(), { findings: [], staticStoryMutants: [] });
+    assert.deepEqual(written(), emptyReport);
   });
 
   it('reports an erased stub in a story file in the mutation report', (t) => {
@@ -452,6 +503,7 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(written(), {
       findings: [],
+      interactionHints: [],
       staticStoryMutants: [
         {
           file: 'src/SpyStubMetaOff.stories.tsx',
@@ -477,7 +529,7 @@ describe('storybookReporter', () => {
     });
     reporter.onMutationTestReportReady({ files: {} });
 
-    assert.deepEqual(written(), { findings: [], staticStoryMutants: [] });
+    assert.deepEqual(written(), emptyReport);
   });
 
   it('leaves a static mutant outside story files out of the static list', (t) => {
@@ -488,7 +540,7 @@ describe('storybookReporter', () => {
     });
     reporter.onMutationTestReportReady({ files: {} });
 
-    assert.deepEqual(written(), { findings: [], staticStoryMutants: [] });
+    assert.deepEqual(written(), emptyReport);
   });
 
   it('leaves a static mutant with an early result out of the static list', (t) => {
@@ -503,7 +555,7 @@ describe('storybookReporter', () => {
     });
     reporter.onMutationTestReportReady({ files: {} });
 
-    assert.deepEqual(written(), { findings: [], staticStoryMutants: [] });
+    assert.deepEqual(written(), emptyReport);
   });
 
   it('opens its console block with the finding counts per verdict', (t) => {
@@ -907,13 +959,75 @@ describe('storybookReporter', () => {
     );
   });
 
+  it('opens a hint section with the interaction hint counts per shape', (t) => {
+    const { reporter, consoleBlock } = setup(t);
+
+    reporter.onMutationTestReportReady(shapedReport);
+
+    assert.deepEqual(consoleBlock().slice(0, 2), [
+      'info: @layzee/stryker-storybook: no spy stub findings',
+      '@layzee/stryker-storybook: 3 interaction hints (1 negative-only, 1 click-before-type, 1 cleared-later)',
+    ]);
+  });
+
+  it('prints each hint with its shape, place, reason and fix, and the ready comment below it', (t) => {
+    const { reporter, consoleBlock, written } = setup(t);
+
+    reporter.onMutationTestReportReady(shapedReport);
+
+    const report = written();
+    const hints =
+      isRecord(report) && Array.isArray(report['interactionHints'])
+        ? report['interactionHints'].filter(isRecord)
+        : [];
+
+    assert.deepEqual(
+      consoleBlock().slice(2),
+      hints.flatMap(({ shape, file, line, reason, fix, comment }) => [
+        `  ${String(shape)}  ${String(file)}:${String(line)}  ${String(reason)}; ${String(fix)}`,
+        `    ${String(comment)}`,
+      ]),
+    );
+    assert.equal(hints.length, 3);
+  });
+
+  it('warns and gives no hint for a story file that a line-range mutate pattern names', (t) => {
+    const { reporter, lines, written } = setup(t, 'no-main', {
+      mutate: ['src/Form.stories.tsx:5-9'],
+    });
+
+    reporter.onMutationTestReportReady(shapedReport);
+
+    assert.deepEqual(written(), emptyReport);
+    assert.deepEqual(
+      lines.filter((line) => line.startsWith('warn: ')),
+      [
+        "warn: @layzee/stryker-storybook: the mutate pattern src/Form.stories.tsx:5-9 gives src/Form.stories.tsx a line range, so lz-storybook gave it no interaction hints: an interaction outside the range has no LzStorybookInteraction mutant to end a hint's window",
+      ],
+    );
+  });
+
+  it('prints no hint section when no interaction mutant survived with a shape', (t) => {
+    const { reporter, consoleBlock } = setup(t);
+
+    reporter.onMutationTestReportReady(recordedReport);
+
+    assert.deepEqual(consoleBlock(), [
+      'info: @layzee/stryker-storybook: 4 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked)',
+      "  unknown  src/lzsb/Imported.stories.tsx:14  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach",
+      '  order-dependent  src/lzsb/OrderDep.stories.tsx:13  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
+      '  erased  src/SpyStubDefault.stories.tsx:15  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
+      '  unchecked  src/SpyStubMetaOff.stories.tsx:24  no test fails without this stub, so no play checks what it changes; assert in the play what the stubbed value changes',
+    ]);
+  });
+
   it('writes its report into a reports folder that an earlier run left', (t) => {
     const { reporter, written, projectDir } = setup(t);
     mkdirSync(join(projectDir, 'reports'));
 
     reporter.onMutationTestReportReady({ files: {} });
 
-    assert.deepEqual(written(), { findings: [], staticStoryMutants: [] });
+    assert.deepEqual(written(), emptyReport);
   });
 
   it('reports no finding for a Survived mutant of another mutator in a story file', (t) => {
