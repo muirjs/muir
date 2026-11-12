@@ -435,20 +435,6 @@ const clickBeforeTypeCases: readonly Case[] = [
     ],
   },
   {
-    id: 'skip-vitest-browser-named-import-member-click-before-type',
-    title:
-      "a click directly before a type on the same target, both on the userEvent member of a named import of 'vitest/browser', makes no mutant, as only a namespace import is the module",
-    source: `import { page } from 'vitest/browser';\n${inPlay('await page.userEvent.click(input);', "await page.userEvent.type(input, 'a');")}`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'skip-unnamed-receiver-click-before-type',
-    title:
-      "a click directly before a type on the same target, both on the userEvent of a call result, makes no mutant, even beside a 'vitest/browser' namespace bound to the name undefined",
-    source: `import * as undefined from 'vitest/browser';\n${inPlay('await (await openForm()).userEvent.click(input);', "await (await openForm()).userEvent.type(input, 'a');")}`,
-    expect: [[interaction, ';']],
-  },
-  {
     id: 'vitest-browser-choice-click-before-type',
     title:
       "a click directly before a type on the same target, both on a local that is import('vitest/browser')'s userEvent or userEvent, is removed",

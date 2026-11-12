@@ -41,8 +41,7 @@ export const spyStubOutcomeCases: readonly Case[] = [
   },
   {
     id: 'spy-stub-outcome-statement-in-render',
-    title:
-      'a resolved stub statement outside story test code makes no outcome mutant',
+    title: 'a mockResolvedValue statement in a render makes no outcome mutant',
     source: withFnImport(
       'export const Story = {',
       '  render: () => {',

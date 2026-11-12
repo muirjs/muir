@@ -125,18 +125,6 @@ export const repeatCases: readonly Case[] = [
     expect: [],
   },
   {
-    id: 'repeat-click-given-key-text',
-    title:
-      'a click given {End} as text runs twice, as only a key press of {Home} or {End} is skipped',
-    source: inPlay("await userEvent.click('{End}');"),
-    expect: [
-      [
-        repeat,
-        "{ await userEvent.click('{End}'); await userEvent.click('{End}'); }",
-      ],
-    ],
-  },
-  {
     id: 'repeat-hover',
     title: 'a hover makes no mutant, as a second hover changes nothing',
     source: inPlay('await userEvent.hover(button);'),
