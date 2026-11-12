@@ -20,7 +20,7 @@ export const resolvedObjectIsNotConstructible: 'ResolvedObject' extends keyof ty
   ? true
   : false = false;
 
-export const spreadCopyIsNotLayer: Assignable<
+export const spreadCopyIsNotResolvedObject: Assignable<
   ReturnType<typeof spreadCopy>,
-  Layer
+  ResolvedObject
 > = false;

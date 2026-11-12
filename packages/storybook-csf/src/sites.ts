@@ -34,8 +34,8 @@ export type ProofReason = 'same-as-below' | 'overridden' | 'default-global';
 
 /**
  * The proof that removing one property of a site changes nothing in any run of the site (ADR 0006). Only `sitesOf`
- * makes one; it is exported as a type only, and its `#` fields keep a literal with the same members, or a spread copy
- * of one, from passing as one.
+ * makes one; it is exported as a type only, and its `#` fields keep a literal with the same members from passing as
+ * one. A spread copy of one is none either, as TypeScript drops the getters from a spread type.
  */
 class Proven {
   readonly #property: object;
