@@ -971,24 +971,18 @@ describe('storybookReporter', () => {
   });
 
   it('prints each hint with its shape, place, reason and fix, and the ready comment below it', (t) => {
-    const { reporter, consoleBlock, written } = setup(t);
+    const { reporter, consoleBlock } = setup(t);
 
     reporter.onMutationTestReportReady(shapedReport);
 
-    const report = written();
-    const hints =
-      isRecord(report) && Array.isArray(report['interactionHints'])
-        ? report['interactionHints'].filter(isRecord)
-        : [];
-
-    assert.deepEqual(
-      consoleBlock().slice(2),
-      hints.flatMap(({ shape, file, line, reason, fix, comment }) => [
-        `  ${String(shape)}  ${String(file)}:${String(line)}  ${String(reason)}; ${String(fix)}`,
-        `    ${String(comment)}`,
-      ]),
-    );
-    assert.equal(hints.length, 3);
+    assert.deepEqual(consoleBlock().slice(2), [
+      '  negative-only  src/Form.stories.tsx:5  every check after this interaction up to the next one is negative, so the play also passes when the interaction does nothing; if the control is meant to ignore it, such as a disabled one, disable the mutant, otherwise add a check that the interaction makes true',
+      '    // Stryker disable next-line LzStorybookInteraction: lz-storybook: negative-only: every check up to the next interaction is negative',
+      "  click-before-type  src/Form.stories.tsx:7  the type in the next statement clicks the same target first (user-event 14's type does, unless given skipClick), so this click repeats it; disable the mutant or remove the click, unless the click itself must do something, then add a check for that before the type",
+      '    // Stryker disable next-line LzStorybookInteraction: lz-storybook: click-before-type: the next type clicks the same target first',
+      '  cleared-later  src/Form.stories.tsx:8  the next interaction clears the same target with no check between them, so nothing reads what this one leaves; disable the mutant if no handler records the input, otherwise add a check of what it records before the clear',
+      '    // Stryker disable next-line LzStorybookInteraction: lz-storybook: cleared-later: the next interaction clears the same target before any check',
+    ]);
   });
 
   it('warns and gives no hint for a story file that a line-range mutate pattern names', (t) => {
