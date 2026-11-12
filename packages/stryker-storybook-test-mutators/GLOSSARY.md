@@ -77,25 +77,32 @@ from `storybook/test` or `@testing-library/user-event`, or the default import of
 any local name; the `userEvent` of a play's context, destructured in its first parameter or read as
 `<context>.userEvent` or `<context>?.userEvent` on that parameter itself, where the play is a `play` property or
 method given inline under a key that is not computed, that is story test code and inside none, such as the meta's
-play or a CSF factory story's. The file must also only read that context: it never reassigns the parameter or the
-local it destructures, it uses a context that is not destructured only as `<context>.<name>`, and it names `userEvent`
-only in an import, in a parameter's destructuring, or as `userEvent` or `<x>.userEvent` that is a method call's
-receiver or a side of a choice given to a local that is only ever a method call's receiver, with no `'userEvent'`
-string. A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read
-where the local is given that value. A local that holds one of these, whether an import, a destructured `userEvent`,
-a `setup()` or a choice, keeps its proof only when every reference to it is a method call's receiver or a side of a
-choice given to such a local. An import also needs every import of a user-event 14 module in the file to meet that,
-the `userEvent` and `default` members of a namespace import included, and no `import()` that may load one. Any other
-receiver may be Vitest browser's userEvent, whose `type` does not click:
-another import, a `userEvent` the file does not bind, the `userEvent` of another object, a call result or another
-function's parameter, a play context's `userEvent` destructured with a default, a `.test()` function's or a step
-callback's context, the context of a play given by its name, assigned as `Story.play` or under a computed key, a play
-context the play passes on or reads with a computed member, and every play context in a file that names `userEvent`
-any other way, as a `beforeEach` or the play may replace the context's userEvent or its methods. The play context's
-proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()` and runs the loaders and `beforeEach` hooks
-on the same context before the play, as the default global's proof rests on Storybook's initial values. It also
-assumes that no project loader or `beforeEach` in `.storybook/preview` replaces the context's userEvent, which the
-story file cannot show; a play that other code calls with a context of its own is not read.
+play or a CSF factory story's. The play never reassigns that parameter or the local it destructures, and every
+context the file can reach is only read. A context is the first parameter of a `play`, `beforeEach` or loader, the
+second of a decorator or `render` function, every parameter of a function under a computed key, the first of a step
+callback, a `useStoryContext()` call, and the `context` member or destructured `context` of any of these, which
+Storybook sets to the context itself; such a function counts given inline, as a method, in an array, by the name of a
+local function, or assigned as `<x>.beforeEach` and the like. Each context is used only as `<context>.<name>`, or
+destructured under plain keys in a parameter or a declaration, its `userEvent` local only called on. A hook the file
+cannot read, such as an imported decorator, or one that may reach its context through `arguments` or a rest
+parameter, counts as one that does not. The file also names `userEvent` only in an import, in a parameter's
+destructuring, or as `userEvent` or `<x>.userEvent` that is a method call's receiver or a side of a choice given to a
+local that is only ever a method call's receiver, with no `'userEvent'` string. A `setup()` of one of these, or a
+local that is a choice between them, is proven too, with its names read where the local is given that value. A local
+that holds one of these, whether an import, a destructured `userEvent`, a `setup()` or a choice, keeps its proof only
+when every reference to it is a method call's receiver or a side of a choice given to such a local. An import also
+needs every import of a user-event 14 module in the file to meet that, the `userEvent` and `default` members of a
+namespace import included, and no `import()` that may load one. Any other receiver may be Vitest browser's userEvent,
+whose `type` does not click: another import, a `userEvent` the file does not bind, the `userEvent` of another object,
+a call result or another function's parameter, a play context's `userEvent` destructured with a default, a `.test()`
+function's or a step callback's context, the context of a play given by its name, assigned as `Story.play` or under a
+computed key, and every play context in a file where any context is used another way or given to a hook the file
+cannot read, as that hook or the play may replace the context's userEvent or its methods. The play context's proof
+rests on Storybook 10.6.5, which sets it to user-event 14's `setup()` and runs the loaders, the `beforeEach` hooks and
+the first decorator on the same context before the play, as the default global's proof rests on Storybook's initial
+values. It also assumes that no project loader, `beforeEach` or decorator in `.storybook/preview` replaces the
+context's userEvent, which the story file cannot show; a play that other code calls with a context of its own is not
+read.
 _Avoid_: real userEvent, Storybook userEvent
 
 **Copied check**:
