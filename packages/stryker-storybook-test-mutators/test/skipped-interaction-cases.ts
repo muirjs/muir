@@ -1,8 +1,8 @@
 import { backstopCases } from './backstop-cases.ts';
 import { bindingRuleCases } from './binding-rule-cases.ts';
 import { clickBeforeTypeCases } from './click-before-type-cases.ts';
+import { contextRuleCases } from './context-rule-cases.ts';
 import { type Case, inPlay } from './support/case.ts';
-import { userEventProofCases } from './user-event-proof-cases.ts';
 
 const interaction = 'LzStorybookInteraction';
 
@@ -400,7 +400,7 @@ export const skippedInteractionCases: readonly Case[] = [
   ...negativeOnlyCases,
   ...clickBeforeTypeCases,
   ...bindingRuleCases,
-  ...userEventProofCases,
+  ...contextRuleCases,
   ...backstopCases,
   ...clearedLaterCases,
 ];
