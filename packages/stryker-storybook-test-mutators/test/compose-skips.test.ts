@@ -5,11 +5,8 @@ import { field, isRecord } from '@layzee/storybook-core';
 import { proofsBySite } from '../src/story-globals.ts';
 import { assertionBeforeCases } from './assertion-before-cases.ts';
 import { clickFocusCases } from './click-focus-cases.ts';
-import { composedPlayCases } from './composed-play-cases.ts';
-import { crashCases, interactionCases } from './interaction-cases.ts';
-import { rawDomCases } from './raw-dom-cases.ts';
+import { allInteractionCases, crashCases } from './interaction-cases.ts';
 import { repeatCases } from './repeat-cases.ts';
-import { skippedInteractionCases } from './skipped-interaction-cases.ts';
 import { spyStubCases } from './spy-stub-cases.ts';
 import { spyStubOutcomeCases } from './spy-stub-outcome-cases.ts';
 import {
@@ -51,10 +48,7 @@ composeSkips({
     ...storyGlobalsCrashCases,
     ...assertionBeforeCases,
     ...clickFocusCases,
-    ...interactionCases,
-    ...composedPlayCases,
-    ...rawDomCases,
-    ...skippedInteractionCases,
+    ...allInteractionCases,
     ...crashCases,
     ...repeatCases,
     ...spyStubCases,

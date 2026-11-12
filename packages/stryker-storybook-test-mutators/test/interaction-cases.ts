@@ -1,3 +1,6 @@
+import { composedPlayCases } from './composed-play-cases.ts';
+import { rawDomCases } from './raw-dom-cases.ts';
+import { skippedInteractionCases } from './skipped-interaction-cases.ts';
 import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const interaction = 'LzStorybookInteraction';
@@ -29,7 +32,7 @@ const vitestBrowserCalls: readonly (readonly [string, string])[] = [
   ['wheel', "list, { direction: 'down' }"],
 ];
 
-export const interactionCases: readonly Case[] = [
+const interactionCases: readonly Case[] = [
   ...userEventCalls.map(([method, args]) => ({
     id: `user-event-method-${method}`,
     title: `an awaited userEvent.${method} statement is removed`,
@@ -339,6 +342,13 @@ export const interactionCases: readonly Case[] = [
     source: inPlay('await (fireEvent as any).click(button);'),
     expect: [[interaction, ';']],
   },
+];
+
+export const allInteractionCases: readonly Case[] = [
+  ...interactionCases,
+  ...composedPlayCases,
+  ...rawDomCases,
+  ...skippedInteractionCases,
 ];
 
 // Cases that once crashed the instrumenter, which fails every case it instruments together.
