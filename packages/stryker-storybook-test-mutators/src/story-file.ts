@@ -1,11 +1,7 @@
 import type { NodePath, types } from '@babel/core';
 import { csfShapes } from '@layzee/storybook-core';
 
-/**
- * What `read` gives for the file around a path, read once per file. A mutator calls it at the Program: Stryker places
- * a statement's mutants as it leaves the statement, so a later first read could find a node replaced by a mutant
- * switch.
- */
+/** What `read` gives for the Program around a path, read once per Program; `outsideProgram` when there is none. */
 export function perFile<T>(
   read: (program: types.Program) => T,
   outsideProgram: T,
@@ -40,14 +36,17 @@ const storyTestCode = perFile(
   new Set(),
 );
 
-/** Reads the story test code, and what each of a mutator's own per-file `readers` gives, on entering the Program. Every mutator calls it first. */
+/**
+ * Reads the story test code, and what each of a mutator's own per-file `readers` gives, unless already read for this
+ * file. Every mutator that reads a per-file value calls it first at each node it is given: Stryker places a statement's
+ * mutants as it leaves the statement, so a later first read could find a node replaced by a mutant switch, and a
+ * line-range `--mutate` leaves the Program out, so the first call can come at any node.
+ */
 export function readStoryFileAt(
   path: NodePath,
   ...readers: readonly ((path: NodePath) => unknown)[]
 ): void {
-  if (path.isProgram()) {
-    [storyTestCode, ...readers].forEach((read) => read(path));
-  }
+  [storyTestCode, ...readers].forEach((read) => read(path));
 }
 
 export function isInStoryTestCode(path: NodePath): boolean {
