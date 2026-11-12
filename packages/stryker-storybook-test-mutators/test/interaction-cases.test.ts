@@ -3,12 +3,20 @@ import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
 import { lzStorybookTestMutators } from '../src/index.ts';
+import { composedPlayCases } from './composed-play-cases.ts';
 import { crashCases, interactionCases } from './interaction-cases.ts';
+import { rawDomCases } from './raw-dom-cases.ts';
+import { skippedInteractionCases } from './skipped-interaction-cases.ts';
 import { inPlay } from './support/case.ts';
 import { mutantLinesByFile, runCases } from './support/run-cases.ts';
 import { tempRoot, writeTree } from './support/temp-tree.ts';
 
-runCases('LzStorybookInteraction', interactionCases);
+runCases('LzStorybookInteraction', [
+  ...interactionCases,
+  ...composedPlayCases,
+  ...rawDomCases,
+  ...skippedInteractionCases,
+]);
 describe('cases that once crashed the instrumenter', () => {
   runCases('LzStorybookInteraction', crashCases);
 });
