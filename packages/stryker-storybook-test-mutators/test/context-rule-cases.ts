@@ -239,6 +239,27 @@ export const contextRuleCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-defaulted-to-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a destructuring assignment reads the meta's beforeEach as a default, as only the member a pattern writes gives Storybook a hook",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\nlet local;\n[local = meta.beforeEach] = sharedHooks;\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-computed-key-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a destructuring assignment reads the meta's beforeEach as a computed key, as only the member a pattern writes gives Storybook a hook",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\nlet local;\n({ [meta.beforeEach]: local } = sharedHooks);\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'skip-copied-meta-hook-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when an object literal copies the meta's beforeEach under another key, as only the member a pattern writes gives Storybook a hook",
+    source: `const meta = {};\nconst copy = { other: meta.beforeEach };\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    copy;\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-destructured-hook-key-onto-local-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when a destructuring assignment writes an imported object's beforeEach to a local, as only the member a pattern writes gives Storybook a hook",
