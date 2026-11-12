@@ -12,14 +12,18 @@ export function spreadCopy(proven: Proven) {
   return { ...proven };
 }
 
-export const literal: Assignable<ProvenMembers, Proven> = false;
+export const literalIsNotProven: Assignable<ProvenMembers, Proven> = false;
 
-export const constructible: 'Proven' extends keyof typeof csf ? true : false =
-  false;
+export const provenIsNotConstructible: 'Proven' extends keyof typeof csf
+  ? true
+  : false = false;
 
-export const spread: Assignable<ReturnType<typeof spreadCopy>, Proven> = false;
+export const spreadCopyIsNotProven: Assignable<
+  ReturnType<typeof spreadCopy>,
+  Proven
+> = false;
 
-export const site: Assignable<
+export const siteWithLiteralProofsIsNotSite: Assignable<
   {
     readonly node: object;
     readonly runs: readonly [];
