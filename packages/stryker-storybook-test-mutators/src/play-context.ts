@@ -223,7 +223,7 @@ export const contextsOnlyRead = perFile((program) => {
   return onlyRead;
 }, false);
 
-/** A member, bare or inside type wrappers, whose hook key the file writes only with a value read as that hook: an assignment's, never a destructuring's or a loop's. */
+/** Whether one member, bare or inside type wrappers, keeps the proof: it does unless it has a hook key and is written, by an assignment whose value is not read as that hook, or by a destructuring or a loop. */
 function isWrittenMemberRead(
   member: NodePath<types.MemberExpression>,
   reads: FileReads,
@@ -500,7 +500,7 @@ interface FileReads {
   readonly argumentReaders: Map<types.Node, boolean>;
 }
 
-/** A local or pattern that a context is given to, read as a context, once per local or pattern. One reached again, itself included, counts as read: reading it again finds nothing the first read does not, and had the first read failed, the file's read would have stopped. So a caller combines this only with `every` or `&&`, never with `some`, `||` or a negation. */
+/** A local or pattern that a context is given to, read as a context, once per local or pattern. One reached again, itself included, counts as read: reading it again finds nothing the first read does not, and had the first read failed, the file's read would have stopped. So a caller lets this call's `false` decide its own result: never inside `some` or a negation, nor before another `||` operand. */
 function isContextLocal(
   local: types.Node,
   scope: NodePath['scope'],
