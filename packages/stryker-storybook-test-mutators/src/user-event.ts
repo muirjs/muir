@@ -65,11 +65,15 @@ export function readUserEvent(
 }
 
 /** A binding whose every reference is a method call's receiver or a side of a choice given to such a local. */
-function isOnlyCalledOn(binding: Binding | undefined): boolean {
+function isOnlyCalledOn(
+  binding: Binding | undefined,
+  seen: ReadonlySet<Binding> = new Set(),
+): boolean {
   return (
     binding !== undefined &&
     binding.referencePaths.every(
-      (reference) => isMethodCallReceiver(reference) || isChoiceSide(reference),
+      (reference) =>
+        isMethodCallReceiver(reference) || isChoiceSide(reference, seen),
     )
   );
 }
@@ -564,19 +568,40 @@ function isMethodCallReceiver(path: NodePath): boolean {
 }
 
 /** A side of `<test> ? <a> : <b>` given to a local that is only a method call's receiver. */
-function isChoiceSide(path: NodePath): boolean {
+function isChoiceSide(
+  path: NodePath,
+  seen: ReadonlySet<Binding> = new Set(),
+): boolean {
   const choice = path.parentPath;
-  const declarator = choice?.parentPath;
-  const local = declarator?.isVariableDeclarator()
-    ? bindingOf(declarator.node.id, declarator.scope)
-    : undefined;
+
+  if (!choice?.isConditionalExpression() || path.key === 'test') {
+    return false;
+  }
+
+  const local = localGiven(choice);
+  const value =
+    local?.path.isVariableDeclarator() === true
+      ? boundValue(local.path, local)
+      : undefined;
 
   return (
-    choice?.isConditionalExpression() === true &&
-    path.key !== 'test' &&
     local !== undefined &&
-    local.referencePaths.every(isMethodCallReceiver)
+    value?.node === choice.node &&
+    (seen.has(local) || isOnlyCalledOn(local, new Set([...seen, local])))
   );
+}
+
+/** The local that `value` is given to, by a declaration's `init` or the right side of an assignment. */
+function localGiven(value: NodePath): Binding | undefined {
+  const { parentPath } = value;
+
+  if (parentPath?.isVariableDeclarator() && value.key === 'init') {
+    return bindingOf(parentPath.node.id, parentPath.scope);
+  }
+
+  return parentPath?.isAssignmentExpression() && value.key === 'right'
+    ? bindingOf(parentPath.node.left, parentPath.scope)
+    : undefined;
 }
 
 /** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */

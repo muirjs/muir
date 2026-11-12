@@ -258,6 +258,19 @@ export const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-assigned-choice-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on a local assigned one of two user-event 14 instances after its declaration, makes no mutant',
+    source: inPlay(
+      'const slowUser = userEvent.setup({ delay: 100 });',
+      'let user;',
+      'user = slow ? slowUser : userEvent;',
+      'await user.click(input);',
+      "await user.type(input, 'a');",
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'vitest-browser-click-before-type',
     title:
       'a Vitest browser click directly before a type on the same target is removed, as that type does not click',
