@@ -4,7 +4,7 @@ import type { LzStorybookTestMutator } from './mutator.ts';
 import { perFile, readStoryFileAt } from './story-file.ts';
 
 /** The `globals` object literals that a played story runs with, the meta's included, each with the properties whose removal the file proves changes nothing. A story whose play is an unknown one counts as played. */
-const proofsBySite = perFile(
+export const proofsBySite = perFile(
   (program): ReadonlyMap<unknown, readonly Proven[]> =>
     new Map(
       sitesOf(list(program.body), 'globals').map(({ node, proofs }) => [

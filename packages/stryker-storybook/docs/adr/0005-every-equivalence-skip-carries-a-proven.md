@@ -39,3 +39,10 @@ skip.
   initial-globals table moved into `@layzee/storybook-csf`: a table in the mutator would let the mutator decide the
   skip. A story or meta the file writes, or another meta of the file, may set the global, so such a default keeps
   its mutant.
+- Storybook checks the proofs: `test/compose-skips.test.ts` in each mutator package composes every case row with
+  Storybook 10.6.5, with and without each property the mutator skips, and fails when a composed story or `.test()`
+  child differs. Args compare deep-equal; globals compare by effect (a viewport by its `value`, backgrounds by `value`
+  and `grid`), a rule copied from the Vitest addon as the `default-global` proof copies it. A name the row leaves
+  unbound and a module it imports get a stub that claims every key the row names, so a skip over an unknown value
+  shows as a change. A row with a proof that cannot load fails the test unless the test lists it as one Storybook
+  cannot load either. The check covers the case rows only, not every story file.
