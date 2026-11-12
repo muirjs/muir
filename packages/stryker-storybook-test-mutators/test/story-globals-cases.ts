@@ -1,9 +1,6 @@
-import {
-  type Case,
-  factoryFile,
-  storyFile,
-  storyGlobals,
-} from './support/case.ts';
+import { type Case, factoryFile, storyFile } from './support/case.ts';
+
+const storyGlobals = 'LzStorybookStoryGlobals';
 
 export const storyGlobalsCases: readonly Case[] = [
   {

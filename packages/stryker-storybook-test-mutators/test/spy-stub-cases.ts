@@ -1,4 +1,4 @@
-import { type Case, fnStoryFile, inPlay } from './support/case.ts';
+import { type Case, inPlay, withFnImport } from './support/case.ts';
 
 const spyStub = 'LzStorybookSpyStub';
 
@@ -6,7 +6,7 @@ export const spyStubCases: readonly Case[] = [
   {
     id: 'spy-stub-args',
     title: 'a stub chained on fn() in story args leaves the bare fn() call',
-    source: fnStoryFile(
+    source: withFnImport(
       'export const Story = {',
       "  args: { getValue: fn().mockReturnValue('stubbed') },",
       '};',
@@ -17,7 +17,7 @@ export const spyStubCases: readonly Case[] = [
     id: 'spy-stub-resolved-no-outcome',
     title:
       'a resolved stub gets only the removal mutant, as its outcome mutant is LzStorybookSpyStubOutcome',
-    source: fnStoryFile(
+    source: withFnImport(
       'export const Story = {',
       '  args: { save: fn().mockResolvedValue({ id: 1 }) },',
       '};',
@@ -27,7 +27,7 @@ export const spyStubCases: readonly Case[] = [
   {
     id: 'spy-stub-once',
     title: 'a Once stub chained on fn() leaves the bare fn() call',
-    source: fnStoryFile(
+    source: withFnImport(
       'export const Story = {',
       '  args: { save: fn().mockResolvedValueOnce(1) },',
       '};',
@@ -38,7 +38,7 @@ export const spyStubCases: readonly Case[] = [
     id: 'spy-stub-in-render',
     title:
       'a stub chained on fn() inside a function runs at render, so it makes no mutant',
-    source: fnStoryFile(
+    source: withFnImport(
       'export const Story = {',
       "  render: () => Probe({ getValue: fn().mockReturnValue('stubbed') }),",
       '};',
@@ -54,7 +54,7 @@ export const spyStubCases: readonly Case[] = [
   {
     id: 'spy-stub-statement-in-render',
     title: 'a stub statement outside story test code makes no mutant',
-    source: fnStoryFile(
+    source: withFnImport(
       'export const Story = {',
       '  render: () => {',
       "    mocked(getValue).mockReturnValue('stubbed');",
@@ -67,7 +67,7 @@ export const spyStubCases: readonly Case[] = [
   {
     id: 'spy-stub-statement-in-before-each',
     title: 'a stub statement in a story beforeEach is removed',
-    source: fnStoryFile(
+    source: withFnImport(
       'export const Story = {',
       '  beforeEach: () => {',
       "    mocked(getValue).mockReturnValue('stubbed');",
