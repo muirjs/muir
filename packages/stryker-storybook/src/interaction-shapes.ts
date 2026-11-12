@@ -292,7 +292,7 @@ function isPlayContext(
 
 /**
  * The parameter or statement nearest to a node with these ancestors that declares `name`, a `for` head, a `catch`
- * parameter and a `switch` case's statements included.
+ * parameter and the statements of every case of a `switch`, one scope, included.
  */
 function declarationOf(
   name: string,
@@ -304,7 +304,9 @@ function declarationOf(
       ancestor['left'],
       ancestor['init'],
       ancestor['param'],
-      ...list(ancestor['consequent']),
+      ...list(ancestor['cases']).flatMap((switchCase) =>
+        list(field(switchCase, 'consequent')),
+      ),
     ])
     .filter(isNode)
     .find((declaration) => declares(declaration, name));
