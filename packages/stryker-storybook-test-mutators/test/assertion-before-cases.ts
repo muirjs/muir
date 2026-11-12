@@ -58,6 +58,21 @@ export const assertionBeforeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'assertion-before-wait-for-not-awaited',
+    title:
+      'a waitFor that is not awaited and holds the first check is copied as written',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'waitFor(() => expect(dialog).toBeVisible());',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ waitFor(() => expect(dialog).toBeVisible()); await userEvent.click(open); }',
+      ],
+    ],
+  },
+  {
     id: 'assertion-before-skip-wait-for-check-outside-callback',
     title:
       'an interaction whose first check is in a waitFor argument other than its callback makes no mutant, as the copy would run the callback before the interaction and check nothing',
@@ -68,12 +83,14 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
-    id: 'assertion-before-skip-other-call-holding-check',
+    id: 'assertion-before-skip-step-holding-check',
     title:
-      'an interaction whose first check is inside a call other than waitFor makes no mutant, as a copy of the call would run its other effects twice',
-    source: inPlay(
+      'an interaction whose first check is inside a step makes no mutant, as a copy of the step would run its other effects twice',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
       'await userEvent.click(open);',
-      "await within(dialog, () => expect(canvas.getByRole('dialog')).toBeVisible());",
+      "await step('verify', async () => { await expect(dialog).toBeVisible(); });",
+      'await expect(args.onOpen).toHaveBeenCalled();',
     ),
     expect: [],
   },
