@@ -158,44 +158,11 @@ function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   );
 }
 
-/** An interaction that makes no mutant: one in a story hook, a click that a type of its target repeats, or a type that a later clear undoes. */
+/** An interaction that makes no mutant: one in a story hook, or a click that a type of its target repeats. */
 export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
   const { path } = interaction;
 
-  return (
-    path.findParent(isHook) !== null ||
-    isRepeatedByNext(interaction, t) ||
-    isClearedLater(interaction, t)
-  );
-}
-
-/** A user-event type or clear with no following checks, when the statement that ends them is a user-event clear of the same target. */
-function isClearedLater(current: Interaction, t: BabelTypes): boolean {
-  const [target] = current.call.arguments;
-
-  if (
-    current.kind !== 'userEvent' ||
-    target === undefined ||
-    !['type', 'clear'].includes(current.method)
-  ) {
-    return false;
-  }
-
-  const siblings = nextSiblings(current.path);
-  const between = statementsBefore(siblings, holdsInteraction);
-  const next = siblings[between.length];
-  const later =
-    next === undefined || between.some(hasCheck)
-      ? undefined
-      : interactionAt(next);
-  const [laterTarget] = later?.call.arguments ?? [];
-
-  return (
-    later?.kind === 'userEvent' &&
-    later.method === 'clear' &&
-    laterTarget !== undefined &&
-    t.isNodesEquivalent(target, laterTarget)
-  );
+  return path.findParent(isHook) !== null || isRepeatedByNext(interaction, t);
 }
 
 /** A user-event click or hover directly before a type of the same target on a receiver the file proves to be user-event 14, which clicks it first; Vitest browser's type does not. */

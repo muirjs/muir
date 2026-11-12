@@ -50,17 +50,16 @@ The `expect(...)` checks after an interaction, up to the next statement that is 
 holds an interaction that runs within it, such as one in an `if` or in a `waitFor(...)` callback; a `step(...)` holds
 every interaction in its callback, including one in a function the callback defines. Outside a step callback, an
 interaction is looked for only in `step` and `waitFor` callbacks: every other function counts as not run, even one
-that the statement calls. Checks are found in any function. The copied check and a later `clear` that undoes a `type`
-are looked for in the interaction's own block.
+that the statement calls. Checks are found in any function. The copied check is looked for in the interaction's own
+block.
 _Avoid_: checks after, assertion window
 
 **Skipped interaction**:
 An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`,
 `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of: one in a `beforeEach` or `afterEach`,
-given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`); a click or hover that a `type` of
-the same target in the next statement repeats, when that `type`'s receiver is a proven user-event 14 (whose `type`
-clicks first unless given a `skipClick` other than `false`); and a `type` or `clear` with no following checks, when
-the statement that ends them is a `clear` of the same target, which undoes it.
+given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`); and a click or hover
+that a `type` of the same target in the next statement repeats, when that `type`'s receiver is a proven user-event 14
+(whose `type` clicks first unless given a `skipClick` other than `false`).
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Proven user-event 14**:

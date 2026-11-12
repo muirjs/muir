@@ -257,9 +257,9 @@ const negativeOnlyCases: readonly Case[] = [
 
 const clearedLaterCases: readonly Case[] = [
   {
-    id: 'skip-type-cleared-later',
+    id: 'type-cleared-later',
     title:
-      'a type that a later clear of the same target undoes before any check makes no mutant',
+      'a type that a later clear of the same target undoes before any check is removed',
     source: inPlay(
       "await userEvent.type(input, 'a');",
       'await userEvent.clear(input);',
@@ -269,12 +269,13 @@ const clearedLaterCases: readonly Case[] = [
     expect: [
       [interaction, ';'],
       [interaction, ';'],
+      [interaction, ';'],
     ],
   },
   {
-    id: 'skip-clear-cleared-later',
+    id: 'clear-cleared-later',
     title:
-      'a clear that a later clear of the same target repeats before any check makes no mutant',
+      'a clear that a later clear of the same target repeats before any check is removed',
     source: inPlay(
       'await userEvent.clear(input);',
       'await userEvent.clear(input);',
@@ -284,12 +285,13 @@ const clearedLaterCases: readonly Case[] = [
     expect: [
       [interaction, ';'],
       [interaction, ';'],
+      [interaction, ';'],
     ],
   },
   {
-    id: 'skip-type-cleared-later-past-statements',
+    id: 'type-cleared-later-past-statements',
     title:
-      'a type that a later clear of the same target undoes, past a statement that reads nothing such as a sleep, makes no mutant',
+      'a type that a later clear of the same target undoes, past a statement that reads nothing such as a sleep, is removed',
     source: inPlay(
       "await userEvent.type(input, 'a');",
       'await sleep(10);',
@@ -298,6 +300,7 @@ const clearedLaterCases: readonly Case[] = [
       "await expect(input).toHaveValue('b');",
     ),
     expect: [
+      [interaction, ';'],
       [interaction, ';'],
       [interaction, ';'],
     ],

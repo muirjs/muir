@@ -38,6 +38,20 @@ export const targetCases: readonly Case[] = [
     expect: [[target, "'Profile'"]],
   },
   {
+    id: 'target-cleared-later',
+    title:
+      'the target of a type that a later clear of the same target undoes becomes another target in the file',
+    source: inPlay(
+      "await userEvent.type(canvas.getByRole('textbox', { name: 'Name' }), 'a');",
+      "await userEvent.clear(canvas.getByRole('textbox', { name: 'Name' }));",
+      "await expect(canvas.getByRole('textbox', { name: 'Email' })).toBeVisible();",
+    ),
+    expect: [
+      [target, "'Email'"],
+      [target, "'Email'"],
+    ],
+  },
+  {
     id: 'target-text',
     title:
       'the text of a text query an interaction acts on becomes the text the same query takes elsewhere in the file',
