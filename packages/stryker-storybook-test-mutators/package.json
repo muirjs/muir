@@ -44,7 +44,8 @@
     "@layzee/stryker-mutator-install": "0.0.0"
   },
   "devDependencies": {
-    "@babel/core": "8.0.9"
+    "@babel/core": "8.0.9",
+    "storybook": "10.6.5"
   },
   "nx": {
     "tags": [
