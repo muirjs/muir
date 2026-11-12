@@ -85,7 +85,7 @@ export const assertionBeforeCases: readonly Case[] = [
   {
     id: 'assertion-before-skip-step-holding-check',
     title:
-      'an interaction whose first check is inside a step makes no mutant, as a copy of the step would run its other effects twice',
+      'an interaction whose first following check is inside a step makes no mutant, as a step is no check statement and the later check is not copied in its place',
     source: inPlayWith(
       ['args', 'step', 'userEvent'],
       'await userEvent.click(open);',
