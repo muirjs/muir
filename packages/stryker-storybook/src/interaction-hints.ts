@@ -303,7 +303,7 @@ function isClickBeforeType(site: Located, index: InteractionIndex): boolean {
     rootName(current.receiver) !== 'fireEvent' &&
     following.method === 'type' &&
     actsOnSameTarget(current, following) &&
-    !skipsClick(following.args[2]) &&
+    !maySkipClick(following.args[2]) &&
     isUserEvent14(following.receiver, nextSite?.ancestors ?? [])
   );
 }
@@ -379,14 +379,20 @@ function declares(node: unknown, name: string): boolean {
   );
 }
 
-function skipsClick(options: unknown): boolean {
+/** Unless the options are absent, or an object literal with no spread whose `skipClick` is absent or `false`. */
+function maySkipClick(options: unknown): boolean {
+  if (options !== undefined && field(options, 'type') !== 'ObjectExpression') {
+    return true;
+  }
+
   return list(field(options, 'properties')).some(
     (property) =>
-      nameOf(field(property, 'key')) === 'skipClick' &&
-      !(
-        field(property, 'value', 'type') === 'BooleanLiteral' &&
-        field(property, 'value', 'value') === false
-      ),
+      field(property, 'type') === 'SpreadElement' ||
+      (nameOf(field(property, 'key')) === 'skipClick' &&
+        !(
+          field(property, 'value', 'type') === 'BooleanLiteral' &&
+          field(property, 'value', 'value') === false
+        )),
   );
 }
 

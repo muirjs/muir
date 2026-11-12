@@ -202,6 +202,30 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'type-options-variable',
+    title:
+      'gives no hint for a click before a type whose options come from a variable, which may skip the click',
+    source: inPlay(
+      'const options = { skipClick: true };',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada', options);",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'type-options-spread',
+    title:
+      'gives no hint for a click before a type whose options hold a spread, which may skip the click',
+    source: inPlay(
+      'const options = { skipClick: true };',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada', { delay: 0, ...options });",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
     id: 'type-keeps-click',
     title:
       'names a surviving click before a type given skipClick: false, which clicks',
