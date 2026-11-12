@@ -661,6 +661,24 @@ export const interactionCases: readonly Case[] = [
     ],
   },
   {
+    id: 'type-used-in-if-before-clear',
+    title:
+      'a type that an interaction in an if statement uses before a later clear of the same target is removed',
+    source: inPlay(
+      "await userEvent.type(input, 'a');",
+      'if (submitting) {',
+      '  await userEvent.click(submit);',
+      '}',
+      'await userEvent.clear(input);',
+      "await expect(args.onSubmit).toHaveBeenCalledWith('a');",
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'click-before-type-skip-click',
     title:
       'a click directly before a type of the same target with skipClick is removed, as that type does not click',
@@ -823,9 +841,9 @@ export const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
-    id: 'negative-only-past-if-with-interaction',
+    id: 'negative-only-until-if-with-interaction',
     title:
-      'the checks that decide a skip run past an if statement that holds an interaction, as only a step ends them',
+      'the checks that decide a skip end at an if statement that holds an interaction, so only the click in the if is skipped',
     source: inPlay(
       'await userEvent.click(button);',
       'if (open) {',
@@ -833,7 +851,7 @@ export const interactionCases: readonly Case[] = [
       '}',
       'await expect(args.onClick).not.toHaveBeenCalled();',
     ),
-    expect: [],
+    expect: [[interaction, ';']],
   },
   {
     id: 'negative-only-ends-at-local-function',

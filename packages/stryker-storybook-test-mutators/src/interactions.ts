@@ -236,14 +236,14 @@ export function targetInteraction(path: NodePath): Interaction | undefined {
     : undefined;
 }
 
-/** The first statement after `path` in its block that holds an `expect(...)` check, before the next interaction. */
+/** The first statement after `path` in its block that holds an `expect(...)` check, before the next statement that is or holds an interaction. */
 export function firstCheckAfter(path: NodePath): NodePath | undefined {
   return untilNextInteraction(nextSiblings(path)).find(
     (sibling) => checksIn(sibling).length > 0,
   );
 }
 
-/** The statements after `path`, up to the next interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
+/** The statements after `path`, up to the next statement that is or holds an interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
   const checks = untilNextInteraction(followingStatements(path)).flatMap(
     checksIn,
@@ -252,15 +252,10 @@ function hasOnlyNegativeChecks(path: NodePath): boolean {
   return checks.length > 0 && checks.every(isNegative);
 }
 
-/** A `step(...)` statement whose callback holds an interaction. */
-function isStepWithInteraction(statement: NodePath): boolean {
-  const { node } = statement;
-
-  if (
-    node.type !== 'ExpressionStatement' ||
-    !isStepCall(awaited(node.expression))
-  ) {
-    return false;
+/** Whether `statement` is an interaction or holds one, such as a `step(...)` or an `if` around one. */
+function holdsInteraction(statement: NodePath): boolean {
+  if (interactionAt(statement) !== undefined) {
+    return true;
   }
 
   let found = false;
@@ -277,15 +272,11 @@ function isStepWithInteraction(statement: NodePath): boolean {
   return found;
 }
 
-/** The statements before the first interaction statement or step with an interaction among them. */
+/** The statements before the first one among them that is or holds an interaction. */
 function untilNextInteraction(
   statements: readonly NodePath[],
 ): readonly NodePath[] {
-  const end = statements.findIndex(
-    (statement) =>
-      interactionAt(statement) !== undefined ||
-      isStepWithInteraction(statement),
-  );
+  const end = statements.findIndex(holdsInteraction);
 
   return end === -1 ? statements : statements.slice(0, end);
 }

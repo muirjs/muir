@@ -46,11 +46,14 @@ An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStoryb
 `afterEach`, given inline or as a function declared in the file, one whose following checks are all negative checks,
 a click or hover that a user-event 14 `type` of the same target in the next statement repeats (that `type` clicks
 first unless given a `skipClick` other than `false`; Vitest browser's does not click), and a `type` or `clear` that a
-later `clear` of the same target undoes before any check.
+later `clear` of the same target undoes before any check, with no statement between them that holds an
+interaction. The following checks stop at the next statement that is or holds an interaction, such as a
+`step(...)` or an `if` around one.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
-The first `expect(...)` statement after an interaction in the interaction's own block, before the next interaction,
+The first `expect(...)` statement after an interaction in the interaction's own block, before the next statement that
+is or holds an interaction,
 that `LzStorybookAssertionBefore` also runs before the interaction; a check after the end of a step callback that
 holds the interaction is not looked at, so an interaction that is a step callback's expression body has none. A
 negative check, a `toHaveBeenCalledTimes(0)` check, one that reads a name declared or assigned after the interaction,
