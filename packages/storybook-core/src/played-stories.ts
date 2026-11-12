@@ -12,7 +12,7 @@ import {
 } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { unknownValue, writtenValue } from './object-value.ts';
+import { isObjectLiteral, unknownValue, writtenValue } from './object-value.ts';
 import { asWrittenLayer, valuesOf } from './resolved-values.ts';
 import { extendLevels } from './story-layers.ts';
 
@@ -69,7 +69,9 @@ export function playedStories(
             valuesOf(
               level === unknownValue
                 ? level
-                : asWrittenLayer(level.argument, level.bindings),
+                : isObjectLiteral(level.argument)
+                  ? asWrittenLayer(level.argument, level.bindings)
+                  : undefined,
               'play',
             ),
           ),

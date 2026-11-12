@@ -12,7 +12,11 @@ import {
 import { isRecord } from './is-record.ts';
 import { namesReadElsewhere } from './names-read-elsewhere.ts';
 import { field, list } from './node-field.ts';
-import { writtenValue } from './object-value.ts';
+import {
+  isObjectLiteral,
+  writtenValue,
+  type ObjectLiteral,
+} from './object-value.ts';
 
 export interface IndexedStory {
   /** The story's static tags, the meta's first. */
@@ -50,7 +54,7 @@ export function csfShapes(program: unknown): CsfShapes {
     list(field(statement, 'specifiers')),
   );
   const { metas, stories: exported } = csfFile(body, bindings);
-  const metaObjects = metas.map(({ object }) => object);
+  const metaObjects: readonly unknown[] = metas.map(({ object }) => object);
   const assignments = exported.flatMap((story) => story.assignments);
   const runtime = exported.flatMap((story) => story.runtimeAssignments);
   const stories = [
@@ -194,7 +198,7 @@ export interface CsfFile {
 }
 
 export interface MetaObject {
-  readonly object: unknown;
+  readonly object: ObjectLiteral;
   readonly owner: unknown;
 }
 
@@ -651,21 +655,20 @@ export function isTemplateBind(init: unknown): boolean {
   );
 }
 
-function objectOf(expression: unknown, bindings: Bindings): readonly unknown[] {
+function objectOf(
+  expression: unknown,
+  bindings: Bindings,
+): readonly ObjectLiteral[] {
   const node = unwrap(expression);
 
-  switch (field(node, 'type')) {
-    case 'ObjectExpression': {
-      return [node];
-    }
-    case 'Identifier': {
-      return objectOf(
+  if (isObjectLiteral(node)) {
+    return [node];
+  }
+
+  return field(node, 'type') === 'Identifier'
+    ? objectOf(
         followed(node, bindings),
         withoutBinding(bindings, field(node, 'name')),
-      );
-    }
-    default: {
-      return [];
-    }
-  }
+      )
+    : [];
 }

@@ -9,6 +9,7 @@ import { isInitialGlobal } from './initial-globals.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import {
+  isObjectLiteral,
   maySet,
   propertyKey,
   unknownValue,
@@ -163,7 +164,9 @@ export function sitesOf(
         {
           run: { owner: 'story', story },
           node: ownValueOf(
-            asWrittenLayer(levels[0].argument, levels[0].bindings),
+            isObjectLiteral(levels[0].argument)
+              ? asWrittenLayer(levels[0].argument, levels[0].bindings)
+              : undefined,
             key,
           ),
           own: layerOf(storyRoot, key),
@@ -216,7 +219,7 @@ export function sitesOf(
 
   return [...Map.groupBy(runs, ({ node }) => node)].flatMap(
     ([node, all]): readonly Site[] =>
-      isRecord(node) && node['type'] === 'ObjectExpression'
+      isObjectLiteral(node)
         ? [
             {
               node,

@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { topLevelBindings } from '../src/csf.ts';
-import { isRecord } from '../src/is-record.ts';
 import { field } from '../src/node-field.ts';
-import { objectValue, unknownValue } from '../src/object-value.ts';
+import {
+  isObjectLiteral,
+  objectValue,
+  unknownValue,
+} from '../src/object-value.ts';
 import {
   asWrittenLayer,
   rootLayer,
@@ -34,7 +37,7 @@ function storyGlobals(source: readonly string[]): readonly unknown[] {
 }
 
 function localeOf(globals: unknown): unknown {
-  return isRecord(globals)
+  return isObjectLiteral(globals)
     ? field(objectValue(globals, 'locale'), 'value')
     : globals;
 }
@@ -74,6 +77,7 @@ describe('extendLevels', () => {
       layers.map((layer) => field(valuesOf(layer, 'globals')[0], 'type'));
     const [own] = extendLevels(bindings.get('B'), 'B', bindings);
 
+    assert.ok(isObjectLiteral(own.argument));
     assert.deepEqual(
       {
         root: typesOf(rootLayers(bindings, new Set(['B']))),

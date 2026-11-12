@@ -3,11 +3,13 @@ import { isMember, keyOf, memberRoot, unwrap } from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import {
+  isObjectLiteral,
   propertyKey,
   sameKey,
   unknownValue,
   valuesIn,
   type LayerValue,
+  type ObjectLiteral,
 } from './object-value.ts';
 
 /** The value the last property of exactly `key` gives it, as `shownObject` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. */
@@ -45,15 +47,15 @@ export function resolvedPropertyValues(
 }
 
 class ResolvedObject {
-  readonly #node: object;
+  readonly #node: ObjectLiteral;
   readonly #bindings: Bindings;
 
-  constructor(node: object, bindings: Bindings) {
+  constructor(node: ObjectLiteral, bindings: Bindings) {
     this.#node = node;
     this.#bindings = bindings;
   }
 
-  get node(): object {
+  get node(): ObjectLiteral {
     return this.#node;
   }
 
@@ -92,10 +94,11 @@ export function rootLayer(
     : (shownObject(expression, unchanged) ?? unknownValue);
 }
 
-export function asWrittenLayer(expression: unknown, bindings: Bindings): Layer {
-  return isRecord(expression) && expression['type'] === 'ObjectExpression'
-    ? new ResolvedObject(expression, bindings)
-    : undefined;
+export function asWrittenLayer(
+  object: ObjectLiteral,
+  bindings: Bindings,
+): ResolvedObject {
+  return new ResolvedObject(object, bindings);
 }
 
 export function layerOf(layer: Layer, key: string | number): Layer {
@@ -127,7 +130,7 @@ function shownObject(
   const current = unwrap(node);
   const name = field(current, 'name');
 
-  if (isRecord(current) && current['type'] === 'ObjectExpression') {
+  if (isObjectLiteral(current)) {
     return new ResolvedObject(current, bindings);
   }
 

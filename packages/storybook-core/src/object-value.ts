@@ -1,8 +1,18 @@
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 
-/** What something the file cannot read gives a key: a spread of an imported object, a computed key, or a value that is no object literal. */
+/** What something the file cannot read gives a key: a spread of an imported object, a computed key, or a value that is not an object literal. */
 export const unknownValue = 'unknown';
+
+/** An object literal node, `{ ... }`. */
+export interface ObjectLiteral {
+  readonly type: 'ObjectExpression';
+  readonly [key: string]: unknown;
+}
+
+export function isObjectLiteral(node: unknown): node is ObjectLiteral {
+  return isRecord(node) && node['type'] === 'ObjectExpression';
+}
 
 /** What one property, one object or one layer of a story gives a key: `undefined` for nothing, `unknownValue` when something the file cannot read may set it, else the value node. */
 export type LayerValue = object | typeof unknownValue | undefined;
@@ -73,7 +83,7 @@ export function writtenValue(object: unknown, key: string): object | undefined {
 
 /** The value the object literal `object` gives `key` as JavaScript reads it, the last property that may set it winning. */
 export function objectValue(
-  object: Readonly<Record<string, unknown>>,
+  object: ObjectLiteral,
   key: string | number,
 ): LayerValue {
   return valuesIn(list(object['properties']).toReversed(), key)[0];

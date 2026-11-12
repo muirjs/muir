@@ -1,6 +1,10 @@
-import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { objectValue, propertyKey, type LayerValue } from './object-value.ts';
+import {
+  isObjectLiteral,
+  objectValue,
+  propertyKey,
+  type LayerValue,
+} from './object-value.ts';
 import { valuesOf, type Layer } from './resolved-values.ts';
 
 // Storybook 10.6.5's own initial globals (`initialGlobals` of its viewport, backgrounds, measure and outline addons,
@@ -25,8 +29,7 @@ const initialGlobals: ReadonlyMap<
         (layer) => valuesOf(layer, 'viewport')[0] === undefined,
       ) &&
       (viewportDefaults.includes(stringBooleanOrUndefinedOf(value)) ||
-        (isRecord(value) &&
-          value['type'] === 'ObjectExpression' &&
+        (isObjectLiteral(value) &&
           isDefaultViewportValue(objectValue(value, 'value')))),
   ],
   [
@@ -54,8 +57,8 @@ function isObjectOfAllowedLiterals(
   allowed: ReadonlyMap<string, readonly unknown[]>,
 ): boolean {
   return (
-    field(value, 'type') === 'ObjectExpression' &&
-    list(field(value, 'properties')).every((property) => {
+    isObjectLiteral(value) &&
+    list(value['properties']).every((property) => {
       const key = propertyKey(property);
 
       return (
