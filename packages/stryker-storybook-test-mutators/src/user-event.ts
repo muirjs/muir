@@ -74,29 +74,14 @@ function userEventBinding(
   const { name } = binding.identifier;
   const declaration = binding.path;
 
-  if (declaration.isImportSpecifier()) {
-    const { parent } = declaration;
-    const source =
-      nameOf(declaration.node.imported) === 'userEvent' &&
-      parent.type === 'ImportDeclaration'
-        ? parent.source.value
-        : undefined;
-    if (source !== undefined && userEvent14Sources.has(source)) {
-      return 'provenUserEvent14';
-    }
+  const source = userEventImportSource(declaration);
 
-    return source !== undefined && vitestBrowserSources.has(source)
-      ? 'userEvent'
-      : 'none';
-  }
-
-  if (declaration.isImportDefaultSpecifier()) {
-    const { parent } = declaration;
-
-    return parent.type === 'ImportDeclaration' &&
-      parent.source.value === '@testing-library/user-event'
+  if (source !== undefined) {
+    return userEvent14Sources.has(source)
       ? 'provenUserEvent14'
-      : 'none';
+      : vitestBrowserSources.has(source)
+        ? 'userEvent'
+        : 'none';
   }
 
   if (binding.kind === 'param') {
@@ -140,6 +125,24 @@ function userEventBinding(
   return receiver === undefined ? 'none' : readUserEvent(receiver, path, seen);
 }
 
+/** The module an import declaration names when `declaration` imports `userEvent` by name from it, or is the default import of `@testing-library/user-event`, the one user-event module with a default export. */
+function userEventImportSource(declaration: NodePath): string | undefined {
+  const { node, parent } = declaration;
+
+  if (parent?.type !== 'ImportDeclaration') {
+    return undefined;
+  }
+
+  const source = parent.source.value;
+  const importsUserEvent =
+    node.type === 'ImportSpecifier'
+      ? nameOf(node.imported) === 'userEvent'
+      : node.type === 'ImportDefaultSpecifier' &&
+        source === '@testing-library/user-event';
+
+  return importsUserEvent ? source : undefined;
+}
+
 /** `{ userEvent: <name> }`, among other properties. */
 function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
   return pattern.properties.some(
@@ -156,7 +159,7 @@ function isPlayContext(node: types.Node, path: NodePath): boolean {
 
   return (
     binding?.kind === 'param' &&
-    binding.path.node === binding.identifier &&
+    binding.path.isIdentifier() &&
     isPlayParameter(binding.path)
   );
 }
