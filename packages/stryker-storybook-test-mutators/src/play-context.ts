@@ -37,11 +37,11 @@ export function isPlayContextAsSet(binding: Binding): boolean {
 }
 
 /** `<context>.<name>`, or a declaration's value whose local or pattern is read as a context. A `context` member, which Storybook sets to the context itself, is read the same way, a `step` member may only be called, and a `userEvent` member only called on, as the binding rule asks of a local. */
-function isContextRead(path: NodePath): boolean {
+function isContextRead(path: NodePath, reads: FileReads): boolean {
   const { parentPath } = path;
 
   if (parentPath?.isVariableDeclarator() && path.key === 'init') {
-    return isContextLocal(parentPath.node.id, parentPath.scope);
+    return isContextLocal(parentPath.node.id, parentPath.scope, reads);
   }
 
   if (!isMemberObject(path) || parentPath === null) {
@@ -51,11 +51,11 @@ function isContextRead(path: NodePath): boolean {
   const name = memberName(parentPath.node);
 
   if (name === 'context') {
-    return isContextRead(parentPath);
+    return isContextRead(parentPath, reads);
   }
 
   if (name === 'step') {
-    return isStepRead(parentPath);
+    return isStepRead(parentPath, reads);
   }
 
   return (
@@ -160,6 +160,10 @@ function readsUserEvent(path: NodePath<types.Identifier>): boolean {
 /** Whether every context the file can reach is only read: as `<context>.<name>` or destructured under plain keys, in hooks whose code the file holds. A context's userEvent is held to the binding rule (`isOnlyCalledOn`), as a hook that changes that object changes the play's. */
 export const contextsOnlyRead = perFile((program) => {
   let onlyRead = true;
+  const reads: FileReads = {
+    contextLocals: new WeakMap(),
+    argumentReaders: new WeakMap(),
+  };
 
   const check = (path: NodePath, read: boolean): void => {
     if (!read) {
@@ -175,13 +179,18 @@ export const contextsOnlyRead = perFile((program) => {
       check(
         path,
         left.type !== 'MemberExpression' ||
-          isKeyedHookRead(left.property, left.computed, path.get('right')),
+          isKeyedHookRead(
+            left.property,
+            left.computed,
+            path.get('right'),
+            reads,
+          ),
       );
     },
     CallExpression(path) {
       const name = calleeName(path.node.callee, path.scope);
 
-      check(path, name !== 'useStoryContext' || isContextRead(path));
+      check(path, name !== 'useStoryContext' || isContextRead(path, reads));
       check(
         path,
         name !== 'assign' ||
@@ -203,7 +212,7 @@ export const contextsOnlyRead = perFile((program) => {
         hookPositions(path.node.key, path.node.computed).every(
           (position) =>
             path.node.kind === 'method' &&
-            isContextParameterRead(path, position),
+            isContextParameterRead(path, position, reads),
         ),
       );
     },
@@ -211,7 +220,12 @@ export const contextsOnlyRead = perFile((program) => {
       check(
         path,
         path.parentPath.isObjectPattern() ||
-          isKeyedHookRead(path.node.key, path.node.computed, path.get('value')),
+          isKeyedHookRead(
+            path.node.key,
+            path.node.computed,
+            path.get('value'),
+            reads,
+          ),
       );
     },
     SpreadElement(path) {
@@ -285,20 +299,25 @@ function isKeyedHookRead(
   key: types.Node,
   computed: boolean,
   value: NodePath,
+  reads: FileReads,
 ): boolean {
   return hookPositions(key, computed).every((position) =>
-    isHookValueRead(value, position),
+    isHookValueRead(value, position, reads),
   );
 }
 
 /** A hook value, or an array of them, whose every function the file holds and reads its context in. */
-function isHookValueRead(value: NodePath, position: number): boolean {
+function isHookValueRead(
+  value: NodePath,
+  position: number,
+  reads: FileReads,
+): boolean {
   const hooks = value.isArrayExpression() ? value.get('elements') : [value];
 
   return hooks.every((hook) => {
     const fn = hookFunction(hook);
 
-    return fn !== undefined && isContextParameterRead(fn, position);
+    return fn !== undefined && isContextParameterRead(fn, position, reads);
   });
 }
 
@@ -357,39 +376,52 @@ const contextPositions: ReadonlyMap<string, number> = new Map([
 function isContextParameterRead(
   hook: NodePath<types.Function>,
   position: number,
+  reads: FileReads,
 ): boolean {
-  if (readsArguments(hook)) {
+  if (readsArguments(hook, reads)) {
     return false;
   }
 
   const parameter = hook.node.params[position];
 
   if (parameter !== undefined) {
-    return isContextLocal(parameter, hook.scope);
+    return isContextLocal(parameter, hook.scope, reads);
   }
 
   return !hook.node.params.some((earlier) => earlier.type === 'RestElement');
 }
 
-function readsArguments(hook: NodePath<types.Function>): boolean {
-  let reads = false;
+/** Whether a hook reads `arguments`, walked once per hook in a file's read. */
+function readsArguments(
+  hook: NodePath<types.Function>,
+  reads: FileReads,
+): boolean {
+  const known = reads.argumentReaders.get(hook.node);
+
+  if (known !== undefined) {
+    return known;
+  }
+
+  let found = false;
 
   hook.traverse({
     Identifier(path) {
       if (path.node.name === 'arguments' && path.isReferencedIdentifier()) {
-        reads = true;
+        found = true;
         path.stop();
       }
     },
   });
+  reads.argumentReaders.set(hook.node, found);
 
-  return reads;
+  return found;
 }
 
 /** A destructuring of a context under plain keys, whose `userEvent` local is only called on. */
 function isReadPattern(
   pattern: types.ObjectPattern,
   scope: NodePath['scope'],
+  reads: FileReads,
 ): boolean {
   return pattern.properties.every((property) => {
     if (property.type !== 'ObjectProperty' || property.computed) {
@@ -410,33 +442,40 @@ function isReadPattern(
     }
 
     if (name === 'step') {
-      return isStepLocal(local, scope);
+      return isStepLocal(local, scope, reads);
     }
 
-    return name !== 'context' || isContextLocal(local, scope);
+    return name !== 'context' || isContextLocal(local, scope, reads);
   });
 }
 
 /** A context's `step` member, called or given to a local by a declaration. */
-function isStepRead(step: NodePath): boolean {
+function isStepRead(step: NodePath, reads: FileReads): boolean {
   const { parentPath } = step;
 
   if (parentPath?.isVariableDeclarator() && step.key === 'init') {
-    return isStepLocal(parentPath.node.id, parentPath.scope);
+    return isStepLocal(parentPath.node.id, parentPath.scope, reads);
   }
 
-  return isStepCall(step);
+  return isStepCall(step, reads);
 }
 
 /** A local that a context's `step` is given to, only called with a callback read as a hook taking the context first. */
-function isStepLocal(local: types.Node, scope: NodePath['scope']): boolean {
+function isStepLocal(
+  local: types.Node,
+  scope: NodePath['scope'],
+  reads: FileReads,
+): boolean {
   const binding = bindingOf(local, scope);
 
-  return binding !== undefined && binding.referencePaths.every(isStepCall);
+  return (
+    binding !== undefined &&
+    binding.referencePaths.every((reference) => isStepCall(reference, reads))
+  );
 }
 
 /** `<step>(<name>, <callback>)`, whose callback Storybook runs with the context, with no spread argument that could hold one. */
-function isStepCall(step: NodePath): boolean {
+function isStepCall(step: NodePath, reads: FileReads): boolean {
   const call = step.parentPath;
 
   if (!call?.isCallExpression() || step.key !== 'callee') {
@@ -448,33 +487,50 @@ function isStepCall(step: NodePath): boolean {
 
   return (
     !stepArguments.some((argument) => argument.isSpreadElement()) &&
-    (callback === undefined || isHookValueRead(callback, 0))
+    (callback === undefined || isHookValueRead(callback, 0, reads))
   );
 }
 
-const contextLocalReads = new WeakMap<types.Node, boolean>();
+/** What one file's read has found so far. A context local that reaches itself is held as read while its read is in progress, so these live only as long as that file's read, which stops at the first context not read. */
+interface FileReads {
+  readonly contextLocals: WeakMap<types.Node, boolean>;
+  readonly argumentReaders: WeakMap<types.Node, boolean>;
+}
 
 /** A local or pattern that a context is given to, read as a context, once per local or pattern. One that reaches itself counts as read while it is being read, as reading it again finds nothing the first read does not. */
-function isContextLocal(local: types.Node, scope: NodePath['scope']): boolean {
-  const known = contextLocalReads.get(local);
+function isContextLocal(
+  local: types.Node,
+  scope: NodePath['scope'],
+  reads: FileReads,
+): boolean {
+  const known = reads.contextLocals.get(local);
 
   if (known !== undefined) {
     return known;
   }
 
-  contextLocalReads.set(local, true);
-  const read = readsAsContext(local, scope);
-  contextLocalReads.set(local, read);
+  reads.contextLocals.set(local, true);
+  const read = readsAsContext(local, scope, reads);
+  reads.contextLocals.set(local, read);
 
   return read;
 }
 
-function readsAsContext(local: types.Node, scope: NodePath['scope']): boolean {
+function readsAsContext(
+  local: types.Node,
+  scope: NodePath['scope'],
+  reads: FileReads,
+): boolean {
   if (local.type === 'ObjectPattern') {
-    return isReadPattern(local, scope);
+    return isReadPattern(local, scope, reads);
   }
 
   const binding = bindingOf(local, scope);
 
-  return binding !== undefined && binding.referencePaths.every(isContextRead);
+  return (
+    binding !== undefined &&
+    binding.referencePaths.every((reference) =>
+      isContextRead(reference, reads),
+    )
+  );
 }
