@@ -4,6 +4,7 @@ import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import {
   propertyKey,
+  sameKey,
   unknownValue,
   valuesIn,
   type LayerValue,
@@ -51,8 +52,8 @@ export function ownValue(
 export function ownValueOf(layer: Layer, key: string | number): LayerValue {
   return typeof layer === 'object'
     ? valuesIn(
-        layer.lastWinsProperties.filter(
-          (property) => propertyKey(property) === key,
+        layer.lastWinsProperties.filter((property) =>
+          sameKey(propertyKey(property), key),
         ),
         key,
       )[0]

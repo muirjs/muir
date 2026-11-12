@@ -25,7 +25,15 @@ export function propertyKey(property: unknown): string | number | undefined {
 export function maySet(property: unknown, key: string | number): boolean {
   const name = propertyKey(property);
 
-  return name === undefined || String(name) === String(key);
+  return name === undefined || sameKey(name, key);
+}
+
+/** JavaScript's rule: `1` and `'1'` name one key. */
+export function sameKey(
+  name: string | number | undefined,
+  key: string | number,
+): boolean {
+  return name !== undefined && String(name) === String(key);
 }
 
 /** The values the properties of a last-wins-first list that may set `key` give it: `unknownValue` for a spread or a computed key, a method being its own value. */
