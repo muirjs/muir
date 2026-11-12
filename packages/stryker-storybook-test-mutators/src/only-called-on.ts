@@ -9,17 +9,14 @@ import {
 
 /** A binding whose every reference is a method call's receiver, a side of a choice given to such a local, or inside a type. */
 export function isOnlyCalledOn(
-  binding: Binding | undefined,
+  binding: Binding,
   seen: ReadonlySet<Binding> = new Set(),
 ): boolean {
-  return (
-    binding !== undefined &&
-    binding.referencePaths.every(
-      (reference) =>
-        isInType(reference) ||
-        isMethodCallReceiver(reference) ||
-        isChoiceSide(reference, seen),
-    )
+  return binding.referencePaths.every(
+    (reference) =>
+      isInType(reference) ||
+      isMethodCallReceiver(reference) ||
+      isChoiceSide(reference, seen),
   );
 }
 

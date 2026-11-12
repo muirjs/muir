@@ -217,7 +217,7 @@ export const userEventProofCases: readonly Case[] = [
     id: 'named-hook-passed-context-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach given by the name of a local function passes its context to a function",
-    source: `import { slowDown } from './support';\nconst slowUser = (context) => {\n  slowDown(context);\n};\nexport default {\n  beforeEach: slowUser,\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    source: `import { slowDown } from './support';\nconst slowDownContext = (context) => {\n  slowDown(context);\n};\nexport default {\n  beforeEach: slowDownContext,\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
     expect: [
       [interaction, ';'],
       [interaction, ';'],

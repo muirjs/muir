@@ -76,7 +76,7 @@ export function readUserEvent(
       ? 'none'
       : userEventBinding(binding, new Set([...seen, binding]));
 
-  if (bound === 'none') {
+  if (binding === undefined || bound === 'none') {
     return nameOf(node) === 'userEvent' ? 'unprovenUserEvent' : 'none';
   }
 
@@ -250,7 +250,7 @@ function isOnlyCalledImport(
 
   return (
     (imported !== 'userEvent' && imported !== 'default') ||
-    isOnlyCalledOn(binding)
+    (binding !== undefined && isOnlyCalledOn(binding))
   );
 }
 

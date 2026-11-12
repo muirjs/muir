@@ -28,7 +28,7 @@ export function isPlayContext(node: types.Node, path: NodePath): boolean {
   );
 }
 
-/** `<context>.<name>`, or a declaration's value whose local or pattern is read as a context, where a `context` member, which Storybook sets to the context itself, is read the same way. */
+/** `<context>.<name>`, or a declaration's value whose local or pattern is read as a context. A `context` member, which Storybook sets to the context itself, is read the same way, a `step` member may only be called, and a `userEvent` member only called on, as the binding rule asks of a local. */
 function isContextRead(path: NodePath): boolean {
   const { parentPath } = path;
 
@@ -94,7 +94,7 @@ export function isContextLeftAsSet(binding: Binding): boolean {
   );
 }
 
-/** Whether the file names userEvent only where the rules read it: an import's name, a key or local in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` only called on; never as a string or a template's text. It backs up `contextsOnlyRead`, which reads only the hooks it knows. */
+/** Whether the file names userEvent only where the rules read it: an import's name, a key or local in a parameter's destructuring, a `userEvent` or `<x>.userEvent` only called on, or inside a type; never as a string or a template's text. It backs up `contextsOnlyRead`, which reads only the hooks it knows. */
 export const namesOnlyReadUserEvent = perFile((program) => {
   let onlyRead = true;
 
@@ -356,7 +356,9 @@ function isReadPattern(
     const name = keyName(property.key);
 
     if (name === 'userEvent') {
-      return isOnlyCalledOn(bindingOf(local, scope));
+      const binding = bindingOf(local, scope);
+
+      return binding !== undefined && isOnlyCalledOn(binding);
     }
 
     if (name === 'step') {
