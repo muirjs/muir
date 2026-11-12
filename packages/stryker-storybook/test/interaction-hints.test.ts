@@ -13,6 +13,8 @@ import {
   interactionMutatorNames,
   type ReportFiles,
 } from '../src/interaction-hints.ts';
+import { interactionShapeReader } from '../src/interaction-shapes.ts';
+import { parseProgram } from '../src/parse.ts';
 import { inPlay, interactionHintCases } from './interaction-hint-cases.ts';
 import { instrument } from './support/instrument.ts';
 
@@ -143,6 +145,35 @@ describe('interactionHints', () => {
         });
       });
     });
+  });
+
+  it('finds at most one shape at each interaction of every case', async () => {
+    const overlaps = await Promise.all(
+      interactionHintCases.map(async ({ id, source }) => {
+        const { mutants } = await instrument(
+          join(fixtures, 'no-main', file),
+          source,
+          [],
+        );
+        const sites = mutants
+          .filter(({ mutatorName }) => mutatorName === 'LzStorybookInteraction')
+          .map(({ location }) => location);
+        const shapesAt = interactionShapeReader(
+          parseProgram(source, file),
+          sites,
+        );
+
+        return sites.flatMap((site) => {
+          const shapes = shapesAt(site) ?? [];
+
+          return shapes.length > 1
+            ? [`${id}:${site.start.line} ${shapes.join(', ')}`]
+            : [];
+        });
+      }),
+    );
+
+    assert.deepEqual(overlaps.flat(), []);
   });
 
   it('makes at least one mutant of each interaction mutator name, so the list matches the test mutators', async () => {
