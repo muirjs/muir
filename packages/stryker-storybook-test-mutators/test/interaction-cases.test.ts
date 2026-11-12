@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
+import { lzStorybookTestMutators } from '../src/index.ts';
 import { crashCases, interactionCases } from './interaction-cases.ts';
 import { inPlay } from './support/case.ts';
-import { mutantsOf, runCases } from './support/run-cases.ts';
+import { mutantLinesByFile, runCases } from './support/run-cases.ts';
 import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 runCases('LzStorybookInteraction', interactionCases);
@@ -26,16 +27,13 @@ test('a click on userEvent in parentheses that the Babel config keeps as a node 
   process.chdir(root);
 
   try {
-    const mutants = await mutantsOf([
-      { name: file, content: inPlay('await (userEvent).click(button);') },
-    ]);
-
-    assert.deepEqual(
-      mutants
-        .filter(({ mutatorName }) => mutatorName === 'LzStorybookInteraction')
-        .map(({ replacement }) => replacement),
-      [';'],
+    await lzStorybookTestMutators();
+    const lines = await mutantLinesByFile(
+      [{ name: file, content: inPlay('await (userEvent).click(button);') }],
+      'LzStorybookInteraction',
     );
+
+    assert.deepEqual(lines.get(file), ['LzStorybookInteraction ;']);
   } finally {
     process.chdir(cwd);
   }
