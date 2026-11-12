@@ -116,7 +116,7 @@ export function rootLayer(
     : (shownObject(expression, unchanged) ?? unknownValue);
 }
 
-export function literalLayer(expression: unknown, bindings: Bindings): Layer {
+export function asWrittenLayer(expression: unknown, bindings: Bindings): Layer {
   return isRecord(expression) && expression['type'] === 'ObjectExpression'
     ? new ResolvedObject(expression, bindings)
     : undefined;

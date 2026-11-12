@@ -1,35 +1,29 @@
 import { storyArgument, unwrap } from './csf-nodes.ts';
 import { withoutBinding } from './csf.ts';
 import { field } from './node-field.ts';
-import { unknownValue, type LayerValue } from './object-value.ts';
-import {
-  literalLayer,
-  rootLayer,
-  valuesOf,
-  type Layer,
-} from './resolved-values.ts';
+import { unknownValue } from './object-value.ts';
 
 type Bindings = ReadonlyMap<string, unknown>;
 
-type LayerReading = 'root' | 'as-written';
+/** One level of a story's `.extend()` chain: the object it gives, the name that owns it, and the bindings it reads. */
+export interface ExtendLevel {
+  readonly argument: unknown;
+  readonly owner: unknown;
+  readonly bindings: Bindings;
+}
 
 /**
- * The layers a story ends up with, one each for the story and then each `.extend()` base, as Storybook 10.6.5
+ * The levels a story ends up with, one for the story and then one for each `.extend()` base, as Storybook 10.6.5
  * `extend()` merges a base story in key by key. A base the bindings do not hold, imported or one the file changes, is
- * an unknown layer.
+ * an unknown level.
  */
-export function storyRoots(
+export function extendLevels(
   init: unknown,
   owner: unknown,
-  written: ReadonlySet<unknown>,
-  unchanged: Bindings,
-  reading: LayerReading,
-): readonly [Layer, ...Layer[]] {
+  bindings: Bindings,
+): readonly [ExtendLevel, ...(ExtendLevel | typeof unknownValue)[]] {
   const call = unwrap(init);
-  const own =
-    reading === 'root'
-      ? rootLayer(storyArgument(call), owner, written, unchanged)
-      : literalLayer(storyArgument(call), unchanged);
+  const own = { argument: storyArgument(call), owner, bindings };
   const base = field(call, 'callee', 'object', 'name');
 
   if (
@@ -39,23 +33,14 @@ export function storyRoots(
     return [own];
   }
 
-  return unchanged.has(base)
+  return bindings.has(base)
     ? [
         own,
-        ...storyRoots(
-          unchanged.get(base),
+        ...extendLevels(
+          bindings.get(base),
           base,
-          written,
-          withoutBinding(unchanged, base),
-          reading,
+          withoutBinding(bindings, base),
         ),
       ]
     : [own, unknownValue];
-}
-
-export function storyValueChain(
-  layers: readonly Layer[],
-  key: string,
-): readonly LayerValue[] {
-  return layers.flatMap((layer) => valuesOf(layer, key));
 }

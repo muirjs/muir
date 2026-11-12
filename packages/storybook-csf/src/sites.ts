@@ -1,4 +1,3 @@
-import { storyArgument, unwrap } from './csf-nodes.ts';
 import {
   csfFile,
   topLevelBindings,
@@ -16,8 +15,8 @@ import {
 } from './object-value.ts';
 import { playedStories, type PlayedStory } from './played-stories.ts';
 import {
+  asWrittenLayer,
   layerOf,
-  literalLayer,
   ownValue,
   ownValueOf,
   resolvedPropertyValues,
@@ -25,7 +24,7 @@ import {
   valuesOf,
   type Layer,
 } from './resolved-values.ts';
-import { storyRoots } from './story-layers.ts';
+import { extendLevels } from './story-layers.ts';
 
 type Bindings = ReadonlyMap<string, unknown>;
 
@@ -143,7 +142,17 @@ export function sitesOf(
   const runs = playedStories(body, bindings, file).flatMap(
     (story): readonly RunLayers[] => {
       const { init, local } = story.story;
-      const roots = storyRoots(init, local, file.written, unchanged, 'root');
+      const levels = extendLevels(init, local, unchanged);
+      const roots = levels.map((level) =>
+        level === unknownValue
+          ? level
+          : rootLayer(
+              level.argument,
+              level.owner,
+              file.written,
+              level.bindings,
+            ),
+      );
       const [own, ...bases] = roots.map((layer) => layerOf(layer, key));
       const storyRoot = unlessReadByOtherObjects(roots[0], local);
       const storyParameters = [
@@ -163,7 +172,7 @@ export function sitesOf(
         {
           run: { owner: 'story', story },
           node: ownValueOf(
-            literalLayer(storyArgument(unwrap(init)), unchanged),
+            asWrittenLayer(levels[0].argument, levels[0].bindings),
             key,
           ),
           own: layerOf(storyRoot, key),

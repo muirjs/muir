@@ -12,8 +12,8 @@ import {
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import { unknownValue, writtenValue } from './object-value.ts';
-import { resolvedValues } from './resolved-values.ts';
-import { storyRoots, storyValueChain } from './story-layers.ts';
+import { asWrittenLayer, resolvedValues, valuesOf } from './resolved-values.ts';
+import { extendLevels } from './story-layers.ts';
 
 /** An unknown play with a play the file reads under it, which runs when the unknown one sets none: an earlier own play, an `.extend()` base's or the meta's. */
 export const unknownOverAPlay = 'unknown over a play';
@@ -64,15 +64,13 @@ export function playedStories(
         story,
         play: storyPlay(
           assignedPlay,
-          storyValueChain(
-            storyRoots(
-              story.init,
-              story.local,
-              written,
-              unchanged,
-              'as-written',
+          extendLevels(story.init, story.local, unchanged).flatMap((level) =>
+            valuesOf(
+              level === unknownValue
+                ? level
+                : asWrittenLayer(level.argument, level.bindings),
+              'play',
             ),
-            'play',
           ),
           metaPlays,
           unchanged,
