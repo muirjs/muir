@@ -30,11 +30,14 @@ const reasons: Readonly<Record<ReasonVerdict, string>> = {
   'once-not-rewritten':
     'the mock transformer does not rewrite *Once stubs, so the mock reset still erases this stub',
   'chain-not-rewritten':
-    'the mock transformer rewrites only the first stub of a chain, so the mock reset still erases this stub',
+    'the mock transformer rewrites a stub only when it is the first of its chain, so the mock reset still erases this stub',
 };
 
 const fix =
   'pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach';
+
+/** The reason for a chain whose stubs have different verdicts and none is kept, since its ignore covers them all. */
+export const unrewrittenChainReason = `${storybookPluginName}: chain-not-rewritten: the mock transformer rewrites neither a *Once stub nor a stub after the first of its chain, so the mock reset still erases every stub of this chain; ${fix}`;
 
 export const uncheckedFinding = {
   verdict: 'unchecked',
@@ -48,12 +51,63 @@ export interface SpyStubReason {
   readonly fix: string;
 }
 
+/** A node the lz-storybook ignorer ignores: a stub call with every stub before it in its chain, or only its arguments. */
+export interface StubIgnore {
+  readonly start: number;
+  readonly end: number;
+  readonly covers: 'call' | 'arguments';
+  readonly reason: string;
+}
+
 export function reasonSites(
   file: StoryFile,
   { previewTest, testTags, transformer }: StorybookProject,
 ): readonly ReasonSite[] {
   const { stubs } = classifyStubs(file, previewTest, testTags);
 
+  return siteReasons(stubs, transformer);
+}
+
+/** Stryker ignores the whole subtree of an ignored node, so a stub call is ignored only when no stub before it in its chain is kept. */
+export function stubIgnores(
+  file: StoryFile,
+  { previewTest, testTags, transformer }: StorybookProject,
+): readonly StubIgnore[] {
+  const { stubs } = classifyStubs(file, previewTest, testTags);
+  const sites = siteReasons(stubs, transformer);
+
+  return sites.map(({ start, end, verdict }) => {
+    const inChain = ({
+      start: innerStart,
+      end: innerEnd,
+    }: Pick<ClassifiedStub, 'start' | 'end'>) =>
+      innerStart === start && innerEnd <= end;
+    const chain = sites.filter(inChain);
+
+    if (chain.length < stubs.filter(inChain).length) {
+      return {
+        start,
+        end,
+        covers: 'arguments',
+        reason: spyStubReason(verdict),
+      };
+    }
+
+    return {
+      start,
+      end,
+      covers: 'call',
+      reason: chain.every((site) => site.verdict === verdict)
+        ? spyStubReason(verdict)
+        : unrewrittenChainReason,
+    };
+  });
+}
+
+function siteReasons(
+  stubs: readonly ClassifiedStub[],
+  transformer: StorybookProject['transformer'],
+): readonly ReasonSite[] {
   return stubs.flatMap(({ once, verdict, ...site }): readonly ReasonSite[] => {
     if (verdict === 'kept') {
       return [];

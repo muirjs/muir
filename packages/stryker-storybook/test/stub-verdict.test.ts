@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { spyStubReason } from '../src/stub-verdict.ts';
+import { spyStubReason, unrewrittenChainReason } from '../src/stub-verdict.ts';
 
 const fix =
   'pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach';
@@ -38,7 +38,14 @@ describe('spyStubReason', () => {
   it('says why a stub after the first of a chain stays erased with the mock transformer on', () => {
     assert.equal(
       spyStubReason('chain-not-rewritten'),
-      `lz-storybook: chain-not-rewritten: the mock transformer rewrites only the first stub of a chain, so the mock reset still erases this stub; ${fix}`,
+      `lz-storybook: chain-not-rewritten: the mock transformer rewrites a stub only when it is the first of its chain, so the mock reset still erases this stub; ${fix}`,
+    );
+  });
+
+  it('says why every stub of a chain that the mock transformer leaves whole stays erased', () => {
+    assert.equal(
+      unrewrittenChainReason,
+      `lz-storybook: chain-not-rewritten: the mock transformer rewrites neither a *Once stub nor a stub after the first of its chain, so the mock reset still erases every stub of this chain; ${fix}`,
     );
   });
 });

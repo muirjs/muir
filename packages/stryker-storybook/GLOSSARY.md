@@ -142,9 +142,9 @@ _Avoid_: slow mutant
 
 **Mock transformer**:
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
-form, which survives the mock reset. It leaves the `Once` forms as they are, and rewrites only the first stub of a
-chain, leaving the stubs after it as they are; the `lz-storybook` report gives an erased stub of either kind the verdict
-`once-not-rewritten` or `chain-not-rewritten`.
+form, which survives the mock reset. It rewrites a stub only when it is the first of its chain and not one of the
+`Once` forms. The `lz-storybook` report gives an erased `Once` stub the verdict `once-not-rewritten`, and an erased
+stub after the first of a chain that is not a `Once` stub the verdict `chain-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:
@@ -174,7 +174,8 @@ _Avoid_: story ignorer, Storybook ignorer
 
 **Stub ignorer**:
 The `lz-storybook` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
-erase, or cannot be told to keep.
+erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call holds the stubs
+before it in its chain, so when one of those is kept the ignorer reports only the stub's own arguments as Ignored.
 _Avoid_: reset ignorer
 
 **Play mode**:
