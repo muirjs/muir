@@ -88,9 +88,10 @@ function's parameter, a play context's `userEvent` destructured with a default, 
 callback's context, the context of a play given by its name, assigned as `Story.play` or under a computed key, a play
 context the play passes on or reads with a computed member, and every play context in a file that names `userEvent`
 any other way, as a `beforeEach` or the play may replace the context's userEvent or its methods. The play context's
-proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()` and runs the `beforeEach` hooks on the same
-context before the play, as the default global's proof rests on Storybook's initial values; a play that other code
-calls with a context of its own is not read.
+proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()` and runs the loaders and `beforeEach` hooks
+on the same context before the play, as the default global's proof rests on Storybook's initial values. It also
+assumes that no project loader or `beforeEach` in `.storybook/preview` replaces the context's userEvent, which the
+story file cannot show; a play that other code calls with a context of its own is not read.
 _Avoid_: real userEvent, Storybook userEvent
 
 **Copied check**:
