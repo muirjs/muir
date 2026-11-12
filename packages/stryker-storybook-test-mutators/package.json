@@ -66,6 +66,12 @@
       "test": {
         "dependsOn": [
           "^build"
+        ],
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/packages/stryker-storybook-mutators/test/support/compose-skips.ts",
+          "{workspaceRoot}/packages/stryker-storybook-mutators/test/support/temp-tree.ts"
         ]
       },
       "lint": {

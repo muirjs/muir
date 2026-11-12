@@ -49,6 +49,11 @@ skip.
   shows as a change. A row with a proof that cannot load fails the test unless the test lists it as one Storybook
   cannot load either. Each test names the proof reasons its rows must exercise, and fails when one of them, or any
   proof at all, gets no cut. The check covers the case rows only, not every story file.
+- The check's harness, `test/support/compose-skips.ts` with its `temp-tree.ts`, is a byte copy in each mutator
+  package: the workspace has no shared test-support project, and a test may not import another project's files
+  (`@nx/enforce-module-boundaries` refuses the relative path, and each spec project's `rootDir` excludes them). The
+  Storybook test mutators' `test/copies.test.ts` fails when a copy differs from the Storybook mutators' file, and its
+  test target lists those files as inputs.
 - Storybook's composition does not check a `viewport` default: composed with and without `viewport: 'responsive'`,
   the globals differ, and the test calls them the same through a hand-copied oracle of the Vitest addon's
   `setViewport` rule, the rule the `default-global` proof copies, so a mistake in that copy would pass both.
