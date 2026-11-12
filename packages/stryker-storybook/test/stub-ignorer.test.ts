@@ -140,6 +140,16 @@ describe('stubIgnorer', () => {
       assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [undefined]);
     });
 
+    it('leaves a later stub that starts its own chain placed', async () => {
+      const { reasonsOf } = await setup(
+        'transformer',
+        'Stub.stories.tsx',
+        resetCase('F01AllDefault'),
+      );
+
+      assert.deepEqual(reasonsOf("mockReturnValue('stubbed')", 1), [undefined]);
+    });
+
     it('gives the once-not-rewritten reason to an erased *Once stub', async () => {
       const { reasonsOf } = await setup(
         'transformer',
