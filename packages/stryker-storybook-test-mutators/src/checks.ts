@@ -51,12 +51,28 @@ function startsWithExpect(node: types.Node): boolean {
 
 /** `expect`, or `expect.soft`, `expect.element` or `expect.poll`, each of which starts a check. */
 function isExpect(callee: types.Node): boolean {
+  if (callee.type !== 'MemberExpression') {
+    return nameOf(callee) === 'expect';
+  }
+
+  const method = memberName(callee);
+
   return (
-    nameOf(callee) === 'expect' ||
-    (callee.type === 'MemberExpression' &&
-      nameOf(callee.object) === 'expect' &&
-      expectMethods.has(nameOf(callee.property) ?? ''))
+    nameOf(callee.object) === 'expect' &&
+    method !== undefined &&
+    expectMethods.has(method)
   );
+}
+
+/** The name a member reads: its identifier, or its string-literal key when computed. */
+function memberName(member: types.MemberExpression): string | undefined {
+  if (member.computed) {
+    return member.property.type === 'StringLiteral'
+      ? member.property.value
+      : undefined;
+  }
+
+  return nameOf(member.property);
 }
 
 const expectMethods: ReadonlySet<string> = new Set(['soft', 'element', 'poll']);

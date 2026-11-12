@@ -1,6 +1,12 @@
 import type { NodePath, types } from '@babel/core';
 
-import { awaited, type Binding, bindingOf, nameOf } from './nodes.ts';
+import {
+  awaited,
+  type Binding,
+  bindingOf,
+  nameOf,
+  withoutTypeWrappers,
+} from './nodes.ts';
 
 // The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
 // storybook/test re-exports) and those only Vitest browser's userEvent has.
@@ -113,7 +119,7 @@ function isUserEventBinding(
   );
 }
 
-/** The module an import declaration names when `declaration` imports `userEvent` by name from it, or is the default import of `@testing-library/user-event`, the one user-event module with a default export. */
+/** The module an import declaration names when `declaration` imports `userEvent` by name from it, or imports the default export of `@testing-library/user-event`, the one user-event module with a default export, as a default import or by the name `default`. */
 function userEventImportSource(declaration: NodePath): string | undefined {
   const { node, parent } = declaration;
 
@@ -122,11 +128,15 @@ function userEventImportSource(declaration: NodePath): string | undefined {
   }
 
   const source = parent.source.value;
-  const importsUserEvent =
+  const imported =
     node.type === 'ImportSpecifier'
-      ? nameOf(node.imported) === 'userEvent'
-      : node.type === 'ImportDefaultSpecifier' &&
-        source === defaultExportModule;
+      ? nameOf(node.imported)
+      : node.type === 'ImportDefaultSpecifier'
+        ? 'default'
+        : undefined;
+  const importsUserEvent =
+    imported === 'userEvent' ||
+    (imported === 'default' && source === defaultExportModule);
 
   return importsUserEvent ? source : undefined;
 }
@@ -136,7 +146,7 @@ const defaultExportModule = '@testing-library/user-event';
 
 /** Whether `node` names a namespace import of the user-event module with a default export, whose `default` member is a user-event. */
 function isUserEventNamespace(node: types.Node, path: NodePath): boolean {
-  const declaration = bindingOf(node, path.scope)?.path;
+  const declaration = bindingOf(withoutTypeWrappers(node), path.scope)?.path;
 
   return (
     declaration?.node.type === 'ImportNamespaceSpecifier' &&

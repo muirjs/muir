@@ -233,6 +233,13 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'testing-library-default-named-import',
+    title:
+      "a call on the default export of '@testing-library/user-event' imported by name under another name is removed",
+    source: `import { default as ev } from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ev.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'storybook-test-default-import-other-name',
     title:
       "a call on the default import of 'storybook/test' under another name makes no mutant, as only '@testing-library/user-event' has a user-event default export",
@@ -251,6 +258,13 @@ const interactionCases: readonly Case[] = [
     title:
       "a call on the default member of a namespace import of '@testing-library/user-event' is removed",
     source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ue.default.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-namespace-default-in-type-assertion',
+    title:
+      "a call on the default member of a namespace import of '@testing-library/user-event' inside an as expression is removed",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await (ue as any).default.click(canvas.getByRole('button'));")}`,
     expect: [[interaction, ';']],
   },
   {

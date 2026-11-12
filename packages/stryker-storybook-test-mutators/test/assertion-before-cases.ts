@@ -403,4 +403,36 @@ export const assertionBeforeCases: readonly Case[] = [
       ],
     ],
   },
+  {
+    id: 'assertion-before-expect-soft-string-key',
+    title:
+      "an expect['soft'] check is the first check after an interaction, so it is the one copied",
+    source: inPlay(
+      'await userEvent.click(save);',
+      "expect['soft'](status).toHaveTextContent('Saved');",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ expect['soft'](status).toHaveTextContent('Saved'); await userEvent.click(save); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-past-computed-expect-member',
+    title:
+      'an expect member under a computed key that is a name, not a string, is no check, so the copied check is the first one past it',
+    source: inPlay(
+      'await userEvent.click(save);',
+      "expect[soft](status).toHaveTextContent('Saved');",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent.click(save); }',
+      ],
+    ],
+  },
 ];
