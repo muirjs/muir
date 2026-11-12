@@ -113,17 +113,17 @@ function siteReasons(
       return [];
     }
 
-    if (transformer === 'seen') {
-      if (once) {
-        return [{ ...site, verdict: 'once-not-rewritten' }];
-      }
-
-      return followsAStub(site, stubs)
-        ? [{ ...site, verdict: 'chain-not-rewritten' }]
-        : [];
+    if (transformer !== 'seen') {
+      return [{ ...site, verdict }];
     }
 
-    return [{ ...site, verdict }];
+    if (once) {
+      return [{ ...site, verdict: 'once-not-rewritten' }];
+    }
+
+    return followsAStub(site, stubs)
+      ? [{ ...site, verdict: 'chain-not-rewritten' }]
+      : [];
   });
 }
 
