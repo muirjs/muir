@@ -239,10 +239,17 @@ function maySkipClick(options: unknown): boolean {
 }
 
 /** The name of a property's identifier or string-literal key, when it is not computed. */
-function keyName(property: unknown): unknown {
-  return field(property, 'computed') === true
-    ? undefined
-    : (nameOf(field(property, 'key')) ?? field(property, 'key', 'value'));
+function keyName(property: unknown): string | undefined {
+  const value = field(property, 'key', 'value');
+
+  if (field(property, 'computed') === true) {
+    return undefined;
+  }
+
+  return (
+    nameOf(field(property, 'key')) ??
+    (typeof value === 'string' ? value : undefined)
+  );
 }
 
 /**
@@ -281,6 +288,10 @@ function playOf(
   parameter: AstNode | undefined,
   ancestors: readonly AstNode[],
 ): AstNode | undefined {
+  if (parameter === undefined) {
+    return undefined;
+  }
+
   const owner = ancestors.findIndex(
     (ancestor) =>
       isFunction(ancestor) && list(ancestor['params'])[0] === parameter,
