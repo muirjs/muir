@@ -105,3 +105,10 @@ const memberTypes: readonly unknown[] = [
 export function isMember(node: unknown): boolean {
   return memberTypes.includes(field(node, 'type'));
 }
+
+/** The object at the start of a member chain, read through casts at every level. */
+export function memberRoot(node: unknown): unknown {
+  const current = unwrap(node);
+
+  return isMember(current) ? memberRoot(field(current, 'object')) : current;
+}

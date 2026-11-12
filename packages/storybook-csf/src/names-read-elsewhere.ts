@@ -4,6 +4,7 @@ import {
   isIndexedTestCall,
   isMember,
   isStoryFactoryCall,
+  memberRoot,
   storyArgument,
   unwrap,
   type Assignment,
@@ -197,12 +198,6 @@ function wholeHeldIdentifiers(init: unknown): readonly unknown[] {
     .filter((property) => field(property, 'type') === 'SpreadElement')
     .map((spread) => memberRoot(field(spread, 'argument')))
     .filter((argument) => field(argument, 'type') === 'Identifier');
-}
-
-function memberRoot(node: unknown): unknown {
-  const current = unwrap(node);
-
-  return isMember(current) ? memberRoot(field(current, 'object')) : current;
 }
 
 /** A literal or template literal holds no object, so two names that read one share nothing a write could change. */

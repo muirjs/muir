@@ -1,4 +1,4 @@
-import { isMember, keyOf, unwrap } from './csf-nodes.ts';
+import { isMember, keyOf, memberRoot, unwrap } from './csf-nodes.ts';
 import { withoutBinding } from './csf.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
@@ -169,7 +169,10 @@ function shownObject(
 
   // Without the member's root name, a value that names the member again, as in `const A = { b: A.b }`, ends.
   return isRecord(value)
-    ? shownObject(value, withoutBinding(bindings, rootName(current)))
+    ? shownObject(
+        value,
+        withoutBinding(bindings, field(memberRoot(current), 'name')),
+      )
     : undefined;
 }
 
@@ -187,10 +190,4 @@ function inLastWinsOrder(
               ?.lastWinsProperties
           : undefined) ?? [property],
     );
-}
-
-function rootName(node: unknown): unknown {
-  return isMember(node)
-    ? rootName(field(node, 'object'))
-    : field(unwrap(node), 'name');
 }

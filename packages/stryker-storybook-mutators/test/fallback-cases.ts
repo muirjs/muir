@@ -928,4 +928,32 @@ export const crashCases: readonly Case[] = [
       "export const Primary = { args: { ...Primary.args, label: 'a', disabled: true } };\n",
     expect: [],
   },
+  {
+    id: 'member-self-spread',
+    title:
+      'the lookup ends on a spread of a member whose value names that member again, so the spread may set any key',
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'const shared = { story: { args: shared.story.args } };\n' +
+      "export const Primary = { args: { ...shared.story.args, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, "{ ...shared.story.args, label: 'a' }"],
+      [args, '{ ...shared.story.args, disabled: true }'],
+      [args, '{ ...shared.story.args }'],
+    ],
+  },
+  {
+    id: 'cast-member-self-spread',
+    title:
+      'the lookup ends on a spread of a member chain with a cast inside it whose value names that member again',
+    source:
+      "export default { title: 'Button', play: async () => {} };\n" +
+      'const shared = { story: { args: (shared.story as Story).args } };\n' +
+      "export const Primary = { args: { ...(shared.story as Story).args, label: 'a', disabled: true } };\n",
+    expect: [
+      [args, "{ ...(shared.story as Story).args, label: 'a' }"],
+      [args, '{ ...(shared.story as Story).args, disabled: true }'],
+      [args, '{ ...(shared.story as Story).args }'],
+    ],
+  },
 ];

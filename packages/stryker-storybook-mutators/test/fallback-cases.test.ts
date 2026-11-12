@@ -5,5 +5,9 @@ import { runCases } from './support/run-cases.ts';
 
 runCases(fallbackCases);
 describe('cases whose lookup could run without end', () => {
-  runCases(crashCases);
+  crashCases.forEach((crashCase) => {
+    describe(crashCase.id, () => {
+      runCases([crashCase]);
+    });
+  });
 });
