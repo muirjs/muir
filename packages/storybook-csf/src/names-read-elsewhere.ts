@@ -199,7 +199,7 @@ const primitiveTypes: readonly unknown[] = [
   'TemplateLiteral',
 ];
 
-/** The identifiers whose objects a value shares: those `evaluate` in reset-setting.ts follows, those of a `.story()` or `.extend()` argument, which Storybook 10.6.5 keeps as the story's `input`, and the object of a member such as `Base.args`. */
+/** The identifiers whose objects a value shares: the value itself, its property values and spread arguments, those of a `.story()` or `.extend()` argument, which Storybook 10.6.5 keeps as the story's `input`, and the object of a member such as `Base.args`. */
 function identifiersReachedFrom(node: unknown): readonly unknown[] {
   const current = unwrap(node);
 
