@@ -67,7 +67,8 @@ An interaction that `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStoryb
 given inline or as a function declared in the file but not one that a call wraps (`withUser(fn)`); one with at least one
 following check, whose checks before the next interaction are all negative checks; a click or hover that a user-event
 14 `type` of the same target in the next statement repeats (that `type` clicks first unless given a `skipClick` other
-than `false`; Vitest browser's does not click); and a `type` or `clear` with no following checks, when the statement that ends them is a `clear` of the same target, which undoes it.
+than `false`; Vitest browser's does not click); and a `type` or `clear` with no following checks, when the statement
+that ends them is a `clear` of the same target, which undoes it.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
