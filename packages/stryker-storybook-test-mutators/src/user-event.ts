@@ -136,13 +136,13 @@ function userEventImportSource(declaration: NodePath): string | undefined {
         : undefined;
   const importsUserEvent =
     imported === 'userEvent' ||
-    (imported === 'default' && source === defaultExportModule);
+    (imported === 'default' && source === userEventDefaultExportModule);
 
   return importsUserEvent ? source : undefined;
 }
 
 /** The one user-event module with a default export. */
-const defaultExportModule = '@testing-library/user-event';
+const userEventDefaultExportModule = '@testing-library/user-event';
 
 /** Whether `node` names a namespace import of the user-event module with a default export, whose `default` member is a user-event. */
 function isUserEventNamespace(node: types.Node, path: NodePath): boolean {
@@ -151,7 +151,7 @@ function isUserEventNamespace(node: types.Node, path: NodePath): boolean {
   return (
     declaration?.node.type === 'ImportNamespaceSpecifier' &&
     declaration.parent.type === 'ImportDeclaration' &&
-    declaration.parent.source.value === defaultExportModule
+    declaration.parent.source.value === userEventDefaultExportModule
   );
 }
 
@@ -189,7 +189,7 @@ const vitestBrowserSources: ReadonlySet<string> = new Set([
 /** The modules whose `userEvent` export is a user-event. */
 const userEventModules: ReadonlySet<string> = new Set([
   'storybook/test',
-  '@testing-library/user-event',
+  userEventDefaultExportModule,
   ...vitestBrowserSources,
 ]);
 

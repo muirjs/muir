@@ -6,7 +6,7 @@ import {
   type Site,
 } from '@layzee/stryker-mutator-install';
 
-import { isExpectStatement, isWaitForStatement } from './checks.ts';
+import { isCheckStatement, isWaitForStatement } from './checks.ts';
 import {
   firstCheckAfter,
   interactionAt,
@@ -355,7 +355,7 @@ function checkToCopy(
   const check = firstCheckAfter(interaction);
 
   return check !== undefined &&
-    (isExpectStatement(check) || isWaitForStatement(check)) &&
+    (isCheckStatement(check) || isWaitForStatement(check)) &&
     !readsNameBoundBetween(interaction, check) &&
     !standsEarlier(check, interaction, t)
     ? check.node

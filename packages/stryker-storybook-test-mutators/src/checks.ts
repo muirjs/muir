@@ -8,7 +8,7 @@ export function hasCheck(path: NodePath): boolean {
 
   path.traverse({
     CallExpression(call) {
-      if (isExpect(call.node.callee)) {
+      if (startsCheck(call.node.callee)) {
         found = true;
         call.stop();
       }
@@ -19,12 +19,12 @@ export function hasCheck(path: NodePath): boolean {
 }
 
 /** A statement that is a check, such as `expect(...).<matcher>(...);`, awaited or not. */
-export function isExpectStatement(
+export function isCheckStatement(
   path: NodePath,
 ): path is NodePath<types.ExpressionStatement> {
   return (
     path.isExpressionStatement() &&
-    startsWithExpect(awaited(path.node.expression))
+    startsWithCheck(awaited(path.node.expression))
   );
 }
 
@@ -41,16 +41,16 @@ export function isWaitForStatement(
   return call.type === 'CallExpression' && nameOf(call.callee) === 'waitFor';
 }
 
-function startsWithExpect(node: types.Node): boolean {
+function startsWithCheck(node: types.Node): boolean {
   if (node.type === 'CallExpression') {
-    return isExpect(node.callee) || startsWithExpect(node.callee);
+    return startsCheck(node.callee) || startsWithCheck(node.callee);
   }
 
-  return node.type === 'MemberExpression' && startsWithExpect(node.object);
+  return node.type === 'MemberExpression' && startsWithCheck(node.object);
 }
 
-/** `expect`, or `expect.soft`, `expect.element` or `expect.poll`, each of which starts a check. */
-function isExpect(callee: types.Node): boolean {
+/** Whether a call of `callee` starts a check: `expect`, or `expect.soft`, `expect.element` or `expect.poll`. */
+function startsCheck(callee: types.Node): boolean {
   if (callee.type !== 'MemberExpression') {
     return nameOf(callee) === 'expect';
   }

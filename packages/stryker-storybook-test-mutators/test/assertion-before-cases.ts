@@ -28,7 +28,7 @@ export const assertionBeforeCases: readonly Case[] = [
   {
     id: 'assertion-before-first-check',
     title:
-      'the copied check is the first expect statement after the interaction, past statements that check nothing',
+      'the copied check is the first check statement after the interaction, past statements that check nothing',
     source: inPlay(
       'await userEvent.click(save);',
       'await sleep(10);',

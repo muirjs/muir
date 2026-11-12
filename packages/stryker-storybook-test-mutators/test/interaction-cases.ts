@@ -60,7 +60,7 @@ const interactionCases: readonly Case[] = [
   },
   {
     id: 'expect-statement',
-    title: 'an expect statement makes no mutant',
+    title: 'a check statement makes no mutant',
     source: inPlay(
       "await expect(canvas.getByRole('button')).toBeInTheDocument();",
     ),
