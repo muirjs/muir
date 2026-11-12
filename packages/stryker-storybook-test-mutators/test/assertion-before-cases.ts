@@ -1,4 +1,4 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
 const assertionBefore = 'LzStorybookAssertionBefore';
 
@@ -301,7 +301,44 @@ export const assertionBeforeCases: readonly Case[] = [
     id: 'assertion-before-skip-past-step-defining-interaction',
     title:
       'an interaction makes no mutant when a step whose callback defines a function holding another interaction stands before the next check, as that check is none of its following checks',
-    source: `export const Story = {\n  play: async ({ args, step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      const clickSecond = async () => {\n        await userEvent.click(second);\n      };\n      await clickSecond();\n    });\n    await expect(args.onClick).toHaveBeenCalled();\n  },\n};\n`,
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(first);',
+      "await step('Second', async () => {",
+      '  const clickSecond = async () => {',
+      '    await userEvent.click(second);',
+      '  };',
+      '  await clickSecond();',
+      '});',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-past-call-with-interaction',
+    title:
+      'the copied check is the first one past a call that is no step or waitFor, even when a function given to it holds an interaction',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await run(async () => { await userEvent.click(second); });',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onClick).toHaveBeenCalled(); await userEvent.click(first); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-skip-past-if-with-step',
+    title:
+      'an interaction makes no mutant when an if that holds a step with another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      "if (open) { await step('Second', async () => { await userEvent.click(second); }); }",
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
     expect: [],
   },
   {

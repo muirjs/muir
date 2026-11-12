@@ -105,15 +105,15 @@ export const composedPlayCases: readonly Case[] = [
   {
     id: 'nested-play-user-event',
     title:
-      "an interaction on the userEvent of a play property's parameter inside a play is removed, as is the call of that play",
-    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay(
+      "an interaction on a parameter's userEvent in a play property defined inside a play is removed, as is the call of that play",
+    source: inPlay(
       'const inner = {',
       '  play: async (page) => {',
       '    await page.userEvent.click(input);',
       '  },',
       '};',
-      'await inner.play({ userEvent: browserUserEvent });',
-    )}`,
+      'await inner.play({});',
+    ),
     expect: [
       [interaction, ';'],
       [interaction, ';'],
