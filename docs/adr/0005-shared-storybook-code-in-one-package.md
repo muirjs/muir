@@ -7,8 +7,11 @@ stubs (`stub-shape.ts`), write and read the transformer record (`stryker-record.
 depend on as a regular dependency. It has
 no Stryker peer, so the mock transformer, a Vite plugin, still depends on no Stryker package. Lars ruled: "CSF
 reader/shared code: Approve recommendation." The recommendation he approved: shared code reaches its consumers as a
-published dependency, in one package with no Stryker peer, rather than as copies. The package was named
-`@layzee/storybook-csf` until 2026-11-12 and was renamed to `@layzee/storybook-core`.
+published dependency, in one package with no Stryker peer, rather than as copies.
+
+The package was first named `@layzee/storybook-csf`, although it holds more than the CSF reader. It also holds the
+stub shape, the transformer record and the value readers. Lars ruled on 2026-11-11: "Name of the shared package:
+`@layzee/storybook-core` rather than _shared_." The rename landed on 2026-11-12, and this decision is unchanged.
 
 Before this, `@layzee/stryker-storybook` owned these files and the other two packages held byte copies of them, each
 guarded by a `test/copies.test.ts` that failed when a copy drifted. The copies let the Vite plugin share the code

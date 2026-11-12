@@ -5,7 +5,7 @@ the mock reset, one resets module mock spies before each test, and one lets Stor
 sandbox. This context covers `@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer` and
 `@layzee/storybook-core`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
 same spy stub shape from `@layzee/storybook-core`, which holds the code they share.
-_Avoid_: `@layzee/storybook-csf` (the shared package's name until 2026-11-12)
+_Avoid_: `@layzee/storybook-csf` (the shared package's former name)
 
 ## Language
 
