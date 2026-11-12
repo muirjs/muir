@@ -297,6 +297,17 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'type-options-proto',
+    title:
+      'gives no hint for a click before a type whose options set a prototype, which may hold skipClick',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada', { __proto__: { skipClick: true } });",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
     id: 'type-keeps-click',
     title:
       'names a surviving click before a type given skipClick: false, which clicks',

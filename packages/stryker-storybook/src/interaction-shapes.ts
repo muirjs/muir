@@ -216,7 +216,10 @@ function equivalent(first: unknown, second: unknown): boolean {
   return [...keys].every((key) => equivalent(first[key], second[key]));
 }
 
-/** Unless the options are absent, or an object literal with no spread or computed key whose `skipClick` is absent or `false`. */
+/**
+ * Unless the options are absent, or an object literal with no spread, computed key or `__proto__` whose `skipClick` is
+ * absent or `false`.
+ */
 function maySkipClick(options: unknown): boolean {
   if (options !== undefined && field(options, 'type') !== 'ObjectExpression') {
     return true;
@@ -226,6 +229,7 @@ function maySkipClick(options: unknown): boolean {
     (property) =>
       field(property, 'type') === 'SpreadElement' ||
       field(property, 'computed') === true ||
+      keyName(property) === '__proto__' ||
       (keyName(property) === 'skipClick' &&
         !(
           field(property, 'value', 'type') === 'BooleanLiteral' &&
