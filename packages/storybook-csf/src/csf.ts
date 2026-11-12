@@ -755,7 +755,6 @@ function namesReadElsewhere(
   };
 }
 
-/** `names` with every name a read of one of them may reach, and every name that holds one of them whole, as `export default meta` or `const B = { ...A }` does, so its runs read what the other holds. */
 function withReadThrough(
   names: ReadonlySet<unknown>,
   reaches: readonly Reach[],
@@ -808,7 +807,6 @@ interface Reach {
   readonly from: unknown;
   readonly to: string;
   readonly identifier: unknown;
-  /** The init is the name itself, or its object spreads the name at the top level, so it holds every object the name holds. */
   readonly shares: boolean;
 }
 
@@ -832,7 +830,6 @@ function reachesOf(
   });
 }
 
-/** The names an init holds whole: the init itself, or a spread among the top-level properties of its object or story argument. */
 function sharedIdentifiers(init: unknown): readonly unknown[] {
   const current = unwrap(init);
 

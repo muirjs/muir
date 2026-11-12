@@ -16,11 +16,9 @@ type Key = NonNullable<ReturnType<typeof propertyKey>>;
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<Key> | 'whole';
 
-/** What stays in every mutant of an args site. */
 interface Kept {
   /** The keys a function that runs for the site reads. */
   readonly read: ReadonlySet<Key>;
-  /** The properties whose removal the file proves changes nothing. */
   readonly proofs: readonly Proven[];
 }
 
@@ -119,7 +117,6 @@ export function sitesIn(program: NodePath): Sites {
   return sites;
 }
 
-/** The `args` sites of stories and `.test()` options that a play or test function runs for, each with what stays. The meta's args are no args site, and an object a function reads whole is none. */
 function argsSites(
   body: readonly unknown[],
   readsOf: (fn: unknown) => Reads,
@@ -135,7 +132,6 @@ function argsSites(
   );
 }
 
-/** What the functions that run for one run of a site read: the play, and every `.test()` call for the story's own args or that call's for its options. An unknown play may read any key. */
 function readersOf(
   run: SiteRun,
   readsOf: (fn: unknown) => Reads,

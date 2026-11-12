@@ -1,7 +1,3 @@
-// Composes each case row with Storybook 10.6.5, with and without each property the mutator proves changes nothing,
-// and fails when a composed story differs: such a skip would hide a killable mutant (ADR 0006). Names the row leaves
-// unbound and modules it imports get a stub that claims every key the row names, so a skip over an unknown value
-// shows as a change.
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { join, relative, resolve } from 'node:path';
@@ -17,7 +13,6 @@ import { composeStories } from 'storybook/preview-api';
 import type { Case } from './case.ts';
 import { tempRoot, writeTree } from './temp-tree.ts';
 
-/** A property the mutator skips, and why. */
 export interface Skip {
   readonly property: object;
   readonly reason: string;
@@ -25,14 +20,11 @@ export interface Skip {
 
 export interface ComposeSkips {
   readonly cases: readonly Case[];
-  /** The properties the mutator skips, per site, from its own analysis of the file. */
   readonly skipsOf: (
     program: NodePath,
   ) => ReadonlyMap<unknown, readonly Skip[]>;
   readonly layer: 'args' | 'globals';
-  /** Whether two composed values of the layer act the same. */
   readonly same: (withProperty: unknown, withoutProperty: unknown) => boolean;
-  /** Rows with a skip that Storybook itself cannot load, each with the reason. */
   readonly unloadable: ReadonlyMap<string, string>;
 }
 
@@ -67,7 +59,6 @@ interface RowResult {
   readonly id: string;
   readonly loaded: boolean;
   readonly proofCount: number;
-  /** For each property cut, its proofs' reasons and whether every story composed the same. */
   readonly cuts: readonly {
     readonly reasons: readonly string[];
     readonly same: boolean;
@@ -97,7 +88,7 @@ export function composeSkips({
           return nextResolve(specifier, context);
         }
 
-        // Story files import without an extension, as Storybook's bundler allows; a package is a stub in the tree.
+        // Story files import without an extension, as Storybook's bundler allows.
         if (!specifier.startsWith('.')) {
           return {
             url: new URL(`__bare__/${bareFile(specifier)}`, parent).href,
@@ -339,7 +330,6 @@ function analyse(source: string): Row {
   };
 }
 
-/** The row's tree: the preview, a stub module for each import other than the preview, and a prelude that stubs each free name. */
 function writeRow(
   dir: string,
   row: number,
@@ -401,7 +391,6 @@ function bareFile(specifier: string): string {
   return `${specifier.replaceAll(/[^\w.-]/g, '_')}.ts`;
 }
 
-/** The composed `layer` of every story the file exports and of every `.test()` child, by name. */
 async function compose(
   files: RowFiles,
   source: string,
@@ -463,7 +452,6 @@ function member(value: unknown, key: string): unknown {
     : undefined;
 }
 
-/** The source without `property`, with the separator that went with it. */
 function without(source: string, site: unknown, property: object): string {
   const properties = list(field(site, 'properties'));
   const index = properties.indexOf(property);
@@ -484,7 +472,6 @@ function offset(node: unknown, edge: 'start' | 'end'): number {
   return value;
 }
 
-/** A value that claims every key in `keys`, so that a spread or read of it may set any key the row names. */
 function claimingStub(keys: readonly string[]): unknown {
   const claims = (key: string | symbol) =>
     typeof key === 'string' && keys.includes(key);

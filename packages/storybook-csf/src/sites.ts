@@ -79,18 +79,14 @@ export interface Site {
   readonly proofs: readonly Proven[];
 }
 
-/** One run with what it reads around the site: the object it takes the key from, each layer below it, and the metas. */
 interface RunLayers {
   readonly run: SiteRun;
   readonly node: unknown;
   readonly own: Layer;
   readonly below: readonly Layer[];
   readonly metas: readonly Layer[];
-  /** The root object the run reads the site from: the story's own object, the `.test()` options or the meta. */
   readonly root: Layer;
-  /** The `parameters` layers of every run of the story, or of this `.test()` call's run. */
   readonly parameters: readonly Layer[];
-  /** For a meta's run, the key's layers of the file's other metas. */
   readonly otherMetas: readonly Layer[];
 }
 
@@ -108,7 +104,6 @@ export function sitesOf(
   const unchanged = unchangedBindings(bindings, file.written);
   const root = (expression: unknown, owner: unknown): Layer =>
     rootLayer(expression, owner, file.written, unchanged);
-  /** A root `name` holds as its own run reads it: another object the file loads may read what it holds, so removing a property can change more than this run. */
   const ownRoot = (layer: Layer, name: unknown): Layer =>
     file.readElsewhere.has(name) ? unknownValue : layer;
   const metas = file.metas.map(({ object, owner }) => {
@@ -215,7 +210,6 @@ export function sitesOf(
   );
 }
 
-/** A story's own object, then each `.extend()` base, as Storybook 10.6.5 `extend()` merges a base story in; a base the unchanged bindings do not hold is an unknown layer. */
 function storyRoots(
   init: unknown,
   owner: unknown,
@@ -246,7 +240,6 @@ function storyRoots(
     : [own, unknownValue];
 }
 
-/** The proofs of an `args` site: a property its object overrides, and a literal equal to the value it falls back to in every run. */
 function argsProofs(
   site: object,
   runs: readonly RunLayers[],
@@ -281,7 +274,6 @@ function argsProofs(
   });
 }
 
-/** The proofs of a `globals` site: a property at Storybook 10.6.5's initial value of its global, which no earlier property of the site may set, nor anything below the site in any run. */
 function globalsProofs(
   site: object,
   runs: readonly RunLayers[],
@@ -300,7 +292,6 @@ function globalsProofs(
   });
 }
 
-/** In this run, `property` holds the initial value of global `key`, and no layer below the site, no other meta, and no root the file writes may set `key`. */
 function isDefaultGlobal(
   { root, below, metas, otherMetas, parameters }: RunLayers,
   property: object,
@@ -319,7 +310,6 @@ function isDefaultGlobal(
   );
 }
 
-/** The object gives `key` the same value node without `property`. */
 function isOverridden(
   properties: readonly unknown[],
   property: unknown,
@@ -339,7 +329,6 @@ function isOverridden(
   );
 }
 
-/** In this run, `property` is a literal equal to what `key` falls back to: the properties before it, else the first layer below that sets it, else the metas. Only when the run takes the key from the site itself, as the file shows it; a layer that is the site itself falls away with the property. */
 function isSameAsBelow(
   { own, below, metas }: RunLayers,
   site: object,
@@ -363,7 +352,6 @@ function isSameAsBelow(
   return sameLiteral(field(property, 'value'), fallback);
 }
 
-/** The value the metas give `key`: the one each meta that may set it gives, when they are the same literal; `unknownValue` when they differ. */
 function metaValue(metas: readonly Layer[], key: Key): LayerValue {
   const [first, ...more] = metas
     .map((meta) => valuesOf(meta, key)[0])
@@ -391,7 +379,6 @@ const literalTypes: readonly unknown[] = [
   'BooleanLiteral',
 ];
 
-/** The value of a literal, a negative number or a template literal without expressions; `undefined` for any other node. */
 function literalOf(node: unknown): { readonly value: unknown } | undefined {
   const type = field(node, 'type');
 
