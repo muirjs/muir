@@ -84,8 +84,8 @@ _Avoid_: duplicated assertion, moved check
 **Stub statement**:
 An expression statement in story test code whose call is a spy stub method on any receiver, such as
 `mocked(save).mockResolvedValue(note);` in a play or a `beforeEach`, on a member that is not computed.
-`LzStorybookSpyStub` removes it, as it removes a definition-time stub (the Storybook context's term) from its chain,
-each stub of a chain on its own.
+`LzStorybookSpyStub` removes it, as it removes each definition-time stub (the Storybook context's term), leaving the
+calls before it in place.
 _Avoid_: mock statement, stub call
 
 **Outcome mutant**:
