@@ -13,7 +13,7 @@ import { isAbsolute, join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { appendRecord, isRecord, recordVariable } from '@layzee/storybook-csf';
+import { appendRecord, isRecord, recordVariable } from '@layzee/storybook-core';
 import { PlanKind, type schema } from '@stryker-mutator/api/core';
 
 import { storybookReporter } from '../src/reporter.ts';

@@ -1,4 +1,4 @@
-import { field, isRecord, list } from '@layzee/storybook-csf';
+import { field, isRecord, list } from '@layzee/storybook-core';
 
 import { parseProgram } from './parse.ts';
 import type { StorybookProject } from './storybook-project.ts';

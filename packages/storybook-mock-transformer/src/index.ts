@@ -1,4 +1,4 @@
-import { mockTransformerPluginName } from '@layzee/storybook-csf';
+import { mockTransformerPluginName } from '@layzee/storybook-core';
 import type { Plugin } from 'vite';
 
 import { transform } from './transform.ts';

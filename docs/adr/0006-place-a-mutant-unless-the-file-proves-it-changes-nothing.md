@@ -26,7 +26,7 @@ since equivalence is undecidable in general.
 - The mutators place some mutants that no test can kill. The glossaries of both packages list the known shapes, so
   a user can recognise such a survivor and disable it.
 - A check that would skip more mutants has to prove its case from the story file, as the resolver in
-  `@layzee/storybook-csf` does for a name the file leaves unchanged; a check that only finds a mutant likely to be
+  `@layzee/storybook-core` does for a name the file leaves unchanged; a check that only finds a mutant likely to be
   equivalent does not skip it.
 - `LzStorybookStoryGlobals` still skips a default global (its glossary's term), whose proof rests on Storybook
   10.6.5's own initial values rather than on the file alone: a project preview's `initialGlobals` can differ.

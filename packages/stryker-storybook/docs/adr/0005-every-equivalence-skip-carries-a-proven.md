@@ -1,10 +1,10 @@
-# Every equivalence skip carries a `Proven` that `@layzee/storybook-csf` mints from root-gated layers
+# Every equivalence skip carries a `Proven` that `@layzee/storybook-core` mints from root-gated layers
 
 The Storybook mutators skip a mutant as equivalent only when the story file proves that it changes nothing (docs/adr
-ADR-0006). The resolver in `@layzee/storybook-csf` followed a name only through the bindings the file leaves
+ADR-0006). The resolver in `@layzee/storybook-core` followed a name only through the bindings the file leaves
 unchanged, but read the meta object and a story's own object straight from the file, so a write such as
 `meta.args.label = 'b'` or `Primary.args.label = 'b'` did not stop a skip, and `LzStorybookArgs` compared literals
-per key, so a proof for `label: 'a'` also skipped a later `label: 'c'`. Now `@layzee/storybook-csf` reads every root
+per key, so a proof for `label: 'a'` also skipped a later `label: 'c'`. Now `@layzee/storybook-core` reads every root
 (a meta object, a story's own object, `.test()` options) through `rootLayer`, which gives an unknown layer when the
 file writes the root's owner, and mints a `Proven` per property node: `overridden` when the object gives the key the
 same value node without the property, `same-as-below` when its literal equals the value it falls back to in every
@@ -38,7 +38,7 @@ skip.
   and ESLint's `prefer-object-spread`, on for the whole repository, rejects the `Object.assign({}, ...)` form.
 - The site rules stay outside `Proven`: they skip when the file cannot tell, the opposite default.
 - `LzStorybookStoryGlobals` skips a default global only through a `default-global` `Proven`, so Storybook 10.6.5's
-  initial-globals table moved into `@layzee/storybook-csf`: a table in the mutator would let the mutator decide the
+  initial-globals table moved into `@layzee/storybook-core`: a table in the mutator would let the mutator decide the
   skip. A story or meta the file writes, or another meta of the file, may set the global, so such a default keeps
   its mutant.
 - Storybook checks the proofs: `test/compose-skips.test.ts` in each mutator package composes every case row with

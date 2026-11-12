@@ -3,7 +3,12 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve, sep } from 'node:path';
 
-import { field, hasRecords, list, recordVariable } from '@layzee/storybook-csf';
+import {
+  field,
+  hasRecords,
+  list,
+  recordVariable,
+} from '@layzee/storybook-core';
 import {
   PlanKind,
   type MutantEarlyResultPlan,

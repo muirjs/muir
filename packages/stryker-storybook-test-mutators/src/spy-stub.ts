@@ -5,7 +5,7 @@ import {
   type StubMethod,
   type StubMethodCall,
   type StubSite,
-} from '@layzee/storybook-csf';
+} from '@layzee/storybook-core';
 
 import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
 import { nameOf } from './nodes.ts';

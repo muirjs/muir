@@ -7,7 +7,7 @@ import {
   sitesOf,
   type Proven,
   type SiteRun,
-} from '@layzee/storybook-csf';
+} from '@layzee/storybook-core';
 
 import type { LzStorybookMutator } from './mutator.ts';
 

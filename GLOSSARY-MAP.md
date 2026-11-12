@@ -14,7 +14,7 @@
   mutator package uses.
 - [Storybook](./packages/stryker-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
-  Covers `packages/stryker-storybook`, `packages/storybook-mock-transformer` and `packages/storybook-csf`, the
+  Covers `packages/stryker-storybook`, `packages/storybook-mock-transformer` and `packages/storybook-core`, the
   internal package that holds the code the Storybook packages share.
 - [Storybook test mutators](./packages/stryker-storybook-test-mutators/GLOSSARY.md): mutate story test code, so
   a test-code run shows which steps of a play function no check depends on.
@@ -40,18 +40,18 @@
 - **msw mutators <-> Storybook**: neither uses the other. The CSF ignorer hides the handlers in a story's
   `parameters.msw` where its play mode is `ignore`, so the msw mutators reach them in the configuration that sets
   `mutate`.
-- **Storybook mutators -> Storybook**: they read story files with `@layzee/storybook-csf`, which gives
+- **Storybook mutators -> Storybook**: they read story files with `@layzee/storybook-core`, which gives
   `LzStorybookArgs` its args sites with a Proven for each property whose removal the file proves changes nothing,
   and mutate story data, so they belong in the Stryker configuration for the components,
   where the CSF ignorer's play mode is `ignore`.
-- **Storybook test mutators -> Storybook**: they read story test code with `@layzee/storybook-csf`
+- **Storybook test mutators -> Storybook**: they read story test code with `@layzee/storybook-core`
   and mutate it, and the CSF ignorer reports those mutants as Ignored unless its play mode is `mutate`, so they
   belong in the Stryker configuration that sets that mode. `LzStorybookStoryGlobals` and the Storybook mutators'
-  `LzStorybookArgs` take the played stories and each story's layers from the same `@layzee/storybook-csf` rule, and
+  `LzStorybookArgs` take the played stories and each story's layers from the same `@layzee/storybook-core` rule, and
   `LzStorybookStoryGlobals` takes its globals sites with a Proven for each default global, whose table of Storybook's
-  initial globals `@layzee/storybook-csf` holds.
+  initial globals `@layzee/storybook-core` holds.
   `LzStorybookSpyStub` and `LzStorybookSpyStubOutcome` read definition-time stubs from
-  the same `@layzee/storybook-csf` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
+  the same `@layzee/storybook-core` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
   the `lz-storybook` reporter makes unchecked stubs of surviving `LzStorybookSpyStub` mutants only, so the outcome
   mutants, which carry the other name, stay out of them;
   `@layzee/stryker-storybook`'s tests (a devDependency only) check that each mutant carries its name, and that
@@ -63,7 +63,7 @@
 - **Playwright mutators -> Playwright runner**: the runner runs test-code mutants. The serialized-callback ignorer
   reports as Ignored the mutants of callbacks that Playwright sends to another realm; the runner's page helpers
   make such callbacks work in pages, but not in workers, service workers or Electron.
-- **Storybook**: shares no plugin with the other contexts, and no code apart from `@layzee/storybook-csf`, which
+- **Storybook**: shares no plugin with the other contexts, and no code apart from `@layzee/storybook-core`, which
   the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
   Playwright runner. Inside it, the mock transformer writes the transformer record that the `lz-storybook` reporter
-  reads, and both take the stub shape from `@layzee/storybook-csf`.
+  reads, and both take the stub shape from `@layzee/storybook-core`.

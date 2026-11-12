@@ -3,7 +3,7 @@ import {
   isStringArray,
   list,
   type IndexedStory,
-} from '@layzee/storybook-csf';
+} from '@layzee/storybook-core';
 import { loadCsf } from 'storybook/internal/csf-tools';
 
 /** The stories Storybook's CsfFile indexes; none when Storybook cannot read the file. */

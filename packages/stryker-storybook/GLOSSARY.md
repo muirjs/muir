@@ -3,8 +3,9 @@
 Stryker plugins for Storybook story files, and three Vite plugins: one rewrites definition-time stubs so they survive
 the mock reset, one resets module mock spies before each test, and one lets Storybook's tests run in Stryker's
 sandbox. This context covers `@layzee/stryker-storybook`, `@layzee/storybook-mock-transformer` and
-`@layzee/storybook-csf`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
-same spy stub shape from `@layzee/storybook-csf`, which holds the code they share.
+`@layzee/storybook-core`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
+same spy stub shape from `@layzee/storybook-core`, which holds the code they share.
+_Avoid_: `@layzee/storybook-csf` (the shared package's former name)
 
 ## Language
 
@@ -56,7 +57,7 @@ The Storybook mutators and the Storybook test mutators mutate only played storie
 _Avoid_: run story, story with a play
 
 **Proven**:
-The proof, made only in `@layzee/storybook-csf`, that removing one property of an args site (the Storybook mutators'
+The proof, made only in `@layzee/storybook-core`, that removing one property of an args site (the Storybook mutators'
 term) or a globals site (the Storybook test mutators' term) changes nothing in any run of it: a later property or a
 spread the file resolves sets its key, its literal equals the value it falls back to, or it is a default global (the
 Storybook test mutators' term). What a meta or story the file writes gives proves nothing, and neither does a site

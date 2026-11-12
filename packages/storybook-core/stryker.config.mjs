@@ -2,7 +2,7 @@ import { packageConfig } from '../../stryker.package.ts';
 
 export default {
   ...packageConfig(
-    'storybook-csf',
+    'storybook-core',
     ['*.test.ts'],
     ['packages/stryker-storybook/test/*.test.ts'],
   ),

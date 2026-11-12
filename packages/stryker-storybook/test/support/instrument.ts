@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { field } from '@layzee/storybook-csf';
+import { field } from '@layzee/storybook-core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
 export interface Instrumented {

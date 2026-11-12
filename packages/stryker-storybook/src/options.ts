@@ -1,4 +1,4 @@
-import { field, isRecord } from '@layzee/storybook-csf';
+import { field, isRecord } from '@layzee/storybook-core';
 
 import { packageName } from './package-name.ts';
 

@@ -13,7 +13,7 @@ import {
   isRecord,
   isStringArray,
   mockTransformerPluginName,
-} from '@layzee/storybook-csf';
+} from '@layzee/storybook-core';
 import { loadConfig } from 'storybook/internal/csf-tools';
 
 import type { LoadResult } from './loader-result.ts';
