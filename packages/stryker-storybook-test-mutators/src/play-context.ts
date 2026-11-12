@@ -13,7 +13,7 @@ import {
   isMethodCallReceiver,
   isOnlyCalledOn,
 } from './only-called-on.ts';
-import { isInStoryTestCode, perFile } from './story-file.ts';
+import { isInStoryTestCode, isMetaOrStory, perFile } from './story-file.ts';
 
 /** A play's context parameter, not destructured, that holds what Storybook set. */
 export function isPlayContext(node: types.Node, path: NodePath): boolean {
@@ -169,11 +169,11 @@ export const contextsOnlyRead = perFile((program) => {
       );
     },
     CallExpression(path) {
-      check(
-        path,
-        calleeName(path.node.callee, path.scope) !== 'useStoryContext' ||
-          isContextRead(path),
-      );
+      const name = calleeName(path.node.callee, path.scope);
+      const [target] = path.node.arguments;
+
+      check(path, name !== 'useStoryContext' || isContextRead(path));
+      check(path, name !== 'assign' || target?.type === 'ObjectExpression');
     },
     ObjectMethod(path) {
       check(
@@ -191,10 +191,32 @@ export const contextsOnlyRead = perFile((program) => {
         isKeyedHookRead(path.node.key, path.node.computed, path.get('value')),
       );
     },
+    SpreadElement(path) {
+      check(
+        path,
+        !isMetaOrStory(path.parentPath) ||
+          isHeldObject(path.node.argument, path.scope),
+      );
+    },
   });
 
   return onlyRead;
 }, false);
+
+/** A local the file never reassigns whose value is an object literal with no spread of its own, so the file holds every hook it gives. */
+function isHeldObject(argument: types.Node, scope: NodePath['scope']): boolean {
+  const binding = bindingOf(argument, scope);
+  const declaration = binding?.path.node;
+
+  return (
+    binding?.constantViolations.length === 0 &&
+    declaration?.type === 'VariableDeclarator' &&
+    declaration.init?.type === 'ObjectExpression' &&
+    declaration.init.properties.every(
+      (property) => property.type !== 'SpreadElement',
+    )
+  );
+}
 
 /** The name a call's callee goes by: a member's property, or an identifier's name, or the name it is imported under. */
 function calleeName(

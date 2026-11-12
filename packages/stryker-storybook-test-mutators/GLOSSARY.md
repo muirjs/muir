@@ -87,7 +87,9 @@ method, in an array, by the name of a local function the file never reassigns, o
 like. Each context is used only as `<context>.<name>`, or destructured under plain keys in a parameter or a
 declaration, with its `userEvent`, as a member or a local, only a method call's receiver or a side of a choice given to
 such a local. A hook the file cannot read, such as an imported decorator or a getter, or one that reads `arguments` or
-may reach its context through a rest parameter, counts as one that does not.
+may reach its context through a rest parameter, counts as one that does not, and so does a spread into a meta or story
+object of anything but a local object literal, never reassigned, with no spread of its own, and an `assign` call onto
+anything but a fresh object literal, as either may bring in hooks the file cannot show.
 As a backstop for hooks given in ways these rules do not read, the file must also name `userEvent` only as an import's
 name, a key or local in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` that is a method call's
 receiver or such a choice side, and never spell it as a string or a template's text; a type literal's `userEvent` key
@@ -97,7 +99,7 @@ that holds one of these, whether an import, a destructured `userEvent`, a `setup
 when every reference to it is a method call's receiver or a side of a choice that is the one value, by declaration or
 by assignment, of such a local. An import also
 needs every import of a user-event 14 module in the file to meet that, the `userEvent` and `default` members of a
-namespace import included, and no `import()` that may load one. Any other receiver may be Vitest browser's userEvent,
+namespace import included, and no `import()` or `require()` that may load one. Any other receiver may be Vitest browser's userEvent,
 whose `type` does not click: another import, a `userEvent` the file does not bind, the `userEvent` of another object,
 a call result or another function's parameter, a play context's `userEvent` destructured with a default, a `.test()`
 function's or a step callback's context, the context of a play given by its name, assigned as `Story.play` or under a

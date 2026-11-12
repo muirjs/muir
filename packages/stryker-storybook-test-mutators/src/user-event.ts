@@ -203,18 +203,28 @@ function isUserEvent14Module(source: types.Node): boolean {
   );
 }
 
-/** An `import()` of a user-event 14 module, or of a module the file does not spell out. */
+/** An `import()` or `require()` of a user-event 14 module, or of a module the file does not spell out. */
 function mayImportUserEvent14(program: NodePath<types.Program>): boolean {
   let found = false;
 
-  program.traverse({
-    ImportExpression(path) {
-      const { source } = path.node;
+  const check = (path: NodePath, source: types.Node | undefined): void => {
+    if (
+      source !== undefined &&
+      (source.type !== 'StringLiteral' || isUserEvent14Module(source))
+    ) {
+      found = true;
+      path.stop();
+    }
+  };
 
-      if (source.type !== 'StringLiteral' || isUserEvent14Module(source)) {
-        found = true;
-        path.stop();
-      }
+  program.traverse({
+    CallExpression(path) {
+      const { arguments: args, callee } = path.node;
+
+      check(path, nameOf(callee) === 'require' ? args[0] : undefined);
+    },
+    ImportExpression(path) {
+      check(path, path.node.source);
     },
   });
 

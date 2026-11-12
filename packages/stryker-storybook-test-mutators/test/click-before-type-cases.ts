@@ -239,6 +239,13 @@ export const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-spread-local-meta-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when the meta spreads a local object whose hooks only read their contexts",
+    source: `const sharedMeta = {\n  args: { label: 'Name' },\n  beforeEach: ({ args }) => {\n    args.label;\n  },\n};\nexport default {\n  ...sharedMeta,\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'typed-context-click-before-type',
     title:
       'a click directly before a type on the same target, both on the userEvent destructured in a play context typed with a userEvent member, is removed, as the file names userEvent outside a read',

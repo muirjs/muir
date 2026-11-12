@@ -35,10 +35,24 @@ export function perFile<T>(
   };
 }
 
-const storyTestCode = perFile(
-  (program): ReadonlySet<unknown> => csfShapes(program.node).testCode,
-  new Set(),
+const shapesOf = perFile<ReturnType<typeof csfShapes> | undefined>(
+  (program) => csfShapes(program.node),
+  undefined,
 );
+
+const storyTestCode = (path: NodePath): ReadonlySet<unknown> =>
+  shapesOf(path)?.testCode ?? new Set();
+
+/** A meta object, or a story object or function, as storybook-core reads the file. */
+export function isMetaOrStory(path: NodePath): boolean {
+  const shapes = shapesOf(path);
+
+  return (
+    shapes !== undefined &&
+    (shapes.metaObjects.has(path.node) ||
+      shapes.literalContainers.has(path.node))
+  );
+}
 
 /** Reads the story test code, and what each of a mutator's own per-file `readers` gives, on entering the Program. Every mutator calls it first. */
 export function readStoryFileAt(

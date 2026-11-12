@@ -413,4 +413,44 @@ export const userEventProofCases: readonly Case[] = [
       [interaction, ';'],
     ],
   },
+  {
+    id: 'spread-imported-meta-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when the meta spreads an imported object, as the story file cannot show the hooks it holds",
+    source: `import { sharedMeta } from './support';\nexport default {\n  ...sharedMeta,\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'spread-imported-story-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when the story spreads a story of another file, as the story file cannot show the hooks it holds",
+    source: `import * as Base from './Base.stories';\nexport const Story = {\n  ...Base.Primary,\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'assigned-imported-hooks-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when Object.assign copies an imported object onto the meta, as the story file cannot show the hooks it holds",
+    source: `import { sharedHooks } from './support';\nconst meta = {};\nObject.assign(meta, sharedHooks);\nexport default meta;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'required-written-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', is removed when the file also loads that module with require() and writes its userEvent's type",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nimport { userEvent } from 'storybook/test';\nconst test = require('storybook/test');\ntest.userEvent.type = browserUserEvent.type;\nexport const Story = {\n  play: async () => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
 ];
