@@ -37,7 +37,10 @@ const fix =
   'pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach';
 
 /** The reason for a chain whose stubs have different verdicts and none is kept, since its ignore covers them all. */
-export const unrewrittenChainReason = `${storybookPluginName}: chain-not-rewritten: the mock transformer rewrites neither a *Once stub nor a stub after the first of its chain, so the mock reset still erases every stub of this chain; ${fix}`;
+export const unrewrittenChainReason = reasonText(
+  'chain-not-rewritten',
+  'the mock transformer rewrites neither a *Once stub nor a stub after the first of its chain, so the mock reset still erases every stub of this chain',
+);
 
 export const uncheckedFinding = {
   verdict: 'unchecked',
@@ -77,14 +80,9 @@ export function stubIgnores(
   const sites = siteReasons(stubs, transformer);
 
   return sites.map(({ start, end, verdict }) => {
-    const inChain = ({
-      start: innerStart,
-      end: innerEnd,
-    }: Pick<ClassifiedStub, 'start' | 'end'>) =>
-      innerStart === start && innerEnd <= end;
-    const chain = sites.filter(inChain);
+    const chain = chainUpTo({ start, end }, sites);
 
-    if (chain.length < stubs.filter(inChain).length) {
+    if (chain.length < chainUpTo({ start, end }, stubs).length) {
       return {
         start,
         end,
@@ -121,19 +119,19 @@ function siteReasons(
       return [{ ...site, verdict: 'once-not-rewritten' }];
     }
 
-    return followsAStub(site, stubs)
+    return chainUpTo(site, stubs).length > 1
       ? [{ ...site, verdict: 'chain-not-rewritten' }]
       : [];
   });
 }
 
-/** Whether the stub comes after another in its chain, which the mock transformer leaves as it is. */
-function followsAStub(
+/** The stubs of a chain from its first up to this one; the mock transformer leaves every stub after the first as it is. */
+function chainUpTo<TStub extends Pick<ClassifiedStub, 'start' | 'end'>>(
   stub: Pick<ClassifiedStub, 'start' | 'end'>,
-  stubs: readonly ClassifiedStub[],
-): boolean {
-  return stubs.some(
-    (inner) => inner.start === stub.start && inner.end < stub.end,
+  stubs: readonly TStub[],
+): readonly TStub[] {
+  return stubs.filter(
+    (other) => other.start === stub.start && other.end <= stub.end,
   );
 }
 
@@ -142,5 +140,9 @@ export function describeVerdict(verdict: ReasonVerdict): SpyStubReason {
 }
 
 export function spyStubReason(verdict: ReasonVerdict): string {
-  return `${storybookPluginName}: ${verdict}: ${reasons[verdict]}; ${fix}`;
+  return reasonText(verdict, reasons[verdict]);
+}
+
+function reasonText(verdict: ReasonVerdict, reason: string): string {
+  return `${storybookPluginName}: ${verdict}: ${reason}; ${fix}`;
 }

@@ -28,8 +28,9 @@ export function stubIgnorer(options: object, log: ProjectLog): Ignorer {
             : [];
       }
 
+      const argumentCall = callOfArgument(path);
       const ignore = ignores.find(({ start, end, covers }) => {
-        const call = covers === 'call' ? node : callOfArgument(path);
+        const call = covers === 'call' ? node : argumentCall;
 
         return field(call, 'start') === start && field(call, 'end') === end;
       });
