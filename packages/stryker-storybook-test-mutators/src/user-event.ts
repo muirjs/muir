@@ -180,24 +180,25 @@ function isMemberObject(path: NodePath): boolean {
   );
 }
 
-/** A parameter that the file never reassigns, of a play that Storybook calls: a `play` method, or a function given as a `play` property, which is story test code and inside none, in a file that writes no `.userEvent` member. */
+/** A parameter that the file never reassigns, of a play that Storybook calls: a `play` method, or a function given as a `play` property, under a key that is not computed, which is story test code and inside none, in a file that only reads the play context's userEvent. */
 function isPlayParameter(binding: Binding): boolean {
   const parameter = binding.path;
   const play = parameter.parentPath;
   const parent = play?.parent;
-  const key =
+  const keyed =
     play?.node.type === 'ObjectMethod'
-      ? play.node.key
+      ? play.node
       : parent?.type === 'ObjectProperty'
-        ? parent.key
+        ? parent
         : undefined;
 
   return (
     binding.constantViolations.length === 0 &&
     parameter.key === 0 &&
     play !== null &&
-    key !== undefined &&
-    keyName(key) === 'play' &&
+    keyed !== undefined &&
+    !keyed.computed &&
+    keyName(keyed.key) === 'play' &&
     isInStoryTestCode(parameter) &&
     !isInStoryTestCode(play) &&
     !changesUserEvent(parameter)

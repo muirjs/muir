@@ -669,6 +669,16 @@ export const clickBeforeTypeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'computed-play-key-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the userEvent of the context of a function under a computed key that a local named play holds, is removed, as only a play key the file spells out is read',
+    source: `const play = 'other';\nexport const Story = {\n  [play]: async (context) => {\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'named-play-click-before-type',
     title:
       'a click directly before a type on the same target, both on the userEvent of the context of a play given by its name, is removed, as only a play given inline is read',
