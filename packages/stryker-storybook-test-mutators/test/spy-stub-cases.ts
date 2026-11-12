@@ -49,6 +49,21 @@ export const spyStubCases: readonly Case[] = [
     ],
   },
   {
+    id: 'spy-stub-chain-of-three',
+    title:
+      'removing the middle stub of a chain of three leaves the stub before it, with the last stub chained on',
+    source: withFnImport(
+      'export const Story = {',
+      "  args: { save: fn().mockResolvedValueOnce(1).mockResolvedValueOnce(2).mockRejectedValueOnce(new Error('x')) },",
+      '};',
+    ),
+    expect: [
+      [spyStub, 'fn()'],
+      [spyStub, 'fn().mockResolvedValueOnce(1)'],
+      [spyStub, 'fn().mockResolvedValueOnce(1).mockResolvedValueOnce(2)'],
+    ],
+  },
+  {
     id: 'spy-stub-chain-on-unknown-spy',
     title:
       'a chain of stubs on a spy that fn() from storybook/test did not make makes no mutant',

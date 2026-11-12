@@ -51,6 +51,27 @@ export const spyStubOutcomeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'spy-stub-outcome-chain-of-three',
+    title:
+      'the middle stub of a chain of three flips on its own, keeping the stub before it and the stub chained after it',
+    source: withFnImport(
+      'export const Story = {',
+      "  args: { save: fn().mockResolvedValueOnce(1).mockResolvedValueOnce(2).mockRejectedValueOnce(new Error('x')) },",
+      '};',
+    ),
+    expect: [
+      [outcome, 'fn().mockRejectedValueOnce(new Error("Stryker"))'],
+      [
+        outcome,
+        'fn().mockResolvedValueOnce(1).mockRejectedValueOnce(new Error("Stryker"))',
+      ],
+      [
+        outcome,
+        'fn().mockResolvedValueOnce(1).mockResolvedValueOnce(2).mockResolvedValueOnce(undefined)',
+      ],
+    ],
+  },
+  {
     id: 'spy-stub-outcome-statement',
     title: 'a resolved stub statement in a play rejects with an Error instead',
     source: inPlay('mocked(save).mockResolvedValue(note);'),
