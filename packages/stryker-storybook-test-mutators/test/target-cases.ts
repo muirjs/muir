@@ -67,6 +67,16 @@ export const targetCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'target-skip-role',
+    title:
+      'the role of a role query with no name is not swapped for another role, so it makes no mutant',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('checkbox'));",
+      "await expect(canvas.getByRole('switch')).toBeChecked();",
+    ),
+    expect: [],
+  },
+  {
     id: 'target-get-and-find-by-role',
     title:
       'the name of a getByRole query becomes the name a findByRole query of the same role takes',

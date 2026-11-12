@@ -104,6 +104,14 @@ export const repeatCases: readonly Case[] = [
     ],
   },
   {
+    id: 'repeat-skip-fire-event-change',
+    title: 'a fireEvent call other than click makes no mutant',
+    source: inPlay(
+      "await fireEvent.change(input, { target: { value: 'a' } });",
+    ),
+    expect: [],
+  },
+  {
     id: 'repeat-skip-home',
     title:
       'a {Home} press makes no mutant, as a second press goes where the first went',
@@ -115,6 +123,18 @@ export const repeatCases: readonly Case[] = [
     title: 'an {End} press makes no mutant',
     source: inPlay("await userEvent.keyboard('{End}');"),
     expect: [],
+  },
+  {
+    id: 'repeat-click-given-key-text',
+    title:
+      'a click given {End} as text runs twice, as only a key press of {Home} or {End} is skipped',
+    source: inPlay("await userEvent.click('{End}');"),
+    expect: [
+      [
+        repeat,
+        "{ await userEvent.click('{End}'); await userEvent.click('{End}'); }",
+      ],
+    ],
   },
   {
     id: 'repeat-hover',
