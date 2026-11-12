@@ -187,4 +187,14 @@ export const targetCases: readonly Case[] = [
     source: `export const Story = {\n  beforeEach: async ({ userEvent }) => {\n    await userEvent.click(canvas.getByTestId('save'));\n  },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('cancel')).toBeVisible();\n  },\n};\n`,
     expect: [],
   },
+  {
+    id: 'target-namespace-default',
+    title:
+      "the target of a click on the default member of a namespace import of '@testing-library/user-event' becomes another target in the file",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlay(
+      "await ue.default.click(canvas.getByTestId('save'));",
+      "await expect(canvas.getByTestId('cancel')).toBeVisible();",
+    )}`,
+    expect: [[target, "'cancel'"]],
+  },
 ];

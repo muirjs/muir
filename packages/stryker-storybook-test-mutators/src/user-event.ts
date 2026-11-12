@@ -26,7 +26,7 @@ export const userEventMethods: ReadonlySet<string> = new Set([
   'paste',
 ]);
 
-/** Whether a receiver is a user-event: `userEvent`, `<x>.userEvent` such as the play context's, or a local that `isUserEventBinding` reads as one. */
+/** Whether a receiver is a user-event: `userEvent`, `<x>.userEvent` such as the play context's, `<ns>.default` on a namespace import of `@testing-library/user-event`, or a local that `isUserEventBinding` reads as one. */
 export function isUserEvent(node: types.Node, path: NodePath): boolean {
   return isUserEventUnseen(node, path, new Set());
 }
@@ -41,7 +41,12 @@ function isUserEventUnseen(
     node.type === 'MemberExpression' ||
     node.type === 'OptionalMemberExpression'
   ) {
-    return nameOf(node.property) === 'userEvent';
+    const name = nameOf(node.property);
+
+    return (
+      name === 'userEvent' ||
+      (name === 'default' && isUserEventNamespace(node.object, path))
+    );
   }
 
   const binding = bindingOf(node, path.scope);
@@ -121,9 +126,23 @@ function userEventImportSource(declaration: NodePath): string | undefined {
     node.type === 'ImportSpecifier'
       ? nameOf(node.imported) === 'userEvent'
       : node.type === 'ImportDefaultSpecifier' &&
-        source === '@testing-library/user-event';
+        source === defaultExportModule;
 
   return importsUserEvent ? source : undefined;
+}
+
+/** The one user-event module with a default export. */
+const defaultExportModule = '@testing-library/user-event';
+
+/** Whether `node` names a namespace import of the user-event module with a default export, whose `default` member is a user-event. */
+function isUserEventNamespace(node: types.Node, path: NodePath): boolean {
+  const declaration = bindingOf(node, path.scope)?.path;
+
+  return (
+    declaration?.node.type === 'ImportNamespaceSpecifier' &&
+    declaration.parent.type === 'ImportDeclaration' &&
+    declaration.parent.source.value === defaultExportModule
+  );
 }
 
 /** Whether a pattern's properties hold `userEvent: <name>` or `userEvent: <name> = <default>`. */

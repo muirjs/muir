@@ -364,4 +364,19 @@ export const assertionBeforeCases: readonly Case[] = [
     source: `export const Story = {\n  beforeEach: async ({ userEvent }) => {\n    await userEvent.click(accept);\n    await expect(args.onAccept).toHaveBeenCalled();\n  },\n};\n`,
     expect: [],
   },
+  {
+    id: 'assertion-before-namespace-default',
+    title:
+      "the check after a click on the default member of a namespace import of '@testing-library/user-event' is copied to run before it too",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlay(
+      'await ue.default.click(save);',
+      'await expect(args.onSave).toHaveBeenCalled();',
+    )}`,
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await ue.default.click(save); }',
+      ],
+    ],
+  },
 ];

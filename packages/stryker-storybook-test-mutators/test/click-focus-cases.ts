@@ -191,4 +191,11 @@ export const clickFocusCases: readonly Case[] = [
     source: `export const Story = {\n  beforeEach: async ({ userEvent }) => {\n    await userEvent.click(button);\n  },\n};\n`,
     expect: [],
   },
+  {
+    id: 'click-focus-namespace-default',
+    title:
+      "a click on the default member of a namespace import of '@testing-library/user-event' becomes a focus() call",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlay('await ue.default.click(button);')}`,
+    expect: [[clickFocus, 'await button.focus();']],
+  },
 ];

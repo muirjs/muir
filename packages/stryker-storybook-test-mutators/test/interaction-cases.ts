@@ -246,6 +246,27 @@ const interactionCases: readonly Case[] = [
     source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ue.click(canvas.getByRole('button'));")}`,
     expect: [],
   },
+  {
+    id: 'testing-library-namespace-default',
+    title:
+      "a call on the default member of a namespace import of '@testing-library/user-event' is removed",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ue.default.click(canvas.getByRole('button'));")}`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'testing-library-namespace-other-member',
+    title:
+      "a call on a member other than default of a namespace import of '@testing-library/user-event' makes no mutant",
+    source: `import * as ue from '@testing-library/user-event';\n${inPlayWith(['canvas'], "await ue.other.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
+  {
+    id: 'storybook-test-namespace-default',
+    title:
+      "a call on the default member of a namespace import of 'storybook/test' makes no mutant, as only '@testing-library/user-event' has a user-event default export",
+    source: `import * as ue from 'storybook/test';\n${inPlayWith(['canvas'], "await ue.default.click(canvas.getByRole('button'));")}`,
+    expect: [],
+  },
   ...userEventModuleNames.map((module) => ({
     id: `named-import-${module}`,
     title: `a call on userEvent imported by name from '${module}' is removed`,
