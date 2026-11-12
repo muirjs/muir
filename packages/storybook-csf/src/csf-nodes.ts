@@ -71,6 +71,12 @@ function memberChain(node: unknown): readonly unknown[] {
     : [field(node, 'name')];
 }
 
+export function assignmentRootWithoutUnwrap(node: unknown): unknown {
+  return field(node, 'type') === 'MemberExpression'
+    ? assignmentRootWithoutUnwrap(field(node, 'object'))
+    : node;
+}
+
 /** Storybook 10.6.5 `keyOf`: a member's name, or `undefined` when only running the file gives it. */
 export function keyOf(member: unknown): unknown {
   if (field(member, 'property', 'type') === 'StringLiteral') {

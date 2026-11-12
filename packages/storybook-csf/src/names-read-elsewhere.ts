@@ -1,5 +1,6 @@
 import {
   assignmentOf,
+  assignmentRootWithoutUnwrap,
   declarationOf,
   isIndexedTestCall,
   isMember,
@@ -87,17 +88,13 @@ function identifiersInReadForms(statement: unknown): readonly unknown[] {
       : []),
     ...(field(statement, 'expression', 'operator') === '='
       ? [
-          rootObject(field(statement, 'expression', 'left', 'object')),
+          assignmentRootWithoutUnwrap(
+            field(statement, 'expression', 'left', 'object'),
+          ),
           field(statement, 'expression', 'right'),
         ]
       : []),
   ];
-}
-
-function rootObject(node: unknown): unknown {
-  return field(node, 'type') === 'MemberExpression'
-    ? rootObject(field(node, 'object'))
-    : node;
 }
 
 function withReachedAndWholeHolders(
