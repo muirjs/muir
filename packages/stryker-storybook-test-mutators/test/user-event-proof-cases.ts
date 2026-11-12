@@ -464,6 +464,16 @@ export const userEventProofCases: readonly Case[] = [
     ],
   },
   {
+    id: 'declared-destructured-context-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach destructures its context's userEvent in a declaration and only calls it, as the file names userEvent in a destructuring that is not a parameter's",
+    source: `export default {\n  beforeEach: async (context) => {\n    const { userEvent } = context;\n    await userEvent.keyboard('{Escape}');\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'required-written-click-before-type',
     title:
       "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', is removed when the file also loads that module with require() and writes its userEvent's type",
