@@ -347,7 +347,7 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
   };
 }
 
-/** The first statement after the interaction that holds a check, when it is a check statement or a `waitFor` whose copy runs nothing but the check, and the copy can run before the interaction. */
+/** The first statement after the interaction that holds a check, when it is a check statement or a `waitFor(...)` statement and its copy can run before the interaction. */
 function checkToCopy(
   interaction: NodePath,
   t: BabelTypes,
