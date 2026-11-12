@@ -126,9 +126,9 @@ function isMember(
   );
 }
 
-/** The expression body of an arrow passed to `step(...)`. */
+/** The expression body of an arrow passed to `step(...)`. `path` may be the Program, whose parent path is null. */
 function isStepBody(path: NodePath): path is NodePath<types.Expression> {
-  const arrow = path.parentPath;
+  const arrow: NodePath | null = path.parentPath;
 
   return (
     arrow?.node.type === 'ArrowFunctionExpression' &&
