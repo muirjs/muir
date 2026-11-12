@@ -226,6 +226,40 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'type-skips-click-quoted',
+    title:
+      'gives no hint for a click before a type given a quoted skipClick key, which does not click',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada', { 'skipClick': true });",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'type-options-computed-key',
+    title:
+      'gives no hint for a click before a type whose options have a computed key, which may be skipClick',
+    source: inPlay(
+      "const option = 'skipClick';",
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada', { [option]: true });",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'type-options-getter',
+    title:
+      'gives no hint for a click before a type whose options have a skipClick getter, which may skip the click',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada', { get skipClick() { return true; } });",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
     id: 'type-keeps-click',
     title:
       'names a surviving click before a type given skipClick: false, which clicks',

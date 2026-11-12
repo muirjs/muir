@@ -212,7 +212,7 @@ function equivalent(first: unknown, second: unknown): boolean {
   return [...keys].every((key) => equivalent(first[key], second[key]));
 }
 
-/** Unless the options are absent, or an object literal with no spread whose `skipClick` is absent or `false`. */
+/** Unless the options are absent, or an object literal with no spread or computed key whose `skipClick` is absent or `false`. */
 function maySkipClick(options: unknown): boolean {
   if (options !== undefined && field(options, 'type') !== 'ObjectExpression') {
     return true;
@@ -221,12 +221,18 @@ function maySkipClick(options: unknown): boolean {
   return list(field(options, 'properties')).some(
     (property) =>
       field(property, 'type') === 'SpreadElement' ||
-      (nameOf(field(property, 'key')) === 'skipClick' &&
+      field(property, 'computed') === true ||
+      (keyName(property) === 'skipClick' &&
         !(
           field(property, 'value', 'type') === 'BooleanLiteral' &&
           field(property, 'value', 'value') === false
         )),
   );
+}
+
+/** The name of a property's identifier or string-literal key. */
+function keyName(property: unknown): unknown {
+  return nameOf(field(property, 'key')) ?? field(property, 'key', 'value');
 }
 
 /**
