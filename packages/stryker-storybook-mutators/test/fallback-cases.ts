@@ -646,6 +646,19 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'written-story-through-cast',
+    title:
+      "a key whose literal value equals the meta's is removed when the file writes the story's args through a cast",
+    source:
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', size: 1 } };\n" +
+      "(Primary as any).args = { label: 'b' };\n",
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'read-in-other-story',
     title:
       "a key whose literal value equals the meta's is removed when another story reads it when the file loads",
