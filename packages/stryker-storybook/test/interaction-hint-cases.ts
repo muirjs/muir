@@ -443,6 +443,34 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'for-head-user-event-shadows-context',
+    title:
+      "gives no hint for a click before a type on a userEvent that a for head declares, which shadows the play context's",
+    source: inPlay(
+      'for (let userEvent = vitestUserEvent, i = 0; i < 1; i += 1) {',
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '}',
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'catch-user-event-shadows-context',
+    title:
+      "gives no hint for a click before a type on a userEvent that a catch parameter declares, which shadows the play context's",
+    source: inPlay(
+      'try {',
+      '  throw vitestUserEvent;',
+      '} catch (userEvent) {',
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '}',
+    ),
+    survived: [[interaction, 8]],
+    expect: [],
+  },
+  {
     id: 'switch-case-user-event-shadows-context',
     title:
       "gives no hint for a click before a type on a userEvent that an earlier case of the same switch declares, which shadows the play context's",
