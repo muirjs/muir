@@ -30,7 +30,9 @@ skip.
   loads gets no `same-as-below` or `default-global` proof either, such as `Other = { args: { text: Primary.args.label } }` or `...Primary.args` after a key of
   `Other`'s own: removing the property changes what that object reads, outside the site's runs. A spread of the
   whole object at the top level (`{ ...Primary }`, `export default meta`) is not such a read, as the reader then
-  runs the site itself and its run takes part in the proof.
+  runs the site itself and its run takes part in the proof. A top-level spread of a member (`{ ...lib.story }`)
+  counts as a spread of its root name, so a read of `lib` elsewhere also stops the proofs of the spreading story's
+  sites.
 - `Object.assign({}, proven, { property: node })` still type-checks as a `Proven`, as TypeScript types
   `Object.assign` as the intersection of its arguments; the type stops a literal, a spread copy and construction,
   and ESLint's `prefer-object-spread`, on for the whole repository, rejects the `Object.assign({}, ...)` form.

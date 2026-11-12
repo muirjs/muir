@@ -839,8 +839,14 @@ function sharedIdentifiers(init: unknown): readonly unknown[] {
 
   return list(field(storyArgument(current), 'properties'))
     .filter((property) => field(property, 'type') === 'SpreadElement')
-    .map((spread) => unwrap(field(spread, 'argument')))
+    .map((spread) => memberRoot(field(spread, 'argument')))
     .filter((argument) => field(argument, 'type') === 'Identifier');
+}
+
+function memberRoot(node: unknown): unknown {
+  const current = unwrap(node);
+
+  return isMember(current) ? memberRoot(field(current, 'object')) : current;
 }
 
 /** A literal or template literal holds no object, so two names that read one share nothing a write could change. */

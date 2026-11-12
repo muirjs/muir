@@ -624,6 +624,39 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-default-member-spread-read-in-other-story',
+    title:
+      'a default value of a global gets a mutant when the story spreads a member of a top-level object that another story reads when the file loads',
+    source: storyFile(
+      'const lib = { story: { globals: { outline: false, measureEnabled: true } } };',
+      'export const Primary = { ...lib.story, play: async () => {} };',
+      'export const Other = { globals: { measureEnabled: lib.story.globals.outline }, play: async () => {} };',
+    ),
+    expect: [
+      [storyGlobals, '{ measureEnabled: true }'],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
+    id: 'story-globals-meta-default-member-spread-read-in-story',
+    title:
+      "the meta's default value of a global gets a mutant when the meta spreads a member of a top-level object that a story reads when the file loads",
+    source: [
+      'const lib = { meta: { globals: { outline: false, measureEnabled: true } } };',
+      "export default { title: 'Probe', ...lib.meta };",
+      '',
+      'export const Primary = { play: async () => {} };',
+      'export const Other = { globals: { measureEnabled: lib.meta.globals.outline }, play: async () => {} };',
+      '',
+    ].join('\n'),
+    expect: [
+      [storyGlobals, '{ measureEnabled: true }'],
+      [storyGlobals, '{ outline: false }'],
+      [storyGlobals, '{}'],
+    ],
+  },
+  {
     id: 'story-globals-meta-default-read-in-story',
     title:
       "the meta's default value of a global gets a mutant when a story reads it when the file loads",

@@ -744,6 +744,48 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'member-spread-read-in-other-story',
+    title:
+      "a key whose literal value equals the meta's is removed when the story spreads a member of a top-level object that another story reads when the file loads",
+    source:
+      "export default { title: 'Button', args: { label: 'a' } };\n" +
+      "const lib = { story: { args: { label: 'a', size: 1 } } };\n" +
+      'export const Primary = { ...lib.story, play: async () => {} };\n' +
+      'export const Other = { args: { text: lib.story.args.label }, play: async () => {} };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'nested-member-spread-read-in-other-story',
+    title:
+      "a key whose literal value equals the meta's is removed when the story spreads a nested member of a top-level object that another story reads when the file loads",
+    source:
+      "export default { title: 'Button', args: { label: 'a' } };\n" +
+      "const lib = { stories: { primary: { args: { label: 'a', size: 1 } } } };\n" +
+      'export const Primary = { ...lib.stories.primary, play: async () => {} };\n' +
+      'export const Other = { args: { text: lib.stories.primary.args.label }, play: async () => {} };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'optional-member-spread-read-in-other-story',
+    title:
+      "a key whose literal value equals the meta's is removed when the story spreads an optional member of a top-level object that another story reads when the file loads",
+    source:
+      "export default { title: 'Button', args: { label: 'a' } };\n" +
+      "const lib = { stories: { primary: { args: { label: 'a', size: 1 } } } };\n" +
+      'export const Primary = { ...lib?.stories?.primary, play: async () => {} };\n' +
+      'export const Other = { args: { text: lib.stories.primary.args.label }, play: async () => {} };\n',
+    expect: [
+      [args, '{ size: 1 }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'story-spread-in-other-story',
     title:
       "a key whose literal value equals the meta's makes no mutant when another story spreads the whole story, as that story runs the same args object",

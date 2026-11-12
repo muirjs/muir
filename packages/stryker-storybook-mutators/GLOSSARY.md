@@ -55,8 +55,9 @@ same key or a later spread the file resolves sets, as removing it changes nothin
 property, so a later `label: 'c'` after a `label: 'a'` equal to the value below keeps its mutant. A key equal to
 the value below keeps its mutant when another top-level object or the meta reads the story or `.test()` options
 constant that holds it when the file loads (such as `text: Primary.args.label`, or `...Primary.args` in another
-story's args), as removing it changes what that object reads; a spread of the whole story at the top level of
-another one (`{ ...Primary }`) runs the same args object, so it does not count. Any other key
+story's args), or reads a top-level object that the story spreads whole or through a member (`...lib.story`), as
+removing it changes what that object reads; a spread of the whole story at the top level of another one
+(`{ ...Primary }`) runs the same args object, so it does not count. Any other key
 keeps its mutant even where no test can kill it (ADR 0006), as in these known shapes: a story whose `args` a runtime
 assignment such as `S.args = { ... }` or `S.args.label = 'b'` replaces; a key that a later spread the file cannot
 resolve may set; and, on a story with no play, a key that the options of every `.test()` call on it set, as only the
