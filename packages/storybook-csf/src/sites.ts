@@ -84,7 +84,6 @@ export interface Site {
 }
 
 interface Layers<TRun extends SiteRun> {
-  readonly owner: TRun['owner'];
   readonly run: TRun;
   readonly node: unknown;
   readonly own: Layer;
@@ -162,7 +161,6 @@ export function sitesOf(
 
       return [
         {
-          owner: 'story',
           run: { owner: 'story', story },
           node: ownValueOf(
             asWrittenLayer(levels[0].argument, levels[0].bindings),
@@ -187,7 +185,6 @@ export function sitesOf(
 
           return [
             {
-              owner: 'test',
               run: { owner: 'test', story, test },
               node: ownValue(test.options, key, unchanged),
               own: layerOf(optionsOwnRoot, key),
@@ -203,7 +200,6 @@ export function sitesOf(
         }),
         ...metas.map(
           (meta): RunLayers => ({
-            owner: 'meta',
             run: { owner: 'meta', story },
             node: ownValue(meta.object, key, unchanged),
             own: layerOf(meta.ownRoot, key),
@@ -299,7 +295,7 @@ function isDefaultGlobal(
 ): boolean {
   const rootMaySetKey = layers.root === unknownValue;
   const mayGiveKey =
-    layers.owner === 'meta'
+    'otherMetas' in layers
       ? layers.otherMetas
       : [...layers.below, ...layers.metas];
 
@@ -356,7 +352,7 @@ function isSameAsBelow(
     typeof layer === 'object' && layer.node === site ? unknownValue : layer;
   const fallback = [
     ...resolvedPropertyValues(before, key, bindings),
-    ...(layers.owner === 'meta'
+    ...('otherMetas' in layers
       ? []
       : [
           ...layers.below.flatMap((layer) =>
