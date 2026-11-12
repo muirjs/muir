@@ -55,9 +55,23 @@ export function readUserEvent(
       ? 'none'
       : userEventBinding(binding, new Set([...seen, binding]));
 
-  return bound === 'none' && nameOf(node) === 'userEvent'
+  if (bound === 'none') {
+    return nameOf(node) === 'userEvent' ? 'unprovenUserEvent' : 'none';
+  }
+
+  return bound === 'provenUserEvent14' && !isOnlyCalledOn(binding)
     ? 'unprovenUserEvent'
     : bound;
+}
+
+/** A binding whose every reference is a method call's receiver or a side of a choice given to such a local. */
+function isOnlyCalledOn(binding: Binding | undefined): boolean {
+  return (
+    binding !== undefined &&
+    binding.referencePaths.every(
+      (reference) => isMethodCallReceiver(reference) || isChoiceSide(reference),
+    )
+  );
 }
 
 /** The weaker of two readings, as a choice between them is only as proven as its weaker side. */
@@ -82,7 +96,12 @@ function userEventBinding(
   const source = userEventImportSource(declaration);
 
   if (source !== undefined) {
-    return importReadings.get(source) ?? 'none';
+    const reading = importReadings.get(source) ?? 'none';
+
+    return reading === 'provenUserEvent14' &&
+      !importsOnlyCallUserEvent(declaration)
+      ? 'unprovenUserEvent'
+      : reading;
   }
 
   if (binding.kind === 'param') {
@@ -149,6 +168,90 @@ function userEventImportSource(declaration: NodePath): string | undefined {
         source === '@testing-library/user-event';
 
   return importsUserEvent ? source : undefined;
+}
+
+/** Whether every import of a user-event 14 module in the file uses its userEvent only as a method call's receiver or a choice side: a named or default import of it, or a namespace import read as `<namespace>.<name>`, and no `import()` may load one. */
+export const importsOnlyCallUserEvent = perFile(
+  (program) =>
+    program
+      .get('body')
+      .every(
+        (statement) =>
+          !statement.isImportDeclaration() ||
+          !isUserEvent14Module(statement.node.source) ||
+          statement.get('specifiers').every(isOnlyCalledImport),
+      ) && !mayImportUserEvent14(program),
+  false,
+);
+
+function isUserEvent14Module(source: types.Node): boolean {
+  return (
+    source.type === 'StringLiteral' &&
+    importReadings.get(source.value) === 'provenUserEvent14'
+  );
+}
+
+/** An `import()` of a user-event 14 module, or of a module the file does not spell out. */
+function mayImportUserEvent14(program: NodePath<types.Program>): boolean {
+  let found = false;
+
+  program.traverse({
+    ImportExpression(path) {
+      const { source } = path.node;
+
+      if (source.type !== 'StringLiteral' || isUserEvent14Module(source)) {
+        found = true;
+        path.stop();
+      }
+    },
+  });
+
+  return found;
+}
+
+function isOnlyCalledImport(
+  specifier: NodePath<
+    | types.ImportSpecifier
+    | types.ImportDefaultSpecifier
+    | types.ImportNamespaceSpecifier
+  >,
+): boolean {
+  const binding = bindingOf(specifier.node.local, specifier.scope);
+
+  if (specifier.isImportNamespaceSpecifier()) {
+    return binding !== undefined && binding.referencePaths.every(isModuleRead);
+  }
+
+  const imported = specifier.isImportSpecifier()
+    ? keyName(specifier.node.imported)
+    : 'default';
+
+  return (
+    (imported !== 'userEvent' && imported !== 'default') ||
+    isOnlyCalledOn(binding)
+  );
+}
+
+/** `<namespace>.<name>`, where a `userEvent` or `default` member is only a method call's receiver or a choice side. */
+function isModuleRead(path: NodePath): boolean {
+  const { parentPath } = path;
+
+  if (!isMemberObject(path) || parentPath === null) {
+    return false;
+  }
+
+  const member = parentPath.node;
+  const name =
+    member.type === 'MemberExpression' ||
+    member.type === 'OptionalMemberExpression'
+      ? nameOf(member.property)
+      : undefined;
+
+  return (
+    (name !== 'userEvent' && name !== 'default') ||
+    isMethodCallReceiver(parentPath) ||
+    isChoiceSide(parentPath)
+  );
 }
 
 /** The `userEvent: <name>` or `userEvent: <name> = <default>` among a pattern's properties. */
@@ -239,6 +342,12 @@ export const changesUserEvent = perFile((program) => {
 
   return changes;
 }, true);
+
+/** What the user-event proofs read once per file, at the Program. */
+export const userEventFileReaders: readonly ((path: NodePath) => boolean)[] = [
+  changesUserEvent,
+  importsOnlyCallUserEvent,
+];
 
 /** `userEvent` as an import's name, a key or binding in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` that is only a method call's receiver or a side of a choice. */
 function readsUserEvent(path: NodePath<types.Identifier>): boolean {

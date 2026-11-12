@@ -12,8 +12,8 @@ import {
 } from './nodes.ts';
 import { isInStoryTestCode, readStoryFileAt } from './story-file.ts';
 import {
-  changesUserEvent,
   readUserEvent,
+  userEventFileReaders,
   userEventMethods,
 } from './user-event.ts';
 
@@ -44,7 +44,7 @@ export type Interaction = InteractionSite &
 
 /** The interaction at `path`, when `path` is an interaction site whose call is an interaction. */
 export function interactionAt(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path, changesUserEvent);
+  readStoryFileAt(path, ...userEventFileReaders);
 
   const site = siteAt(path);
 
@@ -234,7 +234,7 @@ function hasSkipClick(options: types.Node | undefined): boolean {
 
 /** The interaction whose first argument is the call nearest around `path`, such as the query in `userEvent.click(canvas.getByRole('button', { name: 'Save' }))` around `'Save'`. */
 export function targetInteraction(path: NodePath): Interaction | undefined {
-  readStoryFileAt(path, changesUserEvent);
+  readStoryFileAt(path, ...userEventFileReaders);
 
   const query = path.findParent((parent) => parent.isCallExpression());
   const site = path.findParent(

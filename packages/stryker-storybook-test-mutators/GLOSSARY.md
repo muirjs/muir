@@ -82,7 +82,11 @@ local it destructures, it uses a context that is not destructured only as `<cont
 only in an import, in a parameter's destructuring, or as `userEvent` or `<x>.userEvent` that is a method call's
 receiver or a side of a choice given to a local that is only ever a method call's receiver, with no `'userEvent'`
 string. A `setup()` of one of these, or a local that is a choice between them, is proven too, with its names read
-where the local is given that value. Any other receiver may be Vitest browser's userEvent, whose `type` does not click:
+where the local is given that value. A local that holds one of these, whether an import, a destructured `userEvent`,
+a `setup()` or a choice, keeps its proof only when every reference to it is a method call's receiver or a side of a
+choice given to such a local. An import also needs every import of a user-event 14 module in the file to meet that,
+the `userEvent` and `default` members of a namespace import included, and no `import()` that may load one. Any other
+receiver may be Vitest browser's userEvent, whose `type` does not click:
 another import, a `userEvent` the file does not bind, the `userEvent` of another object, a call result or another
 function's parameter, a play context's `userEvent` destructured with a default, a `.test()` function's or a step
 callback's context, the context of a play given by its name, assigned as `Story.play` or under a computed key, a play
