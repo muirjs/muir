@@ -1,4 +1,4 @@
-import type { InteractionShape } from '../src/interaction-hints.ts';
+import type { InteractionShape } from '../src/interaction-shapes.ts';
 
 export interface InteractionHintCase {
   readonly id: string;
