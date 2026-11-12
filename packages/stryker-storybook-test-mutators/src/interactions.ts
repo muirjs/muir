@@ -165,7 +165,7 @@ export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event type or clear that the next interaction, a user-event clear of the same target, undoes with no check between. */
+/** A user-event type or clear with no following checks, when the statement that ends them is a user-event clear of the same target. */
 function isClearedLater(current: Interaction, t: BabelTypes): boolean {
   const [target] = current.call.arguments;
 
@@ -178,7 +178,7 @@ function isClearedLater(current: Interaction, t: BabelTypes): boolean {
   }
 
   const siblings = nextSiblings(current.path);
-  const between = untilNextInteraction(siblings);
+  const between = statementsBefore(siblings, holdsInteraction);
   const next = siblings[between.length];
   const later =
     next === undefined ||
@@ -244,14 +244,14 @@ export function targetInteraction(path: NodePath): Interaction | undefined {
     : undefined;
 }
 
-/** The first statement after `path` in its block that holds an `expect(...)` check, before the next statement that is or holds an interaction. */
+/** The first statement after `path` in its block that holds one of its following checks. */
 export function firstCheckAfter(path: NodePath): NodePath | undefined {
-  return untilNextInteraction(nextSiblings(path)).find(
+  return statementsBefore(nextSiblings(path), holdsInteraction).find(
     (sibling) => checksIn(sibling).length > 0,
   );
 }
 
-/** The statements after `path` hold an `expect(...)` check before the next statement that is or holds an interaction, and every check before the next interaction statement has `.not` in its matcher chain. */
+/** Whether the following checks of `path`, past the end of its block and of a step callback that holds it, are all negative: there is one, and every check up to the next interaction statement is negative. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
   const following = followingStatements(path);
 
@@ -277,7 +277,7 @@ function isInteractionStatement(statement: NodePath): boolean {
   );
 }
 
-/** Whether `statement` is an interaction or holds one that runs there, such as an `if` around one; of the functions in it, only step and `waitFor` callbacks run there. */
+/** Whether `statement` is an interaction or holds one that runs within it, such as an `if` around one; of the functions in it, only step and `waitFor` callbacks run there. */
 function holdsInteraction(statement: NodePath): boolean {
   return (
     isInteractionStatement(statement) ||
@@ -314,13 +314,6 @@ function runsWhereGiven(fn: NodePath): boolean {
     owner?.type === 'CallExpression' &&
     (isStepCall(owner) || nameOf(owner.callee) === 'waitFor')
   );
-}
-
-/** The statements before the first one among them that is or holds an interaction. */
-function untilNextInteraction(
-  statements: readonly NodePath[],
-): readonly NodePath[] {
-  return statementsBefore(statements, holdsInteraction);
 }
 
 /** The statements before the first one among them that `ends`. */
