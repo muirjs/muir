@@ -27,7 +27,7 @@ interface Mutant {
   readonly replacement: string;
 }
 
-async function mutantsOf(
+export async function mutantsOf(
   files: readonly SourceFile[],
 ): Promise<readonly Mutant[]> {
   const instrument = await coreInstrument({
