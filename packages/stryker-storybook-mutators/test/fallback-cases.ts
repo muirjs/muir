@@ -770,6 +770,32 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'key-between-getter-and-setter',
+    title:
+      'a key between a getter and a setter of the same key is removed, as without it the two make one accessor that reads the getter',
+    source:
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { get label() { return 'g'; }, label: 'a', set label(v) {}, size: 1 }, play: async () => {} };\n",
+    expect: [
+      [args, "{ get label() { return 'g'; }, set label(v) {}, size: 1 }"],
+      [args, "{ get label() { return 'g'; }, label: 'a', set label(v) {} }"],
+      [args, "{ get label() { return 'g'; }, set label(v) {} }"],
+    ],
+  },
+  {
+    id: 'meta-equal-key-before-setter',
+    title:
+      "a key whose literal value equals the meta's is removed while a setter of the same key is in the object, as the proofs do not read accessors",
+    source:
+      "export default { title: 'Button', args: { label: 'a' } };\n" +
+      "export const Primary = { args: { label: 'a', set label(v) {}, size: 1 }, play: async () => {} };\n",
+    expect: [
+      [args, '{ set label(v) {}, size: 1 }'],
+      [args, "{ label: 'a', set label(v) {} }"],
+      [args, '{ set label(v) {} }'],
+    ],
+  },
+  {
     id: 'member-spread-read-in-other-story',
     title:
       "a key whose literal value equals the meta's is removed when the story spreads a member of a top-level object that another story reads when the file loads",

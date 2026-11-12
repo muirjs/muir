@@ -639,6 +639,19 @@ export const storyGlobalsCases: readonly Case[] = [
     ],
   },
   {
+    id: 'story-globals-default-before-setter',
+    title:
+      "a story's default value of a global gets a mutant while a setter of that global is in the object, as the proofs do not read accessors",
+    source: storyFile(
+      "export const Primary = { globals: { outline: false, set outline(v) {}, locale: 'de' }, play: async () => {} };",
+    ),
+    expect: [
+      [storyGlobals, "{ set outline(v) {}, locale: 'de' }"],
+      [storyGlobals, "{ outline: false, locale: 'de' }"],
+      [storyGlobals, '{ outline: false, set outline(v) {} }'],
+    ],
+  },
+  {
     id: 'story-globals-meta-default-member-spread-read-in-story',
     title:
       "the meta's default value of a global gets a mutant when the meta spreads a member of a top-level object that a story reads when the file loads",

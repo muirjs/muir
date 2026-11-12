@@ -250,7 +250,11 @@ function argsProofs(
   return properties.flatMap((property, index): readonly Proven[] => {
     const key = propertyKey(property);
 
-    if (!isRecord(property) || key === undefined) {
+    if (
+      !isRecord(property) ||
+      key === undefined ||
+      hasAccessor(properties, key)
+    ) {
       return [];
     }
 
@@ -285,6 +289,7 @@ function globalsProofs(
 
     return isRecord(property) &&
       typeof key === 'string' &&
+      !hasAccessor(properties, key) &&
       !properties.slice(0, index).some((earlier) => maySet(earlier, key)) &&
       runs.every((run) => isDefaultGlobal(run, property, key))
       ? [new Proven(property, 'default-global')]
@@ -307,6 +312,15 @@ function isDefaultGlobal(
   return (
     isInitialGlobal(key, field(property, 'value'), parameters) &&
     mayGiveKey.every((layer) => valuesOf(layer, key)[0] === undefined)
+  );
+}
+
+const accessorKinds: readonly unknown[] = ['get', 'set'];
+
+function hasAccessor(properties: readonly unknown[], key: Key): boolean {
+  return properties.some(
+    (property) =>
+      accessorKinds.includes(field(property, 'kind')) && maySet(property, key),
   );
 }
 
