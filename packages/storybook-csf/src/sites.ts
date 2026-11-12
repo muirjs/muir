@@ -63,14 +63,24 @@ export type { Proven };
 /** The story data key a site holds. */
 type SiteKey = 'args' | 'globals';
 
+interface StoryRun {
+  readonly owner: 'story';
+  readonly story: PlayedStory;
+}
+
+interface TestRun {
+  readonly owner: 'test';
+  readonly story: PlayedStory;
+  readonly test: TestArguments;
+}
+
+interface MetaRun {
+  readonly owner: 'meta';
+  readonly story: PlayedStory;
+}
+
 /** One run of a site, for one played story: its own run, one of its `.test()` calls, or the run that reads the meta's object. */
-export type SiteRun =
-  | { readonly owner: 'story' | 'meta'; readonly story: PlayedStory }
-  | {
-      readonly owner: 'test';
-      readonly story: PlayedStory;
-      readonly test: TestArguments;
-    };
+export type SiteRun = StoryRun | TestRun | MetaRun;
 
 /** An object literal a played story runs with as its `args` or `globals`, every run of it, and the proofs that hold in all of them. */
 export interface Site {
@@ -79,15 +89,29 @@ export interface Site {
   readonly proofs: readonly Proven[];
 }
 
-interface RunLayers {
-  readonly run: SiteRun;
+interface Layers<TRun extends SiteRun> {
+  readonly run: TRun;
   readonly node: unknown;
   readonly own: Layer;
-  readonly below: readonly Layer[];
-  readonly metas: readonly Layer[];
   readonly root: Layer;
   readonly parameters: readonly Layer[];
+}
+
+/** A story's or `.test()` run falls back to the layers below its site, then to the metas. */
+interface StoryRunLayers extends Layers<StoryRun | TestRun> {
+  readonly below: readonly Layer[];
+  readonly metas: readonly Layer[];
+}
+
+/** A meta's run falls back to nothing below it, but the file's other metas may set a global it does not. */
+interface MetaRunLayers extends Layers<MetaRun> {
   readonly otherMetas: readonly Layer[];
+}
+
+type RunLayers = StoryRunLayers | MetaRunLayers;
+
+function isMetaRun(layers: RunLayers): layers is MetaRunLayers {
+  return layers.run.owner === 'meta';
 }
 
 /**
@@ -104,7 +128,7 @@ export function sitesOf(
   const unchanged = unchangedBindings(bindings, file.written);
   const root = (expression: unknown, owner: unknown): Layer =>
     rootLayer(expression, owner, file.written, unchanged);
-  const ownRoot = (layer: Layer, name: unknown): Layer =>
+  const unlessReadByOtherObjects = (layer: Layer, name: unknown): Layer =>
     file.readByOtherObjects.has(name) ? unknownValue : layer;
   const metas = file.metas.map(({ object, owner }) => {
     const metaRoot = root(object, owner);
@@ -113,7 +137,7 @@ export function sitesOf(
       object,
       root: metaRoot,
       layer: layerOf(metaRoot, key),
-      ownRoot: ownRoot(metaRoot, owner),
+      ownRoot: unlessReadByOtherObjects(metaRoot, owner),
     };
   });
   const metaLayers = metas.map(({ layer }) => layer);
@@ -123,7 +147,7 @@ export function sitesOf(
       const { init, local } = story.story;
       const roots = storyRoots(init, local, file.written, unchanged, 'root');
       const [own, ...bases] = roots.map((layer) => layerOf(layer, key));
-      const storyRoot = ownRoot(roots[0], local);
+      const storyRoot = unlessReadByOtherObjects(roots[0], local);
       const storyParameters = [
         ...roots.map((layer) => layerOf(layer, 'parameters')),
         ...metaParameters,
@@ -149,7 +173,6 @@ export function sitesOf(
           metas: metaLayers,
           root: storyRoot,
           parameters: everyRunParameters,
-          otherMetas: [],
         },
         ...story.tests.flatMap((test): readonly RunLayers[] => {
           if (test === 'unmatched') {
@@ -157,7 +180,7 @@ export function sitesOf(
           }
 
           const optionsRoot = root(test.options, undefined);
-          const optionsOwnRoot = ownRoot(
+          const optionsOwnRoot = unlessReadByOtherObjects(
             optionsRoot,
             field(test.options, 'name'),
           );
@@ -174,7 +197,6 @@ export function sitesOf(
                 layerOf(optionsRoot, 'parameters'),
                 ...storyParameters,
               ],
-              otherMetas: [],
             },
           ];
         }),
@@ -183,8 +205,6 @@ export function sitesOf(
             run: { owner: 'meta', story },
             node: ownValue(meta.object, key, unchanged),
             own: layerOf(meta.ownRoot, key),
-            below: [],
-            metas: [],
             root: meta.ownRoot,
             parameters: everyRunParameters,
             otherMetas: metas
@@ -271,19 +291,18 @@ function globalsProofs(
 }
 
 function isDefaultGlobal(
-  { root, below, metas, otherMetas, parameters }: RunLayers,
+  layers: RunLayers,
   property: object,
   key: string,
 ): boolean {
-  const mayGiveKey: readonly Layer[] = [
-    root === unknownValue ? unknownValue : undefined,
-    ...below,
-    ...metas,
-    ...otherMetas,
-  ];
+  const rootMaySetKey = layers.root === unknownValue;
+  const mayGiveKey = isMetaRun(layers)
+    ? layers.otherMetas
+    : [...layers.below, ...layers.metas];
 
   return (
-    isInitialGlobal(key, field(property, 'value'), parameters) &&
+    isInitialGlobal(key, field(property, 'value'), layers.parameters) &&
+    !rootMaySetKey &&
     mayGiveKey.every((layer) => valuesOf(layer, key)[0] === undefined)
   );
 }
@@ -317,23 +336,31 @@ function isOverridden(
 }
 
 function isSameAsBelow(
-  { own, below, metas }: RunLayers,
+  layers: RunLayers,
   site: object,
   before: readonly unknown[],
   property: object,
   key: Key,
   bindings: Bindings,
 ): boolean {
+  const { own } = layers;
+
   if (typeof own !== 'object' || own.node !== site) {
     return false;
   }
 
-  const apart = (layer: Layer): Layer =>
+  const siteAsUnknown = (layer: Layer): Layer =>
     typeof layer === 'object' && layer.node === site ? unknownValue : layer;
   const fallback = [
     ...resolvedPropertyValues(before, key, bindings),
-    ...below.flatMap((layer) => valuesOf(apart(layer), key)),
-    metaValue(metas.map(apart), key),
+    ...(isMetaRun(layers)
+      ? []
+      : [
+          ...layers.below.flatMap((layer) =>
+            valuesOf(siteAsUnknown(layer), key),
+          ),
+          metaValue(layers.metas.map(siteAsUnknown), key),
+        ]),
   ][0];
 
   return sameLiteral(field(property, 'value'), fallback);
