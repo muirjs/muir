@@ -126,7 +126,9 @@ _Avoid_: lost stub, reset stub
 A spy stub at whose line an `LzStorybookSpyStub` mutant, which removes a stub, survived; the `lz-storybook` report
 lists it once as a stub finding, because no test fails without the stub. A surviving outcome mutant (the test
 mutators' term), which `LzStorybookSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
-success from failure, not that none reads the stub.
+success from failure, not that none reads the stub. A later stub of a chain whose first stub the mock transformer
+keeps is erased all the same, so its removal survives and the report lists an unchecked stub on the line of its
+`chain-not-rewritten` or `once-not-rewritten` finding; the fix of that finding clears both.
 _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:
