@@ -100,18 +100,13 @@ export function interactionHints(
       .filter(({ mutatorName }) => mutatorName === siteMutatorName)
       .map(({ location }) => location);
     const shapesAt = interactionShapeReader(program, sites);
-    const placed = survivors.map(({ mutant, name }) => {
+    const held = survivors.flatMap(({ mutant, name }) => {
       const site = siteHolding(sites, mutant.location.start);
 
-      return {
-        mutant,
-        name,
-        site,
-        shapes: site === undefined ? undefined : shapesAt(site),
-      };
+      return site === undefined ? [] : [{ mutant, name, site }];
     });
 
-    if (placed.some(({ site }) => site === undefined)) {
+    if (held.length < survivors.length) {
       warn(
         `${packageName}: ${file} has a surviving interaction mutant outside every ${siteMutatorName} mutant, so lz-storybook gave it no interaction hints`,
       );
@@ -119,7 +114,13 @@ export function interactionHints(
       return [];
     }
 
-    if (placed.some(({ shapes }) => shapes === undefined)) {
+    const read = held.flatMap(({ mutant, name, site }) => {
+      const shapes = shapesAt(site);
+
+      return shapes === undefined ? [] : [{ mutant, name, shapes }];
+    });
+
+    if (read.length < held.length) {
       warn(
         `${packageName}: ${file} has an ${siteMutatorName} mutant whose range no node of the parsed file has, so lz-storybook gave it no interaction hints`,
       );
@@ -130,7 +131,7 @@ export function interactionHints(
     return groupedHints(
       file,
       mutants,
-      placed.flatMap(({ mutant, name, shapes: [shape] = [] }) =>
+      read.flatMap(({ mutant, name, shapes: [shape] }) =>
         shape === undefined ? [] : [{ mutant, name, shape }],
       ),
     );

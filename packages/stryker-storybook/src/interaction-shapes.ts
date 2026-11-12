@@ -97,14 +97,17 @@ function isClickBeforeType(site: Located, index: InteractionIndex): boolean {
       ? index.located.get(next)
       : undefined;
 
-  if (current === undefined || nextSite === undefined) {
+  const following = nextSite === undefined ? undefined : callOf(nextSite.node);
+
+  if (
+    current === undefined ||
+    nextSite === undefined ||
+    following === undefined
+  ) {
     return false;
   }
 
-  const following = callOf(nextSite.node);
-
   return (
-    following !== undefined &&
     ['click', 'hover'].includes(current.method ?? '') &&
     rootName(current.receiver) !== 'fireEvent' &&
     following.method === 'type' &&
@@ -537,6 +540,9 @@ function chainTo(
     : undefined;
 }
 
+/** `findBy*`, `findAllBy*`, `getBy*` and `getAllBy*`, on any receiver or none; `queryBy*` finds nothing quietly. */
+const failingQuery = /^(find|get)(All)?By/;
+
 /**
  * `expect(...)`, `expect.<name>(...)` such as `expect.soft`, `expect.element` or `expect.poll`, or a query that fails
  * when it finds nothing.
@@ -550,9 +556,6 @@ function isCheckCall(call: AstNode): boolean {
     failingQuery.test(nameOf(callee) ?? nameOf(field(callee, 'property')) ?? '')
   );
 }
-
-/** `findBy*`, `findAllBy*`, `getBy*` and `getAllBy*`, on any receiver or none; `queryBy*` finds nothing quietly. */
-const failingQuery = /^(find|get)(All)?By/;
 
 function nameOf(node: unknown): string | undefined {
   const name = field(node, 'name');
