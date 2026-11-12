@@ -744,6 +744,32 @@ export const fallbackCases: readonly Case[] = [
     ],
   },
   {
+    id: 'string-key-after-numeric-key',
+    title:
+      "a string key equal to the meta's is removed when an earlier numeric key names the same key, which the string key's removal leaves in place",
+    source:
+      "export default { title: 'Button', args: { '1': 'b' } };\n" +
+      "export const Primary = { args: { 1: 'a', '1': 'b', size: 1 }, play: async () => {} };\n",
+    expect: [
+      [args, "{ 1: 'a', size: 1 }"],
+      [args, "{ 1: 'a', '1': 'b' }"],
+      [args, "{ 1: 'a' }"],
+    ],
+  },
+  {
+    id: 'numeric-key-before-string-key',
+    title:
+      'a numeric key makes no mutant when a later string key names the same key, as removing it changes nothing',
+    source:
+      "export default { title: 'Button' };\n" +
+      "export const Primary = { args: { 1: 'a', '1': 'b', size: 1 }, play: async () => {} };\n",
+    expect: [
+      [args, "{ 1: 'a', size: 1 }"],
+      [args, "{ 1: 'a', '1': 'b' }"],
+      [args, "{ 1: 'a' }"],
+    ],
+  },
+  {
     id: 'member-spread-read-in-other-story',
     title:
       "a key whose literal value equals the meta's is removed when the story spreads a member of a top-level object that another story reads when the file loads",

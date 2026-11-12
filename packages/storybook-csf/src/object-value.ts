@@ -25,7 +25,7 @@ export function propertyKey(property: unknown): string | number | undefined {
 export function maySet(property: unknown, key: string | number): boolean {
   const name = propertyKey(property);
 
-  return name === undefined || name === key;
+  return name === undefined || String(name) === String(key);
 }
 
 /** The values the properties of a last-wins-first list that may set `key` give it: `unknownValue` for a spread or a computed key, a method being its own value. */
@@ -37,7 +37,9 @@ export function valuesIn(
     .filter((property) => maySet(property, key))
     .map(
       (property): LayerValue =>
-        propertyKey(property) === key ? propertyValue(property) : unknownValue,
+        propertyKey(property) === undefined
+          ? unknownValue
+          : propertyValue(property),
     );
 }
 
