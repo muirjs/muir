@@ -1,3 +1,4 @@
+import { backstopCases } from './backstop-cases.ts';
 import { bindingRuleCases } from './binding-rule-cases.ts';
 import { clickBeforeTypeCases } from './click-before-type-cases.ts';
 import { type Case, inPlay } from './support/case.ts';
@@ -400,5 +401,6 @@ export const skippedInteractionCases: readonly Case[] = [
   ...clickBeforeTypeCases,
   ...bindingRuleCases,
   ...userEventProofCases,
+  ...backstopCases,
   ...clearedLaterCases,
 ];

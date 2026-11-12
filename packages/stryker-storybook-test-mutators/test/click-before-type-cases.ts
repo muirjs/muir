@@ -274,35 +274,11 @@ export const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
-    id: 'skip-typed-context-click-before-type',
-    title:
-      'a click directly before a type on the same target, both on the userEvent destructured in a play context typed with a userEvent member, makes no mutant, as a type does not run',
-    source: `import type { UserEvent } from 'storybook/test';\nexport const Story = {\n  play: async ({ userEvent }: { userEvent: UserEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
-  },
-  {
-    id: 'skip-interface-typed-context-click-before-type',
-    title:
-      'a click directly before a type on the same target, both on the userEvent destructured in a play context typed by an interface with a userEvent member, makes no mutant, as an interface does not run',
-    source: `import type { UserEvent } from 'storybook/test';\ninterface PlayContext {\n  userEvent: UserEvent;\n}\nexport const Story = {\n  play: async ({ userEvent }: PlayContext) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [[interaction, ';']],
-  },
-  {
     id: 'skip-destructured-hook-name-click-before-type',
     title:
       "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when the file destructures a local named render from an import, as a pattern gives Storybook no hook",
     source: `import { renderers } from './support';\nconst { render } = renderers;\nexport const Story = {\n  play: async ({ userEvent }) => {\n    render;\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
     expect: [[interaction, ';']],
-  },
-  {
-    id: 'unrelated-user-event-key-click-before-type',
-    title:
-      "a click directly before a type on the same target, both on the play context's userEvent, is removed beside an unrelated object with a userEvent key, as the file names userEvent outside a read",
-    source: `export const labels = { userEvent: 'User event' };\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
-    expect: [
-      [interaction, ';'],
-      [interaction, ';'],
-    ],
   },
   {
     id: 'skip-choice-click-before-type',
