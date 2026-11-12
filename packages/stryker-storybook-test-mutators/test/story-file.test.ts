@@ -6,6 +6,7 @@ import { test } from 'node:test';
 
 import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
+import { interactionMutator } from '../src/interaction-mutators.ts';
 import type { LzStorybookTestMutator } from '../src/mutator.ts';
 import { spyStubMutator, spyStubOutcomeMutator } from '../src/spy-stub.ts';
 import { storyGlobalsMutator } from '../src/story-globals.ts';
@@ -80,7 +81,7 @@ const factoryStubStatement = [
   '',
 ].join('\n');
 
-test('LzStorybookSpyStub reads the story test code at the first node it visits', () => {
+test('LzStorybookSpyStub removes a stub statement after a mutant is placed earlier in a line-range run', () => {
   const file = parse(factoryStubStatement);
   const story = file.at('export const Story', 'ExportNamedDeclaration');
   const mutator = spyStubMutator();
@@ -94,7 +95,7 @@ test('LzStorybookSpyStub reads the story test code at the first node it visits',
   );
 });
 
-test('LzStorybookSpyStubOutcome reads the story test code at the first node it visits', () => {
+test('LzStorybookSpyStubOutcome flips a stub after a mutant is placed earlier in a line-range run', () => {
   const file = parse(factoryStubStatement);
   const story = file.at('export const Story', 'ExportNamedDeclaration');
   const mutator = spyStubOutcomeMutator();
@@ -108,7 +109,38 @@ test('LzStorybookSpyStubOutcome reads the story test code at the first node it v
   );
 });
 
-test('LzStorybookStoryGlobals reads its proofs at the first node it visits', () => {
+test('LzStorybookInteraction removes a raw DOM interaction after a mutant is placed earlier in a line-range run', () => {
+  const file = parse(
+    [
+      "import preview from '../.storybook/preview';",
+      '',
+      "const meta = preview.meta({ title: 'Probe' });",
+      '',
+      'export const Story = meta.story({});',
+      '',
+      "Story.test('clicks', async ({ canvas }) => {",
+      "  canvas.getByRole('button').click();",
+      "  await expect(canvas.getByText('Saved')).toBeVisible();",
+      '});',
+      '',
+    ].join('\n'),
+  );
+  const story = file.at('export const Story', 'ExportNamedDeclaration');
+  const mutator = interactionMutator();
+
+  mutantTypes(mutator, story);
+  placeSwitch(story);
+
+  assert.deepEqual(
+    mutantTypes(
+      mutator,
+      file.at("canvas.getByRole('button').click", 'ExpressionStatement'),
+    ),
+    ['EmptyStatement'],
+  );
+});
+
+test('LzStorybookStoryGlobals mutates story globals after a mutant is placed earlier in a line-range run', () => {
   const file = parse(
     [
       "const meta = { title: 'Probe', parameters: { viewport: { defaultViewport: 'mobile1' } } };",
