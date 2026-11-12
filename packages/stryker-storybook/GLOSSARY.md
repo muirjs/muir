@@ -137,10 +137,11 @@ _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:
 One entry in the `lz-storybook` report for the surviving mutants of the interaction mutators (`LzStorybookInteraction`,
-`LzStorybookClickFocus`, `LzStorybookInteractionRepeat`, `LzStorybookInteractionTarget` and
-`LzStorybookAssertionBefore`, the Storybook test mutators' names) that start on one line and whose interaction has an
-interaction shape: the file and line, the shape, the reason, the fix, and a ready `// Stryker disable next-line` comment
-for the line above. The comment names a mutator only when every mutant of it placed on that line survived with that
+`LzStorybookClickFocus`, `LzStorybookInteractionRepeat` and `LzStorybookInteractionTarget`, the Storybook test
+mutators' names) that start on one line and whose interaction has an interaction shape. The reporter reads
+`LzStorybookAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
+holds the file and line, the shape, the reason, the fix, and a ready `// Stryker disable next-line` comment for the
+line above. The comment names a mutator only when every mutant of it placed on that line survived with that
 shape, since one comment disables them all. The reporter takes the interactions from the `LzStorybookInteraction`
 mutants in the report, whatever their status, and gives no hint for a file that a `mutate` pattern with a line range
 names, where an interaction outside the range has no such mutant.
