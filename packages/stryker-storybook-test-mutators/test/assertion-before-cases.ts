@@ -274,6 +274,16 @@ export const assertionBeforeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'assertion-before-skip-braceless-if-body',
+    title:
+      'an interaction that is the body of an if without braces makes no mutant, as no check follows it in its own block',
+    source: inPlay(
+      'if (open) await userEvent.click(button);',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
     id: 'assertion-before-skip-past-if-with-interaction',
     title:
       'an interaction makes no mutant when an if that holds another interaction stands before the next check, as that check is none of its following checks',

@@ -127,7 +127,7 @@ export const repeatCases: readonly Case[] = [
   {
     id: 'repeat-click-of-home-text',
     title:
-      'a click given the text {Home} runs twice, as only a key press of {Home} or {End} makes no mutant',
+      'the {Home} and {End} rule covers only keyboard, so a click given the text {Home} runs twice',
     source: inPlay("await userEvent.click('{Home}');"),
     expect: [
       [
