@@ -744,6 +744,46 @@ const clickBeforeTypeCases: readonly Case[] = [
     ],
   },
   {
+    id: 'reassigned-context-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the userEvent of a play context that the play reassigns, is removed',
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async (context) => {\n    context = { userEvent: browserUserEvent };\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'reassigned-context-user-event-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the context's userEvent destructured under another name that the play reassigns, is removed",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent: user }) => {\n    user = browserUserEvent;\n    await user.click(input);\n    await user.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'written-context-user-event-click-before-type',
+    title:
+      'a click directly before a type on the same target, both on the userEvent of a play context whose userEvent the play writes, is removed',
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async (context) => {\n    context.userEvent = browserUserEvent;\n    await context.userEvent.click(input);\n    await context.userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'hook-written-user-event-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when a beforeEach writes the context's userEvent, as Storybook runs it on the same context first",
+    source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport default {\n  beforeEach: (context) => {\n    context.userEvent = browserUserEvent;\n  },\n};\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'named-play-click-before-type',
     title:
       'a click directly before a type on the same target, both on the userEvent of the context of a play given by its name, is removed, as only a play given inline is read',

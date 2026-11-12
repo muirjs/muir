@@ -1,7 +1,8 @@
 import type { NodePath, types } from '@babel/core';
+import { field, isRecord } from '@layzee/storybook-core';
 
 import { awaited, type Binding, bindingOf, keyName, nameOf } from './nodes.ts';
-import { isInStoryTestCode } from './story-file.ts';
+import { isInStoryTestCode, perFile } from './story-file.ts';
 
 // The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
 // storybook/test re-exports) and those only Vitest browser's userEvent has.
@@ -91,7 +92,7 @@ function userEventBinding(
       return 'none';
     }
 
-    return isPlayParameter(declaration) ? 'provenUserEvent14' : 'userEvent';
+    return isPlayParameter(binding) ? 'provenUserEvent14' : 'userEvent';
   }
 
   if (!declaration.isVariableDeclarator()) {
@@ -161,12 +162,13 @@ function isPlayContext(node: types.Node, path: NodePath): boolean {
   return (
     binding?.kind === 'param' &&
     binding.path.isIdentifier() &&
-    isPlayParameter(binding.path)
+    isPlayParameter(binding)
   );
 }
 
-/** A parameter of a play that Storybook calls: a `play` method, or a function given as a `play` property, which is story test code and inside none. */
-function isPlayParameter(parameter: NodePath): boolean {
+/** A parameter that the file never reassigns, of a play that Storybook calls: a `play` method, or a function given as a `play` property, which is story test code and inside none, in a file that writes no `.userEvent` member. */
+function isPlayParameter(binding: Binding): boolean {
+  const parameter = binding.path;
   const play = parameter.parentPath;
   const parent = play?.parent;
   const key =
@@ -177,13 +179,30 @@ function isPlayParameter(parameter: NodePath): boolean {
         : undefined;
 
   return (
+    binding.constantViolations.length === 0 &&
     parameter.key === 0 &&
     play !== null &&
     key !== undefined &&
     keyName(key) === 'play' &&
     isInStoryTestCode(parameter) &&
-    !isInStoryTestCode(play)
+    !isInStoryTestCode(play) &&
+    !writesUserEvent(parameter)
   );
+}
+
+/** Whether the file assigns a `.userEvent` member anywhere, as a play or a hook given the play's context may replace the user-event that Storybook sets there. */
+export const writesUserEvent = perFile(
+  (program) =>
+    nodesIn(program).some(
+      (node) =>
+        field(node, 'type') === 'AssignmentExpression' &&
+        field(node, 'left', 'property', 'name') === 'userEvent',
+    ),
+  true,
+);
+
+function nodesIn(node: object): readonly unknown[] {
+  return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
 }
 
 /** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */
