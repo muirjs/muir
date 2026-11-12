@@ -1,6 +1,7 @@
 import type { NodePath, types } from '@babel/core';
 
-import { awaited, type Binding, bindingOf, nameOf } from './nodes.ts';
+import { awaited, type Binding, bindingOf, keyName, nameOf } from './nodes.ts';
+import { isInStoryTestCode } from './story-file.ts';
 
 // The user-event methods that act on the page: those of user-event 14 (@testing-library/user-event, which
 // storybook/test re-exports) and those only Vitest browser's userEvent has.
@@ -28,12 +29,13 @@ export const userEventMethods: ReadonlySet<string> = new Set([
 
 interface UserEventReading {
   readonly isUserEvent: boolean;
-  readonly mayBeVitestBrowser: boolean;
+  /** The file proves it is user-event 14, whose `type` clicks first; anything else may be Vitest browser's, whose `type` does not. */
+  readonly isUserEvent14: boolean;
 }
 
 const noUserEvent: UserEventReading = {
   isUserEvent: false,
-  mayBeVitestBrowser: false,
+  isUserEvent14: false,
 };
 
 /** Reads `userEvent`, `<x>.userEvent` such as the play context's, or a local that `userEventBinding` reads as a user-event. `seen` holds the bindings already followed, so a local given a choice of itself ends the search. */
@@ -45,9 +47,7 @@ export function readUserEvent(
   if (node.type === 'MemberExpression') {
     return {
       isUserEvent: nameOf(node.property) === 'userEvent',
-      mayBeVitestBrowser:
-        isVitestBrowserNamespace(node.object, path) ||
-        isVitestBrowserImport(awaited(node.object)),
+      isUserEvent14: isPlayContext(node.object, path),
     };
   }
 
@@ -59,11 +59,11 @@ export function readUserEvent(
 
   return {
     isUserEvent: nameOf(node) === 'userEvent' || bound.isUserEvent,
-    mayBeVitestBrowser: bound.mayBeVitestBrowser,
+    isUserEvent14: bound.isUserEvent14,
   };
 }
 
-/** Reads what a binding holds: Vitest browser's userEvent imported or destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
+/** Reads what a binding holds: a userEvent import, Vitest browser's userEvent destructured under another name, a context's userEvent destructured under another name in a parameter, or a local whose one value is a user-event's `setup()` or a choice between user-events. */
 function userEventBinding(
   binding: Binding,
   path: NodePath,
@@ -74,23 +74,39 @@ function userEventBinding(
 
   if (declaration.isImportSpecifier()) {
     const { parent } = declaration;
-    const fromVitestBrowser =
+    const source =
       nameOf(declaration.node.imported) === 'userEvent' &&
-      parent.type === 'ImportDeclaration' &&
-      vitestBrowserSources.has(parent.source.value);
+      parent.type === 'ImportDeclaration'
+        ? parent.source.value
+        : undefined;
+    const fromVitestBrowser =
+      source !== undefined && vitestBrowserSources.has(source);
 
     return {
       isUserEvent: fromVitestBrowser,
-      mayBeVitestBrowser: fromVitestBrowser,
+      isUserEvent14: source !== undefined && userEvent14Sources.has(source),
+    };
+  }
+
+  if (declaration.isImportDefaultSpecifier()) {
+    const { parent } = declaration;
+
+    return {
+      isUserEvent: false,
+      isUserEvent14:
+        parent.type === 'ImportDeclaration' &&
+        parent.source.value === '@testing-library/user-event',
     };
   }
 
   if (binding.kind === 'param') {
+    const takesUserEvent =
+      declaration.node.type === 'ObjectPattern' &&
+      takesUserEventAs(declaration.node, name);
+
     return {
-      isUserEvent:
-        declaration.node.type === 'ObjectPattern' &&
-        takesUserEventAs(declaration.node, name),
-      mayBeVitestBrowser: false,
+      isUserEvent: takesUserEvent,
+      isUserEvent14: takesUserEvent && isPlayParameter(declaration),
     };
   }
 
@@ -107,7 +123,7 @@ function userEventBinding(
     init !== undefined &&
     isVitestBrowserImport(awaited(init))
   ) {
-    return { isUserEvent: true, mayBeVitestBrowser: true };
+    return { isUserEvent: true, isUserEvent14: false };
   }
 
   const value = boundValue(init, binding);
@@ -118,8 +134,7 @@ function userEventBinding(
 
     return {
       isUserEvent: consequent.isUserEvent && alternate.isUserEvent,
-      mayBeVitestBrowser:
-        consequent.mayBeVitestBrowser || alternate.mayBeVitestBrowser,
+      isUserEvent14: consequent.isUserEvent14 && alternate.isUserEvent14,
     };
   }
 
@@ -140,15 +155,35 @@ function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
   );
 }
 
-/** `<name>` from `import * as <name> from 'vitest/browser'`. */
-function isVitestBrowserNamespace(node: types.Node, path: NodePath): boolean {
+/** A play's context parameter, not destructured. */
+function isPlayContext(node: types.Node, path: NodePath): boolean {
   const binding = bindingOf(node, path.scope);
-  const declaration = binding?.path.parent;
 
   return (
-    binding?.path.node.type === 'ImportNamespaceSpecifier' &&
-    declaration?.type === 'ImportDeclaration' &&
-    vitestBrowserSources.has(declaration.source.value)
+    binding?.kind === 'param' &&
+    binding.path.node === binding.identifier &&
+    isPlayParameter(binding.path)
+  );
+}
+
+/** A parameter of a play that Storybook calls: a `play` method, or a function given as a `play` property, which is story test code and inside none. */
+function isPlayParameter(parameter: NodePath): boolean {
+  const play = parameter.parentPath;
+  const parent = play?.parent;
+  const key =
+    play?.node.type === 'ObjectMethod'
+      ? play.node.key
+      : parent?.type === 'ObjectProperty'
+        ? parent.key
+        : undefined;
+
+  return (
+    parameter.key === 0 &&
+    play !== null &&
+    key !== undefined &&
+    keyName(key) === 'play' &&
+    isInStoryTestCode(parameter) &&
+    !isInStoryTestCode(play)
   );
 }
 
@@ -164,6 +199,11 @@ function isVitestBrowserImport(node: types.Node): boolean {
 const vitestBrowserSources: ReadonlySet<string> = new Set([
   'vitest/browser',
   '@vitest/browser/context',
+]);
+
+const userEvent14Sources: ReadonlySet<string> = new Set([
+  'storybook/test',
+  '@testing-library/user-event',
 ]);
 
 /** The receiver of `<x>.setup()`. */

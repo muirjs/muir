@@ -25,8 +25,8 @@ type InteractionKind =
   | {
       readonly kind: 'userEvent';
       readonly method: string;
-      /** Whether the receiver is or may be Vitest browser's userEvent, whose `type` does not click first. */
-      readonly mayBeVitestBrowser: boolean;
+      /** Whether the file proves the receiver is user-event 14, whose `type` clicks first; Vitest browser's does not. */
+      readonly isUserEvent14: boolean;
     }
   | { readonly kind: 'fireEvent'; readonly method: string | undefined }
   | { readonly kind: 'composedPlay' | 'rawDom' };
@@ -87,7 +87,7 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
       return {
         kind: 'userEvent',
         method,
-        mayBeVitestBrowser: receiver.mayBeVitestBrowser,
+        isUserEvent14: receiver.isUserEvent14,
       };
     }
   }
@@ -195,7 +195,7 @@ function isClearedLater(current: Interaction, t: BabelTypes): boolean {
   );
 }
 
-/** A user-event click or hover directly before a user-event 14 type of the same target, which clicks it first; Vitest browser's type does not. */
+/** A user-event click or hover directly before a type of the same target on a receiver the file proves to be user-event 14, which clicks it first; Vitest browser's type does not. */
 function isRepeatedByNext(current: Interaction, t: BabelTypes): boolean {
   const [next] = nextSiblings(current.path);
   const following = next === undefined ? undefined : interactionAt(next);
@@ -209,7 +209,7 @@ function isRepeatedByNext(current: Interaction, t: BabelTypes): boolean {
     followingTarget !== undefined &&
     ['click', 'hover'].includes(current.method) &&
     following.method === 'type' &&
-    !following.mayBeVitestBrowser &&
+    following.isUserEvent14 &&
     !hasSkipClick(options) &&
     t.isNodesEquivalent(target, followingTarget)
   );
