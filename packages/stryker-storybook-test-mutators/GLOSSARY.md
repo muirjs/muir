@@ -52,8 +52,9 @@ whose following checks are all negative checks,
 a click or hover that a user-event 14 `type` of the same target in the next statement repeats (that `type` clicks
 first unless given a `skipClick` other than `false`; Vitest browser's does not click), and a `type` or `clear` that a
 later `clear` of the same target undoes before any check, with no statement between them that holds an
-interaction. The following checks stop at the next statement that is or holds an interaction, such as a
-`step(...)` or an `if` around one.
+interaction. Its following checks are all negative when a check comes before the next statement that is or holds an
+interaction, such as an `if` around one, and every check is negative up to the next statement that is itself an
+interaction or a `step(...)` that holds one, as an `if` may not run.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:

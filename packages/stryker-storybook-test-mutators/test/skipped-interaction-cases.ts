@@ -127,6 +127,74 @@ const negativeOnlyCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'positive-after-if-with-interaction',
+    title:
+      'a positive check after an if statement that holds an interaction keeps an earlier interaction followed by a negative check, as the if may not run',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'await expect(args.onA).not.toHaveBeenCalled();',
+      'if (c) {',
+      '  await userEvent.click(b);',
+      '}',
+      'await expect(args.onB).toHaveBeenCalled();',
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'positive-after-function-with-interaction',
+    title:
+      'a positive check after a function defined with an interaction in it keeps an earlier interaction followed by a negative check',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'await expect(args.onA).not.toHaveBeenCalled();',
+      'const later = async () => {',
+      '  await userEvent.click(b);',
+      '};',
+      'await expect(args.onB).toHaveBeenCalled();',
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'positive-after-function-declaration-with-interaction',
+    title:
+      'a positive check after a function declaration with an interaction in it keeps an earlier interaction followed by a negative check',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'await expect(args.onA).not.toHaveBeenCalled();',
+      'async function later() {',
+      '  await userEvent.click(b);',
+      '}',
+      'await expect(args.onB).toHaveBeenCalled();',
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'positive-in-wait-for-with-interaction',
+    title:
+      'a positive check in a waitFor callback that holds an interaction keeps an earlier interaction followed by a negative check',
+    source: inPlay(
+      'await userEvent.click(a);',
+      'await expect(args.onA).not.toHaveBeenCalled();',
+      'await waitFor(async () => {',
+      '  await userEvent.click(retry);',
+      '  await expect(args.onB).toHaveBeenCalled();',
+      '});',
+    ),
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'negative-only-ends-at-local-function',
     title:
       'the checks that decide a skip end with a function that is no step callback, so negative checks after it skip nothing',

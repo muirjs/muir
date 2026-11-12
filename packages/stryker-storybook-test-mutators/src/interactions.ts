@@ -251,13 +251,30 @@ export function firstCheckAfter(path: NodePath): NodePath | undefined {
   );
 }
 
-/** The statements after `path`, up to the next statement that is or holds an interaction, hold an `expect(...)` check, and each one has `.not` in its matcher chain. */
+/** The statements after `path` hold an `expect(...)` check before the next statement that is or holds an interaction, and every check before the next interaction statement has `.not` in its matcher chain. */
 function hasOnlyNegativeChecks(path: NodePath): boolean {
-  const checks = untilNextInteraction(followingStatements(path)).flatMap(
-    checksIn,
-  );
+  const following = followingStatements(path);
 
-  return checks.length > 0 && checks.every(isNegative);
+  return (
+    statementsBefore(following, holdsInteraction).some(
+      (statement) => checksIn(statement).length > 0,
+    ) &&
+    statementsBefore(following, isInteractionStatement)
+      .flatMap(checksIn)
+      .every(isNegative)
+  );
+}
+
+/** Whether `statement` is an interaction, or a `step(...)` whose callback holds one. */
+function isInteractionStatement(statement: NodePath): boolean {
+  const { node } = statement;
+
+  return (
+    interactionAt(statement) !== undefined ||
+    (node.type === 'ExpressionStatement' &&
+      isStepCall(awaited(node.expression)) &&
+      holdsInteraction(statement))
+  );
 }
 
 /** Whether `statement` is an interaction or holds one, such as a `step(...)` or an `if` around one. */
@@ -284,7 +301,15 @@ function holdsInteraction(statement: NodePath): boolean {
 function untilNextInteraction(
   statements: readonly NodePath[],
 ): readonly NodePath[] {
-  const end = statements.findIndex(holdsInteraction);
+  return statementsBefore(statements, holdsInteraction);
+}
+
+/** The statements before the first one among them that `ends`. */
+function statementsBefore(
+  statements: readonly NodePath[],
+  ends: (statement: NodePath) => boolean,
+): readonly NodePath[] {
+  const end = statements.findIndex(ends);
 
   return end === -1 ? statements : statements.slice(0, end);
 }
