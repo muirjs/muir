@@ -115,7 +115,7 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
 
   const isComposedPlay = composedPlayMethods.has(name);
   const matches = isComposedPlay
-    ? isNameChain(callee.object)
+    ? startsAtIdentifier(callee.object)
     : rawDomArguments.get(name) === call.arguments.length;
 
   return matches && isInStoryTestCode(path)
@@ -123,11 +123,11 @@ function kindOf(call: CallNode, path: NodePath): InteractionKind | undefined {
     : undefined;
 }
 
-/** A name chain: an identifier, or a member chain that starts at one, such as `Stories.Other`. */
-function isNameChain(node: types.Node): boolean {
+/** An identifier, or a member chain that starts at one, computed or optional members included, such as `Stories.Other`, `Stories['Other']` or `Stories?.Other`. */
+function startsAtIdentifier(node: types.Node): boolean {
   return (
     node.type === 'Identifier' ||
-    (node.type === 'MemberExpression' && isNameChain(node.object))
+    (isMember(node) && startsAtIdentifier(node.object))
   );
 }
 
@@ -440,14 +440,14 @@ function functionBinding(path: NodePath): Binding | undefined {
   return name === undefined ? undefined : parentPath?.scope.getBinding(name);
 }
 
-/** `<Story>.play`, where `<Story>` is a name chain such as `Other` or `Stories.Other`. */
+/** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other` or `Stories.Other`. */
 function isStoryPlay(argument: types.Node | undefined): boolean {
   const node =
     argument === undefined ? undefined : withoutTypeWrappers(argument);
 
   return (
     node?.type === 'MemberExpression' &&
-    isNameChain(node.object) &&
+    startsAtIdentifier(node.object) &&
     nameOf(node.property) === 'play'
   );
 }

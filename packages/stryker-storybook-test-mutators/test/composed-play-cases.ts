@@ -18,6 +18,20 @@ export const composedPlayCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'composed-play-computed-member',
+    title:
+      "a composed play through a computed member, Stories['Other'].play(context), is removed",
+    source: `import * as Stories from './Other.stories';\nexport const Story = {\n  play: async (context) => {\n    await Stories['Other'].play(context);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'composed-play-optional-member',
+    title:
+      'a composed play through an optional member, Stories?.Other.play(context), is removed',
+    source: `import * as Stories from './Other.stories';\nexport const Story = {\n  play: async (context) => {\n    await Stories?.Other.play(context);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'composed-run',
     title: "a CSF factory story's run() is removed",
     source: `export const Other = meta.story({});\nexport const Story = meta.story({\n  play: async () => {\n    await Other.run();\n  },\n});\n`,
