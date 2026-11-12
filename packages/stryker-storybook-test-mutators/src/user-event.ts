@@ -1,6 +1,4 @@
 import type { NodePath, types } from '@babel/core';
-import { field, isRecord } from '@layzee/storybook-core';
-
 import { awaited, type Binding, bindingOf, keyName, nameOf } from './nodes.ts';
 import { isInStoryTestCode, perFile } from './story-file.ts';
 
@@ -157,14 +155,28 @@ function takesUserEventAs(pattern: types.ObjectPattern, name: string): boolean {
   );
 }
 
-/** A play's context parameter, not destructured. */
+/** A play's context parameter, not destructured, that the play only reads members of. */
 function isPlayContext(node: types.Node, path: NodePath): boolean {
   const binding = bindingOf(node, path.scope);
 
   return (
     binding?.kind === 'param' &&
     binding.path.isIdentifier() &&
+    binding.referencePaths.every(isMemberObject) &&
     isPlayParameter(binding)
+  );
+}
+
+/** `<path>.<name>` or `<path>?.<name>`. */
+function isMemberObject(path: NodePath): boolean {
+  const { parentPath } = path;
+
+  return (
+    path.key === 'object' &&
+    parentPath !== null &&
+    (parentPath.isMemberExpression() ||
+      parentPath.isOptionalMemberExpression()) &&
+    !parentPath.node.computed
   );
 }
 
@@ -188,23 +200,84 @@ function isPlayParameter(binding: Binding): boolean {
     keyName(key) === 'play' &&
     isInStoryTestCode(parameter) &&
     !isInStoryTestCode(play) &&
-    !writesUserEvent(parameter)
+    !changesUserEvent(parameter)
   );
 }
 
-/** Whether the file assigns a `.userEvent` member anywhere, as a play or a hook given the play's context may replace the user-event that Storybook sets there. */
-export const writesUserEvent = perFile(
-  (program) =>
-    nodesIn(program).some(
-      (node) =>
-        field(node, 'type') === 'AssignmentExpression' &&
-        field(node, 'left', 'property', 'name') === 'userEvent',
-    ),
-  true,
-);
+/** Whether the file names `userEvent` anywhere it may change it, as a play or a hook given the play's context may replace the user-event that Storybook sets there. */
+export const changesUserEvent = perFile((program) => {
+  let changes = false;
 
-function nodesIn(node: object): readonly unknown[] {
-  return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
+  program.traverse({
+    Identifier(path) {
+      if (path.node.name === 'userEvent' && !readsUserEvent(path)) {
+        changes = true;
+        path.stop();
+      }
+    },
+    StringLiteral(path) {
+      if (path.node.value === 'userEvent') {
+        changes = true;
+        path.stop();
+      }
+    },
+  });
+
+  return changes;
+}, true);
+
+/** `userEvent` as an import's name, a key or binding in a parameter's destructuring, or a `userEvent` or `<x>.userEvent` that is only a method call's receiver or a side of a choice. */
+function readsUserEvent(path: NodePath<types.Identifier>): boolean {
+  const { parentPath } = path;
+
+  if (parentPath === null) {
+    return false;
+  }
+
+  if (
+    parentPath.isImportSpecifier() ||
+    parentPath.isImportDefaultSpecifier() ||
+    (parentPath.isObjectProperty() &&
+      parentPath.parentPath.isObjectPattern() &&
+      parentPath.parentPath.listKey === 'params')
+  ) {
+    return true;
+  }
+
+  const read =
+    (parentPath.isMemberExpression() ||
+      parentPath.isOptionalMemberExpression()) &&
+    path.key === 'property' &&
+    !parentPath.node.computed
+      ? parentPath
+      : path.isReferencedIdentifier()
+        ? path
+        : undefined;
+
+  return (
+    read !== undefined && (isMethodCallReceiver(read) || isChoiceSide(read))
+  );
+}
+
+/** `<path>.<method>(...)`, optional or not. */
+function isMethodCallReceiver(path: NodePath): boolean {
+  return isMemberObject(path) && path.parentPath?.key === 'callee';
+}
+
+/** A side of `<test> ? <a> : <b>` given to a local that is only a method call's receiver. */
+function isChoiceSide(path: NodePath): boolean {
+  const choice = path.parentPath;
+  const declarator = choice?.parentPath;
+  const local = declarator?.isVariableDeclarator()
+    ? bindingOf(declarator.node.id, declarator.scope)
+    : undefined;
+
+  return (
+    choice?.isConditionalExpression() === true &&
+    path.key !== 'test' &&
+    local !== undefined &&
+    local.referencePaths.every(isMethodCallReceiver)
+  );
 }
 
 /** `import('vitest/browser')` or its Vitest 3 name, an `ImportExpression` as Babel 8 parses it. */

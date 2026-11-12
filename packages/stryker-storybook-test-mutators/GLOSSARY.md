@@ -76,13 +76,17 @@ A user-event receiver that the file proves is user-event 14, whose `type` clicks
 from `storybook/test` or `@testing-library/user-event`, or the default import of `@testing-library/user-event`, under
 any local name; the `userEvent` of a play's context, destructured in its first parameter or read as
 `<context>.userEvent` or `<context>?.userEvent` on that parameter itself, where the play is a `play` property or
-method given inline that is story test code and inside none, such as the meta's play or a CSF factory story's, the
-file never reassigns that parameter, and the file writes no `.userEvent` member anywhere; and a `setup()` of one of
-these, or a local that is a choice between them, with its names read where the local is given that value. Any other
-receiver may be Vitest browser's userEvent, whose `type` does not click: another import, a `userEvent` the file does
-not bind, the `userEvent` of another object, a call result or another function's parameter, a `.test()` function's or
-a step callback's context, the context of a play given by its name or assigned as `Story.play`, and every play context
-in a file that writes a `.userEvent` member, as a `beforeEach` or the play may replace the context's. The play
+method given inline that is story test code and inside none, such as the meta's play or a CSF factory story's. The
+file must also only read that context: it never reassigns the parameter or the local it destructures, it uses a
+context that is not destructured only as `<context>.<name>`, and it names `userEvent` only in an import, in a
+parameter's destructuring, or as `userEvent` or `<x>.userEvent` that is a method call's receiver or a side of a choice
+given to a local that is only ever a method call's receiver, with no `'userEvent'` string. A `setup()` of one of these,
+or a local that is a choice between them, is proven too, with its names read where the local is given that value. Any
+other receiver may be Vitest browser's userEvent, whose `type` does not click: another import, a `userEvent` the file
+does not bind, the `userEvent` of another object, a call result or another function's parameter, a `.test()`
+function's or a step callback's context, the context of a play given by its name or assigned as `Story.play`, a play
+context the play passes on or reads with a computed member, and every play context in a file that names `userEvent`
+any other way, as a `beforeEach` or the play may replace the context's userEvent or its methods. The play
 context's proof rests on Storybook 10.6.5, which sets it to user-event 14's `setup()` and runs the `beforeEach` hooks
 on the same context before the play, as the default global's proof rests on Storybook's initial values; a play that
 other code calls with a context of its own is not read.

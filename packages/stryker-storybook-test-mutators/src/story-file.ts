@@ -7,7 +7,7 @@ import { csfShapes } from '@layzee/storybook-core';
  * switch.
  */
 export function perFile<T>(
-  read: (program: types.Program) => T,
+  read: (program: NodePath<types.Program>) => T,
   outsideProgram: T,
 ): (path: NodePath) => T {
   const byProgram = new WeakMap<object, T>();
@@ -17,7 +17,7 @@ export function perFile<T>(
       ? path
       : path.findParent((parent) => parent.isProgram());
 
-    if (program === null || program.node.type !== 'Program') {
+    if (program === null || !program.isProgram()) {
       return outsideProgram;
     }
 
@@ -27,7 +27,7 @@ export function perFile<T>(
       return cached;
     }
 
-    const value = read(program.node);
+    const value = read(program);
 
     byProgram.set(program.node, value);
 
@@ -36,7 +36,7 @@ export function perFile<T>(
 }
 
 const storyTestCode = perFile(
-  (program): ReadonlySet<unknown> => csfShapes(program).testCode,
+  (program): ReadonlySet<unknown> => csfShapes(program.node).testCode,
   new Set(),
 );
 
