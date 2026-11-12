@@ -27,15 +27,15 @@ export const targetCases: readonly Case[] = [
     expect: [[target, "'Cancel'"]],
   },
   {
-    id: 'target-skip-negative-only',
+    id: 'target-negative-only',
     title:
-      'an interaction whose checks before the next interaction are all negative makes no mutant',
+      'the target of an interaction whose checks before the next interaction are all negative becomes another target in the file',
     source: inPlay(
       "await expect(canvas.getByRole('tab', { name: 'Profile' })).toBeVisible();",
       "await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));",
       'await expect(args.onChange).not.toHaveBeenCalled();',
     ),
-    expect: [],
+    expect: [[target, "'Profile'"]],
   },
   {
     id: 'target-text',

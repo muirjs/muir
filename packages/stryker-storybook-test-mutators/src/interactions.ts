@@ -1,6 +1,6 @@
 import type { NodePath, types } from '@babel/core';
 
-import { checksIn, hasCheck, isNegative } from './checks.ts';
+import { hasCheck } from './checks.ts';
 import type { BabelTypes } from './mutator.ts';
 import {
   awaited,
@@ -158,13 +158,12 @@ function isStepBody(path: NodePath): path is NodePath<types.Expression> {
   );
 }
 
-/** An interaction that makes no mutant: one in a story hook, one with following checks whose checks before the next interaction are all negative, a click that a type of its target repeats, or a type that a later clear undoes. */
+/** An interaction that makes no mutant: one in a story hook, a click that a type of its target repeats, or a type that a later clear undoes. */
 export function isSkipped(interaction: Interaction, t: BabelTypes): boolean {
   const { path } = interaction;
 
   return (
     path.findParent(isHook) !== null ||
-    hasOnlyNegativeChecks(path) ||
     isRepeatedByNext(interaction, t) ||
     isClearedLater(interaction, t)
   );
@@ -253,19 +252,7 @@ export function firstCheckAfter(path: NodePath): NodePath | undefined {
   return statementsBefore(nextSiblings(path), holdsInteraction).find(hasCheck);
 }
 
-/** Whether `path` has a following check and its checks before the next interaction are all negative, both looked for past the end of its block and of a step callback that holds it. */
-function hasOnlyNegativeChecks(path: NodePath): boolean {
-  const later = laterStatements(path);
-
-  return (
-    statementsBefore(later, holdsInteraction).some(hasCheck) &&
-    statementsBefore(later, isNextInteraction)
-      .flatMap(checksIn)
-      .every(isNegative)
-  );
-}
-
-/** Whether `statement` ends the checks before the next interaction: it is an interaction, or a `step(...)` whose callback holds one. */
+/** Whether `statement` is an interaction, or a `step(...)` whose callback holds one. */
 function isNextInteraction(statement: NodePath): boolean {
   const { node } = statement;
 
@@ -327,26 +314,6 @@ function statementsBefore(
   const end = statements.findIndex(ends);
 
   return end === -1 ? statements : statements.slice(0, end);
-}
-
-/** The statements that run after `path` in its function, and after the step call when that function is a step callback. */
-function laterStatements(path: NodePath): readonly NodePath[] {
-  const siblings = nextSiblings(path);
-  const parent = path.parentPath;
-
-  if (parent === null) {
-    return siblings;
-  }
-
-  if (!parent.isFunction()) {
-    return [...siblings, ...laterStatements(parent)];
-  }
-
-  const owner = parent.parentPath;
-
-  return owner !== null && isStepCall(owner.node)
-    ? [...siblings, ...laterStatements(owner)]
-    : siblings;
 }
 
 /** The statements after `path` in its block. */

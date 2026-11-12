@@ -141,13 +141,18 @@ export const repeatCases: readonly Case[] = [
     expect: [],
   },
   {
-    id: 'repeat-skip-negative-only',
+    id: 'repeat-negative-only',
     title:
-      'a click whose checks before the next interaction are all negative makes no mutant',
+      'a click whose checks before the next interaction are all negative runs twice',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',
     ),
-    expect: [],
+    expect: [
+      [
+        repeat,
+        '{ await userEvent.click(button); await userEvent.click(button); }',
+      ],
+    ],
   },
 ];

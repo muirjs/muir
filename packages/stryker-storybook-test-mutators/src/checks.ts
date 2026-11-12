@@ -38,7 +38,7 @@ interface Check {
 }
 
 /** The `expect(...)` checks in `path`. */
-export function checksIn(path: NodePath): readonly Check[] {
+function checksIn(path: NodePath): readonly Check[] {
   const checks: Check[] = [];
 
   path.traverse({
@@ -67,7 +67,7 @@ function checkOf(expectCall: NodePath): Check {
   };
 }
 
-export function isNegative(check: Check): boolean {
+function isNegative(check: Check): boolean {
   return check.chain.includes('not');
 }
 

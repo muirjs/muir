@@ -159,14 +159,14 @@ export const clickFocusCases: readonly Case[] = [
     expect: [[clickFocus, 'await email.focus();']],
   },
   {
-    id: 'click-focus-skip-negative-only',
+    id: 'click-focus-negative-only',
     title:
-      'a click whose checks before the next interaction are all negative makes no mutant, as focusing also leaves them true',
+      'a click whose checks before the next interaction are all negative becomes a focus of its target',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',
     ),
-    expect: [],
+    expect: [[clickFocus, 'await button.focus();']],
   },
   {
     id: 'click-focus-skip-click-before-type',

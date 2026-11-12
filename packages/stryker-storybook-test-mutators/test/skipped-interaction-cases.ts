@@ -63,14 +63,14 @@ const hookCases: readonly Case[] = [
 
 const negativeOnlyCases: readonly Case[] = [
   {
-    id: 'skip-negative-only',
+    id: 'negative-only',
     title:
-      'an interaction whose checks before the next interaction are all negative makes no mutant',
+      'an interaction whose checks before the next interaction are all negative is removed',
     source: inPlay(
       'await userEvent.click(button);',
       'await expect(args.onClick).not.toHaveBeenCalled();',
     ),
-    expect: [],
+    expect: [[interaction, ';']],
   },
   {
     id: 'negative-and-positive',
@@ -85,7 +85,7 @@ const negativeOnlyCases: readonly Case[] = [
   {
     id: 'computed-expect-not-negative',
     title:
-      'an expect(...) given as the key of a computed member rather than called through a matcher chain is no negative check, so the interaction is removed',
+      'an interaction followed by an expect(...) given as the key of a computed member is removed',
     source: inPlay(
       'await userEvent.click(button);',
       'await matchers[expect(args.onClick)].not;',
@@ -93,34 +93,42 @@ const negativeOnlyCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
-    id: 'negative-only-until-next-interaction',
-    title:
-      'the checks that decide a skip end at the next interaction, so only the last of two clicks is skipped',
+    id: 'negative-only-two-clicks',
+    title: 'both of two clicks followed only by a negative check are removed',
     source: inPlay(
       'await userEvent.click(first);',
       'await userEvent.click(second);',
       'await expect(args.onClick).not.toHaveBeenCalled();',
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
-    id: 'negative-only-until-step-interaction',
+    id: 'negative-only-before-step-interaction',
     title:
-      'the checks that decide a skip end at a step holding an interaction, so only the click in the step is skipped',
+      'a click, and a click in a step after it, followed only by a negative check are both removed',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      await userEvent.click(second);\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
-    id: 'negative-only-until-context-step-interaction',
+    id: 'negative-only-before-context-step-interaction',
     title:
-      'the checks that decide a skip end at a context.step holding an interaction, so only the click in the step is skipped',
+      'a click, and a click in a context.step after it, followed only by a negative check are both removed',
     source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(first);\n    await context.step('Second', async () => {\n      await context.userEvent.click(second);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
-    id: 'negative-only-until-step-defining-interaction',
+    id: 'negative-only-before-step-defining-interaction',
     title:
-      'the checks that decide a skip end at a step that defines a function holding an interaction, as the step may call it',
+      'a click, and a click in a function a step defines, followed only by a negative check are both removed',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(first);\n    await step('Second', async () => {\n      const clickSecond = async () => {\n        await userEvent.click(second);\n      };\n      await clickSecond();\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
     expect: [
       [interaction, ';'],
@@ -128,9 +136,9 @@ const negativeOnlyCases: readonly Case[] = [
     ],
   },
   {
-    id: 'negative-only-until-if-with-interaction',
+    id: 'negative-only-before-if-with-interaction',
     title:
-      'the checks that decide a skip end at an if statement that holds an interaction, so only the click in the if is skipped',
+      'a click, and a click in an if statement after it, followed only by a negative check are both removed',
     source: inPlay(
       'await userEvent.click(button);',
       'if (open) {',
@@ -138,12 +146,15 @@ const negativeOnlyCases: readonly Case[] = [
       '}',
       'await expect(args.onClick).not.toHaveBeenCalled();',
     ),
-    expect: [[interaction, ';']],
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'positive-after-if-with-interaction',
     title:
-      'a positive check after an if statement that holds an interaction keeps an earlier interaction followed by a negative check, as the if may not run',
+      'an interaction followed by a negative check, and one in an if statement followed by a positive check, are both removed',
     source: inPlay(
       'await userEvent.click(a);',
       'await expect(args.onA).not.toHaveBeenCalled();',
@@ -160,7 +171,7 @@ const negativeOnlyCases: readonly Case[] = [
   {
     id: 'positive-after-function-with-interaction',
     title:
-      'a positive check after a function defined with an interaction in it keeps an earlier interaction followed by a negative check',
+      'an interaction followed by a negative check, and one in a function defined after it, are both removed',
     source: inPlay(
       'await userEvent.click(a);',
       'await expect(args.onA).not.toHaveBeenCalled();',
@@ -177,7 +188,7 @@ const negativeOnlyCases: readonly Case[] = [
   {
     id: 'positive-after-function-declaration-with-interaction',
     title:
-      'a positive check after a function declaration with an interaction in it keeps an earlier interaction followed by a negative check',
+      'an interaction followed by a negative check, and one in a function declared after it, are both removed',
     source: inPlay(
       'await userEvent.click(a);',
       'await expect(args.onA).not.toHaveBeenCalled();',
@@ -194,7 +205,7 @@ const negativeOnlyCases: readonly Case[] = [
   {
     id: 'positive-in-wait-for-with-interaction',
     title:
-      'a positive check in a waitFor callback that holds an interaction keeps an earlier interaction followed by a negative check',
+      'an interaction followed by a negative check, and one in a waitFor callback after it, are both removed',
     source: inPlay(
       'await userEvent.click(a);',
       'await expect(args.onA).not.toHaveBeenCalled();',
@@ -209,9 +220,9 @@ const negativeOnlyCases: readonly Case[] = [
     ],
   },
   {
-    id: 'negative-only-ends-at-local-function',
+    id: 'negative-only-after-local-function',
     title:
-      'the checks that decide a skip end with a function that is no step callback, so negative checks after it skip nothing',
+      'an interaction in a local function called before a negative check is removed',
     source: inPlay(
       'const open = async () => {',
       '  await userEvent.click(button);',
@@ -224,23 +235,23 @@ const negativeOnlyCases: readonly Case[] = [
   {
     id: 'negative-only-after-step',
     title:
-      'an interaction in a step whose checks before the next interaction in the play are all negative makes no mutant',
+      'an interaction in a step whose checks before the next interaction in the play are all negative is removed',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Click', async () => {\n      await userEvent.click(button);\n    });\n    await expect(args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
-    expect: [],
+    expect: [[interaction, ';']],
   },
   {
     id: 'negative-only-after-context-step',
     title:
-      'an interaction in a context.step whose checks before the next interaction in the play are all negative makes no mutant',
+      'an interaction in a context.step whose checks before the next interaction in the play are all negative is removed',
     source: `export const Story = {\n  play: async (context) => {\n    await context.step('Click', async () => {\n      await context.userEvent.click(button);\n    });\n    await expect(context.args.onClick).not.toHaveBeenCalled();\n  },\n};\n`,
-    expect: [],
+    expect: [[interaction, ';']],
   },
   {
-    id: 'skip-negative-only-in-step',
+    id: 'negative-only-in-step',
     title:
-      'an interaction followed only by a step of negative checks makes no mutant',
+      'an interaction followed only by a step of negative checks is removed',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await userEvent.click(button);\n    await step('Check', async () => {\n      await expect(args.onClick).not.toHaveBeenCalled();\n    });\n  },\n};\n`,
-    expect: [],
+    expect: [[interaction, ';']],
   },
 ];
 
