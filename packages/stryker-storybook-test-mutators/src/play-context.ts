@@ -172,10 +172,15 @@ export const contextsOnlyRead = perFile((program) => {
     },
     CallExpression(path) {
       const name = calleeName(path.node.callee, path.scope);
-      const [target] = path.node.arguments;
 
       check(path, name !== 'useStoryContext' || isContextRead(path));
-      check(path, name !== 'assign' || target?.type === 'ObjectExpression');
+      check(
+        path,
+        name !== 'assign' ||
+          path.node.arguments.every((argument) =>
+            isHeldObject(argument, path.scope),
+          ),
+      );
     },
     ObjectMethod(path) {
       check(
@@ -205,8 +210,12 @@ export const contextsOnlyRead = perFile((program) => {
   return onlyRead;
 }, false);
 
-/** A local the file never reassigns whose value is an object literal with no spread of its own, so the file holds every hook it gives. */
+/** An object literal with no spread of its own, or a local the file never reassigns whose value is one, so the file holds every hook it gives. */
 function isHeldObject(argument: types.Node, scope: NodePath['scope']): boolean {
+  if (argument.type === 'ObjectExpression') {
+    return spreadsNothing(argument);
+  }
+
   const binding = bindingOf(argument, scope);
   const declaration = binding?.path.node;
 
@@ -214,9 +223,13 @@ function isHeldObject(argument: types.Node, scope: NodePath['scope']): boolean {
     binding?.constantViolations.length === 0 &&
     declaration?.type === 'VariableDeclarator' &&
     declaration.init?.type === 'ObjectExpression' &&
-    declaration.init.properties.every(
-      (property) => property.type !== 'SpreadElement',
-    )
+    spreadsNothing(declaration.init)
+  );
+}
+
+function spreadsNothing(object: types.ObjectExpression): boolean {
+  return object.properties.every(
+    (property) => property.type !== 'SpreadElement',
   );
 }
 

@@ -267,6 +267,13 @@ export const clickBeforeTypeCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'skip-assigned-local-meta-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, makes no mutant when the meta is Object.assign of a fresh object and a local object whose hooks only read their contexts",
+    source: `const sharedMeta = {\n  beforeEach: ({ args }) => {\n    args.label;\n  },\n};\nexport default Object.assign({}, sharedMeta);\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'skip-cast-import-click-before-type',
     title:
       "a click directly before a type on the same target, both on userEvent imported from 'storybook/test' under a type assertion, makes no mutant, as the assertion does not change the receiver",

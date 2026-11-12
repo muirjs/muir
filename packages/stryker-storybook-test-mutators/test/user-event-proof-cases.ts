@@ -444,6 +444,16 @@ export const userEventProofCases: readonly Case[] = [
     ],
   },
   {
+    id: 'assigned-imported-hooks-onto-fresh-meta-click-before-type',
+    title:
+      "a click directly before a type on the same target, both on the play context's userEvent, is removed when the meta is Object.assign of a fresh object and an imported one, as the story file cannot show the hooks it holds",
+    source: `import { sharedHooks } from './support';\nexport default Object.assign({}, sharedHooks);\nexport const Story = {\n  play: async ({ userEvent }) => {\n    await userEvent.click(input);\n    await userEvent.type(input, 'a');\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'required-written-click-before-type',
     title:
       "a click directly before a type on the same target, both on userEvent imported from 'storybook/test', is removed when the file also loads that module with require() and writes its userEvent's type",
