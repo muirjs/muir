@@ -15,7 +15,7 @@ import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 
 interface NamesReadElsewhere {
-  readonly referencedElsewhere: ReadonlySet<unknown>;
+  readonly usedOutsideReadForms: ReadonlySet<unknown>;
   readonly sharingWithWritten: ReadonlySet<unknown>;
   readonly written: ReadonlySet<unknown>;
   readonly readByOtherObjects: ReadonlySet<unknown>;
@@ -45,7 +45,7 @@ export function namesReadElsewhere(
   );
 
   return {
-    referencedElsewhere: new Set(referenced),
+    usedOutsideReadForms: new Set(referenced),
     sharingWithWritten: new Set(
       reaches
         .filter(({ from }) => written.has(from))

@@ -218,7 +218,7 @@ export function csfFile(
     objectOf(meta, bindings).map((object) => ({ object, owner })),
   );
   const {
-    referencedElsewhere,
+    usedOutsideReadForms,
     sharingWithWritten,
     written,
     readByOtherObjects,
@@ -239,7 +239,7 @@ export function csfFile(
       (name) => list(index?.get(name)?.tests),
       (local) =>
         metaBindings.some(([name]) => written.has(name)) ||
-        referencedElsewhere.has(local) ||
+        usedOutsideReadForms.has(local) ||
         sharingWithWritten.has(local),
     ),
     written,
