@@ -31,6 +31,14 @@ export function nameOf(node: types.Node): string | undefined {
   return node.type === 'Identifier' ? node.name : undefined;
 }
 
+/** The property name of `<x>.<name>` or `<x>?.<name>`. */
+export function memberName(node: types.Node): string | undefined {
+  return node.type === 'MemberExpression' ||
+    node.type === 'OptionalMemberExpression'
+    ? nameOf(node.property)
+    : undefined;
+}
+
 /** The binding that the identifier `node` refers to in `scope`. */
 export function bindingOf(
   node: types.Node,
