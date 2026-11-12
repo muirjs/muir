@@ -1,16 +1,12 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, fnStoryFile, inPlay } from './support/case.ts';
 
 const outcome = 'LzStorybookSpyStubOutcome';
-
-function storyFile(...lines: readonly string[]): string {
-  return `import { fn } from 'storybook/test';\n\n${lines.join('\n')}\n`;
-}
 
 export const spyStubOutcomeCases: readonly Case[] = [
   {
     id: 'spy-stub-outcome-resolved',
     title: 'a resolved stub rejects with an Error instead',
-    source: storyFile(
+    source: fnStoryFile(
       'export const Story = {',
       '  args: { save: fn().mockResolvedValue({ id: 1 }) },',
       '};',
@@ -20,7 +16,7 @@ export const spyStubOutcomeCases: readonly Case[] = [
   {
     id: 'spy-stub-outcome-rejected',
     title: 'a rejected stub resolves to undefined instead',
-    source: storyFile(
+    source: fnStoryFile(
       'export const Story = {',
       "  args: { save: fn().mockRejectedValue(new Error('offline')) },",
       '};',
@@ -30,7 +26,7 @@ export const spyStubOutcomeCases: readonly Case[] = [
   {
     id: 'spy-stub-outcome-once',
     title: 'the outcome mutant of a Once stub stays a Once stub',
-    source: storyFile(
+    source: fnStoryFile(
       'export const Story = {',
       '  args: { save: fn().mockResolvedValueOnce(1) },',
       '};',

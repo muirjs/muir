@@ -1,14 +1,9 @@
-import type { Case } from './support/case.ts';
-
-const storyGlobals = 'LzStorybookStoryGlobals';
-
-function storyFile(...lines: readonly string[]): string {
-  return `export default { title: 'Probe' };\n\n${lines.join('\n')}\n`;
-}
-
-function factoryFile(...lines: readonly string[]): string {
-  return `import preview from '../.storybook/preview';\n\nconst meta = preview.meta({ title: 'Probe' });\n\n${lines.join('\n')}\n`;
-}
+import {
+  type Case,
+  factoryFile,
+  storyFile,
+  storyGlobals,
+} from './support/case.ts';
 
 export const storyGlobalsCases: readonly Case[] = [
   {

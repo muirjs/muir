@@ -1,18 +1,10 @@
-import type { Case } from './support/case.ts';
-
-const storyGlobals = 'LzStorybookStoryGlobals';
-
-function metaFile(meta: string, ...lines: readonly string[]): string {
-  return `export default ${meta};\n\n${lines.join('\n')}\n`;
-}
-
-function storyFile(...lines: readonly string[]): string {
-  return metaFile("{ title: 'Probe' }", ...lines);
-}
-
-function factoryFile(...lines: readonly string[]): string {
-  return `import preview from '../.storybook/preview';\n\nconst meta = preview.meta({ title: 'Probe' });\n\n${lines.join('\n')}\n`;
-}
+import {
+  type Case,
+  factoryFile,
+  metaFile,
+  storyFile,
+  storyGlobals,
+} from './support/case.ts';
 
 export const storyGlobalsDefaultCases: readonly Case[] = [
   {
@@ -85,12 +77,10 @@ export const storyGlobalsDefaultCases: readonly Case[] = [
     id: 'story-globals-viewport-over-parameters',
     title:
       "a responsive viewport global under the meta's viewport parameters gets a mutant, as setViewport falls back to their defaultViewport",
-    source: [
-      "export default { title: 'Probe', parameters: { viewport: { defaultViewport: 'mobile1' } } };",
-      '',
+    source: metaFile(
+      "{ title: 'Probe', parameters: { viewport: { defaultViewport: 'mobile1' } } }",
       "export const Story = { globals: { viewport: { value: 'responsive' } }, play: async () => {} };",
-      '',
-    ].join('\n'),
+    ),
     expect: [[storyGlobals, '{}']],
   },
   {
@@ -127,12 +117,10 @@ export const storyGlobalsDefaultCases: readonly Case[] = [
     id: 'story-globals-meta-viewport-over-story-parameters',
     title:
       "a responsive viewport global in the meta gets a mutant when a story it runs for sets viewport parameters, which merge over the meta's",
-    source: [
-      "export default { title: 'Probe', globals: { viewport: { value: 'responsive' } } };",
-      '',
+    source: metaFile(
+      "{ title: 'Probe', globals: { viewport: { value: 'responsive' } } }",
       "export const Story = { parameters: { viewport: { defaultViewport: 'mobile1' } }, play: async () => {} };",
-      '',
-    ].join('\n'),
+    ),
     expect: [[storyGlobals, '{}']],
   },
   {
@@ -376,15 +364,13 @@ export const storyGlobalsDefaultCases: readonly Case[] = [
     id: 'story-globals-default-over-meta',
     title:
       "a story's default value of a global the meta sets gets a mutant, as removing it brings the meta's value back",
-    source: [
-      "export default { title: 'Probe', globals: { outline: true, viewport: { value: 'mobile1' } } };",
-      '',
+    source: metaFile(
+      "{ title: 'Probe', globals: { outline: true, viewport: { value: 'mobile1' } } }",
       'export const Story = {',
       "  globals: { outline: false, viewport: { value: 'responsive' } },",
       '  play: async () => {},',
       '};',
-      '',
-    ].join('\n'),
+    ),
     expect: [
       [storyGlobals, '{ outline: false }'],
       [storyGlobals, '{ outline: true }'],
