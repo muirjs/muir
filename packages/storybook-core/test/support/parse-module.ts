@@ -7,6 +7,6 @@ export function programOf(...lines: readonly string[]) {
   }).program;
 }
 
-export function bodyOf(...lines: readonly string[]): readonly unknown[] {
+export function bodyOf(...lines: readonly string[]) {
   return programOf(...lines).body;
 }

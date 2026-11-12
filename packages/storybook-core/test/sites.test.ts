@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { sitesOf } from '../src/sites.ts';
-import { bodyOf } from './support/body-of.ts';
+import { bodyOf } from './support/parse-module.ts';
 
 describe('sitesOf', () => {
   it('gives no site for args that are not an object literal, such as the result of a call', () => {

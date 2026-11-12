@@ -8,7 +8,7 @@ import {
   playedStories,
   unknownOverAPlay,
 } from '../src/played-stories.ts';
-import { bodyOf } from './support/body-of.ts';
+import { bodyOf } from './support/parse-module.ts';
 
 function played(...lines: readonly string[]) {
   const body = bodyOf(...lines);

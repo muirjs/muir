@@ -6,7 +6,7 @@ import { parse } from '@babel/parser';
 import { csfFile, csfShapes, topLevelBindings } from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
 import { sitesOf } from '../src/sites.ts';
-import { bodyOf, programOf } from './support/body-of.ts';
+import { bodyOf, programOf } from './support/parse-module.ts';
 
 function fileOf(...lines: readonly string[]) {
   const body = bodyOf(...lines);
@@ -202,7 +202,7 @@ describe('csfShapes', () => {
       "A.test('t', () => {});",
       "B.test('t', () => {});",
     );
-    const [, , , , testOfA, testOfB] = program.body;
+    const [testOfA, testOfB] = program.body.slice(-2);
     const shapes = csfShapes(program);
 
     assert.deepEqual(
@@ -220,7 +220,7 @@ describe('csfShapes', () => {
       'export const A = meta.story({});',
       "A.test('t', function () {}, {});",
     );
-    const [, , , testOfA] = program.body;
+    const [testOfA] = program.body.slice(-1);
 
     assert.equal(
       csfShapes(program).testCode.has(testFunctionOf(testOfA)),
@@ -254,7 +254,7 @@ describe('csfShapes', () => {
         "A.test('plain', () => {});\n",
       { sourceType: 'module' },
     ).program;
-    const [, , , withOptions, plain] = program.body;
+    const [withOptions, plain] = program.body.slice(-2);
     const shapes = csfShapes(program);
 
     it('lists only the statement whose call has options', () => {

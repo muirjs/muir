@@ -15,7 +15,7 @@ import {
   type Layer,
 } from '../src/resolved-values.ts';
 import { extendLevels } from '../src/story-layers.ts';
-import { bodyOf } from './support/body-of.ts';
+import { bodyOf } from './support/parse-module.ts';
 
 function rootLayers(
   bindings: ReadonlyMap<string, unknown>,
