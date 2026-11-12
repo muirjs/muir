@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { parse } from '@babel/parser';
 
 import { topLevelBindings } from '../src/csf.ts';
+import { isRecord } from '../src/is-record.ts';
 import { field, list } from '../src/node-field.ts';
 import { objectValue, unknownValue } from '../src/object-value.ts';
 import {
@@ -43,6 +44,12 @@ function storyGlobals(source: readonly string[]): readonly unknown[] {
   );
 }
 
+function localeOf(globals: unknown): unknown {
+  return isRecord(globals)
+    ? field(objectValue(globals, 'locale'), 'value')
+    : globals;
+}
+
 describe('extendLevels', () => {
   it("gives each layer's last value of a key, a spread object's in place of the spread, and the .extend() base's after", () => {
     assert.deepEqual(
@@ -52,7 +59,7 @@ describe('extendLevels', () => {
         "const shared = { globals: { locale: 'de' } };",
         "export const A = meta.story({ globals: { locale: 'en' } });",
         "export const B = A.extend({ globals: { locale: 'fr' }, ...shared });",
-      ]).map((globals) => field(objectValue(globals, 'locale'), 'value')),
+      ]).map(localeOf),
       ['de', 'en'],
     );
   });
@@ -62,7 +69,7 @@ describe('extendLevels', () => {
       storyGlobals([
         "const Common = { story: { globals: { locale: 'de' } } };",
         'export const B = { ...Common.story };',
-      ]).map((globals) => field(objectValue(globals, 'locale'), 'value')),
+      ]).map(localeOf),
       ['de'],
     );
   });

@@ -1,3 +1,4 @@
+import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import { objectValue, propertyKey, type LayerValue } from './object-value.ts';
 import { valuesOf, type Layer } from './resolved-values.ts';
@@ -24,7 +25,8 @@ const initialGlobals: ReadonlyMap<
         (layer) => valuesOf(layer, 'viewport')[0] === undefined,
       ) &&
       (viewportDefaults.includes(stringBooleanOrUndefinedOf(value)) ||
-        (field(value, 'type') === 'ObjectExpression' &&
+        (isRecord(value) &&
+          value['type'] === 'ObjectExpression' &&
           isDefaultViewportValue(objectValue(value, 'value')))),
   ],
   [
