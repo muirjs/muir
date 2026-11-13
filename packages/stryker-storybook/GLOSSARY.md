@@ -217,11 +217,10 @@ mutators' names) that start on one line and whose interaction has an interaction
 `LzStorybookAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
 holds the file and line, the shape, the reason, the fix, and a ready `// Stryker disable next-line` comment for the
 line above. The comment names a mutator only when every mutant of it placed on that line survived with that
-shape, since one comment disables them all. The reporter reads each interaction's kind, user-event origin and
-following checks with the `@layzee/storybook-core` interaction reader, on its own parse of the story file. The
-reporter takes the interactions from the `LzStorybookInteraction` mutants in the report, whatever their status, and
-gives no hint for a file that a `mutate` pattern with a line range names, where an interaction outside the range has
-no such mutant.
+shape, since one comment disables them all. The reporter finds the interactions with the `@layzee/storybook-core`
+interaction reader, on its own parse of the story file, and reads each one's kind, user-event origin and following
+checks there. A survivor belongs to the innermost interaction whose range holds its start, so a file that a `mutate`
+pattern with a line range names gets hints too.
 _Avoid_: interaction finding, interaction warning
 
 **Interaction shape**:

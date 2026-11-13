@@ -2,7 +2,7 @@
 
 `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`, `LzStorybookInteractionTarget`
 and `LzStorybookAssertionBefore` skip an interaction only when it stands in a `beforeEach` or `afterEach` (a site
-rule, which `isSkipped` decides). Every other interaction gets its mutants, including one that looks redundant: an
+rule, which the interaction reader's `inHook` decides). Every other interaction gets its mutants, including one that looks redundant: an
 interaction whose following checks are all negative, a click or hover directly before a `type` of the same target,
 and a `type` or `clear` that a later `clear` of the same target undoes. When such a mutant survives and the user
 judges it equivalent, they disable it with a reasoned `// Stryker disable next-line <mutator>: <reason>` comment,
