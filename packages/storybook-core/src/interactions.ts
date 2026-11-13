@@ -38,7 +38,8 @@ type Kind =
   | { readonly kind: 'composedPlay' | 'rawDom'; readonly method: string };
 
 export type Interaction = {
-  readonly statement: 'statement' | 'stepBody';
+  /** What the statement is: an expression statement, or the expression body of a step. */
+  readonly statement: 'expression' | 'stepBody';
   /** The statement: an expression statement, or the expression body of an arrow given to `step(...)`. Its identity is the join key. */
   readonly node: unknown;
   /** The call, without `await`, optional chaining or type wrappers. */
@@ -239,7 +240,7 @@ export function interactionsOf(
   /** What statement `node` is: an expression statement, or the expression body of an arrow given to `step(...)`. */
   const statementOf = (node: unknown): Interaction['statement'] | undefined => {
     if (field(node, 'type') === 'ExpressionStatement') {
-      return 'statement';
+      return 'expression';
     }
 
     const arrow = tree.parentOf(node);
@@ -259,7 +260,7 @@ export function interactionsOf(
     }
 
     const call = awaited(
-      statement === 'statement' ? field(node, 'expression') : node,
+      statement === 'expression' ? field(node, 'expression') : node,
     );
     const kind = kindOf(call);
     const args = list(field(call, 'arguments'));
