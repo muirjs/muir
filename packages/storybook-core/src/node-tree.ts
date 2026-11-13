@@ -51,7 +51,15 @@ export function childNodes(node: unknown): readonly Node[] {
 
 /** `node` and every node below it, outer before inner and in source order for each key. */
 export function descendants(node: unknown): readonly unknown[] {
-  return [node, ...childNodes(node).flatMap(descendants)];
+  const found: unknown[] = [];
+  const visit = (each: unknown): void => {
+    found.push(each);
+    childNodes(each).forEach(visit);
+  };
+
+  visit(node);
+
+  return found;
 }
 
 /** The expression inside `await` and the type wrappers around either. */
@@ -102,6 +110,27 @@ export function equivalent(first: unknown, second: unknown): boolean {
   );
 
   return [...keys].every((key) => equivalent(first[key], second[key]));
+}
+
+/** A string that nodes `equivalent` to each other share; nodes that share it may still differ where `equivalent` compares a value by identity. */
+export function shapeKey(node: unknown): string {
+  return JSON.stringify(node, (key, value: unknown) => {
+    if (positionKeys.has(key)) {
+      return undefined;
+    }
+
+    if (typeof value === 'bigint') {
+      return String(value);
+    }
+
+    return isRecord(value) && !Array.isArray(value)
+      ? Object.fromEntries(
+          Object.entries(value).sort(([first], [second]) =>
+            first < second ? -1 : 1,
+          ),
+        )
+      : value;
+  });
 }
 
 /** `node` and every object below it, positions included. */

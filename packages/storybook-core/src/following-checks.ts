@@ -7,6 +7,7 @@ import {
   isFunction,
   isNode,
   memberName,
+  shapeKey,
   type TreeIndex,
 } from './node-tree.ts';
 import type { FileScope } from './scope.ts';
@@ -173,12 +174,46 @@ export function targetOf(read: SiteRead): unknown {
   return awaited(read.args[0]);
 }
 
-/** The checks that follow the interaction at `read`: in the statements after it, up to the first that is or holds an interaction. `siteAt` gives the interaction whose site is a node. */
-export function followingChecksOf(
+type StatementsByShape = ReadonlyMap<string, readonly unknown[]>;
+
+/** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `siteAt` gives the interaction whose site is a node. */
+export function followingChecksReader(
+  tree: TreeIndex,
+  scope: FileScope,
+  siteAt: (node: unknown) => SiteRead | undefined,
+): (read: SiteRead) => FollowingChecks {
+  const statementsByFunction = new Map<unknown, StatementsByShape>();
+  /** The expression statements in the outermost function around `node`, by `shapeKey`, built once per function. */
+  const expressionStatementsAround = (node: unknown): StatementsByShape => {
+    const outermost = outermostFunction(node, tree);
+    const known = statementsByFunction.get(outermost);
+
+    if (known !== undefined) {
+      return known;
+    }
+
+    const statements = Map.groupBy(
+      descendants(outermost).filter(
+        (each) => field(each, 'type') === 'ExpressionStatement',
+      ),
+      shapeKey,
+    );
+
+    statementsByFunction.set(outermost, statements);
+
+    return statements;
+  };
+
+  return (read) =>
+    followingChecksOf(read, tree, scope, siteAt, expressionStatementsAround);
+}
+
+function followingChecksOf(
   read: SiteRead,
   tree: TreeIndex,
   scope: FileScope,
   siteAt: (node: unknown) => SiteRead | undefined,
+  expressionStatementsAround: (node: unknown) => StatementsByShape,
 ): FollowingChecks {
   const isSite = (node: unknown): boolean => siteAt(node) !== undefined;
   const later = laterStatements(read.node, tree);
@@ -203,6 +238,7 @@ export function followingChecksOf(
       read,
       tree,
       scope,
+      expressionStatementsAround(read.node),
     ),
   };
 }
@@ -213,28 +249,28 @@ function copyOf(
   read: SiteRead,
   tree: TreeIndex,
   scope: FileScope,
+  expressionStatements: StatementsByShape,
 ): unknown {
   return tree.listOf(statement) === tree.listOf(read.node) &&
     checksWhenRun(statement) &&
     !readsNameSetBetween(read.node, statement, scope) &&
-    !standsEarlier(statement, read.node, tree)
+    !standsEarlier(statement, read.node, expressionStatements)
     ? statement
     : undefined;
 }
 
-/** Whether an expression statement equivalent to `statement` ends by the start of `site`, in the outermost function around `site`; a node without positions stands nowhere. */
+/** Whether one of `expressionStatements`, those of the outermost function around `site`, is equivalent to `statement` and ends by the start of `site`; a node without positions stands nowhere. */
 function standsEarlier(
   statement: unknown,
   site: unknown,
-  tree: TreeIndex,
+  expressionStatements: StatementsByShape,
 ): boolean {
   const start = field(site, 'start');
 
-  return descendants(outermostFunction(site, tree)).some((node) => {
+  return (expressionStatements.get(shapeKey(statement)) ?? []).some((node) => {
     const end = field(node, 'end');
 
     return (
-      field(node, 'type') === 'ExpressionStatement' &&
       typeof end === 'number' &&
       typeof start === 'number' &&
       end <= start &&

@@ -2,7 +2,7 @@ import type { CsfShapes } from './csf.ts';
 import { isMember, unwrap } from './csf-nodes.ts';
 import {
   type FollowingChecks,
-  followingChecksOf,
+  followingChecksReader,
   isStepCall,
   type SiteRead,
   targetOf,
@@ -287,10 +287,13 @@ export function interactionsOf(
   const reads: ReadonlyMap<unknown, SiteRead> = new Map(
     sites.map(({ read }) => [read.node, read]),
   );
+  const followingChecksOf = followingChecksReader(tree, scope, (node) =>
+    reads.get(node),
+  );
   const all: readonly Interaction[] = sites.map(({ read, kind }) => ({
     ...read,
     ...kind,
-    following: followingChecksOf(read, tree, scope, (node) => reads.get(node)),
+    following: followingChecksOf(read),
   }));
 
   return {
