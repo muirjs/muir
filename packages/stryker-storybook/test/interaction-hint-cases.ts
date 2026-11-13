@@ -525,6 +525,44 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'for-of-pattern-reassigns-context-user-event-type',
+    title:
+      "gives no hint for a click before a type on the play context's userEvent after a for...of head destructures another value into it",
+    source: inPlay(
+      'for ({ userEvent } of [{ userEvent: vitestUserEvent }]) {}',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'for-in-head-reassigns-context-user-event-type',
+    title:
+      "gives no hint for a click before a type on the play context's userEvent after a for...in head assigns it another value",
+    source: inPlay(
+      'for (userEvent in { vitestUserEvent }) {}',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'update-reassigns-context-user-event-type',
+    title:
+      "gives no hint for a click before a type on the play context's userEvent after an update expression gives it another value",
+    source: inPlay(
+      'if (args.step) {',
+      '  userEvent++;',
+      '}',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 8]],
+    expect: [],
+  },
+  {
     id: 'vitest-browser-import-expression-type',
     title:
       "gives no hint for a click before a type on Vitest browser's userEvent from an import expression",
