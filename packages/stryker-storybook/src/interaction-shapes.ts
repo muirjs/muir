@@ -2,6 +2,7 @@ import {
   field,
   type Interaction,
   list,
+  propertyKey,
   type StoryInteractions,
 } from '@layzee/storybook-core';
 
@@ -95,24 +96,11 @@ function maySkipClick(options: unknown): boolean {
     (property) =>
       field(property, 'type') === 'SpreadElement' ||
       field(property, 'computed') === true ||
-      keyName(property) === '__proto__' ||
-      (keyName(property) === 'skipClick' &&
+      propertyKey(property) === '__proto__' ||
+      (propertyKey(property) === 'skipClick' &&
         !(
           field(property, 'value', 'type') === 'BooleanLiteral' &&
           field(property, 'value', 'value') === false
         )),
   );
-}
-
-/** The name of a property's identifier or string-literal key, when it is not computed. */
-function keyName(property: unknown): string | undefined {
-  const key = field(property, 'key');
-  const name =
-    field(key, 'type') === 'Identifier'
-      ? field(key, 'name')
-      : field(key, 'value');
-
-  return field(property, 'computed') !== true && typeof name === 'string'
-    ? name
-    : undefined;
 }
