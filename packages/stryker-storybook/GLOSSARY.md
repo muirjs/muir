@@ -135,6 +135,49 @@ _Avoid_: unobserved stub, surviving stub
 One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix.
 _Avoid_: stub warning, diagnostic
 
+**Interaction hint**:
+One entry in the `lz-storybook` report for the surviving mutants of the interaction mutators (`LzStorybookInteraction`,
+`LzStorybookClickFocus`, `LzStorybookInteractionRepeat` and `LzStorybookInteractionTarget`, the Storybook test
+mutators' names) that start on one line and whose interaction has an interaction shape. The reporter reads
+`LzStorybookAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
+holds the file and line, the shape, the reason, the fix, and a ready `// Stryker disable next-line` comment for the
+line above. The comment names a mutator only when every mutant of it placed on that line survived with that
+shape, since one comment disables them all. The reporter takes the interactions from the `LzStorybookInteraction`
+mutants in the report, whatever their status, and gives no hint for a file that a `mutate` pattern with a line range
+names, where an interaction outside the range has no such mutant.
+_Avoid_: interaction finding, interaction warning
+
+**Interaction shape**:
+Why a play may pass although a surviving interaction mutant changes the interaction. An interaction has at most one
+shape:
+
+- `negative-only`: a check comes after it before the next statement that holds an interaction, and every check before
+  the next interaction is negative.
+- `click-before-type`: a user-event click or hover directly before a `type` of the same target on user-event 14's
+  `userEvent`, which clicks it first unless given `skipClick`. The reporter takes the click as kept only when the
+  options are absent, or an object literal with no spread, computed key or `__proto__` whose `skipClick`, quoted or
+  not, is absent or `false`. It takes a `userEvent` for user-event 14 only when it is imported from `storybook/test`,
+  or when it is the play context's: destructured from the first parameter of the function under a non-computed `play`
+  key of the meta (the default export) or of an exported story, with nothing in that function's body that may give
+  the name another value. Such a form is an assignment, a `for...of` or `for...in` head, an update expression or a
+  `var` declaration, anywhere in the body, nested functions and shadowing locals included. Vitest browser's
+  `userEvent`, one destructured from another function's parameter, a `setup()` local and every other form get no
+  such hint.
+- `cleared-later`: a `type` or `clear` whose target the next interaction in its block clears, with no check between
+  them.
+
+_Avoid_: skip reason, interaction pattern
+
+**Checks before the next interaction**:
+The checks after an interaction up to the next statement that is an interaction or a `step(...)` that holds one, looked
+for past the end of the interaction's block and of a step callback that holds it. A check is an `expect(...)` call, an
+`expect.<name>(...)` call such as `expect.soft`, `expect.element` or `expect.poll`, or a call to a `findBy*`,
+`findAllBy*`, `getBy*` or `getAllBy*` query, on a receiver such as `canvas` or destructured from one, which fails when
+it finds nothing (a `queryBy*` query does not); it is negative when its member chain holds `.not`. Unlike the
+following checks, which count only `expect(...)`, they also run past an `if` or a `waitFor(...)` that holds an
+interaction.
+_Avoid_: later checks
+
 **Static story mutant**:
 A mutant in a story file that Stryker runs against every test, listed in the `lz-storybook` report with its net
 time.
