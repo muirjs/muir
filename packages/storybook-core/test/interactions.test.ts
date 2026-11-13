@@ -879,6 +879,12 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      "a userEvent click and a fireEvent click in a story's render are interactions, where a raw DOM click is none",
+    source: `import { userEvent, fireEvent } from 'storybook/test';\nexport const Story = {\n  render: () => {\n    userEvent.click(document.body);\n    fireEvent.click(document.body);\n    document.body.click();\n    return null;\n  },\n};\n`,
+    expect: ['userEvent click userEvent14', 'fireEvent click'],
+  },
+  {
+    title:
       "a raw DOM element's dispatchEvent(event) in a decorator is no interaction",
     source: `export default {\n  decorators: [\n    (Story) => {\n      window.dispatchEvent(new Event('resize'));\n      return Story();\n    },\n  ],\n};\n`,
     expect: [],

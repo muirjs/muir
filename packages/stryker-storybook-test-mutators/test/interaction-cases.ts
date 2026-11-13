@@ -406,6 +406,16 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-and-fire-event-in-render',
+    title:
+      "a userEvent call and a fireEvent call in a story's render are removed, where a raw DOM click is not",
+    source: `import { userEvent, fireEvent } from 'storybook/test';\nexport const Story = {\n  render: () => {\n    userEvent.click(document.body);\n    fireEvent.click(document.body);\n    document.body.click();\n    return null;\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'user-event-destructured-renamed-from-local',
     title:
       "a call on userEvent destructured under another name from a local holding a function's result is removed",

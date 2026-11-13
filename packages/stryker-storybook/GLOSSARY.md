@@ -78,8 +78,10 @@ _Avoid_: test tags
 the `lz-storybook` reporter on its own parse.
 
 **Interaction**:
-A call in story test code that acts on the rendered story: a user-event method such as `click` or `type`, or a
-computed key, on a receiver with a user-event origin; a `fireEvent` call; a composed play; or a raw DOM interaction.
+A call that acts on the rendered story: a user-event method such as `click` or `type`, or a computed key, on a
+receiver with a user-event origin; a `fireEvent` call; a composed play; or a raw DOM interaction. A user-event or
+`fireEvent` call counts anywhere in the story file, a `render` or a decorator included; a composed play other than
+`step(label, Other.play)`, and a raw DOM interaction, count only in story test code.
 It is a statement, or the expression body of an arrow given to `step(...)`; the same call elsewhere, such as in an
 expression-bodied arrow given to `forEach`, is none.
 _Avoid_: action (the Playwright mutators' term), user action
@@ -114,8 +116,8 @@ CSF factory story, or `step(label, Other.play)` and `context.step(label, Other.p
 namespace import, as in `Stories.Other.play(context)`. A `.play()` or `.run()` call, or a `.play` given to `step(...)`,
 counts when its receiver is an identifier or a member chain that starts at one, computed and optional members included
 (`Stories['Other'].play(context)`, `Stories?.Other.play(context)`, `step(label, Stories?.Other.play)`), not a call
-result such as `canvas.getByTestId('video').play()`. A call counts only inside story test code, so `video.play()` in a
-`render` is none.
+result such as `canvas.getByTestId('video').play()`. A `.play()` or `.run()` call counts only inside story test code,
+so `video.play()` in a `render` is none.
 _Avoid_: nested play, reused play
 
 **Raw DOM interaction**:
