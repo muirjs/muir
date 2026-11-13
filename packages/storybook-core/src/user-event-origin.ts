@@ -219,7 +219,7 @@ export function userEventOrigins(
     ];
   };
 
-  /** The origins a local's one value may have: a user-event's `setup()`, another receiver, or either arm of a conditional or logical expression. */
+  /** The origins a local's one value may have: a user-event's `setup()`, another receiver, either arm of a conditional or logical expression, or a sequence's last value. */
   const valueOrigins = (value: unknown): MayOrigins => {
     const node = unwrap(value);
 
@@ -246,7 +246,7 @@ export function userEventOrigins(
 
   /** Each binding's origins, followed once; a local whose value reads itself finds none while it is followed. */
   const knownOrigins = new Map<Binding, MayOrigins>();
-  /** The origins `receiver` may have. */
+  /** The origins `receiver` may have; a member under a key the file does not name may be the holder's `userEvent`. */
   const originsIn = (receiver: unknown): MayOrigins => {
     const node = unwrap(receiver);
 
