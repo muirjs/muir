@@ -118,7 +118,7 @@ const caseSources: readonly Source[] = [
 ];
 
 const contextDestructuredInPlay =
-  "play context destructured in the play body (core's origin table, design change 6 for the reporter)";
+  'a userEvent destructured from the play context in the play body';
 
 /** The sources where the readers differ by a behaviour change of core's reader, with the change. */
 const expectedDifferences: ReadonlyMap<string, string> = new Map([
