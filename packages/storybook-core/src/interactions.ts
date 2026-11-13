@@ -295,10 +295,13 @@ export function interactionsOf(
     ...kind,
     following: followingChecksOf(read),
   }));
+  const byNode: ReadonlyMap<unknown, Interaction> = new Map(
+    all.map((interaction) => [interaction.node, interaction]),
+  );
 
   return {
     all,
-    at: (node) => all.find((interaction) => interaction.node === node),
+    at: (node) => byNode.get(node),
     aimedAt: (node) => {
       const query = callAround(tree, tree.parentOf(node));
 
