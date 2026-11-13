@@ -4,6 +4,7 @@ import {
   type FollowingChecks,
   followingChecksOf,
   isStepCall,
+  type SiteRead,
 } from './following-checks.ts';
 import { field, list } from './node-field.ts';
 import {
@@ -282,10 +283,13 @@ export function interactionsOf(
           },
         ];
   });
+  const reads: ReadonlyMap<unknown, SiteRead> = new Map(
+    sites.map(({ read }) => [read.node, read]),
+  );
   const all: readonly Interaction[] = sites.map(({ read, kind }) => ({
     ...read,
     ...kind,
-    following: followingChecksOf(read.node, tree),
+    following: followingChecksOf(read, tree, (node) => reads.get(node)),
   }));
 
   return {

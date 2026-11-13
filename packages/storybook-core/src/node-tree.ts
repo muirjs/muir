@@ -80,6 +80,30 @@ export function memberName(member: unknown): string | undefined {
   return typeof name === 'string' ? name : undefined;
 }
 
+/** Babel's `isNodesEquivalent` over plain nodes: the same type and fields, whatever the positions, comments and `extra`. */
+export function equivalent(first: unknown, second: unknown): boolean {
+  if (Array.isArray(first) || Array.isArray(second)) {
+    return (
+      Array.isArray(first) &&
+      Array.isArray(second) &&
+      first.length === second.length &&
+      first.every((item: unknown, at) => equivalent(item, second[at]))
+    );
+  }
+
+  if (!isNode(first) || !isNode(second)) {
+    return first === second;
+  }
+
+  const keys = new Set(
+    [...Object.keys(first), ...Object.keys(second)].filter(
+      (key) => !positionKeys.has(key),
+    ),
+  );
+
+  return [...keys].every((key) => equivalent(first[key], second[key]));
+}
+
 /** `node` and every object below it, positions included. */
 export function nodesIn(node: object): readonly unknown[] {
   return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
