@@ -14,7 +14,12 @@ import {
   queryMethods,
 } from './queries.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
-import { placedInteractionAimedAt, placedInteractionAt } from './story-file.ts';
+import {
+  placedInteractionAimedAt,
+  placedInteractionAt,
+  readStoryFileAt,
+  storyInteractions,
+} from './story-file.ts';
 
 function sampleOf(statement: string): string {
   return `export const Story = {\n  play: async ({ canvas, userEvent }) => {\n    ${statement}\n  },\n};\n`;
@@ -97,6 +102,8 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookClickFocus',
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
+      readStoryFileAt(path, storyInteractions);
+
       const interaction = placedInteractionAt(path);
       const [first] = interaction?.args ?? [];
       const value = interaction?.targetValue;
@@ -161,6 +168,8 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookInteractionRepeat',
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
+      readStoryFileAt(path, storyInteractions);
+
       const interaction = placedInteractionAt(path);
 
       if (interaction === undefined || !isRepeated(interaction)) {
@@ -214,6 +223,8 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
     name: swap.name,
     sample: swap.sample,
     *mutate(path, t) {
+      readStoryFileAt(path, storyInteractions);
+
       if (placedInteractionAimedAt(path) === undefined) {
         return;
       }
@@ -234,6 +245,8 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
       'await userEvent.click(button);\n    await expect(args.onClick).toHaveBeenCalled();',
     ),
     *mutate(path, t) {
+      readStoryFileAt(path, storyInteractions);
+
       const copy = placedInteractionAt(path)?.following.copy;
 
       if (!path.isStatement() || !t.isNode(copy) || !t.isStatement(copy)) {
@@ -252,6 +265,8 @@ export function interactionMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookInteraction',
     sample: sampleOf("await userEvent.click(canvas.getByRole('button'));"),
     *mutate(path, t) {
+      readStoryFileAt(path, storyInteractions);
+
       const interaction = placedInteractionAt(path);
 
       if (interaction !== undefined) {

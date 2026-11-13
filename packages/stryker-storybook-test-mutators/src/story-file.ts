@@ -37,21 +37,26 @@ export function perFile<T>(
   };
 }
 
-const storyFileOf = perFile<
-  | {
-      readonly shapes: CsfShapes;
-      readonly interactions: StoryInteractions;
-    }
-  | undefined
->((program) => {
-  const shapes = csfShapes(program.node);
+const storyFileOf = perFile<CsfShapes | undefined>(
+  (program) => csfShapes(program.node),
+  undefined,
+);
 
-  return { shapes, interactions: interactionsOf(program.node, shapes) };
-}, undefined);
+/** The interactions of the file, for the interaction mutators to pass to `readStoryFileAt`. */
+export const storyInteractions = perFile<StoryInteractions | undefined>(
+  (program) => {
+    const shapes = storyFileOf(program);
+
+    return shapes === undefined
+      ? undefined
+      : interactionsOf(program.node, shapes);
+  },
+  undefined,
+);
 
 /**
- * Reads the story test code and the interactions, and what each of a mutator's own per-file `readers` gives, unless
- * already read for this file. Every mutator that reads a per-file value calls it first at each node it is given:
+ * Reads the story test code, and what each of a mutator's own per-file `readers` gives, unless already read for this
+ * file. Every mutator that reads a per-file value calls it first at each node it is given:
  * Stryker places a statement's mutants as it leaves the statement, so a later first read could find a node replaced by
  * a mutant switch, and a line-range `--mutate` leaves the Program out, so the first call can come at any node.
  */
@@ -64,21 +69,21 @@ export function readStoryFileAt(
 
 export function isInStoryTestCode(path: NodePath): boolean {
   const testCode: ReadonlySet<unknown> =
-    storyFileOf(path)?.shapes.testCode ?? new Set();
+    storyFileOf(path)?.testCode ?? new Set();
 
   return path.findParent((parent) => testCode.has(parent.node)) !== null;
 }
 
 /** The interaction the test mutators place whose statement is `path`'s node. */
 export function placedInteractionAt(path: NodePath): Interaction | undefined {
-  return placed(storyFileOf(path)?.interactions.at(path.node));
+  return placed(storyInteractions(path)?.at(path.node));
 }
 
 /** The interaction the test mutators place whose target query is the call nearest around `path`'s node. */
 export function placedInteractionAimedAt(
   path: NodePath,
 ): Interaction | undefined {
-  return placed(storyFileOf(path)?.interactions.aimedAt(path.node));
+  return placed(storyInteractions(path)?.aimedAt(path.node));
 }
 
 /** The interaction unless it stands in a `beforeEach` or `afterEach`, the site rule of every interaction mutator. */
