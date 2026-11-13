@@ -172,7 +172,7 @@ function interactionLines(source: string): {
 
   const core = interactionsOf(file.program, shapes).all.map(
     (interaction) =>
-      `${String(field(interaction.node, 'start'))} ${interaction.kind} ${'method' in interaction ? interaction.method : undefined}`,
+      `${String(field(interaction.node, 'start'))} ${interaction.kind} ${interaction.kind === 'userEvent' || interaction.kind === 'fireEvent' ? interaction.method : undefined}`,
   );
 
   return { babel, core };

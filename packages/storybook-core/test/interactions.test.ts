@@ -1035,6 +1035,36 @@ describe('interactionsOf targetValue', () => {
   });
 });
 
+/** The method of each interaction of `source`, once per parse. */
+function methodsIn(
+  source: string,
+): readonly (readonly (string | undefined)[])[] {
+  return programsOf(source).map((program) =>
+    interactionsOf(program, csfShapes(program)).all.map(({ method }) => method),
+  );
+}
+
+describe('interactionsOf method', () => {
+  it("is a raw DOM interaction's DOM method", () => {
+    assert.deepEqual(methodsIn(inPlay('input.focus();', 'button.click();')), [
+      ['focus', 'click'],
+      ['focus', 'click'],
+    ]);
+  });
+
+  it("is a composed play's play, run or step call method", () => {
+    assert.deepEqual(
+      methodsIn(
+        `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async (context) => {\n    await Other.play(context);\n    await Other.run();\n    await context.step('Again', Other.play);\n    await step('Once more', Other.play);\n  },\n};\n`,
+      ),
+      [
+        ['play', 'run', 'step', 'step'],
+        ['play', 'run', 'step', 'step'],
+      ],
+    );
+  });
+});
+
 interface CallCase {
   readonly title: string;
   readonly source: string;

@@ -35,7 +35,7 @@ type Kind =
       readonly origin: UserEventOrigin;
     }
   | { readonly kind: 'fireEvent'; readonly method: string | undefined }
-  | { readonly kind: 'composedPlay' | 'rawDom' };
+  | { readonly kind: 'composedPlay' | 'rawDom'; readonly method: string };
 
 export type Interaction = {
   readonly site: 'statement' | 'stepBody';
@@ -212,7 +212,7 @@ export function interactionsOf(
 
     if (isStepCall(call)) {
       return isStoryPlay(list(field(call, 'arguments'))[1])
-        ? { kind: 'composedPlay' }
+        ? { kind: 'composedPlay', method: 'step' }
         : undefined;
     }
 
@@ -222,12 +222,12 @@ export function interactionsOf(
 
     if (composedPlayMethods.has(method)) {
       return startsAtIdentifier(receiver)
-        ? { kind: 'composedPlay' }
+        ? { kind: 'composedPlay', method }
         : undefined;
     }
 
     return rawDomArguments.get(method) === list(field(call, 'arguments')).length
-      ? { kind: 'rawDom' }
+      ? { kind: 'rawDom', method }
       : undefined;
   };
   /** `node`, or, for a name the file binds once by `const`, that const's init without `await`. */

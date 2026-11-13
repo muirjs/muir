@@ -133,11 +133,12 @@ export function userEventOrigins(
   /** What `node` holds: a module's exports, the play context while every reference to its name reads members, or an object the file proves nothing about. */
   const holderOf = (node: unknown): Holder => {
     const module = moduleOf(node);
-    const binding = scope.bindingOf(unwrap(node));
 
     if (module !== undefined) {
       return { module };
     }
+
+    const binding = scope.bindingOf(unwrap(node));
 
     return binding?.kind === 'param' &&
       isUnwrittenContext(binding, binding.identifier) &&
