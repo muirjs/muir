@@ -12,7 +12,7 @@ export const babelTypeMembers = [
   'expressionStatement',
   'identifier',
   'isNode',
-  'isNodesEquivalent',
+  'isStatement',
   'memberExpression',
   'newExpression',
   'objectExpression',

@@ -1,4 +1,5 @@
-import type { NodePath, types } from '@babel/core';
+import type { types } from '@babel/core';
+import { field, type Interaction } from '@layzee/storybook-core';
 import {
   firstArgumentSite,
   roleSite,
@@ -6,49 +7,34 @@ import {
   type Site,
 } from '@layzee/stryker-mutator-install';
 
-import { isCheckStatement, isWaitForCheckStatement } from './checks.ts';
-import {
-  firstCheckAfter,
-  interactionAt,
-  isSkipped,
-  targetInteraction,
-  type Interaction,
-} from './interactions.ts';
-import { awaited } from './nodes.ts';
 import {
   elementQueryPrefixes,
   isQueryCall,
   queryKinds,
   queryMethods,
 } from './queries.ts';
-import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
+import type { LzStorybookTestMutator } from './mutator.ts';
+import { interactionAimedAt, interactionAt } from './story-file.ts';
 
 function sampleOf(statement: string): string {
   return `export const Story = {\n  play: async ({ canvas, userEvent }) => {\n    ${statement}\n  },\n};\n`;
 }
 
-const clickMethods: readonly string[] = ['click', 'dblClick'];
+const clickMethods: ReadonlySet<unknown> = new Set(['click', 'dblClick']);
 
-/** A click target with no effects of its own: an identifier, a query, or an awaited query, any of them under `!`. */
+/** A click target with no effects of its own: an identifier, a query, or an awaited query, any of them under `!`. `value` is what the target reads: for a name bound once by `const`, that const's init. */
 function focusTarget(
   target: types.Node | undefined,
-  path: NodePath,
+  value: types.Node | undefined,
 ): types.Expression | undefined {
   if (target?.type === 'TSNonNullExpression') {
-    return focusTarget(target.expression, path) === undefined
+    return focusTarget(target.expression, value) === undefined
       ? undefined
       : target;
   }
 
   if (target?.type === 'Identifier') {
-    const binding = path.scope.getBinding(target.name);
-    const init =
-      binding?.kind === 'const' &&
-      binding.path.node.type === 'VariableDeclarator'
-        ? binding.path.node.init
-        : undefined;
-
-    return init != null && isTextFieldQuery(awaited(init)) ? undefined : target;
+    return value !== undefined && isTextFieldQuery(value) ? undefined : target;
   }
 
   if (target?.type !== 'AwaitExpression' && target?.type !== 'CallExpression') {
@@ -112,16 +98,19 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
       const interaction = interactionAt(path);
+      const [first] = interaction?.args ?? [];
+      const value = interaction?.targetValue;
       const target =
         interaction?.kind === 'userEvent' &&
-        clickMethods.includes(interaction.method)
-          ? focusTarget(interaction.call.arguments[0], path)
+        clickMethods.has(interaction.method) &&
+        t.isNode(first)
+          ? focusTarget(first, t.isNode(value) ? value : undefined)
           : undefined;
 
       if (
         interaction === undefined ||
         target === undefined ||
-        isSkipped(interaction)
+        interaction.inHook
       ) {
         return;
       }
@@ -131,9 +120,9 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
         [],
       );
 
-      yield interaction.site === 'statement'
+      yield path.isExpressionStatement()
         ? t.expressionStatement(
-            interaction.node.expression.type === 'AwaitExpression'
+            path.node.expression.type === 'AwaitExpression'
               ? t.awaitExpression(focus)
               : focus,
           )
@@ -142,7 +131,11 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
   };
 }
 
-const repeatedMethods: readonly string[] = ['click', 'dblClick', 'keyboard'];
+const repeatedMethods: ReadonlySet<unknown> = new Set([
+  'click',
+  'dblClick',
+  'keyboard',
+]);
 
 /** A fireEvent click, or a user-event click, dblClick or key press other than one that a second press repeats with no change. */
 function isRepeated(interaction: Interaction): boolean {
@@ -150,20 +143,20 @@ function isRepeated(interaction: Interaction): boolean {
     return interaction.method === 'click';
   }
 
-  const [key] = interaction.call.arguments;
+  const [key] = interaction.args;
 
   return (
     interaction.kind === 'userEvent' &&
-    repeatedMethods.includes(interaction.method) &&
+    repeatedMethods.has(interaction.method) &&
     !(
       interaction.method === 'keyboard' &&
-      key?.type === 'StringLiteral' &&
-      idempotentKeys.includes(key.value)
+      field(key, 'type') === 'StringLiteral' &&
+      idempotentKeys.has(field(key, 'value'))
     )
   );
 }
 
-const idempotentKeys: readonly string[] = ['{Home}', '{End}'];
+const idempotentKeys: ReadonlySet<unknown> = new Set(['{Home}', '{End}']);
 
 export function interactionRepeatMutator(): LzStorybookTestMutator & {
   readonly name: 'LzStorybookInteractionRepeat';
@@ -177,18 +170,18 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
       if (
         interaction === undefined ||
         !isRepeated(interaction) ||
-        isSkipped(interaction)
+        interaction.inHook
       ) {
         return;
       }
 
-      if (interaction.site === 'statement') {
+      if (path.isExpressionStatement()) {
         yield t.blockStatement([
-          t.cloneNode(interaction.node),
-          t.cloneNode(interaction.node),
+          t.cloneNode(path.node),
+          t.cloneNode(path.node),
         ]);
-      } else {
-        const twice = [interaction.node, interaction.node].map((body) =>
+      } else if (path.isExpression()) {
+        const twice = [path.node, path.node].map((body) =>
           t.expressionStatement(t.awaitExpression(t.cloneNode(body))),
         );
 
@@ -229,9 +222,9 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
     name: swap.name,
     sample: swap.sample,
     *mutate(path, t) {
-      const interaction = targetInteraction(path);
+      const interaction = interactionAimedAt(path);
 
-      if (interaction === undefined || isSkipped(interaction)) {
+      if (interaction === undefined || interaction.inHook) {
         return;
       }
 
@@ -240,84 +233,6 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
         .map((node) => t.cloneNode(node));
     },
   };
-}
-
-function positionOf(node: types.Node, edge: 'start' | 'end'): number {
-  const position = node[edge];
-
-  if (typeof position !== 'number') {
-    throw new Error(
-      `LzStorybookAssertionBefore: a ${node.type} node has no ${edge} position, which it needs to tell what runs before the interaction.`,
-    );
-  }
-
-  return position;
-}
-
-/** Whether `check` reads a name declared or assigned after the interaction and before the check, which a copy before the interaction could not read. */
-function readsNameBoundBetween(
-  interaction: NodePath,
-  check: NodePath,
-): boolean {
-  const after = positionOf(interaction.node, 'end');
-  const before = positionOf(check.node, 'start');
-  let found = false;
-
-  check.traverse({
-    ReferencedIdentifier(reference) {
-      const binding = reference.scope.getBinding(reference.node.name);
-      const bound = [
-        binding?.identifier.start,
-        ...(binding?.constantViolations ?? []).map(
-          (assignment) => assignment.node.start,
-        ),
-      ];
-
-      if (
-        bound.some(
-          (start) =>
-            typeof start === 'number' && start >= after && start < before,
-        )
-      ) {
-        found = true;
-        reference.stop();
-      }
-    },
-  });
-
-  return found;
-}
-
-/** Whether a statement equal to `check` ends before the interaction, in the outermost function around it. */
-function standsEarlier(
-  check: NodePath,
-  interaction: NodePath,
-  t: BabelTypes,
-): boolean {
-  const play = interaction
-    .getAncestry()
-    .filter((ancestor) => ancestor.isFunction())
-    .at(-1);
-  const start = positionOf(interaction.node, 'start');
-  let found = false;
-
-  play?.traverse({
-    ExpressionStatement(statement) {
-      const { end } = statement.node;
-
-      // A statement with no position is a replacement in a mutant Stryker has placed already, not the play's code.
-      if (
-        typeof end === 'number' &&
-        end <= start &&
-        t.isNodesEquivalent(statement.node, check.node)
-      ) {
-        found = true;
-        statement.stop();
-      }
-    },
-  });
-
-  return found;
 }
 
 export function assertionBeforeMutator(): LzStorybookTestMutator & {
@@ -330,36 +245,21 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
     ),
     *mutate(path, t) {
       const interaction = interactionAt(path);
+      const copy = interaction?.following.copy;
 
-      if (interaction?.site !== 'statement') {
+      if (
+        interaction === undefined ||
+        interaction.inHook ||
+        !path.isStatement() ||
+        !t.isNode(copy) ||
+        !t.isStatement(copy)
+      ) {
         return;
       }
 
-      const check = checkToCopy(path, t);
-
-      if (check !== undefined && !isSkipped(interaction)) {
-        yield t.blockStatement([
-          t.cloneNode(check),
-          t.cloneNode(interaction.node),
-        ]);
-      }
+      yield t.blockStatement([t.cloneNode(copy), t.cloneNode(path.node)]);
     },
   };
-}
-
-/** The first statement after the interaction that holds a check, when it is a check statement or a `waitFor(...)` statement whose callback holds a check, and its copy can run before the interaction. */
-function checkToCopy(
-  interaction: NodePath,
-  t: BabelTypes,
-): types.ExpressionStatement | undefined {
-  const check = firstCheckAfter(interaction);
-
-  return check !== undefined &&
-    (isCheckStatement(check) || isWaitForCheckStatement(check)) &&
-    !readsNameBoundBetween(interaction, check) &&
-    !standsEarlier(check, interaction, t)
-    ? check.node
-    : undefined;
 }
 
 export function interactionMutator(): LzStorybookTestMutator & {
@@ -371,7 +271,7 @@ export function interactionMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       const interaction = interactionAt(path);
 
-      if (interaction !== undefined && !isSkipped(interaction)) {
+      if (interaction !== undefined && !interaction.inHook) {
         yield interaction.site === 'statement'
           ? t.emptyStatement()
           : t.identifier('undefined');

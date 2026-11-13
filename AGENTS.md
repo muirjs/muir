@@ -34,7 +34,7 @@ add or change a skip, name its row.
 - Equivalence skips: `docs/adr/0006-place-a-mutant-unless-the-file-proves-it-changes-nothing.md`, and
   `packages/stryker-storybook/docs/adr/0005-every-equivalence-skip-carries-a-proven.md` for how a `Proven` is made.
 - The interaction mutators skip only an interaction in a `beforeEach` or `afterEach` (a site rule, decided by
-  `isSkipped`) and place every other one:
+  the interaction reader's `inHook`) and place every other one:
   `packages/stryker-storybook-test-mutators/docs/adr/0002-place-every-interaction-outside-a-before-each-or-after-each.md`.
 - A default global (`LzStorybookStoryGlobals`) is an equivalence skip too: its `default-global` `Proven` rests on
   Storybook 10.6.5's initial values, which `@layzee/storybook-core` holds, as well as on the file.
