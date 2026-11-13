@@ -281,15 +281,7 @@ function standsEarlier(
 
 /** The outermost function around `node`, or `undefined` outside any. */
 function outermostFunction(node: unknown, tree: TreeIndex): unknown {
-  const parent = tree.parentOf(node);
-
-  if (!isNode(parent)) {
-    return undefined;
-  }
-
-  return (
-    outermostFunction(parent, tree) ?? (isFunction(parent) ? parent : undefined)
-  );
+  return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
 /** Whether `statement` reads a name declared or written from the start of `site` up to its own start; a node without positions counts as not between. */

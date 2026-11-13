@@ -101,13 +101,9 @@ function isStoryPlay(argument: unknown): boolean {
 
 /** `node` when it is a call, else the nearest call around it. */
 function callAround(tree: TreeIndex, node: unknown): unknown {
-  if (!isNode(node)) {
-    return undefined;
-  }
-
-  return field(node, 'type') === 'CallExpression'
-    ? node
-    : callAround(tree, tree.parentOf(node));
+  return [node, ...tree.ancestors(node)].find(
+    (each) => field(each, 'type') === 'CallExpression',
+  );
 }
 
 /** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function declared in the file and given there by its name. */
@@ -169,11 +165,10 @@ export function interactionsOf(
   const tree = indexTree(program);
   const scope = fileScope(program);
   const isInTestCode = (node: unknown): boolean =>
-    isNode(node) &&
-    (shapes.testCode.has(node) || isInTestCode(tree.parentOf(node)));
+    [node, ...tree.ancestors(node)].some((each) => shapes.testCode.has(each));
   const hookFunctions = hooksOf(program, tree, scope);
   const isInHook = (node: unknown): boolean =>
-    isNode(node) && (hookFunctions.has(node) || isInHook(tree.parentOf(node)));
+    [node, ...tree.ancestors(node)].some((each) => hookFunctions.has(each));
   const isUnderComputedKey = (node: unknown): boolean =>
     field(node, 'computed') === true ||
     field(tree.parentOf(node), 'computed') === true;

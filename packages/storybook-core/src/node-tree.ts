@@ -4,6 +4,8 @@ import { field, list } from './node-field.ts';
 
 export interface TreeIndex {
   readonly parentOf: (node: unknown) => unknown;
+  /** The parent of `node`, its parent, and so on up to the Program. */
+  readonly ancestors: (node: unknown) => readonly unknown[];
   readonly listOf: (node: unknown) => readonly unknown[] | undefined;
 }
 
@@ -177,8 +179,20 @@ export function indexTree(program: unknown): TreeIndex {
 
   visit(program);
 
+  const parentOf = (node: unknown): unknown =>
+    isRecord(node) ? parents.get(node) : undefined;
+
   return {
-    parentOf: (node) => (isRecord(node) ? parents.get(node) : undefined),
+    parentOf,
+    ancestors: (node) => {
+      const found: unknown[] = [];
+
+      for (let at = parentOf(node); at !== undefined; at = parentOf(at)) {
+        found.push(at);
+      }
+
+      return found;
+    },
     listOf: (node) => (isRecord(node) ? lists.get(node) : undefined),
   };
 }
