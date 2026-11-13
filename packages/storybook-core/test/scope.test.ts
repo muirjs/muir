@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { field } from '../src/node-field.ts';
-import { nodesIn } from '../src/node-tree.ts';
+import { everyRecordIn } from '../src/node-tree.ts';
 import { fileScope } from '../src/scope.ts';
 import { programsOf } from './support/parse-module.ts';
 
@@ -25,7 +25,7 @@ function occurrences(source: string, name: string): readonly number[] {
 
 /** The identifier that starts at `start`; the value of a shorthand property, which shares its key's start, before the key. */
 function identifierAt(program: object, start: number | undefined): unknown {
-  return nodesIn(program)
+  return everyRecordIn(program)
     .filter(
       (node) =>
         field(node, 'type') === 'Identifier' && field(node, 'start') === start,

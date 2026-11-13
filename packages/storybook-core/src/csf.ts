@@ -11,7 +11,7 @@ import {
 } from './csf-nodes.ts';
 import { namesReadElsewhere } from './names-read-elsewhere.ts';
 import { field, list } from './node-field.ts';
-import { importSourceOf, nodesIn } from './node-tree.ts';
+import { everyRecordIn, importSourceOf } from './node-tree.ts';
 import {
   isObjectLiteral,
   writtenValue,
@@ -596,7 +596,7 @@ export function mayImportItself(
 ): boolean {
   const file = resolve(fileName);
   const withoutExtension = file.slice(0, file.length - extname(file).length);
-  const nodes = nodesIn(body);
+  const nodes = everyRecordIn(body);
   const namesThisFile = (specifier: unknown): boolean => {
     if (typeof specifier !== 'string' || !specifier.startsWith('.')) {
       return false;

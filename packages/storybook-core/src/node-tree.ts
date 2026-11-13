@@ -135,9 +135,9 @@ export function shapeKey(node: unknown): string {
   });
 }
 
-/** `node` and every object below it, positions included. */
-export function nodesIn(node: object): readonly unknown[] {
-  return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
+/** `node` and every object below it, positions included; `descendants` gives only child nodes. */
+export function everyRecordIn(node: object): readonly unknown[] {
+  return [node, ...Object.values(node).filter(isRecord).flatMap(everyRecordIn)];
 }
 
 /** The specifier of `import(<specifier>)`, an `ImportExpression` as Babel 8 parses it, or a call with an `Import` callee as Babel 7 does by default. */
