@@ -186,6 +186,18 @@ export function userEventOrigins(
     return standing;
   };
 
+  const importSource = (binding: Binding): unknown =>
+    field(tree.parentOf(binding.declaration), 'source', 'value');
+  /** The module whose exports `node` holds: a namespace import that it names, or an `import()`. */
+  const moduleOf = (node: unknown): unknown => {
+    const binding = scope.bindingOf(unwrap(node));
+
+    return binding?.kind === 'import' &&
+      field(binding.declaration, 'type') === 'ImportNamespaceSpecifier'
+      ? importSource(binding)
+      : field(importSourceOf(awaited(node)), 'value');
+  };
+
   /** What `node` holds: a module's exports, the play context while every reference to its name reads members, or an object the file proves nothing about. */
   const holderOf = (node: unknown): Holder => {
     const module = moduleOf(node);
@@ -255,18 +267,6 @@ export function userEventOrigins(
       isUnwrittenContext(binding, pattern) ? 'playContext' : 'unknown',
       'userEvent',
     );
-  };
-
-  const importSource = (binding: Binding): unknown =>
-    field(tree.parentOf(binding.declaration), 'source', 'value');
-  /** The module whose exports `node` holds: a namespace import that it names, or an `import()`. */
-  const moduleOf = (node: unknown): unknown => {
-    const binding = scope.bindingOf(unwrap(node));
-
-    return binding?.kind === 'import' &&
-      field(binding.declaration, 'type') === 'ImportNamespaceSpecifier'
-      ? importSource(binding)
-      : field(importSourceOf(awaited(node)), 'value');
   };
 
   /** The origin of a local's one value: a user-event's `setup()`, another receiver, or a choice between two receivers. */
