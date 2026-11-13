@@ -276,7 +276,7 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of a step callback stands at a step body site',
+      'an interaction that is the expression body of a step callback is a step body statement',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Submit', () => userEvent.click(button));\n  },\n};\n`,
     expect: ['userEvent click userEvent14 stepBody'],
   },
@@ -287,7 +287,7 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of a context.step callback stands at a step body site',
+      'an interaction that is the expression body of a context.step callback is a step body statement',
     source: `export const Story = {\n  play: async (context) => {\n    await context.step('Submit', () => context.userEvent.click(button));\n  },\n};\n`,
     expect: ['userEvent click userEvent14 stepBody'],
   },
@@ -302,7 +302,7 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of an arrow held in a local is no interaction site',
+      'an interaction that is the expression body of an arrow held in a local is no interaction statement',
     source: inPlay(
       'const clickSave = () => userEvent.click(save);',
       'await clickSave();',
@@ -311,13 +311,13 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of an arrow given to a method other than step is no interaction site',
+      'an interaction that is the expression body of an arrow given to a method other than step is no interaction statement',
     source: inPlay('buttons.forEach((button) => userEvent.click(button));'),
     expect: [],
   },
   {
     title:
-      'an interaction that is the expression body of an arrow given to step on a member of a member is no interaction site',
+      'an interaction that is the expression body of an arrow given to step on a member of a member is no interaction statement',
     source: inPlay(
       "await story.context.step('Submit', () => userEvent.click(button));",
     ),
@@ -572,7 +572,7 @@ describe('interactionsOf aimedAt', () => {
 });
 
 describe('interactionsOf at', () => {
-  it('gives the interaction whose site is a node, by identity', () => {
+  it('gives the interaction whose statement is a node, by identity', () => {
     readsOf(inPlay('await userEvent.click(button);')).forEach(
       ([program, interactions]) => {
         const statement = descendants(program).find(

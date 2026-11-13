@@ -272,7 +272,7 @@ export function interactionMutator(): LzStorybookTestMutator & {
       const interaction = interactionAt(path);
 
       if (interaction !== undefined && !interaction.inHook) {
-        yield interaction.site === 'statement'
+        yield interaction.statement === 'statement'
           ? t.emptyStatement()
           : t.identifier('undefined');
       }

@@ -4,7 +4,7 @@ import {
   type FollowingChecks,
   followingChecksReader,
   isStepCall,
-  type SiteRead,
+  type StatementRead,
   targetOf,
 } from './following-checks.ts';
 import { field, list } from './node-field.ts';
@@ -38,8 +38,8 @@ type Kind =
   | { readonly kind: 'composedPlay' | 'rawDom'; readonly method: string };
 
 export type Interaction = {
-  readonly site: 'statement' | 'stepBody';
-  /** The site: an expression statement, or the expression body of an arrow given to `step(...)`. Its identity is the join key. */
+  readonly statement: 'statement' | 'stepBody';
+  /** The statement: an expression statement, or the expression body of an arrow given to `step(...)`. Its identity is the join key. */
   readonly node: unknown;
   /** The call, without `await`, optional chaining or type wrappers. */
   readonly call: unknown;
@@ -54,7 +54,7 @@ export type Interaction = {
 export interface StoryInteractions {
   /** Source order. */
   readonly all: readonly Interaction[];
-  /** The interaction whose site is `node`, by identity. */
+  /** The interaction whose statement is `node`, by identity. */
   readonly at: (node: unknown) => Interaction | undefined;
   /** The interaction whose target query is the call nearest around `node`. */
   readonly aimedAt: (node: unknown) => Interaction | undefined;
@@ -236,8 +236,8 @@ export function interactionsOf(
       ? awaited(field(declaration, 'init'))
       : node;
   };
-  /** A site: an expression statement, or the expression body of an arrow given to `step(...)`. */
-  const siteOf = (node: unknown): Interaction['site'] | undefined => {
+  /** What statement `node` is: an expression statement, or the expression body of an arrow given to `step(...)`. */
+  const statementOf = (node: unknown): Interaction['statement'] | undefined => {
     if (field(node, 'type') === 'ExpressionStatement') {
       return 'statement';
     }
@@ -251,15 +251,15 @@ export function interactionsOf(
       ? 'stepBody'
       : undefined;
   };
-  const sites = descendants(program).flatMap((node) => {
-    const site = siteOf(node);
+  const found = descendants(program).flatMap((node) => {
+    const statement = statementOf(node);
 
-    if (site === undefined) {
+    if (statement === undefined) {
       return [];
     }
 
     const call = awaited(
-      site === 'statement' ? field(node, 'expression') : node,
+      statement === 'statement' ? field(node, 'expression') : node,
     );
     const kind = kindOf(call);
     const args = list(field(call, 'arguments'));
@@ -269,7 +269,7 @@ export function interactionsOf(
       : [
           {
             read: {
-              site,
+              statement,
               node,
               call,
               args,
@@ -280,13 +280,13 @@ export function interactionsOf(
           },
         ];
   });
-  const reads: ReadonlyMap<unknown, SiteRead> = new Map(
-    sites.map(({ read }) => [read.node, read]),
+  const reads: ReadonlyMap<unknown, StatementRead> = new Map(
+    found.map(({ read }) => [read.node, read]),
   );
   const followingChecksOf = followingChecksReader(tree, scope, (node) =>
     reads.get(node),
   );
-  const all: readonly Interaction[] = sites.map(({ read, kind }) => ({
+  const all: readonly Interaction[] = found.map(({ read, kind }) => ({
     ...read,
     ...kind,
     following: followingChecksOf(read),

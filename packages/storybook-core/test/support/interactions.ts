@@ -21,7 +21,7 @@ export function inPlay(...statements: readonly string[]): string {
   return inPlayWith(['canvas', 'userEvent'], ...statements);
 }
 
-/** The kind of an interaction, with its method (`?` for an unknown key), its user-event origin, a step body site and a hook. */
+/** The kind of an interaction, with its method (`?` for an unknown key), its user-event origin, a step body statement and a hook. */
 function describeInteraction(interaction: Interaction): string {
   return [
     interaction.kind,
@@ -29,7 +29,7 @@ function describeInteraction(interaction: Interaction): string {
       ? [interaction.method ?? '?']
       : []),
     ...(interaction.kind === 'userEvent' ? [interaction.origin] : []),
-    ...(interaction.site === 'stepBody' ? ['stepBody'] : []),
+    ...(interaction.statement === 'stepBody' ? ['stepBody'] : []),
     ...(interaction.inHook ? ['inHook'] : []),
   ].join(' ');
 }

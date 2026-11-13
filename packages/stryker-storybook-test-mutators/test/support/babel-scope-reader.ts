@@ -385,17 +385,17 @@ function kindOf(
     : undefined;
 }
 
-/** The kind of the interaction whose site is `path`: an expression statement, or the expression body of an arrow given to `step(...)`. `testCode` is the file's story test code. */
+/** The kind of the interaction whose statement is `path`: an expression statement, or the expression body of an arrow given to `step(...)`. `testCode` is the file's story test code. */
 export function interactionKindAt(
   path: NodePath,
   testCode: ReadonlySet<unknown>,
 ): InteractionKind | undefined {
-  const site = path.isExpressionStatement()
+  const expression = path.isExpressionStatement()
     ? path.node.expression
     : isStepBody(path)
       ? path.node
       : undefined;
-  const call = site === undefined ? undefined : awaited(site);
+  const call = expression === undefined ? undefined : awaited(expression);
 
   return call?.type === 'CallExpression' ||
     call?.type === 'OptionalCallExpression'

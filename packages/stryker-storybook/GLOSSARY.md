@@ -82,9 +82,11 @@ A call that acts on the rendered story: a user-event method such as `click` or `
 receiver with a user-event origin; a `fireEvent` call; a composed play; or a raw DOM interaction. A user-event or
 `fireEvent` call counts anywhere in the story file, a `render` or a decorator included; a composed play other than
 `step(label, Other.play)`, and a raw DOM interaction, count only in story test code.
-It is a statement, or the expression body of an arrow given to `step(...)`; the same call elsewhere, such as in an
-expression-bodied arrow given to `forEach`, is none.
-_Avoid_: action (the Playwright mutators' term), user action
+Its statement, the node the interaction mutators replace, is an expression statement, or the expression body of an
+arrow given to `step(...)` (a step body); the same call elsewhere, such as in an expression-bodied arrow given to
+`forEach`, is none.
+_Avoid_: action (the Playwright mutators' term), user action, site (for its statement; a site is an args or globals
+object)
 
 **User-event origin**:
 Where the receiver of a user-event method comes from, as far as the story file proves it. A receiver with no origin

@@ -78,17 +78,23 @@ export function interactionHints(
     }
 
     const interactions = interactionsOf(program, csfShapes(program));
-    const sites = interactions.all.flatMap((interaction) => {
+    const statements = interactions.all.flatMap((interaction) => {
       const location = locationOf(interaction.node);
 
       return location === undefined ? [] : [{ interaction, location }];
     });
     const read = survivors.flatMap(({ mutant, name }) => {
-      const site = siteHolding(sites, mutant.location.start);
+      const statement = statementHolding(statements, mutant.location.start);
 
-      return site === undefined
+      return statement === undefined
         ? []
-        : [{ mutant, name, shapes: shapesOf(site.interaction, interactions) }];
+        : [
+            {
+              mutant,
+              name,
+              shapes: shapesOf(statement.interaction, interactions),
+            },
+          ];
     });
 
     return groupedHints(
@@ -127,18 +133,18 @@ function parsed(
   }
 }
 
-/** An interaction with its range in the report. */
-interface Site {
+/** An interaction with the range of its statement in the report. */
+interface InteractionStatement {
   readonly interaction: Interaction;
   readonly location: schema.Location;
 }
 
-/** The innermost site whose range holds `position`, the one that starts last: a target literal lies inside its interaction. */
-function siteHolding(
-  sites: readonly Site[],
+/** The innermost statement whose range holds `position`, the one that starts last: a target literal lies inside its interaction. */
+function statementHolding(
+  statements: readonly InteractionStatement[],
   position: schema.Position,
-): Site | undefined {
-  const holding = sites.filter(
+): InteractionStatement | undefined {
+  const holding = statements.filter(
     ({ location: { start, end } }) =>
       !isBefore(position, start) && !isBefore(end, position),
   );
@@ -155,7 +161,7 @@ function isBefore(first: schema.Position, second: schema.Position): boolean {
   );
 }
 
-/** The report's 1-based range of an interaction's site, whose Babel columns are 0-based; `undefined` for a site with no `loc`. */
+/** The report's 1-based range of an interaction's statement, whose Babel columns are 0-based; `undefined` for a statement with no `loc`. */
 function locationOf(node: Interaction['node']): schema.Location | undefined {
   const start = field(node, 'loc', 'start');
   const end = field(node, 'loc', 'end');

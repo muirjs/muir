@@ -24,7 +24,7 @@ export interface Check {
 export type WindowEnd =
   | {
       readonly by: 'interaction';
-      /** The ending site; `at(node)` gives its interaction. */
+      /** The ending interaction's statement; `at(node)` gives its interaction. */
       readonly node: unknown;
       /** It stands in this interaction's own statement list. */
       readonly sameList: boolean;
@@ -146,42 +146,44 @@ function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
   ];
 }
 
-/** Whether `node` is or holds a site outside any function, or anywhere in a function given to `step(...)` or `waitFor(...)`; any other function holds nothing. */
+/** Whether `node` is or holds an interaction's statement outside any function, or anywhere in a function given to `step(...)` or `waitFor(...)`; any other function holds nothing. */
 function holdsInteraction(
   node: unknown,
   tree: TreeIndex,
-  isSite: (node: unknown) => boolean,
+  isInteractionStatement: (node: unknown) => boolean,
 ): boolean {
   if (isFunction(node) && isCallbackOf(node, tree, runsCallback)) {
-    return descendants(node).some(isSite);
+    return descendants(node).some(isInteractionStatement);
   }
 
   return (
-    isSite(node) ||
+    isInteractionStatement(node) ||
     (!isFunction(node) &&
-      childNodes(node).some((child) => holdsInteraction(child, tree, isSite)))
+      childNodes(node).some((child) =>
+        holdsInteraction(child, tree, isInteractionStatement),
+      ))
   );
 }
 
-/** An interaction's site and the arguments of its call. */
-export interface SiteRead {
+/** An interaction's statement and the arguments of its call. */
+export interface StatementRead {
   readonly node: unknown;
   readonly args: readonly unknown[];
 }
 
 /** The target of an interaction: its first argument without `await` or type wrappers. */
-export function targetOf(read: SiteRead): unknown {
+export function targetOf(read: StatementRead): unknown {
   return awaited(read.args[0]);
 }
 
 type StatementsByShape = ReadonlyMap<string, readonly unknown[]>;
 
-/** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `siteAt` gives the interaction whose site is a node. */
+/** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `statementAt` gives the interaction whose statement is a node. */
 export function followingChecksReader(
   tree: TreeIndex,
   scope: FileScope,
-  siteAt: (node: unknown) => SiteRead | undefined,
-): (read: SiteRead) => FollowingChecks {
+  statementAt: (node: unknown) => StatementRead | undefined,
+): (read: StatementRead) => FollowingChecks {
   const statementsByFunction = new Map<unknown, StatementsByShape>();
   /** The expression statements in the outermost function around `node`, by `shapeKey`, built once per function. */
   const expressionStatementsAround = (node: unknown): StatementsByShape => {
@@ -205,20 +207,27 @@ export function followingChecksReader(
   };
 
   return (read) =>
-    followingChecksOf(read, tree, scope, siteAt, expressionStatementsAround);
+    followingChecksOf(
+      read,
+      tree,
+      scope,
+      statementAt,
+      expressionStatementsAround,
+    );
 }
 
 function followingChecksOf(
-  read: SiteRead,
+  read: StatementRead,
   tree: TreeIndex,
   scope: FileScope,
-  siteAt: (node: unknown) => SiteRead | undefined,
+  statementAt: (node: unknown) => StatementRead | undefined,
   expressionStatementsAround: (node: unknown) => StatementsByShape,
 ): FollowingChecks {
-  const isSite = (node: unknown): boolean => siteAt(node) !== undefined;
+  const isInteractionStatement = (node: unknown): boolean =>
+    statementAt(node) !== undefined;
   const later = laterStatements(read.node, tree);
   const cut = later.find((statement) =>
-    holdsInteraction(statement, tree, isSite),
+    holdsInteraction(statement, tree, isInteractionStatement),
   );
   const window = cut === undefined ? later : later.slice(0, later.indexOf(cut));
   const checks = window.flatMap(descendants).flatMap((node) => {
@@ -230,7 +239,7 @@ function followingChecksOf(
 
   return {
     checks,
-    end: endAt(cut, read, tree, siteAt),
+    end: endAt(cut, read, tree, statementAt),
     copy: copyOf(
       window.find((statement) =>
         descendants(statement).includes(firstExpect?.node),
@@ -246,7 +255,7 @@ function followingChecksOf(
 /** `statement`, the window statement that holds the first expect check, when it may be copied before the interaction at `read`: a check statement, or a `waitFor(...)` statement whose callback holds an expect check, in the interaction's own list. */
 function copyOf(
   statement: unknown,
-  read: SiteRead,
+  read: StatementRead,
   tree: TreeIndex,
   scope: FileScope,
   expressionStatements: StatementsByShape,
@@ -259,13 +268,13 @@ function copyOf(
     : undefined;
 }
 
-/** Whether one of `expressionStatements`, those of the outermost function around `site`, is equivalent to `statement` and ends by the start of `site`; a node without positions stands nowhere. */
+/** Whether one of `expressionStatements`, those of the outermost function around `interactionStatement`, is equivalent to `statement` and ends by the start of `interactionStatement`; a node without positions stands nowhere. */
 function standsEarlier(
   statement: unknown,
-  site: unknown,
+  interactionStatement: unknown,
   expressionStatements: StatementsByShape,
 ): boolean {
-  const start = field(site, 'start');
+  const start = field(interactionStatement, 'start');
 
   return (expressionStatements.get(shapeKey(statement)) ?? []).some((node) => {
     const end = field(node, 'end');
@@ -284,13 +293,13 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
-/** Whether `statement` reads a name declared or written from the start of `site` up to its own start; a node without positions counts as not between. */
+/** Whether `statement` reads a name declared or written from the start of `interactionStatement` up to its own start; a node without positions counts as not between. */
 function readsNameSetBetween(
-  site: unknown,
+  interactionStatement: unknown,
   statement: unknown,
   scope: FileScope,
 ): boolean {
-  const from = field(site, 'start');
+  const from = field(interactionStatement, 'start');
   const to = field(statement, 'start');
   const isBetween = (node: unknown): boolean => {
     const at = field(node, 'start');
@@ -325,15 +334,15 @@ function checksWhenRun(statement: unknown): boolean {
 /** What ends the window of `read` at `cut`, the first later statement that is or holds an interaction, if any. */
 function endAt(
   cut: unknown,
-  read: SiteRead,
+  read: StatementRead,
   tree: TreeIndex,
-  siteAt: (node: unknown) => SiteRead | undefined,
+  statementAt: (node: unknown) => StatementRead | undefined,
 ): WindowEnd {
   if (cut === undefined) {
     return { by: 'none' };
   }
 
-  const ending = siteAt(cut);
+  const ending = statementAt(cut);
 
   if (ending === undefined) {
     return isStepCall(awaited(field(cut, 'expression')))

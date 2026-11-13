@@ -69,7 +69,7 @@ export function isInStoryTestCode(path: NodePath): boolean {
   return path.findParent((parent) => testCode.has(parent.node)) !== null;
 }
 
-/** The interaction whose site is `path`'s node. */
+/** The interaction whose statement is `path`'s node. */
 export function interactionAt(path: NodePath): Interaction | undefined {
   return storyFileOf(path)?.interactions.at(path.node);
 }

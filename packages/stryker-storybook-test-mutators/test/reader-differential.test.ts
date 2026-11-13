@@ -143,7 +143,7 @@ const expectedDifferences: ReadonlyMap<string, string> = new Map([
   ['scope-context-destructured-in-body', contextDestructuredInPlay],
 ]);
 
-/** Each interaction as `<site start> <kind> <method>`, in source order. */
+/** Each interaction as `<statement start> <kind> <method>`, in source order. */
 function interactionLines(source: string): {
   readonly babel: readonly string[];
   readonly core: readonly string[];
