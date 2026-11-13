@@ -38,7 +38,7 @@ terms; a failing query is never copied), which `LzStorybookAssertionBefore` also
 looked for only in the interaction's own block, so a check after the end of a step callback that holds the
 interaction is not looked at, and an interaction that is a step callback's expression body has none. Three kinds of
 statement are not copied: one that is neither a check statement nor a `waitFor(...)` whose callback holds a check, one
-that reads a name declared or written between the interaction and that statement, and one whose equal already stands
+that reads a name declared or written from the start of the interaction up to that statement, and one whose equal already stands
 before the interaction in the outermost function around it. A negative check and a `toHaveBeenCalledTimes(0)` check
 are copied like any other. `@layzee/storybook-core` picks the copied check, as it picks globals sites.
 _Avoid_: duplicated assertion, moved check

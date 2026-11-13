@@ -851,6 +851,16 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check reads a name the interaction itself assigns has no copy',
+    source: inPlay(
+      'let input;',
+      "await userEvent.click((input = canvas.getByRole('textbox')));",
+      'await expect(input).toHaveFocus();',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
       'an interaction whose first check reads a name assigned right after the interaction, with nothing between the two statements, has no copy',
     source: inPlay(
       'let dialog;',

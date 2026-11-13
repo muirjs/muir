@@ -256,13 +256,13 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   );
 }
 
-/** Whether `statement` reads a name declared or written from the end of `site` up to its own start; a node without positions counts as not between. */
+/** Whether `statement` reads a name declared or written from the start of `site` up to its own start; a node without positions counts as not between. */
 function readsNameSetBetween(
   site: unknown,
   statement: unknown,
   scope: FileScope,
 ): boolean {
-  const from = field(site, 'end');
+  const from = field(site, 'start');
   const to = field(statement, 'start');
   const isBetween = (node: unknown): boolean => {
     const at = field(node, 'start');
