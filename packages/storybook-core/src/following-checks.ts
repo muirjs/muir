@@ -206,49 +206,36 @@ export function followingChecksReader(
     return statements;
   };
 
-  return (read) =>
-    followingChecksOf(
-      read,
-      tree,
-      scope,
-      statementAt,
-      expressionStatementsAround,
-    );
-}
-
-function followingChecksOf(
-  read: StatementRead,
-  tree: TreeIndex,
-  scope: FileScope,
-  statementAt: (node: unknown) => StatementRead | undefined,
-  expressionStatementsAround: (node: unknown) => StatementsByShape,
-): FollowingChecks {
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
-  const later = laterStatements(read.node, tree);
-  const cut = later.find((statement) =>
-    holdsInteraction(statement, tree, isInteractionStatement),
-  );
-  const window = cut === undefined ? later : later.slice(0, later.indexOf(cut));
-  const checks = window.flatMap(descendants).flatMap((node) => {
-    const check = checkOf(node, tree);
 
-    return check === undefined ? [] : [check];
-  });
-  const firstExpect = checks.find((check) => check.kind === 'expect');
+  return (read) => {
+    const later = laterStatements(read.node, tree);
+    const cut = later.find((statement) =>
+      holdsInteraction(statement, tree, isInteractionStatement),
+    );
+    const window =
+      cut === undefined ? later : later.slice(0, later.indexOf(cut));
+    const checks = window.flatMap(descendants).flatMap((node) => {
+      const check = checkOf(node, tree);
 
-  return {
-    checks,
-    end: endAt(cut, read, tree, statementAt),
-    copy: copyOf(
-      window.find((statement) =>
-        descendants(statement).includes(firstExpect?.node),
+      return check === undefined ? [] : [check];
+    });
+    const firstExpect = checks.find((check) => check.kind === 'expect');
+
+    return {
+      checks,
+      end: endAt(cut, read, tree, statementAt),
+      copy: copyOf(
+        window.find((statement) =>
+          descendants(statement).includes(firstExpect?.node),
+        ),
+        read,
+        tree,
+        scope,
+        expressionStatementsAround(read.node),
       ),
-      read,
-      tree,
-      scope,
-      expressionStatementsAround(read.node),
-    ),
+    };
   };
 }
 
