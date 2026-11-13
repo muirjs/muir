@@ -78,16 +78,19 @@ export function awaited(expression: unknown): unknown {
 /** The name a member reads: its identifier, or its string-literal key when computed; `undefined` for any other key. */
 export function memberName(member: unknown): string | undefined {
   const property = field(member, 'property');
-  const name =
-    field(member, 'computed') === true
-      ? field(property, 'type') === 'StringLiteral'
-        ? field(property, 'value')
-        : undefined
-      : field(property, 'type') === 'Identifier'
-        ? field(property, 'name')
-        : undefined;
+  const type = field(property, 'type');
 
-  return typeof name === 'string' ? name : undefined;
+  if (field(member, 'computed') === true) {
+    return type === 'StringLiteral' ? stringIn(property, 'value') : undefined;
+  }
+
+  return type === 'Identifier' ? stringIn(property, 'name') : undefined;
+}
+
+function stringIn(node: unknown, key: string): string | undefined {
+  const value = field(node, key);
+
+  return typeof value === 'string' ? value : undefined;
 }
 
 /** Babel's `isNodesEquivalent` over plain nodes: the same type and fields, whatever the positions, comments and `extra`. */
@@ -142,11 +145,13 @@ export function everyRecordIn(node: object): readonly unknown[] {
 
 /** The specifier of `import(<specifier>)`, an `ImportExpression` as Babel 8 parses it, or a call with an `Import` callee as Babel 7 does by default. */
 export function importSourceOf(node: unknown): unknown {
-  return field(node, 'type') === 'ImportExpression'
-    ? field(node, 'source')
-    : field(node, 'callee', 'type') === 'Import'
-      ? list(field(node, 'arguments'))[0]
-      : undefined;
+  if (field(node, 'type') === 'ImportExpression') {
+    return field(node, 'source');
+  }
+
+  return field(node, 'callee', 'type') === 'Import'
+    ? list(field(node, 'arguments'))[0]
+    : undefined;
 }
 
 /** The key that holds each statement-list node's statements. */
