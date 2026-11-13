@@ -46,7 +46,7 @@ export type Interaction = {
   readonly args: readonly unknown[];
   /** The first argument without `await` or type wrappers, or, for a name the file binds once by `const`, that const's init without `await`. */
   readonly targetValue: unknown;
-  /** Stands in a `beforeEach` or `afterEach` function: the test mutators' site rule. */
+  /** Stands in a `beforeEach` or `afterEach` function. */
   readonly inHook: boolean;
   readonly following: FollowingChecks;
 } & Kind;

@@ -41,7 +41,7 @@ export interface FollowingChecks {
   /** Source order. */
   readonly checks: readonly Check[];
   readonly end: WindowEnd;
-  /** The statement LzStorybookAssertionBefore copies before the interaction, or `undefined`. */
+  /** The statement that may be copied before the interaction, or `undefined`. */
   readonly copy: unknown;
 }
 
@@ -243,7 +243,7 @@ function followingChecksOf(
   };
 }
 
-/** `statement`, the window statement that holds the first expect check, when LzStorybookAssertionBefore may copy it before the interaction at `read`: a check statement, or a `waitFor(...)` statement whose callback holds an expect check, in the interaction's own list. */
+/** `statement`, the window statement that holds the first expect check, when it may be copied before the interaction at `read`: a check statement, or a `waitFor(...)` statement whose callback holds an expect check, in the interaction's own list. */
 function copyOf(
   statement: unknown,
   read: SiteRead,

@@ -10,7 +10,7 @@ import {
 import { propertyKey } from './object-value.ts';
 import type { Binding, FileScope } from './scope.ts';
 
-/** Where a user-event receiver comes from, as far as the file proves it. The test mutators take any origin; the reporter takes only `userEvent14`. */
+/** Where a user-event receiver comes from, as far as the file proves it. */
 export type UserEventOrigin = 'userEvent14' | 'vitestBrowser' | 'unproven';
 
 /** The user-event methods that act on the page: those of user-event 14 (`@testing-library/user-event`, which `storybook/test` re-exports) and those only Vitest browser's userEvent has. */
