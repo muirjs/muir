@@ -368,6 +368,18 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      "a click on the play context's userEvent member after the play assigns that member's click is of unproven origin",
+    source: `export const Story = {\n  play: async (context) => {\n    context.userEvent.click = fake;\n    await context.userEvent.click(button);\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on a let destructured under another name from the play context and then assigned is of unproven origin',
+    source: `export const Story = {\n  play: async (context) => {\n    let { userEvent: u } = context;\n    u = other;\n    await u.click(button);\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
       "a click on the play context's userEvent destructured under another name with a default is a user-event 14 click",
     source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent: user = browserUserEvent }) => {\n    await user.click(button);\n  },\n};\n`,
     expect: ['userEvent click userEvent14'],

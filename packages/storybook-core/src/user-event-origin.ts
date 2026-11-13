@@ -111,7 +111,6 @@ export function userEventOrigins(
   /** Whether `reference` reads a member of what it names, or destructures it in a declaration, and so leaves its members as they are. */
   const readsMembers = (reference: unknown): boolean => {
     const parent = tree.parentOf(reference);
-    const assignment = tree.parentOf(parent);
 
     if (field(parent, 'type') === 'VariableDeclarator') {
       return (
@@ -123,10 +122,20 @@ export function userEventOrigins(
     return (
       isMember(parent) &&
       field(parent, 'object') === reference &&
-      !(
-        field(assignment, 'type') === 'AssignmentExpression' &&
-        field(assignment, 'left') === parent
-      )
+      !isAssigned(parent)
+    );
+  };
+
+  /** Whether an assignment writes `member`, or a member read from it. */
+  const isAssigned = (member: unknown): boolean => {
+    const parent = tree.parentOf(member);
+
+    return (
+      (field(parent, 'type') === 'AssignmentExpression' &&
+        field(parent, 'left') === member) ||
+      (isMember(parent) &&
+        field(parent, 'object') === member &&
+        isAssigned(parent))
     );
   };
 

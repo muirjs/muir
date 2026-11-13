@@ -96,8 +96,8 @@ is no user-event, and its call is no interaction. There are three values:
   context's `userEvent` proves it too: `{ userEvent }` destructured from the first parameter of a play, hook or
   `.test()` function of story test code, or read from that parameter as `context.userEvent` or
   `const { userEvent: u } = context`, where nothing in the file writes the parameter and every reference to a named
-  context reads one of its members or destructures it in a declaration. A write to a member, such as
-  `context.userEvent = v`, and any other use, such as `Object.assign(context, ...)` or `const c = context`, refuse it.
+  context reads one of its members or destructures it in a declaration. A write to a member or to a member of one,
+  such as `context.userEvent = v` or `context.userEvent.click = f`, and any other use, such as `Object.assign(context, ...)` or `const c = context`, refuse it.
 - `vitestBrowser`: Vitest browser's `userEvent`, imported the same way from `vitest/browser` or
   `@vitest/browser/context`, statically or by `await import(...)`.
 - `unproven`: a receiver that may be a user-event, but the file does not prove which one: `{ userEvent }` destructured
