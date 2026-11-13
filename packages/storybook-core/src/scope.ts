@@ -1,4 +1,4 @@
-import { unwrap } from './csf-nodes.ts';
+import { isMember, unwrap } from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import { childNodes, isFunction } from './node-tree.ts';
@@ -26,6 +26,8 @@ export interface FileScope {
   readonly bindingOf: (identifier: unknown) => Binding | undefined;
   /** The identifiers in `node` that read or write a binding, in source order. */
   readonly referencesIn: (node: unknown) => readonly unknown[];
+  /** The members a write targets, such as `a.b` in `a.b = c`, `[a.b] = c` or `for (a.b of c)`. */
+  readonly writtenMembers: readonly unknown[];
 }
 
 type DeclaredBinding = Omit<Binding, 'writes'>;
@@ -118,6 +120,7 @@ export function fileScope(program: unknown): FileScope {
   const resolved = new WeakMap<object, DeclaredBinding>();
   const references: (readonly [object, Scope])[] = [];
   const writes: (readonly [object, unknown])[] = [];
+  const writtenMembers: unknown[] = [];
   const written = new Map<DeclaredBinding, readonly unknown[]>();
   const addWrite = (binding: DeclaredBinding, writer: unknown): void => {
     written.set(binding, [...(written.get(binding) ?? []), writer]);
@@ -189,6 +192,10 @@ export function fileScope(program: unknown): FileScope {
     } else if (type === 'RestElement') {
       eachName(field(node, 'argument'), scope, onName);
     } else {
+      if (isMember(node)) {
+        writtenMembers.push(node);
+      }
+
       visit(node, scope);
     }
   };
@@ -417,7 +424,7 @@ export function fileScope(program: unknown): FileScope {
       ? [node]
       : childNodes(node).flatMap(referencesIn);
 
-  return { bindingOf, referencesIn };
+  return { bindingOf, referencesIn, writtenMembers };
 }
 
 function lookUp(

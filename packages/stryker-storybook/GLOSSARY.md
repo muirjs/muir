@@ -99,7 +99,8 @@ is no user-event, and its call is no interaction. There are three values:
   `.test()` function of story test code, or read from that parameter as `context.userEvent` or
   `const { userEvent: u } = context`, where nothing in the file writes the parameter and every reference to a named
   context reads one of its members or destructures it in a declaration. A write to a member or to a member of one,
-  such as `context.userEvent = v` or `context.userEvent.click = f`, and any other use, such as `Object.assign(context, ...)` or `const c = context`, refuse it.
+  such as `context.userEvent = v`, `[context.userEvent] = [v]` or `context.userEvent.click = f`, and any other use,
+  such as `Object.assign(context, ...)` or `const c = context`, refuse it.
 - `vitestBrowser`: Vitest browser's `userEvent`, imported the same way from `vitest/browser` or
   `@vitest/browser/context`, statically or by `await import(...)`.
 - `unproven`: a receiver that may be a user-event, but the file does not prove which one: `{ userEvent }` destructured
@@ -108,9 +109,12 @@ is no user-event, and its call is no interaction. There are three values:
   between receivers of two different origins, or a named receiver whose member, or a member of one, the file writes.
 
 A local whose one value is `<receiver>.setup()`, another receiver, or a choice between receivers of the same origin
-has that receiver's origin. A write to a member of a named receiver, such as `userEvent.click = f` after
-`const { userEvent } = context` or `user.click = f` after `const user = userEvent.setup()`, makes it `unproven`
-whatever it holds. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter
+has that receiver's origin. A write to a member of a receiver, or of what it is read from, makes it `unproven`
+whatever it holds: an assignment, an array or object pattern or a `for...in` or `for...of` head that targets
+`userEvent.click`, `t.userEvent.click` on a namespace import, or the member of any name that holds the same object,
+such as `u.click` after `const u = userEvent` or `userEvent.click` after `const { userEvent } = context`, which
+refuses `context.userEvent` too. A member passed to a call, as in `Object.assign(context.userEvent, ...)`, is a read
+and refuses nothing. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter
 gives the `click-before-type` shape only for `userEvent14`.
 _Avoid_: user-event kind, user-event 14 check
 

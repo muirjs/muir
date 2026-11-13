@@ -422,6 +422,25 @@ export const userEventOriginHintCases: readonly InteractionHintCase[] = [
     expect: [[5, 'click-before-type', [interaction]]],
   },
   {
+    id: 'namespace-type-replaced',
+    title:
+      'gives no hint for a click before a type on the userEvent member of a namespace import of storybook/test after the play replaces its type',
+    source: [
+      "import * as t from 'storybook/test';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    t.userEvent.type = fakeType;',
+      "    await t.userEvent.click(canvas.getByRole('textbox'));",
+      "    await t.userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
     id: 'storybook-test-setup-type',
     title:
       "names a surviving click before a type on a setup() local of storybook/test's userEvent",

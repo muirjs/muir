@@ -33,7 +33,10 @@ scope reading written in core.
   new test mutators over the same story sources and comparing their mutants. A name the file may give another value
   proves nothing: a written play context parameter, a play context whose name the file uses other than to read or
   destructure its members, or a local with more than one value gives a receiver the origin `unproven` or none, so the
-  reporter gives no `click-before-type` hint there.
+  reporter gives no `click-before-type` hint there. A write that targets a member, by assignment, pattern or
+  `for...in`/`for...of` head, of the receiver, of the namespace import or play context it is read from, or of a local
+  that aliases it or destructures `userEvent` from the same object, gives `unproven` too. A member passed to a call,
+  such as `Object.assign(context.userEvent, ...)`, is not seen as a write.
 - The test mutators make mutants for every origin, `unproven` included, as ADR 0006 asks. Their ADR 0002 stands:
   placement does not change, and the user-event 14 proof is a reading the reporter uses, not a skip.
 - The reporter refuses `negative-only` when the following checks end at a statement that may not run its interaction,

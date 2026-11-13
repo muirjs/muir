@@ -1,4 +1,4 @@
-import { isMember, unwrap } from './csf-nodes.ts';
+import { isMember, memberRoot, unwrap } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -120,39 +120,48 @@ export function userEventOrigins(
       );
     }
 
-    return (
-      isMember(parent) &&
-      field(parent, 'object') === reference &&
-      !isAssigned(parent)
-    );
+    return isMember(parent) && field(parent, 'object') === reference;
   };
 
-  /** Whether an assignment writes `member`, or a member read from it. */
-  const isAssigned = (member: unknown): boolean => {
-    const parent = tree.parentOf(member);
+  /** The pattern that holds `identifier` under the key `userEvent`, a default aside. */
+  const userEventPattern = (identifier: unknown): unknown => {
+    const parent = tree.parentOf(identifier);
+    const property =
+      field(parent, 'type') === 'AssignmentPattern'
+        ? tree.parentOf(parent)
+        : parent;
 
-    return (
-      (field(parent, 'type') === 'AssignmentExpression' &&
-        field(parent, 'left') === member) ||
-      writesMember(member)
-    );
+    return field(property, 'type') === 'ObjectProperty' &&
+      propertyKey(property) === 'userEvent'
+      ? tree.parentOf(property)
+      : undefined;
   };
 
-  /** Whether an assignment writes a member read from `node`, at any depth. */
-  const writesMember = (node: unknown): boolean => {
-    const parent = tree.parentOf(node);
+  /** `binding`, and the bindings whose object it holds by its one value naming them or naming what it destructures `userEvent` from, so a member written through it is written through them too. */
+  const sameObjects = (
+    binding: Binding | undefined,
+    seen: ReadonlySet<Binding>,
+  ): readonly Binding[] => {
+    if (binding === undefined || seen.has(binding)) {
+      return [];
+    }
 
-    return (
-      isMember(parent) && field(parent, 'object') === node && isAssigned(parent)
-    );
+    const id = unwrap(field(binding.declaration, 'id'));
+    const value = unwrap(oneValue(binding));
+    const source =
+      field(value, 'type') === 'Identifier' &&
+      (id === binding.identifier || id === userEventPattern(binding.identifier))
+        ? scope.bindingOf(value)
+        : undefined;
+
+    return [binding, ...sameObjects(source, new Set([...seen, binding]))];
   };
 
-  /** The bindings an assignment writes a member of, as `userEvent.click = fake` does. */
-  const membersWritten: ReadonlySet<Binding | undefined> = new Set(
-    scope
-      .referencesIn(program)
-      .filter(writesMember)
-      .map((reference) => scope.bindingOf(reference)),
+  /** The bindings a write targets a member of, as `userEvent.click = fake` does, with the bindings that hold the same object. */
+  const membersWritten: ReadonlySet<Binding> = new Set(
+    scope.writtenMembers.flatMap((member) =>
+      sameObjects(scope.bindingOf(memberRoot(member)), new Set()),
+    ),
   );
 
   const referencesOf = Map.groupBy(scope.referencesIn(program), (reference) =>
@@ -192,18 +201,21 @@ export function userEventOrigins(
       : 'unknown';
   };
 
-  /** The pattern that holds `identifier` under the key `userEvent`, a default aside. */
-  const userEventPattern = (identifier: unknown): unknown => {
-    const parent = tree.parentOf(identifier);
-    const property =
-      field(parent, 'type') === 'AssignmentPattern'
-        ? tree.parentOf(parent)
-        : parent;
+  /** Whether the file writes a member of what `node` names. */
+  const isWritten = (node: unknown): boolean => {
+    const binding = scope.bindingOf(unwrap(node));
 
-    return field(property, 'type') === 'ObjectProperty' &&
-      propertyKey(property) === 'userEvent'
-      ? tree.parentOf(property)
-      : undefined;
+    return binding !== undefined && membersWritten.has(binding);
+  };
+
+  /** The origin of the property `key` of what `object` holds; unproven when the file writes a member of it. */
+  const heldOrigin = (
+    object: unknown,
+    key: unknown,
+  ): UserEventOrigin | undefined => {
+    const origin = originFrom(holderOf(object), key);
+
+    return origin !== undefined && isWritten(object) ? 'unproven' : origin;
   };
 
   const bindingOrigin = (
@@ -226,7 +238,7 @@ export function userEventOrigins(
       }
 
       return id === userEventPattern(binding.identifier)
-        ? originFrom(holderOf(awaited(value)), 'userEvent')
+        ? heldOrigin(awaited(value), 'userEvent')
         : undefined;
     }
 
@@ -281,7 +293,7 @@ export function userEventOrigins(
     const node = unwrap(receiver);
 
     if (isMember(node)) {
-      return originFrom(holderOf(field(node, 'object')), memberName(node));
+      return heldOrigin(field(node, 'object'), memberName(node));
     }
 
     const binding = scope.bindingOf(node);
@@ -290,7 +302,7 @@ export function userEventOrigins(
         ? undefined
         : bindingOrigin(binding, new Set([...seen, binding]));
 
-    if (origin !== undefined && membersWritten.has(binding)) {
+    if (origin !== undefined && isWritten(node)) {
       return 'unproven';
     }
 
