@@ -198,6 +198,17 @@ export const targetCases: readonly Case[] = [
     expect: [[target, "'cancel'"]],
   },
   {
+    id: 'target-destructured-const',
+    title:
+      'a query destructured into the name an interaction acts on gives its value but makes no mutant, as no interaction acts on the query itself',
+    source: inPlay(
+      "const { save } = { save: canvas.getByRole('button', { name: 'Save' }) };",
+      'await userEvent.click(save);',
+      "await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));",
+    ),
+    expect: [[target, "'Save'"]],
+  },
+  {
     id: 'target-string-key',
     title:
       "the target of a click called by a string key, userEvent['click'](x), becomes another target in the file",

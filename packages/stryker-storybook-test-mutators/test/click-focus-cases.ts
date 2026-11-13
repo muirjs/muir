@@ -206,6 +206,26 @@ export const clickFocusCases: readonly Case[] = [
     expect: [[clickFocus, 'await button.focus();']],
   },
   {
+    id: 'click-focus-destructured-object-literal',
+    title:
+      'a click of a name destructured from an object literal holding a query becomes a focus() call on it',
+    source: inPlay(
+      "const { field } = { field: canvas.getByRole('textbox') };",
+      'await userEvent.click(field);',
+    ),
+    expect: [[clickFocus, 'await field.focus();']],
+  },
+  {
+    id: 'click-focus-destructured-from-text-field-query',
+    title:
+      'a click of a name destructured from a text field query becomes a focus() call on it, as only a const bound to the query itself names a text field',
+    source: inPlay(
+      "const { firstElementChild } = canvas.getByRole('textbox');",
+      'await userEvent.click(firstElementChild);',
+    ),
+    expect: [[clickFocus, 'await firstElementChild.focus();']],
+  },
+  {
     id: 'click-focus-skip-unknown-key',
     title:
       'a userEvent member called by a key that is no string literal makes no mutant, as it may be no click',
