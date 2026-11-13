@@ -45,11 +45,12 @@
   and mutate story data, so they belong in the Stryker configuration for the components,
   where the CSF ignorer's play mode is `ignore`.
 - **Storybook test mutators -> Storybook**: they read story test code with `@layzee/storybook-core`
-  and mutate it, and the CSF ignorer reports those mutants as Ignored unless its play mode is `mutate`, so they
-  belong in the Stryker configuration that sets that mode. `LzStorybookStoryGlobals` and the Storybook mutators'
-  `LzStorybookArgs` take the played stories and each story's layers from the same `@layzee/storybook-core` rule, and
-  `LzStorybookStoryGlobals` takes its globals sites with a Proven for each default global, whose table of Storybook's
-  initial globals `@layzee/storybook-core` holds.
+  and mutate it, taking each interaction, its user-event origin and its following checks from the
+  `@layzee/storybook-core` interaction reader, and the CSF ignorer reports those mutants as Ignored unless its play
+  mode is `mutate`, so they belong in the Stryker configuration that sets that mode. `LzStorybookStoryGlobals` and
+  the Storybook mutators' `LzStorybookArgs` take the played stories and each story's layers from the same
+  `@layzee/storybook-core` rule, and `LzStorybookStoryGlobals` takes its globals sites with a Proven for each
+  default global, whose table of Storybook's initial globals `@layzee/storybook-core` holds.
   `LzStorybookSpyStub` and `LzStorybookSpyStubOutcome` read definition-time stubs from
   the same `@layzee/storybook-core` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
   the `lz-storybook` reporter makes unchecked stubs of surviving `LzStorybookSpyStub` mutants only, so the outcome
@@ -69,4 +70,6 @@
 - **Storybook**: shares no plugin with the other contexts, and no code apart from `@layzee/storybook-core`, which
   the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
   Playwright runner. Inside it, the mock transformer writes the transformer record that the `lz-storybook` reporter
-  reads, and both take the stub shape from `@layzee/storybook-core`.
+  reads, and both take the stub shape from `@layzee/storybook-core`. The reporter reads interactions with the same
+  `@layzee/storybook-core` interaction reader as the Storybook test mutators, on its own parse of each story file in
+  the report.
