@@ -394,6 +394,21 @@ const scopeCases: readonly ScopeCase[] = [
     declaredBy: 0,
   },
   {
+    title:
+      "a constructor's parameter property binds its name in the constructor, not the outer binding",
+    lines: [
+      'const user = first;',
+      'class Driver {',
+      '  constructor(private user: object) {',
+      '    use(user);',
+      '  }',
+      '}',
+    ],
+    name: 'user',
+    reference: 2,
+    declaredBy: 1,
+  },
+  {
     title: 'a let in a for head is bound in the loop body',
     lines: [
       'const user = first;',

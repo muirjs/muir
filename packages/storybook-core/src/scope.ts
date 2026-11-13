@@ -247,12 +247,17 @@ export function fileScope(program: unknown): FileScope {
       });
 
       list(field(node, 'params')).forEach((param) =>
-        declarePattern(param, {
-          kind: 'param',
-          scope: params,
-          readScope: params,
-          node: param,
-        }),
+        declarePattern(
+          field(param, 'type') === 'TSParameterProperty'
+            ? field(param, 'parameter')
+            : param,
+          {
+            kind: 'param',
+            scope: params,
+            readScope: params,
+            node: param,
+          },
+        ),
       );
 
       const body = field(node, 'body');
