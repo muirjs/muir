@@ -390,6 +390,20 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'context-user-event-destructured-in-play',
+    title:
+      "a call on the play context's userEvent destructured under another name in the play is removed",
+    source: `export const Story = {\n  play: async (context) => {\n    const { userEvent: user } = context;\n    await user.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'context-user-event-destructured-after-assignment',
+    title:
+      'a call on userEvent destructured from the play context after the play assigns the context makes no mutant',
+    source: `export const Story = {\n  play: async (context) => {\n    context = driverContext;\n    const { userEvent: user } = context;\n    await user.click(button);\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'test-context-user-event-renamed',
     title:
       "a call on a story test's context userEvent destructured under another name is removed",
