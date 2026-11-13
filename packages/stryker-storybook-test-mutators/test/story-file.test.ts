@@ -6,7 +6,10 @@ import { test } from 'node:test';
 
 import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
-import { interactionMutator } from '../src/interaction-mutators.ts';
+import {
+  assertionBeforeMutator,
+  interactionMutator,
+} from '../src/interaction-mutators.ts';
 import type { LzStorybookTestMutator } from '../src/mutator.ts';
 import { spyStubMutator, spyStubOutcomeMutator } from '../src/spy-stub.ts';
 import { storyGlobalsMutator } from '../src/story-globals.ts';
@@ -65,6 +68,24 @@ function placeSwitch({ node }: NodePath): void {
     types.objectExpression([]),
     declarator.init,
   );
+}
+
+/** Wraps the first string literal under `path` in `stryMutAct_9fa48("0") ? "" : literal`. */
+function placeLiteralSwitch(path: NodePath): void {
+  path.traverse({
+    StringLiteral(literal) {
+      literal.replaceWith(
+        types.conditionalExpression(
+          types.callExpression(types.identifier('stryMutAct_9fa48'), [
+            types.stringLiteral('0'),
+          ]),
+          types.stringLiteral(''),
+          literal.node,
+        ),
+      );
+      literal.stop();
+    },
+  });
 }
 
 const factoryStubStatement = [
@@ -137,6 +158,62 @@ test('LzStorybookInteraction removes a raw DOM interaction after a mutant is pla
       file.at("canvas.getByRole('button').click", 'ExpressionStatement'),
     ),
     ['EmptyStatement'],
+  );
+});
+
+test('LzStorybookAssertionBefore copies a check before an interaction after a mutant is placed in an earlier statement', () => {
+  const file = parse(
+    [
+      'export const Story = {',
+      '  play: async ({ args, canvas, userEvent }) => {',
+      "    const save = canvas.getByRole('button');",
+      '    await userEvent.click(save);',
+      '    await expect(args.onSave).toHaveBeenCalled();',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+  );
+  const earlier = file.at('const save', 'VariableDeclaration');
+  const mutator = assertionBeforeMutator();
+
+  mutantTypes(mutator, earlier);
+  placeSwitch(earlier);
+
+  assert.deepEqual(
+    mutantTypes(
+      mutator,
+      file.at('await userEvent.click', 'ExpressionStatement'),
+    ),
+    ['BlockStatement'],
+  );
+});
+
+test('LzStorybookAssertionBefore reads the earlier statements as written when a mutant is placed in the one its check repeats', () => {
+  const file = parse(
+    [
+      'export const Story = {',
+      '  play: async ({ canvas, userEvent }) => {',
+      "    await expect(canvas.getByRole('form')).toBeVisible();",
+      '    await userEvent.click(save);',
+      "    await expect(canvas.getByRole('form')).toBeVisible();",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+  );
+  const earlier = file.at('await expect', 'ExpressionStatement');
+  const mutator = assertionBeforeMutator();
+
+  mutantTypes(mutator, earlier);
+  placeLiteralSwitch(earlier);
+
+  assert.deepEqual(
+    mutantTypes(
+      mutator,
+      file.at('await userEvent.click', 'ExpressionStatement'),
+    ),
+    [],
   );
 });
 
