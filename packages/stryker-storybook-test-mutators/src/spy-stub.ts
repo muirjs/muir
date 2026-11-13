@@ -8,7 +8,7 @@ import {
 } from '@layzee/storybook-core';
 
 import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
-import { nameOf } from './nodes.ts';
+import { nameOf } from './queries.ts';
 import { isInStoryTestCode, perFile, readStoryFileAt } from './story-file.ts';
 
 export function spyStubMutator(): LzStorybookTestMutator & {

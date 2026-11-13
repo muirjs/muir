@@ -1,6 +1,8 @@
 import type { types } from '@babel/core';
 
-import { nameOf } from './nodes.ts';
+export function nameOf(node: types.Node): string | undefined {
+  return node.type === 'Identifier' ? node.name : undefined;
+}
 
 // The Testing Library queries, by what they match.
 export const queryKinds: readonly string[] = [
