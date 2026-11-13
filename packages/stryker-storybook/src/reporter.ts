@@ -23,7 +23,6 @@ import {
   type InteractionHint,
   type ReportFiles,
 } from './interaction-hints.ts';
-import { mutatePatterns } from './options.ts';
 import { packageName } from './package-name.ts';
 import {
   isStoryFile,
@@ -129,11 +128,7 @@ export function storybookReporter(options: object, log: ProjectLog) {
       const findings = excludesSpyStub(options)
         ? []
         : stubFindings(files, storybook(), warnUnparsable);
-      const hints = interactionHints(
-        files,
-        mutatePatterns(options),
-        (message) => log.warn(message),
-      );
+      const hints = interactionHints(files, (message) => log.warn(message));
       const report: LzStorybookReport = {
         findings,
         interactionHints: hints,

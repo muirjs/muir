@@ -1,7 +1,7 @@
-// The hints read the interaction sites from the LzStorybookInteraction mutants in the report, so every case runs the
-// real instrumenter with the real test mutators.
+// The hints name a mutator only when every mutant of it placed on the line survived, so every case runs the real
+// instrumenter with the real test mutators.
 import assert from 'node:assert/strict';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -61,6 +61,9 @@ async function reportOf(
 }
 
 const [negativeOnly] = interactionHintCases;
+const endsAtNextInteraction = interactionHintCases.find(
+  ({ id }) => id === 'ends-at-next-interaction',
+);
 
 function failOnWarning(message: string): never {
   throw new Error(`unexpected warning: ${message}`);
@@ -79,7 +82,7 @@ describe('interactionHints', () => {
       const report = await reportOf(source, survived);
 
       assert.deepEqual(
-        interactionHints(report, [], failOnWarning).map(
+        interactionHints(report, failOnWarning).map(
           ({ line, shape, mutatorNames }) => [line, shape, mutatorNames],
         ),
         expect,
@@ -93,7 +96,6 @@ describe('interactionHints', () => {
         it(`${id}: the comment for line ${line} ignores exactly the survivors the case names there, with its reason`, async () => {
           const hint = interactionHints(
             await reportOf(source, survived),
-            [],
             failOnWarning,
           ).find(
             (candidate) => candidate.line === line && candidate.shape === shape,
@@ -193,7 +195,7 @@ describe('interactionHints', () => {
       'NoCoverage',
     );
 
-    assert.deepEqual(interactionHints(report, [], failOnWarning), []);
+    assert.deepEqual(interactionHints(report, failOnWarning), []);
   });
 
   it('warns once and gives no hint for a file that Babel cannot parse', async () => {
@@ -209,7 +211,6 @@ describe('interactionHints', () => {
     assert.deepEqual(
       interactionHints(
         { [file]: { ...parsed, source: 'export const = ;' } },
-        [],
         (message) => warnings.push(message),
       ),
       [],
@@ -221,14 +222,13 @@ describe('interactionHints', () => {
     );
   });
 
-  it('warns once and gives the file no hint when an interaction survivor lies in no LzStorybookInteraction mutant', async () => {
+  it('gives a hint for a survivor whose interaction has no LzStorybookInteraction mutant, as a column range that cuts the interaction leaves out', async () => {
     assert.ok(negativeOnly !== undefined);
 
     const { [file]: placed } = await reportOf(negativeOnly.source, [
       ['LzStorybookClickFocus', 5],
       ['LzStorybookInteractionRepeat', 5],
     ]);
-    const warnings: string[] = [];
 
     assert.ok(placed !== undefined);
     assert.deepEqual(
@@ -241,24 +241,25 @@ describe('interactionHints', () => {
             ),
           },
         },
-        [],
-        (message) => warnings.push(message),
-      ),
-      [],
+        failOnWarning,
+      ).map(({ line, shape, mutatorNames }) => [line, shape, mutatorNames]),
+      [
+        [
+          5,
+          'negative-only',
+          ['LzStorybookClickFocus', 'LzStorybookInteractionRepeat'],
+        ],
+      ],
     );
-    assert.deepEqual(warnings, [
-      '@layzee/stryker-storybook: src/Form.stories.tsx has a surviving interaction mutant outside every LzStorybookInteraction mutant, so lz-storybook gave it no interaction hints',
-    ]);
   });
 
-  it('warns once and gives the file no hint when no parsed node has the range of an LzStorybookInteraction mutant that holds a survivor', async () => {
-    assert.ok(negativeOnly !== undefined);
+  it('gives hints in a file that a line-range mutate pattern names, read up to an interaction outside the range', async () => {
+    assert.ok(endsAtNextInteraction !== undefined);
 
     const { [file]: placed } = await reportOf(
-      negativeOnly.source,
-      negativeOnly.survived,
+      endsAtNextInteraction.source,
+      endsAtNextInteraction.survived,
     );
-    const warnings: string[] = [];
 
     assert.ok(placed !== undefined);
     assert.deepEqual(
@@ -266,64 +267,15 @@ describe('interactionHints', () => {
         {
           [file]: {
             ...placed,
-            mutants: placed.mutants.map((mutant) =>
-              mutant.mutatorName === 'LzStorybookInteraction'
-                ? {
-                    ...mutant,
-                    location: {
-                      ...mutant.location,
-                      end: {
-                        ...mutant.location.end,
-                        column: mutant.location.end.column + 1,
-                      },
-                    },
-                  }
-                : mutant,
+            mutants: placed.mutants.filter(
+              ({ location }) => location.end.line <= 6,
             ),
           },
         },
-        [],
-        (message) => warnings.push(message),
-      ),
-      [],
+        failOnWarning,
+      ).map(({ line, shape, mutatorNames }) => [line, shape, mutatorNames]),
+      endsAtNextInteraction.expect,
     );
-    assert.deepEqual(warnings, [
-      '@layzee/stryker-storybook: src/Form.stories.tsx has an LzStorybookInteraction mutant whose range no node of the parsed file has, so lz-storybook gave it no interaction hints',
-    ]);
-  });
-
-  it('says once that a file a line-range mutate pattern names gets no hint', async () => {
-    assert.ok(negativeOnly !== undefined);
-
-    const warnings: string[] = [];
-
-    assert.deepEqual(
-      interactionHints(
-        await reportOf(negativeOnly.source, negativeOnly.survived),
-        ['src/**/*.ts', `${file}:5-6`],
-        (message) => warnings.push(message),
-      ),
-      [],
-    );
-    assert.deepEqual(warnings, [
-      `@layzee/stryker-storybook: the mutate pattern ${file}:5-6 gives ${file} a line range, so lz-storybook gave it no interaction hints: an interaction outside the range has no LzStorybookInteraction mutant to end a hint's window`,
-    ]);
-  });
-
-  it('gives no hint for a file a line-range pattern names by its absolute path', async () => {
-    assert.ok(negativeOnly !== undefined);
-
-    const warnings: string[] = [];
-
-    assert.deepEqual(
-      interactionHints(
-        await reportOf(negativeOnly.source, negativeOnly.survived),
-        [`${resolve(file)}:1-20`],
-        (message) => warnings.push(message),
-      ),
-      [],
-    );
-    assert.equal(warnings.length, 1, warnings.join('\n'));
   });
 
   it('reads no file without a surviving interaction mutant', async () => {
@@ -335,7 +287,6 @@ describe('interactionHints', () => {
     assert.deepEqual(
       interactionHints(
         { [file]: { ...killed, source: 'export const = ;' } },
-        [],
         failOnWarning,
       ),
       [],

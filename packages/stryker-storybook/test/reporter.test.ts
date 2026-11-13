@@ -985,19 +985,20 @@ describe('storybookReporter', () => {
     ]);
   });
 
-  it('warns and gives no hint for a story file that a line-range mutate pattern names', (t) => {
-    const { reporter, lines, written } = setup(t, 'no-main', {
+  it('gives hints with no warning for a story file that a line-range mutate pattern names', (t) => {
+    const { reporter, lines, consoleBlock } = setup(t, 'no-main', {
       mutate: ['src/Form.stories.tsx:5-9'],
     });
 
     reporter.onMutationTestReportReady(shapedReport);
 
-    assert.deepEqual(written(), emptyReport);
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
-      [
-        "warn: @layzee/stryker-storybook: the mutate pattern src/Form.stories.tsx:5-9 gives src/Form.stories.tsx a line range, so lz-storybook gave it no interaction hints: an interaction outside the range has no LzStorybookInteraction mutant to end a hint's window",
-      ],
+      [],
+    );
+    assert.deepEqual(
+      consoleBlock()[1],
+      '@layzee/stryker-storybook: 3 interaction hints (1 negative-only, 1 click-before-type, 1 cleared-later)',
     );
   });
 

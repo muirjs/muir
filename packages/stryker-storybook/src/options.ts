@@ -1,4 +1,4 @@
-import { field, isRecord, list } from '@layzee/storybook-core';
+import { field, isRecord } from '@layzee/storybook-core';
 
 import { packageName } from './package-name.ts';
 
@@ -18,13 +18,6 @@ export function vitestConfigFile(options: object): string | undefined {
   const configFile = field(options, 'vitest', 'configFile');
 
   return typeof configFile === 'string' ? configFile : undefined;
-}
-
-/** The string patterns of Stryker's `mutate` option. */
-export function mutatePatterns(options: object): readonly string[] {
-  return list(field(options, 'mutate')).filter(
-    (pattern) => typeof pattern === 'string',
-  );
 }
 
 export function lzStorybookOptions(options: object): LzStorybookOptions {

@@ -1,5 +1,3 @@
-import { resolve } from 'node:path';
-
 import {
   csfShapes,
   field,
@@ -22,13 +20,6 @@ export const interactionMutatorNames = [
 ] as const;
 
 type InteractionMutatorName = (typeof interactionMutatorNames)[number];
-
-/**
- * `LzStorybookInteraction` places a mutant at every interaction outside a `beforeEach` or `afterEach`, and Stryker
- * keeps a mutant it ignores in the report as Ignored, so the ranges of its mutants, whatever their status, are the
- * interactions the test mutators read.
- */
-const siteMutatorName: InteractionMutatorName = 'LzStorybookInteraction';
 
 export interface InteractionHint {
   readonly file: string;
@@ -67,7 +58,6 @@ interface ShapedSurvivor {
  */
 export function interactionHints(
   files: ReportFiles,
-  mutate: readonly string[],
   warn: (message: string) => void,
 ): readonly InteractionHint[] {
   return Object.entries(files).flatMap(([file, { source, mutants }]) => {
@@ -81,64 +71,25 @@ export function interactionHints(
       return [];
     }
 
-    const rangePattern = mutate.find((pattern) =>
-      namesWithLineRange(pattern, file),
-    );
-
-    if (rangePattern !== undefined) {
-      warn(
-        `${packageName}: the mutate pattern ${rangePattern} gives ${file} a line range, so lz-storybook gave it no interaction hints: an interaction outside the range has no ${siteMutatorName} mutant to end a hint's window`,
-      );
-
-      return [];
-    }
-
     const program = parsed(source, file, warn);
 
     if (program === undefined) {
       return [];
     }
 
-    const sites = mutants
-      .filter(({ mutatorName }) => mutatorName === siteMutatorName)
-      .map(({ location }) => location);
-    const held = survivors.flatMap(({ mutant, name }) => {
+    const interactions = interactionsOf(program, csfShapes(program));
+    const sites = interactions.all.flatMap((interaction) => {
+      const location = locationOf(interaction.node);
+
+      return location === undefined ? [] : [{ interaction, location }];
+    });
+    const read = survivors.flatMap(({ mutant, name }) => {
       const site = siteHolding(sites, mutant.location.start);
 
-      return site === undefined ? [] : [{ mutant, name, site }];
-    });
-
-    if (held.length < survivors.length) {
-      warn(
-        `${packageName}: ${file} has a surviving interaction mutant outside every ${siteMutatorName} mutant, so lz-storybook gave it no interaction hints`,
-      );
-
-      return [];
-    }
-
-    const interactions = interactionsOf(program, csfShapes(program));
-    const byRange = new Map(
-      interactions.all.flatMap((interaction) => {
-        const key = rangeKey(interaction.node);
-
-        return key === undefined ? [] : [[key, interaction] as const];
-      }),
-    );
-    const read = held.flatMap(({ mutant, name, site }) => {
-      const interaction = byRange.get(locationKey(site));
-
-      return interaction === undefined
+      return site === undefined
         ? []
-        : [{ mutant, name, shapes: shapesOf(interaction, interactions) }];
+        : [{ mutant, name, shapes: shapesOf(site.interaction, interactions) }];
     });
-
-    if (read.length < held.length) {
-      warn(
-        `${packageName}: ${file} has an ${siteMutatorName} mutant whose range no node of the parsed file has, so lz-storybook gave it no interaction hints`,
-      );
-
-      return [];
-    }
 
     return groupedHints(
       file,
@@ -160,16 +111,6 @@ function survivingName({
     : undefined;
 }
 
-// StrykerJS 10.1.1 core, src/fs/mutate-pattern-constants.ts
-const mutationRange = /(.*?):((\d+)(?::(\d+))?-(\d+)(?::(\d+))?)$/;
-
-/** StrykerJS 10.1.1 refuses a line range on a glob (src/config/options-validator.ts), so a ranged pattern names one file. */
-function namesWithLineRange(pattern: string, file: string): boolean {
-  const path = mutationRange.exec(pattern)?.[1];
-
-  return path !== undefined && resolve(path) === resolve(file);
-}
-
 function parsed(
   source: string,
   file: string,
@@ -186,17 +127,24 @@ function parsed(
   }
 }
 
+/** An interaction with its range in the report. */
+interface Site {
+  readonly interaction: Interaction;
+  readonly location: schema.Location;
+}
+
 /** The innermost site whose range holds `position`, the one that starts last: a target literal lies inside its interaction. */
 function siteHolding(
-  ranges: readonly schema.Location[],
+  sites: readonly Site[],
   position: schema.Position,
-): schema.Location | undefined {
-  const holding = ranges.filter(
-    ({ start, end }) => !isBefore(position, start) && !isBefore(end, position),
+): Site | undefined {
+  const holding = sites.filter(
+    ({ location: { start, end } }) =>
+      !isBefore(position, start) && !isBefore(end, position),
   );
 
-  return holding.find(({ start }) =>
-    holding.every((other) => !isBefore(start, other.start)),
+  return holding.find(({ location: { start } }) =>
+    holding.every((other) => !isBefore(start, other.location.start)),
   );
 }
 
@@ -208,7 +156,7 @@ function isBefore(first: schema.Position, second: schema.Position): boolean {
 }
 
 /** The report's 1-based range of an interaction's site, whose Babel columns are 0-based; `undefined` for a site with no `loc`. */
-function rangeKey(node: Interaction['node']): string | undefined {
+function locationOf(node: Interaction['node']): schema.Location | undefined {
   const start = field(node, 'loc', 'start');
   const end = field(node, 'loc', 'end');
   const startLine = field(start, 'line');
@@ -220,15 +168,11 @@ function rangeKey(node: Interaction['node']): string | undefined {
     typeof startColumn === 'number' &&
     typeof endLine === 'number' &&
     typeof endColumn === 'number'
-    ? locationKey({
+    ? {
         start: { line: startLine, column: startColumn + 1 },
         end: { line: endLine, column: endColumn + 1 },
-      })
+      }
     : undefined;
-}
-
-function locationKey({ start, end }: schema.Location): string {
-  return [start.line, start.column, end.line, end.column].join(':');
 }
 
 /** The survivors that share a line and a shape. */
