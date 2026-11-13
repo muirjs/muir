@@ -31,9 +31,9 @@ scope reading written in core.
 
 - The scope model in core follows JavaScript's binding rules. The migration was checked by running the old and the
   new test mutators over the same story sources and comparing their mutants. A name the file may give another value
-  proves nothing: a written play context parameter, a play context whose name
-  the file uses other than to read or destructure its members, or a local with more than one value gives a receiver
-  the origin `unproven` or none, so the reporter gives no `click-before-type` hint there.
+  proves nothing: a written play context parameter, a play context whose name the file uses other than to read or
+  destructure its members, or a local with more than one value gives a receiver the origin `unproven` or none, so the
+  reporter gives no `click-before-type` hint there.
 - The test mutators make mutants for every origin, `unproven` included, as ADR 0006 asks. Their ADR 0002 stands:
   placement does not change, and the user-event 14 proof is a reading the reporter uses, not a skip.
 - The reporter refuses `negative-only` when the following checks end at a statement that may not run its interaction,
