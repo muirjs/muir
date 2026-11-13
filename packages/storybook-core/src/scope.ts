@@ -45,8 +45,12 @@ interface Declaration {
   readonly node: unknown;
 }
 
-/** The nodes that open a block scope over all they hold. A function's own body block shares the function's scope. */
-const blockScopes: readonly unknown[] = ['BlockStatement', 'ForStatement'];
+/** The nodes that open a block scope over all they hold. A function's own body block shares the function's scope; a class static block also holds its `var`s. */
+const blockScopes: readonly unknown[] = [
+  'BlockStatement',
+  'ForStatement',
+  'StaticBlock',
+];
 
 /** The keys under which a node of each type holds an identifier that reads and writes no binding, such as a label. */
 const nameKeys: ReadonlyMap<unknown, readonly string[]> = new Map([
@@ -270,7 +274,7 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (blockScopes.includes(type)) {
-      const inner = scopeIn(scope, false);
+      const inner = scopeIn(scope, type === 'StaticBlock');
 
       readChildren(node).forEach((child) => visit(child, inner));
 

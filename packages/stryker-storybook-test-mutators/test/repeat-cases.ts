@@ -202,6 +202,23 @@ export const repeatCases: readonly Case[] = [
     ],
   },
   {
+    id: 'repeat-setup-static-block-shadow',
+    title:
+      'a click on a local bound to userEvent.setup() that a class static block shadows runs twice',
+    source: inPlay(
+      'const user = userEvent.setup();',
+      'class Steps {',
+      '  static {',
+      '    const user = 1;',
+      '  }',
+      '}',
+      'await user.click(button);',
+    ),
+    expect: [
+      [repeat, '{ await user.click(button); await user.click(button); }'],
+    ],
+  },
+  {
     id: 'repeat-skip-unknown-key',
     title:
       'a userEvent member called by a key that is no string literal makes no mutant, as it may be no click',

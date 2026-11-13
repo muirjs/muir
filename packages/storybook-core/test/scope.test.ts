@@ -297,6 +297,36 @@ const scopeCases: readonly ScopeCase[] = [
     declaredBy: undefined,
   },
   {
+    title: 'a let in a class static block shadows an outer const inside it',
+    lines: [
+      'const user = first;',
+      'class Page {',
+      '  static {',
+      '    let user = second;',
+      '    use(user);',
+      '  }',
+      '}',
+    ],
+    name: 'user',
+    reference: 2,
+    declaredBy: 1,
+  },
+  {
+    title:
+      'a var in a class static block is bound in the block, not outside it',
+    lines: [
+      'class Page {',
+      '  static {',
+      '    var user = second;',
+      '  }',
+      '}',
+      'use(user);',
+    ],
+    name: 'user',
+    reference: 1,
+    declaredBy: undefined,
+  },
+  {
     title: 'a let in a for head is bound in the loop body',
     lines: [
       'const user = first;',

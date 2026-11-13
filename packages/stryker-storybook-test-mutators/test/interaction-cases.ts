@@ -101,6 +101,21 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-setup-static-block-shadow',
+    title:
+      'a call on a local bound to userEvent.setup() that a class static block shadows is removed',
+    source: inPlay(
+      'const user = userEvent.setup();',
+      'class Steps {',
+      '  static {',
+      '    const user = 1;',
+      '  }',
+      '}',
+      'await user.click(button);',
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'user-event-setup-let',
     title: 'a call on a let bound to userEvent.setup() is removed',
     source: inPlay(

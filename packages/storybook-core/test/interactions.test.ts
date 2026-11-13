@@ -138,6 +138,35 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      'a click on a userEvent that a const in a class static block declares over a storybook/test import is of unproven origin',
+    source: [
+      "import { userEvent } from 'storybook/test';",
+      'class Steps {',
+      '  static {',
+      '    const userEvent = vitestUserEvent;',
+      '    userEvent.click(textbox);',
+      '  }',
+      '}',
+    ].join('\n'),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on a local bound to userEvent.setup() that a class static block shadows is a user-event 14 click',
+    source: `import { userEvent } from 'storybook/test';\n${inPlayWith(
+      ['canvas'],
+      'const user = userEvent.setup();',
+      'class Steps {',
+      '  static {',
+      '    const user = 1;',
+      '  }',
+      '}',
+      "await user.click(canvas.getByRole('textbox'));",
+    )}`,
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
       "a let in a for...of head shadows the play context's userEvent only inside the loop",
     source: inPlay(
       'for (let userEvent of [vitestUserEvent]) {',

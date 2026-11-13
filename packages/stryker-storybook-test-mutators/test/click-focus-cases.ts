@@ -64,6 +64,21 @@ export const clickFocusCases: readonly Case[] = [
     expect: [[clickFocus, 'await button.focus();']],
   },
   {
+    id: 'click-focus-setup-static-block-shadow',
+    title:
+      'a click on a local bound to userEvent.setup() that a class static block shadows becomes a focus() call',
+    source: inPlay(
+      'const user = userEvent.setup();',
+      'class Steps {',
+      '  static {',
+      '    const user = 1;',
+      '  }',
+      '}',
+      'await user.click(button);',
+    ),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
     id: 'click-focus-not-awaited',
     title:
       'a click that is not awaited becomes a focus() call that is not awaited',
