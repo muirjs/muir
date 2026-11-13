@@ -18,8 +18,7 @@ export function waitForMutator(): LzStorybookTestMutator & {
         yield t.emptyStatement();
       } else if (
         call.type === 'CallExpression' &&
-        call.callee.type === 'Identifier' &&
-        call.callee.name === 'waitFor' &&
+        waitCall(call) === 'waitFor' &&
         call.arguments[0]?.type === 'ArrowFunctionExpression'
       ) {
         yield t.callExpression(
