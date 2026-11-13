@@ -45,7 +45,7 @@ interface Declaration {
   readonly node: unknown;
 }
 
-/** The nodes that open a block scope over all they hold. A function's own body block shares the function's scope; a class static block also holds its `var`s. */
+/** The nodes that open a block scope over all they hold. A function's own body block is its body scope, below the scope of its parameters and `var`s; a class static block also holds its `var`s. */
 const blockScopes: readonly unknown[] = [
   'BlockStatement',
   'ForStatement',
@@ -217,13 +217,13 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (isFunction(node)) {
-      const inner = scopeIn(scope, true);
+      const own =
+        type === 'FunctionDeclaration' ? scope : scopeIn(scope, false);
+      const params = scopeIn(own, true);
 
       if (field(node, 'computed') === true) {
         visit(field(node, 'key'), scope);
       }
-
-      const own = type === 'FunctionDeclaration' ? scope : inner;
 
       declare(field(node, 'id'), {
         kind: 'function',
@@ -235,18 +235,19 @@ export function fileScope(program: unknown): FileScope {
       list(field(node, 'params')).forEach((param) =>
         declarePattern(param, {
           kind: 'param',
-          scope: inner,
-          readScope: inner,
+          scope: params,
+          readScope: params,
           node: param,
         }),
       );
 
       const body = field(node, 'body');
+      const bodyScope = scopeIn(params, false);
 
       (field(body, 'type') === 'BlockStatement'
         ? list(field(body, 'body'))
         : [body]
-      ).forEach((child) => visit(child, inner));
+      ).forEach((child) => visit(child, bodyScope));
 
       return;
     }

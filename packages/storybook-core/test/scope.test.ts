@@ -203,6 +203,14 @@ const scopeCases: readonly ScopeCase[] = [
     declaredBy: 1,
   },
   {
+    title:
+      "a parameter named as its function expression shadows the function's name in the body",
+    lines: ['const run = function retry(retry) {', '  return retry;', '};'],
+    name: 'retry',
+    reference: 2,
+    declaredBy: 1,
+  },
+  {
     title: 'a label names no binding',
     lines: [
       'const done = first;',
@@ -341,6 +349,19 @@ const scopeCases: readonly ScopeCase[] = [
     declaredBy: 1,
   },
   {
+    title:
+      "a parameter's default reads the outer binding, not a const in the function's body",
+    lines: [
+      'const user = first;',
+      'function run(driver = user) {',
+      '  const user = second;',
+      '}',
+    ],
+    name: 'user',
+    reference: 1,
+    declaredBy: 0,
+  },
+  {
     title: 'a let in a for head is bound in the loop body',
     lines: [
       'const user = first;',
@@ -452,6 +473,14 @@ const writeCases: readonly WriteCase[] = [
     name: 'user',
     reference: 0,
     writes: ['AssignmentExpression'],
+  },
+  {
+    title:
+      "a parameter named as its function expression is no write of the function's name",
+    lines: ['const run = function retry(retry) {', '  return retry;', '};'],
+    name: 'retry',
+    reference: 0,
+    writes: [],
   },
   {
     title:
