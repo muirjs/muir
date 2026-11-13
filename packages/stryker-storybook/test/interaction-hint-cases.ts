@@ -878,6 +878,21 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [[7, 'negative-only', [interaction]]],
   },
   {
+    id: 'negative-past-function-declaration',
+    title:
+      'names a surviving interaction whose negative checks run past a function declaration that holds an interaction, as declaring a function runs nothing',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'function openMenu() { userEvent.click(menu); }',
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+    ),
+    survived: [
+      [interaction, 5],
+      [interaction, 6],
+    ],
+    expect: [[5, 'negative-only', [interaction]]],
+  },
+  {
     id: 'testing-library-named-type',
     title:
       "names a surviving click before a type on @testing-library/user-event's named userEvent, which is user-event 14",
