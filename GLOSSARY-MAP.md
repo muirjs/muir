@@ -55,8 +55,8 @@
   the same `@layzee/storybook-core` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
   the `lz-storybook` reporter makes unchecked stubs of surviving `LzStorybookSpyStub` mutants only, so the outcome
   mutants, which carry the other name, stay out of them;
-  the `lz-storybook` reporter reads the interaction statements from the `LzStorybookInteraction` mutants in the report,
-  whatever their status, and gives interaction hints for surviving mutants of the five interaction mutators;
+  the `lz-storybook` reporter reads the interaction statements with `interactionsOf` on its own parse of each story
+  file, and gives interaction hints for surviving mutants of the five interaction mutators;
   `@layzee/stryker-storybook`'s tests (a devDependency only) check that each mutant carries its name, that
   `LzStorybookSpyStub` is an experimental mutator name of this package, and that each of the five interaction mutator
   names makes mutants.
