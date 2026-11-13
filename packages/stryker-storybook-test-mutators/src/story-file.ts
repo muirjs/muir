@@ -69,12 +69,19 @@ export function isInStoryTestCode(path: NodePath): boolean {
   return path.findParent((parent) => testCode.has(parent.node)) !== null;
 }
 
-/** The interaction whose statement is `path`'s node. */
-export function interactionAt(path: NodePath): Interaction | undefined {
-  return storyFileOf(path)?.interactions.at(path.node);
+/** The interaction the test mutators place whose statement is `path`'s node. */
+export function placedInteractionAt(path: NodePath): Interaction | undefined {
+  return placed(storyFileOf(path)?.interactions.at(path.node));
 }
 
-/** The interaction whose target query is the call nearest around `path`'s node. */
-export function interactionAimedAt(path: NodePath): Interaction | undefined {
-  return storyFileOf(path)?.interactions.aimedAt(path.node);
+/** The interaction the test mutators place whose target query is the call nearest around `path`'s node. */
+export function placedInteractionAimedAt(
+  path: NodePath,
+): Interaction | undefined {
+  return placed(storyFileOf(path)?.interactions.aimedAt(path.node));
+}
+
+/** The interaction unless it stands in a `beforeEach` or `afterEach`, the site rule of every interaction mutator. */
+function placed(interaction: Interaction | undefined): Interaction | undefined {
+  return interaction?.inHook === true ? undefined : interaction;
 }
