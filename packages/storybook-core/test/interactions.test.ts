@@ -149,6 +149,17 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      "a const in a for...of head shadows the play context's userEvent only inside the loop",
+    source: inPlay(
+      'for (const userEvent of [vitestUserEvent]) {',
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      '}',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+    ),
+    expect: ['userEvent click unproven', 'userEvent click userEvent14'],
+  },
+  {
+    title:
       "a click on userEvent imported under another name from 'vitest/browser' is a Vitest browser click",
     source: `import { userEvent as browserUserEvent } from 'vitest/browser';\n${inPlay("await browserUserEvent.click(canvas.getByRole('button'));")}`,
     expect: ['userEvent click vitestBrowser'],
@@ -181,6 +192,12 @@ const kindCases: readonly KindCase[] = [
     title:
       "a click on the default import of 'storybook/test' named userEvent is a user-event click of unproven origin",
     source: `import userEvent from 'storybook/test';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('button'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on the default import of 'vitest/browser' named userEvent is a user-event click of unproven origin, as only its named userEvent export is Vitest browser's",
+    source: `import userEvent from 'vitest/browser';\n${inPlayWith(['canvas'], "await userEvent.click(canvas.getByRole('button'));")}`,
     expect: ['userEvent click unproven'],
   },
   {
@@ -564,6 +581,12 @@ const kindCases: readonly KindCase[] = [
     expect: ['userEvent click userEvent14'],
   },
   {
+    title:
+      "a click in the meta's play is the play context's user-event 14 click",
+    source: `export default {\n  play: async ({ userEvent }) => {\n    await userEvent.click(button);\n  },\n};\nexport const Story = {};\n`,
+    expect: ['userEvent click userEvent14'],
+  },
+  {
     title: "an interaction in a play method is the play context's",
     source: `export const Story = {\n  async play({ userEvent }) {\n    await userEvent.click(button);\n  },\n};\n`,
     expect: ['userEvent click userEvent14'],
@@ -889,6 +912,101 @@ describe('interactionsOf targetValue', () => {
         memberName(field(interaction?.targetValue, 'callee')),
         'findByRole',
       );
+    });
+  });
+});
+
+interface CallCase {
+  readonly title: string;
+  readonly source: string;
+  /** Each interaction's call and arguments, in source order, as source text. */
+  readonly expect: readonly CallDescription[];
+}
+
+interface CallDescription {
+  readonly call: string | undefined;
+  readonly args: readonly (string | undefined)[];
+}
+
+function textOf(source: string, node: unknown): string | undefined {
+  const start = field(node, 'start');
+  const end = field(node, 'end');
+
+  return typeof start === 'number' && typeof end === 'number'
+    ? source.slice(start, end)
+    : undefined;
+}
+
+/** The call and arguments of each interaction of `source`, once per parse. */
+function callsIn(source: string): readonly (readonly CallDescription[])[] {
+  return programsOf(source).map((program) =>
+    interactionsOf(program, csfShapes(program)).all.map(({ call, args }) => ({
+      call: textOf(source, call),
+      args: args.map((argument) => textOf(source, argument)),
+    })),
+  );
+}
+
+const callCases: readonly CallCase[] = [
+  {
+    title:
+      "a user-event interaction's call is its call without await or type wrappers, and its args are that call's arguments",
+    source: inPlay(
+      "await (userEvent.type(canvas.getByRole('textbox'), 'Ada', { delay: 0 }) as Promise<void>);",
+    ),
+    expect: [
+      {
+        call: "userEvent.type(canvas.getByRole('textbox'), 'Ada', { delay: 0 })",
+        args: ["canvas.getByRole('textbox')", "'Ada'", '{ delay: 0 }'],
+      },
+    ],
+  },
+  {
+    title:
+      "a fireEvent interaction's call is its call without await, and its args are that call's arguments",
+    source: inPlay(
+      "await fireEvent(canvas.getByRole('button'), new MouseEvent('click'));",
+    ),
+    expect: [
+      {
+        call: "fireEvent(canvas.getByRole('button'), new MouseEvent('click'))",
+        args: ["canvas.getByRole('button')", "new MouseEvent('click')"],
+      },
+    ],
+  },
+  {
+    title:
+      "a composed play's call is the play call or the step call that runs it, and its args are that call's arguments",
+    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async (context) => {\n    await Other.play(context);\n    await context.step('Again', Other.play);\n  },\n};\n`,
+    expect: [
+      { call: 'Other.play(context)', args: ['context'] },
+      {
+        call: "context.step('Again', Other.play)",
+        args: ["'Again'", 'Other.play'],
+      },
+    ],
+  },
+  {
+    title:
+      "a raw DOM interaction's call is its call, and its args are that call's arguments",
+    source: inPlay(
+      "button.dispatchEvent(new Event('input'));",
+      'button.blur();',
+    ),
+    expect: [
+      {
+        call: "button.dispatchEvent(new Event('input'))",
+        args: ["new Event('input')"],
+      },
+      { call: 'button.blur()', args: [] },
+    ],
+  },
+];
+
+describe('interactionsOf call and args', () => {
+  callCases.forEach(({ title, source, expect }) => {
+    it(title, () => {
+      assert.deepEqual(callsIn(source), [expect, expect]);
     });
   });
 });
