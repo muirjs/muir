@@ -155,6 +155,28 @@ export function userEventOrigins(
       .map((reference) => scope.bindingOf(reference)),
   );
 
+  const referencesOf = Map.groupBy(scope.referencesIn(program), (reference) =>
+    scope.bindingOf(reference),
+  );
+  const contextStandings = new Map<Binding, boolean>();
+  /** Whether `binding` is the play context and every reference to it reads members, decided once per binding. */
+  const isReadContext = (binding: Binding): boolean => {
+    const known = contextStandings.get(binding);
+
+    if (known !== undefined) {
+      return known;
+    }
+
+    const standing =
+      binding.kind === 'param' &&
+      isUnwrittenContext(binding, binding.identifier) &&
+      (referencesOf.get(binding) ?? []).every(readsMembers);
+
+    contextStandings.set(binding, standing);
+
+    return standing;
+  };
+
   /** What `node` holds: a module's exports, the play context while every reference to its name reads members, or an object the file proves nothing about. */
   const holderOf = (node: unknown): Holder => {
     const module = moduleOf(node);
@@ -165,12 +187,7 @@ export function userEventOrigins(
 
     const binding = scope.bindingOf(unwrap(node));
 
-    return binding?.kind === 'param' &&
-      isUnwrittenContext(binding, binding.identifier) &&
-      scope
-        .referencesIn(tree.parentOf(binding.declaration))
-        .filter((reference) => scope.bindingOf(reference) === binding)
-        .every(readsMembers)
+    return binding !== undefined && isReadContext(binding)
       ? 'playContext'
       : 'unknown';
   };
