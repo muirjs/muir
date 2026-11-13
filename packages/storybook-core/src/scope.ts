@@ -1,7 +1,7 @@
 import { unwrap } from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
-import { childNodes } from './node-tree.ts';
+import { childNodes, isFunction } from './node-tree.ts';
 
 type BindingKind =
   | 'var'
@@ -44,15 +44,6 @@ interface Declaration {
   readonly readScope: Scope;
   readonly node: unknown;
 }
-
-const functionTypes: readonly unknown[] = [
-  'FunctionDeclaration',
-  'FunctionExpression',
-  'ArrowFunctionExpression',
-  'ObjectMethod',
-  'ClassMethod',
-  'ClassPrivateMethod',
-];
 
 /** The nodes that open a block scope over all they hold. A function's own body block shares the function's scope. */
 const blockScopes: readonly unknown[] = ['BlockStatement', 'ForStatement'];
@@ -221,7 +212,7 @@ export function fileScope(program: unknown): FileScope {
       return;
     }
 
-    if (functionTypes.includes(type)) {
+    if (isFunction(node)) {
       const inner = scopeIn(scope, true);
 
       if (field(node, 'computed') === true) {

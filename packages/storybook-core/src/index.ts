@@ -12,6 +12,15 @@ export {
   type IndexedStory,
 } from './csf.ts';
 export { storyArgument, unwrap } from './csf-nodes.ts';
+export {
+  interactionsOf,
+  type Check,
+  type FollowingChecks,
+  type Interaction,
+  type StoryInteractions,
+  type UserEventOrigin,
+  type WindowEnd,
+} from './interactions.ts';
 export * from './is-record.ts';
 export * from './node-field.ts';
 export { propertyKey } from './object-value.ts';
