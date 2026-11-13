@@ -522,6 +522,20 @@ const interactionCases: readonly Case[] = [
     source: inPlay('await (fireEvent as any).click(button);'),
     expect: [[interaction, ';']],
   },
+  {
+    id: 'user-event-string-key',
+    title:
+      "a user-event method called by a string key, userEvent['click'](x), is removed",
+    source: inPlay("await userEvent['click'](button);"),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-unknown-key',
+    title:
+      'a userEvent member called by a key that is no string literal, userEvent[method](x), is removed',
+    source: inPlay('await userEvent[method](button);'),
+    expect: [[interaction, ';']],
+  },
 ];
 
 const redundantInteractionCases: readonly Case[] = [

@@ -198,4 +198,18 @@ export const clickFocusCases: readonly Case[] = [
     source: `import * as ue from '@testing-library/user-event';\n${inPlay('await ue.default.click(button);')}`,
     expect: [[clickFocus, 'await button.focus();']],
   },
+  {
+    id: 'click-focus-string-key',
+    title:
+      "a click called by a string key, userEvent['click'](x), becomes a focus() call",
+    source: inPlay("await userEvent['click'](button);"),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-skip-unknown-key',
+    title:
+      'a userEvent member called by a key that is no string literal makes no mutant, as it may be no click',
+    source: inPlay('await userEvent[method](button);'),
+    expect: [],
+  },
 ];

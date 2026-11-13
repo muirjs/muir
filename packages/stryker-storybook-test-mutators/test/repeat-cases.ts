@@ -190,4 +190,22 @@ export const repeatCases: readonly Case[] = [
       ],
     ],
   },
+  {
+    id: 'repeat-string-key',
+    title: "a click called by a string key, userEvent['click'](x), runs twice",
+    source: inPlay("await userEvent['click'](button);"),
+    expect: [
+      [
+        repeat,
+        "{ await userEvent['click'](button); await userEvent['click'](button); }",
+      ],
+    ],
+  },
+  {
+    id: 'repeat-skip-unknown-key',
+    title:
+      'a userEvent member called by a key that is no string literal makes no mutant, as it may be no click',
+    source: inPlay('await userEvent[method](button);'),
+    expect: [],
+  },
 ];

@@ -433,4 +433,34 @@ export const assertionBeforeCases: readonly Case[] = [
       ],
     ],
   },
+  {
+    id: 'assertion-before-string-key',
+    title:
+      "the check after a click called by a string key, userEvent['click'](x), is copied to run before it too",
+    source: inPlay(
+      "await userEvent['click'](save);",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ await expect(args.onSave).toHaveBeenCalled(); await userEvent['click'](save); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-unknown-key',
+    title:
+      'the check after a userEvent member called by a key that is no string literal is copied to run before it too',
+    source: inPlay(
+      'await userEvent[method](save);',
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent[method](save); }',
+      ],
+    ],
+  },
 ];

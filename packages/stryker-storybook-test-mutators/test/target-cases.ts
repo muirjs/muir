@@ -197,4 +197,24 @@ export const targetCases: readonly Case[] = [
     )}`,
     expect: [[target, "'cancel'"]],
   },
+  {
+    id: 'target-string-key',
+    title:
+      "the target of a click called by a string key, userEvent['click'](x), becomes another target in the file",
+    source: inPlay(
+      "await userEvent['click'](canvas.getByRole('button', { name: 'Save' }));",
+      "await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [[target, "'Cancel'"]],
+  },
+  {
+    id: 'target-unknown-key',
+    title:
+      'the target of a userEvent member called by a key that is no string literal becomes another target in the file',
+    source: inPlay(
+      "await userEvent[method](canvas.getByRole('button', { name: 'Save' }));",
+      "await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible();",
+    ),
+    expect: [[target, "'Cancel'"]],
+  },
 ];
