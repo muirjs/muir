@@ -16,13 +16,13 @@ import {
 } from '../src/interaction-hints.ts';
 import { shapesOf } from '../src/interaction-shapes.ts';
 import { parseProgram } from '../src/parse.ts';
+import { interactionHintCases } from './interaction-hint-cases.ts';
+import { instrument } from './support/instrument.ts';
 import {
   inPlay,
-  interactionHintCases,
   survives,
   type Survivor,
-} from './interaction-hint-cases.ts';
-import { instrument } from './support/instrument.ts';
+} from './support/interaction-hint-case.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
 const file = 'src/Form.stories.tsx';
