@@ -465,6 +465,19 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an optional step call on the play context that holds an interaction ends the window by step',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(open);\n    expect(context.args.onOpen).toHaveBeenCalled();\n    await context?.step('close', async () => {\n      await context.userEvent.click(close);\n    });\n  },\n};\n`,
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'step',
+        copy: 'expect(context.args.onOpen).toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
       'an interaction that is the body of a step callback shares no list with the interaction that ends its window',
     source: inPlayWith(
       ['args', 'step', 'userEvent'],

@@ -109,7 +109,7 @@ export function userEventOrigins(
     isPlayContext(binding.declaration) &&
     binding.writes.length === 0;
 
-  /** Whether `reference` reads a member of what it names, or destructures it in a declaration, and so leaves its members as they are. */
+  /** Whether `reference` uses what it names only through a member, or destructures it in a declaration; `membersWritten` refuses a member write. */
   const readsMembers = (reference: unknown): boolean => {
     const parent = tree.parentOf(reference);
 
@@ -168,7 +168,7 @@ export function userEventOrigins(
     scope.bindingOf(reference),
   );
   const contextStandings = new Map<Binding, boolean>();
-  /** Whether `binding` is the play context and every reference to it reads members, decided once per binding. */
+  /** Whether `binding` is the play context and every reference to it uses a member, decided once per binding. */
   const isReadContext = (binding: Binding): boolean => {
     const known = contextStandings.get(binding);
 
@@ -198,7 +198,7 @@ export function userEventOrigins(
       : field(importSourceOf(awaited(node)), 'value');
   };
 
-  /** What `node` holds: a module's exports, the play context while every reference to its name reads members, or an object the file proves nothing about. */
+  /** What `node` holds: a module's exports, the play context while every reference to its name uses a member, or an object the file proves nothing about. */
   const holderOf = (node: unknown): Holder => {
     const module = moduleOf(node);
 

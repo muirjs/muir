@@ -111,6 +111,12 @@ export function isMember(node: unknown): boolean {
   return memberTypes.includes(field(node, 'type'));
 }
 
+export function isCall(node: unknown): boolean {
+  const type = field(node, 'type');
+
+  return type === 'CallExpression' || type === 'OptionalCallExpression';
+}
+
 export function memberRoot(node: unknown): unknown {
   const current = unwrap(node);
 

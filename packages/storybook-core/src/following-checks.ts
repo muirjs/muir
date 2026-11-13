@@ -1,3 +1,4 @@
+import { isCall, isMember } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -368,14 +369,14 @@ export function waitCall(node: unknown): 'waitFor' | 'removal' | undefined {
     : undefined;
 }
 
-/** `step(...)`, or `<context>.step(...)` on a play context that is not destructured. */
+/** `step(...)`, or `<context>.step(...)` or `<context>?.step(...)` on a play context that is not destructured. */
 export function isStepCall(node: unknown): boolean {
   const callee = field(node, 'callee');
 
   return (
-    field(node, 'type') === 'CallExpression' &&
+    isCall(node) &&
     (field(callee, 'name') === 'step' ||
-      (field(callee, 'type') === 'MemberExpression' &&
+      (isMember(callee) &&
         field(callee, 'object', 'type') === 'Identifier' &&
         memberName(callee) === 'step'))
   );

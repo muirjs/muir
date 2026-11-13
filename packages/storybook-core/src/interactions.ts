@@ -1,5 +1,5 @@
 import type { CsfShapes } from './csf.ts';
-import { isMember, unwrap } from './csf-nodes.ts';
+import { isCall, isMember, unwrap } from './csf-nodes.ts';
 import {
   type FollowingChecks,
   followingChecksReader,
@@ -62,11 +62,6 @@ export interface StoryInteractions {
 }
 
 const hooks: ReadonlySet<unknown> = new Set(['beforeEach', 'afterEach']);
-
-const callTypes: readonly unknown[] = [
-  'CallExpression',
-  'OptionalCallExpression',
-];
 
 /** The DOM element methods that interact, with their number of arguments. */
 const rawDomArguments: ReadonlyMap<string, number> = new Map([
@@ -184,7 +179,7 @@ export function interactionsOf(
     ),
   );
   const kindOf = (call: unknown): Kind | undefined => {
-    if (!callTypes.includes(field(call, 'type'))) {
+    if (!isCall(call)) {
       return undefined;
     }
 
