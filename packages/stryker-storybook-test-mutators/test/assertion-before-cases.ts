@@ -319,6 +319,41 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'assertion-before-skip-past-wait-for-defining-interaction',
+    title:
+      'an interaction makes no mutant when a waitFor whose callback defines a function holding another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await waitFor(async () => {',
+      '  const clickSecond = async () => {',
+      '    await userEvent.click(second);',
+      '  };',
+      '  await clickSecond();',
+      '});',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-past-wait-for-defining-function',
+    title:
+      'the copied check is the first one past a waitFor whose callback defines a function that holds no interaction',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await waitFor(async () => {',
+      '  const readStatus = () => status.textContent;',
+      '  await readStatus();',
+      '});',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onClick).toHaveBeenCalled(); await userEvent.click(first); }',
+      ],
+    ],
+  },
+  {
     id: 'assertion-before-past-call-with-interaction',
     title:
       'the copied check is the first one past a call that is no step or waitFor, even when a function given to it holds an interaction',
