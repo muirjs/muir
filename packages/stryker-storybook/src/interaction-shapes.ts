@@ -76,16 +76,10 @@ function isClearedLater(
       : undefined;
 
   return (
-    ['type', 'clear'].includes(methodOf(interaction) ?? '') &&
-    methodOf(later) === 'clear' &&
+    ['type', 'clear'].includes(interaction.method ?? '') &&
+    later?.method === 'clear' &&
     checks.length === 0
   );
-}
-
-function methodOf(interaction: Interaction | undefined): string | undefined {
-  return interaction?.kind === 'userEvent' || interaction?.kind === 'fireEvent'
-    ? interaction.method
-    : undefined;
 }
 
 /**
