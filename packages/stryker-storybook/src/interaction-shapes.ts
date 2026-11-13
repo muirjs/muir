@@ -1,12 +1,9 @@
 import {
-  csfShapes,
   field,
   type Interaction,
-  interactionsOf,
   list,
   type StoryInteractions,
 } from '@layzee/storybook-core';
-import type { schema } from '@stryker-mutator/api/core';
 
 export const interactionShapes = [
   'negative-only',
@@ -16,37 +13,8 @@ export const interactionShapes = [
 
 export type InteractionShape = (typeof interactionShapes)[number];
 
-/**
- * The shapes of the interactions in `program` whose report ranges are `sites`: for a site, every shape that holds, or
- * `undefined` when no interaction of `program` has its range.
- */
-export function interactionShapeReader(
-  program: unknown,
-  sites: readonly schema.Location[],
-): (site: schema.Location) => readonly InteractionShape[] | undefined {
-  const interactions = interactionsOf(program, csfShapes(program));
-  const siteKeys = new Set(sites.map(locationKey));
-  const byRange = new Map(
-    interactions.all.flatMap((interaction) => {
-      const key = rangeKey(interaction.node);
-
-      return key !== undefined && siteKeys.has(key)
-        ? [[key, interaction] as const]
-        : [];
-    }),
-  );
-
-  return (site) => {
-    const interaction = byRange.get(locationKey(site));
-
-    return interaction === undefined
-      ? undefined
-      : shapesOf(interaction, interactions);
-  };
-}
-
 /** Every shape that holds for `interaction`, one of `interactions`. */
-function shapesOf(
+export function shapesOf(
   interaction: Interaction,
   interactions: StoryInteractions,
 ): readonly InteractionShape[] {
@@ -153,28 +121,4 @@ function keyName(property: unknown): string | undefined {
   return field(property, 'computed') !== true && typeof name === 'string'
     ? name
     : undefined;
-}
-
-/** The report's 1-based range of a Babel node, whose columns are 0-based; `undefined` for a node with no `loc`. */
-function rangeKey(node: unknown): string | undefined {
-  const start = field(node, 'loc', 'start');
-  const end = field(node, 'loc', 'end');
-  const startLine = field(start, 'line');
-  const startColumn = field(start, 'column');
-  const endLine = field(end, 'line');
-  const endColumn = field(end, 'column');
-
-  return typeof startLine === 'number' &&
-    typeof startColumn === 'number' &&
-    typeof endLine === 'number' &&
-    typeof endColumn === 'number'
-    ? locationKey({
-        start: { line: startLine, column: startColumn + 1 },
-        end: { line: endLine, column: endColumn + 1 },
-      })
-    : undefined;
-}
-
-function locationKey({ start, end }: schema.Location): string {
-  return [start.line, start.column, end.line, end.column].join(':');
 }

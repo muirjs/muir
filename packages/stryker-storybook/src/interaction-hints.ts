@@ -1,11 +1,14 @@
 import { resolve } from 'node:path';
 
+import {
+  csfShapes,
+  field,
+  type Interaction,
+  interactionsOf,
+} from '@layzee/storybook-core';
 import type { schema } from '@stryker-mutator/api/core';
 
-import {
-  interactionShapeReader,
-  type InteractionShape,
-} from './interaction-shapes.ts';
+import { type InteractionShape, shapesOf } from './interaction-shapes.ts';
 import { packageName } from './package-name.ts';
 import { parseProgram } from './parse.ts';
 import { storybookPluginName } from './stub-verdict.ts';
@@ -99,7 +102,6 @@ export function interactionHints(
     const sites = mutants
       .filter(({ mutatorName }) => mutatorName === siteMutatorName)
       .map(({ location }) => location);
-    const shapesAt = interactionShapeReader(program, sites);
     const held = survivors.flatMap(({ mutant, name }) => {
       const site = siteHolding(sites, mutant.location.start);
 
@@ -114,10 +116,20 @@ export function interactionHints(
       return [];
     }
 
-    const read = held.flatMap(({ mutant, name, site }) => {
-      const shapes = shapesAt(site);
+    const interactions = interactionsOf(program, csfShapes(program));
+    const byRange = new Map(
+      interactions.all.flatMap((interaction) => {
+        const key = rangeKey(interaction.node);
 
-      return shapes === undefined ? [] : [{ mutant, name, shapes }];
+        return key === undefined ? [] : [[key, interaction] as const];
+      }),
+    );
+    const read = held.flatMap(({ mutant, name, site }) => {
+      const interaction = byRange.get(locationKey(site));
+
+      return interaction === undefined
+        ? []
+        : [{ mutant, name, shapes: shapesOf(interaction, interactions) }];
     });
 
     if (read.length < held.length) {
@@ -193,6 +205,30 @@ function isBefore(first: schema.Position, second: schema.Position): boolean {
     first.line < second.line ||
     (first.line === second.line && first.column < second.column)
   );
+}
+
+/** The report's 1-based range of an interaction's site, whose Babel columns are 0-based; `undefined` for a site with no `loc`. */
+function rangeKey(node: Interaction['node']): string | undefined {
+  const start = field(node, 'loc', 'start');
+  const end = field(node, 'loc', 'end');
+  const startLine = field(start, 'line');
+  const startColumn = field(start, 'column');
+  const endLine = field(end, 'line');
+  const endColumn = field(end, 'column');
+
+  return typeof startLine === 'number' &&
+    typeof startColumn === 'number' &&
+    typeof endLine === 'number' &&
+    typeof endColumn === 'number'
+    ? locationKey({
+        start: { line: startLine, column: startColumn + 1 },
+        end: { line: endLine, column: endColumn + 1 },
+      })
+    : undefined;
+}
+
+function locationKey({ start, end }: schema.Location): string {
+  return [start.line, start.column, end.line, end.column].join(':');
 }
 
 /** The survivors that share a line and a shape. */

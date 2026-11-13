@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { csfShapes, interactionsOf } from '@layzee/storybook-core';
 import { lzStorybookTestMutators } from '@layzee/stryker-storybook-test-mutators';
 import type { schema } from '@stryker-mutator/api/core';
 
@@ -13,7 +14,7 @@ import {
   interactionMutatorNames,
   type ReportFiles,
 } from '../src/interaction-hints.ts';
-import { interactionShapeReader } from '../src/interaction-shapes.ts';
+import { shapesOf } from '../src/interaction-shapes.ts';
 import { parseProgram } from '../src/parse.ts';
 import { inPlay, interactionHintCases } from './interaction-hint-cases.ts';
 import { instrument } from './support/instrument.ts';
@@ -147,33 +148,21 @@ describe('interactionHints', () => {
     });
   });
 
-  it('finds at most one shape at each interaction of every case', async () => {
-    const overlaps = await Promise.all(
-      interactionHintCases.map(async ({ id, source }) => {
-        const { mutants } = await instrument(
-          join(fixtures, 'no-main', file),
-          source,
-          [],
-        );
-        const sites = mutants
-          .filter(({ mutatorName }) => mutatorName === 'LzStorybookInteraction')
-          .map(({ location }) => location);
-        const shapesAt = interactionShapeReader(
-          parseProgram(source, file),
-          sites,
-        );
+  it('finds at most one shape at each interaction of every case', () => {
+    const overlaps = interactionHintCases.flatMap(({ id, source }) => {
+      const program = parseProgram(source, file);
+      const interactions = interactionsOf(program, csfShapes(program));
 
-        return sites.flatMap((site) => {
-          const shapes = shapesAt(site) ?? [];
+      return interactions.all.flatMap((interaction, index) => {
+        const shapes = shapesOf(interaction, interactions);
 
-          return shapes.length > 1
-            ? [`${id}:${site.start.line} ${shapes.join(', ')}`]
-            : [];
-        });
-      }),
-    );
+        return shapes.length > 1
+          ? [`${id} interaction ${index} ${shapes.join(', ')}`]
+          : [];
+      });
+    });
 
-    assert.deepEqual(overlaps.flat(), []);
+    assert.deepEqual(overlaps, []);
   });
 
   it('makes at least one mutant of each interaction mutator name, so the list matches the test mutators', async () => {
