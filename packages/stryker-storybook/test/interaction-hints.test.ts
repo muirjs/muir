@@ -16,16 +16,21 @@ import {
 } from '../src/interaction-hints.ts';
 import { shapesOf } from '../src/interaction-shapes.ts';
 import { parseProgram } from '../src/parse.ts';
-import { inPlay, interactionHintCases } from './interaction-hint-cases.ts';
+import {
+  inPlay,
+  interactionHintCases,
+  survives,
+  type Survivor,
+} from './interaction-hint-cases.ts';
 import { instrument } from './support/instrument.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
 const file = 'src/Form.stories.tsx';
 
-/** A report of `source` in which the `listed` mutants have `status`, the others are Killed, or Ignored when Stryker ignores them. */
+/** A report of `source` in which the `listed` mutants have `status`, the others are Killed, or Ignored when Stryker ignores them; a listed mutant the test mutators do not place throws. */
 async function reportOf(
   source: string,
-  listed: readonly (readonly [string, number])[],
+  listed: readonly Survivor[],
   status: schema.MutantStatus = 'Survived',
 ): Promise<ReportFiles> {
   const { mutants } = await instrument(
@@ -33,14 +38,26 @@ async function reportOf(
     source,
     [],
   );
+  const unplaced = listed.filter(
+    (survivor) =>
+      !mutants.some(({ mutatorName, location }) =>
+        survives([survivor], mutatorName, location.start),
+      ),
+  );
+
+  if (unplaced.length > 0) {
+    throw new Error(
+      `no mutant is placed at the listed ${JSON.stringify(unplaced)}`,
+    );
+  }
 
   return {
     [file]: {
       source,
-      mutants: mutants.map(({ mutatorName, line, location, ignoreReason }) => ({
+      mutants: mutants.map(({ mutatorName, location, ignoreReason }) => ({
         mutatorName,
         location,
-        status: statusOf(ignoreReason, mutatorName, line),
+        status: statusOf(ignoreReason, mutatorName, location.start),
       })),
     },
   };
@@ -48,15 +65,13 @@ async function reportOf(
   function statusOf(
     ignoreReason: string | undefined,
     mutatorName: string,
-    line: number,
+    start: schema.Position,
   ): schema.MutantStatus {
     if (ignoreReason !== undefined) {
       return 'Ignored';
     }
 
-    return listed.some(([name, at]) => name === mutatorName && at === line)
-      ? status
-      : 'Killed';
+    return survives(listed, mutatorName, start) ? status : 'Killed';
   }
 }
 
@@ -124,14 +139,11 @@ describe('interactionHints', () => {
 
           const named = before
             .filter(
-              ({ mutatorName, line: at, ignoreReason }) =>
+              ({ mutatorName, line: at, location, ignoreReason }) =>
                 at === line &&
                 ignoreReason === undefined &&
                 names.includes(mutatorName) &&
-                survived.some(
-                  ([name, survivedAt]) =>
-                    name === mutatorName && survivedAt === at,
-                ),
+                survives(survived, mutatorName, location.start),
             )
             .map(({ mutatorName, line: at }) => [mutatorName, at]);
 

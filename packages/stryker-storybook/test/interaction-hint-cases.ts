@@ -1,18 +1,37 @@
+import type { schema } from '@stryker-mutator/api/core';
+
 import type { InteractionShape } from '../src/interaction-shapes.ts';
+
+/** A surviving mutant as [mutator name, 1-based line], or with the 1-based column it starts at when the line holds another mutant of that mutator that does not survive. */
+export type Survivor = readonly [string, number, number?];
 
 export interface InteractionHintCase {
   readonly id: string;
   readonly title: string;
   /** A story file. */
   readonly source: string;
-  /** The mutants that survive, as [mutator name, 1-based line]; every other mutant is Killed, or Ignored when Stryker ignores it. */
-  readonly survived: readonly (readonly [string, number])[];
+  /** The mutants that survive; every other mutant is Killed, or Ignored when Stryker ignores it. */
+  readonly survived: readonly Survivor[];
   /** The hints, as [line, shape, mutator names]. */
   readonly expect: readonly (readonly [
     number,
     InteractionShape,
     readonly string[],
   ])[];
+}
+
+/** Whether `survived` lists the mutant of `mutatorName` that starts at `start`. */
+export function survives(
+  survived: readonly Survivor[],
+  mutatorName: string,
+  start: schema.Position,
+): boolean {
+  return survived.some(
+    ([name, line, column]) =>
+      name === mutatorName &&
+      line === start.line &&
+      (column === undefined || column === start.column),
+  );
 }
 
 /** The first statement is on line 5. */
@@ -715,5 +734,416 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     ),
     survived: [[interaction, 5]],
     expect: [],
+  },
+  {
+    id: 'shared-line-killed-mutant',
+    title:
+      'gives no hint when a mutant of the surviving mutator on the same line was killed, as the comment would disable it too',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button')); await expect(args.onSave).not.toHaveBeenCalled(); await userEvent.click(canvas.getByRole('checkbox')); await expect(args.onChange).not.toHaveBeenCalled();",
+    ),
+    survived: [[interaction, 5, 5]],
+    expect: [],
+  },
+  {
+    id: 'shared-line-every-mutant-survives',
+    title:
+      'names the mutator when every mutant of it on the line survived with the same shape',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button')); await expect(args.onSave).not.toHaveBeenCalled(); await userEvent.click(canvas.getByRole('checkbox')); await expect(args.onChange).not.toHaveBeenCalled();",
+    ),
+    survived: [[interaction, 5]],
+    expect: [[5, 'negative-only', [interaction]]],
+  },
+  {
+    id: 'context-destructured-in-play-type',
+    title:
+      "names a surviving click before a type on the play context's userEvent destructured in the play body",
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async (context) => {',
+      '    const { canvas, userEvent } = context;',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [[5, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'local-function-context-destructured-type',
+    title:
+      "gives no hint for a click before a type on a userEvent destructured in a local function's body from its parameter, which may be Vitest browser's",
+    source: [
+      "import { userEvent as vitestUserEvent } from 'vitest/browser';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    const fill = async (context) => {',
+      '      const { userEvent } = context;',
+      "      await userEvent.click(canvas.getByRole('textbox'));",
+      "      await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '    };',
+      '    await fill({ userEvent: vitestUserEvent });',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 7]],
+    expect: [],
+  },
+  {
+    id: 'alias-of-context-user-event-type',
+    title:
+      "names a surviving click before a type on a local that aliases the play context's userEvent",
+    source: inPlay(
+      'const user = userEvent;',
+      "await user.click(canvas.getByRole('textbox'));",
+      "await user.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [[6, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'alias-of-vitest-browser-user-event-type',
+    title:
+      "gives no hint for a click before a type on a local that aliases Vitest browser's userEvent",
+    source: [
+      "import { userEvent as vitestUserEvent } from 'vitest/browser';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    const user = vitestUserEvent;',
+      "    await user.click(canvas.getByRole('textbox'));",
+      "    await user.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'negative-asymmetric-matcher',
+    title:
+      'names a surviving interaction whose only check is negative with an asymmetric matcher, which is no check of its own',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalledWith(expect.anything());',
+    ),
+    survived: [[interaction, 5]],
+    expect: [[5, 'negative-only', [interaction]]],
+  },
+  {
+    id: 'positive-asymmetric-matcher',
+    title:
+      'gives no hint for an interaction whose negative check is followed by a positive one with an asymmetric matcher',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalledWith(expect.anything());',
+      'await expect(args.onSubmit).toHaveBeenCalledWith(expect.anything());',
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'negative-past-expect-assertions',
+    title:
+      'names a surviving interaction followed by expect.assertions and a negative check with expect.objectContaining, neither of which is a positive check',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'expect.assertions(1);',
+      'await expect(args.onSave).not.toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));',
+    ),
+    survived: [[interaction, 5]],
+    expect: [[5, 'negative-only', [interaction]]],
+  },
+  {
+    id: 'negative-after-conditional-interaction',
+    title:
+      'gives no hint when the negative checks run past an if that may or may not interact, and names the interaction in the if, whose own checks are all negative',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button'));",
+      'await expect(args.onSave).not.toHaveBeenCalled();',
+      "if (args.open) { await userEvent.click(canvas.getByRole('checkbox')); }",
+      'await expect(args.onClose).not.toHaveBeenCalled();',
+    ),
+    survived: [
+      [interaction, 5],
+      [interaction, 7],
+    ],
+    expect: [[7, 'negative-only', [interaction]]],
+  },
+  {
+    id: 'testing-library-named-type',
+    title:
+      "names a surviving click before a type on @testing-library/user-event's named userEvent, which is user-event 14",
+    source: [
+      "import { userEvent } from '@testing-library/user-event';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [[5, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'testing-library-default-type',
+    title:
+      "names a surviving click before a type on @testing-library/user-event's default import",
+    source: [
+      "import user from '@testing-library/user-event';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      "    await user.click(canvas.getByRole('textbox'));",
+      "    await user.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [[5, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'testing-library-namespace-type',
+    title:
+      'names a surviving click before a type on the default member of a namespace import of @testing-library/user-event',
+    source: [
+      "import * as ue from '@testing-library/user-event';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      "    await ue.default.click(canvas.getByRole('textbox'));",
+      "    await ue.default.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [[5, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'storybook-test-setup-type',
+    title:
+      "names a surviving click before a type on a setup() local of storybook/test's userEvent",
+    source: [
+      "import { userEvent } from 'storybook/test';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    const user = userEvent.setup();',
+      "    await user.click(canvas.getByRole('textbox'));",
+      "    await user.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 6]],
+    expect: [[6, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'context-member-type',
+    title:
+      "names a surviving click before a type on the userEvent member of the play's context",
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async (context) => {',
+      "    await context.userEvent.click(context.canvas.getByRole('textbox'));",
+      "    await context.userEvent.type(context.canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 4]],
+    expect: [[4, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'context-defaulted-pattern-type',
+    title:
+      "names a surviving click before a type on the play context's userEvent destructured with a default",
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas, userEvent = undefined }) => {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 4]],
+    expect: [[4, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'play-method-type',
+    title:
+      'names a surviving click before a type on the userEvent of a play written as a method',
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  async play({ canvas, userEvent }) {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 4]],
+    expect: [[4, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'assigned-play-type',
+    title:
+      'names a surviving click before a type on the userEvent of a play assigned to the story, the CSF2 form',
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = () => null;',
+      'Form.play = async ({ canvas, userEvent }) => {',
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 4]],
+    expect: [[4, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'story-test-callback-type',
+    title:
+      "names a surviving click before a type on the userEvent of a story .test() callback's context",
+    source: [
+      "import preview from '../.storybook/preview';",
+      "const meta = preview.meta({ title: 'Form' });",
+      'export const Form = meta.story({});',
+      "Form.test('fills', async ({ canvas, userEvent }) => {",
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '});',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [[5, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'story-satisfies-type',
+    title:
+      'names a surviving click before a type on the play context of a story wrapped in satisfies',
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas, userEvent }) => {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '} satisfies StoryObj;',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 4]],
+    expect: [[4, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'meta-bound-first-type',
+    title:
+      'names a surviving click before a type on the play context of a meta bound to a name before its default export',
+    source: [
+      "const meta = { title: 'Form', play: async ({ canvas, userEvent }) => {",
+      "  await userEvent.click(canvas.getByRole('textbox'));",
+      "  await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '} };',
+      'export default meta;',
+      'export const Form = {};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 2]],
+    expect: [[2, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'story-exported-later-type',
+    title:
+      'names a surviving click before a type on the play context of a story exported in a later statement',
+    source: [
+      "export default { title: 'Form' };",
+      'const Form = {',
+      '  play: async ({ canvas, userEvent }) => {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      'export { Form };',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 4]],
+    expect: [[4, 'click-before-type', [interaction]]],
+  },
+  {
+    id: 'type-wrapped-write-reassigns-context-user-event-type',
+    title:
+      "gives no hint for a click before a type on the play context's userEvent after an assignment through an as wrapper gives it another value",
+    source: inPlay(
+      '(userEvent as typeof vitestUserEvent) = vitestUserEvent;',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [],
+  },
+  {
+    id: 'parameter-default-reassigns-context-user-event-type',
+    title:
+      "gives no hint for a click before a type on the play context's userEvent when a default of a later play parameter gives it another value",
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas, userEvent }, _ = (userEvent = vitestUserEvent)) => {',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 4]],
+    expect: [],
+  },
+  {
+    id: 'for-var-head-shadows-storybook-test-import',
+    title:
+      "gives no hint for a click before a type on a userEvent that a var in a for head declares, which shadows storybook/test's in the whole play",
+    source: [
+      "import { userEvent } from 'storybook/test';",
+      "import { userEvent as vitestUserEvent } from 'vitest/browser';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    for (var userEvent of [vitestUserEvent]) {}',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 7]],
+    expect: [],
+  },
+  {
+    id: 'for-let-head-shadows-only-inside-loop',
+    title:
+      "names a surviving click before a type on the play context's userEvent after a loop whose let head declares userEvent, which shadows it only inside the loop",
+    source: inPlay(
+      'for (let userEvent = vitestUserEvent, i = 0; i < 1; i += 1) {}',
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+    ),
+    survived: [[interaction, 6]],
+    expect: [[6, 'click-before-type', [interaction]]],
   },
 ];
