@@ -12,6 +12,7 @@ export {
   type IndexedStory,
 } from './csf.ts';
 export { storyArgument, unwrap } from './csf-nodes.ts';
+export { waitCall } from './following-checks.ts';
 export {
   interactionsOf,
   type Check,

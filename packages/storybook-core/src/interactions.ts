@@ -289,7 +289,7 @@ export function interactionsOf(
   const all: readonly Interaction[] = sites.map(({ read, kind }) => ({
     ...read,
     ...kind,
-    following: followingChecksOf(read, tree, (node) => reads.get(node)),
+    following: followingChecksOf(read, tree, scope, (node) => reads.get(node)),
   }));
 
   return {

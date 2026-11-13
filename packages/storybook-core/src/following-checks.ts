@@ -9,6 +9,7 @@ import {
   memberName,
   type TreeIndex,
 } from './node-tree.ts';
+import type { FileScope } from './scope.ts';
 
 export interface Check {
   readonly node: unknown;
@@ -62,6 +63,22 @@ function isExpectCallee(callee: unknown): boolean {
   );
 }
 
+/** Whether the chain going inward from `node`, through call callees and member objects, reaches an expect call. */
+function startsAtExpect(node: unknown): boolean {
+  return (
+    isNode(node) &&
+    (isExpectCall(node) ||
+      startsAtExpect(field(node, 'callee') ?? field(node, 'object')))
+  );
+}
+
+function isExpectCall(node: unknown): boolean {
+  return (
+    field(node, 'type') === 'CallExpression' &&
+    isExpectCallee(field(node, 'callee'))
+  );
+}
+
 /** `.not` in the chain going outward from `node`, through member objects and call callees. */
 function isNegated(node: unknown, tree: TreeIndex): boolean {
   const parent = tree.parentOf(node);
@@ -108,11 +125,7 @@ function isCallbackOf(
 
 /** `step(...)` or `waitFor(...)`, which run the function given to them. */
 function runsCallback(node: unknown): boolean {
-  return (
-    isStepCall(node) ||
-    (field(node, 'type') === 'CallExpression' &&
-      field(node, 'callee', 'name') === 'waitFor')
-  );
+  return isStepCall(node) || waitCall(node) === 'waitFor';
 }
 
 /** The statements after `node` in its list, then after each enclosing statement in its own, up to the function around it unless that function is given to `step(...)`. */
@@ -159,6 +172,7 @@ export interface SiteRead {
 export function followingChecksOf(
   read: SiteRead,
   tree: TreeIndex,
+  scope: FileScope,
   siteAt: (node: unknown) => SiteRead | undefined,
 ): FollowingChecks {
   const isSite = (node: unknown): boolean => siteAt(node) !== undefined;
@@ -167,16 +181,112 @@ export function followingChecksOf(
     holdsInteraction(statement, tree, isSite),
   );
   const window = cut === undefined ? later : later.slice(0, later.indexOf(cut));
+  const checks = window.flatMap(descendants).flatMap((node) => {
+    const check = checkOf(node, tree);
+
+    return check === undefined ? [] : [check];
+  });
+  const firstExpect = checks.find((check) => check.kind === 'expect');
 
   return {
-    checks: window.flatMap(descendants).flatMap((node) => {
-      const check = checkOf(node, tree);
-
-      return check === undefined ? [] : [check];
-    }),
+    checks,
     end: endAt(cut, read, tree, siteAt),
-    copy: undefined,
+    copy: copyOf(
+      window.find((statement) =>
+        descendants(statement).includes(firstExpect?.node),
+      ),
+      read,
+      tree,
+      scope,
+    ),
   };
+}
+
+/** `statement`, the window statement that holds the first expect check, when LzStorybookAssertionBefore may copy it before the interaction at `read`: a check statement, or a `waitFor(...)` statement whose callback holds an expect check, in the interaction's own list. */
+function copyOf(
+  statement: unknown,
+  read: SiteRead,
+  tree: TreeIndex,
+  scope: FileScope,
+): unknown {
+  return tree.listOf(statement) === tree.listOf(read.node) &&
+    checksWhenRun(statement) &&
+    !readsNameSetBetween(read.node, statement, scope) &&
+    !standsEarlier(statement, read.node, tree)
+    ? statement
+    : undefined;
+}
+
+/** Whether an expression statement equivalent to `statement` ends by the start of `site`, in the outermost function around `site`; a node without positions stands nowhere. */
+function standsEarlier(
+  statement: unknown,
+  site: unknown,
+  tree: TreeIndex,
+): boolean {
+  const start = field(site, 'start');
+
+  return descendants(outermostFunction(site, tree)).some((node) => {
+    const end = field(node, 'end');
+
+    return (
+      field(node, 'type') === 'ExpressionStatement' &&
+      typeof end === 'number' &&
+      typeof start === 'number' &&
+      end <= start &&
+      equivalent(node, statement)
+    );
+  });
+}
+
+/** The outermost function around `node`, or `undefined` outside any. */
+function outermostFunction(node: unknown, tree: TreeIndex): unknown {
+  const parent = tree.parentOf(node);
+
+  if (!isNode(parent)) {
+    return undefined;
+  }
+
+  return (
+    outermostFunction(parent, tree) ?? (isFunction(parent) ? parent : undefined)
+  );
+}
+
+/** Whether `statement` reads a name declared or written from the end of `site` up to its own start; a node without positions counts as not between. */
+function readsNameSetBetween(
+  site: unknown,
+  statement: unknown,
+  scope: FileScope,
+): boolean {
+  const from = field(site, 'end');
+  const to = field(statement, 'start');
+  const isBetween = (node: unknown): boolean => {
+    const at = field(node, 'start');
+
+    return (
+      typeof at === 'number' &&
+      typeof from === 'number' &&
+      typeof to === 'number' &&
+      at >= from &&
+      at < to
+    );
+  };
+
+  return scope.referencesIn(statement).some((name) => {
+    const binding = scope.bindingOf(name);
+
+    return [binding?.identifier, ...(binding?.writes ?? [])].some(isBetween);
+  });
+}
+
+/** A check statement, or a `waitFor(...)` statement whose callback holds an expect check. */
+function checksWhenRun(statement: unknown): boolean {
+  const expression = awaited(field(statement, 'expression'));
+
+  return (
+    startsAtExpect(expression) ||
+    (waitCall(statement) === 'waitFor' &&
+      descendants(list(field(expression, 'arguments'))[0]).some(isExpectCall))
+  );
 }
 
 /** What ends the window of `read` at `cut`, the first later statement that is or holds an interaction, if any. */
@@ -208,6 +318,24 @@ function endAt(
     sameTarget:
       read.args[0] !== undefined && equivalent(read.args[0], ending.args[0]),
   };
+}
+
+const waitCalls: ReadonlyMap<unknown, 'waitFor' | 'removal'> = new Map([
+  ['waitFor', 'waitFor'],
+  ['waitForElementToBeRemoved', 'removal'],
+]);
+
+/** `'waitFor'` for a `waitFor(...)` call, `'removal'` for a `waitForElementToBeRemoved(...)` call, given as a statement, awaited or plain; `undefined` for anything else. */
+export function waitCall(node: unknown): 'waitFor' | 'removal' | undefined {
+  const call = awaited(
+    field(node, 'type') === 'ExpressionStatement'
+      ? field(node, 'expression')
+      : node,
+  );
+
+  return field(call, 'type') === 'CallExpression'
+    ? waitCalls.get(field(call, 'callee', 'name'))
+    : undefined;
 }
 
 /** `step(...)`, or `<context>.step(...)` on a play context that is not destructured. */
