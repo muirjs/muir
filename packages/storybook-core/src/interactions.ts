@@ -5,6 +5,7 @@ import {
   followingChecksOf,
   isStepCall,
   type SiteRead,
+  targetOf,
 } from './following-checks.ts';
 import { field, list } from './node-field.ts';
 import {
@@ -276,7 +277,7 @@ export function interactionsOf(
               node,
               call,
               args,
-              targetValue: valueOf(awaited(args[0])),
+              targetValue: valueOf(targetOf({ node, args })),
               inHook: isInHook(node),
             },
             kind,
@@ -300,7 +301,7 @@ export function interactionsOf(
 
       return query === undefined
         ? undefined
-        : all.find((interaction) => awaited(interaction.args[0]) === query);
+        : all.find((interaction) => targetOf(interaction) === query);
     },
   };
 }

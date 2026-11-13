@@ -494,6 +494,18 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an ending interaction whose first argument is the same query awaited has the same target',
+    source: inPlay(
+      "await userEvent.click(await canvas.findByRole('textbox'));",
+      "await userEvent.type(canvas.findByRole('textbox'), 'x');",
+    ),
+    expect: [
+      { checks: [], end: 'interaction sameList adjacent sameTarget' },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
       'an ending interaction has no same target when neither has a first argument',
     source: inPlay('open.focus();', 'open.click();'),
     expect: [

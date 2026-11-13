@@ -29,7 +29,7 @@ export type WindowEnd =
       readonly sameList: boolean;
       /** It is the very next statement of this interaction's own statement list. */
       readonly adjacent: boolean;
-      /** Its first argument is structurally equivalent to this one's, positions and comments aside. */
+      /** Its target, the first argument without `await` or type wrappers, is structurally equivalent to this one's, positions and comments aside. */
       readonly sameTarget: boolean;
     }
   | { readonly by: 'step' }
@@ -166,6 +166,11 @@ function holdsInteraction(
 export interface SiteRead {
   readonly node: unknown;
   readonly args: readonly unknown[];
+}
+
+/** The target of an interaction: its first argument without `await` or type wrappers. */
+export function targetOf(read: SiteRead): unknown {
+  return awaited(read.args[0]);
 }
 
 /** The checks that follow the interaction at `read`: in the statements after it, up to the first that is or holds an interaction. `siteAt` gives the interaction whose site is a node. */
@@ -316,7 +321,8 @@ function endAt(
     sameList: tree.listOf(cut) === statements,
     adjacent: statements[statements.indexOf(read.node) + 1] === cut,
     sameTarget:
-      read.args[0] !== undefined && equivalent(read.args[0], ending.args[0]),
+      targetOf(read) !== undefined &&
+      equivalent(targetOf(read), targetOf(ending)),
   };
 }
 
