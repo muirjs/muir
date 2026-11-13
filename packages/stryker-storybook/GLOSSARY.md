@@ -103,10 +103,12 @@ is no user-event, and its call is no interaction. There are three values:
 - `unproven`: a receiver that may be a user-event, but the file does not prove which one: `{ userEvent }` destructured
   from the parameter of any other function, a play context that the file writes or uses otherwise, `<object>.userEvent`
   or `const { userEvent: u } = <object>` on any other object, any other name `userEvent`, or a choice `a ? b : c`
-  between receivers of two different origins.
+  between receivers of two different origins, or a named receiver whose member, or a member of one, the file writes.
 
 A local whose one value is `<receiver>.setup()`, another receiver, or a choice between receivers of the same origin
-has that receiver's origin. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter
+has that receiver's origin. A write to a member of a named receiver, such as `userEvent.click = f` after
+`const { userEvent } = context` or `user.click = f` after `const user = userEvent.setup()`, makes it `unproven`
+whatever it holds. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter
 gives the `click-before-type` shape only for `userEvent14`.
 _Avoid_: user-event kind, user-event 14 check
 

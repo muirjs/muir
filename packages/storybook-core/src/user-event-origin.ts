@@ -90,6 +90,7 @@ function withoutDefault(pattern: unknown): unknown {
 
 /** Gives the origin of a receiver, or `undefined` when it is no user-event. A test function is one Storybook runs with its play context as the first argument. */
 export function userEventOrigins(
+  program: unknown,
   tree: TreeIndex,
   scope: FileScope,
   testFunctions: ReadonlySet<unknown>,
@@ -133,11 +134,26 @@ export function userEventOrigins(
     return (
       (field(parent, 'type') === 'AssignmentExpression' &&
         field(parent, 'left') === member) ||
-      (isMember(parent) &&
-        field(parent, 'object') === member &&
-        isAssigned(parent))
+      writesMember(member)
     );
   };
+
+  /** Whether an assignment writes a member read from `node`, at any depth. */
+  const writesMember = (node: unknown): boolean => {
+    const parent = tree.parentOf(node);
+
+    return (
+      isMember(parent) && field(parent, 'object') === node && isAssigned(parent)
+    );
+  };
+
+  /** The bindings an assignment writes a member of, as `userEvent.click = fake` does. */
+  const membersWritten: ReadonlySet<Binding | undefined> = new Set(
+    scope
+      .referencesIn(program)
+      .filter(writesMember)
+      .map((reference) => scope.bindingOf(reference)),
+  );
 
   /** What `node` holds: a module's exports, the play context while every reference to its name reads members, or an object the file proves nothing about. */
   const holderOf = (node: unknown): Holder => {
@@ -256,6 +272,10 @@ export function userEventOrigins(
       binding === undefined || seen.has(binding)
         ? undefined
         : bindingOrigin(binding, new Set([...seen, binding]));
+
+    if (origin !== undefined && membersWritten.has(binding)) {
+      return 'unproven';
+    }
 
     return origin ?? originFrom('unknown', field(node, 'name'));
   };

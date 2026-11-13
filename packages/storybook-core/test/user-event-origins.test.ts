@@ -342,6 +342,12 @@ const originCases: readonly KindCase[] = [
   },
   {
     title:
+      'a click on userEvent destructured from the play context after the play assigns its click is of unproven origin',
+    source: `export const Story = {\n  play: async (context) => {\n    const { userEvent } = context;\n    userEvent.click = fake;\n    await userEvent.click(button);\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
       "a click on the play context's userEvent destructured under another name with a default is a user-event 14 click",
     source: `import { userEvent as browserUserEvent } from 'vitest/browser';\nexport const Story = {\n  play: async ({ userEvent: user = browserUserEvent }) => {\n    await user.click(button);\n  },\n};\n`,
     expect: ['userEvent click userEvent14'],
@@ -360,6 +366,16 @@ const originCases: readonly KindCase[] = [
       "await user.keyboard('{Enter}');",
     ),
     expect: ['userEvent keyboard userEvent14'],
+  },
+  {
+    title:
+      'a click on a local bound to userEvent.setup() after the play assigns its click is of unproven origin',
+    source: inPlay(
+      'const user = userEvent.setup();',
+      'user.click = fake;',
+      'await user.click(button);',
+    ),
+    expect: ['userEvent click unproven'],
   },
   {
     title: 'a call on a let bound to userEvent.setup() is a user-event 14 call',
@@ -604,6 +620,16 @@ const originCases: readonly KindCase[] = [
       "await u.click(canvas.getByRole('button'));",
     ),
     expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      "a click on a local that aliases the play context's userEvent after the play assigns its click is of unproven origin",
+    source: inPlay(
+      'const u = userEvent;',
+      'u.click = fake;',
+      "await u.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click unproven'],
   },
   {
     title:

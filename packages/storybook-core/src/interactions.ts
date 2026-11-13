@@ -173,6 +173,7 @@ export function interactionsOf(
     field(node, 'computed') === true ||
     field(tree.parentOf(node), 'computed') === true;
   const originOf = userEventOrigins(
+    program,
     tree,
     scope,
     new Set(
