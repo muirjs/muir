@@ -1,6 +1,7 @@
 import type { NodePath, types } from '@babel/core';
 import {
   definitionTimeStubs,
+  field,
   stubMethodOf,
   type StubMethod,
   type StubMethodCall,
@@ -8,7 +9,6 @@ import {
 } from '@layzee/storybook-core';
 
 import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
-import { nameOf } from './queries.ts';
 import { isInStoryTestCode, perFile, readStoryFileAt } from './story-file.ts';
 
 export function spyStubMutator(): LzStorybookTestMutator & {
@@ -121,7 +121,7 @@ function stubOf(node: types.Node): StubMethodCall | undefined {
 
   return member === undefined || member.callee.computed
     ? undefined
-    : stubMethodOf(nameOf(member.callee.property));
+    : stubMethodOf(field(member.callee.property, 'name'));
 }
 
 /** A call, optional or not, on a member such as `x.y()` or `x?.y()`, with that member. */

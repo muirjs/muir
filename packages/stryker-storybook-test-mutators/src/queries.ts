@@ -1,8 +1,5 @@
 import type { types } from '@babel/core';
-
-export function nameOf(node: types.Node): string | undefined {
-  return node.type === 'Identifier' ? node.name : undefined;
-}
+import { field } from '@layzee/storybook-core';
 
 // The Testing Library queries, by what they match.
 export const queryKinds: readonly string[] = [
@@ -36,8 +33,10 @@ export function isQueryCall(node: types.Node): boolean {
   return (
     node.type === 'CallExpression' &&
     node.callee.type === 'MemberExpression' &&
-    elementQueries.includes(nameOf(node.callee.property) ?? '')
+    elementQueries.has(field(node.callee.property, 'name'))
   );
 }
 
-const elementQueries = queryMethods(elementQueryPrefixes);
+const elementQueries: ReadonlySet<unknown> = new Set(
+  queryMethods(elementQueryPrefixes),
+);

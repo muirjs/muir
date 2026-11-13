@@ -14,6 +14,7 @@ import {
   queryMethods,
 } from './queries.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
+import { packageName } from './package-name.ts';
 import {
   placedInteractionAimedAt,
   placedInteractionAt,
@@ -105,14 +106,19 @@ export function clickFocusMutator(): LzStorybookTestMutator & {
       readStoryFileAt(path, storyInteractions);
 
       const interaction = placedInteractionAt(path);
-      const [first] = interaction?.args ?? [];
-      const value = interaction?.targetValue;
-      const target =
-        interaction?.kind === 'userEvent' &&
-        clickMethods.has(interaction.method) &&
-        t.isNode(first)
-          ? focusTarget(first, t.isNode(value) ? value : undefined)
-          : undefined;
+
+      if (
+        interaction?.kind !== 'userEvent' ||
+        !clickMethods.has(interaction.method)
+      ) {
+        return;
+      }
+
+      const [first] = interaction.args;
+      const value = interaction.targetValue;
+      const target = t.isNode(first)
+        ? focusTarget(first, t.isNode(value) ? value : undefined)
+        : undefined;
 
       if (target === undefined) {
         return;
@@ -181,7 +187,13 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
           t.cloneNode(path.node),
           t.cloneNode(path.node),
         ]);
-      } else if (path.isExpression()) {
+      } else {
+        if (!path.isExpression()) {
+          throw new Error(
+            `${packageName}: LzStorybookInteractionRepeat read an interaction at a ${path.node.type}, which is neither an expression statement nor an expression`,
+          );
+        }
+
         const twice = [path.node, path.node].map((body) =>
           t.expressionStatement(t.awaitExpression(t.cloneNode(body))),
         );
@@ -267,10 +279,8 @@ export function interactionMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       readStoryFileAt(path, storyInteractions);
 
-      const interaction = placedInteractionAt(path);
-
-      if (interaction !== undefined) {
-        yield interaction.statement === 'statement'
+      if (placedInteractionAt(path) !== undefined) {
+        yield path.isExpressionStatement()
           ? t.emptyStatement()
           : t.identifier('undefined');
       }

@@ -83,7 +83,7 @@ export function interactionHints(
 
       return location === undefined ? [] : [{ interaction, location }];
     });
-    const read = survivors.flatMap(({ mutant, name }) => {
+    const shaped = survivors.flatMap(({ mutant, name }) => {
       const statement = statementHolding(statements, mutant.location.start);
 
       if (statement === undefined) {
@@ -95,22 +95,12 @@ export function interactionHints(
         return [];
       }
 
-      return [
-        {
-          mutant,
-          name,
-          shapes: shapesOf(statement.interaction, interactions),
-        },
-      ];
+      const [shape] = shapesOf(statement.interaction, interactions);
+
+      return shape === undefined ? [] : [{ mutant, name, shape }];
     });
 
-    return groupedHints(
-      file,
-      mutants,
-      read.flatMap(({ mutant, name, shapes: [shape] }) =>
-        shape === undefined ? [] : [{ mutant, name, shape }],
-      ),
-    );
+    return groupedHints(file, mutants, shaped);
   });
 }
 
