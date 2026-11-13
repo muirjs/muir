@@ -234,6 +234,42 @@ describe('interactionHints', () => {
     );
   });
 
+  it('warns with its file and position about a survivor that lies in no interaction, and gives it no hint', async () => {
+    assert.ok(negativeOnly !== undefined);
+
+    const { [file]: placed } = await reportOf(negativeOnly.source, [
+      ['LzStorybookInteraction', 5],
+    ]);
+    const warnings: string[] = [];
+
+    assert.ok(placed !== undefined);
+    assert.deepEqual(
+      interactionHints(
+        {
+          [file]: {
+            ...placed,
+            mutants: placed.mutants.map((mutant) =>
+              mutant.status === 'Survived'
+                ? {
+                    ...mutant,
+                    location: {
+                      start: { line: 1, column: 1 },
+                      end: { line: 1, column: 2 },
+                    },
+                  }
+                : mutant,
+            ),
+          },
+        },
+        (message) => warnings.push(message),
+      ),
+      [],
+    );
+    assert.deepEqual(warnings, [
+      '@layzee/stryker-storybook: src/Form.stories.tsx:1:1 has a surviving interaction mutant outside every interaction, so lz-storybook gave it no interaction hint',
+    ]);
+  });
+
   it('gives a hint for a survivor whose interaction has no LzStorybookInteraction mutant, as a column range that cuts the interaction leaves out', async () => {
     assert.ok(negativeOnly !== undefined);
 

@@ -53,8 +53,8 @@ interface ShapedSurvivor {
 }
 
 /**
- * One hint per line and shape of the surviving interaction mutants in `files`; `warn` names each file that gets none
- * for a reason the run should show.
+ * One hint per line and shape of the surviving interaction mutants in `files`; `warn` names each file or survivor that
+ * gets none for a reason the run should show.
  */
 export function interactionHints(
   files: ReportFiles,
@@ -86,15 +86,22 @@ export function interactionHints(
     const read = survivors.flatMap(({ mutant, name }) => {
       const statement = statementHolding(statements, mutant.location.start);
 
-      return statement === undefined
-        ? []
-        : [
-            {
-              mutant,
-              name,
-              shapes: shapesOf(statement.interaction, interactions),
-            },
-          ];
+      if (statement === undefined) {
+        const { line, column } = mutant.location.start;
+        warn(
+          `${packageName}: ${file}:${line}:${column} has a surviving interaction mutant outside every interaction, so lz-storybook gave it no interaction hint`,
+        );
+
+        return [];
+      }
+
+      return [
+        {
+          mutant,
+          name,
+          shapes: shapesOf(statement.interaction, interactions),
+        },
+      ];
     });
 
     return groupedHints(
