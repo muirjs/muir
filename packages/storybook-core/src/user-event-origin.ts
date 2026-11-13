@@ -1,4 +1,4 @@
-import { isMember, memberRoot, unwrap } from './csf-nodes.ts';
+import { isMember, unwrap } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -70,6 +70,9 @@ function exportOrigin(
 /** What a receiver is read from: a module's exports, the play context, or an object the file proves nothing about. */
 type Holder = { readonly module: unknown } | 'playContext' | 'unknown';
 
+/** The origins a value may have; `undefined` for a value that may be no user-event. */
+type MayOrigins = readonly (UserEventOrigin | undefined)[];
+
 /** The origin of the property `key` of `holder`: a user-event export of its module, the play context's `userEvent`, or any other `userEvent`, which is unproven. */
 function originFrom(holder: Holder, key: unknown): UserEventOrigin | undefined {
   const exported =
@@ -109,7 +112,7 @@ export function userEventOrigins(
     isPlayContext(binding.declaration) &&
     binding.writes.length === 0;
 
-  /** Whether `reference` uses what it names only through a member, or destructures it in a declaration; `membersWritten` refuses a member write. */
+  /** Whether `reference` uses what it names only through a member, or destructures it in a declaration. */
   const readsMembers = (reference: unknown): boolean => {
     const parent = tree.parentOf(reference);
 
@@ -136,33 +139,6 @@ export function userEventOrigins(
       ? tree.parentOf(property)
       : undefined;
   };
-
-  /** `binding`, and the bindings whose object it holds by its one value naming them or naming what it destructures `userEvent` from, so a member written through it is written through them too. */
-  const sameObjects = (
-    binding: Binding | undefined,
-    seen: ReadonlySet<Binding>,
-  ): readonly Binding[] => {
-    if (binding === undefined || seen.has(binding)) {
-      return [];
-    }
-
-    const id = unwrap(field(binding.declaration, 'id'));
-    const value = unwrap(oneValue(binding));
-    const source =
-      field(value, 'type') === 'Identifier' &&
-      (id === binding.identifier || id === userEventPattern(binding.identifier))
-        ? scope.bindingOf(value)
-        : undefined;
-
-    return [binding, ...sameObjects(source, new Set([...seen, binding]))];
-  };
-
-  /** The bindings a write targets a member of, as `userEvent.click = fake` does, with the bindings that hold the same object. */
-  const membersWritten: ReadonlySet<Binding> = new Set(
-    scope.writtenMembers.flatMap((member) =>
-      sameObjects(scope.bindingOf(memberRoot(member)), new Set()),
-    ),
-  );
 
   const referencesOf = Map.groupBy(scope.referencesIn(program), (reference) =>
     scope.bindingOf(reference),
@@ -213,32 +189,11 @@ export function userEventOrigins(
       : 'unknown';
   };
 
-  /** Whether the file writes a member of what `node` names. */
-  const isWritten = (node: unknown): boolean => {
-    const binding = scope.bindingOf(unwrap(node));
-
-    return binding !== undefined && membersWritten.has(binding);
-  };
-
-  /** The origin of the property `key` of what `object` holds; unproven when the file writes a member of it. */
-  const heldOrigin = (
-    object: unknown,
-    key: unknown,
-  ): UserEventOrigin | undefined => {
-    const origin = originFrom(holderOf(object), key);
-
-    return origin !== undefined && isWritten(object) ? 'unproven' : origin;
-  };
-
-  const bindingOrigin = (
-    binding: Binding,
-    seen: ReadonlySet<Binding>,
-  ): UserEventOrigin | undefined => {
+  const bindingOrigins = (binding: Binding): MayOrigins => {
     if (binding.kind === 'import') {
-      return exportOrigin(
-        importedName(binding.declaration),
-        importSource(binding),
-      );
+      return [
+        exportOrigin(importedName(binding.declaration), importSource(binding)),
+      ];
     }
 
     if (field(binding.declaration, 'type') === 'VariableDeclarator') {
@@ -246,12 +201,14 @@ export function userEventOrigins(
       const value = oneValue(binding);
 
       if (id === binding.identifier) {
-        return valueOrigin(value, seen);
+        return valueOrigins(value);
       }
 
-      return id === userEventPattern(binding.identifier)
-        ? heldOrigin(awaited(value), 'userEvent')
-        : undefined;
+      return [
+        id === userEventPattern(binding.identifier)
+          ? originFrom(holderOf(awaited(value)), 'userEvent')
+          : undefined,
+      ];
     }
 
     const pattern =
@@ -260,68 +217,103 @@ export function userEventOrigins(
         : undefined;
 
     if (pattern === undefined) {
-      return undefined;
+      return [undefined];
     }
 
-    return originFrom(
-      isUnwrittenContext(binding, pattern) ? 'playContext' : 'unknown',
-      'userEvent',
-    );
+    return [
+      originFrom(
+        isUnwrittenContext(binding, pattern) ? 'playContext' : 'unknown',
+        'userEvent',
+      ),
+    ];
   };
 
-  /** The origin of a local's one value: a user-event's `setup()`, another receiver, or a choice between two receivers. */
-  const valueOrigin = (
-    value: unknown,
-    seen: ReadonlySet<Binding>,
-  ): UserEventOrigin | undefined => {
+  /** The origins a local's one value may have: a user-event's `setup()`, another receiver, or either arm of a conditional or logical expression. */
+  const valueOrigins = (value: unknown): MayOrigins => {
     const node = unwrap(value);
 
     if (field(node, 'type') === 'ConditionalExpression') {
-      return choiceOrigin(
-        originIn(field(node, 'consequent'), seen),
-        originIn(field(node, 'alternate'), seen),
-      );
+      return [
+        ...originsIn(field(node, 'consequent')),
+        ...originsIn(field(node, 'alternate')),
+      ];
     }
 
-    return originIn(setupReceiver(node) ?? node, seen);
+    if (field(node, 'type') === 'LogicalExpression') {
+      return [
+        ...originsIn(field(node, 'left')),
+        ...originsIn(field(node, 'right')),
+      ];
+    }
+
+    if (field(node, 'type') === 'SequenceExpression') {
+      return valueOrigins(list(field(node, 'expressions')).at(-1));
+    }
+
+    return originsIn(setupReceiver(node) ?? node);
   };
-  /** The origin of `receiver`, where `seen` holds the locals already followed, so a local whose value reads itself ends the search. */
-  const originIn = (
-    receiver: unknown,
-    seen: ReadonlySet<Binding>,
-  ): UserEventOrigin | undefined => {
+
+  /** Each binding's origins, followed once; a local whose value reads itself finds none while it is followed. */
+  const knownOrigins = new Map<Binding, MayOrigins>();
+  /** The origins `receiver` may have. */
+  const originsIn = (receiver: unknown): MayOrigins => {
     const node = unwrap(receiver);
 
     if (isMember(node)) {
-      return heldOrigin(field(node, 'object'), memberName(node));
+      const holder = holderOf(field(node, 'object'));
+      const key = memberName(node);
+
+      return key === undefined
+        ? [undefined, originFrom(holder, 'userEvent')]
+        : [originFrom(holder, key)];
     }
 
     const binding = scope.bindingOf(node);
-    const origin =
-      binding === undefined || seen.has(binding)
-        ? undefined
-        : bindingOrigin(binding, new Set([...seen, binding]));
+    const named = originFrom('unknown', field(node, 'name'));
 
-    if (origin !== undefined && isWritten(node)) {
-      return 'unproven';
+    if (binding === undefined) {
+      return [named];
     }
 
-    return origin ?? originFrom('unknown', field(node, 'name'));
+    let origins = knownOrigins.get(binding);
+
+    if (origins === undefined) {
+      knownOrigins.set(binding, [undefined]);
+      origins = bindingOrigins(binding);
+      knownOrigins.set(binding, origins);
+    }
+
+    return origins.map((origin) => origin ?? named);
   };
 
-  return (receiver) => originIn(receiver, new Set());
+  /** `node`, and each object a member expression reads, down to its root. */
+  const chainOf = (node: unknown): readonly unknown[] =>
+    isMember(node) ? [node, ...chainOf(unwrap(field(node, 'object')))] : [node];
+  /** The origins of each member a write targets and of every object in its chain; a receiver of any of them is unproven. */
+  const writtenOrigins = new Set(
+    scope.writtenMembers
+      .flatMap((member) => chainOf(unwrap(member)))
+      .flatMap((node) => originsIn(node)),
+  );
+
+  return (receiver) => {
+    const origin = provenOrigin(originsIn(receiver));
+
+    return origin !== undefined && writtenOrigins.has(origin)
+      ? 'unproven'
+      : origin;
+  };
 }
 
-/** The origin of a choice between two receivers: none unless both are user-events, and unproven when they differ. */
-function choiceOrigin(
-  first: UserEventOrigin | undefined,
-  second: UserEventOrigin | undefined,
-): UserEventOrigin | undefined {
-  if (first === undefined || second === undefined) {
+/** The origin a value proves from the origins it may have: none unless each is a user-event, and unproven when they differ. */
+function provenOrigin(origins: MayOrigins): UserEventOrigin | undefined {
+  const [first] = origins;
+
+  if (origins.includes(undefined)) {
     return undefined;
   }
 
-  return first === second ? first : 'unproven';
+  return origins.every((origin) => origin === first) ? first : 'unproven';
 }
 
 /** The receiver of `<receiver>.setup()`. */

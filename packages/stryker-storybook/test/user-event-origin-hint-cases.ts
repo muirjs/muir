@@ -673,4 +673,24 @@ export const userEventOriginHintCases: readonly InteractionHintCase[] = [
     survived: [[interaction, 6]],
     expect: [[6, 'click-before-type', [interaction]]],
   },
+  {
+    id: 'setup-instance-written-type',
+    title:
+      "gives no hint for a click before a type on storybook/test's userEvent after the play assigns the click of a setup() instance, since a write refuses every receiver of its origin",
+    source: [
+      "import { userEvent } from 'storybook/test';",
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async ({ canvas }) => {',
+      '    const user = userEvent.setup();',
+      '    user.click = fake;',
+      "    await userEvent.click(canvas.getByRole('textbox'));",
+      "    await userEvent.type(canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 7]],
+    expect: [],
+  },
 ];

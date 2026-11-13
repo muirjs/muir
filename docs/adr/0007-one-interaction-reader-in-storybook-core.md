@@ -34,9 +34,15 @@ scope reading written in core.
   proves nothing: a written play context parameter, a play context whose name the file uses other than to read or
   destructure its members, or a local with more than one value gives a receiver the origin `unproven` or none, so the
   reporter gives no `click-before-type` hint there. A write that targets a member, by assignment, pattern or
-  `for...in`/`for...of` head, of the receiver, of the namespace import or play context it is read from, or of a local
-  that aliases it or destructures `userEvent` from the same object, gives `unproven` too. A member passed to a call,
-  such as `Object.assign(context.userEvent, ...)`, is not seen as a write.
+  `for...in`/`for...of` head, finds the origin of the written member and of each object it is read through, the way a
+  receiver's origin is found, taking both arms of a conditional or logical value; a member under a computed key may
+  be `userEvent`. Every receiver of such an origin is `unproven`: `u.click = f` after `const u = context.userEvent`,
+  and `t.userEvent.click = f` beside a named `userEvent` import of the same module, both refuse. So a write on one
+  user-event 14 object, such as a `setup()` instance, drops every user-event 14 hint in the file; the cost is hints
+  only, in the safe direction, and such stories are rare. A receiver or a member passed whole to a call, such as
+  `Object.assign(userEvent, ...)`, `vi.spyOn(userEvent, 'click')` or `Object.assign(context.userEvent, ...)`, is not
+  seen as a write, nor is a write through a value the origin search does not follow, such as an array or object
+  literal that holds the receiver or a function parameter.
 - The test mutators make mutants for every origin, `unproven` included, as ADR 0006 asks. Their ADR 0002 stands:
   placement does not change, and the user-event 14 proof is a reading the reporter uses, not a skip.
 - The reporter refuses `negative-only` when the following checks end at a statement that may not run its interaction,

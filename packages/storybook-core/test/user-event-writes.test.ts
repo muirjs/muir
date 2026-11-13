@@ -84,6 +84,66 @@ const writeCases: readonly KindCase[] = [
     source: `export const Story = {\n  play: async (context) => {\n    const { userEvent } = context;\n    for (userEvent.click in { fake }) {}\n    await userEvent.click(context.canvas.getByRole('a'));\n  },\n};\n`,
     expect: ['userEvent click unproven'],
   },
+  {
+    title:
+      'a click on context.userEvent after the play assigns the click of a local holding context.userEvent is of unproven origin',
+    source: `export const Story = {\n  play: async (context) => {\n    const u = context.userEvent;\n    u.click = fake;\n    await context.userEvent.click(context.canvas.getByRole('a'));\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on a namespace import's userEvent after the play assigns the click of a local holding it is of unproven origin",
+    source: `import * as t from 'storybook/test';\n${inPlayWith(['canvas'], 'const u = t.userEvent;', 'u.click = fake;', "await t.userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on an imported userEvent after the play assigns the click of a namespace import's userEvent of the same module is of unproven origin",
+    source: `import * as t from 'storybook/test';\n${importUserEvent}${inPlayWith(['canvas'], 't.userEvent.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a second named import of the same module is of unproven origin',
+    source: `import { userEvent as ue } from 'storybook/test';\n${importUserEvent}${inPlayWith(['canvas'], 'ue.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a local that may hold it by a conditional is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], 'const u = flag ? userEvent : x;', 'u.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a local that may hold it by a logical or is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], 'const u = x || userEvent;', 'u.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a local that may hold it by a nullish coalescing is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], 'const u = userEvent ?? x;', 'u.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a local holding it by a sequence is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], 'const u = (0, userEvent);', 'u.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a setup() instance is of unproven origin, since a write refuses every receiver of its origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], 'const user = userEvent.setup();', 'user.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on context.userEvent after the play assigns a member of the context under a computed key is of unproven origin',
+    source: `export const Story = {\n  play: async (context) => {\n    context[key] = fake;\n    await context.userEvent.click(context.canvas.getByRole('a'));\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
 ];
 
 describe('interactionsOf origins after a member write', () => {

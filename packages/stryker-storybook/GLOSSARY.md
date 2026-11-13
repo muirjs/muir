@@ -98,23 +98,29 @@ is no user-event, and its call is no interaction. There are three values:
   context's `userEvent` proves it too: `{ userEvent }` destructured from the first parameter of a play, hook or
   `.test()` function of story test code, or read from that parameter as `context.userEvent` or
   `const { userEvent: u } = context`, where nothing in the file writes the parameter and every reference to a named
-  context reads one of its members or destructures it in a declaration. A write to a member or to a member of one,
-  such as `context.userEvent = v`, `[context.userEvent] = [v]` or `context.userEvent.click = f`, and any other use,
-  such as `Object.assign(context, ...)` or `const c = context`, refuse it.
+  context reads one of its members or destructures it in a declaration. A write to its `userEvent`, to a member of
+  it or to a member under a computed key, such as `context.userEvent = v`, `[context.userEvent] = [v]`,
+  `context.userEvent.click = f` or `context[key] = v`, and any other use, such as `Object.assign(context, ...)` or
+  `const c = context`, refuse it.
 - `vitestBrowser`: Vitest browser's `userEvent`, imported the same way from `vitest/browser` or
   `@vitest/browser/context`, statically or by `await import(...)`.
 - `unproven`: a receiver that may be a user-event, but the file does not prove which one: `{ userEvent }` destructured
   from the parameter of any other function, a play context that the file writes or uses otherwise, `<object>.userEvent`
   or `const { userEvent: u } = <object>` on any other object, any other name `userEvent`, or a choice `a ? b : c`
-  between receivers of two different origins, or a named receiver whose member, or a member of one, the file writes.
+  between receivers of two different origins, or any receiver of an origin that a member write reaches.
 
-A local whose one value is `<receiver>.setup()`, another receiver, or a choice between receivers of the same origin
-has that receiver's origin. A write to a member of a receiver, or of what it is read from, makes it `unproven`
-whatever it holds: an assignment, an array or object pattern or a `for...in` or `for...of` head that targets
-`userEvent.click`, `t.userEvent.click` on a namespace import, or the member of any name that holds the same object,
-such as `u.click` after `const u = userEvent` or `userEvent.click` after `const { userEvent } = context`, which
-refuses `context.userEvent` too. A member passed to a call, as in `Object.assign(context.userEvent, ...)`, is a read
-and refuses nothing. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter
+A local whose one value is `<receiver>.setup()`, another receiver, a choice between receivers of the same origin, or
+a sequence whose last value is one of these has that receiver's origin. A member write makes every receiver of the
+origin it reaches `unproven`. The write is an assignment, an array or object pattern or a `for...in` or `for...of`
+head that targets a member. It reaches the origin of the written member and of each object it is read through,
+found as a receiver's is, with both arms of a conditional or logical value, and a member under a computed key may be
+`userEvent`. So `userEvent.click`, `t.userEvent.click` on a namespace import, `u.click` after `const u = userEvent`,
+`const u = context.userEvent` or `const u = flag ? userEvent : x`, `userEvent.click` after
+`const { userEvent } = context`, or the `click` of a `setup()` instance each refuse every user-event 14 receiver in
+the file, named imports, namespace imports and the play context's alike. A receiver or a member passed whole to a
+call, as in `Object.assign(userEvent, ...)`, `vi.spyOn(userEvent, 'click')` or
+`Object.assign(context.userEvent, ...)`, is a read and refuses nothing, and so is a write through a value the origin
+search does not follow, such as an array or object literal that holds the receiver or a function parameter. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter
 gives the `click-before-type` shape only for `userEvent14`.
 _Avoid_: user-event kind, user-event 14 check
 
