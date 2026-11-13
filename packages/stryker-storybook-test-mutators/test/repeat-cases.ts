@@ -1,4 +1,4 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, inPlay, namespaceSteps } from './support/case.ts';
 
 const repeat = 'LzStorybookInteractionRepeat';
 
@@ -217,6 +217,13 @@ export const repeatCases: readonly Case[] = [
     expect: [
       [repeat, '{ await user.click(button); await user.click(button); }'],
     ],
+  },
+  {
+    id: 'repeat-in-namespace',
+    title:
+      'a click on a renamed storybook/test userEvent in a TypeScript namespace runs twice',
+    source: namespaceSteps,
+    expect: [[repeat, '{ await ue.click(button); await ue.click(button); }']],
   },
   {
     id: 'repeat-skip-unknown-key',

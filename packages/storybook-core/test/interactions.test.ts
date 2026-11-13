@@ -152,6 +152,21 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      'a click on a storybook/test import renamed and a setup() local in a TypeScript namespace are user-event 14 interactions',
+    source: [
+      "import { userEvent as ue } from 'storybook/test';",
+      'namespace Steps {',
+      '  export async function save() {',
+      '    await ue.click(a);',
+      '    const user = ue.setup();',
+      "    await user.type(a, 'x');",
+      '  }',
+      '}',
+    ].join('\n'),
+    expect: ['userEvent click userEvent14', 'userEvent type userEvent14'],
+  },
+  {
+    title:
       'a click on a named class expression called userEvent, inside that class, is of unproven origin',
     source: [
       "import { userEvent } from 'storybook/test';",

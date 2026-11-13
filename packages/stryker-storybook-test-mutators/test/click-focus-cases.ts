@@ -1,4 +1,4 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, inPlay, namespaceSteps } from './support/case.ts';
 
 const clickFocus = 'LzStorybookClickFocus';
 
@@ -76,6 +76,13 @@ export const clickFocusCases: readonly Case[] = [
       '}',
       'await user.click(button);',
     ),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-in-namespace',
+    title:
+      'a click on a renamed storybook/test userEvent in a TypeScript namespace becomes a focus() call',
+    source: namespaceSteps,
     expect: [[clickFocus, 'await button.focus();']],
   },
   {

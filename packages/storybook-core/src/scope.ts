@@ -93,7 +93,6 @@ const typeDeclarations: readonly unknown[] = [
   'TSInterfaceDeclaration',
   'TSTypeAliasDeclaration',
   'TSDeclareFunction',
-  'TSModuleDeclaration',
   'TSEnumDeclaration',
   'TSImportEqualsDeclaration',
 ];
@@ -213,6 +212,14 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (typeDeclarations.includes(type)) {
+      return;
+    }
+
+    if (type === 'TSModuleDeclaration') {
+      if (field(node, 'declare') !== true) {
+        visit(field(node, 'body'), scopeIn(scope, true));
+      }
+
       return;
     }
 

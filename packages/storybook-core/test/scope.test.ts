@@ -230,6 +230,38 @@ const scopeCases: readonly ScopeCase[] = [
     declaredBy: undefined,
   },
   {
+    title: 'a const in a namespace shadows an outer one inside the namespace',
+    lines: [
+      'const user = first;',
+      'namespace Steps {',
+      '  const user = second;',
+      '  use(user);',
+      '}',
+    ],
+    name: 'user',
+    reference: 2,
+    declaredBy: 1,
+  },
+  {
+    title: 'a var in a namespace is bound in the namespace, not outside it',
+    lines: ['namespace Steps {', '  var user = second;', '}', 'use(user);'],
+    name: 'user',
+    reference: 1,
+    declaredBy: undefined,
+  },
+  {
+    title: 'a name that a declare namespace exports reads no value binding',
+    lines: [
+      'const user = first;',
+      'declare namespace Steps {',
+      '  export { user as other };',
+      '}',
+    ],
+    name: 'user',
+    reference: 1,
+    declaredBy: undefined,
+  },
+  {
     title: 'a key in an interface reads no value binding',
     lines: ['const user = first;', 'interface Props {', '  user: string;', '}'],
     name: 'user',

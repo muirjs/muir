@@ -1,7 +1,12 @@
 import { composedPlayCases } from './composed-play-cases.ts';
 import { rawDomCases } from './raw-dom-cases.ts';
 import { skippedInteractionCases } from './skipped-interaction-cases.ts';
-import { type Case, inPlay, inPlayWith } from './support/case.ts';
+import {
+  type Case,
+  inPlay,
+  inPlayWith,
+  namespaceSteps,
+} from './support/case.ts';
 
 const interaction = 'LzStorybookInteraction';
 
@@ -114,6 +119,16 @@ const interactionCases: readonly Case[] = [
       'await user.click(button);',
     ),
     expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-in-namespace',
+    title:
+      'a click on a renamed storybook/test userEvent and a call on its setup() local in a TypeScript namespace are removed',
+    source: namespaceSteps,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
   },
   {
     id: 'user-event-setup-let',
