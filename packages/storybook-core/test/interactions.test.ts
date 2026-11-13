@@ -152,6 +152,19 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      'a click on a named class expression called userEvent, inside that class, is of unproven origin',
+    source: [
+      "import { userEvent } from 'storybook/test';",
+      'const Steps = class userEvent {',
+      '  open() {',
+      '    userEvent.click(button);',
+      '  }',
+      '};',
+    ].join('\n'),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
       'a click on a local bound to userEvent.setup() that a class static block shadows is a user-event 14 click',
     source: `import { userEvent } from 'storybook/test';\n${inPlayWith(
       ['canvas'],

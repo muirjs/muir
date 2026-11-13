@@ -260,6 +260,20 @@ export function fileScope(program: unknown): FileScope {
       });
     }
 
+    if (type === 'ClassExpression') {
+      const inner = scopeIn(scope, false);
+
+      declare(field(node, 'id'), {
+        kind: 'class',
+        scope: inner,
+        readScope: inner,
+        node,
+      });
+      readChildren(node).forEach((child) => visit(child, inner));
+
+      return;
+    }
+
     if (type === 'ImportDeclaration') {
       list(field(node, 'specifiers')).forEach((specifier) =>
         declare(field(specifier, 'local'), {

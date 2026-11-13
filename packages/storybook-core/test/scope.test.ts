@@ -290,11 +290,11 @@ const scopeCases: readonly ScopeCase[] = [
     declaredBy: 2,
   },
   {
-    title: "a class expression's own name reads no binding",
+    title: "a class expression's own name declares its own binding",
     lines: ['const Page = first;', 'const other = class Page {};'],
     name: 'Page',
     reference: 1,
-    declaredBy: undefined,
+    declaredBy: 1,
   },
   {
     title: 'a let in a class static block shadows an outer const inside it',
@@ -325,6 +325,20 @@ const scopeCases: readonly ScopeCase[] = [
     name: 'user',
     reference: 1,
     declaredBy: undefined,
+  },
+  {
+    title: "a named class expression's own name is bound inside the class",
+    lines: [
+      'const Page = first;',
+      'const other = class Page {',
+      '  open() {',
+      '    return Page;',
+      '  }',
+      '};',
+    ],
+    name: 'Page',
+    reference: 2,
+    declaredBy: 1,
   },
   {
     title: 'a let in a for head is bound in the loop body',
