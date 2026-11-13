@@ -264,13 +264,16 @@ function isUserEvent14(
   ancestors: readonly AstNode[],
 ): boolean {
   const name = nameOf(receiver);
-  const declaration =
-    name === undefined ? undefined : declarationOf(name, ancestors);
+
+  if (name === undefined) {
+    return false;
+  }
+
+  const declaration = declarationOf(name, ancestors);
   const play = playOf(declaration, ancestors);
 
   return (
     (play !== undefined &&
-      name !== undefined &&
       !assigns(play['body'], name) &&
       list(field(declaration, 'properties')).some(
         (property) =>
@@ -311,12 +314,23 @@ function playOf(
     : undefined;
 }
 
+/** The part of a node of each type that it gives a new value, which may differ from the play context's. */
+const rebindingTargets: Readonly<Record<string, (node: AstNode) => unknown>> = {
+  AssignmentExpression: (node) => node['left'],
+  ForOfStatement: (node) => node['left'],
+  ForInStatement: (node) => node['left'],
+  UpdateExpression: (node) => node['argument'],
+  VariableDeclaration: (node) => (node['kind'] === 'var' ? node : undefined),
+};
+
 /** Whether `node` holds an assignment to `name`, which may give it a value other than the play context's. */
 function assigns(node: unknown, name: string): boolean {
+  const type = field(node, 'type');
+
   return (
     isNode(node) &&
-    ((node['type'] === 'AssignmentExpression' &&
-      declares(node['left'], name)) ||
+    ((typeof type === 'string' &&
+      declares(rebindingTargets[type]?.(node), name)) ||
       childEntries(node).some(([, value]) =>
         list(Array.isArray(value) ? value : [value]).some((child) =>
           assigns(child, name),

@@ -148,17 +148,24 @@ names, where an interaction outside the range has no such mutant.
 _Avoid_: interaction finding, interaction warning
 
 **Interaction shape**:
-Why a play may pass although a surviving interaction mutant changes the interaction: `negative-only` (a check comes
-after it before the next statement that holds an interaction, and every check before the next interaction is negative),
-`click-before-type` (a user-event click or hover directly before a `type` of the same target on user-event 14's
-`userEvent`, which clicks it first unless given `skipClick`; the reporter takes the click as kept only when the options
-are absent, or an object literal with no spread, computed key or `__proto__` whose `skipClick`, quoted or not, is
-absent or `false`, and takes a `userEvent` for user-event 14 only when it is destructured from the first parameter of
-the function under a non-computed `play` key of the meta (the default export) or of an exported story, the play
-context, and the play assigns it nothing, or when it is imported from `storybook/test`, so Vitest browser's
-`userEvent`, one destructured from another function's parameter, a `setup()` local and every other form get no such
-hint), or `cleared-later` (a `type` or `clear` whose target the next interaction in its block clears, with no check
-between them). An interaction has at most one shape.
+Why a play may pass although a surviving interaction mutant changes the interaction. An interaction has at most one
+shape:
+
+- `negative-only`: a check comes after it before the next statement that holds an interaction, and every check before
+  the next interaction is negative.
+- `click-before-type`: a user-event click or hover directly before a `type` of the same target on user-event 14's
+  `userEvent`, which clicks it first unless given `skipClick`. The reporter takes the click as kept only when the
+  options are absent, or an object literal with no spread, computed key or `__proto__` whose `skipClick`, quoted or
+  not, is absent or `false`. It takes a `userEvent` for user-event 14 only when it is imported from `storybook/test`,
+  or when it is the play context's: destructured from the first parameter of the function under a non-computed `play`
+  key of the meta (the default export) or of an exported story, with nothing in that function's body that may give
+  the name another value. Such a form is an assignment, a `for...of` or `for...in` head, an update expression or a
+  `var` declaration, anywhere in the body, nested functions and shadowing locals included. Vitest browser's
+  `userEvent`, one destructured from another function's parameter, a `setup()` local and every other form get no
+  such hint.
+- `cleared-later`: a `type` or `clear` whose target the next interaction in its block clears, with no check between
+  them.
+
 _Avoid_: skip reason, interaction pattern
 
 **Checks before the next interaction**:
