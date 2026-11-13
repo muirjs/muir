@@ -3,10 +3,10 @@ import { describe, it } from 'node:test';
 
 import {
   inPlay,
-  inPlayWith,
   interactionsIn,
   type KindCase,
 } from './support/interactions.ts';
+import { inPlayWith } from './support/story-source.ts';
 
 const importUserEvent = "import { userEvent } from 'storybook/test';\n";
 

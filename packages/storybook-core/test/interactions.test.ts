@@ -7,11 +7,11 @@ import { field } from '../src/node-field.ts';
 import { descendants, memberName } from '../src/node-tree.ts';
 import {
   inPlay,
-  inPlayWith,
   interactionsIn,
   type KindCase,
 } from './support/interactions.ts';
 import { programsOf } from './support/parse-module.ts';
+import { inPlayWith } from './support/story-source.ts';
 
 const kindCases: readonly KindCase[] = [
   {

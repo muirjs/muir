@@ -7,9 +7,9 @@ import {
   type FollowingCase,
   followingIn,
   inPlay,
-  inPlayWith,
 } from './support/following-checks.ts';
 import { programsOf } from './support/parse-module.ts';
+import { inPlayWith } from './support/story-source.ts';
 
 const followingCases: readonly FollowingCase[] = [
   {

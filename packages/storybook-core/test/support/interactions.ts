@@ -10,8 +10,6 @@ export interface KindCase {
   readonly expect: readonly string[];
 }
 
-export { inPlayWith };
-
 export function inPlay(...statements: readonly string[]): string {
   return inPlayWith(['canvas', 'userEvent'], ...statements);
 }

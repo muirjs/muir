@@ -20,8 +20,6 @@ interface FollowingDescription {
   readonly copy?: string;
 }
 
-export { inPlayWith };
-
 export function inPlay(...statements: readonly string[]): string {
   return inPlayWith(['args', 'canvas', 'userEvent'], ...statements);
 }
