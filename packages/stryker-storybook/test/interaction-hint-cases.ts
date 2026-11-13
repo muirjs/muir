@@ -968,6 +968,24 @@ export const interactionHintCases: readonly InteractionHintCase[] = [
     expect: [[4, 'click-before-type', [interaction]]],
   },
   {
+    id: 'context-member-written-type',
+    title:
+      "gives no hint for a click before a type on the userEvent member of the play's context after the play assigns that member",
+    source: [
+      "export default { title: 'Form' };",
+      'export const Form = {',
+      '  play: async (context) => {',
+      '    context.userEvent = vitestUserEvent;',
+      "    await context.userEvent.click(context.canvas.getByRole('textbox'));",
+      "    await context.userEvent.type(context.canvas.getByRole('textbox'), 'Ada');",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
     id: 'context-defaulted-pattern-type',
     title:
       "names a surviving click before a type on the play context's userEvent destructured with a default",

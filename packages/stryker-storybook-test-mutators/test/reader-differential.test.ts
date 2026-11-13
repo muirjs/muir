@@ -119,6 +119,8 @@ const caseSources: readonly Source[] = [
 
 const contextDestructuredInPlay =
   'a userEvent destructured from the play context in the play body';
+const unprovenDestructured =
+  'a userEvent destructured from an object that is no user-event module or play context, of unproven origin';
 
 /** The sources where the readers differ by a behaviour change of core's reader, with the change. */
 const expectedDifferences: ReadonlyMap<string, string> = new Map([
@@ -127,7 +129,10 @@ const expectedDifferences: ReadonlyMap<string, string> = new Map([
   ['click-focus-string-key', 'a string-literal computed key'],
   ['click-focus-skip-unknown-key', 'a computed key that is no string literal'],
   ['user-event-alias', 'a local bound to a user-event itself'],
+  ['other-module-user-event', unprovenDestructured],
+  ['user-event-destructured-renamed-from-local', unprovenDestructured],
   ['context-user-event-destructured-in-play', contextDestructuredInPlay],
+  ['context-user-event-destructured-after-assignment', unprovenDestructured],
   ['user-event-string-key', 'a string-literal computed key'],
   ['user-event-unknown-key', 'a computed key that is no string literal'],
   ['composed-context-step', 'context.step(label, Other.play)'],

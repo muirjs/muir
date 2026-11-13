@@ -322,6 +322,16 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      "a click on the userEvent member of a local holding a function's result is a user-event click of unproven origin",
+    source: inPlayWith(
+      ['canvas'],
+      'const foo = makeDriver();',
+      "await foo.userEvent.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
       'a click on the userEvent member of an optional play context is a user-event 14 click',
     source: `export const Story = {\n  play: async (context) => {\n    await context?.userEvent.click(button);\n  },\n};\n`,
     expect: ['userEvent click userEvent14'],
@@ -336,6 +346,24 @@ const kindCases: readonly KindCase[] = [
     title:
       'a click on the userEvent member of a play context that the play assigns is of unproven origin',
     source: `export const Story = {\n  play: async (context) => {\n    context = driverContext;\n    await context.userEvent.click(button);\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on the play context's userEvent member after the play assigns that member is of unproven origin",
+    source: `export const Story = {\n  play: async (context) => {\n    context.userEvent = vitestUserEvent;\n    await context.userEvent.click(context.canvas.getByRole('button'));\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on userEvent destructured from the play context after the play passes the context to a call is of unproven origin',
+    source: `export const Story = {\n  play: async (context) => {\n    Object.assign(context, { userEvent: vitestUserEvent });\n    const { userEvent } = context;\n    await userEvent.click(context.canvas.getByRole('button'));\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on the play context's userEvent member after the play assigns that member through an alias of the context is of unproven origin",
+    source: `export const Story = {\n  play: async (context) => {\n    const driver = context;\n    driver.userEvent = vitestUserEvent;\n    await context.userEvent.click(button);\n  },\n};\n`,
     expect: ['userEvent click unproven'],
   },
   {
@@ -481,6 +509,12 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      'a click on userEvent destructured from the play context in the play, beside member reads of the context, is a user-event 14 click',
+    source: `export const Story = {\n  play: async (context) => {\n    const { userEvent } = context;\n    await userEvent.click(context.canvas.getByRole('button'));\n  },\n};\n`,
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
       "a hover on userEvent destructured under another name from import('@vitest/browser/context') is a Vitest browser hover",
     source: inPlay(
       "const { userEvent: pointer } = await import('@vitest/browser/context');",
@@ -499,18 +533,40 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      "a hover on userEvent destructured from another module's import() is no interaction",
+      "a click on userEvent destructured from a local holding a function's result is a user-event click of unproven origin",
+    source: inPlayWith(
+      ['canvas'],
+      'const foo = makeDriver();',
+      'const { userEvent } = foo;',
+      "await userEvent.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on userEvent destructured under another name from a local holding a function's result is a user-event click of unproven origin",
+    source: inPlayWith(
+      ['canvas'],
+      'const foo = makeDriver();',
+      'const { userEvent: u } = foo;',
+      "await u.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a hover on userEvent destructured from another module's import() is a user-event hover of unproven origin",
     source: inPlay(
       "const { userEvent: pointer } = await import('./driver');",
       "await pointer.hover(canvas.getByRole('button'));",
     ),
-    expect: [],
+    expect: ['userEvent hover unproven'],
   },
   {
     title:
-      'a click on userEvent destructured from the play context after the play assigns the context is no interaction',
+      'a click on userEvent destructured from the play context after the play assigns the context is of unproven origin',
     source: `export const Story = {\n  play: async (context) => {\n    context = driverContext;\n    const { userEvent: user } = context;\n    await user.click(button);\n  },\n};\n`,
-    expect: [],
+    expect: ['userEvent click unproven'],
   },
   {
     title:

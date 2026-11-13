@@ -93,12 +93,15 @@ is no user-event, and its call is no interaction. There are three values:
   `@testing-library/user-event`, or `<ns>.userEvent` or `<ns>.default` of a namespace import of those. The play
   context's `userEvent` proves it too: `{ userEvent }` destructured from the first parameter of a play, hook or
   `.test()` function of story test code, or read from that parameter as `context.userEvent` or
-  `const { userEvent: u } = context`, where nothing in the file writes the parameter.
+  `const { userEvent: u } = context`, where nothing in the file writes the parameter and every reference to a named
+  context reads one of its members or destructures it in a declaration. A write to a member, such as
+  `context.userEvent = v`, and any other use, such as `Object.assign(context, ...)` or `const c = context`, refuse it.
 - `vitestBrowser`: Vitest browser's `userEvent`, imported the same way from `vitest/browser` or
   `@vitest/browser/context`, statically or by `await import(...)`.
 - `unproven`: a receiver that may be a user-event, but the file does not prove which one: `{ userEvent }` destructured
-  from the parameter of any other function, a play context parameter that the file writes, `<object>.userEvent` on any
-  other object, any other name `userEvent`, or a choice `a ? b : c` between receivers of two different origins.
+  from the parameter of any other function, a play context that the file writes or uses otherwise, `<object>.userEvent`
+  or `const { userEvent: u } = <object>` on any other object, any other name `userEvent`, or a choice `a ? b : c`
+  between receivers of two different origins.
 
 A local whose one value is `<receiver>.setup()`, another receiver, or a choice between receivers of the same origin
 has that receiver's origin. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter

@@ -67,6 +67,21 @@ function exportOrigin(
   return name === 'userEvent' ? moduleOrigins.get(source) : undefined;
 }
 
+/** What a receiver is read from: a module's exports, the play context, or an object the file proves nothing about. */
+type Holder = { readonly module: unknown } | 'playContext' | 'unknown';
+
+/** The origin of the property `key` of `holder`: a user-event export of its module, the play context's `userEvent`, or any other `userEvent`, which is unproven. */
+function originFrom(holder: Holder, key: unknown): UserEventOrigin | undefined {
+  const exported =
+    typeof holder === 'object' ? exportOrigin(key, holder.module) : undefined;
+
+  if (exported !== undefined || key !== 'userEvent') {
+    return exported;
+  }
+
+  return holder === 'playContext' ? 'userEvent14' : 'unproven';
+}
+
 function withoutDefault(pattern: unknown): unknown {
   return field(pattern, 'type') === 'AssignmentPattern'
     ? field(pattern, 'left')
@@ -92,6 +107,47 @@ export function userEventOrigins(
     root === withoutDefault(binding.declaration) &&
     isPlayContext(binding.declaration) &&
     binding.writes.length === 0;
+
+  /** Whether `reference` reads a member of what it names, or destructures it in a declaration, and so leaves its members as they are. */
+  const readsMembers = (reference: unknown): boolean => {
+    const parent = tree.parentOf(reference);
+    const assignment = tree.parentOf(parent);
+
+    if (field(parent, 'type') === 'VariableDeclarator') {
+      return (
+        field(parent, 'init') === reference &&
+        field(parent, 'id', 'type') === 'ObjectPattern'
+      );
+    }
+
+    return (
+      isMember(parent) &&
+      field(parent, 'object') === reference &&
+      !(
+        field(assignment, 'type') === 'AssignmentExpression' &&
+        field(assignment, 'left') === parent
+      )
+    );
+  };
+
+  /** What `node` holds: a module's exports, the play context while every reference to its name reads members, or an object the file proves nothing about. */
+  const holderOf = (node: unknown): Holder => {
+    const module = moduleOf(node);
+    const binding = scope.bindingOf(unwrap(node));
+
+    if (module !== undefined) {
+      return { module };
+    }
+
+    return binding?.kind === 'param' &&
+      isUnwrittenContext(binding, binding.identifier) &&
+      scope
+        .referencesIn(tree.parentOf(binding.declaration))
+        .filter((reference) => scope.bindingOf(reference) === binding)
+        .every(readsMembers)
+      ? 'playContext'
+      : 'unknown';
+  };
 
   /** The pattern that holds `identifier` under the key `userEvent`, a default aside. */
   const userEventPattern = (identifier: unknown): unknown => {
@@ -127,7 +183,7 @@ export function userEventOrigins(
       }
 
       return id === userEventPattern(binding.identifier)
-        ? destructuredOrigin(awaited(value))
+        ? originFrom(holderOf(awaited(value)), 'userEvent')
         : undefined;
     }
 
@@ -140,7 +196,10 @@ export function userEventOrigins(
       return undefined;
     }
 
-    return isUnwrittenContext(binding, pattern) ? 'userEvent14' : 'unproven';
+    return originFrom(
+      isUnwrittenContext(binding, pattern) ? 'playContext' : 'unknown',
+      'userEvent',
+    );
   };
 
   const importSource = (binding: Binding): unknown =>
@@ -153,31 +212,6 @@ export function userEventOrigins(
       field(binding.declaration, 'type') === 'ImportNamespaceSpecifier'
       ? importSource(binding)
       : field(importSourceOf(awaited(node)), 'value');
-  };
-  /** Whether `node` names a test function's play context parameter that nothing writes. */
-  const isPlayContextName = (node: unknown): boolean => {
-    const binding = scope.bindingOf(unwrap(node));
-
-    return (
-      binding?.kind === 'param' &&
-      isUnwrittenContext(binding, binding.identifier)
-    );
-  };
-  /** The origin of `{ userEvent: x } = value`: from a user-event module's exports, or from a play context. */
-  const destructuredOrigin = (value: unknown): UserEventOrigin | undefined =>
-    exportOrigin('userEvent', moduleOf(value)) ??
-    (isPlayContextName(value) ? 'userEvent14' : undefined);
-  /** The origin of `<object>.userEvent`. */
-  const contextMemberOrigin = (object: unknown): UserEventOrigin =>
-    isPlayContextName(object) ? 'userEvent14' : 'unproven';
-  const memberOrigin = (member: unknown): UserEventOrigin | undefined => {
-    const name = memberName(member);
-    const object = field(member, 'object');
-
-    return (
-      exportOrigin(name, moduleOf(object)) ??
-      (name === 'userEvent' ? contextMemberOrigin(object) : undefined)
-    );
   };
 
   /** The origin of a local's one value: a user-event's `setup()`, another receiver, or a choice between two receivers. */
@@ -204,7 +238,7 @@ export function userEventOrigins(
     const node = unwrap(receiver);
 
     if (isMember(node)) {
-      return memberOrigin(node);
+      return originFrom(holderOf(field(node, 'object')), memberName(node));
     }
 
     const binding = scope.bindingOf(node);
@@ -213,9 +247,7 @@ export function userEventOrigins(
         ? undefined
         : bindingOrigin(binding, new Set([...seen, binding]));
 
-    return (
-      origin ?? (field(node, 'name') === 'userEvent' ? 'unproven' : undefined)
-    );
+    return origin ?? originFrom('unknown', field(node, 'name'));
   };
 
   return (receiver) => originIn(receiver, new Set());

@@ -398,12 +398,24 @@ const interactionCases: readonly Case[] = [
   {
     id: 'other-module-user-event',
     title:
-      "a call on userEvent destructured from another module's import() makes no mutant",
+      "a call on userEvent destructured from another module's import() is removed",
     source: inPlay(
       "const { userEvent: pointer } = await import('./driver');",
       "await pointer.hover(canvas.getByRole('button'));",
     ),
-    expect: [],
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-destructured-renamed-from-local',
+    title:
+      "a call on userEvent destructured under another name from a local holding a function's result is removed",
+    source: inPlayWith(
+      ['canvas'],
+      'const foo = makeDriver();',
+      'const { userEvent: u } = foo;',
+      "await u.click(canvas.getByRole('button'));",
+    ),
+    expect: [[interaction, ';']],
   },
   {
     id: 'other-module-named-import',
@@ -429,9 +441,9 @@ const interactionCases: readonly Case[] = [
   {
     id: 'context-user-event-destructured-after-assignment',
     title:
-      'a call on userEvent destructured from the play context after the play assigns the context makes no mutant',
+      'a call on userEvent destructured from the play context after the play assigns the context is removed, as any userEvent may be one',
     source: `export const Story = {\n  play: async (context) => {\n    context = driverContext;\n    const { userEvent: user } = context;\n    await user.click(button);\n  },\n};\n`,
-    expect: [],
+    expect: [[interaction, ';']],
   },
   {
     id: 'test-context-user-event-renamed',
