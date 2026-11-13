@@ -147,6 +147,23 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-alias',
+    title: 'a call on a local bound to userEvent itself is removed',
+    source: inPlay('const u = userEvent;', 'await u.click(button);'),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-alias-reassigned',
+    title:
+      'a call on a let bound to userEvent and then given another value makes no mutant',
+    source: inPlay(
+      'let u = userEvent;',
+      'u = createDriver();',
+      'await u.click(button);',
+    ),
+    expect: [],
+  },
+  {
     id: 'user-event-setup-let-reassigned',
     title: 'a call on a let reassigned after userEvent.setup() makes no mutant',
     source: inPlay(
