@@ -42,17 +42,13 @@ const storyFileOf = perFile<CsfShapes | undefined>(
   undefined,
 );
 
-/** The interactions of the file, for the interaction mutators to pass to `readStoryFileAt`. */
-export const storyInteractions = perFile<StoryInteractions | undefined>(
-  (program) => {
-    const shapes = storyFileOf(program);
+const storyInteractions = perFile<StoryInteractions | undefined>((program) => {
+  const shapes = storyFileOf(program);
 
-    return shapes === undefined
-      ? undefined
-      : interactionsOf(program.node, shapes);
-  },
-  undefined,
-);
+  return shapes === undefined
+    ? undefined
+    : interactionsOf(program.node, shapes);
+}, undefined);
 
 /**
  * Reads the story test code, and what each of a mutator's own per-file `readers` gives, unless already read for this
