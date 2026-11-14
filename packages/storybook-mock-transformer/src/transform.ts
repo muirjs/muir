@@ -45,7 +45,10 @@ export function transform(
   const outermost = rewritten.filter(
     (stub) =>
       !rewritten.some(
-        ({ spyCall }) => spyCall.start < stub.start && stub.start < spyCall.end,
+        ({ spyCall }) =>
+          spyCall.start < stub.start &&
+          // Stryker disable next-line EqualityOperator: no stub starts where a spy call ends, as that spy call's own chain or argument list goes on there
+          stub.start < spyCall.end,
       ),
   );
 
@@ -100,6 +103,7 @@ function parenthesesClosedIn(
 
       return (
         typeof tokenStart === 'number' &&
+        // Stryker disable next-line EqualityOperator: the token at start is the . or ?. of the member access, which counts as no parenthesis
         tokenStart >= start &&
         tokenStart < end
       );
@@ -128,6 +132,7 @@ function memberAccessStart(
       );
     }),
     'start',
+    // Stryker disable next-line StringLiteral: no input reaches this error, as Babel reads a stub method only through a . or ?. token
     `no member access before the stub method at ${file}, offset ${nameStart}`,
   );
 }
@@ -149,6 +154,7 @@ function argumentListStart(
       );
     }),
     'end',
+    // Stryker disable next-line StringLiteral: no input reaches this error, as a stub call's argument list always opens with a ( token after its callee
     `no argument list after the stub method at ${file}, offset ${calleeEnd}`,
   );
 }
@@ -156,6 +162,7 @@ function argumentListStart(
 function labelOf(token: unknown): string {
   const label = field(token, 'type', 'label');
 
+  // Stryker disable next-line StringLiteral: only a comment token has no label, and no text it could get here is a . ?. ( or ) the callers look for
   return typeof label === 'string' ? label : '';
 }
 
@@ -167,6 +174,7 @@ function positionIn(
   const position = field(token, edge);
 
   if (typeof position !== 'number') {
+    // Stryker disable next-line StringLiteral: no input reaches this throw; see the two token lookups that call it
     throw new Error(`${packageName}: ${missing}`);
   }
 

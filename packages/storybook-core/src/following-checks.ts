@@ -333,7 +333,11 @@ function bindingsReadThroughFunctions(
       .flatMap((binding) => {
         const body = declaredFunction(binding);
 
-        if (body === undefined || followed.has(body)) {
+        if (
+          // Stryker disable next-line ConditionalExpression: reading an undefined body finds no references, so following it adds nothing
+          body === undefined ||
+          followed.has(body)
+        ) {
           return [binding];
         }
 
