@@ -221,13 +221,57 @@ describe('mayImportItself', () => {
     );
   });
 
-  it('holds for an import through a path alias or a drive path whose last segment names the file', () => {
+  it('holds for an import through a path alias whose last segment names the file, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("import * as self from '@/components/Button.stories';").map(
+        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+      ),
+      [true, true],
+    );
+  });
+
+  it('holds for an import through a drive path whose last segment names the file, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("import * as self from 'D:/app/src/Button.stories.js';").map(
+        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+      ),
+      [true, true],
+    );
+  });
+
+  it('holds for a backslash path whose last segment names the file, on every platform, in either parsed shape', () => {
     assert.deepEqual(
       programsOf(
-        "import * as self from '@/components/Button.stories';",
-        "import * as again from 'D:/app/src/Button.stories.js';",
+        String.raw`import * as self from 'C:\\app\\src\\Button.stories';`,
       ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
       [true, true],
+    );
+  });
+
+  it('holds for a relative string that names the file with another script extension, such as a vi.mock path, as an import of it does, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("vi.mock('./Button.stories.tsx');").map(({ body }) =>
+        mayImportItself(body, 'Button.stories.ts'),
+      ),
+      [true, true],
+    );
+  });
+
+  it('does not hold for a package spelled like the file, which is a package entry, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("import * as other from 'Button.stories';").map(({ body }) =>
+        mayImportItself(body, 'Button.stories.ts'),
+      ),
+      [false, false],
+    );
+  });
+
+  it('does not hold for a relative import of a file of the same name in another folder, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("import * as other from '../legacy/Button.stories';").map(
+        ({ body }) => mayImportItself(body, 'src/Button.stories.ts'),
+      ),
+      [false, false],
     );
   });
 

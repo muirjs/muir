@@ -1,4 +1,4 @@
-import { basename, dirname, extname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 import { withoutBinding, type Bindings } from './bindings.ts';
 import {
@@ -589,50 +589,58 @@ export function testCallOf(statement: unknown): readonly TestCall[] {
     : [];
 }
 
-/** The file holds a relative string literal that names this file in any letter case, loads a module whose specifier is not a string literal or whose last segment names this file, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
+/** The file holds a string literal that names this file in any letter case (a relative path resolved from the file, any other path by its last segment), loads a module whose specifier is not a string literal, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
 export function mayImportItself(
   body: readonly unknown[],
   fileName: string,
 ): boolean {
   const file = resolve(fileName).toLowerCase();
-  const withoutExtension = file.slice(0, file.length - extname(file).length);
-  const nodes = everyRecordIn(body);
-  const namesThisFile = (specifier: unknown): boolean => {
-    if (typeof specifier !== 'string' || !specifier.startsWith('.')) {
+  const withoutExtension = withoutScriptExtension(file);
+  const baseName = basename(withoutExtension);
+  // Vite resolves a relative path from the file's folder, and a .js, .jsx, .mjs or .cjs one to the TypeScript file
+  // of the same name. Any other path may be the file under a root, alias or drive when its last segment names it; a
+  // bare package name such as 'Button.stories' is a package's entry.
+  const namesThisFile = (value: unknown): boolean => {
+    if (typeof value !== 'string') {
       return false;
     }
 
-    const target = resolve(dirname(file), specifier).toLowerCase();
+    const path = value.toLowerCase();
 
-    // Vite resolves a .js, .jsx, .mjs or .cjs specifier to the TypeScript file of the same name.
+    if (path.startsWith('.')) {
+      const target = resolve(dirname(file), path);
+
+      return (
+        target === file || withoutScriptExtension(target) === withoutExtension
+      );
+    }
+
+    const segments = path.split(/[\\/]/).filter((segment) => segment !== '');
+
     return (
-      [file, withoutExtension].includes(target) ||
-      target.replace(/\.[cm]?jsx?$/, '') === withoutExtension
+      /[\\/]/.test(path) &&
+      withoutScriptExtension(segments.at(-1) ?? '') === baseName
     );
   };
 
-  // A path whose last segment names the file may be the file under any root, alias or drive; a bare package name
-  // without a path (`'Button.stories'`) is a package's entry, never this file.
-  const loadsThisFile = (node: unknown): boolean => {
-    const specifier = loadedSpecifierOf(node);
-    const value = field(specifier, 'value');
-
-    return (
-      specifier !== undefined &&
-      (field(specifier, 'type') !== 'StringLiteral' ||
-        (typeof value === 'string' &&
-          /[\\/]/.test(value) &&
-          basename(value.toLowerCase()).replace(/\.[cm]?[jt]sx?$/, '') ===
-            basename(withoutExtension)))
-    );
-  };
-
-  return nodes.some(
+  return everyRecordIn(body).some(
     (node) =>
       (field(node, 'type') === 'StringLiteral' &&
         namesThisFile(field(node, 'value'))) ||
-      loadsThisFile(node) ||
+      loadsWithoutLiteral(node) ||
       isImportMetaGlob(node),
+  );
+}
+
+function withoutScriptExtension(path: string): string {
+  return path.replace(/\.[cm]?[jt]sx?$/, '');
+}
+
+function loadsWithoutLiteral(node: unknown): boolean {
+  const specifier = loadedSpecifierOf(node);
+
+  return (
+    specifier !== undefined && field(specifier, 'type') !== 'StringLiteral'
   );
 }
 

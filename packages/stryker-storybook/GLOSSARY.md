@@ -65,10 +65,10 @@ whose story, meta or `.test()` options constant, or a top-level object one of th
 member (`...lib.story`), another top-level object reads when the file loads, other than through such a spread at the
 top level, nor a key that a getter or setter in the same object also defines or may define (a computed key). A file
 that may import itself proves nothing, since a write through the import may change any site. A file may import
-itself when a relative string literal in it names the file in any letter case, an import or `require` in it takes a
-specifier that is not a string literal or is a path whose last segment names the file (`@/Button.stories`,
-`/src/Button.stories.js`, but not the package `Button.stories`), or it calls `import.meta.glob`. A file whose path the mutator is not given proves nothing
-either. An import through a function `createRequire` made, or through another file that imports this one back, is
+itself when a string literal in it names the file in any letter case, a relative path by resolving it from the file
+and any other path by its last segment (`@/Button.stories`, `/src/Button.stories.js`, but not the package
+`Button.stories`); when an import or `require` in it takes a specifier that is not a string literal; or when it calls
+`import.meta.glob`. A file whose path the mutator is not given proves nothing either. An import through a function `createRequire` made, or through another file that imports this one back, is
 not seen, so such a file still proves. A mutator skips a property as equivalent only through one.
 _Avoid_: proof (alone), equivalence check, safe key
 
