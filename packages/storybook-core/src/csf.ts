@@ -589,12 +589,12 @@ export function testCallOf(statement: unknown): readonly TestCall[] {
     : [];
 }
 
-/** The file holds a string literal that names this file, or loads a module whose specifier is not a string literal. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
+/** The file holds a string literal that names this file in any case, loads a module whose specifier is not a string literal or is root-absolute, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
 export function mayImportItself(
   body: readonly unknown[],
   fileName: string,
 ): boolean {
-  const file = resolve(fileName);
+  const file = resolve(fileName).toLowerCase();
   const withoutExtension = file.slice(0, file.length - extname(file).length);
   const nodes = everyRecordIn(body);
   const namesThisFile = (specifier: unknown): boolean => {
@@ -602,7 +602,7 @@ export function mayImportItself(
       return false;
     }
 
-    const target = resolve(dirname(file), specifier);
+    const target = resolve(dirname(file), specifier).toLowerCase();
 
     // Vite resolves a .js, .jsx, .mjs or .cjs specifier to the TypeScript file of the same name.
     return (
@@ -616,20 +616,44 @@ export function mayImportItself(
       .filter((node) => field(node, 'type') === 'StringLiteral')
       .some((literal) => namesThisFile(field(literal, 'value'))) ||
     nodes
-      .filter(
-        (node) =>
-          importSourceOf(node) !== undefined ||
-          field(node, 'callee', 'name') === 'require',
-      )
+      .map(loadedSpecifierOf)
       .some(
-        (call) =>
-          field(
-            importSourceOf(call) ?? list(field(call, 'arguments'))[0],
-            'type',
-          ) !== 'StringLiteral',
-      )
+        (specifier) =>
+          specifier !== undefined &&
+          (field(specifier, 'type') !== 'StringLiteral' ||
+            String(field(specifier, 'value')).startsWith('/')),
+      ) ||
+    nodes.some(isImportMetaGlob)
   );
 }
+
+function isImportMetaGlob(node: unknown): boolean {
+  return (
+    field(node, 'callee', 'object', 'type') === 'MetaProperty' &&
+    field(node, 'callee', 'object', 'meta', 'name') === 'import' &&
+    field(node, 'callee', 'property', 'name') === 'glob'
+  );
+}
+
+/** The specifier of the module `node` loads: an `import` or `export ... from` declaration, an `import()` or a `require()`. */
+function loadedSpecifierOf(node: unknown): unknown {
+  if (moduleDeclarations.has(field(node, 'type'))) {
+    return field(node, 'source') ?? undefined;
+  }
+
+  return (
+    importSourceOf(node) ??
+    (field(node, 'callee', 'name') === 'require'
+      ? list(field(node, 'arguments'))[0]
+      : undefined)
+  );
+}
+
+const moduleDeclarations: ReadonlySet<unknown> = new Set([
+  'ImportDeclaration',
+  'ExportNamedDeclaration',
+  'ExportAllDeclaration',
+]);
 
 function storyNode(init: unknown, bindings: Bindings): unknown {
   if (isTemplateBind(init)) {

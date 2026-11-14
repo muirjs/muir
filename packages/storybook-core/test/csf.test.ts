@@ -201,6 +201,33 @@ describe('mayImportItself', () => {
       [false, false],
     );
   });
+
+  it('holds for a root-absolute specifier, which Vite resolves from a root the file does not name, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("import * as self from '/src/Button.stories';").map(
+        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+      ),
+      [true, true],
+    );
+  });
+
+  it('holds for an import.meta.glob call, whose pattern may match the file, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf(
+        "const stories = import.meta.glob('./*.stories.ts', { eager: true });",
+      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [true, true],
+    );
+  });
+
+  it('holds for a specifier that names the file in another case, which a case-insensitive file system loads as the file, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("import * as self from './button.stories';").map(({ body }) =>
+        mayImportItself(body, 'Button.stories.ts'),
+      ),
+      [true, true],
+    );
+  });
 });
 
 describe('csfFile readByOtherObjects', () => {
