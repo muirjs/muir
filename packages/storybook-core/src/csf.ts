@@ -589,7 +589,7 @@ export function testCallOf(statement: unknown): readonly TestCall[] {
     : [];
 }
 
-/** The file holds a string literal that names this file in any letter case (a relative path resolved from the file, any other path by its last segment), loads a module whose specifier is not a string literal, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
+/** The file holds a relative string literal that names this file in any letter case, loads a module whose specifier is not a string literal or is a path whose last segment names this file, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
 export function mayImportItself(
   body: readonly unknown[],
   fileName: string,
@@ -598,27 +598,34 @@ export function mayImportItself(
   const withoutExtension = withoutScriptExtension(file);
   const baseName = basename(withoutExtension);
   // Vite resolves a relative path from the file's folder, and a .js, .jsx, .mjs or .cjs one to the TypeScript file
-  // of the same name. Any other path may be the file under a root, alias or drive when its last segment names it; a
-  // bare package name such as 'Button.stories' is a package's entry.
-  const namesThisFile = (value: unknown): boolean => {
-    if (typeof value !== 'string') {
+  // of the same name.
+  const resolvesToThisFile = (value: unknown): boolean =>
+    typeof value === 'string' &&
+    value.startsWith('.') &&
+    withoutScriptExtension(resolve(dirname(file), value.toLowerCase())) ===
+      withoutExtension;
+  // A loaded path may be the file under a root, alias or drive when its last segment names it; a bare package name
+  // such as 'Button.stories' is a package's entry. A string the file only holds, such as a title, is no load.
+  const loadsThisFile = (node: unknown): boolean => {
+    const specifier = loadedSpecifierOf(node);
+    const value = field(specifier, 'value');
+
+    if (specifier === undefined) {
       return false;
     }
 
-    const path = value.toLowerCase();
-
-    if (path.startsWith('.')) {
-      const target = resolve(dirname(file), path);
-
-      return (
-        target === file || withoutScriptExtension(target) === withoutExtension
-      );
+    if (typeof value !== 'string') {
+      return true;
     }
 
-    const segments = path.split(/[\\/]/).filter((segment) => segment !== '');
+    const segments = value
+      .toLowerCase()
+      .split(/[\\/]/)
+      .filter((segment) => segment !== '');
 
     return (
-      /[\\/]/.test(path) &&
+      !value.startsWith('.') &&
+      /[\\/]/.test(value) &&
       withoutScriptExtension(segments.at(-1) ?? '') === baseName
     );
   };
@@ -626,22 +633,14 @@ export function mayImportItself(
   return everyRecordIn(body).some(
     (node) =>
       (field(node, 'type') === 'StringLiteral' &&
-        namesThisFile(field(node, 'value'))) ||
-      loadsWithoutLiteral(node) ||
+        resolvesToThisFile(field(node, 'value'))) ||
+      loadsThisFile(node) ||
       isImportMetaGlob(node),
   );
 }
 
 function withoutScriptExtension(path: string): string {
   return path.replace(/\.[cm]?[jt]sx?$/, '');
-}
-
-function loadsWithoutLiteral(node: unknown): boolean {
-  const specifier = loadedSpecifierOf(node);
-
-  return (
-    specifier !== undefined && field(specifier, 'type') !== 'StringLiteral'
-  );
 }
 
 function isImportMetaGlob(node: unknown): boolean {

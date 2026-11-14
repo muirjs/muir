@@ -257,6 +257,24 @@ describe('mayImportItself', () => {
     );
   });
 
+  it('does not hold for a non-relative path the file holds but does not load, such as an importPath parameter or a title, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf(
+        "export default { title: 'Example/Button.stories', parameters: { importPath: 'core/src/Button.stories.tsx' } };",
+      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [false, false],
+    );
+  });
+
+  it('does not hold for a title whose last segment is the component the file is named after, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("export default { title: 'Components/Button' };").map(
+        ({ body }) => mayImportItself(body, 'Button.tsx'),
+      ),
+      [false, false],
+    );
+  });
+
   it('does not hold for a package spelled like the file, which is a package entry, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("import * as other from 'Button.stories';").map(({ body }) =>
