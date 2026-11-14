@@ -152,6 +152,12 @@ const writeCases: readonly KindCase[] = [
   },
   {
     title:
+      'a click on an imported userEvent after the play assigns the click of the second of two vars that hold each other is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], 'var first = flag ? userEvent : second;', 'var second = first;', 'second.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
       'a click on an imported userEvent after the play assigns the click of a setup() instance is of unproven origin, since a write refuses every receiver of its origin',
     source: `${importUserEvent}${inPlayWith(['canvas'], 'const user = userEvent.setup();', 'user.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
     expect: ['userEvent click unproven'],
