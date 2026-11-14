@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
+import { fn as storybookFn } from 'storybook/test';
+
 import { transform } from '../src/transform.ts';
 
 const storyFile = 'D:/project/src/Button.stories.tsx';
@@ -346,6 +348,23 @@ describe('transform', () => {
       [
         "import { fn } from 'storybook/test';",
         'export const Twice = { args: { load: (fn(((value) => () => value)(1))).mockReturnValue(2) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('moves the arguments of a stub call written with type arguments', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Typed = { args: { load: fn().mockImplementation<() => number>(() => 1) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Typed = { args: { load: fn(() => 1) } };',
         '',
       ].join('\n'),
     );
@@ -802,6 +821,29 @@ describe('the rewritten module', () => {
         'export const load = fn().mockName(value).mockClear().mockReturnValue(1);',
       ),
       [{ returns: 1, names: ['load'] }],
+    );
+  });
+
+  it("keeps the stubbed value and the name of Storybook's own spy through a mock reset", () => {
+    const rewritten = transform(
+      [
+        "import { fn } from 'storybook/test';",
+        "export const load = fn().mockName('load').mockClear().mockReturnValue(42);",
+        '',
+      ].join('\n'),
+      storyFile,
+    )?.code;
+    const body = [
+      (rewritten ?? '')
+        .replace("import { fn } from 'storybook/test';", '')
+        .replace('export const', 'const'),
+      'load.mockReset();',
+      'return [load(), load.getMockName()];',
+    ].join('\n');
+
+    assert.deepEqual(
+      Reflect.apply(new Function('fn', body), undefined, [storybookFn]),
+      [42, 'load'],
     );
   });
 
