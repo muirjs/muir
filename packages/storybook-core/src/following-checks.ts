@@ -1,4 +1,4 @@
-import { isCall, isMember, unwrap } from './csf-nodes.ts';
+import { isCall, isMember } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -11,7 +11,7 @@ import {
   memberName,
   type TreeIndex,
 } from './node-tree.ts';
-import type { Binding, FileScope } from './scope.ts';
+import { type Binding, declaredFunction, type FileScope } from './scope.ts';
 
 export interface Check {
   readonly node: unknown;
@@ -331,7 +331,7 @@ function bindingsReadThroughCalls(
       .filter((binding) => binding !== undefined)
       .filter((binding) => !isDeclaredIn(binding, node))
       .flatMap((binding) => {
-        const body = functionOf(binding);
+        const body = declaredFunction(binding);
 
         if (body === undefined || followed.has(body)) {
           return [binding];
@@ -343,16 +343,6 @@ function bindingsReadThroughCalls(
       });
 
   return readBy(statement);
-}
-
-/** The function a binding names: a function declaration, or a function a variable is declared with. */
-function functionOf(binding: Binding): unknown {
-  const declared =
-    binding.kind === 'function'
-      ? binding.declaration
-      : unwrap(field(binding.declaration, 'init'));
-
-  return isFunction(declared) ? declared : undefined;
 }
 
 /** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */
