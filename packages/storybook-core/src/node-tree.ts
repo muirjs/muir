@@ -212,9 +212,9 @@ export function indexTree(program: unknown): TreeIndex {
   const parents = new WeakMap<object, unknown>();
   const lists = new WeakMap<object, readonly unknown[]>();
   const visit = (node: unknown): void => {
-    const statements = list(
-      field(node, statementLists.get(field(node, 'type')) ?? ''),
-    );
+    const listKey = statementLists.get(field(node, 'type'));
+    // Stryker disable next-line StringLiteral: no Babel node has a field named '' or the mutant's text, so both read no list
+    const statements = list(field(node, listKey ?? ''));
     const snapshot = [...statements];
 
     statements
