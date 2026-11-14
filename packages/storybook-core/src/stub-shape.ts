@@ -110,8 +110,8 @@ function stubSite(
   const start = field(node, 'start');
   const end = field(node, 'end');
   const line = field(node, 'loc', 'start', 'line');
-  const chain = chainBelow(field(node, 'callee', 'object'));
-  const spyCall = chain.at(-1);
+  const callsBelow = chainBelow(field(node, 'callee', 'object'));
+  const spyCall = callsBelow.at(-1);
   const spy = field(spyCall, 'callee', 'name');
   const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
   const spyCallStart = field(spyCall, 'start');
@@ -149,7 +149,7 @@ function stubSite(
     spyCall: { start: spyCallStart, end: spyCallEnd },
     methodStart,
     calleeEnd,
-    firstOfChain: !chain.some(
+    firstOfChain: !callsBelow.some(
       (call) =>
         stubMethodOf(field(call, 'callee', 'property', 'name')) !== undefined,
     ),
@@ -172,7 +172,7 @@ export type StubRewrite =
   | 'once-not-rewritten'
   | 'chain-not-rewritten';
 
-/** Whether the mock transformer's rule rewrites `stub`. The transformer then drops a rewritten stub that stands in another rewritten stub's spy call, with that call's arguments. */
+/** How the mock transformer's rule treats `stub`: rewritten, or left alone as a `Once` stub or a stub after the first of its chain. The transformer then drops a rewritten stub that stands in another rewritten stub's spy call, with that call's arguments. */
 export function mockTransformerRewrite(
   stub: Pick<StubSite, 'once' | 'firstOfChain'>,
 ): StubRewrite {
@@ -186,7 +186,7 @@ export function mockTransformerRewrite(
 /** The spy methods that are not stubs but return the spy and leave what it returns alone, so a stub chain goes on through them. */
 const passedThrough: ReadonlySet<unknown> = new Set(['mockName', 'mockClear']);
 
-/** The calls a stub is chained on, nearest first; the last is the spy call, or whatever ends the chain. */
+/** The nodes a stub is chained on, read down from it with parentheses and casts unwrapped, nearest first: each stub or passed-through call, then the node that ends the chain, which is the spy call when the chain starts at one. */
 function chainBelow(written: unknown): readonly unknown[] {
   const node = unwrap(written);
   const name = field(node, 'callee', 'property', 'name');
