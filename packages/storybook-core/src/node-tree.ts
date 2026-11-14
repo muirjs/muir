@@ -130,7 +130,7 @@ export function equivalenceTokens(
   };
   const tokenOf = (value: unknown): string => {
     if (Array.isArray(value)) {
-      return intern(`[${value.map(tokenOf).join(',')}]`);
+      return intern(`[${value.map(tokenOf).join()}]`);
     }
 
     if (isNode(value)) {
@@ -143,31 +143,18 @@ export function equivalenceTokens(
         .sort()
         .map((key) => `${JSON.stringify(key)}:${shallowTokenOf(value[key])}`);
 
-      return intern(`(${fields.join(',')})`);
+      return intern(`(${fields.join()})`);
     }
 
     return shallowTokenOf(value);
   };
   /** A token for a value that `equivalent` compares with `===`. */
   const shallowTokenOf = (value: unknown): string => {
-    if (typeof value === 'string') {
-      return JSON.stringify(value);
+    if (Number.isNaN(value)) {
+      return fresh();
     }
 
-    if (typeof value === 'number') {
-      return Number.isNaN(value) ? fresh() : `n${value}`;
-    }
-
-    if (
-      typeof value === 'boolean' ||
-      typeof value === 'bigint' ||
-      value === undefined ||
-      value === null
-    ) {
-      return String(value) + typeof value;
-    }
-
-    // Any other object, a function or a symbol: compared by identity.
+    // A Map compares a primitive by its value and anything else by identity, as `===` does but for NaN.
     const known = identities.get(value) ?? fresh();
 
     identities.set(value, known);
@@ -189,7 +176,7 @@ export function equivalenceTokens(
         .sort()
         .map((key) => `${JSON.stringify(key)}:${tokenOf(node[key])}`);
 
-      nodeTokens.set(node, intern(`{${fields.join(',')}}`));
+      nodeTokens.set(node, intern(`{${fields.join()}}`));
     });
 
   return tokenOf;
