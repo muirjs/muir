@@ -127,6 +127,7 @@ function hooksOf(
       }
 
       if (!isHookValue(node)) {
+        // Stryker disable next-line ArrayDeclaration: the set is only asked whether it holds a tree node, and no node is a string
         return [];
       }
 
@@ -242,6 +243,7 @@ export function interactionsOf(
 
     return field(arrow, 'type') === 'ArrowFunctionExpression' &&
       field(arrow, 'body') === node &&
+      // Stryker disable next-line StringLiteral: field(node, '') is undefined, so either mutant only lets a BlockStatement through, and kindOf reads no BlockStatement as a call
       field(node, 'type') !== 'BlockStatement' &&
       isStepCall(tree.parentOf(arrow))
       ? 'stepBody'
