@@ -249,11 +249,10 @@ describe('transform', () => {
     );
   });
 
-  it('keeps what a story name means in a mockName argument when the name is also the name of the stubbed value', () => {
+  it('removes a stub called through an optional member access, with a comment before its name', () => {
     const code = [
       "import { fn } from 'storybook/test';",
-      "const value = 'load';",
-      'export const Named = { args: { load: fn().mockName(value).mockReturnValue(1) } };',
+      'export const load = fn()?. /* stub */ mockReturnValue(1);',
       '',
     ].join('\n');
 
@@ -261,8 +260,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "const value = 'load';",
-        'export const Named = { args: { load: fn(((value) => () => value)(1)).mockName(value) } };',
+        'export const load = fn(((value) => () => value)(1));',
         '',
       ].join('\n'),
     );
@@ -763,7 +761,7 @@ describe('the rewritten module', () => {
     );
   });
 
-  it('names the spy with the story name that mockName reads, also when it is named like the stubbed value', () => {
+  it('names the spy with the value of the variable that mockName reads, also when the variable is named like the stubbed value', () => {
     assert.deepEqual(
       rewrittenSpies(
         "const value = 'load';",

@@ -167,7 +167,7 @@ function consoleBlock({
       : `${packageName}: ${findings.length} spy stub findings (${counts.join(', ')})`,
     ...findings.map(
       (finding) =>
-        `  ${finding.verdict}  ${finding.file}:${finding.line}${'method' in finding ? ` ${finding.method}` : ''}  ${finding.reason}; ${finding.fix}`,
+        `  ${finding.verdict}  ${finding.file}:${finding.line}${finding.verdict === 'unchecked' ? '' : ` ${finding.method}`}  ${finding.reason}; ${finding.fix}`,
     ),
     ...(hints.length === 0
       ? []
