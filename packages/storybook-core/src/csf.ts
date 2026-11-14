@@ -14,6 +14,7 @@ import { field, list } from './node-field.ts';
 import { everyRecordIn, loadedSpecifierOf } from './node-tree.ts';
 import {
   isObjectLiteral,
+  unknownValue,
   writtenValue,
   type ObjectLiteral,
 } from './object-value.ts';
@@ -183,6 +184,25 @@ function isMetaObjectExportedBySpecifier(
 
 /** The family name of the default export, which no identifier can have. */
 const defaultExportName = Symbol('export default');
+
+/** The owner, as `MetaObject.owner` names it, of the meta a story is made from: the default export's for a CSF3 story, the name its `.story()` call is made on for a factory story, followed through the `.extend()` bases `unchanged` holds; `unknownValue` for a base it does not hold. */
+export function storyMetaOwner(init: unknown, unchanged: Bindings): unknown {
+  const call = unwrap(init);
+
+  if (!isStoryFactoryCall(call)) {
+    return defaultExportName;
+  }
+
+  const name = field(call, 'callee', 'object', 'name');
+
+  if (field(call, 'callee', 'property', 'name') !== 'extend') {
+    return name;
+  }
+
+  return typeof name === 'string' && unchanged.has(name)
+    ? storyMetaOwner(unchanged.get(name), withoutBinding(unchanged, name))
+    : unknownValue;
+}
 
 export interface CsfFile {
   /** Each meta object with the family name a write to it marks in `written`: the default export's, or the factory meta's local name. */
