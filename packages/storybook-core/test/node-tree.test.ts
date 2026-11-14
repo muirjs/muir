@@ -44,7 +44,7 @@ describe('indexTree', () => {
 });
 
 describe('equivalent', () => {
-  it('groups statements as Babel 8.0 isNodesEquivalent does, whatever their positions, spacing, comments and quotes', () => {
+  it('pairs each statement with the first equivalent one, whatever their positions, spacing, comments and quotes', () => {
     const statements = parse(
       [
         "await expect(canvas.getByRole('a')).toBeVisible();",
@@ -86,35 +86,13 @@ describe('equivalent', () => {
       ].join('\n'),
       { sourceType: 'module', plugins: ['typescript', 'jsx'] },
     ).program.body;
-    const groups = statements.reduce<readonly (readonly number[])[]>(
-      (found, statement, at) => {
-        const group = found.findIndex(
-          ([first]) =>
-            first !== undefined && equivalent(statements[first], statement),
-        );
-
-        return group === -1
-          ? [...found, [at]]
-          : found.map((each, index) =>
-              index === group ? [...each, at] : each,
-            );
-      },
-      [],
-    );
-
     assert.deepEqual(
-      groups.filter((group) => group.length > 1),
+      statements.map((statement) =>
+        statements.findIndex((other) => equivalent(other, statement)),
+      ),
       [
-        [0, 1],
-        [4, 5],
-        [7, 8],
-        [10, 12],
-        [14, 15, 16],
-        [20, 22],
-        [23, 24],
-        [25, 26],
-        [30, 31],
-        [33, 35],
+        0, 0, 2, 3, 4, 4, 6, 7, 7, 9, 10, 11, 10, 13, 14, 14, 14, 17, 18, 19,
+        20, 21, 20, 23, 23, 25, 25, 27, 28, 29, 30, 30, 32, 33, 34, 33,
       ],
     );
   });
