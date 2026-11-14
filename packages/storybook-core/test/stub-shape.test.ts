@@ -148,6 +148,7 @@ describe('definitionTimeStubs', () => {
         },
         methodStart: source.indexOf('mockReturnValue'),
         calleeEnd: source.indexOf("('x'"),
+        firstOfChain: true,
       },
     ]);
   });
@@ -208,23 +209,15 @@ describe('chainUpTo', () => {
 });
 
 describe('mockTransformerRewrite', () => {
-  const spyCall = { start: 0, end: 4 };
-  const first = { spyCall, end: 10, once: false };
-  const second = { spyCall, end: 20, once: false };
+  const first = { once: false, firstOfChain: true };
+  const second = { once: false, firstOfChain: false };
 
   it('rewrites the first stub of a chain', () => {
-    assert.equal(mockTransformerRewrite(first, [second, first]), 'rewritten');
-  });
-
-  it('rewrites the first stub of a chain also when the stubs given leave it out', () => {
-    assert.equal(mockTransformerRewrite(first, [second]), 'rewritten');
+    assert.equal(mockTransformerRewrite(first), 'rewritten');
   });
 
   it('leaves a stub after the first of its chain alone', () => {
-    assert.equal(
-      mockTransformerRewrite(second, [second, first]),
-      'chain-not-rewritten',
-    );
+    assert.equal(mockTransformerRewrite(second), 'chain-not-rewritten');
   });
 
   it('leaves a stub after a parenthesised first stub of its chain alone', () => {
@@ -235,7 +228,7 @@ describe('mockTransformerRewrite', () => {
     );
 
     assert.deepEqual(
-      stubs.map((stub) => [stub.end, mockTransformerRewrite(stub, stubs)]),
+      stubs.map((stub) => [stub.end, mockTransformerRewrite(stub)]),
       [
         [81, 'chain-not-rewritten'],
         [61, 'rewritten'],
@@ -243,9 +236,22 @@ describe('mockTransformerRewrite', () => {
     );
   });
 
+  it('leaves a stub after a Once stub and a mockName call alone', () => {
+    const stubs = definitionTimeStubs(
+      parseTs(
+        "import { fn } from 'storybook/test';\nfn().mockName('a').mockReturnValueOnce(1).mockReturnValue(2);",
+      ),
+    );
+
+    assert.deepEqual(stubs.map(mockTransformerRewrite), [
+      'chain-not-rewritten',
+      'once-not-rewritten',
+    ]);
+  });
+
   it('leaves a Once stub alone, also as the first of its chain', () => {
     assert.equal(
-      mockTransformerRewrite({ ...first, once: true }, [second, first]),
+      mockTransformerRewrite({ ...first, once: true }),
       'once-not-rewritten',
     );
   });

@@ -61,7 +61,9 @@ export interface SpyStubReason {
 
 /** A node the lz-storybook ignorer ignores: a stub call with everything before it in its chain (the spy call, every stub and any `mockName` or `mockClear` call, with their arguments), or only its arguments. */
 export interface StubIgnore {
+  /** Where the stub call starts, also when only its arguments are ignored. */
   readonly start: number;
+  /** Where the stub call ends, also when only its arguments are ignored. */
   readonly end: number;
   readonly covers: 'call' | 'arguments';
   readonly reason: string;
@@ -121,7 +123,7 @@ function siteReasons(
       return [{ ...site, verdict }];
     }
 
-    const rewrite = mockTransformerRewrite(site, stubs);
+    const rewrite = mockTransformerRewrite(site);
 
     return rewrite === 'rewritten' ? [] : [{ ...site, verdict: rewrite }];
   });

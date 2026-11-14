@@ -17,7 +17,7 @@ export interface TransformResult {
   readonly map: SourceMap;
 }
 
-/** The text around a stub's arguments that makes them the implementation `fn()` takes. The arrow called at once evaluates the arguments once, where the stub stood, so an `await` in them stays outside any function. */
+/** The text around a stub's arguments that makes them the implementation `fn()` takes. The arrow called at once evaluates the arguments once, when the spy is made, so an `await` in them stays outside any function. */
 const implementationWrappers: Readonly<
   Record<StubMethod, readonly [open: string, close: string]>
 > = {
@@ -38,27 +38,26 @@ export function transform(
   }
 
   const { program, tokens } = parseModule(code, file);
-  const stubs = definitionTimeStubs(program);
-  const rewrites = stubs.filter(
-    (stub) => mockTransformerRewrite(stub, stubs) === 'rewritten',
+  const rewritten = definitionTimeStubs(program).filter(
+    (stub) => mockTransformerRewrite(stub) === 'rewritten',
   );
-  // A stub in another rewritten stub's spy call goes with the text of that spy call.
-  const rewritten = rewrites.filter(
+  // A stub in another rewritten stub's spy call is dropped with that call's arguments, which the rewrite overwrites.
+  const outermost = rewritten.filter(
     (stub) =>
-      !rewrites.some(
+      !rewritten.some(
         ({ spyCall }) => spyCall.start < stub.start && stub.start < spyCall.end,
       ),
   );
 
-  if (rewritten.length === 0) {
+  if (outermost.length === 0) {
     return undefined;
   }
 
   const output = new MagicString(code);
-  rewritten.forEach((stub) => {
+  outermost.forEach((stub) => {
     rewriteStub(output, stub, tokens, file);
   });
-  appendRecord(file, rewritten.length);
+  appendRecord(file, outermost.length);
 
   return {
     code: output.toString(),

@@ -38,13 +38,20 @@ export function writtenMethodOf({
 
 export interface StubSite extends StubMethodCall, Span {
   readonly spy: string;
+  /** Where the stub call starts: at the start of its chain, before any parentheses or cast around the spy call. */
+  readonly start: number;
+  /** Where the stub call ends, after the `)` of its argument list. */
+  readonly end: number;
+  /** The line the stub call starts on, which is the line its chain starts on, not the line of the stub method. */
   readonly line: number;
   /** The spy call's span, inside any parentheses, cast or non-null assertion around it. */
   readonly spyCall: Span;
   /** Where the stub method's name starts, after the `.` or `?.` that reads it. */
   readonly methodStart: number;
-  /** The end of the stub call's callee and of its type arguments: the `(` of its argument list comes next, after the `?.` of an optional call when that call has no type arguments. */
+  /** The end of the stub call's callee and of its type arguments. The `(` of its argument list comes next, after any `)` of parentheses around the callee and the `?.` of an optional call that has no type arguments. */
   readonly calleeEnd: number;
+  /** Whether no stub stands between the spy call and this stub in its chain. */
+  readonly firstOfChain: boolean;
 }
 
 export interface Span {
@@ -103,7 +110,8 @@ function stubSite(
   const start = field(node, 'start');
   const end = field(node, 'end');
   const line = field(node, 'loc', 'start', 'line');
-  const spyCall = chainStart(field(node, 'callee', 'object'));
+  const chain = chainBelow(field(node, 'callee', 'object'));
+  const spyCall = chain.at(-1);
   const spy = field(spyCall, 'callee', 'name');
   const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
   const spyCallStart = field(spyCall, 'start');
@@ -141,6 +149,10 @@ function stubSite(
     spyCall: { start: spyCallStart, end: spyCallEnd },
     methodStart,
     calleeEnd,
+    firstOfChain: !chain.some(
+      (call) =>
+        stubMethodOf(field(call, 'callee', 'property', 'name')) !== undefined,
+    ),
   };
 }
 
@@ -160,24 +172,22 @@ export type StubRewrite =
   | 'once-not-rewritten'
   | 'chain-not-rewritten';
 
-/** Whether the mock transformer rewrites `stub`, given every definition-time stub of its file in `stubs`. */
+/** Whether the mock transformer's rule rewrites `stub`. The transformer then drops a rewritten stub that stands in another rewritten stub's spy call, with that call's arguments. */
 export function mockTransformerRewrite(
-  stub: Pick<StubSite, 'spyCall' | 'end' | 'once'>,
-  stubs: readonly Pick<StubSite, 'spyCall' | 'end'>[],
+  stub: Pick<StubSite, 'once' | 'firstOfChain'>,
 ): StubRewrite {
   if (stub.once) {
     return 'once-not-rewritten';
   }
 
-  return chainUpTo(stub, stubs).some((other) => other.end < stub.end)
-    ? 'chain-not-rewritten'
-    : 'rewritten';
+  return stub.firstOfChain ? 'rewritten' : 'chain-not-rewritten';
 }
 
 /** The spy methods that are not stubs but return the spy and leave what it returns alone, so a stub chain goes on through them. */
 const passedThrough: ReadonlySet<unknown> = new Set(['mockName', 'mockClear']);
 
-function chainStart(written: unknown): unknown {
+/** The calls a stub is chained on, nearest first; the last is the spy call, or whatever ends the chain. */
+function chainBelow(written: unknown): readonly unknown[] {
   const node = unwrap(written);
   const name = field(node, 'callee', 'property', 'name');
   const chainsOn =
@@ -185,5 +195,7 @@ function chainStart(written: unknown): unknown {
     field(node, 'callee', 'computed') !== true &&
     (stubMethodOf(name) !== undefined || passedThrough.has(name));
 
-  return chainsOn ? chainStart(field(node, 'callee', 'object')) : node;
+  return chainsOn
+    ? [node, ...chainBelow(field(node, 'callee', 'object'))]
+    : [node];
 }
