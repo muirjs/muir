@@ -32,10 +32,13 @@ export interface StubSite extends StubMethodCall {
   readonly end: number;
   readonly line: number;
   readonly argumentStart: number | undefined;
-  /** The end of the spy call the chain starts at, such as `fn()`. */
+  /** The start of the spy call the chain starts at, such as `fn()`, inside any parentheses around it. */
+  readonly spyCallStart: number;
   readonly spyCallEnd: number;
-  /** The end of the call the stub method is called on; past `spyCallEnd` when calls such as `.mockName('load')` stand between. */
+  /** The end of the call the stub method is called on, inside any parentheses around it; past `spyCallEnd` when calls such as `.mockName('load')` stand between. */
   readonly receiverEnd: number;
+  /** The start of the stub method's name, after the dot before it. */
+  readonly methodStart: number;
 }
 
 const functionType = /Function|ObjectMethod|ClassMethod|ClassPrivateMethod/;
@@ -92,16 +95,20 @@ function stubSite(
   const spyCall = chainStart(field(node, 'callee', 'object'));
   const spy = field(spyCall, 'callee', 'name');
   const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
+  const spyCallStart = field(spyCall, 'start');
   const spyCallEnd = field(spyCall, 'end');
   const receiverEnd = field(node, 'callee', 'object', 'end');
+  const methodStart = field(node, 'callee', 'property', 'start');
 
   if (
     !isCall(node) ||
     typeof start !== 'number' ||
     typeof end !== 'number' ||
     typeof line !== 'number' ||
+    typeof spyCallStart !== 'number' ||
     typeof spyCallEnd !== 'number' ||
     typeof receiverEnd !== 'number' ||
+    typeof methodStart !== 'number' ||
     field(node, 'callee', 'computed') === true ||
     !isCall(spyCall) ||
     typeof spy !== 'string' ||
@@ -121,8 +128,10 @@ function stubSite(
     line,
     argumentStart:
       typeof argumentStart === 'number' ? argumentStart : undefined,
+    spyCallStart,
     spyCallEnd,
     receiverEnd,
+    methodStart,
   };
 }
 

@@ -74,7 +74,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const Checked = { args: { load: ((value) => fn(() => value))('stubbed') } };",
+        "export const Checked = { args: { load: ((value) => fn(() => value)).call(undefined, 'stubbed') } };",
         '',
       ].join('\n'),
     );
@@ -91,7 +91,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        'export const meta = { args: { save: ((value) => fn(async () => value))(42) } };',
+        'export const meta = { args: { save: ((value) => fn(async () => value)).call(undefined, 42) } };',
         '',
       ].join('\n'),
     );
@@ -108,7 +108,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "const failing = ((value) => fn(async () => { throw value; }))(new Error('offline'));",
+        "const failing = ((value) => fn(async () => { throw value; })).call(undefined, new Error('offline'));",
         '',
       ].join('\n'),
     );
@@ -125,7 +125,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const Story = { args: { onLoad: fn(() => 'stubbed') } };",
+        "export const Story = { args: { onLoad: ((implementation) => fn(implementation)).call(undefined, () => 'stubbed') } };",
         '',
       ].join('\n'),
     );
@@ -142,7 +142,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const Checked = { args: { load: ((value) => fn(() => value))('stubbed') } };",
+        "export const Checked = { args: { load: ((value) => fn(() => value)).call(undefined, 'stubbed') } };",
         '',
       ].join('\n'),
     );
@@ -209,7 +209,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        'export const Chain = { args: { load: ((value) => fn(() => value))(1).mockReturnValue(2) } };',
+        'export const Chain = { args: { load: ((value) => fn(() => value)).call(undefined, 1).mockReturnValue(2) } };',
         '',
       ].join('\n'),
     );
@@ -226,7 +226,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const Named = { args: { load: ((value) => fn(() => value).mockName('load'))(1) } };",
+        "export const Named = { args: { load: ((value) => fn(() => value).mockName('load')).call(undefined, 1) } };",
         '',
       ].join('\n'),
     );
@@ -243,7 +243,41 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const Named = { args: { load: ((implementation) => fn(implementation).mockName('load'))(() => 1) } };",
+        "export const Named = { args: { load: ((implementation) => fn(implementation).mockName('load')).call(undefined, () => 1) } };",
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('keeps the parentheses around a spy call before a mockName call', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      "export const Named = { args: { load: (fn()).mockName('load').mockReturnValue(1) } };",
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        "export const Named = { args: { load: ((value) => (fn(() => value)).mockName('load')).call(undefined, 1) } };",
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('rewrites a stub inside the argument of a mockName call before the stub it belongs to', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      "export const Named = { args: { load: fn().mockName(fn().mockReturnValue('n')()).mockReturnValue(1) } };",
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        "export const Named = { args: { load: ((value) => fn(() => value).mockName(((value) => fn(() => value)).call(undefined, 'n')())).call(undefined, 1) } };",
         '',
       ].join('\n'),
     );
@@ -260,7 +294,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        'export const Chain = { args: { load: ((value) => fn(() => value))(1).mockReturnValueOnce(2).mockReturnValue(3) } };',
+        'export const Chain = { args: { load: ((value) => fn(() => value)).call(undefined, 1).mockReturnValueOnce(2).mockReturnValue(3) } };',
         '',
       ].join('\n'),
     );
@@ -285,7 +319,8 @@ describe('transform', () => {
         "import { fn } from 'storybook/test';",
         'export const Chain = {',
         '  args: {',
-        '    load: ((value) => fn(() => value))(1)',
+        '    load: ((value) => fn(() => value))',
+        '      .call(undefined, 1)',
         '      .mockReturnValue(2),',
         '  },',
         '};',
@@ -317,7 +352,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn as spy } from 'storybook/test';",
-        "export const Checked = { args: { load: ((value) => spy(() => value))('stubbed') } };",
+        "export const Checked = { args: { load: ((value) => spy(() => value)).call(undefined, 'stubbed') } };",
         '',
       ].join('\n'),
     );
@@ -334,7 +369,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { 'fn' as spy } from 'storybook/test';",
-        "export const Checked = { args: { load: ((value) => spy(() => value))('stubbed') } };",
+        "export const Checked = { args: { load: ((value) => spy(() => value)).call(undefined, 'stubbed') } };",
         '',
       ].join('\n'),
     );
@@ -417,7 +452,7 @@ describe('transform', () => {
       [
         "import { fn } from 'storybook/test';",
         'export const Both = {',
-        "  args: { load: ((value) => fn(() => value))('a'), save: ((value) => fn(async () => value))('b') },",
+        "  args: { load: ((value) => fn(() => value)).call(undefined, 'a'), save: ((value) => fn(async () => value)).call(undefined, 'b') },",
         '};',
         '',
       ].join('\n'),
@@ -462,7 +497,7 @@ describe('transform', () => {
       [
         "import { fn } from 'storybook/test';",
         "const label = <string>'stubbed';",
-        'export const load = ((value) => fn(() => value))(label);',
+        'export const load = ((value) => fn(() => value)).call(undefined, label);',
         '',
       ].join('\n'),
     );
@@ -479,7 +514,7 @@ describe('transform', () => {
       transform(code, 'D:/project/src/spies.ts?v=1')?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const load = ((value) => fn(() => value))(<string>'stubbed');",
+        "export const load = ((value) => fn(() => value)).call(undefined, <string>'stubbed');",
         '',
       ].join('\n'),
     );
@@ -521,7 +556,7 @@ describe('transform', () => {
       transform(code, 'D:/project/src/spies.mts')?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const load = ((value) => fn(() => value))(<string>'stubbed');",
+        "export const load = ((value) => fn(() => value)).call(undefined, <string>'stubbed');",
         '',
       ].join('\n'),
     );
@@ -538,7 +573,7 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        "export const Checked = { args: { load: ((value) => fn(() => value))('stubbed') }, render: () => <button /> };",
+        "export const Checked = { args: { load: ((value) => fn(() => value)).call(undefined, 'stubbed') }, render: () => <button /> };",
         '',
       ].join('\n'),
     );

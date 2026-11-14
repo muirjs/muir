@@ -14,20 +14,26 @@ export interface TransformResult {
   readonly map: SourceMap;
 }
 
-/** The text that replaces a stub call up to its first argument; `between` is what stands between the spy call and the stub method, such as `.mockName('load')`. */
+/** The parameter that takes the stub's argument, and the implementation the spy call gets from it. */
 const replacements: Readonly<
-  Record<StubMethod, (spy: string, between: string) => string>
+  Record<
+    StubMethod,
+    { readonly parameter: string; readonly implementation: string }
+  >
 > = {
-  mockReturnValue: (spy, between) =>
-    `((value) => ${spy}(() => value)${between})(`,
-  mockResolvedValue: (spy, between) =>
-    `((value) => ${spy}(async () => value)${between})(`,
-  mockRejectedValue: (spy, between) =>
-    `((value) => ${spy}(async () => { throw value; })${between})(`,
-  mockImplementation: (spy, between) =>
-    between === ''
-      ? `${spy}(`
-      : `((implementation) => ${spy}(implementation)${between})(`,
+  mockReturnValue: { parameter: 'value', implementation: '() => value' },
+  mockResolvedValue: {
+    parameter: 'value',
+    implementation: 'async () => value',
+  },
+  mockRejectedValue: {
+    parameter: 'value',
+    implementation: 'async () => { throw value; }',
+  },
+  mockImplementation: {
+    parameter: 'implementation',
+    implementation: 'implementation',
+  },
 };
 
 export function transform(
@@ -41,31 +47,40 @@ export function transform(
   }
 
   const stubs = definitionTimeStubs(parseModule(code, file));
-  const edits = stubs
-    .filter((stub) => chainUpTo(stub, stubs).length === 1)
-    .flatMap(
-      ({ spy, method, once, start, argumentStart, spyCallEnd, receiverEnd }) =>
-        once || argumentStart === undefined
-          ? []
-          : [
-              {
-                start,
-                end: argumentStart,
-                text: replacements[method](
-                  spy,
-                  code.slice(spyCallEnd, receiverEnd),
-                ),
-              },
-            ],
-    );
+  const rewritten = stubs.flatMap(({ argumentStart, ...stub }) =>
+    chainUpTo(stub, stubs).length === 1 &&
+    !stub.once &&
+    argumentStart !== undefined
+      ? [{ ...stub, argumentStart }]
+      : [],
+  );
 
-  if (edits.length === 0) {
+  if (rewritten.length === 0) {
     return undefined;
   }
 
   const output = new MagicString(code);
-  edits.forEach(({ start, end, text }) => output.overwrite(start, end, text));
-  appendRecord(file, edits.length);
+  // The stub call becomes `((value) => <its receiver, the spy call given the implementation>).call(undefined, <its argument>)`, so the text between the spy call and the stub method, parentheses and calls such as `.mockName('load')` included, stays where it is.
+  rewritten.forEach(
+    ({
+      spy,
+      method,
+      start,
+      spyCallStart,
+      spyCallEnd,
+      receiverEnd,
+      methodStart,
+      argumentStart,
+    }) => {
+      const { parameter, implementation } = replacements[method];
+
+      output.overwrite(spyCallStart, spyCallEnd, `${spy}(${implementation})`);
+      output.overwrite(methodStart, argumentStart, 'call(undefined, ');
+      output.appendLeft(start, `((${parameter}) => `);
+      output.appendLeft(receiverEnd, ')');
+    },
+  );
+  appendRecord(file, rewritten.length);
 
   return {
     code: output.toString(),
