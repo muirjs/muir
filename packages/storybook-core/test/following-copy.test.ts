@@ -79,6 +79,16 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an export assignment that holds the first expect check is not copied',
+    source: [
+      'export = expect(a).toBe(1);',
+      'userEvent.click(open);',
+      'export = expect(a).toBe(1);',
+    ].join('\n'),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
       'a statement of a call other than waitFor whose callback holds the first expect check is not copied',
     source: inPlay(
       'await userEvent.click(open);',

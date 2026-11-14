@@ -178,7 +178,7 @@ export function targetOf(read: StatementRead): unknown {
   return awaited(read.args[0]);
 }
 
-/** The expression statements of one function that are `equivalent` to the statement it is given. */
+/** The nodes of one function that are `equivalent` to the statement it is given. */
 type EquivalentStatements = (statement: unknown) => readonly unknown[];
 
 /** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `statementAt` gives the interaction whose statement is a node. */
@@ -189,12 +189,7 @@ export function followingChecksReader(
 ): (read: StatementRead) => FollowingChecks {
   const equivalentStatementsIn = readOnce((outermost): EquivalentStatements => {
     const tokenOf = equivalenceTokens([outermost]);
-    const statements = Map.groupBy(
-      descendants(outermost).filter(
-        (each) => field(each, 'type') === 'ExpressionStatement',
-      ),
-      tokenOf,
-    );
+    const statements = Map.groupBy(descendants(outermost), tokenOf);
 
     return (statement) => list(statements.get(tokenOf(statement)));
   });
@@ -320,14 +315,17 @@ function readsNameSetBetween(
   });
 }
 
-/** A check statement, or a `waitFor(...)` statement whose callback holds an expect check. */
+/** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */
 function checksWhenRun(statement: unknown): boolean {
   const expression = awaited(field(statement, 'expression'));
 
   return (
-    startsAtExpect(expression) ||
-    (waitCall(statement) === 'waitFor' &&
-      descendants(list(field(expression, 'arguments'))[0]).some(isExpectCall))
+    field(statement, 'type') === 'ExpressionStatement' &&
+    (startsAtExpect(expression) ||
+      (waitCall(statement) === 'waitFor' &&
+        descendants(list(field(expression, 'arguments'))[0]).some(
+          isExpectCall,
+        )))
   );
 }
 
