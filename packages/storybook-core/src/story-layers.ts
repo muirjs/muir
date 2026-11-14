@@ -4,6 +4,8 @@ import { field } from './node-field.ts';
 import { unknownValue } from './object-value.ts';
 
 export interface ExtendLevel {
+  /** The story's initializer at this level: a `.story()` or `.extend()` call, or a CSF3 story object. */
+  readonly init: unknown;
   readonly argument: unknown;
   readonly owner: unknown;
   readonly bindings: Bindings;
@@ -16,6 +18,7 @@ export function extendLevels(
 ): readonly [ExtendLevel, ...(ExtendLevel | typeof unknownValue)[]] {
   const call = unwrap(init);
   const own = {
+    init,
     argument: storyArgument(call),
     owner,
     bindings: unchangedBindings,

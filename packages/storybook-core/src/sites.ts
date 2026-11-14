@@ -15,6 +15,7 @@ import {
   maySet,
   propertyKey,
   unknownValue,
+  valuesIn,
   type LayerValue,
 } from './object-value.ts';
 import { playedStories, type PlayedStory } from './played-stories.ts';
@@ -60,25 +61,30 @@ export type { Proven };
 /** The story data key a site holds. */
 type SiteKey = 'args' | 'globals';
 
+/** Where one run of a site takes a key from: the site, elsewhere (a layer above the meta's object, or another meta the story is made from), or a source the file cannot tell. */
+export type KeyFrom = 'site' | 'elsewhere' | 'unknown';
+
 interface StoryRun {
   readonly owner: 'story';
   readonly story: PlayedStory;
+  /** A story's own object, or its `.test()` options, is the top layer of its run. */
+  readonly keyFrom: (key: Key) => KeyFrom;
 }
 
 interface TestRun {
   readonly owner: 'test';
   readonly story: PlayedStory;
   readonly test: TestArguments;
+  readonly keyFrom: (key: Key) => KeyFrom;
 }
-
-/** Where one run of the meta's object takes a key from: the meta, a layer above it, or a source the file cannot tell. */
-export type KeyFrom = 'meta' | 'elsewhere' | 'unknown';
 
 interface MetaRun {
   readonly owner: 'meta';
   readonly story: PlayedStory;
-  keyFrom(key: Key): KeyFrom;
+  readonly keyFrom: (key: Key) => KeyFrom;
 }
+
+const fromSite = (): KeyFrom => 'site';
 
 /** One run of a site, for one played story: its own run, one of its `.test()` calls, or the run that reads the meta's object. */
 export type SiteRun = StoryRun | TestRun | MetaRun;
@@ -157,7 +163,11 @@ export function sitesOf(
             ),
       );
       const [own, ...bases] = roots.map((layer) => layerOf(layer, key));
-      const metaOwner = storyMetaOwner(init, unchanged);
+      const rootLevel = levels.at(-1) ?? levels[0];
+      const metaOwner =
+        rootLevel === unknownValue
+          ? unknownValue
+          : storyMetaOwner(rootLevel.init);
       const storyRoot = unlessReadByOtherObjects(roots[0], local);
       const storyParameters = [
         ...roots.map((layer) => layerOf(layer, 'parameters')),
@@ -174,7 +184,7 @@ export function sitesOf(
 
       return [
         {
-          run: { owner: 'story', story },
+          run: { owner: 'story', story, keyFrom: fromSite },
           node: ownValueOf(
             asWrittenLayer(levels[0].argument, levels[0].bindings),
             key,
@@ -198,7 +208,7 @@ export function sitesOf(
 
           return [
             {
-              run: { owner: 'test', story, test },
+              run: { owner: 'test', story, test, keyFrom: fromSite },
               node: ownValue(test.options, key, unchanged),
               own: layerOf(optionsOwnRoot, key),
               below: [own, ...bases],
@@ -219,9 +229,11 @@ export function sitesOf(
               owner: 'meta',
               story,
               keyFrom: keyFromMeta(
-                metas.some(({ owner }) => owner === metaOwner)
-                  ? metaOwner === meta.owner
-                  : 'unknown',
+                !metas.some(({ owner }) => owner === metaOwner)
+                  ? 'unknown'
+                  : metaOwner === meta.owner
+                    ? 'this'
+                    : 'other',
                 [own, ...bases],
                 node,
                 mayBeSelfImported,
@@ -258,21 +270,27 @@ export function sitesOf(
   );
 }
 
-/** A meta run's `keyFrom`, for a story that is made from the meta (`isMade`) or not. In a file that may import itself, a write through the import may remove a key the story gives. */
+/**
+ * A meta run's `keyFrom`: for a story made from this meta, its layers above the meta tell; a story made from another
+ * meta takes every key elsewhere. In a file that may import itself, a write through the import may remove what a
+ * story gives, so elsewhere reads as unknown there; a key such a write adds keeps its mutant, as a story's own does.
+ */
 function keyFromMeta(
-  isMade: boolean | 'unknown',
+  madeFrom: 'this' | 'other' | 'unknown',
   above: readonly Layer[],
   site: unknown,
   mayBeSelfImported: boolean,
 ): (key: Key) => KeyFrom {
+  const givenElsewhere: KeyFrom = mayBeSelfImported ? 'unknown' : 'elsewhere';
+
+  if (madeFrom !== 'this') {
+    return () => (madeFrom === 'other' ? givenElsewhere : 'unknown');
+  }
+
   return (key) => {
-    if (isMade === 'unknown') {
-      return 'unknown';
-    }
+    const from = keyFromLayers(above, site, key);
 
-    const from = isMade ? keyFromLayers(above, site, key) : 'elsewhere';
-
-    return mayBeSelfImported && from === 'elsewhere' ? 'unknown' : from;
+    return from === 'elsewhere' ? givenElsewhere : from;
   };
 }
 
@@ -285,17 +303,15 @@ function keyFromLayers(
   const value = above.flatMap((layer) => valuesOf(layer, key))[0];
 
   if (value === undefined) {
-    return 'meta';
+    return 'site';
   }
 
   if (value === unknownValue) {
     return 'unknown';
   }
 
-  return list(field(site, 'properties')).some(
-    (property) => property === value || field(property, 'value') === value,
-  )
-    ? 'meta'
+  return valuesIn(list(field(site, 'properties')), key).includes(value)
+    ? 'site'
     : 'elsewhere';
 }
 

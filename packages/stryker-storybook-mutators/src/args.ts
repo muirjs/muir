@@ -148,27 +148,22 @@ function leftAlone(
     list(field(site, 'properties'))
       .map(propertyKey)
       .filter((key) => key !== undefined)
-      .filter(
-        (key) =>
-          !readers.some(({ run }) => sourceOf(run, key) === 'site') ||
-          readers.some(
-            ({ run, reads }) =>
-              sourceOf(run, key) !== 'elsewhere' &&
-              (reads === 'whole' || reads.has(key)),
-          ),
-      ),
+      .filter((key) => {
+        const sources = readers.map(({ run, reads }) => ({
+          from: run.keyFrom(key),
+          reads,
+        }));
+        const isTaken = sources.some(({ from }) => from === 'site');
+
+        return (
+          !isTaken ||
+          sources.some(
+            ({ from, reads }) =>
+              from !== 'elsewhere' && (reads === 'whole' || reads.has(key)),
+          )
+        );
+      }),
   );
-}
-
-/** Where a run takes `key` from, seen from its site: a story or `.test()` run's site is its own top layer. */
-function sourceOf(run: SiteRun, key: Key): 'site' | 'elsewhere' | 'unknown' {
-  if (run.owner !== 'meta') {
-    return 'site';
-  }
-
-  const from = run.keyFrom(key);
-
-  return from === 'meta' ? 'site' : from;
 }
 
 function readersOf(

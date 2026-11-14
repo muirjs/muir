@@ -42,10 +42,10 @@
   `mutate`.
 - **Storybook mutators -> Storybook**: they read story files with `@layzee/storybook-core`, which gives
   `LzStorybookArgs` its args sites with a Proven for each property whose removal the file proves changes nothing,
-  and, for each played story's run of the meta's args, whether the story takes a key from the meta, gives it above
-  the meta, or the file cannot tell, from the story file and the path Stryker's instrumenter gives it, and mutate
-  story data, so they belong in the Stryker configuration for the components, where the CSF ignorer's play mode is
-  `ignore`.
+  and, for each played story's run of the meta's args, whether the story takes a key from the meta, gets it
+  elsewhere (above the meta, or from another meta it is made from), or the file cannot tell, from the story file and
+  the path Stryker's instrumenter gives it, and mutate story data, so they belong in the Stryker configuration for
+  the components, where the CSF ignorer's play mode is `ignore`, which leaves the meta's `args` to them.
 - **Storybook test mutators -> Storybook**: they read story test code with `@layzee/storybook-core`
   and mutate it, taking each interaction, its user-event origin and its following checks from the
   `@layzee/storybook-core` interaction reader, and the CSF ignorer reports those mutants as Ignored unless its play

@@ -8,10 +8,10 @@ ADR 0001's two questions, whether a play or test function runs for the args and 
 asked per key at the meta. A meta key gets a mutant only when some played story surely takes it from the meta (a
 taken key), and it is left alone when a play or `.test()` function of a story that may take it reads it.
 `@layzee/storybook-core` tells, for each played story's run of the meta's args, whether the story takes a key from
-the meta, gives it above the meta, or the file cannot tell. Both questions are site rules, so a story the file cannot
-read counts as one that does not surely take the key but may read it. A key that every played story gives is left
-alone by that rule, not by a Proven. This applies ADR 0001 and does not supersede it: a story's own args are always
-taken by its own run, so nothing changes for them.
+the meta, gets it elsewhere (above the meta, or from another meta it is made from), or the file cannot tell. Both
+questions are site rules, so a story the file cannot read counts as one that does not surely take the key but may
+read it. A key that every played story gives is left alone by that rule, not by a Proven. This applies ADR 0001 and
+does not supersede it: a story's own args are always taken by its own run, so nothing changes for them.
 
 ## Considered Options
 

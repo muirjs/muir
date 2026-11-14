@@ -81,6 +81,28 @@ describe('sitesOf', () => {
   });
 });
 
+describe('SiteRun keyFrom', () => {
+  it("says a story's own run and its .test() runs take every key from their site", () => {
+    assert.deepEqual(
+      sitesOf(
+        bodyOf(
+          "import preview from '../.storybook/preview';",
+          'const meta = preview.meta({});',
+          "export const A = meta.story({ args: { label: 'a' }, play: async () => {} });",
+          "A.test('t', { args: { label: 'b' } }, async () => {});",
+        ),
+        'args',
+        'Button.stories.ts',
+      ).flatMap(({ runs }) =>
+        runs.flatMap((run) =>
+          run.owner === 'meta' ? [] : [run.keyFrom('label')],
+        ),
+      ),
+      ['site', 'site'],
+    );
+  });
+});
+
 describe('MetaRun keyFrom', () => {
   /** What each run of the meta's `args` answers for `key`, in the order `sitesOf` lists them. */
   function keyFromOfMetaRuns(
@@ -100,7 +122,7 @@ describe('MetaRun keyFrom', () => {
         "export default { title: 'a/b', args: { label: 'a' } };",
         'export const A = { play: async () => {} };',
       ),
-      ['meta'],
+      ['site'],
     );
   });
 
@@ -172,7 +194,7 @@ describe('MetaRun keyFrom', () => {
         'export default meta;',
         "export const A = { args: { ...meta.args, size: 's' }, play: async () => {} };",
       ),
-      ['meta'],
+      ['site'],
     );
   });
 
@@ -185,7 +207,7 @@ describe('MetaRun keyFrom', () => {
         "const b = preview.meta({ title: 'b', args: { label: 'b' } });",
         'export const A = a.story({ play: async () => {} });',
       ),
-      ['meta', 'elsewhere'],
+      ['site', 'elsewhere'],
     );
   });
 
@@ -198,7 +220,7 @@ describe('MetaRun keyFrom', () => {
         "export const A = meta.story({ args: { size: 's' } });",
         'export const B = A.extend({ play: async () => {} });',
       ),
-      ['meta'],
+      ['site'],
     );
   });
 
