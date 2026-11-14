@@ -170,7 +170,7 @@ export function mockTransformerRewrite(
 }
 
 /** The spy methods that are no stub but return the spy and leave what it returns alone, so a stub chain goes on through them. */
-const passedThrough: readonly unknown[] = ['mockName', 'mockClear'];
+const passedThrough: ReadonlySet<unknown> = new Set(['mockName', 'mockClear']);
 
 /** The call a chain of stub calls starts from, such as `fn()` in `fn().mockName('load').mockResolvedValueOnce(1)`. */
 function chainStart(node: unknown): unknown {
@@ -178,7 +178,7 @@ function chainStart(node: unknown): unknown {
   const chainsOn =
     isCall(node) &&
     field(node, 'callee', 'computed') !== true &&
-    (stubMethodOf(name) !== undefined || passedThrough.includes(name));
+    (stubMethodOf(name) !== undefined || passedThrough.has(name));
 
   return chainsOn ? chainStart(field(node, 'callee', 'object')) : node;
 }
