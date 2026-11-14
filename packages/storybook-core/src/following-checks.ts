@@ -308,7 +308,7 @@ function readsNameSetBetween(
     typeof field(statement, 'start') === 'number' &&
     [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
-  return bindingsReadThroughCalls(statement, scope, tree).some((binding) =>
+  return bindingsReadThroughFunctions(statement, scope, tree).some((binding) =>
     (binding.kind === 'function'
       ? binding.writes
       : [binding.identifier, ...binding.writes]
@@ -316,7 +316,7 @@ function readsNameSetBetween(
   );
 }
 
-function bindingsReadThroughCalls(
+function bindingsReadThroughFunctions(
   statement: unknown,
   scope: FileScope,
   tree: TreeIndex,

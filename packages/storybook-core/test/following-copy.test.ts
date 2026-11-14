@@ -761,7 +761,7 @@ describe('interactionsOf following checks copy', () => {
     });
   });
 
-  it('reads each function a check calls once, also when the functions call each other', () => {
+  it('copies a check that calls functions which call each other', () => {
     const check =
       'await expect(canvas.getByText(String(isEven(2)))).toBeVisible();';
     const copied = {
