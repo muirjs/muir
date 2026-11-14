@@ -38,9 +38,9 @@ type Kind =
   | { readonly kind: 'composedPlay' | 'rawDom'; readonly method: string };
 
 export type Interaction = {
-  /** What the statement is: an expression statement, or the expression body of a step. */
-  readonly statement: 'expression' | 'stepBody';
-  /** The statement: an expression statement, or the expression body of an arrow given to `step(...)`. Its identity is the join key. */
+  /** What the statement is: an expression statement, or the expression body of an arrow. */
+  readonly statement: 'expression' | 'arrowBody';
+  /** The statement: an expression statement, or the expression body of an arrow. Its identity is the join key. */
   readonly node: unknown;
   /** The call, without `await`, optional chaining or type wrappers. */
   readonly call: unknown;
@@ -214,18 +214,15 @@ export function interactionsOf(
       ? awaited(field(declaration, 'init'))
       : node;
   };
-  /** What statement `node` is: an expression statement, or the body of a callback given to `step(...)`, which holds an interaction only as an arrow's expression body. */
+  /** What statement `node` is: an expression statement, or the expression body of an arrow, wherever the arrow stands. */
   const statementOf = (node: unknown): Interaction['statement'] | undefined => {
     if (field(node, 'type') === 'ExpressionStatement') {
       return 'expression';
     }
 
-    const callback = tree.parentOf(node);
+    const arrow = tree.parentOf(node);
 
-    return field(callback, 'body') === node &&
-      isStepCall(tree.parentOf(callback))
-      ? 'stepBody'
-      : undefined;
+    return field(arrow, 'body') === node ? 'arrowBody' : undefined;
   };
   const found = descendants(program).flatMap((node) => {
     const statement = statementOf(node);

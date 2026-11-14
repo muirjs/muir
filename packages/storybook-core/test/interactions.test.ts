@@ -276,9 +276,15 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of a step callback is a step body statement',
+      'an interaction that is the expression body of a step callback is an arrow body statement',
     source: `export const Story = {\n  play: async ({ step, userEvent }) => {\n    await step('Submit', () => userEvent.click(button));\n  },\n};\n`,
-    expect: ['userEvent click userEvent14 stepBody'],
+    expect: ['userEvent click userEvent14 arrowBody'],
+  },
+  {
+    title:
+      'an interaction that is the expression body of an arrow given to forEach is an arrow body statement',
+    source: inPlay('buttons.forEach((button) => userEvent.click(button));'),
+    expect: ['userEvent click userEvent14 arrowBody'],
   },
   {
     title: 'a new expression of a user-event method is no interaction',
@@ -287,9 +293,9 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of a context.step callback is a step body statement',
+      'an interaction that is the expression body of a context.step callback is an arrow body statement',
     source: `export const Story = {\n  play: async (context) => {\n    await context.step('Submit', () => context.userEvent.click(button));\n  },\n};\n`,
-    expect: ['userEvent click userEvent14 stepBody'],
+    expect: ['userEvent click userEvent14 arrowBody'],
   },
   {
     title:
@@ -302,26 +308,20 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of an arrow held in a local is no interaction statement',
+      'an interaction that is the expression body of an arrow held in a local is an arrow body statement',
     source: inPlay(
       'const clickSave = () => userEvent.click(save);',
       'await clickSave();',
     ),
-    expect: [],
+    expect: ['userEvent click userEvent14 arrowBody'],
   },
   {
     title:
-      'an interaction that is the expression body of an arrow given to a method other than step is no interaction statement',
-    source: inPlay('buttons.forEach((button) => userEvent.click(button));'),
-    expect: [],
-  },
-  {
-    title:
-      'an interaction that is the expression body of an arrow given to step on a member of a member is no interaction statement',
+      'an interaction that is the expression body of an arrow given to step on a member of a member is an arrow body statement',
     source: inPlay(
       "await story.context.step('Submit', () => userEvent.click(button));",
     ),
-    expect: [],
+    expect: ['userEvent click userEvent14 arrowBody'],
   },
   {
     title: 'an interaction in a beforeEach stands in a hook',

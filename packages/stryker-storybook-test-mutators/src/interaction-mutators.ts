@@ -180,7 +180,7 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
       } else {
         if (!path.isExpression()) {
           throw new Error(
-            // Stryker disable next-line StringLiteral: no input reaches this throw, as an interaction is an expression statement or the call a step callback's body is, and a call is an expression
+            // Stryker disable next-line StringLiteral: no input reaches this throw, as an interaction is an expression statement or the call an arrow's body is, and a call is an expression
             `${packageName}: LzStorybookInteractionRepeat read an interaction at a ${path.node.type}, which is neither an expression statement nor an expression`,
           );
         }

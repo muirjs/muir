@@ -90,8 +90,8 @@ receiver with a user-event origin; a `fireEvent` call; a composed play; or a raw
 `fireEvent` call counts anywhere in the story file, a `render` or a decorator included; a composed play other than
 `step(label, Other.play)`, and a raw DOM interaction, count only in story test code.
 Its statement, the node the interaction mutators replace, is an expression statement, or the expression body of an
-arrow given to `step(...)` (a step body); the same call elsewhere, such as in an expression-bodied arrow given to
-`forEach`, is none.
+arrow wherever the arrow stands, such as one given to `step(...)` or `forEach` (an arrow body); the same call elsewhere,
+such as an argument of another call, is none.
 _Avoid_: action (the Playwright mutators' term), user action, site (for its statement; a site is an args or globals
 object)
 

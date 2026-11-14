@@ -36,7 +36,7 @@ _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 The statement that holds the first `expect` check of an interaction's following checks (the Storybook context's
 terms; a failing query is never copied), which `LzStorybookAssertionBefore` also runs before the interaction. It is
 looked for only in the interaction's own block, so a check after the end of a step callback that holds the
-interaction is not looked at, and an interaction that is a step callback's expression body has none.
+interaction is not looked at, and an interaction that is an arrow's expression body has none.
 
 Three kinds of statement are not copied:
 

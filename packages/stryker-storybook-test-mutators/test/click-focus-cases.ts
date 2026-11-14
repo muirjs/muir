@@ -45,6 +45,13 @@ export const clickFocusCases: readonly Case[] = [
     expect: [[clickFocus, 'button.focus()']],
   },
   {
+    id: 'click-focus-for-each-body',
+    title:
+      'a click that is the expression body of an arrow given to forEach becomes a focus() call',
+    source: inPlay('buttons.forEach((button) => userEvent.click(button));'),
+    expect: [[clickFocus, 'button.focus()']],
+  },
+  {
     id: 'click-focus-optional-call',
     title: 'a userEvent?.click of an element becomes a focus() call on it',
     source: inPlay('await userEvent?.click(button);'),

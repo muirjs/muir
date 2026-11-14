@@ -545,28 +545,28 @@ const interactionCases: readonly Case[] = [
   {
     id: 'arrow-body-in-declaration',
     title:
-      'an interaction that is the expression body of an arrow held in a local makes no mutant',
+      'an interaction that is the expression body of an arrow held in a local becomes undefined',
     source: inPlay(
       'const clickSave = () => userEvent.click(save);',
       'await clickSave();',
     ),
-    expect: [],
+    expect: [[interaction, 'undefined']],
   },
   {
     id: 'arrow-body-given-to-method',
     title:
-      'an interaction that is the expression body of an arrow given to a method other than step makes no mutant',
+      'an interaction that is the expression body of an arrow given to forEach becomes undefined',
     source: inPlay('buttons.forEach((button) => userEvent.click(button));'),
-    expect: [],
+    expect: [[interaction, 'undefined']],
   },
   {
     id: 'arrow-body-given-to-nested-step',
     title:
-      'an interaction that is the expression body of an arrow given to step on a member of a member makes no mutant',
+      'an interaction that is the expression body of an arrow given to step on a member of a member becomes undefined',
     source: inPlay(
       "await story.context.step('Submit', () => userEvent.click(button));",
     ),
-    expect: [],
+    expect: [[interaction, 'undefined']],
   },
   {
     id: 'awaited-type-assertion',
