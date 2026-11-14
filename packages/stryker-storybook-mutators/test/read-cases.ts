@@ -363,4 +363,38 @@ export const readCases: readonly Case[] = [
       [args, '{ ...meta.args }'],
     ],
   },
+  {
+    id: 'meta-key-read-by-story-made-through-alias',
+    title:
+      'a meta key that the play of a story made through another name for the meta reads stays',
+    source: inFactoryFile(
+      "const meta = preview.meta({ title: 'Button', args: { label: 'a', size: 's' } });",
+      'const m = meta;',
+      'export const A = m.story({ play: async ({ args }) => { log(args.label); } });',
+      'export const B = meta.story({ play: async () => {} });',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'meta-key-read-by-story-with-unknown-args',
+    title:
+      'a meta key that a story whose args the file does not show reads stays, as that story may take it from the meta',
+    source:
+      "import { shared } from './shared';\n" +
+      "export default { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      'export const A = { args: shared, play: async ({ args }) => { log(args.label); } };\n' +
+      'export const B = { play: async () => {} };\n',
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'meta-key-of-another-factory-meta',
+    title:
+      'a factory meta that no played story is made from makes no mutant, and a read counts only for its own meta',
+    source: inFactoryFile(
+      "const a = preview.meta({ title: 'a', args: { label: 'a', size: 's' } });",
+      "const b = preview.meta({ title: 'b', args: { label: 'b', size: 'm' } });",
+      'export const A = a.story({ play: async ({ args }) => { log(args.label); } });',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
 ];

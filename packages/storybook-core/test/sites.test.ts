@@ -216,6 +216,19 @@ describe('MetaRun keyFrom', () => {
     );
   });
 
+  it('cannot tell where a factory story made through another name for the meta takes a key from', () => {
+    assert.deepEqual(
+      keyFromOfMetaRuns(
+        'label',
+        "import preview from '../.storybook/preview';",
+        "const meta = preview.meta({ title: 'a/b', args: { label: 'a' } });",
+        'const m = meta;',
+        "export const A = m.story({ args: { label: 'b' }, play: async () => {} });",
+      ),
+      ['unknown'],
+    );
+  });
+
   it('cannot tell that a story gives a key itself in a file that imports itself, as a write through the import may remove it', () => {
     assert.deepEqual(
       keyFromOfMetaRuns(

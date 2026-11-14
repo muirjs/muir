@@ -219,9 +219,9 @@ export function sitesOf(
               owner: 'meta',
               story,
               keyFrom: keyFromMeta(
-                metaOwner === unknownValue
-                  ? 'unknown'
-                  : metaOwner === meta.owner,
+                metas.some(({ owner }) => owner === metaOwner)
+                  ? metaOwner === meta.owner
+                  : 'unknown',
                 [own, ...bases],
                 node,
                 mayBeSelfImported,
