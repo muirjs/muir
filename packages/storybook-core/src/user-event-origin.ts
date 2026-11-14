@@ -239,7 +239,7 @@ export function userEventOrigins(
       return valueOrigins(list(field(node, 'expressions')).at(-1));
     }
 
-    return originsIn(setupReceiver(node) ?? node);
+    return originsIn(node);
   };
 
   /**
@@ -249,8 +249,14 @@ export function userEventOrigins(
    * them, so no order of resolution changes a result.
    */
   const knownOrigins = new Map<Binding, MayOrigins>();
-  /** The origins `receiver` may have; a member under a key the file does not name may be the holder's `userEvent`. */
+  /** The origins `receiver` may have, a user-event's `setup()` having its receiver's; a member under a key the file does not name may be the holder's `userEvent`. */
   const originsIn = (receiver: unknown): MayOrigins => {
+    const setupOf = setupReceiver(receiver);
+
+    if (setupOf !== undefined) {
+      return originsIn(setupOf);
+    }
+
     const node = unwrap(receiver);
 
     if (isMember(node)) {
@@ -355,9 +361,9 @@ function valuesOf(node: unknown): readonly unknown[] | undefined {
   }
 }
 
-/** The receiver of `<receiver>.setup()`. */
+/** The receiver of `<receiver>.setup()`, awaited or not. */
 function setupReceiver(value: unknown): unknown {
-  const call = unwrap(value);
+  const call = awaited(value);
   const callee = field(call, 'callee');
 
   return field(call, 'type') === 'CallExpression' &&

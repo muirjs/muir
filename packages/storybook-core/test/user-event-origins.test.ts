@@ -378,6 +378,33 @@ const originCases: readonly KindCase[] = [
     expect: ['userEvent click unproven'],
   },
   {
+    title:
+      'a call on a local bound to an awaited userEvent.setup() is a user-event 14 call',
+    source: inPlay(
+      'const user = await userEvent.setup();',
+      'await user.click(button);',
+    ),
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      'a click on the setup() of the play context userEvent itself is a user-event 14 click',
+    source: inPlay('await userEvent.setup().click(button);'),
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      'a click on the awaited setup() of the play context userEvent itself is a user-event 14 click',
+    source: inPlay('await (await userEvent.setup()).click(button);'),
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      'a click on the setup() of a local that is no user-event is no interaction',
+    source: inPlay('await driver.setup().click(button);'),
+    expect: [],
+  },
+  {
     title: 'a call on a let bound to userEvent.setup() is a user-event 14 call',
     source: inPlay(
       'let user = userEvent.setup();',

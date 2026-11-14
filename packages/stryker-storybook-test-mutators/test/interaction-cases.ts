@@ -513,6 +513,16 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'awaited-setup-local',
+    title:
+      'a click on a local bound to an awaited userEvent.setup() is removed',
+    source: inPlay(
+      'const user = await userEvent.setup();',
+      'await user.click(button);',
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
     id: 'top-level-interaction',
     title: 'a user-event call outside any function is removed',
     source: 'await userEvent.click(button);\nexport const Story = {};\n',

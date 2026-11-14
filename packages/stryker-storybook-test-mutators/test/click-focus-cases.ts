@@ -52,6 +52,13 @@ export const clickFocusCases: readonly Case[] = [
     expect: [[clickFocus, 'button.focus()']],
   },
   {
+    id: 'click-focus-setup-receiver',
+    title:
+      'a click on the setup() of the play context userEvent becomes a focus() call',
+    source: inPlay('await userEvent.setup().click(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
     id: 'click-focus-optional-call',
     title: 'a userEvent?.click of an element becomes a focus() call on it',
     source: inPlay('await userEvent?.click(button);'),

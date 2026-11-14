@@ -116,8 +116,10 @@ is no user-event, and its call is no interaction. There are three values:
   or `const { userEvent: u } = <object>` on any other object, any other name `userEvent`, or a choice `a ? b : c`
   between receivers of two different origins, or any receiver of an origin that a member write reaches.
 
-A local whose one value is `<receiver>.setup()`, another receiver, a choice between receivers of the same origin, or
-a sequence whose last value is one of these has that receiver's origin. A member write makes every receiver of the
+A `<receiver>.setup()` call, awaited or not, has its receiver's origin, as the receiver itself
+(`userEvent.setup().click(...)`) or as the one value of a local. A local whose one value is such a call, another
+receiver, a choice between receivers of the same origin, or a sequence whose last value is one of these has that
+receiver's origin. A member write makes every receiver of the
 origin it reaches `unproven`. The write is an assignment, an array or object pattern or a `for...in` or `for...of`
 head that targets a member. It reaches the origin of the written member and of each object it is read through,
 found as a receiver's is, and a member under a computed key may be `userEvent`. The root of that chain splits
