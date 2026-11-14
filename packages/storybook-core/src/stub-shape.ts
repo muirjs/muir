@@ -26,9 +26,9 @@ export function stubMethodOf(name: unknown): StubMethodCall | undefined {
   return method === undefined ? undefined : { method, once: name !== method };
 }
 
-/** The spy method name of a stub method call, the reverse of `stubMethodOf`. */
 export type WrittenStubMethod = StubMethod | `${StubMethod}Once`;
 
+/** The spy method name of a stub method call, the reverse of `stubMethodOf`. */
 export function writtenMethodOf({
   method,
   once,
@@ -41,8 +41,9 @@ export interface StubSite extends StubMethodCall, Span {
   readonly line: number;
   /** The spy call's span, inside any parentheses, cast or non-null assertion around it. */
   readonly spyCall: Span;
+  /** Where the stub method's name starts, after the `.` or `?.` that reads it. */
   readonly methodStart: number;
-  /** The end of the stub call's callee and of its type arguments: the `(` of its argument list comes next, after the `?.` of an optional call. */
+  /** The end of the stub call's callee and of its type arguments: the `(` of its argument list comes next, after the `?.` of an optional call when that call has no type arguments. */
   readonly calleeEnd: number;
 }
 

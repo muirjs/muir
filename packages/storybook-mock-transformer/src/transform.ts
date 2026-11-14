@@ -64,7 +64,7 @@ export function transform(
   };
 }
 
-/** Replaces the spy call with `fn(((value) => () => value)(<arguments>))`, moving the stub's arguments into it, and removes the stub call from the chain. */
+/** Replaces the spy call with `<spy>(<open><arguments><close>)`, its method's wrapper around the stub's arguments (`fn(((value) => () => value)(1))` for `fn().mockReturnValue(1)`), and removes the stub call from the chain. */
 function rewriteStub(
   output: MagicString,
   { spy, method, end, spyCall }: StubSite,
