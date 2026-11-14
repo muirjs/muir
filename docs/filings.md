@@ -1220,6 +1220,30 @@ eleven case rows that pin that rule could then only be logged as `test-after`. A
 transformation breaks earlier tests, write the narrowest of those broken rows as the next red" would have split it.
 Evidence: `item9/cycles.log` cycle 10 and the three `test-after` lines after it.
 
+**O166. A green that moves existing code over-generates, and nothing names the move as a transformation.** Item 10c
+moved the test mutators' file-naming error wrapper into `@layzee/storybook-core` to turn one red green: a read that
+throws names the story file. The moved body brought two branches the red never asked for (a file with no name, a
+thrown value that is no `Error`), which could then only be logged as `test-after`. `lz-tpp` ranks transformations of
+code written for the red; it has no entry for "move a tested body from elsewhere", which is often the right green
+when the behavior already exists, and no prompt to write the moved body's other branches as reds first. Evidence:
+`item-h/cycles.log` cycle 5 and the `test-after` line after it.
+
+**O167. A red can fail on the asserted value for a cause the green does not address.** Item 10g's red put a junction
+to a fixture in the temp folder and asserted the tag filter the loader read. It failed on that value, the sharpest
+red by `lz-red` step 5, and the planned green (match story files by real path) left it red: a probe showed Storybook
+listed no story file at all through a junction on another drive, a second cause in the test's own setup. Moving the
+junction onto the repository's drive gave a red that the green turned green, confirmed by running it against the old
+code. Step 5 checks that the failure comes from the code under test and names the expected value; it has no step to
+check that the failure comes from the defect the cycle means to fix, for example by tracing the actual value once
+before the green. Evidence: `item-h/cycles.log` cycle 8.
+
+**O168. An expectation written from memory made a red that would have failed for the wrong reason.** Item 10d's
+second red expected the copied check's kinds to be `['expect']`; the case's check is a failing query, so the right
+value was `['expect', 'query']`. The red failed either way before the green, so the wrong expectation only surfaced
+when the green ran. `lz-red` step 5 wants an AssertionError on the behavior the test pins; it has no check that the
+expected value is right in the parts the cycle does not change, such as copying them from a neighbouring passing
+case. Evidence: `item-h/cycles.log` cycle 7.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
