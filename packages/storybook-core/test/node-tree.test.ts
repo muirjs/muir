@@ -192,6 +192,14 @@ describe('equivalent', () => {
       ],
     );
   });
+
+  it('pairs calls whose empty argument lists hold different comments, as Babel does', () => {
+    const [first, second] = list(
+      field(programOf('f(/* a */);', 'f(/* b */);'), 'body'),
+    );
+
+    assert.equal(equivalent(first, second), true);
+  });
 });
 
 describe('equivalenceTokens', () => {
