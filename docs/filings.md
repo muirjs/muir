@@ -1129,6 +1129,37 @@ generic. Each keeps the behaviour and removes an interference. The log labels th
 generic and has no entry for a change of mechanism at the same generality. Evidence: `wave2/cycles.log` cycles 8, 13
 and 15.
 
+The four entries below were mined from the cycle logs of three test-first runs (a Stryker survivor pass on the test
+mutators, the bang-command rule and the C-reader rework, 2026-11-11 to 2026-11-14). Their workers kept no "lz-tdd
+friction" notes, so each entry rests on the log lines alone.
+
+**O155. A red that exhausts the stack or the heap, and a green that changes a data structure to stay within a bound
+(adds to O42 and O152).** Seven reds were a crash of the runtime rather than a failed assertion: a stack overflow
+(bang rule cycle 82, C-reader cycles 134 and 137) and a heap out of memory under `--max-old-space-size=2048` (C-reader
+cycles 131 and 132, bang rule cycles 131 and 132). A heap crash ends the test process, so node:test reports only
+`fail 1, 'test failed'`, and one such red ran 157 s before it crashed. `lz-red` step 5 sorts reds into an assertion, a
+not-implemented throw and a setup failure; a crash fits none, and the step does not suggest capping the resource so the
+red comes fast, which the workers did on their own. The greens kept the behaviour and changed its cost: a `reduce` in
+place of a `Math.max` spread, a `Set` that reads each origin once, an undo log in place of a copy per subshell.
+`lz-tpp` ranks generality, not cost, so the log labels them `(expression -> function)` or cites triage rows instead.
+Evidence: `bang-rule/cycles.log` cycles 82, 131 and 132; `creader/cycles.log` cycles 131, 132, 134 and 137.
+
+**O156. A red for a test that must not be skipped.** Bang rule cycle 130 required the timing tests to fail, not skip,
+on Node.js 26 or later without `--experimental-bench`. The red was a green suite with 8 tests skipped; no test failed.
+`lz-red` step 5 asks for a run that failed, and has no case where the signal is a skip count in the summary. Evidence:
+`bang-rule/cycles.log` cycle 130.
+
+**O157. O92 held at scale: the `test-after` lines outnumber the cycles.** The C-reader rework logged 139 cycles and 298
+`test-after` lines, the bang rule 138 and 182, the survivor pass 6 and 40, and wave 2 15 and 12. With the design or a
+ported rule fixed before the first red, most list items passed when they were written, so the log is mostly pins.
+Nothing in `lz-red` or `test-first.md` says how a pin shows it can fail (O115 asks this for characterization tests);
+in this project the Stryker checkpoint is the only check. Evidence: the four cycle logs.
+
+**O158. Earlier observations seen again in the same logs.** A green that needed two transformations in one step (O47:
+bang rule cycle 70). A red run against a reversed or mutated copy of code that already passes (O50: bang rule cycles
+133, 134 and 143). One cycle with eight cases, seven of them red (O62: bang rule cycle 142). Greens labelled with a
+review note instead of a transformation (O36 and O7: bang rule cycles 135 and 136). Evidence: `bang-rule/cycles.log`.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
@@ -1480,6 +1511,14 @@ and keep text expectations to the forms whose spelling is part of the contract.
 
 **S99 (from O154).** In `lz-tpp`, name a "change of mechanism" move outside the ranked list, for a green that removes
 an interference without generalising, so that the cycle log does not borrow the nearest label.
+
+**S100 (from O155).** In `lz-red` step 5, accept a runtime crash (stack or heap) as the red when the behaviour is a
+resource bound, and advise capping the resource (`--max-old-space-size`, `--stack-size`) so the red arrives in
+seconds. In `lz-tpp`, add a note that a green meeting a bound changes the representation and sits outside the
+generality ranking (it extends S99's "change of mechanism").
+
+**S101 (from O156).** In `lz-red`, add the case where the behaviour is "this test runs": the red is a skip or todo
+count read from the run's summary.
 
 ## stefanoslig/angular-ngrx-nx-realworld-example-app: "View article's author" e2e test always fails
 
