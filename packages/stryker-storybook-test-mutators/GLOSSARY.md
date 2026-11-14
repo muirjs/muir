@@ -27,8 +27,8 @@ _Avoid_: target (alone), locator (the Playwright mutators' term)
 **Skipped interaction**:
 An interaction (the Storybook context's term) that `LzStorybookInteraction`, `LzStorybookClickFocus`,
 `LzStorybookInteractionRepeat`, `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of:
-one in a `beforeEach` or `afterEach`, given inline or as a function declared in the file but not one that a call wraps
-(`withUser(fn)`). Every other interaction gets its mutants, including one that a later interaction makes redundant,
+one in a `beforeEach` or `afterEach`, given inline or as a function declared in the file, also under a cast
+(`setup as Hook`), but not one that a call wraps (`withUser(fn)`). Every other interaction gets its mutants, including one that a later interaction makes redundant,
 such as a click directly before a `type` of the same target.
 _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 

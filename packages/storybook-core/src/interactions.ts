@@ -100,15 +100,23 @@ function callAround(tree: TreeIndex, node: unknown): unknown {
   );
 }
 
-/** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function given there by its name that is declared in the file or is the initial value of a variable, also under parentheses or a cast around that value. */
+/** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function given there by its name that is declared in the file or is the initial value of a variable, also under parentheses or a cast around that value, the property's value, the array or an element. */
 function hooksOf(
   program: unknown,
   tree: TreeIndex,
   scope: FileScope,
 ): ReadonlySet<unknown> {
-  const isHookValue = (node: unknown): boolean => {
+  /** `node` with every parenthesis or cast around it. */
+  const wrapped = (node: unknown): unknown => {
     const parent = tree.parentOf(node);
-    const value = field(parent, 'type') === 'ArrayExpression' ? parent : node;
+
+    return unwrap(parent) === node ? wrapped(parent) : node;
+  };
+  const isHookValue = (node: unknown): boolean => {
+    const element = wrapped(node);
+    const parent = tree.parentOf(element);
+    const value =
+      field(parent, 'type') === 'ArrayExpression' ? wrapped(parent) : element;
     const property = tree.parentOf(value);
 
     return (

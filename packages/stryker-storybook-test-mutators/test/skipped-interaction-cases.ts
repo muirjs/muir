@@ -42,6 +42,13 @@ export const skippedInteractionCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'skip-named-before-each-under-as',
+    title:
+      'an interaction in a function declared in the file and given as a beforeEach under as makes no mutant',
+    source: `async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  beforeEach: setup as Hook,\n};\n`,
+    expect: [],
+  },
+  {
     id: 'skip-named-arrow-before-each',
     title:
       'an interaction in an arrow held in a local and given as a beforeEach makes no mutant',
