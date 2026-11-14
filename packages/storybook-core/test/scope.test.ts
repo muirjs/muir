@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { parse } from '@babel/parser';
+
+import { isRecord } from '../src/is-record.ts';
 import { field } from '../src/node-field.ts';
 import { everyRecordIn } from '../src/node-tree.ts';
 import { fileScope } from '../src/scope.ts';
-import { programsOf } from './support/parse-module.ts';
+import { programOf, programsOf } from './support/parse-module.ts';
 
 interface ScopeCase {
   readonly title: string;
@@ -420,6 +423,101 @@ const scopeCases: readonly ScopeCase[] = [
     reference: 2,
     declaredBy: 1,
   },
+  {
+    title: 'a computed key in an object pattern reads the binding it names',
+    lines: ['const key = first;', 'const { [key]: user } = drivers;'],
+    name: 'key',
+    reference: 1,
+    declaredBy: 0,
+  },
+  {
+    title: 'a key in an object pattern reads no binding',
+    lines: ['const user = first;', 'const { user: driver } = drivers;'],
+    name: 'user',
+    reference: 1,
+    declaredBy: undefined,
+  },
+  {
+    title: 'a rest element in an object pattern is bound',
+    lines: ['const { ...rest } = drivers;', 'use(rest);'],
+    name: 'rest',
+    reference: 1,
+    declaredBy: 0,
+  },
+  {
+    title: 'a rest parameter shadows an outer binding in its function',
+    lines: [
+      'const users = first;',
+      'function run(...users) {',
+      '  use(users);',
+      '}',
+    ],
+    name: 'users',
+    reference: 2,
+    declaredBy: 1,
+  },
+  {
+    title: "a method's key reads no binding",
+    lines: ['const user = first;', 'const page = {', '  user() {},', '};'],
+    name: 'user',
+    reference: 1,
+    declaredBy: undefined,
+  },
+  {
+    title: "a class expression's own name is not bound outside the class",
+    lines: ['const other = class Page {};', 'use(Page);'],
+    name: 'Page',
+    reference: 1,
+    declaredBy: undefined,
+  },
+  {
+    title: 'a var in a catch clause is bound outside the clause',
+    lines: [
+      'try {',
+      '  run();',
+      '} catch (error) {',
+      '  var user = second;',
+      '}',
+      'use(user);',
+    ],
+    name: 'user',
+    reference: 1,
+    declaredBy: 0,
+  },
+  {
+    title: 'a var in a case of a switch is bound outside the switch',
+    lines: [
+      'switch (step) {',
+      '  case 0:',
+      '    var user = second;',
+      '}',
+      'use(user);',
+    ],
+    name: 'user',
+    reference: 1,
+    declaredBy: 0,
+  },
+  {
+    title: 'the discriminant of a switch reads the binding it names',
+    lines: ['const step = first;', 'switch (step) {}'],
+    name: 'step',
+    reference: 1,
+    declaredBy: 0,
+  },
+  {
+    title: 'the right side of a for...of head reads the binding it names',
+    lines: ['const drivers = first;', 'for (const user of drivers) {}'],
+    name: 'drivers',
+    reference: 1,
+    declaredBy: 0,
+  },
+  {
+    title: 'a const in a for...of head is bound in the loop body',
+    lines: ['for (const user of drivers) {', '  use(user);', '}'],
+    name: 'user',
+    reference: 1,
+    declaredBy: 0,
+  },
 ];
 
 interface WriteCase {
@@ -541,6 +639,13 @@ const writeCases: readonly WriteCase[] = [
     reference: 0,
     writes: ['AssignmentExpression'],
   },
+  {
+    title: 'two assignments each write the name they assign',
+    lines: ['let user = first;', 'user = second;', 'user = third;'],
+    name: 'user',
+    reference: 0,
+    writes: ['AssignmentExpression', 'AssignmentExpression'],
+  },
 ];
 
 interface KindCase {
@@ -585,6 +690,111 @@ const kindCases: readonly KindCase[] = [
   },
 ];
 
+interface ReadCase {
+  readonly title: string;
+  readonly lines: readonly string[];
+  /** The names of the identifiers the file reads or writes, in source order. */
+  readonly names: readonly string[];
+}
+
+function namesReadIn(program: object): readonly unknown[] {
+  return fileScope(program)
+    .referencesIn(program)
+    .map((identifier) => field(identifier, 'name'));
+}
+
+/** Moves the value under each `from` key in `program` to `to`, as Babel 8 renames a key Babel 7 parses. */
+function renameKey(program: object, from: string, to: string): void {
+  everyRecordIn(program)
+    .filter(isRecord)
+    .filter((record) => from in record)
+    .forEach((record) => {
+      record[to] = record[from];
+      Reflect.deleteProperty(record, from);
+    });
+}
+
+const readCases: readonly ReadCase[] = [
+  {
+    title: 'the label of a labeled statement is no read',
+    lines: ['done: while (run()) {}'],
+    names: ['run'],
+  },
+  {
+    title: 'the label of a continue is no read',
+    lines: ['done: while (run()) {', '  continue done;', '}'],
+    names: ['run'],
+  },
+  {
+    title: 'the import of import.meta is no read',
+    lines: ['use(import.meta.url);'],
+    names: ['use'],
+  },
+  {
+    title: 'a private name in an in check is no read',
+    lines: [
+      'class Page {',
+      '  #user;',
+      '  has(page) {',
+      '    return #user in page;',
+      '  }',
+      '}',
+    ],
+    names: ['page'],
+  },
+  {
+    title: "a class expression's own name is no read",
+    lines: ['use(class Page {});'],
+    names: ['use'],
+  },
+  {
+    title: "a class declaration's own name is no read",
+    lines: ['class Page {}'],
+    names: [],
+  },
+  {
+    title: "an optional member's property is no read",
+    lines: ['use(page?.user);'],
+    names: ['use', 'page'],
+  },
+  {
+    title: "a computed member's property is a read",
+    lines: ['use(page[user]);'],
+    names: ['use', 'page', 'user'],
+  },
+  {
+    title: "a call's type arguments read no name",
+    lines: ['use<Driver>(value);'],
+    names: ['use', 'value'],
+  },
+  {
+    title:
+      "a class's superclass type arguments and implemented interfaces read no name",
+    lines: ['class Page extends Base<Driver> implements Props {}'],
+    names: ['Base'],
+  },
+  {
+    title: 'a type alias reads no name',
+    lines: ['type Steps = Driver;'],
+    names: [],
+  },
+  {
+    title: 'a declared function reads no name',
+    lines: ['declare function run(user: Driver): void;'],
+    names: [],
+  },
+  {
+    title: 'an enum reads no name',
+    lines: ['enum Steps {', '  First,', '}'],
+    names: [],
+  },
+  {
+    title: 'an import equals declaration reads no name',
+    lines: ['import Steps = Driver.Steps;'],
+    names: [],
+  },
+];
+
 describe('fileScope binding kind and declaration', () => {
   kindCases.forEach(({ title, lines, name, reference, kind, declaration }) => {
     it(title, () => {
@@ -625,6 +835,47 @@ describe('fileScope referencesIn', () => {
         [['use', 'page', 'value'], ['count']],
         [['use', 'page', 'value'], ['count']],
       ],
+    );
+  });
+
+  readCases.forEach(({ title, lines, names }) => {
+    it(title, () => {
+      assert.deepEqual(programsOf(...lines).map(namesReadIn), [names, names]);
+    });
+  });
+
+  it("reads no name in a call's or a superclass's type arguments under Babel 8's keys", () => {
+    const program = programOf(
+      'use<Driver>(value);',
+      'class Page extends Base<Driver> {}',
+    );
+
+    renameKey(program, 'typeParameters', 'typeArguments');
+    renameKey(program, 'superTypeParameters', 'superTypeArguments');
+
+    assert.deepEqual(namesReadIn(program), ['use', 'value', 'Base']);
+  });
+
+  it("reads no name in an auto-accessor's key", () => {
+    const { program } = parse('class Page {\n  accessor user = first;\n}', {
+      sourceType: 'module',
+      plugins: ['typescript', 'decoratorAutoAccessors'],
+    });
+
+    assert.deepEqual(namesReadIn(program), ['first']);
+  });
+});
+
+describe('fileScope writtenMembers', () => {
+  it('gives the members a write targets, and nothing for a catch clause without a parameter', () => {
+    assert.deepEqual(
+      programsOf('try {', '  run();', '} catch {}', 'page.user = second;').map(
+        (program) =>
+          fileScope(program).writtenMembers.map((member) =>
+            field(member, 'type'),
+          ),
+      ),
+      [['MemberExpression'], ['MemberExpression']],
     );
   });
 });
