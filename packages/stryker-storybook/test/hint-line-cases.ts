@@ -60,6 +60,21 @@ export const hintLineCases: readonly InteractionHintCase[] = [
     expect: [[7, 'negative-only', ['LzStorybookInteractionTarget']]],
   },
   {
+    id: 'nested-interaction',
+    title:
+      'names a survivor by the innermost interaction around it, not by an interaction whose argument holds that one',
+    source: inPlay(
+      'await userEvent.click(',
+      '  await (async () => {',
+      "    await userEvent.click(canvas.getByRole('button'));",
+      '    await expect(args.onSave).not.toHaveBeenCalled();',
+      '  })(),',
+      ');',
+    ),
+    survived: [[interaction, 7]],
+    expect: [[7, 'negative-only', [interaction]]],
+  },
+  {
     id: 'shared-line',
     title:
       'leaves a mutator out of the comment when a mutant of it on the same line has no shape',

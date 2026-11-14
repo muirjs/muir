@@ -152,7 +152,6 @@ function isRepeated(interaction: Interaction): boolean {
     repeatedMethods.has(interaction.method) &&
     !(
       interaction.method === 'keyboard' &&
-      field(key, 'type') === 'StringLiteral' &&
       idempotentKeys.has(field(key, 'value'))
     )
   );
@@ -181,6 +180,7 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
       } else {
         if (!path.isExpression()) {
           throw new Error(
+            // Stryker disable next-line StringLiteral: no input reaches this throw, as an interaction is an expression statement or the call a step callback's body is, and a call is an expression
             `${packageName}: LzStorybookInteractionRepeat read an interaction at a ${path.node.type}, which is neither an expression statement nor an expression`,
           );
         }
@@ -246,13 +246,16 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
       'await userEvent.click(button);\n    await expect(args.onClick).toHaveBeenCalled();',
     ),
     *mutate(path, t) {
-      const copy = placedInteractionAt(path)?.following.copy;
+      const statements = [
+        placedInteractionAt(path)?.following.copy,
+        path.node,
+      ].filter((node) => t.isNode(node) && t.isStatement(node));
 
-      if (!path.isStatement() || !t.isNode(copy) || !t.isStatement(copy)) {
+      if (statements.length < 2) {
         return;
       }
 
-      yield t.blockStatement([t.cloneNode(copy), t.cloneNode(path.node)]);
+      yield t.blockStatement(statements.map((node) => t.cloneNode(node)));
     },
   };
 }

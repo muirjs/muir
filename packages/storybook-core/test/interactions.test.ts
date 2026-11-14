@@ -367,6 +367,54 @@ const kindCases: readonly KindCase[] = [
     source: `export const Story = {\n  beforeEach: withUser(async ({ userEvent }) => {\n    await userEvent.click(button);\n  }),\n};\n`,
     expect: ['userEvent click unproven'],
   },
+  {
+    title:
+      'an interaction in a class field named beforeEach stands in no hook, as only an object property or method of that name is one',
+    source: inPlay(
+      'class Page {',
+      '  beforeEach = async () => {',
+      '    await userEvent.click(button);',
+      '  };',
+      '}',
+    ),
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      'an interaction in a function named beforeEach that is only a computed key stands in no hook',
+    source: `async function beforeEach({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  [beforeEach]: true,\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'an interaction in a function a call wraps, held in a local and given as a beforeEach, stands in no hook',
+    source: `const setup = withUser(async ({ userEvent }) => {\n  await userEvent.click(button);\n});\nexport default {\n  beforeEach: setup,\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'an interaction in a function a const destructures, given by a destructured name as a beforeEach, stands in no hook',
+    source: `const { call: setup } = async ({ userEvent }) => {\n  await userEvent.click(button);\n};\nexport default {\n  beforeEach: setup,\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click in a method under a computed key, which need not be play, is of unproven origin',
+    source: `const play = 'x';\nexport default { title: 'Form' };\nexport const Form = {\n  async [play]({ userEvent }) {\n    await userEvent.click(button);\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title: 'a call of a private method on userEvent is no interaction',
+    source: inPlay(
+      'class Page {',
+      '  #click() {}',
+      '  run() {',
+      '    userEvent.#click(button);',
+      '  }',
+      '}',
+    ),
+    expect: [],
+  },
 ];
 
 describe('interactionsOf kinds', () => {
@@ -564,6 +612,18 @@ describe('interactionsOf aimedAt', () => {
       ([program, interactions]) => {
         assert.equal(
           interactions.aimedAt(literalIn(program, 'Ada')) === undefined,
+          true,
+        );
+      },
+    );
+  });
+
+  it('gives none for a node with no call around it, though an interaction has no target', () => {
+    readsOf(inPlay("const label = 'Save';", 'button.blur();')).forEach(
+      ([program, interactions]) => {
+        assert.equal(
+          interactions.aimedAt(literalIn(program, 'Save')) === undefined &&
+            interactions.all.length === 1,
           true,
         );
       },

@@ -44,6 +44,13 @@ function isNegativeOnly({ following: { checks, end } }: Interaction): boolean {
   );
 }
 
+const clickOrHover: ReadonlySet<string | undefined> = new Set([
+  'click',
+  'hover',
+]);
+
+const typeOrClear: ReadonlySet<string | undefined> = new Set(['type', 'clear']);
+
 /** A user-event click or hover directly before a user-event 14 `type` of an equivalent target that keeps the click. */
 function isClickBeforeType(
   interaction: Interaction,
@@ -57,7 +64,7 @@ function isClickBeforeType(
 
   return (
     interaction.kind === 'userEvent' &&
-    ['click', 'hover'].includes(interaction.method ?? '') &&
+    clickOrHover.has(interaction.method) &&
     next?.kind === 'userEvent' &&
     next.method === 'type' &&
     next.origin === 'userEvent14' &&
@@ -77,7 +84,7 @@ function isClearedLater(
       : undefined;
 
   return (
-    ['type', 'clear'].includes(interaction.method ?? '') &&
+    typeOrClear.has(interaction.method) &&
     later?.method === 'clear' &&
     checks.length === 0
   );
