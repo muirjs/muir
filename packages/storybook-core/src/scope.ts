@@ -64,15 +64,17 @@ const nameKeys: ReadonlyMap<unknown, readonly string[]> = new Map([
   ['PrivateName', ['id']],
   ['ClassExpression', ['id']],
   ['ClassDeclaration', ['id']],
+  ['TSDeclareMethod', ['params']],
 ]);
 
-/** The keys under which a node of each type holds a name that reads no binding unless the node is computed: a member's property, a property's or class field's key. A method's key is read where functions are, and a private key is a `PrivateName`, which reads nothing. */
+/** The keys under which a node of each type holds a name that reads no binding unless the node is computed: a member's property, a property's, class field's or overload signature's key. A method's key is read where functions are, and a private key is a `PrivateName`, which reads nothing. */
 const keyNames: ReadonlyMap<unknown, readonly string[]> = new Map([
   ['MemberExpression', ['property']],
   ['OptionalMemberExpression', ['property']],
   ['ObjectProperty', ['key']],
   ['ClassProperty', ['key']],
   ['ClassAccessorProperty', ['key']],
+  ['TSDeclareMethod', ['key']],
 ]);
 
 /** The keys that hold TypeScript types, which read no value binding. Babel 7 puts a call's type arguments under `typeParameters`, Babel 8 under `typeArguments`. A return type needs no key: Babel wraps it in a `TSTypeAnnotation`, whose `typeAnnotation` is skipped. */
@@ -92,6 +94,7 @@ const typeDeclarations: readonly unknown[] = [
   'TSDeclareFunction',
   'TSEnumDeclaration',
   'TSImportEqualsDeclaration',
+  'TSIndexSignature',
 ];
 
 /** The children of `node` that may read or write a binding: not its types or labels. */

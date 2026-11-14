@@ -789,6 +789,31 @@ const readCases: readonly ReadCase[] = [
     names: [],
   },
   {
+    title: "an overload signature's key is no read",
+    lines: ['class Page {', '  open(): Driver;', '}'],
+    names: [],
+  },
+  {
+    title: "an overload signature's parameters are no read",
+    lines: ['class Page {', '  open(user: Driver): Driver;', '}'],
+    names: [],
+  },
+  {
+    title: "an abstract method's key is no read",
+    lines: ['abstract class Page {', '  abstract close(): void;', '}'],
+    names: [],
+  },
+  {
+    title: "an overload signature's computed key is a read",
+    lines: ['class Page {', '  [open](): Driver;', '}'],
+    names: ['open'],
+  },
+  {
+    title: "a class index signature's parameter is no read",
+    lines: ['class Page {', '  [slot: string]: unknown;', '}'],
+    names: [],
+  },
+  {
     title: 'an import equals declaration reads no name',
     lines: ['import Steps = Driver.Steps;'],
     names: [],
