@@ -141,7 +141,6 @@ describe('definitionTimeStubs', () => {
         start: source.indexOf('(fn()'),
         end: source.lastIndexOf(')') + 1,
         line: 2,
-        hasArguments: true,
         spyCall: {
           start: source.indexOf('fn()'),
           end: source.indexOf('fn()') + 'fn()'.length,

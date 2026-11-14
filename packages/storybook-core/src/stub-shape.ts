@@ -39,7 +39,6 @@ export function writtenMethodOf({
 export interface StubSite extends StubMethodCall, Span {
   readonly spy: string;
   readonly line: number;
-  readonly hasArguments: boolean;
   /** The spy call's span, inside any parentheses, cast or non-null assertion around it. */
   readonly spyCall: Span;
   readonly methodStart: number;
@@ -138,7 +137,6 @@ function stubSite(
     start,
     end,
     line,
-    hasArguments: list(field(node, 'arguments')).length > 0,
     spyCall: { start: spyCallStart, end: spyCallEnd },
     methodStart,
     calleeEnd,

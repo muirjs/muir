@@ -67,19 +67,11 @@ export function transform(
 /** Replaces the spy call with `fn(((value) => () => value)(<arguments>))`, moving the stub's arguments into it, and removes the stub call from the chain. */
 function rewriteStub(
   output: MagicString,
-  { spy, method, end, spyCall, hasArguments }: StubSite,
+  { spy, method, end, spyCall }: StubSite,
   accessStart: number,
   listStart: number,
 ): void {
   const [open, close] = implementationWrappers[method];
-
-  if (!hasArguments) {
-    output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}${close})`);
-    output.remove(accessStart, end);
-
-    return;
-  }
-
   const listEnd = end - ')'.length;
 
   output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}`);
