@@ -1,4 +1,10 @@
-import { field, isRecord, list, writtenMethodOf } from '@layzee/storybook-core';
+import {
+  field,
+  isRecord,
+  list,
+  writtenMethodOf,
+  type WrittenStubMethod,
+} from '@layzee/storybook-core';
 
 import { parseProgram } from './parse.ts';
 import type { StorybookProject } from './storybook-project.ts';
@@ -12,8 +18,7 @@ import {
 
 export interface SiteFinding extends SpyStubReason {
   readonly line: number;
-  /** The stub method as the story writes it, such as `mockResolvedValueOnce`. */
-  readonly method: string;
+  readonly method: WrittenStubMethod;
 }
 
 interface DirectiveRule {

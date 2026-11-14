@@ -27,10 +27,12 @@ export function stubMethodOf(name: unknown): StubMethodCall | undefined {
 }
 
 /** The spy method name of a stub method call, the reverse of `stubMethodOf`. */
+export type WrittenStubMethod = StubMethod | `${StubMethod}Once`;
+
 export function writtenMethodOf({
   method,
   once,
-}: StubMethodCall): StubMethod | `${StubMethod}Once` {
+}: StubMethodCall): WrittenStubMethod {
   return once ? `${method}Once` : method;
 }
 
