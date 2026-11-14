@@ -1,4 +1,4 @@
-import { isCall } from './csf-nodes.ts';
+import { isCall, unwrap } from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 
@@ -177,7 +177,8 @@ export function mockTransformerRewrite(
 /** The spy methods that are no stub but return the spy and leave what it returns alone, so a stub chain goes on through them. */
 const passedThrough: ReadonlySet<unknown> = new Set(['mockName', 'mockClear']);
 
-function chainStart(node: unknown): unknown {
+function chainStart(written: unknown): unknown {
+  const node = unwrap(written);
   const name = field(node, 'callee', 'property', 'name');
   const chainsOn =
     isCall(node) &&

@@ -34,6 +34,16 @@ describe('definitionTimeStubs', () => {
       [{ spy: 'fn', method: 'mockReturnValue', once: false }],
     ],
     [
+      'finds a stub on a spy call written with as',
+      "import { fn } from 'storybook/test';\n(fn() as any).mockReturnValue(1);",
+      [{ spy: 'fn', method: 'mockReturnValue', once: false }],
+    ],
+    [
+      'finds a stub on a spy call written with a non-null assertion',
+      "import { fn } from 'storybook/test';\nfn()!.mockReturnValue(1);",
+      [{ spy: 'fn', method: 'mockReturnValue', once: false }],
+    ],
+    [
       'finds a stub whose method is read through optional chaining',
       "import { fn } from 'storybook/test';\nfn()?.mockReturnValue(1);",
       [{ spy: 'fn', method: 'mockReturnValue', once: false }],
