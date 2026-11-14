@@ -110,7 +110,7 @@ function hooksOf(
   const wrapped = (node: unknown): unknown => {
     const parent = tree.parentOf(node);
 
-    return unwrap(parent) === node ? wrapped(parent) : node;
+    return unwrap(parent) === unwrap(node) ? wrapped(parent) : node;
   };
   const isHookValue = (node: unknown): boolean => {
     const element = wrapped(node);
