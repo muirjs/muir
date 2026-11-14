@@ -16,8 +16,9 @@ import { fileURLToPath } from 'node:url';
 import { appendRecord, isRecord, recordVariable } from '@layzee/storybook-core';
 import { PlanKind, type schema } from '@stryker-mutator/api/core';
 
-import { storybookReporter } from '../src/reporter.ts';
+import { storybookReporter, storyFileFindings } from '../src/reporter.ts';
 import { describeVerdict, spyStubReason } from '../src/stub-verdict.ts';
+import { untaggedPreviewTestTags } from './support/test-tags.ts';
 import recorded from './fixtures/reporter/mutation.json' with { type: 'json' };
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -1105,6 +1106,33 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [],
+    );
+  });
+});
+
+describe('storyFileFindings', () => {
+  it('lets a RangeError from reading the source through, since only reading the tree may skip a file', () => {
+    const tooLarge = new RangeError('File size is greater than 2 GiB');
+
+    assert.throws(
+      () =>
+        storyFileFindings(
+          'src/Big.stories.tsx',
+          () => {
+            throw tooLarge;
+          },
+          {
+            configDir: '.storybook',
+            storyFiles: 'fallback',
+            transformer: 'seen',
+            previewTest: {},
+            testTags: untaggedPreviewTestTags,
+          },
+          (message) => {
+            throw new Error(`unexpected warning: ${message}`);
+          },
+        ),
+      (error) => error === tooLarge,
     );
   });
 });
