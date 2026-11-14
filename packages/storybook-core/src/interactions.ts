@@ -100,43 +100,35 @@ function callAround(tree: TreeIndex, node: unknown): unknown {
   );
 }
 
-/** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function given there by its name that is declared in the file, is the initial value of a variable or is given to it by an `=` write, also under parentheses or a cast around that value, the property's value, the array or an element. */
-function hooksOf(
-  program: unknown,
-  tree: TreeIndex,
-  scope: FileScope,
-): ReadonlySet<unknown> {
-  /** `node` with every parenthesis or cast around it. */
-  const wrapped = (node: unknown): unknown => {
-    const parent = tree.parentOf(node);
-
-    return unwrap(parent) === unwrap(node) ? wrapped(parent) : node;
-  };
-  const isHookValue = (node: unknown): boolean => {
-    const element = wrapped(node);
-    const parent = tree.parentOf(element);
-    const value =
-      field(parent, 'type') === 'ArrayExpression' ? wrapped(parent) : element;
-    const property = tree.parentOf(value);
-
-    return (
-      field(property, 'type') === 'ObjectProperty' &&
-      field(property, 'value') === value &&
-      hooks.has(field(property, 'key', 'name'))
-    );
-  };
-
+/**
+ * The `beforeEach` and `afterEach` functions of a file: a method of such a name, and the value of such a property or
+ * each element of its array. A value is a function, or a name that holds the functions `functionsOf` gives. The
+ * property's value, the array and each element are read through parentheses and casts.
+ */
+function hooksOf(program: unknown, scope: FileScope): ReadonlySet<unknown> {
   return new Set(
     descendants(program).flatMap((node): readonly unknown[] => {
-      if (field(node, 'type') === 'ObjectMethod') {
-        return hooks.has(field(node, 'key', 'name')) ? [node] : [];
-      }
-
-      if (!isHookValue(node)) {
+      if (!hooks.has(field(node, 'key', 'name'))) {
         return [];
       }
 
-      return isFunction(node) ? [node] : functionsOf(scope.bindingOf(node));
+      if (field(node, 'type') === 'ObjectMethod') {
+        return [node];
+      }
+
+      if (field(node, 'type') !== 'ObjectProperty') {
+        return [];
+      }
+
+      const value = unwrap(field(node, 'value'));
+      const values =
+        field(value, 'type') === 'ArrayExpression'
+          ? list(field(value, 'elements')).map(unwrap)
+          : [value];
+
+      return values.flatMap((each) =>
+        isFunction(each) ? [each] : functionsOf(scope.bindingOf(each)),
+      );
     }),
   );
 }
@@ -150,7 +142,7 @@ export function interactionsOf(
   const scope = fileScope(program);
   const isInTestCode = (node: unknown): boolean =>
     [node, ...tree.ancestors(node)].some((each) => shapes.testCode.has(each));
-  const hookFunctions = hooksOf(program, tree, scope);
+  const hookFunctions = hooksOf(program, scope);
   const isInHook = (node: unknown): boolean =>
     [node, ...tree.ancestors(node)].some((each) => hookFunctions.has(each));
   const isUnderComputedKey = (node: unknown): boolean =>

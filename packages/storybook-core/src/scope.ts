@@ -127,7 +127,7 @@ function declaredFunction(binding: Binding | undefined): unknown {
     : undefined;
 }
 
-/** The functions a binding may name: the one it is declared with, and each one an `=` write gives it, through any parentheses or cast. */
+/** The functions a binding may name: the one it is declared with, and each one an `=` write gives it, through any parentheses, cast or non-null assertion; none for `undefined`. */
 export function functionsOf(binding: Binding | undefined): readonly unknown[] {
   return [
     declaredFunction(binding),
