@@ -72,9 +72,7 @@ export function interactionHints(
       return [];
     }
 
-    const program = parsed(source, file, warn);
-    const interactions =
-      program === undefined ? undefined : interactionsIn(program, file, warn);
+    const interactions = interactionsOfSource(source, file, warn);
 
     if (interactions === undefined) {
       return [];
@@ -116,13 +114,16 @@ function survivingName({
     : undefined;
 }
 
-function parsed(
+/** The interactions of `source`; `undefined`, after a warning naming `file`, when Babel cannot parse it or reading it fails. */
+function interactionsOfSource(
   source: string,
   file: string,
   warn: (message: string) => void,
-): ReturnType<typeof parseProgram> | undefined {
+): StoryInteractions | undefined {
+  let program: ReturnType<typeof parseProgram>;
+
   try {
-    return parseProgram(source, file);
+    program = parseProgram(source, file);
   } catch (error) {
     warn(
       `${packageName}: Babel could not parse ${file}, so lz-storybook gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
@@ -130,19 +131,29 @@ function parsed(
 
     return undefined;
   }
+
+  return skippedOnRangeError(
+    () => interactionsOf(program, csfShapes(program)),
+    (message) =>
+      warn(
+        `${packageName}: lz-storybook could not read the interactions of ${file}, so it gave no interaction hints for it: ${message}`,
+      ),
+  );
 }
 
-function interactionsIn(
-  program: ReturnType<typeof parseProgram>,
-  file: string,
+/** What `read` gives, or `undefined` once `warn` has the message of a `RangeError` it throws, as a crafted deep file overflows the stack; any other error is a bug and propagates. */
+export function skippedOnRangeError<T>(
+  read: () => T,
   warn: (message: string) => void,
-): StoryInteractions | undefined {
+): T | undefined {
   try {
-    return interactionsOf(program, csfShapes(program));
+    return read();
   } catch (error) {
-    warn(
-      `${packageName}: lz-storybook could not read the interactions of ${file}, so it gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
+
+    warn(error.message);
 
     return undefined;
   }

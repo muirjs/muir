@@ -13,6 +13,7 @@ import {
   interactionHints,
   interactionMutatorNames,
   type ReportFiles,
+  skippedOnRangeError,
 } from '../src/interaction-hints.ts';
 import { shapesOf } from '../src/interaction-shapes.ts';
 import { parseProgram } from '../src/parse.ts';
@@ -251,7 +252,7 @@ describe('interactionHints', () => {
             ...placed,
             source: inPlay(
               "await userEvent.click(canvas.getByRole('button'));",
-              `x${'.a'.repeat(2600)} = 1;`,
+              `x${'.a'.repeat(20_000)} = 1;`,
             ),
           },
           [file]: placed,
@@ -264,6 +265,20 @@ describe('interactionHints', () => {
     assert.match(
       warnings[0] ?? '',
       /^@layzee\/stryker-storybook: lz-storybook could not read the interactions of src\/Deep\.stories\.tsx, so it gave no interaction hints for it: Maximum call stack size exceeded$/,
+    );
+  });
+
+  it('lets an error other than a RangeError from a file read through, so a reader bug fails the report', () => {
+    const bug = new TypeError(
+      "Cannot read properties of undefined (reading 'x')",
+    );
+
+    assert.throws(
+      () =>
+        skippedOnRangeError(() => {
+          throw bug;
+        }, failOnWarning),
+      (error) => error === bug,
     );
   });
 
