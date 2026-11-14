@@ -5,12 +5,14 @@ import {
   isUnknownPlay,
   list,
   propertyKey,
+  readNamingStoryFile,
   sitesOf,
   type Proven,
   type SiteRun,
 } from '@layzee/storybook-core';
 
 import type { LzStorybookMutator } from './mutator.ts';
+import { packageName } from './package-name.ts';
 
 type Key = NonNullable<ReturnType<typeof propertyKey>>;
 
@@ -104,16 +106,19 @@ export function sitesIn(program: NodePath): Sites {
     return cached;
   }
 
-  const functions: ReadonlyMap<unknown, NodePath> = new Map(
-    descendants(program)
-      .filter((path) => path.isFunction())
-      .map((path) => [path.node, path] as const),
-  );
-  const sites = argsSites(
-    list(field(program.node, 'body')),
-    fileNameOf(program),
-    (fn) => keysRead(functions.get(fn)),
-  );
+  const sites = readNamingStoryFile(packageName, program, () => {
+    const functions: ReadonlyMap<unknown, NodePath> = new Map(
+      descendants(program)
+        .filter((path) => path.isFunction())
+        .map((path) => [path.node, path] as const),
+    );
+
+    return argsSites(
+      list(field(program.node, 'body')),
+      fileNameOf(program),
+      (fn) => keysRead(functions.get(fn)),
+    );
+  });
 
   sitesByProgram.set(program.node, sites);
 
