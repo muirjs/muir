@@ -17,7 +17,7 @@ import {
   memberName,
   type TreeIndex,
 } from './node-tree.ts';
-import { declaredFunction, type FileScope, fileScope } from './scope.ts';
+import { type FileScope, fileScope, functionsOf } from './scope.ts';
 import {
   type UserEventOrigin,
   userEventMethods,
@@ -100,7 +100,7 @@ function callAround(tree: TreeIndex, node: unknown): unknown {
   );
 }
 
-/** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function given there by its name that is declared in the file or is the initial value of a variable, also under parentheses or a cast around that value, the property's value, the array or an element. */
+/** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function given there by its name that is declared in the file, is the initial value of a variable or is given to it by an `=` write, also under parentheses or a cast around that value, the property's value, the array or an element. */
 function hooksOf(
   program: unknown,
   tree: TreeIndex,
@@ -127,16 +127,16 @@ function hooksOf(
   };
 
   return new Set(
-    descendants(program).map((node): unknown => {
+    descendants(program).flatMap((node): readonly unknown[] => {
       if (field(node, 'type') === 'ObjectMethod') {
-        return hooks.has(field(node, 'key', 'name')) ? node : undefined;
+        return hooks.has(field(node, 'key', 'name')) ? [node] : [];
       }
 
       if (!isHookValue(node)) {
-        return undefined;
+        return [];
       }
 
-      return isFunction(node) ? node : declaredFunction(scope.bindingOf(node));
+      return isFunction(node) ? [node] : functionsOf(scope.bindingOf(node));
     }),
   );
 }

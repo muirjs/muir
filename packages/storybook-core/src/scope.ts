@@ -114,7 +114,7 @@ function readChildren(node: unknown): readonly unknown[] {
 }
 
 /** The function a binding names: `function <name>() {}`, or `<let | const | var> <name> = <function>`, through any parentheses, cast or non-null assertion around the function. */
-export function declaredFunction(binding: Binding | undefined): unknown {
+function declaredFunction(binding: Binding | undefined): unknown {
   if (binding?.kind === 'function') {
     return binding.declaration;
   }
@@ -125,6 +125,16 @@ export function declaredFunction(binding: Binding | undefined): unknown {
   return field(declaration, 'id') === binding?.identifier && isFunction(init)
     ? init
     : undefined;
+}
+
+/** The functions a binding may name: the one it is declared with, and each one an `=` write gives it, through any parentheses or cast. */
+export function functionsOf(binding: Binding | undefined): readonly unknown[] {
+  return [
+    declaredFunction(binding),
+    ...(binding?.writes ?? [])
+      .filter((write) => field(write, 'operator') === '=')
+      .map((write) => unwrap(field(write, 'right'))),
+  ].filter(isFunction);
 }
 
 /** Resolves every name of `program` as Babel's scope does, in one walk: declarations first, then each read or write by its name up the scopes it stands in, so a `var` or function declaration below a read is found. */

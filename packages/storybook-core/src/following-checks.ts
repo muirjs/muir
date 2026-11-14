@@ -1,4 +1,4 @@
-import { isCall, isMember, unwrap } from './csf-nodes.ts';
+import { isCall, isMember } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -11,7 +11,7 @@ import {
   memberName,
   type TreeIndex,
 } from './node-tree.ts';
-import { type Binding, declaredFunction, type FileScope } from './scope.ts';
+import { type Binding, type FileScope, functionsOf } from './scope.ts';
 
 export interface Check {
   readonly node: unknown;
@@ -345,16 +345,6 @@ function bindingsReadThroughFunctions(
       });
 
   return readBy(statement);
-}
-
-/** The functions a binding may name: the one it is declared with, and each one an `=` write gives it, through any parentheses or cast. */
-function functionsOf(binding: Binding): readonly unknown[] {
-  return [
-    declaredFunction(binding),
-    ...binding.writes
-      .filter((write) => field(write, 'operator') === '=')
-      .map((write) => unwrap(field(write, 'right'))),
-  ].filter(isFunction);
 }
 
 /** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */
