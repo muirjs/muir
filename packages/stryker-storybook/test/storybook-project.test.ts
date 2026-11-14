@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
@@ -410,6 +417,28 @@ describe('storybookProject', () => {
       );
 
       assert.deepEqual(project.testTags.exclude, ['flaky']);
+    });
+
+    it('reads the tag filter of the Storybook project that tests the story files through a path that is not their real one', () => {
+      // Storybook found no story file through a junction in the temp folder, which can be on another drive than the working directory.
+      const tmp = fileURLToPath(new URL('../../../tmp/', import.meta.url));
+      mkdirSync(tmp, { recursive: true });
+      const root = mkdtempSync(join(tmp, 'lz-storybook-link-'));
+      const linked = join(root, 'vitest-tags');
+
+      try {
+        symlinkSync(join(fixtures, 'vitest-tags'), linked, 'junction');
+
+        const project = storybookProject(
+          join(linked, '.storybook'),
+          { info: () => undefined, warn: () => undefined },
+          join(linked, 'vitest.several.config.ts'),
+        );
+
+        assert.deepEqual(project.testTags.exclude, ['flaky']);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
     });
 
     it('reads the tag filter of the Storybook project when Storybook lists no story file', () => {

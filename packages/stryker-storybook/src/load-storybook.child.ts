@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { realpathSync, writeFileSync } from 'node:fs';
 import { register } from 'node:module';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -97,7 +97,9 @@ async function testTags(
       );
       const env: unknown = (
         storybookProjects.find((project) =>
-          storyFiles.some((file) => project.matchesTestGlob(file)),
+          storyFiles.some((file) =>
+            project.matchesTestGlob(realpathSync.native(file)),
+          ),
         ) ?? storybookProjects[0]
       )?.config.env;
 
