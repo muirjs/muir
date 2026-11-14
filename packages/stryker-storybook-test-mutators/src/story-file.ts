@@ -2,10 +2,13 @@ import type { NodePath, types } from '@babel/core';
 import {
   type CsfShapes,
   csfShapes,
+  field,
   type Interaction,
   interactionsOf,
   type StoryInteractions,
 } from '@layzee/storybook-core';
+
+import { packageName } from './package-name.ts';
 
 /** What `read` gives for the Program around a path, read once per Program; `outsideProgram` when there is none. */
 export function perFile<T>(
@@ -29,12 +32,29 @@ export function perFile<T>(
       return cached;
     }
 
-    const value = read(program);
+    const value = readNamingFile(read, program);
 
     byProgram.set(program.node, value);
 
     return value;
   };
+}
+
+/** What `read` gives for `program`; an error it throws comes back with the story file's path in its message. */
+function readNamingFile<T>(
+  read: (program: NodePath<types.Program>) => T,
+  program: NodePath<types.Program>,
+): T {
+  try {
+    return read(program);
+  } catch (error) {
+    const file = String(field(program.hub, 'file', 'opts', 'filename'));
+
+    throw new Error(
+      `${packageName}: could not read the story file ${file}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
+  }
 }
 
 const storyFileOf = perFile<CsfShapes | undefined>(

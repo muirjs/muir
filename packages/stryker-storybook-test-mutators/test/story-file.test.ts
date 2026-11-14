@@ -1,10 +1,16 @@
-// A line-range `--mutate` leaves the Program out of the range, so Stryker first calls a mutator below it. These cases
-// call a mutator at a statement first, replace an earlier node with a mutant switch as Stryker does on leaving a
+// A line-range `--mutate` leaves the Program out of the range, so Stryker first calls a mutator below it. The
+// line-range cases call a mutator at a statement first, replace an earlier node with a mutant switch as Stryker does on leaving a
 // statement, then call it at a later node: what the mutator read of the file must be the file before the switch.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { parseSync, traverse, types, type NodePath } from '@babel/core';
+import {
+  parseSync,
+  transformSync,
+  traverse,
+  types,
+  type NodePath,
+} from '@babel/core';
 
 import {
   assertionBeforeMutator,
@@ -237,4 +243,48 @@ test('LzStorybookStoryGlobals mutates story globals after a mutant is placed ear
     mutantTypes(mutator, file.at('{ viewport: { value', 'ObjectExpression')),
     ['ObjectExpression'],
   );
+});
+
+test('LzStorybookInteraction names the story file when reading it overflows the stack', () => {
+  const errors: unknown[] = [];
+  const mutator = interactionMutator();
+
+  transformSync(
+    [
+      'export const Story = {',
+      '  play: async ({ canvas, userEvent }) => {',
+      "    await userEvent.click(canvas.getByRole('button'));",
+      `    x${'.a'.repeat(2300)} = 1;`,
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    {
+      configFile: false,
+      babelrc: false,
+      filename: 'deep.stories.ts',
+      code: false,
+      parserOpts: { plugins: ['typescript'] },
+      plugins: [
+        () => ({
+          visitor: {
+            Program(path: NodePath) {
+              try {
+                mutantTypes(mutator, path);
+              } catch (error) {
+                errors.push(error);
+              }
+
+              path.stop();
+            },
+          },
+        }),
+      ],
+    },
+  );
+
+  const [error] = errors;
+  assert.ok(error instanceof Error);
+  assert.match(error.message, /deep\.stories\.ts/);
+  assert.ok(error.cause instanceof RangeError);
 });
