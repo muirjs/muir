@@ -29,11 +29,7 @@ export interface StoryReset {
   readonly branch: ResetBranch;
 }
 
-export interface ClassifiedStub
-  extends Pick<
-    StubSite,
-    'start' | 'end' | 'spyCall' | 'line' | 'method' | 'once'
-  > {
+export interface ClassifiedStub extends StubSite {
   readonly verdict: StubVerdict;
 }
 

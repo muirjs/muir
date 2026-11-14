@@ -52,10 +52,10 @@ export function siteFindings(
 
   return sites
     .filter((site) => !silenced.has(site))
-    .map(({ line, verdict, ...stub }) => ({
-      line,
-      method: writtenMethodOf(stub),
-      ...describeVerdict(verdict),
+    .map((site) => ({
+      line: site.line,
+      method: writtenMethodOf(site),
+      ...describeVerdict(site.verdict),
     }));
 }
 

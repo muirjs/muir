@@ -59,7 +59,7 @@ export interface SpyStubReason {
   readonly fix: string;
 }
 
-/** A node the lz-storybook ignorer ignores: a stub call with every stub before it in its chain, or only its arguments. */
+/** A node the lz-storybook ignorer ignores: a stub call with everything before it in its chain (the spy call, every stub and any `mockName` or `mockClear` call, with their arguments), or only its arguments. */
 export interface StubIgnore {
   readonly start: number;
   readonly end: number;
@@ -101,7 +101,7 @@ export function stubIgnores(
       start,
       end,
       covers: 'call',
-      reason: chain.every((site) => site.verdict === verdict)
+      reason: chain.every((other) => other.verdict === verdict)
         ? spyStubReason(verdict)
         : unrewrittenChainReason,
     };
