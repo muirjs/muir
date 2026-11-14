@@ -314,6 +314,42 @@ describe('mayImportItself', () => {
     );
   });
 
+  it('holds for an export from a path alias whose last segment names the file, in either parsed shape', () => {
+    assert.deepEqual(
+      [
+        "export * from '@/components/Button.stories';",
+        "export { Primary } from '@/components/Button.stories';",
+      ].map((source) =>
+        programsOf(source).map(({ body }) =>
+          mayImportItself(body, 'Button.stories.ts'),
+        ),
+      ),
+      [
+        [true, true],
+        [true, true],
+      ],
+    );
+  });
+
+  it('does not hold for another import.meta call, a glob on another object, or a glob on new.target, in either parsed shape', () => {
+    assert.deepEqual(
+      [
+        "const resolved = import.meta.resolve('some-package');",
+        "const files = fs.glob('*.stories.ts');",
+        'function make() { return new.target.glob(); }',
+      ].map((source) =>
+        programsOf(source).map(({ body }) =>
+          mayImportItself(body, 'Button.stories.ts'),
+        ),
+      ),
+      [
+        [false, false],
+        [false, false],
+        [false, false],
+      ],
+    );
+  });
+
   it('holds for an import.meta.glob call, whose pattern may match the file, in either parsed shape', () => {
     assert.deepEqual(
       programsOf(

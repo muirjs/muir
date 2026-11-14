@@ -640,9 +640,9 @@ function withoutScriptExtension(path: string): string {
   return path.replace(/\.[cm]?[jt]sx?$/, '');
 }
 
+/** A call of `import.meta.glob`: only a `MetaProperty` node has a `meta` field. */
 function isImportMetaGlob(node: unknown): boolean {
   return (
-    field(node, 'callee', 'object', 'type') === 'MetaProperty' &&
     field(node, 'callee', 'object', 'meta', 'name') === 'import' &&
     field(node, 'callee', 'property', 'name') === 'glob'
   );
