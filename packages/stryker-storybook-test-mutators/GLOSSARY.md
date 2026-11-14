@@ -44,7 +44,7 @@ Three kinds of statement are not copied:
 - one that reads a name declared or written from the start of the interaction up to that statement. A function
   declaration there counts only by its writes, since hoisting declares it before the interaction. The names a
   statement reads include those that each function it names reads from outside its body, where the function is
-  declared or held in a variable declared with it, and so on for each function those name;
+  declared or is the initial value of a variable, and so on for each function those name;
 - one whose equal already stands before the interaction in the outermost function around it.
 
 A negative check and a `toHaveBeenCalledTimes(0)` check are copied like any other. `@layzee/storybook-core` picks the

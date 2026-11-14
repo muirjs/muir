@@ -71,6 +71,7 @@
   the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
   Playwright runner. Inside it, the mock transformer writes the transformer record that the `lz-storybook` reporter
   reads, and both take the stub shape and the rule for which stubs the transformer rewrites from
-  `@layzee/storybook-core`. The reporter reads interactions with the same
+  `@layzee/storybook-core`; past that rule, the transformer drops a stub that stands in another rewritten stub's spy
+  call. The reporter reads interactions with the same
   `@layzee/storybook-core` interaction reader as the Storybook test mutators, on its own parse of each story file in
   the report.

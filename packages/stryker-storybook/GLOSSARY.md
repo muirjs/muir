@@ -178,7 +178,7 @@ A call that sets what a spy made with `fn()` from `storybook/test` returns or do
 `mockResolvedValue`, `mockRejectedValue`, `mockImplementation`, or their `Once` forms, chained on the spy. In a
 chain such as `fn().mockResolvedValueOnce(1).mockRejectedValue(error)`, each of these calls is a spy stub of its own.
 A chain goes on through `mockName` and `mockClear`, which leave what the spy returns alone, but stops at any other
-call, so no stub after `mockReturnThis` or `mockReset` is a spy stub.
+call, so the package reads no stub after `mockReturnThis` or `mockReset`.
 _Avoid_: mock setup, stub (alone), mock implementation
 
 **Definition-time stub**:
@@ -277,7 +277,9 @@ _Avoid_: slow mutant
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
 form, which survives the mock reset. It rewrites a stub only when it is the first of its chain and not one of the
 `Once` forms, and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
-run before the arguments of a `mockName` call between them and the spy call. The `lz-storybook` report gives an erased `Once`
+run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets or
+resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
+the reset, where the story as written gets none. The `lz-storybook` report gives an erased `Once`
 stub the verdict `once-not-rewritten`, and an erased stub after the first of a chain that is not a `Once` stub the
 verdict `chain-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
