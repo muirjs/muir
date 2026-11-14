@@ -1,4 +1,4 @@
-import { type Case, inStory } from './support/case.ts';
+import { type Case, inFactoryFile, inStory } from './support/case.ts';
 
 const args = 'LzStorybookArgs';
 
@@ -317,5 +317,50 @@ export const readCases: readonly Case[] = [
       'play: async ({ args: { [key]: value } }) => { value; },',
     ),
     expect: [],
+  },
+  {
+    id: 'meta-key-play-reads',
+    title: 'a meta key that the play of a story taking it reads stays',
+    source:
+      "export default { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      'export const Primary = { play: async ({ args }) => { log(args.label); } };\n',
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'meta-key-read-where-given',
+    title:
+      'a meta key read only by a story that gives the key itself is removed, as that play reads the story value',
+    source:
+      "export default { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      "export const Long = { args: { label: 'b' }, play: async ({ args }) => { log(args.label); } };\n" +
+      'export const Other = { play: async () => {} };\n',
+    expect: [
+      [args, "{ size: 's' }"],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
+    id: 'meta-key-test-reads',
+    title:
+      'a meta key that a .test() function of a story taking it reads stays',
+    source: inFactoryFile(
+      "const meta = preview.meta({ title: 'Button', args: { label: 'a', size: 's' } });",
+      'export const Primary = meta.story({});',
+      "Primary.test('t', async ({ args }) => { log(args.size); });",
+    ),
+    expect: [[args, "{ size: 's' }"]],
+  },
+  {
+    id: 'meta-args-spread-into-story',
+    title:
+      "a meta key that a story spreads from the meta's args and its play reads stays",
+    source:
+      "const meta = { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      'export default meta;\n' +
+      'export const Primary = { args: { ...meta.args, disabled: true }, play: async ({ args }) => { log(args.label); } };\n',
+    expect: [
+      [args, "{ label: 'a' }"],
+      [args, '{ ...meta.args }'],
+    ],
   },
 ];

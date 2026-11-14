@@ -18,8 +18,8 @@ type Key = NonNullable<ReturnType<typeof propertyKey>>;
 type Reads = ReadonlySet<Key> | 'whole';
 
 interface Kept {
-  /** The keys a function that runs for the site reads. */
-  readonly read: ReadonlySet<Key>;
+  /** The keys a site rule leaves alone. */
+  readonly leftAlone: ReadonlySet<Key>;
   readonly proofs: readonly Proven[];
 }
 
@@ -72,7 +72,7 @@ export function argsMutator(): LzStorybookMutator & {
           property.type === 'ObjectProperty' &&
           !property.computed &&
           key !== undefined &&
-          !kept.read.has(key) &&
+          !kept.leftAlone.has(key) &&
           !kept.proofs.some((proof) => proof.property === property)
         );
       });
@@ -126,24 +126,55 @@ function argsSites(
   readsOf: (fn: unknown) => Reads,
 ): Sites {
   return new Map(
-    sitesOf(body, 'args', fileName).flatMap(({ node, runs, proofs }) => {
-      const read = union(runs.flatMap((run) => readersOf(run, readsOf)));
-
-      return runs.every(({ owner }) => owner === 'meta') || read === 'whole'
-        ? []
-        : [[node, { read, proofs }] as const];
-    }),
+    sitesOf(body, 'args', fileName).map(
+      ({ node, runs, proofs }) =>
+        [node, { leftAlone: leftAlone(node, runs, readsOf), proofs }] as const,
+    ),
   );
+}
+
+/** The keys of `site` a site rule leaves alone (ADR 0001, per key at the meta by ADR 0002): no run surely takes the key from the site, or a play or test function of a run that may take it reads it. */
+function leftAlone(
+  site: object,
+  runs: readonly SiteRun[],
+  readsOf: (fn: unknown) => Reads,
+): ReadonlySet<Key> {
+  const readers = runs.map((run) => ({
+    run,
+    reads: union(readersOf(run, readsOf)),
+  }));
+
+  return new Set(
+    list(field(site, 'properties'))
+      .map(propertyKey)
+      .filter((key) => key !== undefined)
+      .filter(
+        (key) =>
+          !readers.some(({ run }) => sourceOf(run, key) === 'site') ||
+          readers.some(
+            ({ run, reads }) =>
+              sourceOf(run, key) !== 'elsewhere' &&
+              (reads === 'whole' || reads.has(key)),
+          ),
+      ),
+  );
+}
+
+/** Where a run takes `key` from, seen from its site: a story or `.test()` run's site is its own top layer. */
+function sourceOf(run: SiteRun, key: Key): 'site' | 'elsewhere' | 'unknown' {
+  if (run.owner !== 'meta') {
+    return 'site';
+  }
+
+  const from = run.keyFrom(key);
+
+  return from === 'meta' ? 'site' : from;
 }
 
 function readersOf(
   run: SiteRun,
   readsOf: (fn: unknown) => Reads,
 ): readonly Reads[] {
-  if (run.owner === 'meta') {
-    return [];
-  }
-
   const { play, tests } = run.story;
   const playReads: readonly Reads[] =
     play === undefined ? [] : [isUnknownPlay(play) ? 'whole' : readsOf(play)];

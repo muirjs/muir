@@ -42,11 +42,15 @@ export const playCases: readonly Case[] = [
   },
   {
     id: 'meta-args',
-    title: "the meta's args make no mutant",
+    title:
+      "the meta's args make a mutant for each key a played story takes from the meta",
     source:
       "export default { title: 'Button', args: { label: 'a', disabled: true }, play: async () => {} };\n" +
       'export const Primary = {};\n',
-    expect: [],
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
   },
   {
     id: 'not-a-story',
@@ -628,5 +632,71 @@ export const playCases: readonly Case[] = [
       'Primary.test(`t`, ...all);',
     ),
     expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'meta-key-every-played-story-gives',
+    title:
+      'a meta key that every played story gives itself makes no mutant, as no play runs for it, though a story without a play takes it',
+    source:
+      "export default { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      "export const Played = { args: { label: 'b' }, play: async () => {} };\n" +
+      'export const Plain = {};\n',
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'meta-key-under-unknown-story-args',
+    title:
+      'a meta key makes no mutant when the only played story that may take it has args the file does not show',
+    source:
+      "import { shared } from './shared';\n" +
+      "export default { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      'export const A = { args: shared, play: async () => {} };\n' +
+      "export const B = { args: { label: 'b', size: 'm' }, play: async () => {} };\n",
+    expect: [
+      [args, "{ size: 'm' }"],
+      [args, "{ label: 'b' }"],
+    ],
+  },
+  {
+    id: 'meta-args-under-unknown-play',
+    title: "the meta's args make no mutant under a play from another module",
+    source:
+      "import { play } from './play';\n" +
+      "export default { title: 'Button', args: { label: 'a', size: 's' }, play };\n" +
+      'export const Primary = {};\n',
+    expect: [],
+  },
+  {
+    id: 'meta-args-no-played-story',
+    title: "the meta's args make no mutant when no story is played",
+    source:
+      "export default { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      'export const Primary = {};\n',
+    expect: [],
+  },
+  {
+    id: 'meta-key-extend-base-gives',
+    title:
+      'a meta key that the .extend() base of every played story gives makes no mutant',
+    source: inFactoryFile(
+      "const meta = preview.meta({ title: 'Button', args: { label: 'a', size: 's' } });",
+      "export const A = meta.story({ args: { label: 'b' } });",
+      'export const B = A.extend({ play: async () => {} });',
+    ),
+    expect: [[args, "{ label: 'a' }"]],
+  },
+  {
+    id: 'written-meta-keys-mutated',
+    title:
+      'a meta the file writes keeps a mutant for each key a played story takes from it',
+    source:
+      "const meta = { title: 'Button', args: { label: 'a', size: 's' } };\n" +
+      'export default meta;\n' +
+      'export const Primary = { play: async () => {} };\n' +
+      "meta.args.label = 'b';\n",
+    expect: [
+      [args, "{ size: 's' }"],
+      [args, "{ label: 'a' }"],
+    ],
   },
 ];

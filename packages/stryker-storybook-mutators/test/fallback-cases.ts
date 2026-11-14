@@ -33,6 +33,7 @@ export const fallbackCases: readonly Case[] = [
       "export default { title: 'Button', args: { label: 'a', size: 's' }, play: async () => {} };\n" +
       "export const Primary = { args: { label: 'a', variant: 'b', disabled: true } };\n",
     expect: [
+      [args, "{ label: 'a' }"],
       [args, "{ label: 'a', disabled: true }"],
       [args, "{ label: 'a', variant: 'b' }"],
     ],
@@ -969,6 +970,16 @@ export const fallbackCases: readonly Case[] = [
       [args, '{ size: 1 }'],
       [args, "{ label: 'a' }"],
     ],
+  },
+  {
+    id: 'meta-same-as-earlier-spread',
+    title:
+      "a meta key whose literal value equals the one an earlier spread in the meta's args gives makes no mutant",
+    source:
+      "const defaults = { label: 'a' };\n" +
+      "export default { title: 'Button', args: { ...defaults, label: 'a', size: 's' } };\n" +
+      'export const Primary = { play: async () => {} };\n',
+    expect: [[args, "{ ...defaults, label: 'a' }"]],
   },
 ];
 

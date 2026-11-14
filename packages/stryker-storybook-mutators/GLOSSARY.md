@@ -27,14 +27,26 @@ spread in the options sets `args` (here too a spread or computed key the file ca
 with or without a play under it, reads every key, so neither the story's args nor the args of its `.test()` options
 give a site. An options object that several stories' `.test()` calls share is one site for all of them: its read
 keys are those of every story, and a key gets no per-key mutant as equal to the value below only when it is equal
-for each story.
-_Avoid_: args target, story args (the meta's `args` are no args site)
+for each story. The meta's `args` are an args site too, for every played story, but only its taken keys get a
+mutant (ADR 0002).
+_Avoid_: args target, story args (the meta's are sites too)
+
+**Taken key**:
+A key of the meta's args that some played story surely takes from the meta: the story is made from that meta (the
+default export for a CSF3 story, the factory meta its `.story()` call is made on, through `.extend()` bases the file
+leaves unchanged), and neither its own `args` nor an `.extend()` base gives the key, except through a spread of the
+meta's own args. A key no played story surely takes gets no mutant, since no play or test runs for it: one every
+played story gives, and one a played story may give through args the file does not show, a spread it cannot
+resolve, a story or base it writes, or a write through an import of the file itself. The options of `.test()` calls
+are not read for it.
+_Avoid_: inherited arg, meta fallback
 
 **Read key**:
 A key of an args site that a function that runs for it, or a `step()` callback in it, reads from its context: as
 `args.<key>`, `initialArgs.<key>`, `context.args.<key>`, through a variable that holds one of these, or by
 destructuring. Every key is a read key when such a function hands `args` or its context on whole, reads a key that
-only running it names, or is one the file cannot read.
+only running it names, or is one the file cannot read. For the meta's args, a function counts for a key only when
+its story may take the key from the meta: a story that surely gives the key itself reads its own value.
 _Avoid_: used arg, checked arg
 
 **Per-key mutant**:

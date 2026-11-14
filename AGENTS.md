@@ -30,7 +30,9 @@ add or change a skip, name its row.
 | Site rule        | no play or test runs it, or a function reads it | skip   | `playedStories`, `sitesOf`; the read keys in `args.ts` | a site rule, with a case for each direction       |
 | Equivalence skip | the file proves removing it changes nothing     | place  | a `Proven` minted in `@layzee/storybook-core`          | a new `ProofReason` there, never a mutator filter |
 
-- Site rules: `packages/stryker-storybook-mutators/docs/adr/0001-args-mutated-only-where-a-play-or-test-runs.md`.
+- Site rules: `packages/stryker-storybook-mutators/docs/adr/0001-args-mutated-only-where-a-play-or-test-runs.md`;
+  at the meta's args they apply per key, decided by each meta run's `keyFrom` in `sitesOf`:
+  `packages/stryker-storybook-mutators/docs/adr/0002-the-meta-args-are-an-args-site-judged-per-key.md`.
 - Equivalence skips: `docs/adr/0006-place-a-mutant-unless-the-file-proves-it-changes-nothing.md`, and
   `packages/stryker-storybook/docs/adr/0005-every-equivalence-skip-carries-a-proven.md` for how a `Proven` is made.
 - The interaction mutators skip only an interaction in a `beforeEach` or `afterEach` (a site rule, decided by
