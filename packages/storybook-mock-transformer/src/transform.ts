@@ -17,13 +17,14 @@ export interface TransformResult {
   readonly map: SourceMap;
 }
 
-const implementationFactories: Readonly<
-  Record<StubMethod, string | undefined>
+/** The text around a stub's arguments that makes them the implementation `fn()` takes. */
+const implementationWrappers: Readonly<
+  Record<StubMethod, readonly [open: string, close: string]>
 > = {
-  mockReturnValue: '(value) => () => value',
-  mockResolvedValue: '(value) => async () => value',
-  mockRejectedValue: '(value) => async () => { throw value; }',
-  mockImplementation: undefined,
+  mockReturnValue: ['((value) => () => value)(', ')'],
+  mockResolvedValue: ['((value) => async () => value)(', ')'],
+  mockRejectedValue: ['((value) => async () => { throw value; })(', ')'],
+  mockImplementation: ['', ''],
 };
 
 export function transform(
@@ -70,9 +71,7 @@ function rewriteStub(
   accessStart: number,
   listStart: number,
 ): void {
-  const factory = implementationFactories[method];
-  const [open, close] =
-    factory === undefined ? ['', ''] : [`(${factory})(`, ')'];
+  const [open, close] = implementationWrappers[method];
 
   if (!hasArguments) {
     output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}${close})`);
