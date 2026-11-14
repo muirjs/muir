@@ -211,6 +211,38 @@ describe('mayImportItself', () => {
     );
   });
 
+  it('does not hold for a root-absolute import of a file with another name, such as a stylesheet or an image', () => {
+    assert.deepEqual(
+      programsOf(
+        "import '/src/styles.css';",
+        "import logo from '/assets/logo.svg';",
+      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [false, false],
+    );
+  });
+
+  it('holds for an import through a path alias or a drive path whose last segment names the file', () => {
+    assert.deepEqual(
+      programsOf(
+        "import * as self from '@/components/Button.stories';",
+        "import * as again from 'D:/app/src/Button.stories.js';",
+      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [true, true],
+    );
+  });
+
+  it('does not hold for a story file that imports only other modules and declares its exports', () => {
+    assert.deepEqual(
+      programsOf(
+        "import { fn } from 'storybook/test';",
+        "export default { title: 'a/b', args: { onClick: fn() } };",
+        "export const Primary = { args: { label: 'a' }, play: async () => {} };",
+        'export { Primary as Main };',
+      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [false, false],
+    );
+  });
+
   it('holds for an import.meta.glob call, whose pattern may match the file, in either parsed shape', () => {
     assert.deepEqual(
       programsOf(

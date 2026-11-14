@@ -1,4 +1,4 @@
-import { dirname, extname, resolve } from 'node:path';
+import { basename, dirname, extname, resolve } from 'node:path';
 
 import { withoutBinding, type Bindings } from './bindings.ts';
 import {
@@ -11,7 +11,7 @@ import {
 } from './csf-nodes.ts';
 import { namesReadElsewhere } from './names-read-elsewhere.ts';
 import { field, list } from './node-field.ts';
-import { everyRecordIn, importSourceOf } from './node-tree.ts';
+import { everyRecordIn, loadedSpecifierOf } from './node-tree.ts';
 import {
   isObjectLiteral,
   writtenValue,
@@ -589,7 +589,7 @@ export function testCallOf(statement: unknown): readonly TestCall[] {
     : [];
 }
 
-/** The file holds a string literal that names this file in any case, loads a module whose specifier is not a string literal or is root-absolute, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
+/** The file holds a relative string literal that names this file in any letter case, loads a module whose specifier is not a string literal or whose last segment names this file, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
 export function mayImportItself(
   body: readonly unknown[],
   fileName: string,
@@ -611,19 +611,28 @@ export function mayImportItself(
     );
   };
 
-  return (
-    nodes
-      .filter((node) => field(node, 'type') === 'StringLiteral')
-      .some((literal) => namesThisFile(field(literal, 'value'))) ||
-    nodes
-      .map(loadedSpecifierOf)
-      .some(
-        (specifier) =>
-          specifier !== undefined &&
-          (field(specifier, 'type') !== 'StringLiteral' ||
-            String(field(specifier, 'value')).startsWith('/')),
-      ) ||
-    nodes.some(isImportMetaGlob)
+  // A path whose last segment names the file may be the file under any root, alias or drive; a bare package name
+  // without a path (`'Button.stories'`) is a package's entry, never this file.
+  const loadsThisFile = (node: unknown): boolean => {
+    const specifier = loadedSpecifierOf(node);
+    const value = field(specifier, 'value');
+
+    return (
+      specifier !== undefined &&
+      (field(specifier, 'type') !== 'StringLiteral' ||
+        (typeof value === 'string' &&
+          /[\\/]/.test(value) &&
+          basename(value.toLowerCase()).replace(/\.[cm]?[jt]sx?$/, '') ===
+            basename(withoutExtension)))
+    );
+  };
+
+  return nodes.some(
+    (node) =>
+      (field(node, 'type') === 'StringLiteral' &&
+        namesThisFile(field(node, 'value'))) ||
+      loadsThisFile(node) ||
+      isImportMetaGlob(node),
   );
 }
 
@@ -634,26 +643,6 @@ function isImportMetaGlob(node: unknown): boolean {
     field(node, 'callee', 'property', 'name') === 'glob'
   );
 }
-
-/** The specifier of the module `node` loads: an `import` or `export ... from` declaration, an `import()` or a `require()`. */
-function loadedSpecifierOf(node: unknown): unknown {
-  if (moduleDeclarations.has(field(node, 'type'))) {
-    return field(node, 'source') ?? undefined;
-  }
-
-  return (
-    importSourceOf(node) ??
-    (field(node, 'callee', 'name') === 'require'
-      ? list(field(node, 'arguments'))[0]
-      : undefined)
-  );
-}
-
-const moduleDeclarations: ReadonlySet<unknown> = new Set([
-  'ImportDeclaration',
-  'ExportNamedDeclaration',
-  'ExportAllDeclaration',
-]);
 
 function storyNode(init: unknown, bindings: Bindings): unknown {
   if (isTemplateBind(init)) {

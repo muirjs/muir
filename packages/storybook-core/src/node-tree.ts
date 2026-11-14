@@ -197,6 +197,27 @@ export function importSourceOf(node: unknown): unknown {
     : undefined;
 }
 
+const moduleDeclarations: ReadonlySet<unknown> = new Set([
+  'ImportDeclaration',
+  'ExportNamedDeclaration',
+  'ExportAllDeclaration',
+]);
+
+/** The specifier of the module `node` loads: an `import` or `export ... from` declaration, an `import()` or a `require()`. */
+export function loadedSpecifierOf(node: unknown): unknown {
+  if (moduleDeclarations.has(field(node, 'type'))) {
+    // An `export const` declaration has a null source: it loads nothing.
+    return field(node, 'source') ?? undefined;
+  }
+
+  return (
+    importSourceOf(node) ??
+    (field(node, 'callee', 'name') === 'require'
+      ? list(field(node, 'arguments'))[0]
+      : undefined)
+  );
+}
+
 /** The key that holds each statement-list node's statements. */
 const statementLists: ReadonlyMap<unknown, string> = new Map([
   ['Program', 'body'],
