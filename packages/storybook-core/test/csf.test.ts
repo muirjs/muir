@@ -257,11 +257,20 @@ describe('mayImportItself', () => {
     );
   });
 
-  it('does not hold for a non-relative path the file holds but does not load, such as an importPath parameter or a title, in either parsed shape', () => {
+  it('does not hold for a non-relative path the file holds in a parameter but does not load, in either parsed shape', () => {
     assert.deepEqual(
       programsOf(
-        "export default { title: 'Example/Button.stories', parameters: { importPath: 'core/src/Button.stories.tsx' } };",
+        "export default { parameters: { importPath: 'core/src/Button.stories.tsx' } };",
       ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [false, false],
+    );
+  });
+
+  it('does not hold for a title whose last segment spells the file name, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf("export default { title: 'Example/Button.stories' };").map(
+        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+      ),
       [false, false],
     );
   });

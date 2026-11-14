@@ -68,9 +68,10 @@ that may import itself proves nothing, since a write through the import may chan
 itself when a relative string literal in it resolves to the file in any letter case; when an import or `require` in
 it takes a specifier that is not a string literal, or a path whose last segment names the file (`@/Button.stories`,
 `/src/Button.stories.js`, but not the package `Button.stories`); or when it calls `import.meta.glob`. A title or
-other string the file only holds is no import. A file whose path the mutator is not given proves nothing either. An
-import through a function `createRequire` made, or through another file that imports this one back, is not seen, so
-such a file still proves. A mutator skips a property as equivalent only through one.
+other non-relative string the file only holds is no import. A file whose path the mutator is not given proves
+nothing either. An import through a function `createRequire` made, through a non-relative path passed to a call
+other than `import()` or `require()` (`vi.importActual('@/Button.stories')`), or through another file that imports
+this one back, is not seen, so such a file still proves. A mutator skips a property as equivalent only through one.
 _Avoid_: proof (alone), equivalence check, safe key
 
 **Tag filter**:

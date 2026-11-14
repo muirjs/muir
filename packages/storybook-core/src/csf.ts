@@ -1,4 +1,4 @@
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, resolve, win32 } from 'node:path';
 
 import { withoutBinding, type Bindings } from './bindings.ts';
 import {
@@ -598,45 +598,42 @@ export function mayImportItself(
   const withoutExtension = withoutScriptExtension(file);
   const baseName = basename(withoutExtension);
   // Vite resolves a relative path from the file's folder, and a .js, .jsx, .mjs or .cjs one to the TypeScript file
-  // of the same name.
-  const resolvesToThisFile = (value: unknown): boolean =>
-    typeof value === 'string' &&
-    value.startsWith('.') &&
-    withoutScriptExtension(resolve(dirname(file), value.toLowerCase())) ===
-      withoutExtension;
-  // A loaded path may be the file under a root, alias or drive when its last segment names it; a bare package name
-  // such as 'Button.stories' is a package's entry. A string the file only holds, such as a title, is no load.
-  const loadsThisFile = (node: unknown): boolean => {
-    const specifier = loadedSpecifierOf(node);
-    const value = field(specifier, 'value');
+  // of the same name. Any other path may be the file under a root, alias or drive when its last segment names it; a
+  // bare package name such as 'Button.stories' is a package's entry.
+  const namesThisFile = (path: string): boolean =>
+    path.startsWith('.')
+      ? withoutScriptExtension(resolve(dirname(file), path.toLowerCase())) ===
+        withoutExtension
+      : /[\\/]/.test(path) &&
+        withoutScriptExtension(win32.basename(path.toLowerCase())) === baseName;
 
-    if (specifier === undefined) {
-      return false;
-    }
+  return everyRecordIn(body).some((node) => {
+    const held = stringLiteralValue(node);
 
-    if (typeof value !== 'string') {
+    // A relative string counts wherever the file holds it, as a vi.mock path or a name passed to import() later; a
+    // non-relative one only where the file loads it, since titles and parameters hold such paths too.
+    if (held?.startsWith('.') === true && namesThisFile(held)) {
       return true;
     }
 
-    const segments = value
-      .toLowerCase()
-      .split(/[\\/]/)
-      .filter((segment) => segment !== '');
+    const specifier = loadedSpecifierOf(node);
 
-    return (
-      !value.startsWith('.') &&
-      /[\\/]/.test(value) &&
-      withoutScriptExtension(segments.at(-1) ?? '') === baseName
-    );
-  };
+    if (specifier !== undefined) {
+      const loaded = stringLiteralValue(specifier);
 
-  return everyRecordIn(body).some(
-    (node) =>
-      (field(node, 'type') === 'StringLiteral' &&
-        resolvesToThisFile(field(node, 'value'))) ||
-      loadsThisFile(node) ||
-      isImportMetaGlob(node),
-  );
+      return loaded === undefined || namesThisFile(loaded);
+    }
+
+    return isImportMetaGlob(node);
+  });
+}
+
+function stringLiteralValue(node: unknown): string | undefined {
+  const value = field(node, 'value');
+
+  return field(node, 'type') === 'StringLiteral' && typeof value === 'string'
+    ? value
+    : undefined;
 }
 
 function withoutScriptExtension(path: string): string {
