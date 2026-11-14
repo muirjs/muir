@@ -47,9 +47,9 @@ export function siteFindings(
 
   return sites
     .filter((site) => !silenced.has(site))
-    .map(({ line, method, once, verdict }) => ({
+    .map(({ line, writtenMethod, verdict }) => ({
       line,
-      method: once ? `${method}Once` : method,
+      method: writtenMethod,
       ...describeVerdict(verdict),
     }));
 }

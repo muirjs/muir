@@ -32,12 +32,8 @@ import {
   type ProjectLog,
   type StorybookProject,
 } from './storybook-project.ts';
-import { siteFindings } from './stub-findings.ts';
-import {
-  spyStubName,
-  uncheckedFinding,
-  type ReasonVerdict,
-} from './stub-verdict.ts';
+import { siteFindings, type SiteFinding } from './stub-findings.ts';
+import { spyStubName, uncheckedFinding } from './stub-verdict.ts';
 
 export interface LzStorybookReport {
   readonly findings: readonly StubFinding[];
@@ -45,15 +41,13 @@ export interface LzStorybookReport {
   readonly staticStoryMutants: readonly StaticStoryMutant[];
 }
 
-interface StubFinding {
-  readonly file: string;
-  readonly line: number;
-  /** The stub method as the story writes it; a finding from a surviving mutant has none. */
-  readonly method?: string;
-  readonly verdict: ReasonVerdict | (typeof uncheckedFinding)['verdict'];
-  readonly reason: string;
-  readonly fix: string;
-}
+/** A finding read from the story file names its stub method; one from a surviving mutant names none. */
+type StubFinding =
+  | (SiteFinding & { readonly file: string })
+  | (typeof uncheckedFinding & {
+      readonly file: string;
+      readonly line: number;
+    });
 
 interface ReportInput {
   readonly files: ReportFiles;
@@ -173,8 +167,8 @@ function consoleBlock({
       ? `${packageName}: no spy stub findings`
       : `${packageName}: ${findings.length} spy stub findings (${counts.join(', ')})`,
     ...findings.map(
-      ({ verdict, file, line, method, reason, fix }) =>
-        `  ${verdict}  ${file}:${line}${method === undefined ? '' : ` ${method}`}  ${reason}; ${fix}`,
+      (finding) =>
+        `  ${finding.verdict}  ${finding.file}:${finding.line}${'method' in finding ? ` ${finding.method}` : ''}  ${finding.reason}; ${finding.fix}`,
     ),
     ...(hints.length === 0
       ? []

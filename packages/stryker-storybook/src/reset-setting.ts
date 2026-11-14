@@ -10,7 +10,6 @@ import {
   mayImportItself,
   namedExports,
   storyArgument,
-  type StubMethod,
   topLevelBindings,
   unchangedBindings,
   unwrap,
@@ -33,7 +32,7 @@ export interface ClassifiedStub {
   readonly start: number;
   readonly end: number;
   readonly line: number;
-  readonly method: StubMethod;
+  readonly writtenMethod: string;
   readonly once: boolean;
   readonly verdict: StubVerdict;
 }
@@ -218,7 +217,7 @@ export function classifyStubs(
     );
   const stories = declared.map(({ story }) => story);
   const stubs = definitionTimeStubs(program).map(
-    ({ start, end, line, method, once }) => {
+    ({ start, end, line, writtenMethod, once }) => {
       const owner = declared.findIndex(({ init }) => contains(init, start));
       const users = owner === -1 ? stories.map((_, index) => index) : [owner];
 
@@ -226,7 +225,7 @@ export function classifyStubs(
         start,
         end,
         line,
-        method,
+        writtenMethod,
         once,
         verdict: siteVerdict(stories, users),
       };

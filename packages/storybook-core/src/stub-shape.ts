@@ -28,6 +28,8 @@ export function stubMethodOf(name: unknown): StubMethodCall | undefined {
 
 export interface StubSite extends StubMethodCall {
   readonly spy: string;
+  /** The stub method as the story writes it, such as `mockResolvedValueOnce` where `method` is `mockResolvedValue`. */
+  readonly writtenMethod: string;
   readonly start: number;
   readonly end: number;
   readonly line: number;
@@ -94,7 +96,8 @@ function stubSite(
   const line = field(node, 'loc', 'start', 'line');
   const spyCall = chainStart(field(node, 'callee', 'object'));
   const spy = field(spyCall, 'callee', 'name');
-  const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
+  const writtenMethod = field(node, 'callee', 'property', 'name');
+  const stub = stubMethodOf(writtenMethod);
   const spyCallStart = field(spyCall, 'start');
   const spyCallEnd = field(spyCall, 'end');
   const receiverEnd = field(node, 'callee', 'object', 'end');
@@ -113,6 +116,7 @@ function stubSite(
     !isCall(spyCall) ||
     typeof spy !== 'string' ||
     !spies.has(spy) ||
+    typeof writtenMethod !== 'string' ||
     stub === undefined
   ) {
     return undefined;
@@ -123,6 +127,7 @@ function stubSite(
   return {
     spy,
     ...stub,
+    writtenMethod,
     start,
     end,
     line,

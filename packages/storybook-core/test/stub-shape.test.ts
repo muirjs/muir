@@ -126,6 +126,7 @@ describe('definitionTimeStubs', () => {
         spy: 'fn',
         method: 'mockReturnValue',
         once: false,
+        writtenMethod: 'mockReturnValue',
         start: source.indexOf('(fn()'),
         end: source.lastIndexOf(')') + 1,
         line: 2,
@@ -138,18 +139,25 @@ describe('definitionTimeStubs', () => {
     ]);
   });
 
-  it('reports a Once stub as once, under the method it stubs', () => {
+  it('reports a Once stub as once, under the method it stubs, and keeps the method as written', () => {
     const { program } = parse(
       "import { fn } from 'storybook/test';\nfn().mockResolvedValueOnce(1);",
       { sourceType: 'module' },
     );
 
     assert.deepEqual(
-      definitionTimeStubs(program).map(({ method, once }) => ({
+      definitionTimeStubs(program).map(({ method, once, writtenMethod }) => ({
         method,
         once,
+        writtenMethod,
       })),
-      [{ method: 'mockResolvedValue', once: true }],
+      [
+        {
+          method: 'mockResolvedValue',
+          once: true,
+          writtenMethod: 'mockResolvedValueOnce',
+        },
+      ],
     );
   });
 });
