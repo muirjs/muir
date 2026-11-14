@@ -318,6 +318,16 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check, holding a template literal, also stands earlier in the play has no copy',
+    source: inPlay(
+      'await expect(status).toHaveTextContent(`Saved`);',
+      'await userEvent.click(save);',
+      'await expect(status).toHaveTextContent(`Saved`);',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
       "the first check is copied when the same check stands earlier only in another story's play",
     source: `export const Save = {\n  play: async ({ args, userEvent }) => {\n    await userEvent.click(save);\n    await expect(args.onSave).toHaveBeenCalled();\n  },\n};\nexport const SaveAndClose = {\n  play: async ({ args, userEvent }) => {\n    await userEvent.click(saveAndClose);\n    await expect(args.onSave).toHaveBeenCalled();\n  },\n};\n`,
     expect: [

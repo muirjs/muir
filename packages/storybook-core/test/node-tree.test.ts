@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { parse } from '@babel/parser';
+
 import { field, list } from '../src/node-field.ts';
-import { equivalenceIds, equivalent, indexTree } from '../src/node-tree.ts';
+import { equivalent, indexTree } from '../src/node-tree.ts';
 import { programOf } from './support/parse-module.ts';
 
 describe('indexTree', () => {
@@ -41,27 +43,79 @@ describe('indexTree', () => {
   });
 });
 
-describe('equivalenceIds', () => {
-  it('gives two statements one id exactly when they are equivalent, positions and comments aside', () => {
-    const program = programOf(
-      "await expect(canvas.getByRole('a')).toBeVisible();",
-      "await expect(canvas.getByRole('b')).toBeVisible();",
-      "/* again */ await expect(canvas.getByRole( 'a' )).toBeVisible();",
-      "await expect(canvas.getByRole('a')).not.toBeVisible();",
+describe('equivalent', () => {
+  it('groups statements as Babel 8.0 isNodesEquivalent does, whatever their positions, spacing, comments and quotes', () => {
+    const statements = parse(
+      [
+        "await expect(canvas.getByRole('a')).toBeVisible();",
+        "/* again */ await expect(canvas.getByRole( 'a' )).toBeVisible();",
+        "await expect(canvas.getByRole('b')).toBeVisible();",
+        "await expect(canvas.getByRole('a')).not.toBeVisible();",
+        'f(`a${x}b`);',
+        'f(`a${ x }b`);',
+        'f(`a${y}b`);',
+        'f(/ab+/g);',
+        'f(/ab+/g);',
+        'f(/ab+/i);',
+        'f(10n);',
+        'f(0xan);',
+        'f(10n);',
+        'f(-0);',
+        'f(0);',
+        'f(0.0);',
+        'f(0x0);',
+        'f(1e400);',
+        'f(Infinity);',
+        'f(NaN);',
+        'f(a?.b);',
+        'f(a.b);',
+        'f(a?.b);',
+        "f('a');",
+        'f("a");',
+        'f((a));',
+        'f(a);',
+        'f([, a]);',
+        'f([undefined, a]);',
+        'f([null, a]);',
+        'f(<b x="1" />);',
+        'f(<b x="1"/>);',
+        'f(<b x="2" />);',
+        'f(a as T);',
+        'f(a!);',
+        'f(a as T);',
+      ].join('\n'),
+      { sourceType: 'module', plugins: ['typescript', 'jsx'] },
+    ).program.body;
+    const groups = statements.reduce<readonly (readonly number[])[]>(
+      (found, statement, at) => {
+        const group = found.findIndex(
+          ([first]) =>
+            first !== undefined && equivalent(statements[first], statement),
+        );
+
+        return group === -1
+          ? [...found, [at]]
+          : found.map((each, index) =>
+              index === group ? [...each, at] : each,
+            );
+      },
+      [],
     );
-    const ids = equivalenceIds(program);
-    const statements = list(field(program, 'body'));
 
     assert.deepEqual(
-      statements.flatMap((first) =>
-        statements.map(
-          (second) =>
-            (ids.get(first) === ids.get(second)) === equivalent(first, second),
-        ),
-      ),
-      Array.from({ length: 16 }, () => true),
+      groups.filter((group) => group.length > 1),
+      [
+        [0, 1],
+        [4, 5],
+        [7, 8],
+        [10, 12],
+        [14, 15, 16],
+        [20, 22],
+        [23, 24],
+        [25, 26],
+        [30, 31],
+        [33, 35],
+      ],
     );
-    assert.equal(ids.get(statements[0]), ids.get(statements[2]));
-    assert.notEqual(ids.get(statements[0]), ids.get(statements[1]));
   });
 });

@@ -4,7 +4,7 @@ import {
   awaited,
   childNodes,
   descendants,
-  equivalenceIds,
+  equivalenceTokens,
   equivalent,
   isFunction,
   isNode,
@@ -177,7 +177,7 @@ export function targetOf(read: StatementRead): unknown {
   return awaited(read.args[0]);
 }
 
-/** The expression statements of one function that are `equivalent` to a statement of it. */
+/** The expression statements of one function that are `equivalent` to the statement it is given. */
 type EquivalentStatements = (statement: unknown) => readonly unknown[];
 
 /** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `statementAt` gives the interaction whose statement is a node. */
@@ -187,15 +187,15 @@ export function followingChecksReader(
   statementAt: (node: unknown) => StatementRead | undefined,
 ): (read: StatementRead) => FollowingChecks {
   const equivalentStatementsIn = readOnce((outermost): EquivalentStatements => {
-    const ids = equivalenceIds(outermost);
+    const tokenOf = equivalenceTokens([outermost]);
     const statements = Map.groupBy(
       descendants(outermost).filter(
         (each) => field(each, 'type') === 'ExpressionStatement',
       ),
-      (each) => ids.get(each),
+      tokenOf,
     );
 
-    return (statement) => statements.get(ids.get(statement)) ?? [];
+    return (statement) => statements.get(tokenOf(statement)) ?? [];
   });
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;

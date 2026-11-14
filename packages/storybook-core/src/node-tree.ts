@@ -93,49 +93,47 @@ function stringIn(node: unknown, key: string): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+/** An object that is neither an array nor a node, such as a template element's `value`. */
+function isPlainRecord(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
+  return isRecord(value) && !Array.isArray(value) && !isNode(value);
+}
+
 /** Babel's `isNodesEquivalent` over plain nodes: the same type and fields, whatever the positions, comments and `extra`. */
 export function equivalent(first: unknown, second: unknown): boolean {
-  if (Array.isArray(first) || Array.isArray(second)) {
-    return (
-      Array.isArray(first) &&
-      Array.isArray(second) &&
-      first.length === second.length &&
-      first.every((item: unknown, at) => equivalent(item, second[at]))
-    );
-  }
+  const tokenOf = equivalenceTokens([first, second]);
 
-  if (!isNode(first) || !isNode(second)) {
-    return first === second;
-  }
-
-  const keys = new Set(
-    [...Object.keys(first), ...Object.keys(second)].filter(
-      (key) => !positionKeys.has(key),
-    ),
-  );
-
-  return [...keys].every((key) => equivalent(first[key], second[key]));
+  return tokenOf(first) === tokenOf(second);
 }
 
 /**
- * An id for `root` and each node below it: two of them share an id exactly when `equivalent` holds between them. Ids
- * are built from the leaves up, each from the node's own fields and its children's ids, so none repeats the text
- * below it.
+ * Tokens for the values in and below `roots`, for a Babel tree: two values share a token exactly when they are
+ * `equivalent`. A node's token is built from the leaves up, from its fields other than positions, so none repeats
+ * the text below it; an array's from its items; a plain object's, such as a template element's `value`, from its
+ * fields compared with `===`; any other object's from its identity.
  */
-export function equivalenceIds(root: unknown): ReadonlyMap<unknown, string> {
+export function equivalenceTokens(
+  roots: readonly unknown[],
+): (value: unknown) => string {
   const ids = new Map<unknown, string>();
   const interned = new Map<string, string>();
   const identities = new Map<unknown, string>();
   let count = 0;
   const fresh = (): string => `o${count++}`;
   const intern = (signature: string): string => {
-    const known = interned.get(signature) ?? `#${count++}`;
+    const known = interned.get(signature);
 
-    interned.set(signature, known);
+    if (known !== undefined) {
+      return known;
+    }
 
-    return known;
+    const id = `#${count++}`;
+
+    interned.set(signature, id);
+
+    return id;
   };
-  /** A token for a field's value that matches another exactly when `equivalent` holds between the two values. */
   const tokenOf = (value: unknown): string => {
     if (Array.isArray(value)) {
       return intern(`[${value.map(tokenOf).join(',')}]`);
@@ -145,6 +143,19 @@ export function equivalenceIds(root: unknown): ReadonlyMap<unknown, string> {
       return ids.get(value) ?? fresh();
     }
 
+    if (isPlainRecord(value)) {
+      const fields = Object.keys(value)
+        .filter((key) => value[key] !== undefined)
+        .sort()
+        .map((key) => `${JSON.stringify(key)}:${shallowTokenOf(value[key])}`);
+
+      return intern(`(${fields.join(',')})`);
+    }
+
+    return shallowTokenOf(value);
+  };
+  /** A token for a value that `equivalent` compares with `===`. */
+  const shallowTokenOf = (value: unknown): string => {
     if (typeof value === 'string') {
       return JSON.stringify(value);
     }
@@ -162,7 +173,7 @@ export function equivalenceIds(root: unknown): ReadonlyMap<unknown, string> {
       return String(value) + typeof value;
     }
 
-    // Any other object, a function or a symbol: `equivalent` compares it by identity.
+    // Any other object, a function or a symbol: compared by identity.
     const known = identities.get(value) ?? fresh();
 
     identities.set(value, known);
@@ -170,20 +181,24 @@ export function equivalenceIds(root: unknown): ReadonlyMap<unknown, string> {
     return known;
   };
 
-  [...descendants(root)].reverse().forEach((node) => {
-    if (!isNode(node)) {
-      return;
-    }
+  roots
+    .flatMap((root) => (Array.isArray(root) ? list(root) : [root]))
+    .flatMap(descendants)
+    .reverse()
+    .forEach((node) => {
+      if (!isNode(node)) {
+        return;
+      }
 
-    const fields = Object.keys(node)
-      .filter((key) => !positionKeys.has(key) && node[key] !== undefined)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${tokenOf(node[key])}`);
+      const fields = Object.keys(node)
+        .filter((key) => !positionKeys.has(key) && node[key] !== undefined)
+        .sort()
+        .map((key) => `${JSON.stringify(key)}:${tokenOf(node[key])}`);
 
-    ids.set(node, intern(`{${fields.join(',')}}`));
-  });
+      ids.set(node, intern(`{${fields.join(',')}}`));
+    });
 
-  return ids;
+  return tokenOf;
 }
 
 /** `node` and every object below it, positions included; `descendants` gives only child nodes. */
