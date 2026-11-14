@@ -121,21 +121,16 @@ function hooksOf(
   };
 
   return new Set(
-    descendants(program).flatMap((node): readonly unknown[] => {
+    descendants(program).map((node): unknown => {
       if (field(node, 'type') === 'ObjectMethod') {
-        return hooks.has(field(node, 'key', 'name')) ? [node] : [];
+        return hooks.has(field(node, 'key', 'name')) ? node : undefined;
       }
 
       if (!isHookValue(node)) {
-        // Stryker disable next-line ArrayDeclaration: the set is only asked whether it holds a tree node, and no node is a string
-        return [];
+        return undefined;
       }
 
-      const hook = isFunction(node)
-        ? node
-        : declaredFunction(scope.bindingOf(node));
-
-      return hook === undefined ? [] : [hook];
+      return isFunction(node) ? node : declaredFunction(scope.bindingOf(node));
     }),
   );
 }
@@ -233,19 +228,16 @@ export function interactionsOf(
       ? awaited(field(declaration, 'init'))
       : node;
   };
-  /** What statement `node` is: an expression statement, or the expression body of an arrow given to `step(...)`. */
+  /** What statement `node` is: an expression statement, or the body of a callback given to `step(...)`, which holds an interaction only as an arrow's expression body. */
   const statementOf = (node: unknown): Interaction['statement'] | undefined => {
     if (field(node, 'type') === 'ExpressionStatement') {
       return 'expression';
     }
 
-    const arrow = tree.parentOf(node);
+    const callback = tree.parentOf(node);
 
-    return field(arrow, 'type') === 'ArrowFunctionExpression' &&
-      field(arrow, 'body') === node &&
-      // Stryker disable next-line StringLiteral: field(node, '') is undefined, so either mutant only lets a BlockStatement through, and kindOf reads no BlockStatement as a call
-      field(node, 'type') !== 'BlockStatement' &&
-      isStepCall(tree.parentOf(arrow))
+    return field(callback, 'body') === node &&
+      isStepCall(tree.parentOf(callback))
       ? 'stepBody'
       : undefined;
   };
