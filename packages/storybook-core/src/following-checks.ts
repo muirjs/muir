@@ -1,4 +1,4 @@
-import { isCall, isMember } from './csf-nodes.ts';
+import { isCall, isMember, unwrap } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -352,7 +352,7 @@ function functionOf(binding: Binding): unknown {
   const declared =
     binding.kind === 'function'
       ? binding.declaration
-      : field(binding.declaration, 'init');
+      : unwrap(field(binding.declaration, 'init'));
 
   return isFunction(declared) ? declared : undefined;
 }

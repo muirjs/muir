@@ -348,6 +348,17 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check calls an arrow function held in a const under as that reads a name declared between has no copy',
+    source: inPlay(
+      'const shown = (() => canvas.getByText(label)) as () => HTMLElement;',
+      'await userEvent.click(add);',
+      "const label = '1 item';",
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
       'an interaction whose first check calls a function declared between that calls an arrow reading a name declared between has no copy',
     source: inPlay(
       'const shownLabel = () => label;',
