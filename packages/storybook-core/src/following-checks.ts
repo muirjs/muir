@@ -323,11 +323,15 @@ function bindingsReadThroughCalls(
   tree: TreeIndex,
 ): readonly Binding[] {
   const followed = new Set<unknown>();
+  const isDeclaredIn = (binding: Binding, fn: unknown): boolean =>
+    binding.declaration !== fn &&
+    tree.ancestors(binding.identifier).includes(fn);
   const readBy = (node: unknown): readonly Binding[] =>
     scope
       .referencesIn(node)
       .map(scope.bindingOf)
       .filter((binding) => binding !== undefined)
+      .filter((binding) => node === statement || !isDeclaredIn(binding, node))
       .flatMap((binding) => {
         const body = functionOf(binding);
 
@@ -340,12 +344,7 @@ function bindingsReadThroughCalls(
         return [binding, ...readBy(body)];
       });
 
-  return readBy(statement).filter(
-    (binding) =>
-      ![binding.identifier, ...tree.ancestors(binding.identifier)].some(
-        (each) => followed.has(each),
-      ),
-  );
+  return readBy(statement);
 }
 
 /** The function a binding names: a function declaration, or a function a variable is declared with. */
