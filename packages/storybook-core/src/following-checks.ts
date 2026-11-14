@@ -186,7 +186,7 @@ export function followingChecksReader(
   statementAt: (node: unknown) => StatementRead | undefined,
 ): (read: StatementRead) => FollowingChecks {
   const statementsByFunction = new Map<unknown, StatementsByShape>();
-  /** The expression statements in the outermost function around `node`, by `shapeKey`, built once per function. */
+  /** The expression statements in the outermost function around `node` that may be copies, by `shapeKey`, built once per function; only those are keyed, since a key holds the whole statement. */
   const expressionStatementsAround = (node: unknown): StatementsByShape => {
     const outermost = outermostFunction(node, tree);
     const known = statementsByFunction.get(outermost);
@@ -197,7 +197,8 @@ export function followingChecksReader(
 
     const statements = Map.groupBy(
       descendants(outermost).filter(
-        (each) => field(each, 'type') === 'ExpressionStatement',
+        (each) =>
+          field(each, 'type') === 'ExpressionStatement' && checksWhenRun(each),
       ),
       shapeKey,
     );
