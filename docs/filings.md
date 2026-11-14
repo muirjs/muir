@@ -1778,7 +1778,8 @@ included, so the Storybook test mutators place nothing there and a mutation run 
 the same objects with `satisfies` get their mutants. The cause is the same skip: `shouldSkip` in
 `babel-transformer.ts` stops traversal at every node `isTypeNode` matches, and `TSAsExpression` is on its
 list (still so on `master` on 2026-11-13). A comment on #6208 could name this case, since `as Meta` is a
-common way to type a CSF file.
+common way to type a CSF file. A play function alone written `play: (async (context) => { ... }) as any` loses
+its interaction mutants the same way (measured 2026-11-14 with a test-mutators case row).
 
 ## stryker-mutator/stryker-js: the HTML report never shows its "Stryker" title postfix
 
