@@ -150,6 +150,23 @@ describe('transform', () => {
     );
   });
 
+  it('removes an optional call of a stub method', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Optional = { args: { load: fn().mockReturnValue?.(1) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Optional = { args: { load: fn(((value) => () => value)(1)) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('leaves a definition-time mockReturnValueOnce alone', () => {
     const code = [
       "import { fn } from 'storybook/test';",
@@ -370,6 +387,40 @@ describe('transform', () => {
     );
   });
 
+  it('rewrites a stub whose spy call holds another stub, which goes with that spy call', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Inner = { args: { load: fn(fn().mockReturnValue(2)).mockReturnValue(1) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Inner = { args: { load: fn(((value) => () => value)(1)) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('keeps the parentheses around a stub method it removes', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Wrapped = { args: { load: (fn().mockReturnValue)(1) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Wrapped = { args: { load: (fn(((value) => () => value)(1))) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('moves the arguments of a stub call written with type arguments', () => {
     const code = [
       "import { fn } from 'storybook/test';",
@@ -578,6 +629,23 @@ describe('transform', () => {
       [
         "import { fn } from 'storybook/test';",
         'export const Empty = { args: { load: fn(((value) => async () => value)()) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('rewrites a stub with no argument after a mockName call', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      "export const Empty = { args: { load: fn().mockName('load').mockReturnValue() } };",
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        "export const Empty = { args: { load: fn(((value) => () => value)()).mockName('load') } };",
         '',
       ].join('\n'),
     );

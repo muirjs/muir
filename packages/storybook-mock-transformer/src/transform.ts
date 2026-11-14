@@ -39,8 +39,15 @@ export function transform(
 
   const { program, tokens } = parseModule(code, file);
   const stubs = definitionTimeStubs(program);
-  const rewritten = stubs.filter(
+  const rewrites = stubs.filter(
     (stub) => mockTransformerRewrite(stub, stubs) === 'rewritten',
+  );
+  // A stub in another rewritten stub's spy call goes with the text of that spy call.
+  const rewritten = rewrites.filter(
+    (stub) =>
+      !rewrites.some(
+        ({ spyCall }) => spyCall.start < stub.start && stub.start < spyCall.end,
+      ),
   );
 
   if (rewritten.length === 0) {
@@ -49,12 +56,7 @@ export function transform(
 
   const output = new MagicString(code);
   rewritten.forEach((stub) => {
-    rewriteStub(
-      output,
-      stub,
-      memberAccessStart(tokens, stub.methodStart, file),
-      argumentListStart(tokens, stub.calleeEnd, file),
-    );
+    rewriteStub(output, stub, tokens, file);
   });
   appendRecord(file, rewritten.length);
 
@@ -64,21 +66,49 @@ export function transform(
   };
 }
 
-/** Replaces the spy call with `<spy>(<open><arguments><close>)`, its method's wrapper around the stub's arguments (`fn(((value) => () => value)(1))` for `fn().mockReturnValue(1)`), and removes the stub call from the chain. */
+/** Replaces the spy call with `<spy>(<open><arguments><close>)`, its method's wrapper around the stub's arguments (`fn(((value) => () => value)(1))` for `fn().mockReturnValue(1)`), and removes the stub call from the chain, keeping each parenthesis that closes around its callee. */
 function rewriteStub(
   output: MagicString,
-  { spy, method, end, spyCall }: StubSite,
-  accessStart: number,
-  listStart: number,
+  { spy, method, end, spyCall, methodStart, calleeEnd }: StubSite,
+  tokens: readonly unknown[],
+  file: string,
 ): void {
   const [open, close] = implementationWrappers[method];
+  const accessStart = memberAccessStart(tokens, methodStart, file);
+  const listStart = argumentListStart(tokens, calleeEnd, file);
   const listEnd = end - ')'.length;
+  const closers = parenthesesClosedIn(
+    tokens,
+    accessStart,
+    listStart - '('.length,
+  );
 
   output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}`);
   output.remove(accessStart, listStart);
-  output.remove(listEnd, end);
-  output.appendLeft(listEnd, `${close})`);
-  output.move(listStart, listEnd, spyCall.end);
+  output.overwrite(listEnd, end, `${close})${')'.repeat(closers)}`);
+  output.move(listStart, end, spyCall.end);
+}
+
+/** How many more `)` than `(` the tokens from `start` to `end` hold. */
+function parenthesesClosedIn(
+  tokens: readonly unknown[],
+  start: number,
+  end: number,
+): number {
+  const labels = tokens
+    .filter((token) => {
+      const tokenStart = field(token, 'start');
+
+      return (
+        typeof tokenStart === 'number' && tokenStart >= start && tokenStart < end
+      );
+    })
+    .map(labelOf);
+
+  return (
+    labels.filter((label) => label === ')').length -
+    labels.filter((label) => label === '(').length
+  );
 }
 
 function memberAccessStart(
