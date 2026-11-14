@@ -1183,6 +1183,15 @@ functions that call each other need the visited set, and two such functions over
 `lz-red` step 5 takes a red that ran and failed, but it has no check that a test can still fail once the green is in.
 Evidence: `wave2/r6-test-analyzer.md` F3; `wave2/cycles.log`, the round 6 `test-after` lines.
 
+**O162. A refactor that merged two branches as equivalent passed on tests that never told them apart.** In round 6
+the mock transformer's branch for a stub with no argument was removed, because the general branch writes the same
+text. The suite stayed green, and the claim held for the one input the tests gave: nothing between the spy call and
+the stub. With a `mockName` call, a cast or a `!` in between, the general branch put its closing text where the
+removed member access had been, and `fn().mockName('x').mockReturnValue()` no longer parsed. A round 7 reviewer found
+it with a probe. `lz-refactor` step 5 keeps behaviour by running the tests after each step, and has no check that the
+tests reach the inputs where the two branches could differ. Evidence: `wave2/r7-code-review.md` finding 1;
+`wave2/cycles.log` cycle 21.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
@@ -1546,6 +1555,10 @@ count read from the run's summary.
 **S102 (from O159).** In `lz-red` step 4, when the house idiom compares one composite value per case, predict each
 part of the expected value against the planned green, and pin only the parts that green changes; leave the others as
 the code gives them today.
+
+**S103 (from O162).** In `lz-refactor` step 5, before merging two branches or removing one as equivalent, list the
+inputs where they take different paths (here, text between the spy call and the stub), and pin one such input with a
+characterization test first, so the green run can tell the merge broke something.
 
 ## stefanoslig/angular-ngrx-nx-realworld-example-app: "View article's author" e2e test always fails
 
