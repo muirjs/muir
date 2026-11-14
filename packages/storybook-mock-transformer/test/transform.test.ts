@@ -387,7 +387,7 @@ describe('transform', () => {
     );
   });
 
-  it('rewrites a stub whose spy call holds another stub, which goes with that spy call', () => {
+  it('drops a stub in the spy call of a stub it rewrites, with the arguments of that spy call', () => {
     const code = [
       "import { fn } from 'storybook/test';",
       'export const Inner = { args: { load: fn(fn().mockReturnValue(2)).mockReturnValue(1) } };',
@@ -399,6 +399,23 @@ describe('transform', () => {
       [
         "import { fn } from 'storybook/test';",
         'export const Inner = { args: { load: fn(((value) => () => value)(1)) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('rewrites a stub in the spy call of a stub it leaves alone', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Inner = { args: { load: fn(fn().mockReturnValue(2)).mockReturnValueOnce(1) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Inner = { args: { load: fn(fn(((value) => () => value)(2))).mockReturnValueOnce(1) } };',
         '',
       ].join('\n'),
     );
