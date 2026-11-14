@@ -288,7 +288,7 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
-/** Whether `statement` reads a name declared or written in its list's statements from `interactionStatement` up to it, `statement` aside; a node without positions counts as not between. A function declaration does not count as declared between, since hoisting declares it before the interaction, but the names its body reads from outside it count as read by `statement`. */
+/** Whether `statement`, or a function it calls by name, reads a name declared or written in its list's statements from `interactionStatement` up to it; a node without positions counts as not between. */
 function readsNameSetBetween(
   interactionStatement: unknown,
   statement: unknown,
@@ -308,38 +308,58 @@ function readsNameSetBetween(
     typeof field(statement, 'start') === 'number' &&
     [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
-  const bindingsReadBy = (
-    node: unknown,
-    followed: ReadonlySet<unknown>,
-  ): readonly Binding[] =>
-    scope
-      .referencesIn(node)
-      .map(scope.bindingOf)
-      .filter((binding) => binding !== undefined)
-      .filter(
-        (binding) =>
-          ![binding.identifier, ...tree.ancestors(binding.identifier)].some(
-            (each) => followed.has(each),
-          ),
-      )
-      .flatMap((binding) =>
-        binding.kind === 'function' && !followed.has(binding.declaration)
-          ? [
-              binding,
-              ...bindingsReadBy(
-                binding.declaration,
-                new Set([...followed, binding.declaration]),
-              ),
-            ]
-          : [binding],
+  return bindingsReadThroughCalls(statement, scope, tree, new Set()).some(
+    (binding) => {
+      const hoisted = binding.kind === 'function';
+
+      return [...(hoisted ? [] : [binding.identifier]), ...binding.writes].some(
+        isBetween,
       );
+    },
+  );
+}
 
-  return bindingsReadBy(statement, new Set()).some((binding) => {
-    const declared =
-      binding.kind === 'function' ? undefined : binding.identifier;
+function bindingsReadThroughCalls(
+  node: unknown,
+  scope: FileScope,
+  tree: TreeIndex,
+  followed: ReadonlySet<unknown>,
+): readonly Binding[] {
+  return scope
+    .referencesIn(node)
+    .map(scope.bindingOf)
+    .filter((binding) => binding !== undefined)
+    .filter(
+      (binding) =>
+        ![binding.identifier, ...tree.ancestors(binding.identifier)].some(
+          (each) => followed.has(each),
+        ),
+    )
+    .flatMap((binding) => {
+      const body = functionOf(binding);
 
-    return [declared, ...binding.writes].some(isBetween);
-  });
+      return body === undefined || followed.has(body)
+        ? [binding]
+        : [
+            binding,
+            ...bindingsReadThroughCalls(
+              body,
+              scope,
+              tree,
+              new Set([...followed, body]),
+            ),
+          ];
+    });
+}
+
+/** The function a binding names: a function declaration, or a function a variable is declared with. */
+function functionOf(binding: Binding): unknown {
+  const declared =
+    binding.kind === 'function'
+      ? binding.declaration
+      : field(binding.declaration, 'init');
+
+  return isFunction(declared) ? declared : undefined;
 }
 
 /** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */

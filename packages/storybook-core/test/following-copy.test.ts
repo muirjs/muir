@@ -337,6 +337,17 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check calls an arrow function held in a const that reads a name declared between the interaction and the check has no copy',
+    source: inPlay(
+      'const shown = () => canvas.getByText(label);',
+      'await userEvent.click(add);',
+      "const label = '1 item';",
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
       'the first check is copied when it calls a function declared between that calls itself and reads only its own parameters',
     source: inPlay(
       'await userEvent.click(add);',
