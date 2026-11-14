@@ -248,6 +248,39 @@ const writeCases: readonly KindCase[] = [
   },
   {
     title:
+      "a click on the play context's userEvent after the play assigns the click of a ??= whose right side is that userEvent is of unproven origin",
+    source: inPlay(
+      '(driver ??= userEvent).click = fake;',
+      "await userEvent.click(canvas.getByRole('a'));",
+    ),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on the play context's userEvent after the play assigns the click of a ||= whose right side is that userEvent is of unproven origin",
+    source: inPlay(
+      '(driver ||= userEvent).click = fake;',
+      "await userEvent.click(canvas.getByRole('a'));",
+    ),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on the play context's userEvent after the play assigns the click of a &&= whose right side is that userEvent is of unproven origin",
+    source: inPlay(
+      '(driver &&= userEvent).click = fake;',
+      "await userEvent.click(canvas.getByRole('a'));",
+    ),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a ??= whose target is that userEvent is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], '(userEvent ??= driver).click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
       "a click on the play context's userEvent after the play assigns the click of a += whose right side is that userEvent is a user-event 14 click",
     source: inPlay(
       '(label += userEvent).click = fake;',
