@@ -42,10 +42,10 @@ export interface StubSite extends StubMethodCall {
   readonly end: number;
   readonly line: number;
   readonly hasArguments: boolean;
-  /** Inside any parentheses around it. */
+  /** The spy call's span, inside any parentheses, cast or non-null assertion around it. */
   readonly spyCall: Span;
   readonly methodStart: number;
-  /** The end of the stub call's callee and of its type arguments: the `(` of its argument list comes next. */
+  /** The end of the stub call's callee and of its type arguments: the `(` of its argument list comes next, after the `?.` of an optional call. */
   readonly calleeEnd: number;
 }
 
@@ -147,7 +147,7 @@ function stubSite(
   };
 }
 
-/** The stubs of one chain share its spy call, and each earlier one ends sooner. */
+/** The stubs of `stub`'s chain from its first up to `stub`: the stubs that share its spy call and end no later. */
 export function chainUpTo<TStub extends Pick<StubSite, 'spyCall' | 'end'>>(
   stub: Pick<StubSite, 'spyCall' | 'end'>,
   stubs: readonly TStub[],
@@ -176,7 +176,7 @@ export function mockTransformerRewrite(
     : 'chain-not-rewritten';
 }
 
-/** The spy methods that are no stub but return the spy and leave what it returns alone, so a stub chain goes on through them. */
+/** The spy methods that are not stubs but return the spy and leave what it returns alone, so a stub chain goes on through them. */
 const passedThrough: ReadonlySet<unknown> = new Set(['mockName', 'mockClear']);
 
 function chainStart(written: unknown): unknown {

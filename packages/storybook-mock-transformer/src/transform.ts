@@ -63,7 +63,7 @@ export function transform(
   };
 }
 
-/** Moves the stub's arguments into the spy call, as `fn(((value) => () => value)(<arguments>))`, and removes the stub call from the chain. */
+/** Replaces the spy call with `fn(((value) => () => value)(<arguments>))`, moving the stub's arguments into it, and removes the stub call from the chain. */
 function rewriteStub(
   output: MagicString,
   { spy, method, end, spyCall, hasArguments }: StubSite,

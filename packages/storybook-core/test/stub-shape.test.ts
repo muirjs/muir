@@ -129,7 +129,7 @@ describe('definitionTimeStubs', () => {
     });
   });
 
-  it('gives the positions of the stub call, its spy call, its method and its arguments', () => {
+  it('gives the positions of the stub call, its spy call, its method and the end of its callee', () => {
     const source =
       "import { fn } from 'storybook/test';\nexport const A = { args: { g: (fn()).mockName('g').mockReturnValue<string>('x', 'y') } };";
 

@@ -79,7 +79,7 @@ describe('siteFindings', () => {
     );
   });
 
-  it('names the stub method of each finding, so the stubs of one chain can be told apart', () => {
+  it('names the stub method of each finding as the story writes it', () => {
     const code = [
       "import { fn } from 'storybook/test';",
       'export default {',

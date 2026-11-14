@@ -39,10 +39,10 @@ looked for only in the interaction's own block, so a check after the end of a st
 interaction is not looked at, and an interaction that is a step callback's expression body has none. Three kinds of
 statement are not copied: one that is neither a check statement nor a `waitFor(...)` whose callback holds a check, one
 that reads a name declared or written from the start of the interaction up to that statement (a function declaration
-there aside, since hoisting declares it before the interaction; a write to it still counts), counting the names that a
-function it calls by name, declared or held in a variable, reads from outside its body, and one whose equal already
-stands before the interaction in the outermost function around it. A negative check and a `toHaveBeenCalledTimes(0)` check
-are copied like any other. `@layzee/storybook-core` picks the copied check, as it picks globals sites.
+there aside, since hoisting declares it before the interaction; a write to it still counts), counting the names read
+from outside its body by each function it names, declared or held in a variable declared with it, and by each function
+those name in turn, and one whose equal already stands before the interaction in the outermost function around it. A
+negative check and a `toHaveBeenCalledTimes(0)` check are copied like any other. `@layzee/storybook-core` picks the copied check, as it picks globals sites.
 _Avoid_: duplicated assertion, moved check
 
 ### Spy stubs

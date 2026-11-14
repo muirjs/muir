@@ -234,8 +234,8 @@ _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:
 One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
-read from the story file also names the stub method as written (`mockResolvedValueOnce`), so the stubs of one chain
-can be told apart; an `unchecked` finding comes from surviving mutants and names none.
+read from the story file also names the stub method as written (`mockResolvedValueOnce`); an `unchecked` finding comes
+from surviving mutants and names none.
 _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:
@@ -276,8 +276,9 @@ _Avoid_: slow mutant
 **Mock transformer**:
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
 form, which survives the mock reset. It rewrites a stub only when it is the first of its chain and not one of the
-`Once` forms, and keeps a `mockName` or `mockClear` call before it. The `lz-storybook` report gives an erased `Once` stub the verdict `once-not-rewritten`, and an erased
-stub after the first of a chain that is not a `Once` stub the verdict `chain-not-rewritten`.
+`Once` forms, and keeps a `mockName` or `mockClear` call before it. The `lz-storybook` report gives an erased `Once`
+stub the verdict `once-not-rewritten`, and an erased stub after the first of a chain that is not a `Once` stub the
+verdict `chain-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:

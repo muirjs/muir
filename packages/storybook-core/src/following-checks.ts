@@ -288,7 +288,7 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
-/** Whether `statement`, or a function it calls by name, reads a name declared or written in its list's statements from `interactionStatement` up to it; a node without positions counts as not between. */
+/** Whether `statement`, a function it names (declared, or held in a variable declared with it) or a function those name in turn reads a name declared or written in its list's statements from `interactionStatement` up to it. A function declaration counts by its writes only, as hoisting declares it before the interaction; a node without positions counts as not between. */
 function readsNameSetBetween(
   interactionStatement: unknown,
   statement: unknown,
