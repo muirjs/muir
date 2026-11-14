@@ -251,10 +251,10 @@ export function userEventOrigins(
   const knownOrigins = new Map<Binding, MayOrigins>();
   /** The origins `receiver` may have, a user-event's `setup()` having its receiver's; a member under a key the file does not name may be the holder's `userEvent`. */
   const originsIn = (receiver: unknown): MayOrigins => {
-    const setupOf = setupReceiver(receiver);
+    const setupCallReceiver = setupReceiver(receiver);
 
-    if (setupOf !== undefined) {
-      return originsIn(setupOf);
+    if (setupCallReceiver !== undefined) {
+      return originsIn(setupCallReceiver);
     }
 
     const node = unwrap(receiver);
