@@ -1192,6 +1192,14 @@ it with a probe. `lz-refactor` step 5 keeps behaviour by running the tests after
 tests reach the inputs where the two branches could differ. Evidence: `wave2/r7-code-review.md` finding 1;
 `wave2/cycles.log` cycle 21.
 
+**O163. A red written against a parameter the cycle meant to remove had to be rewritten in its own refactor.** In
+round 8 the rewrite rule's stub list was the defect: the rule should take the stub alone. The red called the rule
+with a one-stub list, the form the old signature needed, and the refactor that removed the parameter rewrote the red's
+call and dropped a list-only case. `lz-red` shapes the next test against the interface that exists; it has no prompt
+to write the red against the interface the cycle is heading for when the defect is the interface itself. Seen again:
+a correct green changed a shape assertion and hand-built test values (O76 and O153: cycle 24). Evidence:
+`wave2/cycles.log` cycle 24.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
