@@ -95,11 +95,11 @@ async function testTags(
         (project) =>
           field(project.config.env, '__STORYBOOK_URL__') !== undefined,
       );
+      // Not realpathSync.native, which throws on a RAM disk and gives a mapped drive's UNC path (Vite 8.3.5 utils.ts safeRealpathSync).
+      const realStoryFiles = storyFiles.map((file) => realpathSync(file));
       const env: unknown = (
         storybookProjects.find((project) =>
-          storyFiles.some((file) =>
-            project.matchesTestGlob(realpathSync.native(file)),
-          ),
+          realStoryFiles.some((file) => project.matchesTestGlob(file)),
         ) ?? storybookProjects[0]
       )?.config.env;
 
