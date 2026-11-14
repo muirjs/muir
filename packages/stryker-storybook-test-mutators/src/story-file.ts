@@ -48,10 +48,14 @@ function readNamingFile<T>(
   try {
     return read(program);
   } catch (error) {
-    const file = String(field(program.hub, 'file', 'opts', 'filename'));
+    const filename = field(program.hub, 'file', 'opts', 'filename');
+    const file =
+      typeof filename === 'string'
+        ? `the story file ${filename}`
+        : 'a story file';
 
     throw new Error(
-      `${packageName}: could not read the story file ${file}: ${error instanceof Error ? error.message : String(error)}`,
+      `${packageName}: could not read ${file}: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
     );
   }

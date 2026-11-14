@@ -1,6 +1,7 @@
 // A line-range `--mutate` leaves the Program out of the range, so Stryker first calls a mutator below it. The
-// line-range cases call a mutator at a statement first, replace an earlier node with a mutant switch as Stryker does on leaving a
-// statement, then call it at a later node: what the mutator read of the file must be the file before the switch.
+// line-range cases call a mutator at a statement first, replace an earlier node with a mutant switch as Stryker does
+// on leaving a statement, then call it at a later node: what the mutator read of the file must be the file before
+// the switch.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -18,6 +19,7 @@ import {
 } from '../src/interaction-mutators.ts';
 import type { LzStorybookTestMutator } from '../src/mutator.ts';
 import { spyStubMutator, spyStubOutcomeMutator } from '../src/spy-stub.ts';
+import { perFile } from '../src/story-file.ts';
 import { storyGlobalsMutator } from '../src/story-globals.ts';
 
 interface StoryFile {
@@ -245,46 +247,57 @@ test('LzStorybookStoryGlobals mutates story globals after a mutant is placed ear
   );
 });
 
-test('LzStorybookInteraction names the story file when reading it overflows the stack', () => {
+/** What a per-file read that throws `thrown` throws in turn, read at the Program of a file transformed with `options`. */
+function perFileError(
+  thrown: unknown,
+  options: { readonly filename?: string },
+): unknown {
   const errors: unknown[] = [];
-  const mutator = interactionMutator();
+  const read = perFile(() => {
+    throw thrown;
+  }, undefined);
 
-  transformSync(
-    [
-      'export const Story = {',
-      '  play: async ({ canvas, userEvent }) => {',
-      "    await userEvent.click(canvas.getByRole('button'));",
-      `    x${'.a'.repeat(2300)} = 1;`,
-      '  },',
-      '};',
-      '',
-    ].join('\n'),
-    {
-      configFile: false,
-      babelrc: false,
-      filename: 'deep.stories.ts',
-      code: false,
-      parserOpts: { plugins: ['typescript'] },
-      plugins: [
-        () => ({
-          visitor: {
-            Program(path: NodePath) {
-              try {
-                mutantTypes(mutator, path);
-              } catch (error) {
-                errors.push(error);
-              }
-
-              path.stop();
-            },
+  transformSync('export const Story = {};\n', {
+    configFile: false,
+    babelrc: false,
+    code: false,
+    ...options,
+    plugins: [
+      () => ({
+        visitor: {
+          Program(path: NodePath) {
+            try {
+              read(path);
+            } catch (error) {
+              errors.push(error);
+            }
           },
-        }),
-      ],
-    },
-  );
+        },
+      }),
+    ],
+  });
 
-  const [error] = errors;
+  return errors[0];
+}
+
+test('a per-file read that throws names the story file and keeps the error as its cause', () => {
+  const deep = new RangeError('Maximum call stack size exceeded');
+  const error = perFileError(deep, { filename: 'deep.stories.ts' });
+
   assert.ok(error instanceof Error);
-  assert.match(error.message, /deep\.stories\.ts/);
-  assert.ok(error.cause instanceof RangeError);
+  assert.match(
+    error.message,
+    /^@layzee\/stryker-storybook-test-mutators: could not read the story file .*deep\.stories\.ts: Maximum call stack size exceeded$/,
+  );
+  assert.equal(error.cause, deep);
+});
+
+test('a per-file read that throws in a file with no name says so without a path', () => {
+  const error = perFileError(new RangeError('deep'), {});
+
+  assert.ok(error instanceof Error);
+  assert.equal(
+    error.message,
+    '@layzee/stryker-storybook-test-mutators: could not read a story file: deep',
+  );
 });
