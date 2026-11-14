@@ -18,7 +18,7 @@ import { PlanKind, type schema } from '@stryker-mutator/api/core';
 
 import { storybookReporter, storyFileFindings } from '../src/reporter.ts';
 import { describeVerdict, spyStubReason } from '../src/stub-verdict.ts';
-import { untaggedPreviewTestTags } from './support/test-tags.ts';
+import { project } from './support/storybook-project.ts';
 import recorded from './fixtures/reporter/mutation.json' with { type: 'json' };
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -1121,13 +1121,7 @@ describe('storyFileFindings', () => {
           () => {
             throw tooLarge;
           },
-          {
-            configDir: '.storybook',
-            storyFiles: 'fallback',
-            transformer: 'seen',
-            previewTest: {},
-            testTags: untaggedPreviewTestTags,
-          },
+          project('seen'),
           (message) => {
             throw new Error(`unexpected warning: ${message}`);
           },

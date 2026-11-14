@@ -224,7 +224,11 @@ function stubFindings(
   ];
 }
 
-/** The spy stub findings of the story file `file`, whose source `sourceOf` reads; none, after a warning, when Babel cannot parse it or reading its tree throws a `RangeError`. */
+/**
+ * The spy stub findings of the story file `file`, whose source `sourceOf` reads; none, after a warning, when Babel
+ * cannot parse it or reading its tree throws a `RangeError`. An error from `sourceOf`, such as
+ * `ERR_FS_FILE_TOO_LARGE` for a file over 2 GiB, propagates and fails the report.
+ */
 export function storyFileFindings(
   file: string,
   sourceOf: () => string,
