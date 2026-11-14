@@ -195,11 +195,11 @@ describe('definitionTimeStubs', () => {
 
 describe('chainUpTo', () => {
   it("gives the stubs of a stub's chain from its first up to the stub, leaving out later stubs and other chains", () => {
-    const spyCall = { start: 0, end: 4 };
-    const first = { spyCall, end: 10 };
-    const second = { spyCall, end: 20 };
-    const third = { spyCall, end: 30 };
-    const otherChain = { spyCall: { start: 40, end: 44 }, end: 50 };
+    const otherChain = { spyCall: { start: 0, end: 4 }, end: 8 };
+    const spyCall = { start: 10, end: 14 };
+    const first = { spyCall, end: 20 };
+    const second = { spyCall, end: 30 };
+    const third = { spyCall, end: 40 };
 
     assert.deepEqual(chainUpTo(second, [third, otherChain, first, second]), [
       first,
