@@ -185,6 +185,15 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
           );
         }
 
+        if (interaction.kind === 'fireEvent') {
+          yield t.sequenceExpression([
+            t.cloneNode(path.node),
+            t.cloneNode(path.node),
+          ]);
+
+          return;
+        }
+
         const twice = [path.node, path.node].map((body) =>
           t.expressionStatement(t.awaitExpression(t.cloneNode(body))),
         );

@@ -105,15 +105,18 @@ export const repeatCases: readonly Case[] = [
     ],
   },
   {
+    id: 'repeat-for-each-body-fire-event',
+    title:
+      'a fireEvent.click that is the expression body of an arrow given to forEach runs twice, at once, in a sequence',
+    source: inPlay('buttons.forEach((button) => fireEvent.click(button));'),
+    expect: [[repeat, 'fireEvent.click(button), fireEvent.click(button)']],
+  },
+  {
     id: 'repeat-step-body-fire-event',
-    title: 'a fireEvent.click that is the expression body of a step runs twice',
+    title:
+      'a fireEvent.click that is the expression body of a step runs twice, at once, in a sequence',
     source: `export const Story = {\n  play: async ({ step }) => {\n    await step('Add', () => fireEvent.click(button));\n  },\n};\n`,
-    expect: [
-      [
-        repeat,
-        '(async () => { await fireEvent.click(button); await fireEvent.click(button); })()',
-      ],
-    ],
+    expect: [[repeat, 'fireEvent.click(button), fireEvent.click(button)']],
   },
   {
     id: 'repeat-skip-fire-event-change',
