@@ -4,8 +4,67 @@ import { describe, it } from 'node:test';
 import { parse } from '@babel/parser';
 
 import { field, list } from '../src/node-field.ts';
-import { equivalent, indexTree } from '../src/node-tree.ts';
+import {
+  childNodes,
+  descendants,
+  equivalent,
+  indexTree,
+  isFunction,
+  isNode,
+  memberName,
+} from '../src/node-tree.ts';
 import { programOf } from './support/parse-module.ts';
+
+describe('isNode', () => {
+  it('is false for an object whose type is not a string', () => {
+    assert.equal(isNode({ type: 1 }), false);
+  });
+});
+
+describe('isFunction', () => {
+  it('is true for a private class method', () => {
+    const method = descendants(programOf('class A { #m() {} }')).find(
+      (node) => field(node, 'type') === 'ClassPrivateMethod',
+    );
+
+    assert.equal(isFunction(method), true);
+  });
+});
+
+describe('childNodes', () => {
+  it('leaves out the comments of a node', () => {
+    const [statement] = list(field(programOf('// note', 'a;'), 'body'));
+
+    assert.deepEqual(childNodes(statement), [field(statement, 'expression')]);
+  });
+});
+
+describe('descendants', () => {
+  it('gives the node and every node below it', () => {
+    const [statement] = list(field(programOf('a;'), 'body'));
+
+    assert.deepEqual(descendants(statement), [
+      statement,
+      field(statement, 'expression'),
+    ]);
+  });
+});
+
+describe('memberName', () => {
+  it('gives undefined for a computed member whose key is a bigint, whose value Babel holds as a string', () => {
+    const [statement] = list(field(programOf('a[1n];'), 'body'));
+
+    assert.equal(memberName(field(statement, 'expression')), undefined);
+  });
+
+  it('gives undefined for a JSX member, whose key is a JSX identifier', () => {
+    const member = descendants(
+      parse('<a.b />;', { plugins: ['jsx'] }).program,
+    ).find((node) => field(node, 'type') === 'JSXMemberExpression');
+
+    assert.equal(memberName(member), undefined);
+  });
+});
 
 describe('indexTree', () => {
   it('gives the parent of a node', () => {
@@ -15,6 +74,16 @@ describe('indexTree', () => {
     assert.equal(
       indexTree(program).parentOf(field(statement, 'expression')),
       statement,
+    );
+  });
+
+  it('gives the ancestors of a node, nearest first, up to the program', () => {
+    const program = programOf('call(a);');
+    const [statement] = list(field(program, 'body'));
+
+    assert.deepEqual(
+      indexTree(program).ancestors(field(statement, 'expression')),
+      [statement, program],
     );
   });
 
@@ -40,6 +109,32 @@ describe('indexTree', () => {
     const consequent = list(field(switchCase, 'consequent'));
 
     assert.deepEqual(indexTree(program).listOf(consequent[1]), consequent);
+  });
+
+  it("gives a static block's statements as the list a statement in the block stands in", () => {
+    const program = programOf(
+      'class A {',
+      '  static {',
+      '    first();',
+      '  }',
+      '}',
+    );
+    const block = descendants(program).find(
+      (node) => field(node, 'type') === 'StaticBlock',
+    );
+    const body = list(field(block, 'body'));
+
+    assert.deepEqual(indexTree(program).listOf(body[0]), body);
+  });
+
+  it("gives a namespace's statements as the list a statement in the namespace stands in", () => {
+    const program = programOf('namespace N {', '  first();', '}');
+    const block = descendants(program).find(
+      (node) => field(node, 'type') === 'TSModuleBlock',
+    );
+    const body = list(field(block, 'body'));
+
+    assert.deepEqual(indexTree(program).listOf(body[0]), body);
   });
 });
 
