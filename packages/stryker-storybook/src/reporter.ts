@@ -165,10 +165,12 @@ function consoleBlock({
     findings.length === 0
       ? `${packageName}: no spy stub findings`
       : `${packageName}: ${findings.length} spy stub findings (${counts.join(', ')})`,
-    ...findings.map(
-      (finding) =>
-        `  ${finding.verdict}  ${finding.file}:${finding.line}${finding.verdict === 'unchecked' ? '' : ` ${finding.method}`}  ${finding.reason}; ${finding.fix}`,
-    ),
+    ...findings.map((finding) => {
+      const method =
+        finding.verdict === 'unchecked' ? '' : ` ${finding.method}`;
+
+      return `  ${finding.verdict}  ${finding.file}:${finding.line}${method}  ${finding.reason}; ${finding.fix}`;
+    }),
     ...(hints.length === 0
       ? []
       : [
