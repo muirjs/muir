@@ -191,6 +191,16 @@ describe('mayImportItself', () => {
       [true, true],
     );
   });
+
+  it('does not hold for an import() or a require() of a string literal that names another file, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf(
+        "const stories = await import('./Other.stories');",
+        "const utility = require('./utility');",
+      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [false, false],
+    );
+  });
 });
 
 describe('csfFile readByOtherObjects', () => {

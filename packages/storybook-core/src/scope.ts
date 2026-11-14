@@ -1,5 +1,5 @@
 import { isMember, unwrap } from './csf-nodes.ts';
-import { isRecord } from './is-record.ts';
+import { isRecord, isStringArray } from './is-record.ts';
 import { field, list } from './node-field.ts';
 import { childNodes, isFunction } from './node-tree.ts';
 
@@ -34,7 +34,7 @@ type DeclaredBinding = Omit<Binding, 'writes'>;
 
 interface Scope {
   readonly parent: Scope | undefined;
-  /** A function's or the Program's scope, where a `var` is bound. */
+  /** A function's scope, where a `var` is bound; a `var` that meets no such scope is bound in the Program's. */
   readonly holdsVar: boolean;
   readonly bindings: Map<string, DeclaredBinding>;
 }
@@ -64,27 +64,24 @@ const nameKeys: ReadonlyMap<unknown, readonly string[]> = new Map([
   ['PrivateName', ['id']],
   ['ClassExpression', ['id']],
   ['ClassDeclaration', ['id']],
+  ['TSDeclareMethod', ['params']],
 ]);
 
-/** The key under which a node of each type holds a name that reads no binding unless the node is computed: a member's property, a property's or class member's key. */
-const keyNames: ReadonlyMap<unknown, string> = new Map([
-  ['MemberExpression', 'property'],
-  ['OptionalMemberExpression', 'property'],
-  ['ObjectProperty', 'key'],
-  ['ObjectMethod', 'key'],
-  ['ClassProperty', 'key'],
-  ['ClassPrivateProperty', 'key'],
-  ['ClassAccessorProperty', 'key'],
-  ['ClassMethod', 'key'],
-  ['ClassPrivateMethod', 'key'],
+/** The keys under which a node of each type holds a name that reads no binding unless the node is computed: a member's property, a property's, class field's or overload signature's key. A method's key is read where functions are, and a private key is a `PrivateName`, which reads nothing. */
+const keyNames: ReadonlyMap<unknown, readonly string[]> = new Map([
+  ['MemberExpression', ['property']],
+  ['OptionalMemberExpression', ['property']],
+  ['ObjectProperty', ['key']],
+  ['ClassProperty', ['key']],
+  ['ClassAccessorProperty', ['key']],
+  ['TSDeclareMethod', ['key']],
 ]);
 
-/** The keys that hold TypeScript types, which read no value binding. Babel 7 puts a call's type arguments under `typeParameters`, Babel 8 under `typeArguments`. */
+/** The keys that hold TypeScript types, which read no value binding. Babel 7 puts a call's type arguments under `typeParameters`, Babel 8 under `typeArguments`. A return type needs no key: Babel wraps it in a `TSTypeAnnotation`, whose `typeAnnotation` is skipped. */
 const typeKeys: readonly string[] = [
   'typeAnnotation',
   'typeParameters',
   'typeArguments',
-  'returnType',
   'superTypeParameters',
   'superTypeArguments',
   'implements',
@@ -97,18 +94,19 @@ const typeDeclarations: readonly unknown[] = [
   'TSDeclareFunction',
   'TSEnumDeclaration',
   'TSImportEqualsDeclaration',
+  'TSIndexSignature',
 ];
 
 /** The children of `node` that may read or write a binding: not its types or labels. */
 function readChildren(node: unknown): readonly unknown[] {
   const type = field(node, 'type');
-  const keyName =
-    field(node, 'computed') === true ? undefined : keyNames.get(type);
   const skipped = [
-    ...typeKeys,
-    ...(nameKeys.get(type) ?? []),
-    ...(keyName === undefined ? [] : [keyName]),
+    typeKeys,
+    nameKeys.get(type),
+    field(node, 'computed') === true ? undefined : keyNames.get(type),
   ]
+    .filter(isStringArray)
+    .flat()
     .map((key) => field(node, key))
     .flatMap((value) => (Array.isArray(value) ? list(value) : [value]));
 
@@ -131,7 +129,7 @@ export function fileScope(program: unknown): FileScope {
       writers.push(writer);
     }
   };
-  const scopeIn = (parent: Scope | undefined, holdsVar: boolean): Scope => ({
+  const scopeIn = (parent: Scope | undefined, holdsVar = false): Scope => ({
     parent,
     holdsVar,
     bindings: new Map(),
@@ -237,8 +235,7 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (isFunction(node)) {
-      const own =
-        type === 'FunctionDeclaration' ? scope : scopeIn(scope, false);
+      const own = type === 'FunctionDeclaration' ? scope : scopeIn(scope);
       const params = scopeIn(own, true);
 
       if (field(node, 'computed') === true) {
@@ -266,13 +263,7 @@ export function fileScope(program: unknown): FileScope {
         ),
       );
 
-      const body = field(node, 'body');
-      const bodyScope = scopeIn(params, false);
-
-      (field(body, 'type') === 'BlockStatement'
-        ? list(field(body, 'body'))
-        : [body]
-      ).forEach((child) => visit(child, bodyScope));
+      visit(field(node, 'body'), params);
 
       return;
     }
@@ -287,7 +278,7 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (type === 'ClassExpression') {
-      const inner = scopeIn(scope, false);
+      const inner = scopeIn(scope);
 
       declare(field(node, 'id'), {
         kind: 'class',
@@ -322,7 +313,7 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (type === 'CatchClause') {
-      const inner = scopeIn(scope, false);
+      const inner = scopeIn(scope);
 
       declarePattern(field(node, 'param'), {
         kind: 'let',
@@ -336,7 +327,7 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (type === 'SwitchStatement') {
-      const cases = scopeIn(scope, false);
+      const cases = scopeIn(scope);
 
       visit(field(node, 'discriminant'), scope);
       list(field(node, 'cases')).forEach((child) => visit(child, cases));
@@ -370,15 +361,10 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (type === 'ForOfStatement' || type === 'ForInStatement') {
-      const head = scopeIn(scope, false);
-      const left = field(node, 'left');
+      const head = scopeIn(scope);
 
-      if (field(left, 'type') === 'VariableDeclaration') {
-        visit(left, head);
-      } else {
-        write(left, node, head);
-      }
-
+      // A declaring head is no pattern, so eachName visits it as a declaration rather than writing it.
+      write(field(node, 'left'), node, head);
       visit(field(node, 'right'), head);
       visit(field(node, 'body'), head);
 
@@ -394,7 +380,7 @@ export function fileScope(program: unknown): FileScope {
     readChildren(node).forEach((child) => visit(child, scope));
   };
 
-  visit(program, scopeIn(undefined, true));
+  visit(program, scopeIn(undefined));
   references.forEach(([identifier, scope]) => {
     const binding = lookUp(scope, field(identifier, 'name'));
 
