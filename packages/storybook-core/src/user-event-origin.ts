@@ -117,10 +117,7 @@ export function userEventOrigins(
     const parent = tree.parentOf(reference);
 
     if (field(parent, 'type') === 'VariableDeclarator') {
-      return (
-        field(parent, 'init') === reference &&
-        field(parent, 'id', 'type') === 'ObjectPattern'
-      );
+      return field(parent, 'id', 'type') === 'ObjectPattern';
     }
 
     return isMember(parent) && field(parent, 'object') === reference;
@@ -363,10 +360,7 @@ function setupReceiver(value: unknown): unknown {
 /** The one value a local is ever given, by its declarator's `init` or a later `=`; `undefined` when anything else, such as `++`, a `for...of` head or a second `var`, also changes it. */
 function oneValue(binding: Binding): unknown {
   const assigned = binding.writes.map((write) =>
-    field(write, 'type') === 'AssignmentExpression' &&
-    field(write, 'operator') === '='
-      ? field(write, 'right')
-      : undefined,
+    field(write, 'operator') === '=' ? field(write, 'right') : undefined,
   );
   const init = field(binding.declaration, 'init');
   const values = [...(isNode(init) ? [init] : []), ...assigned];

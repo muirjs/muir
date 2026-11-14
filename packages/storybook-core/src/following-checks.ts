@@ -136,10 +136,11 @@ function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
     !isNode(node) ||
     (isFunction(node) && !isCallbackOf(node, tree, isStepCall))
   ) {
+    // Stryker disable next-line ArrayDeclaration: a string among the later statements changes no result, as holdsInteraction, checkOf and statementAt find nothing in a string
     return [];
   }
 
-  const statements = tree.listOf(node) ?? [];
+  const statements = list(tree.listOf(node));
 
   return [
     ...statements.slice(statements.indexOf(node) + 1),
@@ -195,7 +196,7 @@ export function followingChecksReader(
       tokenOf,
     );
 
-    return (statement) => statements.get(tokenOf(statement)) ?? [];
+    return (statement) => list(statements.get(tokenOf(statement)));
   });
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
@@ -315,7 +316,7 @@ function readsNameSetBetween(
   return scope.referencesIn(statement).some((name) => {
     const binding = scope.bindingOf(name);
 
-    return [binding?.identifier, ...(binding?.writes ?? [])].some(isBetween);
+    return [binding?.identifier, ...list(binding?.writes)].some(isBetween);
   });
 }
 
@@ -349,7 +350,7 @@ function endAt(
       : { by: 'maybe' };
   }
 
-  const statements = tree.listOf(read.node) ?? [];
+  const statements = list(tree.listOf(read.node));
 
   return {
     by: 'interaction',
