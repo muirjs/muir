@@ -220,13 +220,7 @@ export function interactionsOf(
         ? node
         : undefined;
   const found = descendants(program).flatMap((node) => {
-    const expression = statementExpressionOf(node);
-
-    if (expression === undefined) {
-      return [];
-    }
-
-    const call = awaited(expression);
+    const call = awaited(statementExpressionOf(node));
     const kind = kindOf(call);
     const args = list(field(call, 'arguments'));
 
