@@ -22,8 +22,8 @@ import {
   interactionHints,
   type InteractionHint,
   type ReportFiles,
+  skippedOnRangeError,
 } from './interaction-hints.ts';
-import { mutatePatterns } from './options.ts';
 import { packageName } from './package-name.ts';
 import {
   isStoryFile,
@@ -122,18 +122,10 @@ export function storybookReporter(options: object, log: ProjectLog) {
       );
     },
     onMutationTestReportReady({ files }: ReportInput): void {
-      const warnUnparsable = (fileName: string, error: unknown): void =>
-        log.warn(
-          `${packageName}: Babel could not parse ${projectPath(fileName)}, so lz-storybook skipped its spy stubs: ${error instanceof Error ? error.message : String(error)}`,
-        );
       const findings = excludesSpyStub(options)
         ? []
-        : stubFindings(files, storybook(), warnUnparsable);
-      const hints = interactionHints(
-        files,
-        mutatePatterns(options),
-        (message) => log.warn(message),
-      );
+        : stubFindings(files, storybook(), (message) => log.warn(message));
+      const hints = interactionHints(files, (message) => log.warn(message));
       const report: LzStorybookReport = {
         findings,
         interactionHints: hints,
@@ -202,7 +194,7 @@ function consoleBlock({
 function stubFindings(
   files: ReportInput['files'],
   project: StorybookProject,
-  onUnparsable: (fileName: string, error: unknown) => void,
+  warn: (message: string) => void,
 ): readonly StubFinding[] {
   const storyFiles = new Set([
     ...Object.keys(files).filter((file) => isStoryFile(project, resolve(file))),
@@ -211,12 +203,12 @@ function stubFindings(
 
   return [
     ...[...storyFiles].flatMap((file) =>
-      siteFindings(
-        files[file]?.source ?? readFileSync(file, 'utf8'),
+      storyFileFindings(
         file,
+        () => files[file]?.source ?? readFileSync(file, 'utf8'),
         project,
-        onUnparsable,
-      ).map((finding) => ({ file, ...finding })),
+        warn,
+      ),
     ),
     ...Object.entries(files).flatMap(([file, { mutants }]) =>
       [
@@ -230,6 +222,33 @@ function stubFindings(
       ].map((line) => ({ file, line, ...uncheckedFinding })),
     ),
   ];
+}
+
+/**
+ * The spy stub findings of the story file `file`, whose source `sourceOf` reads; none, after a warning, when Babel
+ * cannot parse it or reading its tree throws a `RangeError`. An error from `sourceOf`, such as
+ * `ERR_FS_FILE_TOO_LARGE` for a file over 2 GiB, propagates and fails the report.
+ */
+export function storyFileFindings(
+  file: string,
+  sourceOf: () => string,
+  project: StorybookProject,
+  warn: (message: string) => void,
+): readonly StubFinding[] {
+  const onUnparsable = (fileName: string, error: unknown): void =>
+    warn(
+      `${packageName}: Babel could not parse ${projectPath(fileName)}, so lz-storybook skipped its spy stubs: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  const source = sourceOf();
+  const findings = skippedOnRangeError(
+    () => siteFindings(source, file, project, onUnparsable),
+    (message) =>
+      warn(
+        `${packageName}: lz-storybook could not read the spy stubs of ${projectPath(file)}, so it skipped them: ${message}`,
+      ),
+  );
+
+  return (findings ?? []).map((finding) => ({ file, ...finding }));
 }
 
 function excludesSpyStub(options: object): boolean {

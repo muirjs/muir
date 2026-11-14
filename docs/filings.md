@@ -1628,6 +1628,14 @@ package now builds the table through a helper with a `const` type parameter, and
 survivors. Worth a comment on #6208 if Lars wants one: a `const` assertion is the common case, and it
 hides the most code.
 
+**It hides whole stories too.** Measured on 2026-11-13: a meta written `export default { ... } as Meta`
+or a story written `export const X = { ... } as StoryObj` gets no mutant anywhere in it, play functions
+included, so the Storybook test mutators place nothing there and a mutation run reports nothing for it;
+the same objects with `satisfies` get their mutants. The cause is the same skip: `shouldSkip` in
+`babel-transformer.ts` stops traversal at every node `isTypeNode` matches, and `TSAsExpression` is on its
+list (still so on `master` on 2026-11-13). A comment on #6208 could name this case, since `as Meta` is a
+common way to type a CSF file.
+
 ## stryker-mutator/stryker-js: the HTML report never shows its "Stryker" title postfix
 
 Status: draft, not filed (2026-11-03). A search of stryker-js issues and PRs for "titlePostfix", and of

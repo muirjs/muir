@@ -9,9 +9,9 @@ import {
   unwrap,
   type Assignment,
 } from './csf-nodes.ts';
-import { isRecord } from './is-record.ts';
 import { namesReadElsewhere } from './names-read-elsewhere.ts';
 import { field, list } from './node-field.ts';
+import { everyRecordIn, importSourceOf } from './node-tree.ts';
 import {
   isObjectLiteral,
   writtenValue,
@@ -596,7 +596,7 @@ export function mayImportItself(
 ): boolean {
   const file = resolve(fileName);
   const withoutExtension = file.slice(0, file.length - extname(file).length);
-  const nodes = nodesIn(body);
+  const nodes = everyRecordIn(body);
   const namesThisFile = (specifier: unknown): boolean => {
     if (typeof specifier !== 'string' || !specifier.startsWith('.')) {
       return false;
@@ -618,18 +618,17 @@ export function mayImportItself(
     nodes
       .filter(
         (node) =>
-          field(node, 'callee', 'type') === 'Import' ||
+          importSourceOf(node) !== undefined ||
           field(node, 'callee', 'name') === 'require',
       )
       .some(
         (call) =>
-          field(list(field(call, 'arguments'))[0], 'type') !== 'StringLiteral',
+          field(
+            importSourceOf(call) ?? list(field(call, 'arguments'))[0],
+            'type',
+          ) !== 'StringLiteral',
       )
   );
-}
-
-function nodesIn(node: object): readonly unknown[] {
-  return [node, ...Object.values(node).filter(isRecord).flatMap(nodesIn)];
 }
 
 function storyNode(init: unknown, bindings: Bindings): unknown {

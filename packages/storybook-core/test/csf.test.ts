@@ -3,10 +3,15 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { csfFile, csfShapes, topLevelBindings } from '../src/csf.ts';
+import {
+  csfFile,
+  csfShapes,
+  mayImportItself,
+  topLevelBindings,
+} from '../src/csf.ts';
 import { field, list } from '../src/node-field.ts';
 import { sitesOf } from '../src/sites.ts';
-import { bodyOf, programOf } from './support/parse-module.ts';
+import { bodyOf, programOf, programsOf } from './support/parse-module.ts';
 
 function fileOf(...lines: readonly string[]) {
   const body = bodyOf(...lines);
@@ -173,6 +178,27 @@ describe('csfFile written', () => {
         'export const Primary = { args };',
       ).includes('args'),
       false,
+    );
+  });
+});
+
+describe('mayImportItself', () => {
+  it('holds for an import() whose specifier is not a string literal, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf('const stories = await import(name);').map(({ body }) =>
+        mayImportItself(body, 'Button.stories.ts'),
+      ),
+      [true, true],
+    );
+  });
+
+  it('does not hold for an import() or a require() of a string literal that names another file, in either parsed shape', () => {
+    assert.deepEqual(
+      programsOf(
+        "const stories = await import('./Other.stories');",
+        "const utility = require('./utility');",
+      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      [false, false],
     );
   });
 });

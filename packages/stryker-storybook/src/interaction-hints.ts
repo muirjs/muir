@@ -1,11 +1,13 @@
-import { resolve } from 'node:path';
-
+import {
+  csfShapes,
+  field,
+  type Interaction,
+  interactionsOf,
+  type StoryInteractions,
+} from '@layzee/storybook-core';
 import type { schema } from '@stryker-mutator/api/core';
 
-import {
-  interactionShapeReader,
-  type InteractionShape,
-} from './interaction-shapes.ts';
+import { type InteractionShape, shapesOf } from './interaction-shapes.ts';
 import { packageName } from './package-name.ts';
 import { parseProgram } from './parse.ts';
 import { storybookPluginName } from './stub-verdict.ts';
@@ -19,13 +21,6 @@ export const interactionMutatorNames = [
 ] as const;
 
 type InteractionMutatorName = (typeof interactionMutatorNames)[number];
-
-/**
- * `LzStorybookInteraction` places a mutant at every interaction outside a `beforeEach` or `afterEach`, and Stryker
- * keeps a mutant it ignores in the report as Ignored, so the ranges of its mutants, whatever their status, are the
- * interactions the test mutators read.
- */
-const siteMutatorName: InteractionMutatorName = 'LzStorybookInteraction';
 
 export interface InteractionHint {
   readonly file: string;
@@ -59,12 +54,11 @@ interface ShapedSurvivor {
 }
 
 /**
- * One hint per line and shape of the surviving interaction mutants in `files`; `warn` names each file that gets none
- * for a reason the run should show.
+ * One hint per line and shape of the surviving interaction mutants in `files`; `warn` names each file or survivor that
+ * gets none for a reason the run should show.
  */
 export function interactionHints(
   files: ReportFiles,
-  mutate: readonly string[],
   warn: (message: string) => void,
 ): readonly InteractionHint[] {
   return Object.entries(files).flatMap(([file, { source, mutants }]) => {
@@ -78,63 +72,35 @@ export function interactionHints(
       return [];
     }
 
-    const rangePattern = mutate.find((pattern) =>
-      namesWithLineRange(pattern, file),
-    );
+    const interactions = interactionsOfSource(source, file, warn);
 
-    if (rangePattern !== undefined) {
-      warn(
-        `${packageName}: the mutate pattern ${rangePattern} gives ${file} a line range, so lz-storybook gave it no interaction hints: an interaction outside the range has no ${siteMutatorName} mutant to end a hint's window`,
-      );
-
+    if (interactions === undefined) {
       return [];
     }
 
-    const program = parsed(source, file, warn);
+    const statements = interactions.all.flatMap((interaction) => {
+      const location = locationOf(interaction.node);
 
-    if (program === undefined) {
-      return [];
-    }
+      return location === undefined ? [] : [{ interaction, location }];
+    });
+    const shaped = survivors.flatMap(({ mutant, name }) => {
+      const statement = statementHolding(statements, mutant.location.start);
 
-    const sites = mutants
-      .filter(({ mutatorName }) => mutatorName === siteMutatorName)
-      .map(({ location }) => location);
-    const shapesAt = interactionShapeReader(program, sites);
-    const held = survivors.flatMap(({ mutant, name }) => {
-      const site = siteHolding(sites, mutant.location.start);
+      if (statement === undefined) {
+        const { line, column } = mutant.location.start;
+        warn(
+          `${packageName}: ${file}:${line}:${column} has a surviving interaction mutant outside every interaction, so lz-storybook gave it no interaction hint`,
+        );
 
-      return site === undefined ? [] : [{ mutant, name, site }];
+        return [];
+      }
+
+      const [shape] = shapesOf(statement.interaction, interactions);
+
+      return shape === undefined ? [] : [{ mutant, name, shape }];
     });
 
-    if (held.length < survivors.length) {
-      warn(
-        `${packageName}: ${file} has a surviving interaction mutant outside every ${siteMutatorName} mutant, so lz-storybook gave it no interaction hints`,
-      );
-
-      return [];
-    }
-
-    const read = held.flatMap(({ mutant, name, site }) => {
-      const shapes = shapesAt(site);
-
-      return shapes === undefined ? [] : [{ mutant, name, shapes }];
-    });
-
-    if (read.length < held.length) {
-      warn(
-        `${packageName}: ${file} has an ${siteMutatorName} mutant whose range no node of the parsed file has, so lz-storybook gave it no interaction hints`,
-      );
-
-      return [];
-    }
-
-    return groupedHints(
-      file,
-      mutants,
-      read.flatMap(({ mutant, name, shapes: [shape] }) =>
-        shape === undefined ? [] : [{ mutant, name, shape }],
-      ),
-    );
+    return groupedHints(file, mutants, shaped);
   });
 }
 
@@ -148,23 +114,16 @@ function survivingName({
     : undefined;
 }
 
-// StrykerJS 10.1.1 core, src/fs/mutate-pattern-constants.ts
-const mutationRange = /(.*?):((\d+)(?::(\d+))?-(\d+)(?::(\d+))?)$/;
-
-/** StrykerJS 10.1.1 refuses a line range on a glob (src/config/options-validator.ts), so a ranged pattern names one file. */
-function namesWithLineRange(pattern: string, file: string): boolean {
-  const path = mutationRange.exec(pattern)?.[1];
-
-  return path !== undefined && resolve(path) === resolve(file);
-}
-
-function parsed(
+/** The interactions of `source`; `undefined`, after a warning naming `file`, when Babel cannot parse it or reading it fails. */
+function interactionsOfSource(
   source: string,
   file: string,
   warn: (message: string) => void,
-): ReturnType<typeof parseProgram> | undefined {
+): StoryInteractions | undefined {
+  let program: ReturnType<typeof parseProgram>;
+
   try {
-    return parseProgram(source, file);
+    program = parseProgram(source, file);
   } catch (error) {
     warn(
       `${packageName}: Babel could not parse ${file}, so lz-storybook gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
@@ -172,19 +131,56 @@ function parsed(
 
     return undefined;
   }
+
+  return skippedOnRangeError(
+    () => interactionsOf(program, csfShapes(program)),
+    (message) =>
+      warn(
+        `${packageName}: lz-storybook could not read the interactions of ${file}, so it gave no interaction hints for it: ${message}`,
+      ),
+  );
 }
 
-/** The innermost site whose range holds `position`, the one that starts last: a target literal lies inside its interaction. */
-function siteHolding(
-  ranges: readonly schema.Location[],
+/**
+ * What `read` gives, or `undefined` once `warn` has the message of any `RangeError` it throws: a crafted deep file
+ * overflows the stack with one, but a reader bug such as `'x'.repeat(-1)` is skipped the same way. Any other error
+ * propagates.
+ */
+export function skippedOnRangeError<T>(
+  read: () => T,
+  warn: (message: string) => void,
+): T | undefined {
+  try {
+    return read();
+  } catch (error) {
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
+
+    warn(error.message);
+
+    return undefined;
+  }
+}
+
+/** An interaction with the range of its statement in the report. */
+interface InteractionStatement {
+  readonly interaction: Interaction;
+  readonly location: schema.Location;
+}
+
+/** The innermost statement whose range holds `position`, the one that starts last: a target literal lies inside its interaction. */
+function statementHolding(
+  statements: readonly InteractionStatement[],
   position: schema.Position,
-): schema.Location | undefined {
-  const holding = ranges.filter(
-    ({ start, end }) => !isBefore(position, start) && !isBefore(end, position),
+): InteractionStatement | undefined {
+  const holding = statements.filter(
+    ({ location: { start, end } }) =>
+      !isBefore(position, start) && !isBefore(end, position),
   );
 
-  return holding.find(({ start }) =>
-    holding.every((other) => !isBefore(start, other.start)),
+  return holding.find(({ location: { start } }) =>
+    holding.every((other) => !isBefore(start, other.location.start)),
   );
 }
 
@@ -193,6 +189,28 @@ function isBefore(first: schema.Position, second: schema.Position): boolean {
     first.line < second.line ||
     (first.line === second.line && first.column < second.column)
   );
+}
+
+/** The report's 1-based range of an interaction's statement, whose Babel columns are 0-based; `undefined` for a statement with no `loc`. */
+function locationOf(node: Interaction['node']): schema.Location | undefined {
+  const start = field(node, 'loc', 'start');
+  const end = field(node, 'loc', 'end');
+  const startLine = field(start, 'line');
+  const startColumn = field(start, 'column');
+  const endLine = field(end, 'line');
+  const endColumn = field(end, 'column');
+
+  return typeof startLine === 'number' &&
+    typeof startColumn === 'number' &&
+    typeof endLine === 'number' &&
+    typeof endColumn === 'number'
+    ? {
+        // Stryker disable next-line ArithmeticOperator: a survivor starts at its interaction statement's start or at a node at least two columns inside it, so moving the first column two to the left lets no other survivor in
+        start: { line: startLine, column: startColumn + 1 },
+        // Stryker disable next-line ArithmeticOperator: a survivor starts at an interaction statement's start or at a node that ends before the statement's closing parenthesis, so moving the last column two to the left lets none out
+        end: { line: endLine, column: endColumn + 1 },
+      }
+    : undefined;
 }
 
 /** The survivors that share a line and a shape. */

@@ -2,13 +2,14 @@
 
 `LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`, `LzStorybookInteractionTarget`
 and `LzStorybookAssertionBefore` skip an interaction only when it stands in a `beforeEach` or `afterEach` (a site
-rule, which `isSkipped` decides). Every other interaction gets its mutants, including one that looks redundant: an
-interaction whose following checks are all negative, a click or hover directly before a `type` of the same target,
-and a `type` or `clear` that a later `clear` of the same target undoes. When such a mutant survives and the user
-judges it equivalent, they disable it with a reasoned `// Stryker disable next-line <mutator>: <reason>` comment,
-which Stryker reports as `ignored`, as StrykerJS asks for equivalent mutants. Lars ruled on 2026-11-12 ("1: Approve A
-plus survivor hints recommendation"), where A was to place all three skipped shapes for every mutator that shared
-them, delete the user-event 14 proof that only the click-before-type skip read, and keep the hook skip as a site rule.
+rule, which the interaction reader's `inHook` decides and `story-file.ts` applies once for all five). Every other
+interaction gets its mutants, including one that looks redundant: an interaction whose following checks are all
+negative, a click or hover directly before a `type` of the same target, and a `type` or `clear` that a later `clear`
+of the same target undoes. When such a mutant survives and the user judges it equivalent, they disable it with a
+reasoned `// Stryker disable next-line <mutator>: <reason>` comment, which Stryker reports as `ignored`, as StrykerJS
+asks for equivalent mutants. Lars ruled on 2026-11-12 ("1: Approve A plus survivor hints recommendation"), where A was
+to place all three skipped shapes for every mutator that shared them, delete the user-event 14 proof that only the
+click-before-type skip read, and keep the hook skip as a site rule.
 
 None of the three skips was an equivalence skip (docs/adr ADR-0006), and the measurements showed each one hid
 killable mutants:

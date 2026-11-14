@@ -1,7 +1,12 @@
 import { composedPlayCases } from './composed-play-cases.ts';
 import { rawDomCases } from './raw-dom-cases.ts';
 import { skippedInteractionCases } from './skipped-interaction-cases.ts';
-import { type Case, inPlay, inPlayWith } from './support/case.ts';
+import {
+  type Case,
+  inPlay,
+  inPlayWith,
+  namespaceSteps,
+} from './support/case.ts';
 
 const interaction = 'LzStorybookInteraction';
 
@@ -101,6 +106,31 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'user-event-setup-static-block-shadow',
+    title:
+      'a call on a local bound to userEvent.setup() that a class static block shadows is removed',
+    source: inPlay(
+      'const user = userEvent.setup();',
+      'class Steps {',
+      '  static {',
+      '    const user = 1;',
+      '  }',
+      '}',
+      'await user.click(button);',
+    ),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-in-namespace',
+    title:
+      'a click on a renamed storybook/test userEvent and a call on its setup() local in a TypeScript namespace are removed',
+    source: namespaceSteps,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
     id: 'user-event-setup-let',
     title: 'a call on a let bound to userEvent.setup() is removed',
     source: inPlay(
@@ -145,6 +175,23 @@ const interactionCases: readonly Case[] = [
       "a call on a let declared outside the play and assigned there the setup() of the context's userEvent destructured under another name is removed",
     source: `let user;\nexport const Story = {\n  play: async ({ userEvent: pointer }) => {\n    user = pointer.setup();\n    await user.click(button);\n  },\n};\n`,
     expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-alias',
+    title: 'a call on a local bound to userEvent itself is removed',
+    source: inPlay('const u = userEvent;', 'await u.click(button);'),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-alias-reassigned',
+    title:
+      'a call on a let bound to userEvent and then given another value makes no mutant',
+    source: inPlay(
+      'let u = userEvent;',
+      'u = createDriver();',
+      'await u.click(button);',
+    ),
+    expect: [],
   },
   {
     id: 'user-event-setup-let-reassigned',
@@ -351,12 +398,34 @@ const interactionCases: readonly Case[] = [
   {
     id: 'other-module-user-event',
     title:
-      "a call on userEvent destructured from another module's import() makes no mutant",
+      "a call on userEvent destructured from another module's import() is removed",
     source: inPlay(
       "const { userEvent: pointer } = await import('./driver');",
       "await pointer.hover(canvas.getByRole('button'));",
     ),
-    expect: [],
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-and-fire-event-in-render',
+    title:
+      "a userEvent call and a fireEvent call in a story's render are removed, where a raw DOM click is not",
+    source: `import { userEvent, fireEvent } from 'storybook/test';\nexport const Story = {\n  render: () => {\n    userEvent.click(document.body);\n    fireEvent.click(document.body);\n    document.body.click();\n    return null;\n  },\n};\n`,
+    expect: [
+      [interaction, ';'],
+      [interaction, ';'],
+    ],
+  },
+  {
+    id: 'user-event-destructured-renamed-from-local',
+    title:
+      "a call on userEvent destructured under another name from a local holding a function's result is removed",
+    source: inPlayWith(
+      ['canvas'],
+      'const foo = makeDriver();',
+      'const { userEvent: u } = foo;',
+      "await u.click(canvas.getByRole('button'));",
+    ),
+    expect: [[interaction, ';']],
   },
   {
     id: 'other-module-named-import',
@@ -370,6 +439,20 @@ const interactionCases: readonly Case[] = [
     title:
       "a call on the play context's userEvent destructured under another name is removed",
     source: `export const Story = {\n  play: async ({ canvas, userEvent: user }) => {\n    await user.click(canvas.getByRole('button'));\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'context-user-event-destructured-in-play',
+    title:
+      "a call on the play context's userEvent destructured under another name in the play is removed",
+    source: `export const Story = {\n  play: async (context) => {\n    const { userEvent: user } = context;\n    await user.click(button);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'context-user-event-destructured-after-assignment',
+    title:
+      'a call on userEvent destructured from the play context after the play assigns the context is removed, as any userEvent may be one',
+    source: `export const Story = {\n  play: async (context) => {\n    context = driverContext;\n    const { userEvent: user } = context;\n    await user.click(button);\n  },\n};\n`,
     expect: [[interaction, ';']],
   },
   {
@@ -520,6 +603,20 @@ const interactionCases: readonly Case[] = [
     id: 'fire-event-in-type-assertion',
     title: 'a fireEvent.click on fireEvent inside an as expression is removed',
     source: inPlay('await (fireEvent as any).click(button);'),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-string-key',
+    title:
+      "a user-event method called by a string key, userEvent['click'](x), is removed",
+    source: inPlay("await userEvent['click'](button);"),
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'user-event-unknown-key',
+    title:
+      'a userEvent member called by a key that is no string literal, userEvent[method](x), is removed',
+    source: inPlay('await userEvent[method](button);'),
     expect: [[interaction, ';']],
   },
 ];

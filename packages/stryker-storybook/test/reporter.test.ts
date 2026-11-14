@@ -16,8 +16,9 @@ import { fileURLToPath } from 'node:url';
 import { appendRecord, isRecord, recordVariable } from '@layzee/storybook-core';
 import { PlanKind, type schema } from '@stryker-mutator/api/core';
 
-import { storybookReporter } from '../src/reporter.ts';
+import { storybookReporter, storyFileFindings } from '../src/reporter.ts';
 import { describeVerdict, spyStubReason } from '../src/stub-verdict.ts';
+import { project } from './support/storybook-project.ts';
 import recorded from './fixtures/reporter/mutation.json' with { type: 'json' };
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -906,6 +907,49 @@ describe('storybookReporter', () => {
     );
   });
 
+  it('warns, naming a reported file whose interactions it cannot parse for hints', (t) => {
+    const { reporter, lines } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Broken.ts': {
+          source: 'export const = ;\n',
+          mutants: [interactionMutant(5, 'Survived')],
+        },
+      },
+    });
+
+    assert.deepEqual(
+      lines.filter((line) => line.startsWith('warn: ')),
+      [
+        'warn: @layzee/stryker-storybook: Babel could not parse src/Broken.ts, so lz-storybook gave no interaction hints for it: Unexpected token (1:13)',
+      ],
+    );
+  });
+
+  it('warns once and reports the other story files when reading one overflows the stack', (t) => {
+    const { reporter, findings, lines, projectDir } = setup(t);
+    writeStory(
+      projectDir,
+      'Deep.stories.tsx',
+      `export const Primary = {};\nx${'.a'.repeat(20_000)} = 1;\n`,
+    );
+    writeStory(projectDir, 'Meta.stories.tsx', erasedStub);
+
+    reporter.onMutationTestReportReady({ files: {} });
+
+    assert.deepEqual(
+      findings().map((finding) => isRecord(finding) && finding['file']),
+      ['src/Meta.stories.tsx'],
+    );
+    assert.deepEqual(
+      lines.filter((line) => line.startsWith('warn: ')),
+      [
+        'warn: @layzee/stryker-storybook: lz-storybook could not read the spy stubs of src/Deep.stories.tsx, so it skipped them: Maximum call stack size exceeded',
+      ],
+    );
+  });
+
   it('scans no story file when the spy stub mutator is in excludedMutations', (t) => {
     const { reporter, findings, projectDir } = setup(t, 'no-main', {
       mutator: { excludedMutations: ['LzStorybookSpyStub'] },
@@ -985,19 +1029,20 @@ describe('storybookReporter', () => {
     ]);
   });
 
-  it('warns and gives no hint for a story file that a line-range mutate pattern names', (t) => {
-    const { reporter, lines, written } = setup(t, 'no-main', {
+  it('gives hints with no warning for a story file that a line-range mutate pattern names', (t) => {
+    const { reporter, lines, consoleBlock } = setup(t, 'no-main', {
       mutate: ['src/Form.stories.tsx:5-9'],
     });
 
     reporter.onMutationTestReportReady(shapedReport);
 
-    assert.deepEqual(written(), emptyReport);
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
-      [
-        "warn: @layzee/stryker-storybook: the mutate pattern src/Form.stories.tsx:5-9 gives src/Form.stories.tsx a line range, so lz-storybook gave it no interaction hints: an interaction outside the range has no LzStorybookInteraction mutant to end a hint's window",
-      ],
+      [],
+    );
+    assert.deepEqual(
+      consoleBlock()[1],
+      '@layzee/stryker-storybook: 3 interaction hints (1 negative-only, 1 click-before-type, 1 cleared-later)',
     );
   });
 
@@ -1081,6 +1126,27 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [],
+    );
+  });
+});
+
+describe('storyFileFindings', () => {
+  it('lets a RangeError from reading the source through, since only reading the tree may skip a file', () => {
+    const tooLarge = new RangeError('File size is greater than 2 GiB');
+
+    assert.throws(
+      () =>
+        storyFileFindings(
+          'src/Big.stories.tsx',
+          () => {
+            throw tooLarge;
+          },
+          project('seen'),
+          (message) => {
+            throw new Error(`unexpected warning: ${message}`);
+          },
+        ),
+      (error) => error === tooLarge,
     );
   });
 });

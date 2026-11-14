@@ -1,4 +1,4 @@
-import { type Case, inPlay } from './support/case.ts';
+import { type Case, inPlay, namespaceSteps } from './support/case.ts';
 
 const clickFocus = 'LzStorybookClickFocus';
 
@@ -61,6 +61,28 @@ export const clickFocusCases: readonly Case[] = [
     id: 'click-focus-dbl-click',
     title: 'a userEvent.dblClick becomes a focus() call on its element',
     source: inPlay('await userEvent.dblClick(button);'),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-setup-static-block-shadow',
+    title:
+      'a click on a local bound to userEvent.setup() that a class static block shadows becomes a focus() call',
+    source: inPlay(
+      'const user = userEvent.setup();',
+      'class Steps {',
+      '  static {',
+      '    const user = 1;',
+      '  }',
+      '}',
+      'await user.click(button);',
+    ),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-in-namespace',
+    title:
+      'a click on a renamed storybook/test userEvent in a TypeScript namespace becomes a focus() call',
+    source: namespaceSteps,
     expect: [[clickFocus, 'await button.focus();']],
   },
   {
@@ -197,5 +219,39 @@ export const clickFocusCases: readonly Case[] = [
       "a click on the default member of a namespace import of '@testing-library/user-event' becomes a focus() call",
     source: `import * as ue from '@testing-library/user-event';\n${inPlay('await ue.default.click(button);')}`,
     expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-string-key',
+    title:
+      "a click called by a string key, userEvent['click'](x), becomes a focus() call",
+    source: inPlay("await userEvent['click'](button);"),
+    expect: [[clickFocus, 'await button.focus();']],
+  },
+  {
+    id: 'click-focus-destructured-object-literal',
+    title:
+      'a click of a name destructured from an object literal holding a query becomes a focus() call on it',
+    source: inPlay(
+      "const { field } = { field: canvas.getByRole('textbox') };",
+      'await userEvent.click(field);',
+    ),
+    expect: [[clickFocus, 'await field.focus();']],
+  },
+  {
+    id: 'click-focus-destructured-from-text-field-query',
+    title:
+      'a click of a name destructured from a text field query becomes a focus() call on it, as only a const bound to the query itself names a text field',
+    source: inPlay(
+      "const { firstElementChild } = canvas.getByRole('textbox');",
+      'await userEvent.click(firstElementChild);',
+    ),
+    expect: [[clickFocus, 'await firstElementChild.focus();']],
+  },
+  {
+    id: 'click-focus-skip-unknown-key',
+    title:
+      'a userEvent member called by a key that is no string literal makes no mutant, as it may be no click',
+    source: inPlay('await userEvent[method](button);'),
+    expect: [],
   },
 ];

@@ -1,25 +1,9 @@
-import type { types } from '@babel/core';
+import { waitCall } from '@layzee/storybook-core';
 
-import { awaited } from './nodes.ts';
 import { queryMethods } from './queries.ts';
 import type { LzStorybookTestMutator } from './mutator.ts';
 
 const findQueries = queryMethods(['findBy', 'findAllBy']);
-
-/** `waitForElementToBeRemoved(...);`, awaited or not. */
-function isRemovalWait(node: types.Node): boolean {
-  if (node.type !== 'ExpressionStatement') {
-    return false;
-  }
-
-  const call = awaited(node.expression);
-
-  return (
-    call.type === 'CallExpression' &&
-    call.callee.type === 'Identifier' &&
-    call.callee.name === 'waitForElementToBeRemoved'
-  );
-}
 
 export function waitForMutator(): LzStorybookTestMutator & {
   readonly name: 'LzStorybookWaitFor';
@@ -30,12 +14,11 @@ export function waitForMutator(): LzStorybookTestMutator & {
     *mutate(path, t) {
       const call = path.node;
 
-      if (isRemovalWait(call)) {
+      if (call.type === 'ExpressionStatement' && waitCall(call) === 'removal') {
         yield t.emptyStatement();
       } else if (
         call.type === 'CallExpression' &&
-        call.callee.type === 'Identifier' &&
-        call.callee.name === 'waitFor' &&
+        waitCall(call) === 'waitFor' &&
         call.arguments[0]?.type === 'ArrowFunctionExpression'
       ) {
         yield t.callExpression(

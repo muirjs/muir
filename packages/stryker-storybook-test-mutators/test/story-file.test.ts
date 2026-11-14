@@ -1,14 +1,25 @@
-// A line-range `--mutate` leaves the Program out of the range, so Stryker first calls a mutator below it. These cases
-// call a mutator at a statement first, replace an earlier node with a mutant switch as Stryker does on leaving a
-// statement, then call it at a later node: what the mutator read of the file must be the file before the switch.
+// A line-range `--mutate` leaves the Program out of the range, so Stryker first calls a mutator below it. The
+// line-range cases call a mutator at a statement first, replace an earlier node with a mutant switch as Stryker does
+// on leaving a statement, then call it at a later node: what the mutator read of the file must be the file before
+// the switch.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { parseSync, traverse, types, type NodePath } from '@babel/core';
+import {
+  parseSync,
+  transformSync,
+  traverse,
+  types,
+  type NodePath,
+} from '@babel/core';
 
-import { interactionMutator } from '../src/interaction-mutators.ts';
+import {
+  assertionBeforeMutator,
+  interactionMutator,
+} from '../src/interaction-mutators.ts';
 import type { LzStorybookTestMutator } from '../src/mutator.ts';
 import { spyStubMutator, spyStubOutcomeMutator } from '../src/spy-stub.ts';
+import { perFile } from '../src/story-file.ts';
 import { storyGlobalsMutator } from '../src/story-globals.ts';
 
 interface StoryFile {
@@ -65,6 +76,24 @@ function placeSwitch({ node }: NodePath): void {
     types.objectExpression([]),
     declarator.init,
   );
+}
+
+/** Wraps the first string literal under `path` in `stryMutAct_9fa48("0") ? "" : literal`. */
+function placeLiteralSwitch(path: NodePath): void {
+  path.traverse({
+    StringLiteral(literal) {
+      literal.replaceWith(
+        types.conditionalExpression(
+          types.callExpression(types.identifier('stryMutAct_9fa48'), [
+            types.stringLiteral('0'),
+          ]),
+          types.stringLiteral(''),
+          literal.node,
+        ),
+      );
+      literal.stop();
+    },
+  });
 }
 
 const factoryStubStatement = [
@@ -140,6 +169,62 @@ test('LzStorybookInteraction removes a raw DOM interaction after a mutant is pla
   );
 });
 
+test('LzStorybookAssertionBefore copies a check before an interaction after a mutant is placed in an earlier statement', () => {
+  const file = parse(
+    [
+      'export const Story = {',
+      '  play: async ({ args, canvas, userEvent }) => {',
+      "    const save = canvas.getByRole('button');",
+      '    await userEvent.click(save);',
+      '    await expect(args.onSave).toHaveBeenCalled();',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+  );
+  const earlier = file.at('const save', 'VariableDeclaration');
+  const mutator = assertionBeforeMutator();
+
+  mutantTypes(mutator, earlier);
+  placeSwitch(earlier);
+
+  assert.deepEqual(
+    mutantTypes(
+      mutator,
+      file.at('await userEvent.click', 'ExpressionStatement'),
+    ),
+    ['BlockStatement'],
+  );
+});
+
+test('LzStorybookAssertionBefore reads the earlier statements as written when a mutant is placed in the one its check repeats', () => {
+  const file = parse(
+    [
+      'export const Story = {',
+      '  play: async ({ canvas, userEvent }) => {',
+      "    await expect(canvas.getByRole('form')).toBeVisible();",
+      '    await userEvent.click(save);',
+      "    await expect(canvas.getByRole('form')).toBeVisible();",
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+  );
+  const earlier = file.at('await expect', 'ExpressionStatement');
+  const mutator = assertionBeforeMutator();
+
+  mutantTypes(mutator, earlier);
+  placeLiteralSwitch(earlier);
+
+  assert.deepEqual(
+    mutantTypes(
+      mutator,
+      file.at('await userEvent.click', 'ExpressionStatement'),
+    ),
+    [],
+  );
+});
+
 test('LzStorybookStoryGlobals mutates story globals after a mutant is placed earlier in a line-range run', () => {
   const file = parse(
     [
@@ -159,5 +244,60 @@ test('LzStorybookStoryGlobals mutates story globals after a mutant is placed ear
   assert.deepEqual(
     mutantTypes(mutator, file.at('{ viewport: { value', 'ObjectExpression')),
     ['ObjectExpression'],
+  );
+});
+
+/** What a per-file read that throws `thrown` throws in turn, read at the Program of a file transformed with `options`. */
+function perFileError(
+  thrown: unknown,
+  options: { readonly filename?: string },
+): unknown {
+  const errors: unknown[] = [];
+  const read = perFile(() => {
+    throw thrown;
+  }, undefined);
+
+  transformSync('export const Story = {};\n', {
+    configFile: false,
+    babelrc: false,
+    code: false,
+    ...options,
+    plugins: [
+      () => ({
+        visitor: {
+          Program(path: NodePath) {
+            try {
+              read(path);
+            } catch (error) {
+              errors.push(error);
+            }
+          },
+        },
+      }),
+    ],
+  });
+
+  return errors[0];
+}
+
+test('a per-file read that throws names the story file and keeps the error as its cause', () => {
+  const deep = new RangeError('Maximum call stack size exceeded');
+  const error = perFileError(deep, { filename: 'deep.stories.ts' });
+
+  assert.ok(error instanceof Error);
+  assert.match(
+    error.message,
+    /^@layzee\/stryker-storybook-test-mutators: could not read the story file .*deep\.stories\.ts: Maximum call stack size exceeded$/,
+  );
+  assert.equal(error.cause, deep);
+});
+
+test('a per-file read that throws in a file with no name says so without a path', () => {
+  const error = perFileError(new RangeError('deep'), {});
+
+  assert.ok(error instanceof Error);
+  assert.equal(
+    error.message,
+    '@layzee/stryker-storybook-test-mutators: could not read a story file: deep',
   );
 });

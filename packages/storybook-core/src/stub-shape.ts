@@ -1,3 +1,4 @@
+import { isCall } from './csf-nodes.ts';
 import { isRecord } from './is-record.ts';
 import { field, list } from './node-field.ts';
 
@@ -123,10 +124,4 @@ function chainStart(node: unknown): unknown {
     stubMethodOf(field(node, 'callee', 'property', 'name')) !== undefined;
 
   return isStubCall ? chainStart(field(node, 'callee', 'object')) : node;
-}
-
-function isCall(node: unknown): boolean {
-  const type = field(node, 'type');
-
-  return type === 'CallExpression' || type === 'OptionalCallExpression';
 }

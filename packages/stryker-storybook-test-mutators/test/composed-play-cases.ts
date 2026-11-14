@@ -85,6 +85,20 @@ export const composedPlayCases: readonly Case[] = [
     expect: [[interaction, ';']],
   },
   {
+    id: 'composed-context-step',
+    title:
+      "a step on the play context that runs another story's play, context.step(label, Other.play), is removed",
+    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async (context) => {\n    await context.step('Enter value', Other.play);\n  },\n};\n`,
+    expect: [[interaction, ';']],
+  },
+  {
+    id: 'nested-member-step-given-story-play',
+    title:
+      "a step on a member of a member given another story's play makes no mutant, as it is no step of a play context",
+    source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async () => {\n    await story.context.step('Enter value', Other.play);\n  },\n};\n`,
+    expect: [],
+  },
+  {
     id: 'call-given-story-play',
     title: "a call other than step given another story's play makes no mutant",
     source: `export const Other = { play: async () => {} };\nexport const Story = {\n  play: async () => {\n    await runPlay('Enter value', Other.play);\n  },\n};\n`,

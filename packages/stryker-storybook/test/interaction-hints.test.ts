@@ -1,10 +1,11 @@
-// The hints read the interaction sites from the LzStorybookInteraction mutants in the report, so every case runs the
-// real instrumenter with the real test mutators.
+// The hints name a mutator only when every mutant of it placed on the line survived, so every case runs the real
+// instrumenter with the real test mutators.
 import assert from 'node:assert/strict';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { csfShapes, interactionsOf } from '@layzee/storybook-core';
 import { lzStorybookTestMutators } from '@layzee/stryker-storybook-test-mutators';
 import type { schema } from '@stryker-mutator/api/core';
 
@@ -12,19 +13,25 @@ import {
   interactionHints,
   interactionMutatorNames,
   type ReportFiles,
+  skippedOnRangeError,
 } from '../src/interaction-hints.ts';
-import { interactionShapeReader } from '../src/interaction-shapes.ts';
+import { shapesOf } from '../src/interaction-shapes.ts';
 import { parseProgram } from '../src/parse.ts';
-import { inPlay, interactionHintCases } from './interaction-hint-cases.ts';
+import { interactionHintCases } from './interaction-hint-cases.ts';
 import { instrument } from './support/instrument.ts';
+import {
+  inPlay,
+  survives,
+  type Survivor,
+} from './support/interaction-hint-case.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
 const file = 'src/Form.stories.tsx';
 
-/** A report of `source` in which the `listed` mutants have `status`, the others are Killed, or Ignored when Stryker ignores them. */
+/** A report of `source` in which the `listed` mutants have `status`, the others are Killed, or Ignored when Stryker ignores them; a listed mutant the test mutators do not place throws. */
 async function reportOf(
   source: string,
-  listed: readonly (readonly [string, number])[],
+  listed: readonly Survivor[],
   status: schema.MutantStatus = 'Survived',
 ): Promise<ReportFiles> {
   const { mutants } = await instrument(
@@ -32,14 +39,26 @@ async function reportOf(
     source,
     [],
   );
+  const unplaced = listed.filter(
+    (survivor) =>
+      !mutants.some(({ mutatorName, location }) =>
+        survives([survivor], mutatorName, location.start),
+      ),
+  );
+
+  if (unplaced.length > 0) {
+    throw new Error(
+      `no mutant is placed at the listed ${JSON.stringify(unplaced)}`,
+    );
+  }
 
   return {
     [file]: {
       source,
-      mutants: mutants.map(({ mutatorName, line, location, ignoreReason }) => ({
+      mutants: mutants.map(({ mutatorName, location, ignoreReason }) => ({
         mutatorName,
         location,
-        status: statusOf(ignoreReason, mutatorName, line),
+        status: statusOf(ignoreReason, mutatorName, location.start),
       })),
     },
   };
@@ -47,19 +66,20 @@ async function reportOf(
   function statusOf(
     ignoreReason: string | undefined,
     mutatorName: string,
-    line: number,
+    start: schema.Position,
   ): schema.MutantStatus {
     if (ignoreReason !== undefined) {
       return 'Ignored';
     }
 
-    return listed.some(([name, at]) => name === mutatorName && at === line)
-      ? status
-      : 'Killed';
+    return survives(listed, mutatorName, start) ? status : 'Killed';
   }
 }
 
 const [negativeOnly] = interactionHintCases;
+const endsAtNextInteraction = interactionHintCases.find(
+  ({ id }) => id === 'ends-at-next-interaction',
+);
 
 function failOnWarning(message: string): never {
   throw new Error(`unexpected warning: ${message}`);
@@ -78,7 +98,7 @@ describe('interactionHints', () => {
       const report = await reportOf(source, survived);
 
       assert.deepEqual(
-        interactionHints(report, [], failOnWarning).map(
+        interactionHints(report, failOnWarning).map(
           ({ line, shape, mutatorNames }) => [line, shape, mutatorNames],
         ),
         expect,
@@ -92,7 +112,6 @@ describe('interactionHints', () => {
         it(`${id}: the comment for line ${line} ignores exactly the survivors the case names there, with its reason`, async () => {
           const hint = interactionHints(
             await reportOf(source, survived),
-            [],
             failOnWarning,
           ).find(
             (candidate) => candidate.line === line && candidate.shape === shape,
@@ -121,14 +140,11 @@ describe('interactionHints', () => {
 
           const named = before
             .filter(
-              ({ mutatorName, line: at, ignoreReason }) =>
+              ({ mutatorName, line: at, location, ignoreReason }) =>
                 at === line &&
                 ignoreReason === undefined &&
                 names.includes(mutatorName) &&
-                survived.some(
-                  ([name, survivedAt]) =>
-                    name === mutatorName && survivedAt === at,
-                ),
+                survives(survived, mutatorName, location.start),
             )
             .map(({ mutatorName, line: at }) => [mutatorName, at]);
 
@@ -147,33 +163,21 @@ describe('interactionHints', () => {
     });
   });
 
-  it('finds at most one shape at each interaction of every case', async () => {
-    const overlaps = await Promise.all(
-      interactionHintCases.map(async ({ id, source }) => {
-        const { mutants } = await instrument(
-          join(fixtures, 'no-main', file),
-          source,
-          [],
-        );
-        const sites = mutants
-          .filter(({ mutatorName }) => mutatorName === 'LzStorybookInteraction')
-          .map(({ location }) => location);
-        const shapesAt = interactionShapeReader(
-          parseProgram(source, file),
-          sites,
-        );
+  it('finds at most one shape at each interaction of every case', () => {
+    const overlaps = interactionHintCases.flatMap(({ id, source }) => {
+      const program = parseProgram(source, file);
+      const interactions = interactionsOf(program, csfShapes(program));
 
-        return sites.flatMap((site) => {
-          const shapes = shapesAt(site) ?? [];
+      return interactions.all.flatMap((interaction, index) => {
+        const shapes = shapesOf(interaction, interactions);
 
-          return shapes.length > 1
-            ? [`${id}:${site.start.line} ${shapes.join(', ')}`]
-            : [];
-        });
-      }),
-    );
+        return shapes.length > 1
+          ? [`${id} interaction ${index} ${shapes.join(', ')}`]
+          : [];
+      });
+    });
 
-    assert.deepEqual(overlaps.flat(), []);
+    assert.deepEqual(overlaps, []);
   });
 
   it('makes at least one mutant of each interaction mutator name, so the list matches the test mutators', async () => {
@@ -204,7 +208,7 @@ describe('interactionHints', () => {
       'NoCoverage',
     );
 
-    assert.deepEqual(interactionHints(report, [], failOnWarning), []);
+    assert.deepEqual(interactionHints(report, failOnWarning), []);
   });
 
   it('warns once and gives no hint for a file that Babel cannot parse', async () => {
@@ -220,7 +224,6 @@ describe('interactionHints', () => {
     assert.deepEqual(
       interactionHints(
         { [file]: { ...parsed, source: 'export const = ;' } },
-        [],
         (message) => warnings.push(message),
       ),
       [],
@@ -232,37 +235,7 @@ describe('interactionHints', () => {
     );
   });
 
-  it('warns once and gives the file no hint when an interaction survivor lies in no LzStorybookInteraction mutant', async () => {
-    assert.ok(negativeOnly !== undefined);
-
-    const { [file]: placed } = await reportOf(negativeOnly.source, [
-      ['LzStorybookClickFocus', 5],
-      ['LzStorybookInteractionRepeat', 5],
-    ]);
-    const warnings: string[] = [];
-
-    assert.ok(placed !== undefined);
-    assert.deepEqual(
-      interactionHints(
-        {
-          [file]: {
-            ...placed,
-            mutants: placed.mutants.filter(
-              ({ mutatorName }) => mutatorName !== 'LzStorybookInteraction',
-            ),
-          },
-        },
-        [],
-        (message) => warnings.push(message),
-      ),
-      [],
-    );
-    assert.deepEqual(warnings, [
-      '@layzee/stryker-storybook: src/Form.stories.tsx has a surviving interaction mutant outside every LzStorybookInteraction mutant, so lz-storybook gave it no interaction hints',
-    ]);
-  });
-
-  it('warns once and gives the file no hint when no parsed node has the range of an LzStorybookInteraction mutant that holds a survivor', async () => {
+  it("warns once for a file whose interactions overflow the stack, gives it no hint, and still gives the other files' hints", async () => {
     assert.ok(negativeOnly !== undefined);
 
     const { [file]: placed } = await reportOf(
@@ -275,66 +248,130 @@ describe('interactionHints', () => {
     assert.deepEqual(
       interactionHints(
         {
+          'src/Deep.stories.tsx': {
+            ...placed,
+            source: inPlay(
+              "await userEvent.click(canvas.getByRole('button'));",
+              `x${'.a'.repeat(20_000)} = 1;`,
+            ),
+          },
+          [file]: placed,
+        },
+        (message) => warnings.push(message),
+      ).map(({ line, shape, mutatorNames }) => [line, shape, mutatorNames]),
+      negativeOnly.expect,
+    );
+    assert.equal(warnings.length, 1, warnings.join('\n'));
+    assert.match(
+      warnings[0] ?? '',
+      /^@layzee\/stryker-storybook: lz-storybook could not read the interactions of src\/Deep\.stories\.tsx, so it gave no interaction hints for it: Maximum call stack size exceeded$/,
+    );
+  });
+
+  it('lets an error other than a RangeError from a file read through, so a reader bug fails the report', () => {
+    const bug = new TypeError(
+      "Cannot read properties of undefined (reading 'x')",
+    );
+
+    assert.throws(
+      () =>
+        skippedOnRangeError(() => {
+          throw bug;
+        }, failOnWarning),
+      (error) => error === bug,
+    );
+  });
+
+  it('warns with its file and position about a survivor that lies in no interaction, and gives it no hint', async () => {
+    assert.ok(negativeOnly !== undefined);
+
+    const { [file]: placed } = await reportOf(negativeOnly.source, [
+      ['LzStorybookInteraction', 5],
+    ]);
+    const warnings: string[] = [];
+
+    assert.ok(placed !== undefined);
+    assert.deepEqual(
+      interactionHints(
+        {
           [file]: {
             ...placed,
             mutants: placed.mutants.map((mutant) =>
-              mutant.mutatorName === 'LzStorybookInteraction'
+              mutant.status === 'Survived'
                 ? {
                     ...mutant,
                     location: {
-                      ...mutant.location,
-                      end: {
-                        ...mutant.location.end,
-                        column: mutant.location.end.column + 1,
-                      },
+                      start: { line: 1, column: 1 },
+                      end: { line: 1, column: 2 },
                     },
                   }
                 : mutant,
             ),
           },
         },
-        [],
         (message) => warnings.push(message),
       ),
       [],
     );
     assert.deepEqual(warnings, [
-      '@layzee/stryker-storybook: src/Form.stories.tsx has an LzStorybookInteraction mutant whose range no node of the parsed file has, so lz-storybook gave it no interaction hints',
+      '@layzee/stryker-storybook: src/Form.stories.tsx:1:1 has a surviving interaction mutant outside every interaction, so lz-storybook gave it no interaction hint',
     ]);
   });
 
-  it('says once that a file a line-range mutate pattern names gets no hint', async () => {
+  it('gives a hint for a survivor whose interaction has no LzStorybookInteraction mutant, as a column range that cuts the interaction leaves out', async () => {
     assert.ok(negativeOnly !== undefined);
 
-    const warnings: string[] = [];
+    const { [file]: placed } = await reportOf(negativeOnly.source, [
+      ['LzStorybookClickFocus', 5],
+      ['LzStorybookInteractionRepeat', 5],
+    ]);
 
+    assert.ok(placed !== undefined);
     assert.deepEqual(
       interactionHints(
-        await reportOf(negativeOnly.source, negativeOnly.survived),
-        ['src/**/*.ts', `${file}:5-6`],
-        (message) => warnings.push(message),
-      ),
-      [],
+        {
+          [file]: {
+            ...placed,
+            mutants: placed.mutants.filter(
+              ({ mutatorName }) => mutatorName !== 'LzStorybookInteraction',
+            ),
+          },
+        },
+        failOnWarning,
+      ).map(({ line, shape, mutatorNames }) => [line, shape, mutatorNames]),
+      [
+        [
+          5,
+          'negative-only',
+          ['LzStorybookClickFocus', 'LzStorybookInteractionRepeat'],
+        ],
+      ],
     );
-    assert.deepEqual(warnings, [
-      `@layzee/stryker-storybook: the mutate pattern ${file}:5-6 gives ${file} a line range, so lz-storybook gave it no interaction hints: an interaction outside the range has no LzStorybookInteraction mutant to end a hint's window`,
-    ]);
   });
 
-  it('gives no hint for a file a line-range pattern names by its absolute path', async () => {
-    assert.ok(negativeOnly !== undefined);
+  it('gives hints in a file that a line-range mutate pattern names, read up to an interaction outside the range', async () => {
+    assert.ok(endsAtNextInteraction !== undefined);
 
-    const warnings: string[] = [];
+    const { [file]: placed } = await reportOf(
+      endsAtNextInteraction.source,
+      endsAtNextInteraction.survived,
+    );
 
+    assert.ok(placed !== undefined);
     assert.deepEqual(
       interactionHints(
-        await reportOf(negativeOnly.source, negativeOnly.survived),
-        [`${resolve(file)}:1-20`],
-        (message) => warnings.push(message),
-      ),
-      [],
+        {
+          [file]: {
+            ...placed,
+            mutants: placed.mutants.filter(
+              ({ location }) => location.end.line <= 6,
+            ),
+          },
+        },
+        failOnWarning,
+      ).map(({ line, shape, mutatorNames }) => [line, shape, mutatorNames]),
+      endsAtNextInteraction.expect,
     );
-    assert.equal(warnings.length, 1, warnings.join('\n'));
   });
 
   it('reads no file without a surviving interaction mutant', async () => {
@@ -346,7 +383,6 @@ describe('interactionHints', () => {
     assert.deepEqual(
       interactionHints(
         { [file]: { ...killed, source: 'export const = ;' } },
-        [],
         failOnWarning,
       ),
       [],

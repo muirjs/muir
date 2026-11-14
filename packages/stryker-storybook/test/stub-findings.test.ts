@@ -1,22 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { StorybookProject } from '../src/storybook-project.ts';
 import { siteFindings } from '../src/stub-findings.ts';
+import { project } from './support/storybook-project.ts';
 import { untaggedPreviewTestTags } from './support/test-tags.ts';
-
-function project(
-  transformer: StorybookProject['transformer'],
-  testTags = untaggedPreviewTestTags,
-) {
-  return {
-    configDir: '.storybook',
-    storyFiles: 'fallback',
-    transformer,
-    previewTest: {},
-    testTags,
-  } satisfies StorybookProject;
-}
 
 describe('siteFindings', () => {
   it('gives a repaired stub inside a *Once stub no finding of its own', () => {

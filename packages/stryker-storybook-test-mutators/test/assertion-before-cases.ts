@@ -319,6 +319,41 @@ export const assertionBeforeCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'assertion-before-skip-past-wait-for-defining-interaction',
+    title:
+      'an interaction makes no mutant when a waitFor whose callback defines a function holding another interaction stands before the next check, as that check is none of its following checks',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await waitFor(async () => {',
+      '  const clickSecond = async () => {',
+      '    await userEvent.click(second);',
+      '  };',
+      '  await clickSecond();',
+      '});',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [],
+  },
+  {
+    id: 'assertion-before-past-wait-for-defining-function',
+    title:
+      'the copied check is the first one past a waitFor whose callback defines a function that holds no interaction',
+    source: inPlay(
+      'await userEvent.click(first);',
+      'await waitFor(async () => {',
+      '  const readStatus = () => status.textContent;',
+      '  await readStatus();',
+      '});',
+      'await expect(args.onClick).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onClick).toHaveBeenCalled(); await userEvent.click(first); }',
+      ],
+    ],
+  },
+  {
     id: 'assertion-before-past-call-with-interaction',
     title:
       'the copied check is the first one past a call that is no step or waitFor, even when a function given to it holds an interaction',
@@ -430,6 +465,36 @@ export const assertionBeforeCases: readonly Case[] = [
       [
         assertionBefore,
         '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent.click(save); }',
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-string-key',
+    title:
+      "the check after a click called by a string key, userEvent['click'](x), is copied to run before it too",
+    source: inPlay(
+      "await userEvent['click'](save);",
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        "{ await expect(args.onSave).toHaveBeenCalled(); await userEvent['click'](save); }",
+      ],
+    ],
+  },
+  {
+    id: 'assertion-before-unknown-key',
+    title:
+      'the check after a userEvent member called by a key that is no string literal is copied to run before it too',
+    source: inPlay(
+      'await userEvent[method](save);',
+      'await expect(args.onSave).toHaveBeenCalled();',
+    ),
+    expect: [
+      [
+        assertionBefore,
+        '{ await expect(args.onSave).toHaveBeenCalled(); await userEvent[method](save); }',
       ],
     ],
   },

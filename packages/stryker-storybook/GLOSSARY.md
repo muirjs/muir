@@ -72,6 +72,105 @@ The `include`, `exclude` and `skip` tag lists of Storybook's Vitest addon, which
 one, stories tagged `test` are tested.
 _Avoid_: test tags
 
+### Interactions and checks
+
+`@layzee/storybook-core` reads these once per story file, for the Storybook test mutators on Stryker's tree and for
+the `lz-storybook` reporter on its own parse.
+
+**Interaction**:
+A call that acts on the rendered story: a user-event method such as `click` or `type`, or a computed key, on a
+receiver with a user-event origin; a `fireEvent` call; a composed play; or a raw DOM interaction. A user-event or
+`fireEvent` call counts anywhere in the story file, a `render` or a decorator included; a composed play other than
+`step(label, Other.play)`, and a raw DOM interaction, count only in story test code.
+Its statement, the node the interaction mutators replace, is an expression statement, or the expression body of an
+arrow given to `step(...)` (a step body); the same call elsewhere, such as in an expression-bodied arrow given to
+`forEach`, is none.
+_Avoid_: action (the Playwright mutators' term), user action, site (for its statement; a site is an args or globals
+object)
+
+**User-event origin**:
+Where the receiver of a user-event method comes from, as far as the story file proves it. A receiver with no origin
+is no user-event, and its call is no interaction. There are three values:
+
+- `userEvent14`: user-event 14's `userEvent`. The file proves it with an import of `userEvent` (renamed or
+  string-named included) from `storybook/test` or `@testing-library/user-event`, the default import of
+  `@testing-library/user-event`, or `<ns>.userEvent` or `<ns>.default` of a namespace import of those. The play
+  context's `userEvent` proves it too: `{ userEvent }` destructured from the first parameter of a play, hook or
+  `.test()` function of story test code, or read from that parameter as `context.userEvent` or
+  `const { userEvent: u } = context`, where nothing in the file writes the parameter and every reference to a named
+  context reads one of its members or destructures it in a declaration. A write to its `userEvent`, to a member of
+  it or to a member under a computed key, such as `context.userEvent = v`, `[context.userEvent] = [v]`,
+  `context.userEvent.click = f` or `context[key] = v`, and any other use, such as `Object.assign(context, ...)` or
+  `const c = context`, refuse it.
+- `vitestBrowser`: Vitest browser's `userEvent`, imported the same way from `vitest/browser` or
+  `@vitest/browser/context`, statically or by `await import(...)`.
+- `unproven`: a receiver that may be a user-event, but the file does not prove which one: `{ userEvent }` destructured
+  from the parameter of any other function, a play context that the file writes or uses otherwise, `<object>.userEvent`
+  or `const { userEvent: u } = <object>` on any other object, any other name `userEvent`, or a choice `a ? b : c`
+  between receivers of two different origins, or any receiver of an origin that a member write reaches.
+
+A local whose one value is `<receiver>.setup()`, another receiver, a choice between receivers of the same origin, or
+a sequence whose last value is one of these has that receiver's origin. A member write makes every receiver of the
+origin it reaches `unproven`. The write is an assignment, an array or object pattern or a `for...in` or `for...of`
+head that targets a member. It reaches the origin of the written member and of each object it is read through,
+found as a receiver's is, and a member under a computed key may be `userEvent`. The root of that chain splits
+choices, sequences and `=` assignments at every level and reads what is left as a local's one value is read, so
+`(flag ? userEvent : x).click = f`, `(a || (flag ? userEvent.setup() : x)).click = f` or `(a = userEvent).click = f`
+reaches each origin it may hold. So `userEvent.click`, `t.userEvent.click` on a namespace import, `u.click` after
+`const u = userEvent`, `const u = context.userEvent` or `const u = flag ? userEvent : x`, `userEvent.click` after
+`const { userEvent } = context`, or the `click` of a `setup()` instance each refuse every user-event 14 receiver in
+the file, named imports, namespace imports and the play context's alike. A receiver or a member passed whole to a
+call, as in `Object.assign(userEvent, ...)`, `vi.spyOn(userEvent, 'click')` or `Object.assign(context.userEvent, ...)`,
+is a read and refuses nothing, and so is a write through a value the origin search does not follow, such as an array
+or object literal that holds the receiver, a function parameter, `arguments` in a method or `function` play, a local
+that holds the module object (`const t2 = t`, or an awaited `import()`), a local with two values, a local whose value
+nests a choice (`const u = a || (flag ? userEvent : x)`), or `(await userEvent).click = f`. `delete userEvent.click`
+is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the `lz-storybook`
+reporter gives the `click-before-type` shape only for `userEvent14`.
+_Avoid_: user-event kind, user-event 14 check
+
+**Composed play**:
+A call that runs another story's play inside this one: `Other.play(context)`, `meta.play?.(context)`, `Other.run()` on a
+CSF factory story, or `step(label, Other.play)` and `context.step(label, Other.play)`. The story may come from a
+namespace import, as in `Stories.Other.play(context)`. A `.play()` or `.run()` call, or a `.play` given to `step(...)`,
+counts when its receiver is an identifier or a member chain that starts at one, computed and optional members included
+(`Stories['Other'].play(context)`, `Stories?.Other.play(context)`, `step(label, Stories?.Other.play)`), not a call
+result such as `canvas.getByTestId('video').play()`. A `.play()` or `.run()` call counts only inside story test code,
+so `video.play()` in a `render` is none.
+_Avoid_: nested play, reused play
+
+**Raw DOM interaction**:
+A `focus()`, `blur()` or `click()` call with no argument, or a `dispatchEvent(event)` call, on any receiver, inside
+story test code; the same call in a `render`, a decorator or a `useEffect` is none.
+_Avoid_: native event, DOM action
+
+**Check**:
+A call of `expect(...)`, `expect.soft(...)`, `expect.element(...)` or `expect.poll(...)`, with any matcher chain on
+it, such as `await expect.element(dialog).toBeVisible()`, or a failing query. `expect['soft'](...)` counts as
+`expect.soft(...)`; a computed member whose key is not a string literal, `expect.anything()`, `expect.any(...)`,
+`expect.objectContaining(...)`, `expect.assertions(...)` and other `expect` members are none.
+_Avoid_: assertion (alone)
+
+**Failing query**:
+A call of a `findBy*`, `findAllBy*`, `getBy*` or `getAllBy*` query, on any receiver or none, which fails when it finds
+nothing; a `queryBy*` query does not, so it is no check. A failing query is a check that is never negative.
+_Avoid_: positive query, query check
+
+**Negative check**:
+An `expect` check with `.not` in its member chain, which passes when the interaction before it did nothing.
+_Avoid_: absence check, negated assertion
+
+**Following checks**:
+The checks after an interaction, up to the next statement that is or holds an interaction. They are looked for past
+the end of the interaction's block into the enclosing one and out of a step callback that holds it, never out of any
+other function. A statement holds an interaction that runs within it outside any function, such as one in an `if`, and
+every interaction anywhere in a function given to `step(...)` or `waitFor(...)`, including one in a function that
+callback defines; any other function, a function declaration included, holds nothing, even one that the statement
+calls. Checks are found in any function. What ends them is part of them: the next interaction, a `step(...)` that holds
+one, a statement that may not run the interaction it holds (such as an `if` or a `waitFor(...)`), or the end of the
+function.
+_Avoid_: checks after, later checks, assertion window, checks before the next interaction
+
 ### Spies, stubs and the mock reset
 
 **Spy stub**:
@@ -142,41 +241,26 @@ mutators' names) that start on one line and whose interaction has an interaction
 `LzStorybookAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
 holds the file and line, the shape, the reason, the fix, and a ready `// Stryker disable next-line` comment for the
 line above. The comment names a mutator only when every mutant of it placed on that line survived with that
-shape, since one comment disables them all. The reporter takes the interactions from the `LzStorybookInteraction`
-mutants in the report, whatever their status, and gives no hint for a file that a `mutate` pattern with a line range
-names, where an interaction outside the range has no such mutant.
+shape, since one comment disables them all. The reporter finds the interactions with the `@layzee/storybook-core`
+interaction reader, on its own parse of the story file, and reads each one's kind, user-event origin and following
+checks there. A survivor belongs to the innermost interaction whose range holds its start, so a file that a `mutate`
+pattern with a line range names gets hints too.
 _Avoid_: interaction finding, interaction warning
 
 **Interaction shape**:
 Why a play may pass although a surviving interaction mutant changes the interaction. An interaction has at most one
 shape:
 
-- `negative-only`: a check comes after it before the next statement that holds an interaction, and every check before
-  the next interaction is negative.
-- `click-before-type`: a user-event click or hover directly before a `type` of the same target on user-event 14's
-  `userEvent`, which clicks it first unless given `skipClick`. The reporter takes the click as kept only when the
-  options are absent, or an object literal with no spread, computed key or `__proto__` whose `skipClick`, quoted or
-  not, is absent or `false`. It takes a `userEvent` for user-event 14 only when it is imported from `storybook/test`,
-  or when it is the play context's: destructured from the first parameter of the function under a non-computed `play`
-  key of the meta (the default export) or of an exported story, with nothing in that function's body that may give
-  the name another value. Such a form is an assignment, a `for...of` or `for...in` head, an update expression or a
-  `var` declaration, anywhere in the body, nested functions and shadowing locals included. Vitest browser's
-  `userEvent`, one destructured from another function's parameter, a `setup()` local and every other form get no
-  such hint.
+- `negative-only`: it has following checks, every one of them is negative, and they do not end at a statement that
+  may not run the interaction it holds.
+- `click-before-type`: a user-event click or hover directly before a `type` of the same target whose user-event
+  origin is `userEvent14`, which clicks it first unless given `skipClick`. The reporter takes the click as kept only
+  when the options are absent, or an object literal with no spread, computed key or `__proto__` whose `skipClick`,
+  quoted or not, is absent or `false`.
 - `cleared-later`: a `type` or `clear` whose target the next interaction in its block clears, with no check between
   them.
 
 _Avoid_: skip reason, interaction pattern
-
-**Checks before the next interaction**:
-The checks after an interaction up to the next statement that is an interaction or a `step(...)` that holds one, looked
-for past the end of the interaction's block and of a step callback that holds it. A check is an `expect(...)` call, an
-`expect.<name>(...)` call such as `expect.soft`, `expect.element` or `expect.poll`, or a call to a `findBy*`,
-`findAllBy*`, `getBy*` or `getAllBy*` query, on a receiver such as `canvas` or destructured from one, which fails when
-it finds nothing (a `queryBy*` query does not); it is negative when its member chain holds `.not`. Unlike the
-following checks, which count only `expect(...)`, they also run past an `if` or a `waitFor(...)` that holds an
-interaction.
-_Avoid_: later checks
 
 **Static story mutant**:
 A mutant in a story file that Stryker runs against every test, listed in the `lz-storybook` report with its net
