@@ -334,6 +334,23 @@ describe('transform', () => {
     );
   });
 
+  it('rewrites only the first stub of a chain whose first stub is in parentheses', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Twice = { args: { load: (fn().mockReturnValue(1)).mockReturnValue(2) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Twice = { args: { load: (fn(((value) => () => value)(1))).mockReturnValue(2) } };',
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('rewrites a stub inside the argument of a mockName call before the stub it belongs to', () => {
     const code = [
       "import { fn } from 'storybook/test';",

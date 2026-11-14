@@ -145,13 +145,14 @@ function stubSite(
   };
 }
 
-/** The stubs of one chain share its start, and each earlier one ends sooner. */
-export function chainUpTo<TStub extends Pick<StubSite, 'start' | 'end'>>(
-  stub: Pick<StubSite, 'start' | 'end'>,
+/** The stubs of one chain share its spy call, and each earlier one ends sooner. */
+export function chainUpTo<TStub extends Pick<StubSite, 'spyCall' | 'end'>>(
+  stub: Pick<StubSite, 'spyCall' | 'end'>,
   stubs: readonly TStub[],
 ): readonly TStub[] {
   return stubs.filter(
-    (other) => other.start === stub.start && other.end <= stub.end,
+    (other) =>
+      other.spyCall.start === stub.spyCall.start && other.end <= stub.end,
   );
 }
 
@@ -161,8 +162,8 @@ export type StubRewrite =
   | 'chain-not-rewritten';
 
 export function mockTransformerRewrite(
-  stub: Pick<StubSite, 'start' | 'end' | 'once'>,
-  stubs: readonly Pick<StubSite, 'start' | 'end'>[],
+  stub: Pick<StubSite, 'spyCall' | 'end' | 'once'>,
+  stubs: readonly Pick<StubSite, 'spyCall' | 'end'>[],
 ): StubRewrite {
   if (stub.once) {
     return 'once-not-rewritten';

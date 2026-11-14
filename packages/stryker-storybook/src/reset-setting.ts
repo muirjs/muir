@@ -9,6 +9,7 @@ import {
   list,
   mayImportItself,
   namedExports,
+  type Span,
   storyArgument,
   type StubMethod,
   topLevelBindings,
@@ -32,6 +33,7 @@ export interface StoryReset {
 export interface ClassifiedStub {
   readonly start: number;
   readonly end: number;
+  readonly spyCall: Span;
   readonly line: number;
   readonly method: StubMethod;
   readonly once: boolean;
@@ -218,13 +220,14 @@ export function classifyStubs(
     );
   const stories = declared.map(({ story }) => story);
   const stubs = definitionTimeStubs(program).map(
-    ({ start, end, line, method, once }) => {
+    ({ start, end, spyCall, line, method, once }) => {
       const owner = declared.findIndex(({ init }) => contains(init, start));
       const users = owner === -1 ? stories.map((_, index) => index) : [owner];
 
       return {
         start,
         end,
+        spyCall,
         line,
         method,
         once,

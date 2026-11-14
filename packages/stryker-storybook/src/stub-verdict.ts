@@ -84,10 +84,11 @@ export function stubIgnores(
   const { stubs } = classifyStubs(file, previewTest, testTags);
   const sites = siteReasons(stubs, transformer);
 
-  return sites.map(({ start, end, verdict }) => {
-    const chain = chainUpTo({ start, end }, sites);
+  return sites.map((site) => {
+    const { start, end, verdict } = site;
+    const chain = chainUpTo(site, sites);
 
-    if (chain.length < chainUpTo({ start, end }, stubs).length) {
+    if (chain.length < chainUpTo(site, stubs).length) {
       return {
         start,
         end,

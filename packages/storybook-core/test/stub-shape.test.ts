@@ -171,10 +171,11 @@ describe('definitionTimeStubs', () => {
 
 describe('chainUpTo', () => {
   it("gives the stubs of a stub's chain from its first up to the stub, leaving out later stubs and other chains", () => {
-    const first = { start: 0, end: 10 };
-    const second = { start: 0, end: 20 };
-    const third = { start: 0, end: 30 };
-    const otherChain = { start: 40, end: 50 };
+    const spyCall = { start: 0, end: 4 };
+    const first = { spyCall, end: 10 };
+    const second = { spyCall, end: 20 };
+    const third = { spyCall, end: 30 };
+    const otherChain = { spyCall: { start: 40, end: 44 }, end: 50 };
 
     assert.deepEqual(chainUpTo(second, [third, otherChain, first, second]), [
       first,
@@ -184,8 +185,9 @@ describe('chainUpTo', () => {
 });
 
 describe('mockTransformerRewrite', () => {
-  const first = { start: 0, end: 10, once: false };
-  const second = { start: 0, end: 20, once: false };
+  const spyCall = { start: 0, end: 4 };
+  const first = { spyCall, end: 10, once: false };
+  const second = { spyCall, end: 20, once: false };
 
   it('rewrites the first stub of a chain', () => {
     assert.equal(mockTransformerRewrite(first, [second, first]), 'rewritten');
@@ -195,6 +197,22 @@ describe('mockTransformerRewrite', () => {
     assert.equal(
       mockTransformerRewrite(second, [second, first]),
       'chain-not-rewritten',
+    );
+  });
+
+  it('leaves a stub after a parenthesised first stub of its chain alone', () => {
+    const stubs = definitionTimeStubs(
+      parseTs(
+        "import { fn } from 'storybook/test';\n(fn().mockReturnValue(1)).mockReturnValue(2);",
+      ),
+    );
+
+    assert.deepEqual(
+      stubs.map((stub) => [stub.end, mockTransformerRewrite(stub, stubs)]),
+      [
+        [81, 'chain-not-rewritten'],
+        [61, 'rewritten'],
+      ],
     );
   });
 
