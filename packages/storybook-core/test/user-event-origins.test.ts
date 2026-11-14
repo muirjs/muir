@@ -673,6 +673,86 @@ const originCases: readonly KindCase[] = [
     ),
     expect: ['userEvent click userEvent14'],
   },
+  {
+    title:
+      "a click on the play context's userEvent destructured from a context parameter with a default is a user-event 14 click",
+    source: `export const Story = {\n  play: async ({ canvas, userEvent } = {}) => {\n    await userEvent.click(canvas.getByRole('button'));\n  },\n};\n`,
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      "a click on userEvent destructured from a play's second parameter is a user-event click of unproven origin",
+    source: `export const Story = {\n  play: async (context, { userEvent }) => {\n    await userEvent.click(button);\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on the userEvent member of another key destructured from the play context is a user-event click of unproven origin',
+    source: inPlayWith(
+      ['canvas', 'driver'],
+      "await driver.userEvent.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on the userEvent member of a play context that a computed key also reads is of unproven origin',
+    source: `export const Story = {\n  play: async (context) => {\n    await context.userEvent.click(buttons[context]);\n  },\n};\n`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on the parameter of an object method keyed userEvent is no interaction',
+    source:
+      'const steps = {\n  userEvent(user) {\n    user.click(button);\n  },\n};\n',
+    expect: [],
+  },
+  {
+    title:
+      "a click on the userEvent member of a named import from 'vitest/browser' is a user-event click of unproven origin",
+    source: `import { browser } from 'vitest/browser';\n${inPlayWith(['canvas'], "await browser.userEvent.click(canvas.getByRole('button'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on userEvent destructured under another name in a catch clause is no interaction',
+    source: inPlayWith(
+      ['canvas'],
+      'try {',
+      '  await open();',
+      '} catch ({ userEvent: user }) {',
+      "  await user.click(canvas.getByRole('button'));",
+      '}',
+    ),
+    expect: [],
+  },
+  {
+    title:
+      "a click on a local given a sequence whose last of three values is the play context's userEvent is a user-event 14 click",
+    source: inPlay(
+      'const pointer = (log(), driver, userEvent);',
+      "await pointer.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      'a click on a local bound to a new expression of userEvent.setup is no interaction',
+    source: inPlay(
+      'const user = new userEvent.setup();',
+      'await user.click(button);',
+    ),
+    expect: [],
+  },
+  {
+    title: 'a click on a let given userEvent only by += is no interaction',
+    source: inPlay(
+      'let user;',
+      'user += userEvent;',
+      'await user.click(button);',
+    ),
+    expect: [],
+  },
 ];
 
 describe('interactionsOf origins', () => {
