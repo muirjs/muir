@@ -69,6 +69,24 @@ const copyCases: readonly FollowingCase[] = [
     expect: [{ checks: ['expect'], end: 'none' }],
   },
   {
+    title:
+      'a waitFor statement whose callback holds only a new expression of expect is not copied',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'await waitFor(() => new expect(dialog), { onTimeout: () => expect(dialog).toBeVisible() });',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
+      'a statement of a call other than waitFor whose callback holds the first expect check is not copied',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'await retry(() => expect(dialog).toBeVisible());',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
     title: "a check statement outside the interaction's own list is not copied",
     source: inPlay(
       'for (const item of args.items) {',
