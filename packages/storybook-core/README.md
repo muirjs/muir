@@ -21,8 +21,9 @@ declares it as a regular dependency, so installing one of them installs this one
   `waitForElementToBeRemoved(...)`.
 - `definitionTimeStubs`, with the types `StubSite`, `Span` and `StubMethodCall`: the definition-time spy stubs in a
   program, with their positions.
-- `mockTransformerRewrite`, with the type `StubRewrite`, and `chainUpTo`: which stubs the mock transformer rewrites,
-  the one rule the transformer and the `lz-storybook` report share.
+- `mockTransformerRewrite`, with the type `StubRewrite`: which stubs the mock transformer rewrites, the one rule the
+  transformer and the `lz-storybook` report share.
+- `chainUpTo`: the stubs of a chain up to one of them.
 - `stubMethodOf` and `writtenMethodOf`, with the types `StubMethod` and `WrittenStubMethod`: a spy method name read
   as a stub method and its `Once` form, and written back.
 - `appendRecord`, `hasRecords`, `recordVariable`, `mockTransformerPluginName`: write and read the transformer record.

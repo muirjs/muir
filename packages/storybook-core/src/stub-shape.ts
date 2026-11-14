@@ -160,6 +160,7 @@ export type StubRewrite =
   | 'once-not-rewritten'
   | 'chain-not-rewritten';
 
+/** Whether the mock transformer rewrites `stub`, given every definition-time stub of its file in `stubs`. */
 export function mockTransformerRewrite(
   stub: Pick<StubSite, 'spyCall' | 'end' | 'once'>,
   stubs: readonly Pick<StubSite, 'spyCall' | 'end'>[],

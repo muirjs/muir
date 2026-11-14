@@ -17,7 +17,7 @@ export interface TransformResult {
   readonly map: SourceMap;
 }
 
-/** The text around a stub's arguments that makes them the implementation `fn()` takes. */
+/** The text around a stub's arguments that makes them the implementation `fn()` takes. The arrow called at once evaluates the arguments once, where the stub stood, so an `await` in them stays outside any function. */
 const implementationWrappers: Readonly<
   Record<StubMethod, readonly [open: string, close: string]>
 > = {
@@ -100,7 +100,9 @@ function parenthesesClosedIn(
       const tokenStart = field(token, 'start');
 
       return (
-        typeof tokenStart === 'number' && tokenStart >= start && tokenStart < end
+        typeof tokenStart === 'number' &&
+        tokenStart >= start &&
+        tokenStart < end
       );
     })
     .map(labelOf);
