@@ -69,6 +69,34 @@ const copyCases: readonly FollowingCase[] = [
     expect: [{ checks: ['expect'], end: 'none' }],
   },
   {
+    title:
+      'a waitFor statement whose callback holds only a new expression of expect is not copied',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'await waitFor(() => new expect(dialog), { onTimeout: () => expect(dialog).toBeVisible() });',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
+      'an export assignment that holds the first expect check is not copied',
+    source: [
+      'export = expect(a).toBe(1);',
+      'userEvent.click(open);',
+      'export = expect(a).toBe(1);',
+    ].join('\n'),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
+      'a statement of a call other than waitFor whose callback holds the first expect check is not copied',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'await retry(() => expect(dialog).toBeVisible());',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
     title: "a check statement outside the interaction's own list is not copied",
     source: inPlay(
       'for (const item of args.items) {',
@@ -639,6 +667,54 @@ describe('interactionsOf following checks copy', () => {
         'start',
       ),
       [check, check],
+    );
+  });
+
+  it('a name declared between an interaction without positions and the check does not keep it from being copied', () => {
+    const check = "expect(status).toHaveTextContent('Saved');";
+    const source = inPlay(
+      'await userEvent.click(save);',
+      "const status = canvas.getByRole('status');",
+      check,
+    );
+
+    assert.deepEqual(
+      firstCopyWithout(
+        source,
+        (node) => field(node, 'type') === 'ExpressionStatement',
+        'start',
+      ),
+      [check, check],
+    );
+  });
+
+  it('a check statement without positions is copied though it reads a name declared between', () => {
+    const source = inPlay(
+      'await userEvent.click(save);',
+      "const status = canvas.getByRole('status');",
+      "expect(status).toHaveTextContent('Saved');",
+    );
+
+    assert.deepEqual(
+      programsOf(source).map((program) => {
+        const check = descendants(program).find(
+          (node) =>
+            field(node, 'type') === 'ExpressionStatement' &&
+            field(node, 'expression', 'type') === 'CallExpression',
+        );
+
+        if (!isRecord(check)) {
+          throw new Error('The source has no check statement.');
+        }
+
+        Reflect.deleteProperty(check, 'start');
+
+        return (
+          interactionsOf(program, csfShapes(program)).all[0]?.following.copy ===
+          check
+        );
+      }),
+      [true, true],
     );
   });
 

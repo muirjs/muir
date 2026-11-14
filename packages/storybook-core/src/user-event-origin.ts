@@ -117,10 +117,7 @@ export function userEventOrigins(
     const parent = tree.parentOf(reference);
 
     if (field(parent, 'type') === 'VariableDeclarator') {
-      return (
-        field(parent, 'init') === reference &&
-        field(parent, 'id', 'type') === 'ObjectPattern'
-      );
+      return field(parent, 'id', 'type') === 'ObjectPattern';
     }
 
     return isMember(parent) && field(parent, 'object') === reference;
@@ -283,7 +280,7 @@ export function userEventOrigins(
     return origins.map((origin) => origin ?? named);
   };
 
-  /** The origins the root of a written chain may have: it splits choices, sequences and `=` assignments at every level, and reads anything else as a local's one value. */
+  /** The origins the root of a written chain may have: it splits choices, sequences, `=` assignments and logical assignments at every level, and reads anything else as a local's one value. */
   const rootOrigins = (value: unknown): MayOrigins => {
     const node = unwrap(value);
 
@@ -326,7 +323,10 @@ function distinct(origins: MayOrigins): MayOrigins {
   return [...new Set(origins)];
 }
 
-/** The values `node` may evaluate to when it is a choice, a sequence or an `=` assignment; `undefined` for any other node. */
+/** The assignment operators whose result is the target's old value or the right side. */
+const logicalAssignments: ReadonlySet<unknown> = new Set(['??=', '||=', '&&=']);
+
+/** The values `node` may evaluate to when it is a choice, a sequence, an `=` assignment or a logical assignment; `undefined` for any other node. */
 function valuesOf(node: unknown): readonly unknown[] | undefined {
   switch (field(node, 'type')) {
     case 'ConditionalExpression': {
@@ -339,8 +339,14 @@ function valuesOf(node: unknown): readonly unknown[] | undefined {
       return list(field(node, 'expressions')).slice(-1);
     }
     case 'AssignmentExpression': {
-      return field(node, 'operator') === '='
-        ? [field(node, 'right')]
+      const operator = field(node, 'operator');
+
+      if (operator === '=') {
+        return [field(node, 'right')];
+      }
+
+      return logicalAssignments.has(operator)
+        ? [field(node, 'left'), field(node, 'right')]
         : undefined;
     }
     default: {
@@ -363,10 +369,7 @@ function setupReceiver(value: unknown): unknown {
 /** The one value a local is ever given, by its declarator's `init` or a later `=`; `undefined` when anything else, such as `++`, a `for...of` head or a second `var`, also changes it. */
 function oneValue(binding: Binding): unknown {
   const assigned = binding.writes.map((write) =>
-    field(write, 'type') === 'AssignmentExpression' &&
-    field(write, 'operator') === '='
-      ? field(write, 'right')
-      : undefined,
+    field(write, 'operator') === '=' ? field(write, 'right') : undefined,
   );
   const init = field(binding.declaration, 'init');
   const values = [...(isNode(init) ? [init] : []), ...assigned];

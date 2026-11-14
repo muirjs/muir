@@ -92,6 +92,24 @@ const followingCases: readonly FollowingCase[] = [
     ],
   },
   {
+    title: 'a call whose name holds getBy past its start is no check',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'const total = budgetByMonth(args);',
+    ),
+    expect: [{ checks: [], end: 'none' }],
+  },
+  {
+    title: 'a soft call on an object other than expect is no check',
+    source: inPlay('await userEvent.click(open);', 'assert.soft(args.onOpen);'),
+    expect: [{ checks: [], end: 'none' }],
+  },
+  {
+    title: 'a new expression of expect is no check',
+    source: inPlay('await userEvent.click(open);', 'new expect(args.onOpen);'),
+    expect: [{ checks: [], end: 'none' }],
+  },
+  {
     title: 'an expect.assertions call is no check',
     source: inPlay('await userEvent.click(open);', 'expect.assertions(1);'),
     expect: [{ checks: [], end: 'none' }],

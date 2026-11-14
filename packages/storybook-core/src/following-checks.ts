@@ -136,10 +136,11 @@ function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
     !isNode(node) ||
     (isFunction(node) && !isCallbackOf(node, tree, isStepCall))
   ) {
+    // Stryker disable next-line ArrayDeclaration: a string among the later statements changes no result, as holdsInteraction, checkOf and statementAt find nothing in a string
     return [];
   }
 
-  const statements = tree.listOf(node) ?? [];
+  const statements = list(tree.listOf(node));
 
   return [
     ...statements.slice(statements.indexOf(node) + 1),
@@ -177,7 +178,7 @@ export function targetOf(read: StatementRead): unknown {
   return awaited(read.args[0]);
 }
 
-/** The expression statements of one function that are `equivalent` to the statement it is given. */
+/** The nodes of one function that are `equivalent` to the statement it is given. */
 type EquivalentStatements = (statement: unknown) => readonly unknown[];
 
 /** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `statementAt` gives the interaction whose statement is a node. */
@@ -188,14 +189,9 @@ export function followingChecksReader(
 ): (read: StatementRead) => FollowingChecks {
   const equivalentStatementsIn = readOnce((outermost): EquivalentStatements => {
     const tokenOf = equivalenceTokens([outermost]);
-    const statements = Map.groupBy(
-      descendants(outermost).filter(
-        (each) => field(each, 'type') === 'ExpressionStatement',
-      ),
-      tokenOf,
-    );
+    const statements = Map.groupBy(descendants(outermost), tokenOf);
 
-    return (statement) => statements.get(tokenOf(statement)) ?? [];
+    return (statement) => list(statements.get(tokenOf(statement)));
   });
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
@@ -266,7 +262,7 @@ function copyOf(
 ): unknown {
   return tree.listOf(statement) === tree.listOf(read.node) &&
     checksWhenRun(statement) &&
-    !readsNameSetBetween(read.node, statement, scope) &&
+    !readsNameSetBetween(read.node, statement, tree, scope) &&
     !standsEarlier(statement, read.node, equivalentStatements)
     ? statement
     : undefined;
@@ -292,41 +288,44 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
-/** Whether `statement` reads a name declared or written from the start of `interactionStatement` up to its own start; a node without positions counts as not between. */
+/** Whether `statement` reads a name declared or written in its list's statements from `interactionStatement` up to it, `statement` aside; a node without positions counts as not between. */
 function readsNameSetBetween(
   interactionStatement: unknown,
   statement: unknown,
+  tree: TreeIndex,
   scope: FileScope,
 ): boolean {
-  const from = field(interactionStatement, 'start');
-  const to = field(statement, 'start');
-  const isBetween = (node: unknown): boolean => {
-    const at = field(node, 'start');
-
-    return (
-      typeof at === 'number' &&
-      typeof from === 'number' &&
-      typeof to === 'number' &&
-      at >= from &&
-      at < to
-    );
-  };
+  const statements = list(tree.listOf(statement));
+  const between = new Set(
+    statements.slice(
+      statements.indexOf(interactionStatement),
+      statements.indexOf(statement),
+    ),
+  );
+  const isBetween = (node: unknown): boolean =>
+    typeof field(node, 'start') === 'number' &&
+    typeof field(interactionStatement, 'start') === 'number' &&
+    typeof field(statement, 'start') === 'number' &&
+    [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
   return scope.referencesIn(statement).some((name) => {
     const binding = scope.bindingOf(name);
 
-    return [binding?.identifier, ...(binding?.writes ?? [])].some(isBetween);
+    return [binding?.identifier, ...list(binding?.writes)].some(isBetween);
   });
 }
 
-/** A check statement, or a `waitFor(...)` statement whose callback holds an expect check. */
+/** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */
 function checksWhenRun(statement: unknown): boolean {
   const expression = awaited(field(statement, 'expression'));
 
   return (
-    startsAtExpect(expression) ||
-    (waitCall(statement) === 'waitFor' &&
-      descendants(list(field(expression, 'arguments'))[0]).some(isExpectCall))
+    field(statement, 'type') === 'ExpressionStatement' &&
+    (startsAtExpect(expression) ||
+      (waitCall(statement) === 'waitFor' &&
+        descendants(list(field(expression, 'arguments'))[0]).some(
+          isExpectCall,
+        )))
   );
 }
 
@@ -349,7 +348,7 @@ function endAt(
       : { by: 'maybe' };
   }
 
-  const statements = tree.listOf(read.node) ?? [];
+  const statements = list(tree.listOf(read.node));
 
   return {
     by: 'interaction',
