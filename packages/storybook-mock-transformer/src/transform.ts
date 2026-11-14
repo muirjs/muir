@@ -14,12 +14,20 @@ export interface TransformResult {
   readonly map: SourceMap;
 }
 
-const replacements: Readonly<Record<StubMethod, (spy: string) => string>> = {
-  mockReturnValue: (spy) => `((value) => ${spy}(() => value))(`,
-  mockResolvedValue: (spy) => `((value) => ${spy}(async () => value))(`,
-  mockRejectedValue: (spy) =>
-    `((value) => ${spy}(async () => { throw value; }))(`,
-  mockImplementation: (spy) => `${spy}(`,
+/** The text that replaces a stub call up to its first argument; `between` is what stands between the spy call and the stub method, such as `.mockName('load')`. */
+const replacements: Readonly<
+  Record<StubMethod, (spy: string, between: string) => string>
+> = {
+  mockReturnValue: (spy, between) =>
+    `((value) => ${spy}(() => value)${between})(`,
+  mockResolvedValue: (spy, between) =>
+    `((value) => ${spy}(async () => value)${between})(`,
+  mockRejectedValue: (spy, between) =>
+    `((value) => ${spy}(async () => { throw value; })${between})(`,
+  mockImplementation: (spy, between) =>
+    between === ''
+      ? `${spy}(`
+      : `((implementation) => ${spy}(implementation)${between})(`,
 };
 
 export function transform(
@@ -35,10 +43,20 @@ export function transform(
   const stubs = definitionTimeStubs(parseModule(code, file));
   const edits = stubs
     .filter((stub) => !followsAStub(stub, stubs))
-    .flatMap(({ spy, method, once, start, argumentStart }) =>
-      once || argumentStart === undefined
-        ? []
-        : [{ start, end: argumentStart, text: replacements[method](spy) }],
+    .flatMap(
+      ({ spy, method, once, start, argumentStart, spyCallEnd, receiverEnd }) =>
+        once || argumentStart === undefined
+          ? []
+          : [
+              {
+                start,
+                end: argumentStart,
+                text: replacements[method](
+                  spy,
+                  code.slice(spyCallEnd, receiverEnd),
+                ),
+              },
+            ],
     );
 
   if (edits.length === 0) {

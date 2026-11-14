@@ -32,6 +32,10 @@ export interface StubSite extends StubMethodCall {
   readonly end: number;
   readonly line: number;
   readonly argumentStart: number | undefined;
+  /** The end of the spy call the chain starts at, such as `fn()`. */
+  readonly spyCallEnd: number;
+  /** The end of the call the stub method is called on; past `spyCallEnd` when calls such as `.mockName('load')` stand between. */
+  readonly receiverEnd: number;
 }
 
 const functionType = /Function|ObjectMethod|ClassMethod|ClassPrivateMethod/;
@@ -88,12 +92,16 @@ function stubSite(
   const spyCall = chainStart(field(node, 'callee', 'object'));
   const spy = field(spyCall, 'callee', 'name');
   const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
+  const spyCallEnd = field(spyCall, 'end');
+  const receiverEnd = field(node, 'callee', 'object', 'end');
 
   if (
     !isCall(node) ||
     typeof start !== 'number' ||
     typeof end !== 'number' ||
     typeof line !== 'number' ||
+    typeof spyCallEnd !== 'number' ||
+    typeof receiverEnd !== 'number' ||
     field(node, 'callee', 'computed') === true ||
     !isCall(spyCall) ||
     typeof spy !== 'string' ||
@@ -113,15 +121,21 @@ function stubSite(
     line,
     argumentStart:
       typeof argumentStart === 'number' ? argumentStart : undefined,
+    spyCallEnd,
+    receiverEnd,
   };
 }
 
-/** The call a chain of stub calls starts from, such as `fn()` in `fn().mockResolvedValueOnce(1)`. */
+/** The spy methods that are no stub but return the spy and leave what it returns alone, so a stub chain goes on through them. */
+const passedThrough: readonly unknown[] = ['mockName', 'mockClear'];
+
+/** The call a chain of stub calls starts from, such as `fn()` in `fn().mockName('load').mockResolvedValueOnce(1)`. */
 function chainStart(node: unknown): unknown {
-  const isStubCall =
+  const name = field(node, 'callee', 'property', 'name');
+  const chainsOn =
     isCall(node) &&
     field(node, 'callee', 'computed') !== true &&
-    stubMethodOf(field(node, 'callee', 'property', 'name')) !== undefined;
+    (stubMethodOf(name) !== undefined || passedThrough.includes(name));
 
-  return isStubCall ? chainStart(field(node, 'callee', 'object')) : node;
+  return chainsOn ? chainStart(field(node, 'callee', 'object')) : node;
 }

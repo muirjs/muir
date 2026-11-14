@@ -215,6 +215,40 @@ describe('transform', () => {
     );
   });
 
+  it('keeps a mockName call before the stub it rewrites', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      "export const Named = { args: { load: fn().mockName('load').mockReturnValue(1) } };",
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        "export const Named = { args: { load: ((value) => fn(() => value).mockName('load'))(1) } };",
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('keeps a mockName call before a mockImplementation it rewrites', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      "export const Named = { args: { load: fn().mockName('load').mockImplementation(() => 1) } };",
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        "export const Named = { args: { load: ((implementation) => fn(implementation).mockName('load'))(() => 1) } };",
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('rewrites only the first stub of a chain of three', () => {
     const code = [
       "import { fn } from 'storybook/test';",

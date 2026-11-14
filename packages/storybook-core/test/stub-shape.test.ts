@@ -51,8 +51,18 @@ describe('definitionTimeStubs', () => {
       ],
     ],
     [
-      'finds no stub after a mock method that is not a stub in a chain',
+      'finds a stub after mockName in a chain, under the spy the chain starts at',
       "import { fn } from 'storybook/test';\nfn().mockName('load').mockReturnValue(1);",
+      [{ spy: 'fn', method: 'mockReturnValue', once: false }],
+    ],
+    [
+      'finds a stub after mockClear in a chain, under the spy the chain starts at',
+      "import { fn } from 'storybook/test';\nfn().mockClear().mockReturnValue(1);",
+      [{ spy: 'fn', method: 'mockReturnValue', once: false }],
+    ],
+    [
+      'finds no stub after mockReturnThis in a chain, as mockReturnThis changes what the spy returns',
+      "import { fn } from 'storybook/test';\nfn().mockReturnThis().mockReturnValue(1);",
       [],
     ],
     [
@@ -116,6 +126,8 @@ describe('definitionTimeStubs', () => {
         end: source.lastIndexOf(')') + 1,
         line: 2,
         argumentStart: source.indexOf("'x'"),
+        spyCallEnd: source.indexOf('fn()') + 'fn()'.length,
+        receiverEnd: source.indexOf('fn()') + 'fn()'.length,
       },
     ]);
   });
