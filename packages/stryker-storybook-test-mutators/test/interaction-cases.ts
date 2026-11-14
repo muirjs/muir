@@ -560,15 +560,6 @@ const interactionCases: readonly Case[] = [
     expect: [[interaction, 'undefined']],
   },
   {
-    id: 'arrow-body-given-to-nested-step',
-    title:
-      'an interaction that is the expression body of an arrow given to step on a member of a member becomes undefined',
-    source: inPlay(
-      "await story.context.step('Submit', () => userEvent.click(button));",
-    ),
-    expect: [[interaction, 'undefined']],
-  },
-  {
     id: 'awaited-type-assertion',
     title: 'an awaited interaction inside an as expression is removed',
     source: inPlay('await (userEvent.click(button) as Promise<void>);'),

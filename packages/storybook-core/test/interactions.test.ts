@@ -317,10 +317,8 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
-      'an interaction that is the expression body of an arrow given to step on a member of a member is an arrow body statement',
-    source: inPlay(
-      "await story.context.step('Submit', () => userEvent.click(button));",
-    ),
+      'an interaction that is the expression body of a play is an arrow body statement',
+    source: `export const Story = {\n  play: ({ userEvent }) => userEvent.click(button),\n};\n`,
     expect: ['userEvent click userEvent14 arrowBody'],
   },
   {

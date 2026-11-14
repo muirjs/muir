@@ -545,6 +545,43 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'a step call holds an interaction that is an arrow body given to forEach in its callback',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      "await step('close', async () => {",
+      '  buttons.forEach((button) => userEvent.click(button));',
+      '});',
+    ),
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'step',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a waitFor whose callback is an interaction ends the window by maybe',
+    source: inPlay(
+      'await userEvent.click(open);',
+      "expect(canvas.queryByRole('alert')).not.toBeInTheDocument();",
+      'await waitFor(() => userEvent.click(close));',
+    ),
+    expect: [
+      {
+        checks: ['expect not'],
+        end: 'maybe',
+        copy: "expect(canvas.queryByRole('alert')).not.toBeInTheDocument();",
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
       'negative checks before a conditional interaction end their window by maybe',
     source: inPlay(
       'await userEvent.click(open);',
