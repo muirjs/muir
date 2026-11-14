@@ -1102,6 +1102,33 @@ member spread at all, so no change to the families could turn it green. Only app
 red showed this; the input was then swapped for literal spreads. `lz-red` step 5 checks that the failure comes from
 the code under test, and the message was the same in both cases. Evidence: `r13fix/notes.md`, "lz-tdd friction".
 
+**O152. A red that never yields cannot be stopped by the test runner (adds to O43).** In the wave 2 fixes, the red for
+"reads each function a check calls once" called a walk that doubled its work at each of 24 levels. node:test's
+`timeout` option never fired, because the synchronous loop never gave the runner a turn, so the run printed no summary
+and an outer `timeout 120` killed it. The red that was handed forward is a killed process, not a failure. O43's way out,
+a test double that stops after a number of probes, has no counterpart for code under test that never yields. The test
+keeps `{ timeout: 10_000 }`, which bounds only a run that yields, so a regression would hang the suite again rather
+than fail. Evidence: `wave2/cycles.log` cycle 12.
+
+**O153. For a code transformer, every change of output form turns the text expectations red (adds to O48 and O76).**
+In the same fixes, two greens changed how the Vite mock transformer writes a rewritten stub, and each had to rewrite
+existing expectations of the emitted text in the same step: 17 in cycle 8 and 20 in cycle 13. An additive report field
+in cycle 6 changed 11 deep-equal shape assertions the same way. `lz-red` step 4 asks for observable behaviour. For a
+transformer the emitted text is observable, but what a story author depends on is how the rewritten module behaves.
+Tests that run the output against a recording `fn` arrived only as a `test-after`, from a review finding. `lz-red`'s
+stance router has no code-generator case that says which of the two levels to pin. Evidence: `wave2/cycles.log`
+cycles 6, 8 and 13, and the `test-after` line "the rewritten module".
+
+**O154 (lz-tpp fit). A green that swaps one mechanism for another of the same generality.** Three greens in the same
+fixes changed how the transformer edits text, not what it covers. Cycle 8 replaced one replacement that copied the
+text between two calls with four edits around it. Cycle 13 fixed a name capture: the rewrite wrapped the stub argument
+in a function whose parameter hid a story name that a `mockName` argument read. The fix moved the arguments into the
+spy call instead. Cycle 15 moved the whole text between the stub call's parentheses. None of these makes the code more
+generic. Each keeps the behaviour and removes an interference. The log labels them `(constant -> scalar)` and
+`(expression -> function)` because those entries were the closest. The list orders transformations from specific to
+generic and has no entry for a change of mechanism at the same generality. Evidence: `wave2/cycles.log` cycles 8, 13
+and 15.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
@@ -1443,6 +1470,16 @@ less reading.
 **S96 (from O107).** In `test-first.md` (Lars's user-scope rule, not the plugin), allow a refactoring before Green to
 run with the one red row still failing, when the spec is a row table that cannot skip one row without an edit: the
 check is that the same row stays the only failure.
+
+**S97 (from O152).** In `lz-red` step 5, add the case of code under test that may never yield (a loop or recursion
+that can blow up): run the act in a worker thread or child process with a deadline. The red is then a timeout failure
+the runner reports, and a later regression fails instead of hanging the suite.
+
+**S98 (from O153).** Give `lz-red`'s stance router a code-generator case: pin behaviour by running the generated code,
+and keep text expectations to the forms whose spelling is part of the contract.
+
+**S99 (from O154).** In `lz-tpp`, name a "change of mechanism" move outside the ranked list, for a green that removes
+an interference without generalising, so that the cycle log does not borrow the nearest label.
 
 ## stefanoslig/angular-ngrx-nx-realworld-example-app: "View article's author" e2e test always fails
 
