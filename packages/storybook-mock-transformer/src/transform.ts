@@ -52,8 +52,8 @@ export function transform(
     rewriteStub(
       output,
       stub,
-      memberAccessStart(tokens, stub.methodStart),
-      argumentListStart(tokens, stub.calleeEnd),
+      memberAccessStart(tokens, stub.methodStart, file),
+      argumentListStart(tokens, stub.calleeEnd, file),
     );
   });
   appendRecord(file, rewritten.length);
@@ -84,6 +84,7 @@ function rewriteStub(
 function memberAccessStart(
   tokens: readonly unknown[],
   nameStart: number,
+  file: string,
 ): number {
   return positionIn(
     tokens.findLast((token) => {
@@ -96,7 +97,7 @@ function memberAccessStart(
       );
     }),
     'start',
-    `no member access before the stub method at ${nameStart}`,
+    `no member access before the stub method at ${file}, offset ${nameStart}`,
   );
 }
 
@@ -104,6 +105,7 @@ function memberAccessStart(
 function argumentListStart(
   tokens: readonly unknown[],
   calleeEnd: number,
+  file: string,
 ): number {
   return positionIn(
     tokens.find((token) => {
@@ -116,7 +118,7 @@ function argumentListStart(
       );
     }),
     'end',
-    `no argument list after the stub method at ${calleeEnd}`,
+    `no argument list after the stub method at ${file}, offset ${calleeEnd}`,
   );
 }
 
