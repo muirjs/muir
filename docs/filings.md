@@ -1160,6 +1160,21 @@ bang rule cycle 70). A red run against a reversed or mutated copy of code that a
 133, 134 and 143). One cycle with eight cases, seven of them red (O62: bang rule cycle 142). Greens labelled with a
 review note instead of a transformation (O36 and O7: bang rule cycles 135 and 136). Evidence: `bang-rule/cycles.log`.
 
+**O159. A row whose expected value is one composite string asserts several behaviours at once.** In the wave 2 round 5
+fixes, the interaction reader's rows compare one string per interaction, such as `userEvent click userEvent14 inHook`,
+that joins its kind, its user-event origin and whether it stands in a hook. The red for a hook held in a variable under
+`as` expected the right origin as well. The green fixed the hook reading, but the origin comes from another reader, so
+the row stayed red for a second behaviour. The expectation was narrowed to `unproven inHook`, because the interaction
+mutators place nothing in a hook and the origin is never used there. `lz-red`'s "two behaviours, two tests" assumes
+the test names them. A house idiom that packs several properties into one compared value hides the second behaviour
+until the green runs. Evidence: `wave2/cycles.log` cycle 19.
+
+**O160. Earlier observations seen again in the round 5 fixes.** A hand-written expected position failed on its
+spelling before the behaviour (O71: cycle 16, end 80 for 81). A correct green changed a shape assertion in another
+package's test (O76 and O153: cycle 16). Three greens reused an existing predicate and had no `lz-tpp` entry (O67:
+cycles 17 to 19). One green changed a mechanism without generalising (O154: cycle 16, a chain keyed by its spy call).
+Evidence: `wave2/cycles.log` cycles 16 to 19.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
@@ -1519,6 +1534,10 @@ generality ranking (it extends S99's "change of mechanism").
 
 **S101 (from O156).** In `lz-red`, add the case where the behaviour is "this test runs": the red is a skip or todo
 count read from the run's summary.
+
+**S102 (from O159).** In `lz-red` step 4, when the house idiom compares one composite value per case, predict each
+part of the expected value against the planned green, and pin only the parts that green changes; leave the others as
+the code gives them today.
 
 ## stefanoslig/angular-ngrx-nx-realworld-example-app: "View article's author" e2e test always fails
 
