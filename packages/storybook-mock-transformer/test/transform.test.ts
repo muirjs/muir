@@ -685,3 +685,84 @@ describe('transform', () => {
     ]);
   });
 });
+
+interface RecordedSpy {
+  /** What the implementation the spy was made with returns. */
+  readonly returns: unknown;
+  readonly names: readonly unknown[];
+}
+
+/** Runs a rewritten module against an `fn` that records each spy it makes. */
+function rewrittenSpies(
+  ...declarations: readonly string[]
+): readonly RecordedSpy[] {
+  const code = [
+    "import { fn } from 'storybook/test';",
+    ...declarations,
+    '',
+  ].join('\n');
+  const rewritten = transform(code, storyFile)?.code;
+
+  if (rewritten === undefined) {
+    throw new Error('The module was not rewritten.');
+  }
+
+  const body = rewritten
+    .replace("import { fn } from 'storybook/test';", '')
+    .replaceAll('export const', 'const');
+  const spies: RecordedSpy[] = [];
+  const fn = (implementation?: unknown) => {
+    const names = new Array<unknown>();
+    const spy: RecordedSpy = {
+      returns:
+        typeof implementation === 'function'
+          ? Reflect.apply(implementation, undefined, [])
+          : undefined,
+      names,
+    };
+    const chain = {
+      mockName: (name: unknown) => {
+        names.push(name);
+
+        return chain;
+      },
+      mockClear: () => chain,
+    };
+    spies.push(spy);
+
+    return chain;
+  };
+
+  Reflect.apply(new Function('fn', body), undefined, [fn]);
+
+  return spies;
+}
+
+describe('the rewritten module', () => {
+  it('makes a spy whose implementation returns the stubbed value', () => {
+    assert.deepEqual(
+      rewrittenSpies('export const load = fn().mockReturnValue(42);'),
+      [{ returns: 42, names: [] }],
+    );
+  });
+
+  it('names the spy with the story name that mockName reads, also when it is named like the stubbed value', () => {
+    assert.deepEqual(
+      rewrittenSpies(
+        "const value = 'load';",
+        'export const load = fn().mockName(value).mockClear().mockReturnValue(1);',
+      ),
+      [{ returns: 1, names: ['load'] }],
+    );
+  });
+
+  it('makes a spy with the implementation that a mockImplementation after mockName passes', () => {
+    assert.deepEqual(
+      rewrittenSpies(
+        "const implementation = () => 'loaded';",
+        "export const load = fn().mockName('load').mockImplementation(implementation);",
+      ),
+      [{ returns: 'loaded', names: ['load'] }],
+    );
+  });
+});
