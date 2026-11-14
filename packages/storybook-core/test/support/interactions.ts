@@ -1,5 +1,6 @@
 import { csfShapes } from '../../src/csf.ts';
 import { type Interaction, interactionsOf } from '../../src/interactions.ts';
+import { field } from '../../src/node-field.ts';
 import { programsOf } from './parse-module.ts';
 import { inPlayWith } from './story-source.ts';
 
@@ -22,7 +23,9 @@ function describeInteraction(interaction: Interaction): string {
       ? [interaction.method ?? '?']
       : []),
     ...(interaction.kind === 'userEvent' ? [interaction.origin] : []),
-    ...(interaction.statement === 'arrowBody' ? ['arrowBody'] : []),
+    ...(field(interaction.node, 'type') === 'ExpressionStatement'
+      ? []
+      : ['arrowBody']),
     ...(interaction.inHook ? ['inHook'] : []),
   ].join(' ');
 }

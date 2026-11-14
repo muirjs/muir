@@ -38,8 +38,6 @@ type Kind =
   | { readonly kind: 'composedPlay' | 'rawDom'; readonly method: string };
 
 export type Interaction = {
-  /** What the statement is: an expression statement, or the expression body of an arrow. */
-  readonly statement: 'expression' | 'arrowBody';
   /** The statement: an expression statement, or the expression body of an arrow. Its identity is the join key. */
   readonly node: unknown;
   /** The call, without `await`, optional chaining or type wrappers. */
@@ -214,26 +212,21 @@ export function interactionsOf(
       ? awaited(field(declaration, 'init'))
       : node;
   };
-  /** What statement `node` is: an expression statement, or the expression body of an arrow, wherever the arrow stands. */
-  const statementOf = (node: unknown): Interaction['statement'] | undefined => {
-    if (field(node, 'type') === 'ExpressionStatement') {
-      return 'expression';
-    }
-
-    const arrow = tree.parentOf(node);
-
-    return field(arrow, 'body') === node ? 'arrowBody' : undefined;
-  };
+  /** The expression `node` stands for as a statement: an expression statement's expression, or `node` itself when it is its parent's `body`, which among expressions only an arrow's expression body is; `undefined` otherwise. */
+  const statementExpressionOf = (node: unknown): unknown =>
+    field(node, 'type') === 'ExpressionStatement'
+      ? field(node, 'expression')
+      : field(tree.parentOf(node), 'body') === node
+        ? node
+        : undefined;
   const found = descendants(program).flatMap((node) => {
-    const statement = statementOf(node);
+    const expression = statementExpressionOf(node);
 
-    if (statement === undefined) {
+    if (expression === undefined) {
       return [];
     }
 
-    const call = awaited(
-      statement === 'expression' ? field(node, 'expression') : node,
-    );
+    const call = awaited(expression);
     const kind = kindOf(call);
     const args = list(field(call, 'arguments'));
 
@@ -242,7 +235,6 @@ export function interactionsOf(
       : [
           {
             read: {
-              statement,
               node,
               call,
               args,
