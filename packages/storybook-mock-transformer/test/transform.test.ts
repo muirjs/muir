@@ -42,6 +42,20 @@ describe('transform records', () => {
     );
   });
 
+  it('counts only the stubs it edits, not one it drops with the spy call that holds it', () => {
+    const file = join(process.cwd(), 'src', 'Button.stories.tsx');
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Inner = { args: { load: fn(fn().mockReturnValue(2)).mockReturnValue(1) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      recordWhile(() => transform(code, file)),
+      '{"file":"src/Button.stories.tsx","rewritten":1}\n',
+    );
+  });
+
   it('appends nothing for a module it leaves alone', () => {
     const file = join(process.cwd(), 'src', 'Button.stories.tsx');
 
