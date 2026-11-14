@@ -297,6 +297,7 @@ describe('storybookReporter', () => {
         {
           file: 'src/SpyStubDefault.stories.tsx',
           line: 15,
+          method: 'mockReturnValue',
           ...describeVerdict('erased'),
         },
       ],
@@ -319,11 +320,13 @@ describe('storybookReporter', () => {
         {
           file: 'src/lzsb/Imported.stories.tsx',
           line: 14,
+          method: 'mockReturnValue',
           ...describeVerdict('unknown'),
         },
         {
           file: 'src/lzsb/OrderDep.stories.tsx',
           line: 13,
+          method: 'mockReturnValue',
           ...describeVerdict('order-dependent'),
         },
       ],
@@ -350,6 +353,7 @@ describe('storybookReporter', () => {
       {
         file: 'src/Literal.stories.tsx',
         line: 4,
+        method: 'mockReturnValue',
         ...describeVerdict('erased'),
       },
     ]);
@@ -377,6 +381,7 @@ describe('storybookReporter', () => {
       {
         file: 'src/Meta.stories.tsx',
         line: 3,
+        method: 'mockReturnValue',
         ...describeVerdict('erased'),
       },
     ]);
@@ -578,7 +583,7 @@ describe('storybookReporter', () => {
 
     assert.equal(
       consoleBlock()[3],
-      `  erased  src/SpyStubDefault.stories.tsx:15  ${erased.reason}; ${erased.fix}`,
+      `  erased  src/SpyStubDefault.stories.tsx:15 mockReturnValue  ${erased.reason}; ${erased.fix}`,
     );
   });
 
@@ -688,6 +693,7 @@ describe('storybookReporter', () => {
       {
         file: 'src/Meta.stories.tsx',
         line: 3,
+        method: 'mockReturnValue',
         ...describeVerdict('erased'),
       },
     ]);
@@ -724,7 +730,7 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(consoleBlock(), [
       'info: @layzee/stryker-storybook: 1 spy stub findings (1 erased)',
-      `  erased  src/Meta.stories.tsx:3  ${erased.reason}; ${erased.fix}`,
+      `  erased  src/Meta.stories.tsx:3 mockReturnValue  ${erased.reason}; ${erased.fix}`,
     ]);
   });
 
@@ -1053,9 +1059,9 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(consoleBlock(), [
       'info: @layzee/stryker-storybook: 4 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked)',
-      "  unknown  src/lzsb/Imported.stories.tsx:14  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach",
-      '  order-dependent  src/lzsb/OrderDep.stories.tsx:13  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
-      '  erased  src/SpyStubDefault.stories.tsx:15  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
+      "  unknown  src/lzsb/Imported.stories.tsx:14 mockReturnValue  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach",
+      '  order-dependent  src/lzsb/OrderDep.stories.tsx:13 mockReturnValue  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
+      '  erased  src/SpyStubDefault.stories.tsx:15 mockReturnValue  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
       '  unchecked  src/SpyStubMetaOff.stories.tsx:24  no test fails without this stub, so no play checks what it changes; assert in the play what the stubbed value changes',
     ]);
   });

@@ -12,6 +12,8 @@ import {
 
 export interface SiteFinding extends SpyStubReason {
   readonly line: number;
+  /** The stub method as the story writes it, such as `mockResolvedValueOnce`. */
+  readonly method: string;
 }
 
 interface DirectiveRule {
@@ -45,7 +47,11 @@ export function siteFindings(
 
   return sites
     .filter((site) => !silenced.has(site))
-    .map(({ line, verdict }) => ({ line, ...describeVerdict(verdict) }));
+    .map(({ line, method, once, verdict }) => ({
+      line,
+      method: once ? `${method}Once` : method,
+      ...describeVerdict(verdict),
+    }));
 }
 
 function silencedSites(

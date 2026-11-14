@@ -233,7 +233,9 @@ keeps is erased all the same, so its removal survives and the report lists an un
 _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:
-One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix.
+One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
+read from the story file also names the stub method as written (`mockResolvedValueOnce`), so the stubs of one chain
+can be told apart; an `unchecked` finding comes from surviving mutants and names none.
 _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:

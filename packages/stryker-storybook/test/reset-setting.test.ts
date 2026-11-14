@@ -147,10 +147,11 @@ describe('classifyStubs stub verdicts', () => {
       assert.deepEqual(
         stubs,
         definitionTimeStubs(story.program).map(
-          ({ start, end, line, once }, index) => ({
+          ({ start, end, line, method, once }, index) => ({
             start,
             end,
             line,
+            method,
             once,
             verdict: verdicts[index],
           }),

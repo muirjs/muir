@@ -48,6 +48,8 @@ export interface LzStorybookReport {
 interface StubFinding {
   readonly file: string;
   readonly line: number;
+  /** The stub method as the story writes it; a finding from a surviving mutant has none. */
+  readonly method?: string;
   readonly verdict: ReasonVerdict | (typeof uncheckedFinding)['verdict'];
   readonly reason: string;
   readonly fix: string;
@@ -171,8 +173,8 @@ function consoleBlock({
       ? `${packageName}: no spy stub findings`
       : `${packageName}: ${findings.length} spy stub findings (${counts.join(', ')})`,
     ...findings.map(
-      ({ verdict, file, line, reason, fix }) =>
-        `  ${verdict}  ${file}:${line}  ${reason}; ${fix}`,
+      ({ verdict, file, line, method, reason, fix }) =>
+        `  ${verdict}  ${file}:${line}${method === undefined ? '' : ` ${method}`}  ${reason}; ${fix}`,
     ),
     ...(hints.length === 0
       ? []

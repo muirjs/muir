@@ -18,7 +18,7 @@ export type ReasonVerdict =
   | 'once-not-rewritten'
   | 'chain-not-rewritten';
 
-export interface ReasonSite extends Omit<ClassifiedStub, 'verdict' | 'once'> {
+export interface ReasonSite extends Omit<ClassifiedStub, 'verdict'> {
   readonly verdict: ReasonVerdict;
 }
 
@@ -108,7 +108,7 @@ function siteReasons(
   stubs: readonly ClassifiedStub[],
   transformer: StorybookProject['transformer'],
 ): readonly ReasonSite[] {
-  return stubs.flatMap(({ once, verdict, ...site }): readonly ReasonSite[] => {
+  return stubs.flatMap(({ verdict, ...site }): readonly ReasonSite[] => {
     if (verdict === 'kept') {
       return [];
     }
@@ -117,7 +117,7 @@ function siteReasons(
       return [{ ...site, verdict }];
     }
 
-    if (once) {
+    if (site.once) {
       return [{ ...site, verdict: 'once-not-rewritten' }];
     }
 
