@@ -108,8 +108,11 @@ export function sitesIn(program: NodePath): Sites {
       .filter((path) => path.isFunction())
       .map((path) => [path.node, path] as const),
   );
-  const sites = argsSites(list(field(program.node, 'body')), (fn) =>
-    keysRead(functions.get(fn)),
+  const fileName = field(program.hub, 'file', 'opts', 'filename');
+  const sites = argsSites(
+    list(field(program.node, 'body')),
+    typeof fileName === 'string' ? fileName : undefined,
+    (fn) => keysRead(functions.get(fn)),
   );
 
   sitesByProgram.set(program.node, sites);
@@ -119,10 +122,11 @@ export function sitesIn(program: NodePath): Sites {
 
 function argsSites(
   body: readonly unknown[],
+  fileName: string | undefined,
   readsOf: (fn: unknown) => Reads,
 ): Sites {
   return new Map(
-    sitesOf(body, 'args').flatMap(({ node, runs, proofs }) => {
+    sitesOf(body, 'args', fileName).flatMap(({ node, runs, proofs }) => {
       const read = union(runs.flatMap((run) => readersOf(run, readsOf)));
 
       return runs.every(({ owner }) => owner === 'meta') || read === 'whole'

@@ -14,8 +14,38 @@ describe('sitesOf', () => {
           'export const A = { args: makeArgs(), play: async () => {} };',
         ),
         'args',
+        'Button.stories.ts',
       ),
       [],
+    );
+  });
+
+  it('proves nothing in a file that imports itself, as a write through the import changes what a story runs with', () => {
+    assert.deepEqual(
+      sitesOf(
+        bodyOf(
+          "import * as self from './Button.stories';",
+          "export default { title: 'a/b', args: { label: 'a' } };",
+          "export const A = { args: { label: 'a' }, play: async () => {} };",
+        ),
+        'args',
+        'Button.stories.ts',
+      ).map(({ proofs }) => proofs),
+      [[], []],
+    );
+  });
+
+  it('keeps every site but proves nothing when the file name is not known', () => {
+    assert.deepEqual(
+      sitesOf(
+        bodyOf(
+          "export default { title: 'a/b', args: { label: 'a' } };",
+          "export const A = { args: { label: 'a' }, play: async () => {} };",
+        ),
+        'args',
+        undefined,
+      ).map(({ proofs }) => proofs),
+      [[], []],
     );
   });
 });

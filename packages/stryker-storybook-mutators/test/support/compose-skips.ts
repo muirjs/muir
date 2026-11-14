@@ -5,7 +5,12 @@ import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { inspect } from 'node:util';
 
-import { parseSync, traverse, types, type NodePath } from '@babel/core';
+import {
+  transformSync,
+  types,
+  type NodePath,
+  type PluginObject,
+} from '@babel/core';
 import {
   field,
   isRecord,
@@ -313,27 +318,31 @@ async function checkRow(
 }
 
 function analyse(source: string): Row {
-  const file = parseSync(source, {
+  const programs: NodePath<types.Program>[] = [];
+  const keys = new Set(['args', 'globals']);
+  // A plugin's paths carry Babel's File, which gives a mutator the file name as Stryker's instrumenter does.
+  const reader: PluginObject = {
+    visitor: {
+      Program(path) {
+        programs.push(path);
+      },
+      ObjectProperty({ node }) {
+        const key = propertyKey(node);
+
+        if (typeof key === 'string' && !structural.includes(key)) {
+          keys.add(key);
+        }
+      },
+    },
+  };
+
+  transformSync(source, {
     configFile: false,
     babelrc: false,
     filename: 'case.stories.ts',
     parserOpts: { plugins: ['typescript'] },
-  });
-  assert.ok(file);
-  const programs: NodePath[] = [];
-  const keys = new Set(['args', 'globals']);
-
-  traverse(file, {
-    Program(path) {
-      programs.push(path);
-    },
-    ObjectProperty({ node }) {
-      const key = propertyKey(node);
-
-      if (typeof key === 'string' && !structural.includes(key)) {
-        keys.add(key);
-      }
-    },
+    code: false,
+    plugins: [() => reader],
   });
   const [program] = programs;
   assert.ok(program);
@@ -345,7 +354,7 @@ function analyse(source: string): Row {
     freeNames: Object.keys(program.scope.globals).filter(
       (name) => types.isValidIdentifier(name) && !(name in globalThis),
     ),
-    imports: file.program.body.filter((statement) =>
+    imports: program.node.body.filter((statement) =>
       types.isImportDeclaration(statement),
     ),
   };

@@ -1,6 +1,7 @@
 import type { Bindings } from './bindings.ts';
 import {
   csfFile,
+  mayImportItself,
   topLevelBindings,
   unchangedBindings,
   type TestArguments,
@@ -106,12 +107,16 @@ type RunLayers = StoryRunLayers | MetaRunLayers;
 /**
  * Every `key` site of the file. A site is chosen as the story's own object, its `.test()` options or the meta give
  * the key, so a written root still has its sites; its layers come only through `rootLayer`, so what a written root
- * gives proves nothing.
+ * gives proves nothing. A file that may import itself proves nothing either, as a write through that import changes
+ * what a story runs with; with no `fileName`, its path, any file may.
  */
 export function sitesOf(
   body: readonly unknown[],
   key: SiteKey,
+  fileName: string | undefined,
 ): readonly Site[] {
+  const mayBeSelfImported =
+    fileName === undefined || mayImportItself(body, fileName);
   const bindings = topLevelBindings(body);
   const file = csfFile(body, bindings);
   const unchanged = unchangedBindings(bindings, file.written);
@@ -222,8 +227,9 @@ export function sitesOf(
             {
               node,
               runs: all.map(({ run }) => run),
-              proofs:
-                key === 'args'
+              proofs: mayBeSelfImported
+                ? []
+                : key === 'args'
                   ? argsProofs(node, all, unchanged)
                   : globalsProofs(node, all),
             },

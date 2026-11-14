@@ -13,6 +13,19 @@ export const fallbackCases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'self-import',
+    title:
+      "a key whose literal value equals the meta's is removed in a file that imports itself, as a write through the import may change either",
+    source:
+      "import * as self from './self-import.stories';\n" +
+      "export default { title: 'Button', args: { label: 'a' }, play: async () => {} };\n" +
+      "export const Primary = { args: { label: 'a', disabled: true } };\n",
+    expect: [
+      [args, '{ disabled: true }'],
+      [args, "{ label: 'a' }"],
+    ],
+  },
+  {
     id: 'meta-key-not-last',
     title:
       "a key whose literal value equals the meta's makes no mutant when the meta sets other keys after it",

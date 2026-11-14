@@ -212,6 +212,7 @@ describe('csfFile readByOtherObjects', () => {
           "export var A = { args: { label: 'a', self: A?.args }, play: async () => {} };",
         ),
         'args',
+        'Button.stories.ts',
       ).map(({ proofs }) => proofs.map(({ reason }) => reason)),
       [['same-as-below'], []],
     );

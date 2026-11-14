@@ -1,15 +1,14 @@
 import { list, sitesOf, type Proven } from '@layzee/storybook-core';
 
 import type { LzStorybookTestMutator } from './mutator.ts';
-import { perFile, readStoryFileAt } from './story-file.ts';
+import { fileNameOf, perFile, readStoryFileAt } from './story-file.ts';
 
 export const proofsBySite = perFile(
   (program): ReadonlyMap<unknown, readonly Proven[]> =>
     new Map(
-      sitesOf(list(program.node.body), 'globals').map(({ node, proofs }) => [
-        node,
-        proofs,
-      ]),
+      sitesOf(list(program.node.body), 'globals', fileNameOf(program)).map(
+        ({ node, proofs }) => [node, proofs],
+      ),
     ),
   new Map<unknown, readonly Proven[]>(),
 );

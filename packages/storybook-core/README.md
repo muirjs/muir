@@ -14,6 +14,7 @@ declares it as a regular dependency, so installing one of them installs this one
   cannot read.
 - `sitesOf`, with the types `Site`, `SiteRun`, `Proven` and `ProofReason`: the `args` or `globals` objects that
   played stories run with, each with a `Proven` for every property whose removal the file proves changes nothing.
+  It takes the file's path, and proves nothing in a file that may import itself or whose path it is not given.
 - `interactionsOf`, with the types `StoryInteractions`, `Interaction`, `UserEventOrigin`, `FollowingChecks`, `Check`
   and `WindowEnd`: every interaction of a story file in source order, each with its kind, its call and arguments,
   its user-event origin, whether it stands in a hook, and the checks that follow it up to what ends them.

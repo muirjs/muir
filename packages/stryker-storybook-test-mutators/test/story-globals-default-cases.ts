@@ -16,6 +16,22 @@ export const storyGlobalsDefaultCases: readonly Case[] = [
     expect: [[storyGlobals, "{ viewport: 'responsive' }"]],
   },
   {
+    id: 'story-globals-self-import',
+    title:
+      "Storybook's default viewport name is removed in a file that imports itself, as a write through the import may change the globals",
+    source: storyFile(
+      "import * as self from './story-globals-self-import.stories';",
+      'export const Story = {',
+      "  globals: { viewport: 'responsive', locale: 'de' },",
+      '  play: async () => {},',
+      '};',
+    ),
+    expect: [
+      [storyGlobals, "{ locale: 'de' }"],
+      [storyGlobals, "{ viewport: 'responsive' }"],
+    ],
+  },
+  {
     id: 'story-globals-default-viewport-object',
     title:
       'a viewport global of the responsive value and no rotation makes no mutant',

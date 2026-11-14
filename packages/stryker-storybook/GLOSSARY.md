@@ -63,8 +63,10 @@ spread the file resolves sets its key, its literal equals the value it falls bac
 Storybook test mutators' term). What a meta or story the file writes gives proves nothing, and neither does a site
 whose story, meta or `.test()` options constant, or a top-level object one of them spreads whole or through a
 member (`...lib.story`), another top-level object reads when the file loads, other than through such a spread at the
-top level, nor a key that a getter or setter in the same object also defines or may define (a computed key). A mutator skips a property as
-equivalent only through one.
+top level, nor a key that a getter or setter in the same object also defines or may define (a computed key). Nothing
+in a file that may import itself is proven: a string literal names the file, or an import or `require` takes a
+specifier that is not a string literal, so a write through that import may change any site; a mutator that cannot
+tell the file's path proves nothing either. A mutator skips a property as equivalent only through one.
 _Avoid_: proof (alone), equivalence check, safe key
 
 **Tag filter**:

@@ -48,17 +48,24 @@ function readNamingFile<T>(
   try {
     return read(program);
   } catch (error) {
-    const filename = field(program.hub, 'file', 'opts', 'filename');
+    const filename = fileNameOf(program);
     const file =
-      typeof filename === 'string'
-        ? `the story file ${filename}`
-        : 'a story file';
+      filename === undefined ? 'a story file' : `the story file ${filename}`;
 
     throw new Error(
       `${packageName}: could not read ${file}: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
     );
   }
+}
+
+/** The path of the file Babel parsed the Program from, as Stryker's instrumenter gives it. */
+export function fileNameOf(
+  program: NodePath<types.Program>,
+): string | undefined {
+  const filename = field(program.hub, 'file', 'opts', 'filename');
+
+  return typeof filename === 'string' ? filename : undefined;
 }
 
 const storyFileOf = perFile<CsfShapes | undefined>(
