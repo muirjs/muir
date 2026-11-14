@@ -117,6 +117,75 @@ export function equivalent(first: unknown, second: unknown): boolean {
   return [...keys].every((key) => equivalent(first[key], second[key]));
 }
 
+/**
+ * An id for `root` and each node below it: two of them share an id exactly when `equivalent` holds between them. Ids
+ * are built from the leaves up, each from the node's own fields and its children's ids, so none repeats the text
+ * below it.
+ */
+export function equivalenceIds(root: unknown): ReadonlyMap<unknown, string> {
+  const ids = new Map<unknown, string>();
+  const interned = new Map<string, string>();
+  const identities = new Map<unknown, string>();
+  let count = 0;
+  const fresh = (): string => `o${count++}`;
+  const intern = (signature: string): string => {
+    const known = interned.get(signature) ?? `#${count++}`;
+
+    interned.set(signature, known);
+
+    return known;
+  };
+  /** A token for a field's value that matches another exactly when `equivalent` holds between the two values. */
+  const tokenOf = (value: unknown): string => {
+    if (Array.isArray(value)) {
+      return intern(`[${value.map(tokenOf).join(',')}]`);
+    }
+
+    if (isNode(value)) {
+      return ids.get(value) ?? fresh();
+    }
+
+    if (typeof value === 'string') {
+      return JSON.stringify(value);
+    }
+
+    if (typeof value === 'number') {
+      return Number.isNaN(value) ? fresh() : `n${value}`;
+    }
+
+    if (
+      typeof value === 'boolean' ||
+      typeof value === 'bigint' ||
+      value === undefined ||
+      value === null
+    ) {
+      return String(value) + typeof value;
+    }
+
+    // Any other object, a function or a symbol: `equivalent` compares it by identity.
+    const known = identities.get(value) ?? fresh();
+
+    identities.set(value, known);
+
+    return known;
+  };
+
+  [...descendants(root)].reverse().forEach((node) => {
+    if (!isNode(node)) {
+      return;
+    }
+
+    const fields = Object.keys(node)
+      .filter((key) => !positionKeys.has(key) && node[key] !== undefined)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${tokenOf(node[key])}`);
+
+    ids.set(node, intern(`{${fields.join(',')}}`));
+  });
+
+  return ids;
+}
+
 /** `node` and every object below it, positions included; `descendants` gives only child nodes. */
 export function everyRecordIn(node: object): readonly unknown[] {
   return [node, ...Object.values(node).filter(isRecord).flatMap(everyRecordIn)];

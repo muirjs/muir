@@ -4,6 +4,7 @@ import {
   awaited,
   childNodes,
   descendants,
+  equivalenceIds,
   equivalent,
   isFunction,
   isNode,
@@ -176,27 +177,8 @@ export function targetOf(read: StatementRead): unknown {
   return awaited(read.args[0]);
 }
 
-type StatementsByChain = ReadonlyMap<string, readonly unknown[]>;
-
-/** A key that `equivalent` statements share, read only from the expression's callee, object and awaited-argument chain; `equivalent` decides among the statements that share one. */
-function chainKey(statement: unknown): string {
-  return JSON.stringify(chainLinks(field(statement, 'expression')));
-}
-
-function chainLinks(node: unknown): readonly unknown[] {
-  return isNode(node)
-    ? [
-        field(node, 'type'),
-        field(node, 'name') ?? memberName(node),
-        list(field(node, 'arguments')).length,
-        ...chainLinks(
-          field(node, 'callee') ??
-            field(node, 'object') ??
-            field(node, 'argument'),
-        ),
-      ]
-    : [];
-}
+/** The expression statements of one function that are `equivalent` to a statement of it. */
+type EquivalentStatements = (statement: unknown) => readonly unknown[];
 
 /** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `statementAt` gives the interaction whose statement is a node. */
 export function followingChecksReader(
@@ -204,16 +186,17 @@ export function followingChecksReader(
   scope: FileScope,
   statementAt: (node: unknown) => StatementRead | undefined,
 ): (read: StatementRead) => FollowingChecks {
-  /** The expression statements in a function, by `chainKey`. */
-  const statementsIn = readOnce(
-    (outermost): StatementsByChain =>
-      Map.groupBy(
-        descendants(outermost).filter(
-          (each) => field(each, 'type') === 'ExpressionStatement',
-        ),
-        chainKey,
+  const equivalentStatementsIn = readOnce((outermost): EquivalentStatements => {
+    const ids = equivalenceIds(outermost);
+    const statements = Map.groupBy(
+      descendants(outermost).filter(
+        (each) => field(each, 'type') === 'ExpressionStatement',
       ),
-  );
+      (each) => ids.get(each),
+    );
+
+    return (statement) => statements.get(ids.get(statement)) ?? [];
+  });
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
   /** Interactions in one `switch` or `else if` chain share the statements after it, so each statement is read once. */
@@ -246,7 +229,7 @@ export function followingChecksReader(
         read,
         tree,
         scope,
-        statementsIn(outermostFunction(read.node, tree)),
+        equivalentStatementsIn(outermostFunction(read.node, tree)),
       ),
     };
   };
@@ -279,33 +262,28 @@ function copyOf(
   read: StatementRead,
   tree: TreeIndex,
   scope: FileScope,
-  expressionStatements: StatementsByChain,
+  equivalentStatements: EquivalentStatements,
 ): unknown {
   return tree.listOf(statement) === tree.listOf(read.node) &&
     checksWhenRun(statement) &&
     !readsNameSetBetween(read.node, statement, scope) &&
-    !standsEarlier(statement, read.node, expressionStatements)
+    !standsEarlier(statement, read.node, equivalentStatements)
     ? statement
     : undefined;
 }
 
-/** Whether one of `expressionStatements`, those of the outermost function around `interactionStatement`, is equivalent to `statement` and ends by the start of `interactionStatement`; a node without positions stands nowhere. */
+/** Whether a statement equivalent to `statement`, in the outermost function around `interactionStatement`, ends by the start of `interactionStatement`; a node without positions stands nowhere. */
 function standsEarlier(
   statement: unknown,
   interactionStatement: unknown,
-  expressionStatements: StatementsByChain,
+  equivalentStatements: EquivalentStatements,
 ): boolean {
   const start = field(interactionStatement, 'start');
 
-  return (expressionStatements.get(chainKey(statement)) ?? []).some((node) => {
+  return equivalentStatements(statement).some((node) => {
     const end = field(node, 'end');
 
-    return (
-      typeof end === 'number' &&
-      typeof start === 'number' &&
-      end <= start &&
-      equivalent(node, statement)
-    );
+    return typeof end === 'number' && typeof start === 'number' && end <= start;
   });
 }
 
