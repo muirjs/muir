@@ -219,7 +219,7 @@ export function userEventOrigins(
     ];
   };
 
-  /** The origins a local's one value may have: a user-event's `setup()`, another receiver, either arm of a conditional or logical expression, or a sequence's last value. */
+  /** The origins a local's one value, or the root of a written member, may have: a user-event's `setup()`, another receiver, either arm of a conditional or logical expression, or a sequence's last value. */
   const valueOrigins = (value: unknown): MayOrigins => {
     const node = unwrap(value);
 
@@ -277,14 +277,14 @@ export function userEventOrigins(
     return origins.map((origin) => origin ?? named);
   };
 
-  /** `node`, and each object a member expression reads, down to its root. */
-  const chainOf = (node: unknown): readonly unknown[] =>
-    isMember(node) ? [node, ...chainOf(unwrap(field(node, 'object')))] : [node];
+  /** The origins of `node` and of each object a member expression reads, down to its root, which splits as a local's one value does. */
+  const chainOrigins = (node: unknown): MayOrigins =>
+    isMember(node)
+      ? [...originsIn(node), ...chainOrigins(unwrap(field(node, 'object')))]
+      : valueOrigins(node);
   /** The origins of each member a write targets and of every object in its chain; a receiver of any of them is unproven. */
   const writtenOrigins = new Set(
-    scope.writtenMembers
-      .flatMap((member) => chainOf(unwrap(member)))
-      .flatMap((node) => originsIn(node)),
+    scope.writtenMembers.flatMap((member) => chainOrigins(unwrap(member))),
   );
 
   return (receiver) => {
