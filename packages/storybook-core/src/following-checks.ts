@@ -210,19 +210,24 @@ export function followingChecksReader(
 
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
-
-  return (read) => {
-    const later = laterStatements(read.node, tree);
-    const cut = later.find((statement) =>
-      holdsInteraction(statement, tree, isInteractionStatement),
-    );
-    const window =
-      cut === undefined ? later : later.slice(0, later.indexOf(cut));
-    const checks = window.flatMap(descendants).flatMap((node) => {
+  /** Interactions in one `switch` or `else if` chain share the statements after it, so each statement is read once. */
+  const holdsAnInteraction = readOnce((statement) =>
+    holdsInteraction(statement, tree, isInteractionStatement),
+  );
+  const checksIn = readOnce((statement) =>
+    descendants(statement).flatMap((node) => {
       const check = checkOf(node, tree);
 
       return check === undefined ? [] : [check];
-    });
+    }),
+  );
+
+  return (read) => {
+    const later = laterStatements(read.node, tree);
+    const cut = later.find(holdsAnInteraction);
+    const window =
+      cut === undefined ? later : later.slice(0, later.indexOf(cut));
+    const checks = window.flatMap(checksIn);
     const firstExpect = checks.find((check) => check.kind === 'expect');
 
     return {
@@ -230,7 +235,7 @@ export function followingChecksReader(
       end: endAt(cut, read, tree, statementAt),
       copy: copyOf(
         window.find((statement) =>
-          descendants(statement).includes(firstExpect?.node),
+          checksIn(statement).some((check) => check === firstExpect),
         ),
         read,
         tree,
@@ -238,6 +243,25 @@ export function followingChecksReader(
         expressionStatementsAround(read.node),
       ),
     };
+  };
+}
+
+/** `read`, which gives the same defined value for a node each time, kept for each node it is given. */
+function readOnce<T>(read: (node: unknown) => T): (node: unknown) => T {
+  const known = new Map<unknown, T>();
+
+  return (node) => {
+    const found = known.get(node);
+
+    if (found !== undefined) {
+      return found;
+    }
+
+    const value = read(node);
+
+    known.set(node, value);
+
+    return value;
   };
 }
 
