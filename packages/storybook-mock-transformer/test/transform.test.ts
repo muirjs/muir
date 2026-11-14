@@ -268,6 +268,23 @@ describe('transform', () => {
     );
   });
 
+  it('keeps the parentheses around a stub argument', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const load = fn().mockReturnValue((1, 2));',
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const load = fn(((value) => () => value)((1, 2)));',
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('keeps a top-level await in a mockName argument outside any function it adds', () => {
     const code = [
       "import { fn } from 'storybook/test';",

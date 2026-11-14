@@ -48,7 +48,12 @@ export function transform(
 
   const output = new MagicString(code);
   rewritten.forEach((stub) => {
-    rewriteStub(output, stub, memberAccessStart(tokens, stub.methodStart));
+    rewriteStub(
+      output,
+      stub,
+      memberAccessStart(tokens, stub.methodStart),
+      argumentListStart(tokens, stub.calleeEnd),
+    );
   });
   appendRecord(file, rewritten.length);
 
@@ -61,52 +66,87 @@ export function transform(
 /** Moves the stub's arguments into the spy call, as `fn(((value) => () => value)(<arguments>))`, and removes the stub call from the chain. */
 function rewriteStub(
   output: MagicString,
-  { spy, method, end, spyCall, argumentSpan }: StubSite,
+  { spy, method, end, spyCall, hasArguments }: StubSite,
   accessStart: number,
+  listStart: number,
 ): void {
   const factory = implementationFactories[method];
   const [open, close] =
     factory === undefined ? ['', ''] : [`(${factory})(`, ')'];
 
-  if (argumentSpan === undefined) {
+  if (!hasArguments) {
     output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}${close})`);
     output.remove(accessStart, end);
 
     return;
   }
 
+  const listEnd = end - ')'.length;
+
   output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}`);
-  output.remove(accessStart, argumentSpan.start);
-  output.remove(argumentSpan.end, end);
-  output.appendLeft(argumentSpan.end, `${close})`);
-  output.move(argumentSpan.start, argumentSpan.end, spyCall.end);
+  output.remove(accessStart, listStart);
+  output.remove(listEnd, end);
+  output.appendLeft(listEnd, `${close})`);
+  output.move(listStart, listEnd, spyCall.end);
 }
 
 function memberAccessStart(
   tokens: readonly unknown[],
   nameStart: number,
 ): number {
-  const start = field(
+  return positionIn(
     tokens.findLast((token) => {
       const end = field(token, 'end');
-      const label = field(token, 'type', 'label');
 
       return (
         typeof end === 'number' &&
         end <= nameStart &&
-        (label === '.' || label === '?.')
+        ['.', '?.'].includes(labelOf(token))
       );
     }),
     'start',
+    `no member access before the stub method at ${nameStart}`,
   );
+}
 
-  if (typeof start !== 'number') {
-    throw new Error(
-      `${packageName}: no member access before the stub method at ${nameStart}`,
-    );
+/** Just past the `(` that opens a stub call's argument list. */
+function argumentListStart(
+  tokens: readonly unknown[],
+  calleeEnd: number,
+): number {
+  return positionIn(
+    tokens.find((token) => {
+      const start = field(token, 'start');
+
+      return (
+        typeof start === 'number' &&
+        start >= calleeEnd &&
+        labelOf(token) === '('
+      );
+    }),
+    'end',
+    `no argument list after the stub method at ${calleeEnd}`,
+  );
+}
+
+function labelOf(token: unknown): string {
+  const label = field(token, 'type', 'label');
+
+  return typeof label === 'string' ? label : '';
+}
+
+function positionIn(
+  token: unknown,
+  edge: 'start' | 'end',
+  missing: string,
+): number {
+  const position = field(token, edge);
+
+  if (typeof position !== 'number') {
+    throw new Error(`${packageName}: ${missing}`);
   }
 
-  return start;
+  return position;
 }
 
 function parseModule(

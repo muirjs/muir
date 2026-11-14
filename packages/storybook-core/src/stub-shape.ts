@@ -32,10 +32,12 @@ export interface StubSite extends StubMethodCall {
   readonly start: number;
   readonly end: number;
   readonly line: number;
-  readonly argumentSpan: Span | undefined;
+  readonly hasArguments: boolean;
   /** Inside any parentheses around it. */
   readonly spyCall: Span;
   readonly methodStart: number;
+  /** The end of the stub call's callee and of its type arguments: the `(` of its argument list comes next. */
+  readonly calleeEnd: number;
 }
 
 export interface Span {
@@ -101,6 +103,10 @@ function stubSite(
   const spyCallStart = field(spyCall, 'start');
   const spyCallEnd = field(spyCall, 'end');
   const methodStart = field(node, 'callee', 'property', 'start');
+  const calleeEnd =
+    field(node, 'typeArguments', 'end') ??
+    field(node, 'typeParameters', 'end') ??
+    field(node, 'callee', 'end');
 
   if (
     !isCall(node) ||
@@ -110,6 +116,7 @@ function stubSite(
     typeof spyCallStart !== 'number' ||
     typeof spyCallEnd !== 'number' ||
     typeof methodStart !== 'number' ||
+    typeof calleeEnd !== 'number' ||
     field(node, 'callee', 'computed') === true ||
     !isCall(spyCall) ||
     typeof spy !== 'string' ||
@@ -120,9 +127,6 @@ function stubSite(
     return undefined;
   }
 
-  const argumentStart = field(node, 'arguments', '0', 'start');
-  const argumentsEnd = field(list(field(node, 'arguments')).at(-1), 'end');
-
   return {
     spy,
     ...stub,
@@ -130,12 +134,10 @@ function stubSite(
     start,
     end,
     line,
-    argumentSpan:
-      typeof argumentStart === 'number' && typeof argumentsEnd === 'number'
-        ? { start: argumentStart, end: argumentsEnd }
-        : undefined,
+    hasArguments: list(field(node, 'arguments')).length > 0,
     spyCall: { start: spyCallStart, end: spyCallEnd },
     methodStart,
+    calleeEnd,
   };
 }
 
