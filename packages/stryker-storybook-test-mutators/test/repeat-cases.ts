@@ -112,6 +112,15 @@ export const repeatCases: readonly Case[] = [
     expect: [[repeat, 'fireEvent.click(button), fireEvent.click(button)']],
   },
   {
+    id: 'repeat-awaited-arrow-body-fire-event',
+    title:
+      'an awaited fireEvent.click that is the expression body of an async arrow runs twice, at once, in a sequence without the await',
+    source: inPlay(
+      'buttons.forEach(async (button) => await fireEvent.click(button));',
+    ),
+    expect: [[repeat, 'fireEvent.click(button), fireEvent.click(button)']],
+  },
+  {
     id: 'repeat-step-body-fire-event',
     title:
       'a fireEvent.click that is the expression body of a step runs twice, at once, in a sequence',

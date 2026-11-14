@@ -545,7 +545,7 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
-      'a step call holds an interaction that is an arrow body given to forEach in its callback',
+      'a step call whose callback clicks in a forEach arrow body ends the window by step',
     source: inPlayWith(
       ['args', 'step', 'userEvent'],
       'await userEvent.click(open);',

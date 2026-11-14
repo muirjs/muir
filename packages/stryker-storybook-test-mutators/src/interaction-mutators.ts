@@ -177,32 +177,34 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
           t.cloneNode(path.node),
           t.cloneNode(path.node),
         ]);
-      } else {
-        if (!path.isExpression()) {
-          throw new Error(
-            // Stryker disable next-line StringLiteral: no input reaches this throw, as an interaction is an expression statement or the call an arrow's body is, and a call is an expression
-            `${packageName}: LzStorybookInteractionRepeat read an interaction at a ${path.node.type}, which is neither an expression statement nor an expression`,
-          );
-        }
 
-        if (interaction.kind === 'fireEvent') {
-          yield t.sequenceExpression([
-            t.cloneNode(path.node),
-            t.cloneNode(path.node),
-          ]);
+        return;
+      }
 
-          return;
-        }
-
-        const twice = [path.node, path.node].map((body) =>
-          t.expressionStatement(t.awaitExpression(t.cloneNode(body))),
-        );
-
-        yield t.callExpression(
-          t.arrowFunctionExpression([], t.blockStatement(twice), true),
-          [],
+      if (!path.isExpression()) {
+        throw new Error(
+          // Stryker disable next-line StringLiteral: no input reaches this throw, as an interaction is an expression statement or an arrow's expression body, and an arrow's expression body is an expression
+          `${packageName}: LzStorybookInteractionRepeat read an interaction at a ${path.node.type}, which is neither an expression statement nor an expression`,
         );
       }
+
+      // fireEvent dispatches synchronously, so the second click runs at once; a user-event call is awaited before the next.
+      if (interaction.kind === 'fireEvent') {
+        const call = path.isAwaitExpression() ? path.node.argument : path.node;
+
+        yield t.sequenceExpression([t.cloneNode(call), t.cloneNode(call)]);
+
+        return;
+      }
+
+      const twice = [path.node, path.node].map((body) =>
+        t.expressionStatement(t.awaitExpression(t.cloneNode(body))),
+      );
+
+      yield t.callExpression(
+        t.arrowFunctionExpression([], t.blockStatement(twice), true),
+        [],
+      );
     },
   };
 }
