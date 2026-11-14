@@ -278,11 +278,17 @@ export function userEventOrigins(
     return origins.map((origin) => origin ?? named);
   };
 
-  /** The origins of `node` and of each object a member expression reads, down to its root, which splits as a local's one value does. */
+  /** The origins the root of a written chain may have: it splits choices, sequences and `=` assignments at every level, and reads anything else as a local's one value. */
+  const rootOrigins = (value: unknown): MayOrigins => {
+    const node = unwrap(value);
+
+    return valuesOf(node)?.flatMap(rootOrigins) ?? valueOrigins(node);
+  };
+  /** The origins of `node` and of each object a member expression reads, down to its root. */
   const chainOrigins = (node: unknown): MayOrigins =>
     isMember(node)
       ? [...originsIn(node), ...chainOrigins(unwrap(field(node, 'object')))]
-      : valueOrigins(node);
+      : rootOrigins(node);
   /** The origins of each member a write targets and of every object in its chain; a receiver of any of them is unproven. */
   const writtenOrigins: ReadonlySet<UserEventOrigin> = new Set(
     scope.writtenMembers
@@ -308,6 +314,29 @@ function provenOrigin(origins: MayOrigins): UserEventOrigin | undefined {
   }
 
   return origins.every((origin) => origin === first) ? first : 'unproven';
+}
+
+/** The values `node` may evaluate to when it is a choice, a sequence or an `=` assignment; `undefined` for any other node. */
+function valuesOf(node: unknown): readonly unknown[] | undefined {
+  switch (field(node, 'type')) {
+    case 'ConditionalExpression': {
+      return [field(node, 'consequent'), field(node, 'alternate')];
+    }
+    case 'LogicalExpression': {
+      return [field(node, 'left'), field(node, 'right')];
+    }
+    case 'SequenceExpression': {
+      return list(field(node, 'expressions')).slice(-1);
+    }
+    case 'AssignmentExpression': {
+      return field(node, 'operator') === '='
+        ? [field(node, 'right')]
+        : undefined;
+    }
+    default: {
+      return undefined;
+    }
+  }
 }
 
 /** The receiver of `<receiver>.setup()`. */

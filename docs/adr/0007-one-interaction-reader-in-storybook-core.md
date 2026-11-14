@@ -35,9 +35,10 @@ scope reading written in core.
   destructure its members, or a local with more than one value gives a receiver the origin `unproven` or none, so the
   reporter gives no `click-before-type` hint there. A write that targets a member, by assignment, pattern or
   `for...in`/`for...of` head, finds the origin of the written member and of each object it is read through, the way a
-  receiver's origin is found; a member under a computed key may be `userEvent`. The root of that chain is followed as
-  a local's one value is, so `(flag ? userEvent : x).click = f`, `(x || userEvent).click = f` and
-  `(0, userEvent).click = f` reach each origin they may hold. Every receiver of such an origin is `unproven`:
+  receiver's origin is found; a member under a computed key may be `userEvent`. The root of that chain splits choices,
+  sequences and `=` assignments at every level and reads what is left as a local's one value is read, so
+  `(flag ? userEvent : x).click = f`, `(a || (flag ? userEvent.setup() : x)).click = f` and
+  `(a = userEvent).click = f` reach each origin they may hold. Every receiver of such an origin is `unproven`:
   `u.click = f` after `const u = context.userEvent`, and `t.userEvent.click = f` beside a named `userEvent` import of
   the same module, both refuse. So a write on one
   user-event 14 object, such as a `setup()` instance, drops every user-event 14 hint in the file; the cost is hints

@@ -113,9 +113,10 @@ A local whose one value is `<receiver>.setup()`, another receiver, a choice betw
 a sequence whose last value is one of these has that receiver's origin. A member write makes every receiver of the
 origin it reaches `unproven`. The write is an assignment, an array or object pattern or a `for...in` or `for...of`
 head that targets a member. It reaches the origin of the written member and of each object it is read through,
-found as a receiver's is, and a member under a computed key may be `userEvent`. The root of that chain is followed
-as a local's one value is, so an inline choice or sequence, as in `(flag ? userEvent : x).click = f`,
-`(x || userEvent).click = f` or `(0, userEvent).click = f`, reaches each origin it may hold. So `userEvent.click`,
+found as a receiver's is, and a member under a computed key may be `userEvent`. The root of that chain splits
+choices, sequences and `=` assignments at every level and reads what is left as a local's one value is read, so
+`(flag ? userEvent : x).click = f`, `(a || (flag ? userEvent.setup() : x)).click = f` or `(a = userEvent).click = f`
+reaches each origin it may hold. So `userEvent.click`,
 `t.userEvent.click` on a namespace import, `u.click` after `const u = userEvent`, `const u = context.userEvent` or
 `const u = flag ? userEvent : x`, `userEvent.click` after `const { userEvent } = context`, or the `click` of a
 `setup()` instance each refuse every user-event 14 receiver in the file, named imports, namespace imports and the play

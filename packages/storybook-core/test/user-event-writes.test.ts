@@ -152,6 +152,36 @@ const writeCases: readonly KindCase[] = [
   },
   {
     title:
+      'a click on an imported userEvent after the play assigns the click of a conditional whose arm is a sequence ending in it is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], '(flag ? (0, userEvent) : x).click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a logical or whose right is a conditional that may hold it is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], '(a || (flag ? userEvent : x)).click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a conditional that may hold its setup() call is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], '(flag ? userEvent.setup() : x).click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of an assignment of it is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], '(a = userEvent).click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      'a click on an imported userEvent after the play assigns the click of a sequence ending in a logical or whose right is a conditional that may hold it is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(['canvas'], '(0, a || (flag ? userEvent : x)).click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
       'a click on an imported userEvent after the play assigns the click of the second of two vars that hold each other is of unproven origin',
     source: `${importUserEvent}${inPlayWith(['canvas'], 'var first = flag ? userEvent : second;', 'var second = first;', 'second.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
     expect: ['userEvent click unproven'],
@@ -160,6 +190,12 @@ const writeCases: readonly KindCase[] = [
     title:
       'a click on an imported userEvent after the play assigns the click of a setup() instance is of unproven origin, since a write refuses every receiver of its origin',
     source: `${importUserEvent}${inPlayWith(['canvas'], 'const user = userEvent.setup();', 'user.click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
+    expect: ['userEvent click unproven'],
+  },
+  {
+    title:
+      "a click on an imported userEvent after the play assigns the click of its setup() call's result is of unproven origin",
+    source: `${importUserEvent}${inPlayWith(['canvas'], 'userEvent.setup().click = fake;', "await userEvent.click(canvas.getByRole('a'));")}`,
     expect: ['userEvent click unproven'],
   },
   {
