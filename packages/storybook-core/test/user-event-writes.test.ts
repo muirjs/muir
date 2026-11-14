@@ -204,6 +204,21 @@ const writeCases: readonly KindCase[] = [
     source: `export const Story = {\n  play: async (context) => {\n    context[key] = fake;\n    await context.userEvent.click(context.canvas.getByRole('a'));\n  },\n};\n`,
     expect: ['userEvent click unproven'],
   },
+  {
+    title:
+      'a click on an imported userEvent after the play writes a member of the last of 40 locals that each give the one before or itself is of unproven origin',
+    source: `${importUserEvent}${inPlayWith(
+      ['canvas'],
+      'const u0 = userEvent;',
+      ...Array.from(
+        { length: 40 },
+        (_, i) => `const u${i + 1} = u${i} || u${i};`,
+      ),
+      'u40.x = 1;',
+      "await userEvent.click(canvas.getByRole('a'));",
+    )}`,
+    expect: ['userEvent click unproven'],
+  },
 ];
 
 describe('interactionsOf origins after a member write', () => {

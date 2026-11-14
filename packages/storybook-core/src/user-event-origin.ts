@@ -225,17 +225,17 @@ export function userEventOrigins(
     const node = unwrap(value);
 
     if (field(node, 'type') === 'ConditionalExpression') {
-      return [
-        ...originsIn(field(node, 'consequent')),
-        ...originsIn(field(node, 'alternate')),
-      ];
+      return distinct(
+        [field(node, 'consequent'), field(node, 'alternate')].flatMap(
+          originsIn,
+        ),
+      );
     }
 
     if (field(node, 'type') === 'LogicalExpression') {
-      return [
-        ...originsIn(field(node, 'left')),
-        ...originsIn(field(node, 'right')),
-      ];
+      return distinct(
+        [field(node, 'left'), field(node, 'right')].flatMap(originsIn),
+      );
     }
 
     if (field(node, 'type') === 'SequenceExpression') {
@@ -319,6 +319,11 @@ function provenOrigin(origins: MayOrigins): UserEventOrigin | undefined {
   }
 
   return origins.every((origin) => origin === first) ? first : 'unproven';
+}
+
+/** Each origin once, so a value that reads another twice holds no more entries than it. */
+function distinct(origins: MayOrigins): MayOrigins {
+  return [...new Set(origins)];
 }
 
 /** The values `node` may evaluate to when it is a choice, a sequence or an `=` assignment; `undefined` for any other node. */

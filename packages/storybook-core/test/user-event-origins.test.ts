@@ -647,6 +647,32 @@ const originCases: readonly KindCase[] = [
     ),
     expect: [],
   },
+  {
+    title:
+      'a click on the last of 40 locals that each give the one before or itself is a user-event 14 click',
+    source: inPlay(
+      'const u0 = userEvent;',
+      ...Array.from(
+        { length: 40 },
+        (_, i) => `const u${i + 1} = u${i} || u${i};`,
+      ),
+      "await u40.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click userEvent14'],
+  },
+  {
+    title:
+      'a click on the last of 40 locals that each choose between the one before and itself is a user-event 14 click',
+    source: inPlay(
+      'const u0 = userEvent;',
+      ...Array.from(
+        { length: 40 },
+        (_, i) => `const u${i + 1} = flag ? u${i} : u${i};`,
+      ),
+      "await u40.click(canvas.getByRole('button'));",
+    ),
+    expect: ['userEvent click userEvent14'],
+  },
 ];
 
 describe('interactionsOf origins', () => {
