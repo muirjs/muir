@@ -184,7 +184,7 @@ function isMetaObjectExportedBySpecifier(
 /** The family name of the default export, which no identifier can have. */
 const defaultExportName = Symbol('export default');
 
-/** The owner, as `MetaObject.owner` names it, of the meta the root story of an `.extend()` chain is made from: the default export's for a CSF3 story, the name its `.story()` call is made on for a factory story. */
+/** The owner, as `MetaObject.owner` names it, of the meta a story is made from, given the initializer `extendLevels` ends its chain at: the default export's for a CSF3 story, the name a `.story()` call is made on for a factory story. */
 export function storyMetaOwner(rootInit: unknown): unknown {
   const call = unwrap(rootInit);
 

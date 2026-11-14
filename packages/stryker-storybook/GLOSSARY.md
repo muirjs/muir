@@ -313,7 +313,8 @@ _Avoid_: record file, rewrite log
 
 **CSF ignorer**:
 The `lz-storybook-csf` ignorer, which reports as Ignored the mutants of static CSF values and, in the default play
-mode, also those of the meta object apart from its `args`, which are story data, story test code and MSW handlers.
+mode, also those of story test code, MSW handlers and the meta object apart from its `args`, which are story data
+(an `args` object written on the meta's first line keeps its own `{}` mutant out, as a story's does).
 _Avoid_: story ignorer, Storybook ignorer
 
 **Stub ignorer**:

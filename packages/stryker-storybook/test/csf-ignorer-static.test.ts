@@ -28,7 +28,7 @@ describe('lz-storybook-csf', () => {
     );
   });
 
-  it('keeps the meta object as written', async () => {
+  it("keeps the meta object as written, and on its first line the args' own object too", async () => {
     const { outcomes } = setup();
 
     assert.deepEqual(
@@ -88,7 +88,7 @@ describe('lz-storybook-csf', () => {
     );
   });
 
-  it('keeps a meta object under satisfies as written', async () => {
+  it("keeps a meta object under satisfies as written, and on its first line the args' own object too", async () => {
     const { outcomes } = setup();
 
     assert.deepEqual(

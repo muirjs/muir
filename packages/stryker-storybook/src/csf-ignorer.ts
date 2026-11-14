@@ -92,7 +92,7 @@ function metaPartsKept(meta: unknown): readonly unknown[] {
   );
 }
 
-// An ignorer skips a whole subtree, so the meta object itself is kept by a directive, leaving its args unignored.
+// An ignorer skips a whole subtree, so the meta object itself is kept by a directive, leaving its args unignored. A next-line directive matches every ObjectLiteral mutant on the meta's first line, so the `{}` of args written on that line is kept too, as a story's own is.
 function keepMetaObject(meta: unknown): void {
   addDirective(meta, `Stryker disable next-line ObjectLiteral: ${metaReason}`);
 }

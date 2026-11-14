@@ -61,13 +61,12 @@ export type { Proven };
 /** The story data key a site holds. */
 type SiteKey = 'args' | 'globals';
 
-/** Where one run of a site takes a key from: the site, elsewhere (a layer above the meta's object, or another meta the story is made from), or a source the file cannot tell. */
+/** Where one run of a site takes a key the site holds from: the site, elsewhere (a layer above the meta's object, or another meta the story is made from), or a source the file cannot tell. */
 export type KeyFrom = 'site' | 'elsewhere' | 'unknown';
 
 interface StoryRun {
   readonly owner: 'story';
   readonly story: PlayedStory;
-  /** A story's own object, or its `.test()` options, is the top layer of its run. */
   readonly keyFrom: (key: Key) => KeyFrom;
 }
 
@@ -84,6 +83,7 @@ interface MetaRun {
   readonly keyFrom: (key: Key) => KeyFrom;
 }
 
+/** A story's own object, or its `.test()` options, is the top layer of its run. */
 const fromSite = (): KeyFrom => 'site';
 
 /** One run of a site, for one played story: its own run, one of its `.test()` calls, or the run that reads the meta's object. */
@@ -163,11 +163,12 @@ export function sitesOf(
             ),
       );
       const [own, ...bases] = roots.map((layer) => layerOf(layer, key));
-      const rootLevel = levels.at(-1) ?? levels[0];
+      const rootLevel = levels.reduce((_, level) => level);
       const metaOwner =
         rootLevel === unknownValue
           ? unknownValue
           : storyMetaOwner(rootLevel.init);
+      const namesAMeta = metas.some(({ owner }) => owner === metaOwner);
       const storyRoot = unlessReadByOtherObjects(roots[0], local);
       const storyParameters = [
         ...roots.map((layer) => layerOf(layer, 'parameters')),
@@ -229,11 +230,7 @@ export function sitesOf(
               owner: 'meta',
               story,
               keyFrom: keyFromMeta(
-                !metas.some(({ owner }) => owner === metaOwner)
-                  ? 'unknown'
-                  : metaOwner === meta.owner
-                    ? 'this'
-                    : 'other',
+                madeFrom(namesAMeta, metaOwner === meta.owner),
                 [own, ...bases],
                 node,
                 mayBeSelfImported,
@@ -268,6 +265,18 @@ export function sitesOf(
           ]
         : [],
   );
+}
+
+/** Which meta a story is made from, seen from one meta: an owner that names no meta of the file, such as an alias, cannot be told. */
+function madeFrom(
+  namesAMeta: boolean,
+  isThisMeta: boolean,
+): 'this' | 'other' | 'unknown' {
+  if (!namesAMeta) {
+    return 'unknown';
+  }
+
+  return isThisMeta ? 'this' : 'other';
 }
 
 /**

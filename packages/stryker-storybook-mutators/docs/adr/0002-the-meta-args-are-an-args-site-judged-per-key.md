@@ -34,4 +34,6 @@ does not supersede it: a story's own args are always taken by its own run, so no
 - The CSF ignorer of `@layzee/stryker-storybook` reported every mutant inside the meta object as Ignored in its
   default play mode, the mode of the components configuration. Lars approved on 2026-11-14 that it leave the meta's
   `args` to the mutators ("1: Approve recommendation."), so Stryker's built-in mutators now place their mutants in
-  the meta's `args` values too, as they do in a story's own `args`. An ignorer skips by node, not by mutator.
+  the meta's `args` values too, as they do in a story's own `args`, since an ignorer skips by node, not by mutator.
+  The directive that keeps the meta object's own `{}` mutant out also keeps that of `args` written on the meta's
+  first line, as for a story's own `args`.
