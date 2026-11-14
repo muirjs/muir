@@ -308,13 +308,12 @@ function readsNameSetBetween(
     typeof field(statement, 'start') === 'number' &&
     [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
-  return bindingsReadThroughCalls(statement, scope, tree).some((binding) => {
-    const hoisted = binding.kind === 'function';
-
-    return [...(hoisted ? [] : [binding.identifier]), ...binding.writes].some(
-      isBetween,
-    );
-  });
+  return bindingsReadThroughCalls(statement, scope, tree).some((binding) =>
+    (binding.kind === 'function'
+      ? binding.writes
+      : [binding.identifier, ...binding.writes]
+    ).some(isBetween),
+  );
 }
 
 function bindingsReadThroughCalls(
@@ -323,15 +322,14 @@ function bindingsReadThroughCalls(
   tree: TreeIndex,
 ): readonly Binding[] {
   const followed = new Set<unknown>();
-  const isDeclaredIn = (binding: Binding, fn: unknown): boolean =>
-    binding.declaration !== fn &&
-    tree.ancestors(binding.identifier).includes(fn);
+  const isDeclaredIn = (binding: Binding, node: unknown): boolean =>
+    tree.ancestors(binding.identifier).includes(node);
   const readBy = (node: unknown): readonly Binding[] =>
     scope
       .referencesIn(node)
       .map(scope.bindingOf)
       .filter((binding) => binding !== undefined)
-      .filter((binding) => node === statement || !isDeclaredIn(binding, node))
+      .filter((binding) => !isDeclaredIn(binding, node))
       .flatMap((binding) => {
         const body = functionOf(binding);
 
