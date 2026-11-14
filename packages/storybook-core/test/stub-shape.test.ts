@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { definitionTimeStubs } from '../src/stub-shape.ts';
+import { chainUpTo, definitionTimeStubs } from '../src/stub-shape.ts';
 
 function parseTs(source: string) {
   return parse(source, {
@@ -145,5 +145,19 @@ describe('definitionTimeStubs', () => {
       })),
       [{ method: 'mockResolvedValue', once: true }],
     );
+  });
+});
+
+describe('chainUpTo', () => {
+  it("gives the stubs of a stub's chain from its first up to the stub, leaving out later stubs and other chains", () => {
+    const first = { start: 0, end: 10 };
+    const second = { start: 0, end: 20 };
+    const third = { start: 0, end: 30 };
+    const otherChain = { start: 40, end: 50 };
+
+    assert.deepEqual(chainUpTo(second, [third, otherChain, first, second]), [
+      first,
+      second,
+    ]);
   });
 });

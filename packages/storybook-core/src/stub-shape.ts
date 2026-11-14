@@ -126,6 +126,16 @@ function stubSite(
   };
 }
 
+/** The stubs of `stub`'s chain from its first up to `stub` itself: they start where the chain starts, and each earlier one ends sooner. */
+export function chainUpTo<TStub extends Pick<StubSite, 'start' | 'end'>>(
+  stub: Pick<StubSite, 'start' | 'end'>,
+  stubs: readonly TStub[],
+): readonly TStub[] {
+  return stubs.filter(
+    (other) => other.start === stub.start && other.end <= stub.end,
+  );
+}
+
 /** The spy methods that are no stub but return the spy and leave what it returns alone, so a stub chain goes on through them. */
 const passedThrough: readonly unknown[] = ['mockName', 'mockClear'];
 

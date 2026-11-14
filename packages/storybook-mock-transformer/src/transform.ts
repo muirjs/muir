@@ -1,9 +1,9 @@
 import { parse } from '@babel/parser';
 import {
   appendRecord,
+  chainUpTo,
   definitionTimeStubs,
   type StubMethod,
-  type StubSite,
 } from '@layzee/storybook-core';
 import MagicString, { type SourceMap } from 'magic-string';
 
@@ -42,7 +42,7 @@ export function transform(
 
   const stubs = definitionTimeStubs(parseModule(code, file));
   const edits = stubs
-    .filter((stub) => !followsAStub(stub, stubs))
+    .filter((stub) => chainUpTo(stub, stubs).length === 1)
     .flatMap(
       ({ spy, method, once, start, argumentStart, spyCallEnd, receiverEnd }) =>
         once || argumentStart === undefined
@@ -71,13 +71,6 @@ export function transform(
     code: output.toString(),
     map: output.generateMap({ source: file, hires: true }),
   };
-}
-
-/** Whether another stub of the chain comes before this one: it starts at the same call and ends earlier. */
-function followsAStub(stub: StubSite, stubs: readonly StubSite[]): boolean {
-  return stubs.some(
-    (inner) => inner.start === stub.start && inner.end < stub.end,
-  );
 }
 
 function parseModule(code: string, file: string): unknown {

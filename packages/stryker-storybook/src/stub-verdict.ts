@@ -1,3 +1,5 @@
+import { chainUpTo } from '@layzee/storybook-core';
+
 import {
   classifyStubs,
   type ClassifiedStub,
@@ -123,16 +125,6 @@ function siteReasons(
       ? [{ ...site, verdict: 'chain-not-rewritten' }]
       : [];
   });
-}
-
-/** The stubs of a chain from its first up to this one; the mock transformer leaves every stub after the first as it is. */
-function chainUpTo<TStub extends Pick<ClassifiedStub, 'start' | 'end'>>(
-  stub: Pick<ClassifiedStub, 'start' | 'end'>,
-  stubs: readonly TStub[],
-): readonly TStub[] {
-  return stubs.filter(
-    (other) => other.start === stub.start && other.end <= stub.end,
-  );
 }
 
 export function describeVerdict(verdict: ReasonVerdict): SpyStubReason {
