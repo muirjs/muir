@@ -1200,6 +1200,15 @@ to write the red against the interface the cycle is heading for when the defect 
 a correct green changed a shape assertion and hand-built test values (O76 and O153: cycle 24). Evidence:
 `wave2/cycles.log` cycle 24.
 
+**O164. A shared library's signature change left its dependents' new cases no red of their own.** Item 8d gave
+`sitesOf` in `@layzee/storybook-core` a file-name parameter. Its first cycle went red and green in that package. The
+two mutator packages that call it then failed every case that rests on a proof, all at once, because their callers
+did not yet pass the file name. Their new self-import cases, run through the real instrumenter, passed as soon as
+the callers did, so they could only be logged as `test-after`. `lz-red` sizes one failing test per cycle within one
+spec. It has no guidance for a change whose red sits in one package while the callers' tests break across others,
+for example to write the dependents' cases first, against the old signature, so each one goes red when the callers
+change. Evidence: `8d/cycles.log`, the two `test-after` lines.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
