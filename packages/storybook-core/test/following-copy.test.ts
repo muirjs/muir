@@ -306,6 +306,24 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'the first check is copied when the name it reads is a function declared between the interaction and the check, as hoisting declares it before the interaction',
+    source: inPlay(
+      'await userEvent.click(add);',
+      'function itemCount(count) {',
+      "  return count + ' item';",
+      '}',
+      'await expect(canvas.getByText(itemCount(1))).toBeVisible();',
+    ),
+    expect: [
+      {
+        checks: ['expect', 'query'],
+        end: 'none',
+        copy: 'await expect(canvas.getByText(itemCount(1))).toBeVisible();',
+      },
+    ],
+  },
+  {
+    title:
       'an interaction whose first check reads a name the interaction itself assigns has no copy',
     source: inPlay(
       'let input;',

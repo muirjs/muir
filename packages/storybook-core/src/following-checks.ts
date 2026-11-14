@@ -311,7 +311,10 @@ function readsNameSetBetween(
   return scope.referencesIn(statement).some((name) => {
     const binding = scope.bindingOf(name);
 
-    return [binding?.identifier, ...list(binding?.writes)].some(isBetween);
+    const declared =
+      binding?.kind === 'function' ? undefined : binding?.identifier;
+
+    return [declared, ...list(binding?.writes)].some(isBetween);
   });
 }
 
