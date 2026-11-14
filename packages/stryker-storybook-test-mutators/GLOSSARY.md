@@ -41,10 +41,12 @@ interaction is not looked at, and an interaction that is an arrow's expression b
 Three kinds of statement are not copied:
 
 - one that is neither a check statement nor a `waitFor(...)` whose callback holds a check;
-- one that reads a name declared or written from the start of the interaction up to that statement. A function
+- one that reads a name declared or written from the start of the interaction up to that statement, a write in a
+  function a statement there names (`count();`) included. A function
   declaration there counts only by its writes, since hoisting declares it before the interaction. The names a
   statement reads include those that each function it names reads from outside that function, where the function is
-  declared or is the initial value of a variable, and so on for each function those name;
+  declared, is the initial value of a variable or is given to it by an `=` write, and so on for each function those
+  name;
 - one whose equal already stands before the interaction in the outermost function around it.
 
 A negative check and a `toHaveBeenCalledTimes(0)` check are copied like any other. `@layzee/storybook-core` picks the

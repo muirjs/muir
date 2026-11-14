@@ -1,4 +1,4 @@
-import { isCall, isMember } from './csf-nodes.ts';
+import { isCall, isMember, unwrap } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -288,7 +288,7 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
-/** Whether `statement`, a function it names (declared, or the initial value of a variable) or a function those name in turn reads, from outside that function, a name declared or written in its list's statements from `interactionStatement` up to it, `statement` aside. A function declaration counts by its writes only, as hoisting declares it before the interaction; a node without positions counts as not between. */
+/** Whether `statement`, a function it names (declared, the initial value of a variable, or given to it by an `=` write) or a function those name in turn reads, from outside that function, a name declared or written in its list's statements from `interactionStatement` up to it, `statement` aside, or in a function those statements name, followed the same way. A function declaration counts by its writes only, as hoisting declares it before the interaction; a node without positions counts as not between. */
 function readsNameSetBetween(
   interactionStatement: unknown,
   statement: unknown,
@@ -296,12 +296,16 @@ function readsNameSetBetween(
   scope: FileScope,
 ): boolean {
   const statements = list(tree.listOf(statement));
-  const between = new Set(
-    statements.slice(
-      statements.indexOf(interactionStatement),
-      statements.indexOf(statement),
-    ),
+  const betweenStatements = statements.slice(
+    statements.indexOf(interactionStatement),
+    statements.indexOf(statement),
   );
+  const between = new Set([
+    ...betweenStatements,
+    ...betweenStatements
+      .flatMap((each) => bindingsReadThroughFunctions(each, scope, tree))
+      .flatMap(functionsOf),
+  ]);
   const isBetween = (node: unknown): boolean =>
     typeof field(node, 'start') === 'number' &&
     typeof field(interactionStatement, 'start') === 'number' &&
@@ -331,22 +335,26 @@ function bindingsReadThroughFunctions(
       .filter((binding) => binding !== undefined)
       .filter((binding) => !isDeclaredIn(binding, node))
       .flatMap((binding) => {
-        const body = declaredFunction(binding);
+        const bodies = functionsOf(binding).filter(
+          (body) => !followed.has(body),
+        );
 
-        if (
-          // Stryker disable next-line ConditionalExpression: reading an undefined body finds no references, so following it adds nothing
-          body === undefined ||
-          followed.has(body)
-        ) {
-          return [binding];
-        }
+        bodies.forEach((body) => followed.add(body));
 
-        followed.add(body);
-
-        return [binding, ...readBy(body)];
+        return [binding, ...bodies.flatMap(readBy)];
       });
 
   return readBy(statement);
+}
+
+/** The functions a binding may name: the one it is declared with, and each one an `=` write gives it, through any parentheses or cast. */
+function functionsOf(binding: Binding): readonly unknown[] {
+  return [
+    declaredFunction(binding),
+    ...binding.writes
+      .filter((write) => field(write, 'operator') === '=')
+      .map((write) => unwrap(field(write, 'right'))),
+  ].filter(isFunction);
 }
 
 /** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */
