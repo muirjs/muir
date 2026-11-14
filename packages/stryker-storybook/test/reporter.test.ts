@@ -906,6 +906,29 @@ describe('storybookReporter', () => {
     );
   });
 
+  it('warns once and reports the other story files when reading one overflows the stack', (t) => {
+    const { reporter, findings, lines, projectDir } = setup(t);
+    writeStory(
+      projectDir,
+      'Deep.stories.tsx',
+      `export const Primary = {};\nx${'.a'.repeat(20_000)} = 1;\n`,
+    );
+    writeStory(projectDir, 'Meta.stories.tsx', erasedStub);
+
+    reporter.onMutationTestReportReady({ files: {} });
+
+    assert.deepEqual(
+      findings().map((finding) => isRecord(finding) && finding['file']),
+      ['src/Meta.stories.tsx'],
+    );
+    assert.deepEqual(
+      lines.filter((line) => line.startsWith('warn: ')),
+      [
+        'warn: @layzee/stryker-storybook: lz-storybook could not read the spy stubs of src/Deep.stories.tsx, so it skipped them: Maximum call stack size exceeded',
+      ],
+    );
+  });
+
   it('scans no story file when the spy stub mutator is in excludedMutations', (t) => {
     const { reporter, findings, projectDir } = setup(t, 'no-main', {
       mutator: { excludedMutations: ['LzStorybookSpyStub'] },

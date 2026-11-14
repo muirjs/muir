@@ -22,6 +22,7 @@ import {
   interactionHints,
   type InteractionHint,
   type ReportFiles,
+  skippedOnRangeError,
 } from './interaction-hints.ts';
 import { packageName } from './package-name.ts';
 import {
@@ -121,13 +122,9 @@ export function storybookReporter(options: object, log: ProjectLog) {
       );
     },
     onMutationTestReportReady({ files }: ReportInput): void {
-      const warnUnparsable = (fileName: string, error: unknown): void =>
-        log.warn(
-          `${packageName}: Babel could not parse ${projectPath(fileName)}, so lz-storybook skipped its spy stubs: ${error instanceof Error ? error.message : String(error)}`,
-        );
       const findings = excludesSpyStub(options)
         ? []
-        : stubFindings(files, storybook(), warnUnparsable);
+        : stubFindings(files, storybook(), (message) => log.warn(message));
       const hints = interactionHints(files, (message) => log.warn(message));
       const report: LzStorybookReport = {
         findings,
@@ -197,8 +194,12 @@ function consoleBlock({
 function stubFindings(
   files: ReportInput['files'],
   project: StorybookProject,
-  onUnparsable: (fileName: string, error: unknown) => void,
+  warn: (message: string) => void,
 ): readonly StubFinding[] {
+  const onUnparsable = (fileName: string, error: unknown): void =>
+    warn(
+      `${packageName}: Babel could not parse ${projectPath(fileName)}, so lz-storybook skipped its spy stubs: ${error instanceof Error ? error.message : String(error)}`,
+    );
   const storyFiles = new Set([
     ...Object.keys(files).filter((file) => isStoryFile(project, resolve(file))),
     ...storyFilePaths(project).map(projectPath),
@@ -206,11 +207,20 @@ function stubFindings(
 
   return [
     ...[...storyFiles].flatMap((file) =>
-      siteFindings(
-        files[file]?.source ?? readFileSync(file, 'utf8'),
-        file,
-        project,
-        onUnparsable,
+      (
+        skippedOnRangeError(
+          () =>
+            siteFindings(
+              files[file]?.source ?? readFileSync(file, 'utf8'),
+              file,
+              project,
+              onUnparsable,
+            ),
+          (message) =>
+            warn(
+              `${packageName}: lz-storybook could not read the spy stubs of ${projectPath(file)}, so it skipped them: ${message}`,
+            ),
+        ) ?? []
       ).map((finding) => ({ file, ...finding })),
     ),
     ...Object.entries(files).flatMap(([file, { mutants }]) =>
