@@ -16,7 +16,6 @@ const positionKeys: ReadonlySet<string> = new Set([
   'end',
   'range',
   'extra',
-  'comments',
   'leadingComments',
   'trailingComments',
   'innerComments',
