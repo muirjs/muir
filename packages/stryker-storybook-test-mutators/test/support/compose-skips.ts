@@ -139,7 +139,7 @@ export function composeSkips({
 
     const results = await Promise.all(
       cases.map((testCase, index) => {
-        const row = analyse(testCase.source);
+        const row = analyse(testCase.source, `${testCase.id}.stories.ts`);
         keysByRow.set(index, row.keys);
 
         return checkRow(
@@ -317,10 +317,11 @@ async function checkRow(
   };
 }
 
-function analyse(source: string): Row {
+/** Reads `source` as the file `fileName`, the name the case runner instruments it under. */
+function analyse(source: string, fileName: string): Row {
   const programs: NodePath<types.Program>[] = [];
   const keys = new Set(['args', 'globals']);
-  // A plugin's paths carry Babel's File, which gives a mutator the file name as Stryker's instrumenter does.
+  // A plugin's paths carry Babel's File, the place a mutator reads the file name from under Stryker's instrumenter.
   const reader: PluginObject = {
     visitor: {
       Program(path) {
@@ -339,7 +340,7 @@ function analyse(source: string): Row {
   transformSync(source, {
     configFile: false,
     babelrc: false,
-    filename: 'case.stories.ts',
+    filename: fileName,
     parserOpts: { plugins: ['typescript'] },
     code: false,
     plugins: [() => reader],
