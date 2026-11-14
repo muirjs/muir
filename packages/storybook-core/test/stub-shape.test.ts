@@ -203,6 +203,10 @@ describe('mockTransformerRewrite', () => {
     assert.equal(mockTransformerRewrite(first, [second, first]), 'rewritten');
   });
 
+  it('rewrites the first stub of a chain also when the stubs given leave it out', () => {
+    assert.equal(mockTransformerRewrite(first, [second]), 'rewritten');
+  });
+
   it('leaves a stub after the first of its chain alone', () => {
     assert.equal(
       mockTransformerRewrite(second, [second, first]),

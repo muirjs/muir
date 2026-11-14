@@ -169,9 +169,9 @@ export function mockTransformerRewrite(
     return 'once-not-rewritten';
   }
 
-  return chainUpTo(stub, stubs).length === 1
-    ? 'rewritten'
-    : 'chain-not-rewritten';
+  return chainUpTo(stub, stubs).some((other) => other.end < stub.end)
+    ? 'chain-not-rewritten'
+    : 'rewritten';
 }
 
 /** The spy methods that are not stubs but return the spy and leave what it returns alone, so a stub chain goes on through them. */
