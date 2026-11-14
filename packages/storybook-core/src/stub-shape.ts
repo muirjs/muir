@@ -26,9 +26,16 @@ export function stubMethodOf(name: unknown): StubMethodCall | undefined {
   return method === undefined ? undefined : { method, once: name !== method };
 }
 
+/** The spy method name of a stub method call, the reverse of `stubMethodOf`. */
+export function writtenMethodOf({
+  method,
+  once,
+}: StubMethodCall): StubMethod | `${StubMethod}Once` {
+  return once ? `${method}Once` : method;
+}
+
 export interface StubSite extends StubMethodCall {
   readonly spy: string;
-  readonly writtenMethod: string;
   readonly start: number;
   readonly end: number;
   readonly line: number;
@@ -98,8 +105,7 @@ function stubSite(
   const line = field(node, 'loc', 'start', 'line');
   const spyCall = chainStart(field(node, 'callee', 'object'));
   const spy = field(spyCall, 'callee', 'name');
-  const writtenMethod = field(node, 'callee', 'property', 'name');
-  const stub = stubMethodOf(writtenMethod);
+  const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
   const spyCallStart = field(spyCall, 'start');
   const spyCallEnd = field(spyCall, 'end');
   const methodStart = field(node, 'callee', 'property', 'start');
@@ -121,7 +127,6 @@ function stubSite(
     !isCall(spyCall) ||
     typeof spy !== 'string' ||
     !spies.has(spy) ||
-    typeof writtenMethod !== 'string' ||
     stub === undefined
   ) {
     return undefined;
@@ -130,7 +135,6 @@ function stubSite(
   return {
     spy,
     ...stub,
-    writtenMethod,
     start,
     end,
     line,

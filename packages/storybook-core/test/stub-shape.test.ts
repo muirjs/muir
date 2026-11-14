@@ -7,6 +7,8 @@ import {
   chainUpTo,
   definitionTimeStubs,
   mockTransformerRewrite,
+  stubMethodOf,
+  writtenMethodOf,
 } from '../src/stub-shape.ts';
 
 function parseTs(source: string) {
@@ -126,7 +128,6 @@ describe('definitionTimeStubs', () => {
         spy: 'fn',
         method: 'mockReturnValue',
         once: false,
-        writtenMethod: 'mockReturnValue',
         start: source.indexOf('(fn()'),
         end: source.lastIndexOf(')') + 1,
         line: 2,
@@ -141,25 +142,29 @@ describe('definitionTimeStubs', () => {
     ]);
   });
 
-  it('reports a Once stub as once, under the method it stubs, and keeps the method as written', () => {
+  it('reports a Once stub as once, under the method it stubs', () => {
     const { program } = parse(
       "import { fn } from 'storybook/test';\nfn().mockResolvedValueOnce(1);",
       { sourceType: 'module' },
     );
 
     assert.deepEqual(
-      definitionTimeStubs(program).map(({ method, once, writtenMethod }) => ({
+      definitionTimeStubs(program).map(({ method, once }) => ({
         method,
         once,
-        writtenMethod,
       })),
-      [
-        {
-          method: 'mockResolvedValue',
-          once: true,
-          writtenMethod: 'mockResolvedValueOnce',
-        },
-      ],
+      [{ method: 'mockResolvedValue', once: true }],
+    );
+  });
+
+  it('writes a stub method call back as the spy method name it was read from', () => {
+    assert.deepEqual(
+      ['mockResolvedValueOnce', 'mockReturnValue']
+        .map(stubMethodOf)
+        .map((call) =>
+          call === undefined ? undefined : writtenMethodOf(call),
+        ),
+      ['mockResolvedValueOnce', 'mockReturnValue'],
     );
   });
 });

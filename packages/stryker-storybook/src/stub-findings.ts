@@ -1,4 +1,4 @@
-import { field, isRecord, list } from '@layzee/storybook-core';
+import { field, isRecord, list, writtenMethodOf } from '@layzee/storybook-core';
 
 import { parseProgram } from './parse.ts';
 import type { StorybookProject } from './storybook-project.ts';
@@ -47,9 +47,9 @@ export function siteFindings(
 
   return sites
     .filter((site) => !silenced.has(site))
-    .map(({ line, writtenMethod, verdict }) => ({
+    .map(({ line, verdict, ...stub }) => ({
       line,
-      method: writtenMethod,
+      method: writtenMethodOf(stub),
       ...describeVerdict(verdict),
     }));
 }
