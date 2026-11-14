@@ -126,6 +126,7 @@ function memberAccessStart(
       const end = field(token, 'end');
 
       return (
+        // Stryker disable next-line ConditionalExpression: every Babel token has a number end, so this check only narrows the type, and without it the type check fails
         typeof end === 'number' &&
         end <= nameStart &&
         ['.', '?.'].includes(labelOf(token))
