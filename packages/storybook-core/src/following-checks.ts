@@ -8,7 +8,6 @@ import {
   isFunction,
   isNode,
   memberName,
-  shapeKey,
   type TreeIndex,
 } from './node-tree.ts';
 import type { FileScope } from './scope.ts';
@@ -177,7 +176,27 @@ export function targetOf(read: StatementRead): unknown {
   return awaited(read.args[0]);
 }
 
-type StatementsByShape = ReadonlyMap<string, readonly unknown[]>;
+type StatementsByChain = ReadonlyMap<string, readonly unknown[]>;
+
+/** A key that `equivalent` statements share, read only from the expression's callee, object and awaited-argument chain; `equivalent` decides among the statements that share one. */
+function chainKey(statement: unknown): string {
+  return JSON.stringify(chainLinks(field(statement, 'expression')));
+}
+
+function chainLinks(node: unknown): readonly unknown[] {
+  return isNode(node)
+    ? [
+        field(node, 'type'),
+        field(node, 'name') ?? memberName(node),
+        list(field(node, 'arguments')).length,
+        ...chainLinks(
+          field(node, 'callee') ??
+            field(node, 'object') ??
+            field(node, 'argument'),
+        ),
+      ]
+    : [];
+}
 
 /** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `statementAt` gives the interaction whose statement is a node. */
 export function followingChecksReader(
@@ -185,29 +204,16 @@ export function followingChecksReader(
   scope: FileScope,
   statementAt: (node: unknown) => StatementRead | undefined,
 ): (read: StatementRead) => FollowingChecks {
-  const statementsByFunction = new Map<unknown, StatementsByShape>();
-  /** The expression statements in the outermost function around `node` that may be copies, by `shapeKey`, built once per function; only those are keyed, since a key holds the whole statement. */
-  const expressionStatementsAround = (node: unknown): StatementsByShape => {
-    const outermost = outermostFunction(node, tree);
-    const known = statementsByFunction.get(outermost);
-
-    if (known !== undefined) {
-      return known;
-    }
-
-    const statements = Map.groupBy(
-      descendants(outermost).filter(
-        (each) =>
-          field(each, 'type') === 'ExpressionStatement' && checksWhenRun(each),
+  /** The expression statements in a function, by `chainKey`. */
+  const statementsIn = readOnce(
+    (outermost): StatementsByChain =>
+      Map.groupBy(
+        descendants(outermost).filter(
+          (each) => field(each, 'type') === 'ExpressionStatement',
+        ),
+        chainKey,
       ),
-      shapeKey,
-    );
-
-    statementsByFunction.set(outermost, statements);
-
-    return statements;
-  };
-
+  );
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
   /** Interactions in one `switch` or `else if` chain share the statements after it, so each statement is read once. */
@@ -240,14 +246,16 @@ export function followingChecksReader(
         read,
         tree,
         scope,
-        expressionStatementsAround(read.node),
+        statementsIn(outermostFunction(read.node, tree)),
       ),
     };
   };
 }
 
-/** `read`, which gives the same defined value for a node each time, kept for each node it is given. */
-function readOnce<T>(read: (node: unknown) => T): (node: unknown) => T {
+/** `read`, which gives the same value for a node each time, kept for each node it is given. */
+function readOnce<T extends NonNullable<unknown>>(
+  read: (node: unknown) => T,
+): (node: unknown) => T {
   const known = new Map<unknown, T>();
 
   return (node) => {
@@ -271,7 +279,7 @@ function copyOf(
   read: StatementRead,
   tree: TreeIndex,
   scope: FileScope,
-  expressionStatements: StatementsByShape,
+  expressionStatements: StatementsByChain,
 ): unknown {
   return tree.listOf(statement) === tree.listOf(read.node) &&
     checksWhenRun(statement) &&
@@ -285,11 +293,11 @@ function copyOf(
 function standsEarlier(
   statement: unknown,
   interactionStatement: unknown,
-  expressionStatements: StatementsByShape,
+  expressionStatements: StatementsByChain,
 ): boolean {
   const start = field(interactionStatement, 'start');
 
-  return (expressionStatements.get(shapeKey(statement)) ?? []).some((node) => {
+  return (expressionStatements.get(chainKey(statement)) ?? []).some((node) => {
     const end = field(node, 'end');
 
     return (
