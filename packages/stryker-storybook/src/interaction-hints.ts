@@ -3,6 +3,7 @@ import {
   field,
   type Interaction,
   interactionsOf,
+  type StoryInteractions,
 } from '@layzee/storybook-core';
 import type { schema } from '@stryker-mutator/api/core';
 
@@ -72,12 +73,13 @@ export function interactionHints(
     }
 
     const program = parsed(source, file, warn);
+    const interactions =
+      program === undefined ? undefined : interactionsIn(program, file, warn);
 
-    if (program === undefined) {
+    if (interactions === undefined) {
       return [];
     }
 
-    const interactions = interactionsOf(program, csfShapes(program));
     const statements = interactions.all.flatMap((interaction) => {
       const location = locationOf(interaction.node);
 
@@ -124,6 +126,22 @@ function parsed(
   } catch (error) {
     warn(
       `${packageName}: Babel could not parse ${file}, so lz-storybook gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
+    );
+
+    return undefined;
+  }
+}
+
+function interactionsIn(
+  program: ReturnType<typeof parseProgram>,
+  file: string,
+  warn: (message: string) => void,
+): StoryInteractions | undefined {
+  try {
+    return interactionsOf(program, csfShapes(program));
+  } catch (error) {
+    warn(
+      `${packageName}: lz-storybook could not read the interactions of ${file}, so it gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
     );
 
     return undefined;

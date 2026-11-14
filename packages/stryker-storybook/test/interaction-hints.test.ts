@@ -234,6 +234,39 @@ describe('interactionHints', () => {
     );
   });
 
+  it("warns once for a file whose interactions overflow the stack, gives it no hint, and still gives the other files' hints", async () => {
+    assert.ok(negativeOnly !== undefined);
+
+    const { [file]: placed } = await reportOf(
+      negativeOnly.source,
+      negativeOnly.survived,
+    );
+    const warnings: string[] = [];
+
+    assert.ok(placed !== undefined);
+    assert.deepEqual(
+      interactionHints(
+        {
+          'src/Deep.stories.tsx': {
+            ...placed,
+            source: inPlay(
+              "await userEvent.click(canvas.getByRole('button'));",
+              `x${'.a'.repeat(2600)} = 1;`,
+            ),
+          },
+          [file]: placed,
+        },
+        (message) => warnings.push(message),
+      ).map(({ line, shape, mutatorNames }) => [line, shape, mutatorNames]),
+      negativeOnly.expect,
+    );
+    assert.equal(warnings.length, 1, warnings.join('\n'));
+    assert.match(
+      warnings[0] ?? '',
+      /^@layzee\/stryker-storybook: lz-storybook could not read the interactions of src\/Deep\.stories\.tsx, so it gave no interaction hints for it: Maximum call stack size exceeded$/,
+    );
+  });
+
   it('warns with its file and position about a survivor that lies in no interaction, and gives it no hint', async () => {
     assert.ok(negativeOnly !== undefined);
 
