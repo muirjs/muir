@@ -353,6 +353,23 @@ describe('transform', () => {
     );
   });
 
+  it('rewrites a stub inside the argument of a stub it moves', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      "export const Nested = { args: { getClient: fn().mockReturnValue({ fetch: fn().mockResolvedValue('data') }) } };",
+      '',
+    ].join('\n');
+
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        "export const Nested = { args: { getClient: fn(((value) => () => value)({ fetch: fn(((value) => async () => value)('data')) })) } };",
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('moves the arguments of a stub call written with type arguments', () => {
     const code = [
       "import { fn } from 'storybook/test';",

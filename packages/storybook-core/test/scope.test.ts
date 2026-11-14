@@ -3,11 +3,10 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { isRecord } from '../src/is-record.ts';
 import { field } from '../src/node-field.ts';
 import { everyRecordIn } from '../src/node-tree.ts';
 import { fileScope } from '../src/scope.ts';
-import { programOf, programsOf } from './support/parse-module.ts';
+import { programOf, programsOf, renameKey } from './support/parse-module.ts';
 
 interface ScopeCase {
   readonly title: string;
@@ -701,17 +700,6 @@ function namesReadIn(program: object): readonly unknown[] {
   return fileScope(program)
     .referencesIn(program)
     .map((identifier) => field(identifier, 'name'));
-}
-
-/** Moves the value under each `from` key in `program` to `to`, as Babel 8 renames a key Babel 7 parses. */
-function renameKey(program: object, from: string, to: string): void {
-  everyRecordIn(program)
-    .filter(isRecord)
-    .filter((record) => from in record)
-    .forEach((record) => {
-      record[to] = record[from];
-      Reflect.deleteProperty(record, from);
-    });
 }
 
 const readCases: readonly ReadCase[] = [

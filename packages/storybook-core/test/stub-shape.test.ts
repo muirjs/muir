@@ -10,6 +10,7 @@ import {
   stubMethodOf,
   writtenMethodOf,
 } from '../src/stub-shape.ts';
+import { renameKey } from './support/parse-module.ts';
 
 function parseTs(source: string) {
   return parse(source, {
@@ -149,6 +150,19 @@ describe('definitionTimeStubs', () => {
         calleeEnd: source.indexOf("('x'"),
       },
     ]);
+  });
+
+  it("gives the end of the callee past the stub call's type arguments under Babel 8's key", () => {
+    const source =
+      "import { fn } from 'storybook/test';\nfn().mockReturnValue<string>('x');";
+    const babel8 = parseTs(source);
+
+    renameKey(babel8, 'typeParameters', 'typeArguments');
+
+    assert.deepEqual(
+      definitionTimeStubs(babel8).map(({ calleeEnd }) => calleeEnd),
+      definitionTimeStubs(parseTs(source)).map(({ calleeEnd }) => calleeEnd),
+    );
   });
 
   it('reports a Once stub as once, under the method it stubs', () => {

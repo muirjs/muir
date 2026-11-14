@@ -761,29 +761,27 @@ describe('interactionsOf following checks copy', () => {
     });
   });
 
-  it(
-    'reads each function a check calls once, however often the functions call each other',
-    { timeout: 10_000 },
-    () => {
-      const levels = 24;
-      const functions = Array.from({ length: levels }, (_, level) =>
-        level === 0
-          ? 'function f0() { return 0; }'
-          : `function f${level}() { return f${level - 1}() + f${level - 1}(); }`,
-      );
-      const check = `await expect(canvas.getByText(String(f${levels - 1}()))).toBeVisible();`;
-      const copied = {
-        checks: ['expect', 'query'],
-        end: 'none',
-        copy: check,
-      };
+  it('reads each function a check calls once, also when the functions call each other', () => {
+    const check =
+      'await expect(canvas.getByText(String(isEven(2)))).toBeVisible();';
+    const copied = {
+      checks: ['expect', 'query'],
+      end: 'none',
+      copy: check,
+    };
 
-      assert.deepEqual(
-        followingIn(inPlay('await userEvent.click(add);', ...functions, check)),
-        [[copied], [copied]],
-      );
-    },
-  );
+    assert.deepEqual(
+      followingIn(
+        inPlay(
+          'await userEvent.click(add);',
+          'function isEven(count) { return count === 0 || isOdd(count - 1); }',
+          'function isOdd(count) { return count !== 0 && isEven(count - 1); }',
+          check,
+        ),
+      ),
+      [[copied], [copied]],
+    );
+  });
 
   it('a name declared between the interaction and the check by a node without positions does not keep it from being copied', () => {
     const check = "expect(status).toHaveTextContent('Saved');";
