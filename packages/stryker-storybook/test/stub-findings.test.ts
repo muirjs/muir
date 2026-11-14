@@ -79,6 +79,31 @@ describe('siteFindings', () => {
     );
   });
 
+  it('names the stub method of each finding as the story writes it', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export default {',
+      '  args: { g: fn().mockResolvedValueOnce(1).mockResolvedValue(2) },',
+      '};',
+      'export const Primary = {};',
+    ].join('\n');
+
+    const findings = siteFindings(
+      code,
+      'Meta.stories.tsx',
+      project('seen'),
+      () => undefined,
+    );
+
+    assert.deepEqual(
+      findings.map(({ method, verdict }) => [method, verdict]),
+      [
+        ['mockResolvedValue', 'chain-not-rewritten'],
+        ['mockResolvedValueOnce', 'once-not-rewritten'],
+      ],
+    );
+  });
+
   it('silences every stub of a chain under a Stryker disable comment', () => {
     const code = [
       "import { fn } from 'storybook/test';",

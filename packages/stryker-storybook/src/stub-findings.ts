@@ -1,4 +1,10 @@
-import { field, isRecord, list } from '@layzee/storybook-core';
+import {
+  field,
+  isRecord,
+  list,
+  writtenMethodOf,
+  type WrittenStubMethod,
+} from '@layzee/storybook-core';
 
 import { parseProgram } from './parse.ts';
 import type { StorybookProject } from './storybook-project.ts';
@@ -12,6 +18,7 @@ import {
 
 export interface SiteFinding extends SpyStubReason {
   readonly line: number;
+  readonly method: WrittenStubMethod;
 }
 
 interface DirectiveRule {
@@ -45,7 +52,11 @@ export function siteFindings(
 
   return sites
     .filter((site) => !silenced.has(site))
-    .map(({ line, verdict }) => ({ line, ...describeVerdict(verdict) }));
+    .map((site) => ({
+      line: site.line,
+      method: writtenMethodOf(site),
+      ...describeVerdict(site.verdict),
+    }));
 }
 
 function silencedSites(

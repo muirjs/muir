@@ -36,11 +36,19 @@ _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 The statement that holds the first `expect` check of an interaction's following checks (the Storybook context's
 terms; a failing query is never copied), which `LzStorybookAssertionBefore` also runs before the interaction. It is
 looked for only in the interaction's own block, so a check after the end of a step callback that holds the
-interaction is not looked at, and an interaction that is a step callback's expression body has none. Three kinds of
-statement are not copied: one that is neither a check statement nor a `waitFor(...)` whose callback holds a check, one
-that reads a name declared or written from the start of the interaction up to that statement, and one whose equal already stands
-before the interaction in the outermost function around it. A negative check and a `toHaveBeenCalledTimes(0)` check
-are copied like any other. `@layzee/storybook-core` picks the copied check, as it picks globals sites.
+interaction is not looked at, and an interaction that is a step callback's expression body has none.
+
+Three kinds of statement are not copied:
+
+- one that is neither a check statement nor a `waitFor(...)` whose callback holds a check;
+- one that reads a name declared or written from the start of the interaction up to that statement. A function
+  declaration there counts only by its writes, since hoisting declares it before the interaction. The names a
+  statement reads include those that each function it names reads from outside that function, where the function is
+  declared or is the initial value of a variable, and so on for each function those name;
+- one whose equal already stands before the interaction in the outermost function around it.
+
+A negative check and a `toHaveBeenCalledTimes(0)` check are copied like any other. `@layzee/storybook-core` picks the
+copied check, as it picks globals sites.
 _Avoid_: duplicated assertion, moved check
 
 ### Spy stubs

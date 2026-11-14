@@ -306,6 +306,117 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'the first check is copied when the name it reads is a function declared between the interaction and the check, as hoisting declares it before the interaction',
+    source: inPlay(
+      'await userEvent.click(add);',
+      'function itemCount(count) {',
+      "  return count + ' item';",
+      '}',
+      'await expect(canvas.getByText(itemCount(1))).toBeVisible();',
+    ),
+    expect: [
+      {
+        checks: ['expect', 'query'],
+        end: 'none',
+        copy: 'await expect(canvas.getByText(itemCount(1))).toBeVisible();',
+      },
+    ],
+  },
+  {
+    title:
+      'an interaction whose first check calls a function that reads a name declared between the interaction and the check has no copy, as the copy would read it before its declaration',
+    source: inPlay(
+      'await userEvent.click(add);',
+      "const label = '1 item';",
+      'function shown() {',
+      '  return canvas.getByText(label);',
+      '}',
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+  },
+  {
+    title:
+      'an interaction whose first check calls an arrow function held in a const that reads a name declared between the interaction and the check has no copy',
+    source: inPlay(
+      'const shown = () => canvas.getByText(label);',
+      'await userEvent.click(add);',
+      "const label = '1 item';",
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
+      'an interaction whose first check calls an arrow function held in a const under as that reads a name declared between has no copy',
+    source: inPlay(
+      'const shown = (() => canvas.getByText(label)) as () => HTMLElement;',
+      'await userEvent.click(add);',
+      "const label = '1 item';",
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
+      'an interaction whose first check calls a function declared between that calls an arrow reading a name declared between has no copy',
+    source: inPlay(
+      'const shownLabel = () => label;',
+      'await userEvent.click(add);',
+      "const label = '1 item';",
+      'function shown() {',
+      '  return canvas.getByText(shownLabel());',
+      '}',
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+  },
+  {
+    title:
+      'an interaction whose first check calls the function it is in and reads a name declared between has no copy',
+    source: inPlay(
+      'async function attempt(times) {',
+      '  await userEvent.click(add);',
+      "  const label = '1 item';",
+      '  await expect(times > 0 ? await attempt(times - 1) : canvas.getByText(label)).toBeVisible();',
+      '}',
+      'await attempt(1);',
+    ),
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
+  },
+  {
+    title:
+      'an interaction whose first check calls a function declaration given another value between the interaction and the check has no copy',
+    source: inPlay(
+      'function shown() {',
+      "  return canvas.getByText('1 item');",
+      '}',
+      'await userEvent.click(add);',
+      "shown = () => canvas.getByText('2 items');",
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+  },
+  {
+    title:
+      'the first check is copied when it calls a function declared between that calls itself and reads only its own parameters',
+    source: inPlay(
+      'await userEvent.click(add);',
+      'function count(n) {',
+      '  return n === 0 ? 0 : count(n - 1) + 1;',
+      '}',
+      'await expect(canvas.getByText(String(count(1)))).toBeVisible();',
+    ),
+    expect: [
+      {
+        checks: ['expect', 'query'],
+        end: 'none',
+        copy: 'await expect(canvas.getByText(String(count(1)))).toBeVisible();',
+      },
+    ],
+  },
+  {
+    title:
       'an interaction whose first check reads a name the interaction itself assigns has no copy',
     source: inPlay(
       'let input;',
@@ -648,6 +759,28 @@ describe('interactionsOf following checks copy', () => {
     it(title, () => {
       assert.deepEqual(followingIn(source), [expect, expect]);
     });
+  });
+
+  it('copies a check that calls functions which call each other', () => {
+    const check =
+      'await expect(canvas.getByText(String(isEven(2)))).toBeVisible();';
+    const copied = {
+      checks: ['expect', 'query'],
+      end: 'none',
+      copy: check,
+    };
+
+    assert.deepEqual(
+      followingIn(
+        inPlay(
+          'await userEvent.click(add);',
+          'function isEven(count) { return count === 0 || isOdd(count - 1); }',
+          'function isOdd(count) { return count !== 0 && isEven(count - 1); }',
+          check,
+        ),
+      ),
+      [[copied], [copied]],
+    );
   });
 
   it('a name declared between the interaction and the check by a node without positions does not keep it from being copied', () => {

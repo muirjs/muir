@@ -19,6 +19,13 @@ declares it as a regular dependency, so installing one of them installs this one
   its user-event origin, whether it stands in a hook, and the checks that follow it up to what ends them.
 - `waitCall`: whether a call, awaited or not and given as a statement or not, is `waitFor(...)` or
   `waitForElementToBeRemoved(...)`.
-- `definitionTimeStubs`: the definition-time spy stubs in a program, with their positions.
+- `definitionTimeStubs`, with the types `StubSite`, `Span` and `StubMethodCall`: the definition-time spy stubs in a
+  program, with their positions.
+- `mockTransformerRewrite`, with the type `StubRewrite`: the rule for which stubs the mock transformer rewrites,
+  shared by the transformer and the `lz-storybook` report. The transformer also drops a stub that stands in another
+  rewritten stub's spy call.
+- `chainUpTo`: the stubs of a chain up to one of them.
+- `stubMethodOf` and `writtenMethodOf`, with the types `StubMethod` and `WrittenStubMethod`: a spy method name read
+  as a stub method and its `Once` form, and written back.
 - `appendRecord`, `hasRecords`, `recordVariable`, `mockTransformerPluginName`: write and read the transformer record.
 - `isRecord`, `isStringArray`, `field`, `list`: read values of unknown shape, such as Babel nodes.

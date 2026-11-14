@@ -53,6 +53,9 @@
       "optional": true
     }
   },
+  "devDependencies": {
+    "storybook": "10.6.5"
+  },
   "nx": {
     "tags": [
       "type:lib"

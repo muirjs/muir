@@ -1,4 +1,10 @@
 import {
+  chainUpTo,
+  mockTransformerRewrite,
+  type StubRewrite,
+} from '@layzee/storybook-core';
+
+import {
   classifyStubs,
   type ClassifiedStub,
   type StoryFile,
@@ -13,10 +19,9 @@ export const spyStubName = 'LzStorybookSpyStub';
 
 export type ReasonVerdict =
   | Exclude<StubVerdict, 'kept'>
-  | 'once-not-rewritten'
-  | 'chain-not-rewritten';
+  | Exclude<StubRewrite, 'rewritten'>;
 
-export interface ReasonSite extends Omit<ClassifiedStub, 'verdict' | 'once'> {
+export interface ReasonSite extends Omit<ClassifiedStub, 'verdict'> {
   readonly verdict: ReasonVerdict;
 }
 
@@ -54,9 +59,11 @@ export interface SpyStubReason {
   readonly fix: string;
 }
 
-/** A node the lz-storybook ignorer ignores: a stub call with every stub before it in its chain, or only its arguments. */
+/** A node the lz-storybook ignorer ignores: a stub call with everything before it in its chain (the spy call, every stub and any `mockName` or `mockClear` call, with their arguments), or only its arguments. */
 export interface StubIgnore {
+  /** Where the stub call starts, also when only its arguments are ignored. */
   readonly start: number;
+  /** Where the stub call ends, also when only its arguments are ignored. */
   readonly end: number;
   readonly covers: 'call' | 'arguments';
   readonly reason: string;
@@ -79,10 +86,11 @@ export function stubIgnores(
   const { stubs } = classifyStubs(file, previewTest, testTags);
   const sites = siteReasons(stubs, transformer);
 
-  return sites.map(({ start, end, verdict }) => {
-    const chain = chainUpTo({ start, end }, sites);
+  return sites.map((site) => {
+    const { start, end, verdict } = site;
+    const chain = chainUpTo(site, sites);
 
-    if (chain.length < chainUpTo({ start, end }, stubs).length) {
+    if (chain.length < chainUpTo(site, stubs).length) {
       return {
         start,
         end,
@@ -95,7 +103,7 @@ export function stubIgnores(
       start,
       end,
       covers: 'call',
-      reason: chain.every((site) => site.verdict === verdict)
+      reason: chain.every((other) => other.verdict === verdict)
         ? spyStubReason(verdict)
         : unrewrittenChainReason,
     };
@@ -106,7 +114,7 @@ function siteReasons(
   stubs: readonly ClassifiedStub[],
   transformer: StorybookProject['transformer'],
 ): readonly ReasonSite[] {
-  return stubs.flatMap(({ once, verdict, ...site }): readonly ReasonSite[] => {
+  return stubs.flatMap(({ verdict, ...site }): readonly ReasonSite[] => {
     if (verdict === 'kept') {
       return [];
     }
@@ -115,24 +123,10 @@ function siteReasons(
       return [{ ...site, verdict }];
     }
 
-    if (once) {
-      return [{ ...site, verdict: 'once-not-rewritten' }];
-    }
+    const rewrite = mockTransformerRewrite(site);
 
-    return chainUpTo(site, stubs).length > 1
-      ? [{ ...site, verdict: 'chain-not-rewritten' }]
-      : [];
+    return rewrite === 'rewritten' ? [] : [{ ...site, verdict: rewrite }];
   });
-}
-
-/** The stubs of a chain from its first up to this one; the mock transformer leaves every stub after the first as it is. */
-function chainUpTo<TStub extends Pick<ClassifiedStub, 'start' | 'end'>>(
-  stub: Pick<ClassifiedStub, 'start' | 'end'>,
-  stubs: readonly TStub[],
-): readonly TStub[] {
-  return stubs.filter(
-    (other) => other.start === stub.start && other.end <= stub.end,
-  );
 }
 
 export function describeVerdict(verdict: ReasonVerdict): SpyStubReason {

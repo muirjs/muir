@@ -352,6 +352,12 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      'an interaction in an arrow held in a local under as and given as a beforeEach stands in a hook',
+    source: `const setup = (async ({ userEvent }) => {\n  await userEvent.click(button);\n}) as Hook;\nexport default {\n  beforeEach: setup,\n};\n`,
+    expect: ['userEvent click unproven inHook'],
+  },
+  {
+    title:
       'an interaction in the cleanup function a beforeEach returns stands in a hook',
     source: `export const Story = {\n  beforeEach: () => () => {\n    button.blur();\n  },\n};\n`,
     expect: ['rawDom inHook'],

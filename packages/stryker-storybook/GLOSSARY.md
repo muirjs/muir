@@ -177,6 +177,8 @@ _Avoid_: checks after, later checks, assertion window, checks before the next in
 A call that sets what a spy made with `fn()` from `storybook/test` returns or does: `mockReturnValue`,
 `mockResolvedValue`, `mockRejectedValue`, `mockImplementation`, or their `Once` forms, chained on the spy. In a
 chain such as `fn().mockResolvedValueOnce(1).mockRejectedValue(error)`, each of these calls is a spy stub of its own.
+Read down from a stub, a chain goes on through `mockName` and `mockClear`, which leave what the spy returns alone,
+and ends at any other call, so no stub chained on `mockReturnThis` or `mockReset` is read as a spy stub.
 _Avoid_: mock setup, stub (alone), mock implementation
 
 **Definition-time stub**:
@@ -231,7 +233,9 @@ keeps is erased all the same, so its removal survives and the report lists an un
 _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:
-One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix.
+One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
+read from the story file also names the stub method as written (`mockResolvedValueOnce`); an `unchecked` finding comes
+from surviving mutants and names none.
 _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:
@@ -272,8 +276,12 @@ _Avoid_: slow mutant
 **Mock transformer**:
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
 form, which survives the mock reset. It rewrites a stub only when it is the first of its chain and not one of the
-`Once` forms. The `lz-storybook` report gives an erased `Once` stub the verdict `once-not-rewritten`, and an erased
-stub after the first of a chain that is not a `Once` stub the verdict `chain-not-rewritten`.
+`Once` forms, and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
+run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets or
+resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
+the reset, where the story as written gets none. The `lz-storybook` report gives an erased `Once`
+stub the verdict `once-not-rewritten`, and an erased stub after the first of a chain that is not a `Once` stub the
+verdict `chain-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:
@@ -305,6 +313,8 @@ _Avoid_: story ignorer, Storybook ignorer
 The `lz-storybook` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
 erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call holds the stubs
 before it in its chain, so when one of those is kept the ignorer reports only the stub's own arguments as Ignored.
+Otherwise it ignores the whole stub call, so the spy call's arguments and those of a `mockName` call in the chain
+are reported as Ignored under the stub's reason too.
 _Avoid_: reset ignorer
 
 **Play mode**:

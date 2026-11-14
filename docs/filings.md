@@ -1102,6 +1102,104 @@ member spread at all, so no change to the families could turn it green. Only app
 red showed this; the input was then swapped for literal spreads. `lz-red` step 5 checks that the failure comes from
 the code under test, and the message was the same in both cases. Evidence: `r13fix/notes.md`, "lz-tdd friction".
 
+**O152. A red that never yields cannot be stopped by the test runner (adds to O43).** In the wave 2 fixes, the red for
+"reads each function a check calls once" called a walk that doubled its work at each of 24 levels. node:test's
+`timeout` option never fired, because the synchronous loop never gave the runner a turn, so the run printed no summary
+and an outer `timeout 120` killed it. The red that was handed forward is a killed process, not a failure. O43's way out,
+a test double that stops after a number of probes, has no counterpart for code under test that never yields. The test
+keeps `{ timeout: 10_000 }`, which bounds only a run that yields, so a regression would hang the suite again rather
+than fail. Evidence: `wave2/cycles.log` cycle 12.
+
+**O153. For a code transformer, every change of output form turns the text expectations red (adds to O48 and O76).**
+In the same fixes, two greens changed how the Vite mock transformer writes a rewritten stub, and each had to rewrite
+existing expectations of the emitted text in the same step: 17 in cycle 8 and 20 in cycle 13. An additive report field
+in cycle 6 changed 11 deep-equal shape assertions the same way. `lz-red` step 4 asks for observable behaviour. For a
+transformer the emitted text is observable, but what a story author depends on is how the rewritten module behaves.
+Tests that run the output against a recording `fn` arrived only as a `test-after`, from a review finding. `lz-red`'s
+stance router has no code-generator case that says which of the two levels to pin. Evidence: `wave2/cycles.log`
+cycles 6, 8 and 13, and the `test-after` line "the rewritten module".
+
+**O154 (lz-tpp fit). A green that swaps one mechanism for another of the same generality.** Three greens in the same
+fixes changed how the transformer edits text, not what it covers. Cycle 8 replaced one replacement that copied the
+text between two calls with four edits around it. Cycle 13 fixed a name capture: the rewrite wrapped the stub argument
+in a function whose parameter hid a story name that a `mockName` argument read. The fix moved the arguments into the
+spy call instead. Cycle 15 moved the whole text between the stub call's parentheses. None of these makes the code more
+generic. Each keeps the behaviour and removes an interference. The log labels them `(constant -> scalar)` and
+`(expression -> function)` because those entries were the closest. The list orders transformations from specific to
+generic and has no entry for a change of mechanism at the same generality. Evidence: `wave2/cycles.log` cycles 8, 13
+and 15.
+
+The four entries below were mined from the cycle logs of three test-first runs (a Stryker survivor pass on the test
+mutators, the bang-command rule and the C-reader rework, 2026-11-11 to 2026-11-14). Their workers kept no "lz-tdd
+friction" notes, so each entry rests on the log lines alone.
+
+**O155. A red that exhausts the stack or the heap, and a green that changes a data structure to stay within a bound
+(adds to O42 and O152).** Seven reds were a crash of the runtime rather than a failed assertion: a stack overflow
+(bang rule cycle 82, C-reader cycles 134 and 137) and a heap out of memory under `--max-old-space-size=2048` (C-reader
+cycles 131 and 132, bang rule cycles 131 and 132). A heap crash ends the test process, so node:test reports only
+`fail 1, 'test failed'`, and one such red ran 157 s before it crashed. `lz-red` step 5 sorts reds into an assertion, a
+not-implemented throw and a setup failure; a crash fits none, and the step does not suggest capping the resource so the
+red comes fast, which the workers did on their own. The greens kept the behaviour and changed its cost: a `reduce` in
+place of a `Math.max` spread, a `Set` that reads each origin once, an undo log in place of a copy per subshell.
+`lz-tpp` ranks generality, not cost, so the log labels them `(expression -> function)` or cites triage rows instead.
+Evidence: `bang-rule/cycles.log` cycles 82, 131 and 132; `creader/cycles.log` cycles 131, 132, 134 and 137.
+
+**O156. A red for a test that must not be skipped.** Bang rule cycle 130 required the timing tests to fail, not skip,
+on Node.js 26 or later without `--experimental-bench`. The red was a green suite with 8 tests skipped; no test failed.
+`lz-red` step 5 asks for a run that failed, and has no case where the signal is a skip count in the summary. Evidence:
+`bang-rule/cycles.log` cycle 130.
+
+**O157. O92 held at scale: the `test-after` lines outnumber the cycles.** The C-reader rework logged 139 cycles and 298
+`test-after` lines, the bang rule 138 and 182, the survivor pass 6 and 40, and wave 2 15 and 12. With the design or a
+ported rule fixed before the first red, most list items passed when they were written, so the log is mostly pins.
+Nothing in `lz-red` or `test-first.md` says how a pin shows it can fail (O115 asks this for characterization tests);
+in this project the Stryker checkpoint is the only check. Evidence: the four cycle logs.
+
+**O158. Earlier observations seen again in the same logs.** A green that needed two transformations in one step (O47:
+bang rule cycle 70). A red run against a reversed or mutated copy of code that already passes (O50: bang rule cycles
+133, 134 and 143). One cycle with eight cases, seven of them red (O62: bang rule cycle 142). Greens labelled with a
+review note instead of a transformation (O36 and O7: bang rule cycles 135 and 136). Evidence: `bang-rule/cycles.log`.
+
+**O159. A row whose expected value is one composite string asserts several behaviours at once.** In the wave 2 round 5
+fixes, the interaction reader's rows compare one string per interaction, such as `userEvent click userEvent14 inHook`,
+that joins its kind, its user-event origin and whether it stands in a hook. The red for a hook held in a variable under
+`as` expected the right origin as well. The green fixed the hook reading, but the origin comes from another reader, so
+the row stayed red for a second behaviour. The expectation was narrowed to `unproven inHook`, because the interaction
+mutators place nothing in a hook and the origin is never used there. `lz-red`'s "two behaviours, two tests" assumes
+the test names them. A house idiom that packs several properties into one compared value hides the second behaviour
+until the green runs. Evidence: `wave2/cycles.log` cycle 19.
+
+**O160. Earlier observations seen again in the round 5 fixes.** A hand-written expected position failed on its
+spelling before the behaviour (O71: cycle 16, end 80 for 81). A correct green changed a shape assertion in another
+package's test (O76 and O153: cycle 16). Three greens reused an existing predicate and had no `lz-tpp` entry (O67:
+cycles 17 to 19). One green changed a mechanism without generalising (O154: cycle 16, a chain keyed by its spy call).
+Evidence: `wave2/cycles.log` cycles 16 to 19.
+
+**O161. O152's test could not fail, and a reviewer's mutant showed it.** In round 6 a test reviewer deleted the visited
+set's `add` from the copied-check walk in a copy of the package. The once-per-function test still passed, after 163 s
+instead of 48 ms, because node:test cannot stop a synchronous body at its `timeout`. Deleting the `has` check survived
+the same way. The fix needed no timer: since round 5 a function's own name is left out inside its body, so only
+functions that call each other need the visited set, and two such functions overflow the stack in 316 ms without it.
+`lz-red` step 5 takes a red that ran and failed, but it has no check that a test can still fail once the green is in.
+Evidence: `wave2/r6-test-analyzer.md` F3; `wave2/cycles.log`, the round 6 `test-after` lines.
+
+**O162. A refactor that merged two branches as equivalent passed on tests that never told them apart.** In round 6
+the mock transformer's branch for a stub with no argument was removed, because the general branch writes the same
+text. The suite stayed green, and the claim held for the one input the tests gave: nothing between the spy call and
+the stub. With a `mockName` call, a cast or a `!` in between, the general branch put its closing text where the
+removed member access had been, and `fn().mockName('x').mockReturnValue()` no longer parsed. A round 7 reviewer found
+it with a probe. `lz-refactor` step 5 keeps behaviour by running the tests after each step, and has no check that the
+tests reach the inputs where the two branches could differ. Evidence: `wave2/r7-code-review.md` finding 1;
+`wave2/cycles.log` cycle 21.
+
+**O163. A red written against a parameter the cycle meant to remove had to be rewritten in its own refactor.** In
+round 8 the rewrite rule's stub list was the defect: the rule should take the stub alone. The red called the rule
+with a one-stub list, the form the old signature needed, and the refactor that removed the parameter rewrote the red's
+call and dropped a list-only case. `lz-red` shapes the next test against the interface that exists; it has no prompt
+to write the red against the interface the cycle is heading for when the defect is the interface itself. Seen again:
+a correct green changed a shape assertion and hand-built test values (O76 and O153: cycle 24). Evidence:
+`wave2/cycles.log` cycle 24.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
@@ -1443,6 +1541,32 @@ less reading.
 **S96 (from O107).** In `test-first.md` (Lars's user-scope rule, not the plugin), allow a refactoring before Green to
 run with the one red row still failing, when the spec is a row table that cannot skip one row without an edit: the
 check is that the same row stays the only failure.
+
+**S97 (from O152).** In `lz-red` step 5, add the case of code under test that may never yield (a loop or recursion
+that can blow up): run the act in a worker thread or child process with a deadline. The red is then a timeout failure
+the runner reports, and a later regression fails instead of hanging the suite.
+
+**S98 (from O153).** Give `lz-red`'s stance router a code-generator case: pin behaviour by running the generated code,
+and keep text expectations to the forms whose spelling is part of the contract.
+
+**S99 (from O154).** In `lz-tpp`, name a "change of mechanism" move outside the ranked list, for a green that removes
+an interference without generalising, so that the cycle log does not borrow the nearest label.
+
+**S100 (from O155).** In `lz-red` step 5, accept a runtime crash (stack or heap) as the red when the behaviour is a
+resource bound, and advise capping the resource (`--max-old-space-size`, `--stack-size`) so the red arrives in
+seconds. In `lz-tpp`, add a note that a green meeting a bound changes the representation and sits outside the
+generality ranking (it extends S99's "change of mechanism").
+
+**S101 (from O156).** In `lz-red`, add the case where the behaviour is "this test runs": the red is a skip or todo
+count read from the run's summary.
+
+**S102 (from O159).** In `lz-red` step 4, when the house idiom compares one composite value per case, predict each
+part of the expected value against the planned green, and pin only the parts that green changes; leave the others as
+the code gives them today.
+
+**S103 (from O162).** In `lz-refactor` step 5, before merging two branches or removing one as equivalent, list the
+inputs where they take different paths (here, text between the spy call and the stub), and pin one such input with a
+characterization test first, so the green run can tell the merge broke something.
 
 ## stefanoslig/angular-ngrx-nx-realworld-example-app: "View article's author" e2e test always fails
 

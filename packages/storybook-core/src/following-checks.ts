@@ -11,7 +11,7 @@ import {
   memberName,
   type TreeIndex,
 } from './node-tree.ts';
-import type { FileScope } from './scope.ts';
+import { type Binding, declaredFunction, type FileScope } from './scope.ts';
 
 export interface Check {
   readonly node: unknown;
@@ -288,7 +288,7 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
-/** Whether `statement` reads a name declared or written in its list's statements from `interactionStatement` up to it, `statement` aside; a node without positions counts as not between. */
+/** Whether `statement`, a function it names (declared, or the initial value of a variable) or a function those name in turn reads, from outside that function, a name declared or written in its list's statements from `interactionStatement` up to it, `statement` aside. A function declaration counts by its writes only, as hoisting declares it before the interaction; a node without positions counts as not between. */
 function readsNameSetBetween(
   interactionStatement: unknown,
   statement: unknown,
@@ -308,11 +308,41 @@ function readsNameSetBetween(
     typeof field(statement, 'start') === 'number' &&
     [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
-  return scope.referencesIn(statement).some((name) => {
-    const binding = scope.bindingOf(name);
+  return bindingsReadThroughFunctions(statement, scope, tree).some((binding) =>
+    (binding.kind === 'function'
+      ? binding.writes
+      : [binding.identifier, ...binding.writes]
+    ).some(isBetween),
+  );
+}
 
-    return [binding?.identifier, ...list(binding?.writes)].some(isBetween);
-  });
+function bindingsReadThroughFunctions(
+  statement: unknown,
+  scope: FileScope,
+  tree: TreeIndex,
+): readonly Binding[] {
+  const followed = new Set<unknown>();
+  const isDeclaredIn = (binding: Binding, node: unknown): boolean =>
+    tree.ancestors(binding.identifier).includes(node);
+  const readBy = (node: unknown): readonly Binding[] =>
+    scope
+      .referencesIn(node)
+      .map(scope.bindingOf)
+      .filter((binding) => binding !== undefined)
+      .filter((binding) => !isDeclaredIn(binding, node))
+      .flatMap((binding) => {
+        const body = declaredFunction(binding);
+
+        if (body === undefined || followed.has(body)) {
+          return [binding];
+        }
+
+        followed.add(body);
+
+        return [binding, ...readBy(body)];
+      });
+
+  return readBy(statement);
 }
 
 /** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */

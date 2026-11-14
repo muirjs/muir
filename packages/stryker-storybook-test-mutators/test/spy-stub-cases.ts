@@ -49,6 +49,17 @@ export const spyStubCases: readonly Case[] = [
     ],
   },
   {
+    id: 'spy-stub-after-mock-name',
+    title:
+      'a stub chained after mockName on fn() is removed, leaving the mockName call',
+    source: withFnImport(
+      'export const Story = {',
+      "  args: { load: fn().mockName('load').mockReturnValue(1) },",
+      '};',
+    ),
+    expect: [[spyStub, "fn().mockName('load')"]],
+  },
+  {
     id: 'spy-stub-chain-of-three',
     title:
       'removing the middle stub of a chain of three leaves the stub before it, with the last stub chained on',

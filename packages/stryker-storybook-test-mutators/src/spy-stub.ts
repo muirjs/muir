@@ -6,6 +6,7 @@ import {
   type StubMethod,
   type StubMethodCall,
   type StubSite,
+  writtenMethodOf,
 } from '@layzee/storybook-core';
 
 import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
@@ -97,7 +98,7 @@ function outcomeMutant(
   const flipped = t.cloneNode(node);
 
   flippedCallee.property = t.identifier(
-    `${outcome.method}${stub.once ? 'Once' : ''}`,
+    writtenMethodOf({ method: outcome.method, once: stub.once }),
   );
   flipped.callee = flippedCallee;
   flipped.arguments = [outcome.argument];

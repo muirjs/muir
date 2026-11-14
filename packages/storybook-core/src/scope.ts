@@ -113,6 +113,20 @@ function readChildren(node: unknown): readonly unknown[] {
   return childNodes(node).filter((child) => !skipped.includes(child));
 }
 
+/** The function a binding names: `function <name>() {}`, or `<let | const | var> <name> = <function>`, through any parentheses, cast or non-null assertion around the function. */
+export function declaredFunction(binding: Binding | undefined): unknown {
+  if (binding?.kind === 'function') {
+    return binding.declaration;
+  }
+
+  const declaration = binding?.declaration;
+  const init = unwrap(field(declaration, 'init'));
+
+  return field(declaration, 'id') === binding?.identifier && isFunction(init)
+    ? init
+    : undefined;
+}
+
 /** Resolves every name of `program` as Babel's scope does, in one walk: declarations first, then each read or write by its name up the scopes it stands in, so a `var` or function declaration below a read is found. */
 export function fileScope(program: unknown): FileScope {
   const resolved = new WeakMap<object, DeclaredBinding>();

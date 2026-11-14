@@ -10,6 +10,7 @@ import {
   mayImportItself,
   namedExports,
   storyArgument,
+  type StubSite,
   topLevelBindings,
   unchangedBindings,
   unwrap,
@@ -28,11 +29,7 @@ export interface StoryReset {
   readonly branch: ResetBranch;
 }
 
-export interface ClassifiedStub {
-  readonly start: number;
-  readonly end: number;
-  readonly line: number;
-  readonly once: boolean;
+export interface ClassifiedStub extends StubSite {
   readonly verdict: StubVerdict;
 }
 
@@ -215,14 +212,12 @@ export function classifyStubs(
       },
     );
   const stories = declared.map(({ story }) => story);
-  const stubs = definitionTimeStubs(program).map(
-    ({ start, end, line, once }) => {
-      const owner = declared.findIndex(({ init }) => contains(init, start));
-      const users = owner === -1 ? stories.map((_, index) => index) : [owner];
+  const stubs = definitionTimeStubs(program).map((stub) => {
+    const owner = declared.findIndex(({ init }) => contains(init, stub.start));
+    const users = owner === -1 ? stories.map((_, index) => index) : [owner];
 
-      return { start, end, line, once, verdict: siteVerdict(stories, users) };
-    },
-  );
+    return { ...stub, verdict: siteVerdict(stories, users) };
+  });
 
   return { stories, stubs };
 }
