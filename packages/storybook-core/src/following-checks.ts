@@ -308,48 +308,44 @@ function readsNameSetBetween(
     typeof field(statement, 'start') === 'number' &&
     [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
-  return bindingsReadThroughCalls(statement, scope, tree, new Set()).some(
-    (binding) => {
-      const hoisted = binding.kind === 'function';
+  return bindingsReadThroughCalls(statement, scope, tree).some((binding) => {
+    const hoisted = binding.kind === 'function';
 
-      return [...(hoisted ? [] : [binding.identifier]), ...binding.writes].some(
-        isBetween,
-      );
-    },
-  );
+    return [...(hoisted ? [] : [binding.identifier]), ...binding.writes].some(
+      isBetween,
+    );
+  });
 }
 
 function bindingsReadThroughCalls(
-  node: unknown,
+  statement: unknown,
   scope: FileScope,
   tree: TreeIndex,
-  followed: ReadonlySet<unknown>,
 ): readonly Binding[] {
-  return scope
-    .referencesIn(node)
-    .map(scope.bindingOf)
-    .filter((binding) => binding !== undefined)
-    .filter(
-      (binding) =>
-        ![binding.identifier, ...tree.ancestors(binding.identifier)].some(
-          (each) => followed.has(each),
-        ),
-    )
-    .flatMap((binding) => {
-      const body = functionOf(binding);
+  const followed = new Set<unknown>();
+  const readBy = (node: unknown): readonly Binding[] =>
+    scope
+      .referencesIn(node)
+      .map(scope.bindingOf)
+      .filter((binding) => binding !== undefined)
+      .flatMap((binding) => {
+        const body = functionOf(binding);
 
-      return body === undefined || followed.has(body)
-        ? [binding]
-        : [
-            binding,
-            ...bindingsReadThroughCalls(
-              body,
-              scope,
-              tree,
-              new Set([...followed, body]),
-            ),
-          ];
-    });
+        if (body === undefined || followed.has(body)) {
+          return [binding];
+        }
+
+        followed.add(body);
+
+        return [binding, ...readBy(body)];
+      });
+
+  return readBy(statement).filter(
+    (binding) =>
+      ![binding.identifier, ...tree.ancestors(binding.identifier)].some(
+        (each) => followed.has(each),
+      ),
+  );
 }
 
 /** The function a binding names: a function declaration, or a function a variable is declared with. */

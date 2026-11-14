@@ -348,6 +348,20 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check calls a function declared between that calls an arrow reading a name declared between has no copy',
+    source: inPlay(
+      'const shownLabel = () => label;',
+      'await userEvent.click(add);',
+      "const label = '1 item';",
+      'function shown() {',
+      '  return canvas.getByText(shownLabel());',
+      '}',
+      'await expect(shown()).toBeVisible();',
+    ),
+    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+  },
+  {
+    title:
       'the first check is copied when it calls a function declared between that calls itself and reads only its own parameters',
     source: inPlay(
       'await userEvent.click(add);',
@@ -709,6 +723,30 @@ describe('interactionsOf following checks copy', () => {
       assert.deepEqual(followingIn(source), [expect, expect]);
     });
   });
+
+  it(
+    'reads each function a check calls once, however often the functions call each other',
+    { timeout: 10_000 },
+    () => {
+      const levels = 24;
+      const functions = Array.from({ length: levels }, (_, level) =>
+        level === 0
+          ? 'function f0() { return 0; }'
+          : `function f${level}() { return f${level - 1}() + f${level - 1}(); }`,
+      );
+      const check = `await expect(canvas.getByText(String(f${levels - 1}()))).toBeVisible();`;
+      const copied = {
+        checks: ['expect', 'query'],
+        end: 'none',
+        copy: check,
+      };
+
+      assert.deepEqual(
+        followingIn(inPlay('await userEvent.click(add);', ...functions, check)),
+        [[copied], [copied]],
+      );
+    },
+  );
 
   it('a name declared between the interaction and the check by a node without positions does not keep it from being copied', () => {
     const check = "expect(status).toHaveTextContent('Saved');";
