@@ -93,13 +93,6 @@ function stringIn(node: unknown, key: string): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-/** An object that is neither an array nor a node, such as a template element's `value`. */
-function isPlainRecord(
-  value: unknown,
-): value is Readonly<Record<string, unknown>> {
-  return isRecord(value) && !Array.isArray(value) && !isNode(value);
-}
-
 /** Babel's `isNodesEquivalent` over plain nodes: the same type and fields, whatever the positions, comments and `extra`. */
 export function equivalent(first: unknown, second: unknown): boolean {
   const tokenOf = equivalenceTokens([first, second]);
@@ -111,12 +104,13 @@ export function equivalent(first: unknown, second: unknown): boolean {
  * Tokens for the values in and below `roots`, for a Babel tree: two values share a token exactly when they are
  * `equivalent`. A node's token is built from the leaves up, from its fields other than positions, so none repeats
  * the text below it; an array's from its items; a plain object's, such as a template element's `value`, from its
- * fields compared with `===`; any other object's from its identity.
+ * fields compared with `===`; any other object's from its identity. A node outside `roots` gets a fresh token at each
+ * call, which no other value shares.
  */
 export function equivalenceTokens(
   roots: readonly unknown[],
 ): (value: unknown) => string {
-  const ids = new Map<unknown, string>();
+  const nodeTokens = new Map<unknown, string>();
   const interned = new Map<string, string>();
   const identities = new Map<unknown, string>();
   let count = 0;
@@ -140,10 +134,10 @@ export function equivalenceTokens(
     }
 
     if (isNode(value)) {
-      return ids.get(value) ?? fresh();
+      return nodeTokens.get(value) ?? fresh();
     }
 
-    if (isPlainRecord(value)) {
+    if (isRecord(value)) {
       const fields = Object.keys(value)
         .filter((key) => value[key] !== undefined)
         .sort()
@@ -182,7 +176,7 @@ export function equivalenceTokens(
   };
 
   roots
-    .flatMap((root) => (Array.isArray(root) ? list(root) : [root]))
+    .flat()
     .flatMap(descendants)
     .reverse()
     .forEach((node) => {
@@ -195,7 +189,7 @@ export function equivalenceTokens(
         .sort()
         .map((key) => `${JSON.stringify(key)}:${tokenOf(node[key])}`);
 
-      ids.set(node, intern(`{${fields.join(',')}}`));
+      nodeTokens.set(node, intern(`{${fields.join(',')}}`));
     });
 
   return tokenOf;
