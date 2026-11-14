@@ -102,7 +102,7 @@ function callAround(tree: TreeIndex, node: unknown): unknown {
   );
 }
 
-/** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function declared in the file and given there by its name. */
+/** The `beforeEach` and `afterEach` functions of a file: a method of such a name, a function that is the value of such a property or an element of its array, and a function given there by its name that is declared in the file or is the initial value of a variable, also under parentheses or a cast around that value. */
 function hooksOf(
   program: unknown,
   tree: TreeIndex,

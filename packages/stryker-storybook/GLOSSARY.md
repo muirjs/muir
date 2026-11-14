@@ -177,8 +177,8 @@ _Avoid_: checks after, later checks, assertion window, checks before the next in
 A call that sets what a spy made with `fn()` from `storybook/test` returns or does: `mockReturnValue`,
 `mockResolvedValue`, `mockRejectedValue`, `mockImplementation`, or their `Once` forms, chained on the spy. In a
 chain such as `fn().mockResolvedValueOnce(1).mockRejectedValue(error)`, each of these calls is a spy stub of its own.
-A chain goes on through `mockName` and `mockClear`, which leave what the spy returns alone, but stops at any other
-call, so the package reads no stub after `mockReturnThis` or `mockReset`.
+Read down from a stub, a chain goes on through `mockName` and `mockClear`, which leave what the spy returns alone,
+and ends at any other call, so no stub chained on `mockReturnThis` or `mockReset` is read as a spy stub.
 _Avoid_: mock setup, stub (alone), mock implementation
 
 **Definition-time stub**:
