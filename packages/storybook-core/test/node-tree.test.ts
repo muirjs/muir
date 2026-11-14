@@ -7,6 +7,7 @@ import { field, list } from '../src/node-field.ts';
 import {
   childNodes,
   descendants,
+  equivalenceTokens,
   equivalent,
   indexTree,
   isFunction,
@@ -190,5 +191,71 @@ describe('equivalent', () => {
         20, 21, 20, 23, 23, 25, 25, 27, 28, 29, 30, 30, 32, 33, 34, 33,
       ],
     );
+  });
+});
+
+describe('equivalenceTokens', () => {
+  it('gives each node outside the roots a token no other value shares, whatever the order of the calls', () => {
+    const tokenOf = equivalenceTokens([]);
+    const tokens = [
+      tokenOf({ type: 'A' }),
+      tokenOf([]),
+      tokenOf({ type: 'A' }),
+      tokenOf([1]),
+    ];
+
+    assert.equal(new Set(tokens).size, tokens.length);
+  });
+
+  it('gives plain objects with the same fields in another order the same token', () => {
+    const tokenOf = equivalenceTokens([]);
+
+    assert.equal(tokenOf({ a: 1, b: 2 }), tokenOf({ b: 2, a: 1 }));
+  });
+
+  it('gives a plain object with an undefined field the token of the object without it', () => {
+    const tokenOf = equivalenceTokens([]);
+
+    assert.equal(tokenOf({ a: 1, b: undefined }), tokenOf({ a: 1 }));
+  });
+
+  it('gives plain objects whose fields differ different tokens', () => {
+    const tokenOf = equivalenceTokens([]);
+
+    assert.notEqual(tokenOf({ a: 1 }), tokenOf({ a: 2 }));
+  });
+
+  it('gives nodes with the same fields in another order the same token', () => {
+    const first = { type: 'A', x: 1, y: 2 };
+    const second = { type: 'A', y: 2, x: 1 };
+    const tokenOf = equivalenceTokens([first, second]);
+
+    assert.equal(tokenOf(first), tokenOf(second));
+  });
+
+  it('gives a node with an undefined field the token of the node without it', () => {
+    assert.equal(equivalent({ type: 'A', x: undefined }, { type: 'A' }), true);
+  });
+
+  it('gives two NaNs different tokens, as NaN is not equal to itself', () => {
+    const tokenOf = equivalenceTokens([]);
+
+    assert.notEqual(tokenOf(NaN), tokenOf(NaN));
+  });
+
+  it('gives two functions with the same source different tokens', () => {
+    const tokenOf = equivalenceTokens([]);
+
+    assert.notEqual(
+      tokenOf(() => undefined),
+      tokenOf(() => undefined),
+    );
+  });
+
+  it('gives the same function the same token wherever it stands', () => {
+    const tokenOf = equivalenceTokens([]);
+    const callback = (): undefined => undefined;
+
+    assert.equal(tokenOf({ a: callback }), tokenOf({ a: callback }));
   });
 });
