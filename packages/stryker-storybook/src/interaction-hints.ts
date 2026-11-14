@@ -141,7 +141,11 @@ function interactionsOfSource(
   );
 }
 
-/** What `read` gives, or `undefined` once `warn` has the message of a `RangeError` it throws, as a crafted deep file overflows the stack; any other error is a bug and propagates. */
+/**
+ * What `read` gives, or `undefined` once `warn` has the message of any `RangeError` it throws: a crafted deep file
+ * overflows the stack with one, but a reader bug such as `'x'.repeat(-1)` is skipped the same way. Any other error
+ * propagates.
+ */
 export function skippedOnRangeError<T>(
   read: () => T,
   warn: (message: string) => void,
