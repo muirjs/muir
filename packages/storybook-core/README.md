@@ -30,3 +30,4 @@ declares it as a regular dependency, so installing one of them installs this one
   as a stub method and its `Once` form, and written back.
 - `appendRecord`, `hasRecords`, `recordVariable`, `mockTransformerPluginName`: write and read the transformer record.
 - `isRecord`, `isStringArray`, `field`, `list`: read values of unknown shape, such as Babel nodes.
+- `fileNameOf`: the path of the file a Babel path's tree was parsed from, as Stryker's instrumenter gives it.

@@ -1,4 +1,4 @@
-import { field } from '@layzee/storybook-core';
+import { field, fileNameOf } from '@layzee/storybook-core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
@@ -17,11 +17,11 @@ export function stubIgnorer(options: object, log: ProjectLog): Ignorer {
       const node = field(path, 'node');
 
       if (field(node, 'type') === 'Program') {
-        const fileName = field(path, 'hub', 'file', 'opts', 'filename');
+        const fileName = fileNameOf(path);
         const code = field(path, 'hub', 'file', 'code');
         const project = strykerStorybookProject(options, log);
         ignores =
-          typeof fileName === 'string' &&
+          fileName !== undefined &&
           typeof code === 'string' &&
           isStoryFile(project, fileName)
             ? stubIgnores({ program: node, code, fileName }, project)

@@ -1,6 +1,7 @@
 import type { NodePath } from '@babel/core';
 import {
   field,
+  fileNameOf,
   isUnknownPlay,
   list,
   propertyKey,
@@ -108,10 +109,9 @@ export function sitesIn(program: NodePath): Sites {
       .filter((path) => path.isFunction())
       .map((path) => [path.node, path] as const),
   );
-  const fileName = field(program.hub, 'file', 'opts', 'filename');
   const sites = argsSites(
     list(field(program.node, 'body')),
-    typeof fileName === 'string' ? fileName : undefined,
+    fileNameOf(program),
     (fn) => keysRead(functions.get(fn)),
   );
 

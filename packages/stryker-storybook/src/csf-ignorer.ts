@@ -1,6 +1,7 @@
 import {
   csfShapes,
   field,
+  fileNameOf,
   isRecord,
   list,
   type CsfShapes,
@@ -27,10 +28,10 @@ export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
   let reasons: ReadonlyMap<unknown, string> = new Map();
   const fileReasons = (
     program: unknown,
-    fileName: unknown,
+    fileName: string | undefined,
   ): ReadonlyMap<unknown, string> => {
     if (
-      typeof fileName !== 'string' ||
+      fileName === undefined ||
       !isStoryFile(strykerStorybookProject(options, log), fileName)
     ) {
       return new Map();
@@ -54,10 +55,7 @@ export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
       const node = field(path, 'node');
 
       if (field(node, 'type') === 'Program') {
-        reasons = fileReasons(
-          node,
-          field(path, 'hub', 'file', 'opts', 'filename'),
-        );
+        reasons = fileReasons(node, fileNameOf(path));
       }
 
       return reasons.get(node);

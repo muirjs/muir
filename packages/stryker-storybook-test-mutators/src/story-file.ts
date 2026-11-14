@@ -2,7 +2,7 @@ import type { NodePath, types } from '@babel/core';
 import {
   type CsfShapes,
   csfShapes,
-  field,
+  fileNameOf,
   type Interaction,
   interactionsOf,
   type StoryInteractions,
@@ -48,24 +48,15 @@ function readNamingFile<T>(
   try {
     return read(program);
   } catch (error) {
-    const filename = fileNameOf(program);
+    const fileName = fileNameOf(program);
     const file =
-      filename === undefined ? 'a story file' : `the story file ${filename}`;
+      fileName === undefined ? 'a story file' : `the story file ${fileName}`;
 
     throw new Error(
       `${packageName}: could not read ${file}: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
     );
   }
-}
-
-/** The path of the file Babel parsed the Program from, as Stryker's instrumenter gives it. */
-export function fileNameOf(
-  program: NodePath<types.Program>,
-): string | undefined {
-  const filename = field(program.hub, 'file', 'opts', 'filename');
-
-  return typeof filename === 'string' ? filename : undefined;
 }
 
 const storyFileOf = perFile<CsfShapes | undefined>(

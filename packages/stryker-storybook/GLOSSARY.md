@@ -66,8 +66,9 @@ member (`...lib.story`), another top-level object reads when the file loads, oth
 top level, nor a key that a getter or setter in the same object also defines or may define (a computed key). A file
 that may import itself proves nothing, since a write through the import may change any site. A file may import
 itself when a string literal in it names the file, or an import or `require` in it takes a specifier that is not a
-string literal. A file whose path the mutator is not given proves nothing either. A mutator skips a property as
-equivalent only through one.
+string literal. A file whose path the mutator is not given proves nothing either. An import through a path alias
+(`@/Button.stories`) or through another file that imports this one back is not seen, so such a file still proves. A
+mutator skips a property as equivalent only through one.
 _Avoid_: proof (alone), equivalence check, safe key
 
 **Tag filter**:
