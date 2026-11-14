@@ -36,10 +36,8 @@ export function writtenMethodOf({
   return once ? `${method}Once` : method;
 }
 
-export interface StubSite extends StubMethodCall {
+export interface StubSite extends StubMethodCall, Span {
   readonly spy: string;
-  readonly start: number;
-  readonly end: number;
   readonly line: number;
   readonly hasArguments: boolean;
   /** The spy call's span, inside any parentheses, cast or non-null assertion around it. */

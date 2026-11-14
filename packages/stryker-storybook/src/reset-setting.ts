@@ -9,9 +9,8 @@ import {
   list,
   mayImportItself,
   namedExports,
-  type Span,
   storyArgument,
-  type StubMethod,
+  type StubSite,
   topLevelBindings,
   unchangedBindings,
   unwrap,
@@ -30,13 +29,11 @@ export interface StoryReset {
   readonly branch: ResetBranch;
 }
 
-export interface ClassifiedStub {
-  readonly start: number;
-  readonly end: number;
-  readonly spyCall: Span;
-  readonly line: number;
-  readonly method: StubMethod;
-  readonly once: boolean;
+export interface ClassifiedStub
+  extends Pick<
+    StubSite,
+    'start' | 'end' | 'spyCall' | 'line' | 'method' | 'once'
+  > {
   readonly verdict: StubVerdict;
 }
 
