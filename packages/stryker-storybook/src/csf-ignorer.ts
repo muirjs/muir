@@ -4,6 +4,7 @@ import {
   fileNameOf,
   isRecord,
   list,
+  propertyKey,
   type CsfShapes,
 } from '@layzee/storybook-core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
@@ -46,6 +47,7 @@ export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
     // StrykerJS reads a node's leading comments when it enters that node, after the ignorer has seen the Program node.
     shapes.literalContainers.forEach(keepLiteralContainer);
     shapes.testStatementsWithOptions.forEach(keepTestCall);
+    shapes.metaObjects.forEach(keepMetaObject);
 
     return ignoreModeReasons(shapes);
   };
@@ -77,8 +79,22 @@ function ignoreModeReasons(shapes: CsfShapes): ReadonlyMap<unknown, string> {
     ...staticReasons(shapes),
     ...[...shapes.mswValues].map((node) => [node, mswReason] as const),
     ...[...shapes.testCode].map((node) => [node, testReason] as const),
-    ...[...shapes.metaObjects].map((node) => [node, metaReason] as const),
+    ...[...shapes.metaObjects]
+      .flatMap(metaPartsKept)
+      .map((node) => [node, metaReason] as const),
   ]);
+}
+
+/** Every property of a meta object but its `args`, which are story data, mutated as a story's are. */
+function metaPartsKept(meta: unknown): readonly unknown[] {
+  return list(field(meta, 'properties')).filter(
+    (property) => propertyKey(property) !== 'args',
+  );
+}
+
+// An ignorer skips a whole subtree, so the meta object itself is kept by a directive, leaving its args unignored.
+function keepMetaObject(meta: unknown): void {
+  addDirective(meta, `Stryker disable next-line ObjectLiteral: ${metaReason}`);
 }
 
 // A Stryker ignorer skips a whole subtree; a next-line directive skips only the mutants on the container's first line.

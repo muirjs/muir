@@ -36,7 +36,23 @@ describe('lz-storybook-csf', () => {
       [
         `1 ObjectLiteral ${metaReason}`,
         `1 ObjectLiteral ${metaReason}`,
-        `1 StringLiteral ${metaReason}`,
+        '1 StringLiteral placed',
+      ],
+    );
+  });
+
+  it("places the mutants in the meta's args, which are story data", async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      await outcomes(
+        "export default {\n  title: 'a/b',\n  args: { a: 'x' },\n};",
+      ),
+      [
+        `1 ObjectLiteral ${metaReason}`,
+        `2 StringLiteral ${metaReason}`,
+        '3 ObjectLiteral placed',
+        '3 StringLiteral placed',
       ],
     );
   });
@@ -80,7 +96,7 @@ describe('lz-storybook-csf', () => {
       [
         `1 ObjectLiteral ${metaReason}`,
         `1 ObjectLiteral ${metaReason}`,
-        `1 StringLiteral ${metaReason}`,
+        '1 StringLiteral placed',
       ],
     );
   });
@@ -135,6 +151,24 @@ describe('lz-storybook-csf', () => {
         )
       ).filter((outcome) => /^[23] /.test(outcome)),
       [`2 ObjectLiteral ${metaReason}`, `3 StringLiteral ${metaReason}`],
+    );
+  });
+
+  it('places the mutants in the args of the object passed to preview.meta()', async () => {
+    const { outcomes } = setup();
+
+    assert.deepEqual(
+      (
+        await outcomes(
+          "import preview from '#.storybook/preview';\nconst meta = preview.meta({\n  title: 'a/b',\n  args: { a: 'x' },\n});\nexport const A = meta.story();",
+        )
+      ).filter((outcome) => /^[234] /.test(outcome)),
+      [
+        `2 ObjectLiteral ${metaReason}`,
+        `3 StringLiteral ${metaReason}`,
+        '4 ObjectLiteral placed',
+        '4 StringLiteral placed',
+      ],
     );
   });
 

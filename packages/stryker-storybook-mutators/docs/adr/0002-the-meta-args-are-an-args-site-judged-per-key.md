@@ -31,5 +31,7 @@ taken by its own run, so nothing changes for them.
 - A file whose played stories all take their `args` from another module gets no meta mutant.
 - On a played story with no play, a meta key that every `.test()` call's options set keeps its mutant, as on a
   story's own args.
-- The CSF ignorer of `@layzee/stryker-storybook` reports every mutant inside the meta object as Ignored in its
-  default play mode, so in that configuration these mutants are reported Ignored.
+- The CSF ignorer of `@layzee/stryker-storybook` reported every mutant inside the meta object as Ignored in its
+  default play mode, the mode of the components configuration. Lars approved on 2026-11-14 that it leave the meta's
+  `args` to the mutators ("1: Approve recommendation."), so Stryker's built-in mutators now place their mutants in
+  the meta's `args` values too, as they do in a story's own `args`. An ignorer skips by node, not by mutator.
