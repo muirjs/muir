@@ -17,7 +17,7 @@ import {
   memberName,
   type TreeIndex,
 } from './node-tree.ts';
-import { type Binding, type FileScope, fileScope } from './scope.ts';
+import { declaredFunction, type FileScope, fileScope } from './scope.ts';
 import {
   type UserEventOrigin,
   userEventMethods,
@@ -133,20 +133,6 @@ function hooksOf(
       return isFunction(node) ? node : declaredFunction(scope.bindingOf(node));
     }),
   );
-}
-
-/** The function a binding names: `function <name>() {}`, or `const <name> = <function>`. */
-function declaredFunction(binding: Binding | undefined): unknown {
-  const declaration = binding?.declaration;
-  const init = field(declaration, 'init');
-
-  if (binding?.kind === 'function') {
-    return declaration;
-  }
-
-  return field(declaration, 'id') === binding?.identifier && isFunction(init)
-    ? init
-    : undefined;
 }
 
 /** Reads every interaction of one file, once, from its Program. Accepts Babel 7 and Babel 8 trees. `shapes` is `csfShapes(program)`. */

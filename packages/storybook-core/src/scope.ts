@@ -114,6 +114,20 @@ function readChildren(node: unknown): readonly unknown[] {
 }
 
 /** Resolves every name of `program` as Babel's scope does, in one walk: declarations first, then each read or write by its name up the scopes it stands in, so a `var` or function declaration below a read is found. */
+/** The function a binding names: `function <name>() {}`, or `const <name> = <function>`. */
+export function declaredFunction(binding: Binding | undefined): unknown {
+  if (binding?.kind === 'function') {
+    return binding.declaration;
+  }
+
+  const declaration = binding?.declaration;
+  const init = unwrap(field(declaration, 'init'));
+
+  return field(declaration, 'id') === binding?.identifier && isFunction(init)
+    ? init
+    : undefined;
+}
+
 export function fileScope(program: unknown): FileScope {
   const resolved = new WeakMap<object, DeclaredBinding>();
   const references: (readonly [object, Scope])[] = [];
