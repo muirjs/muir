@@ -121,9 +121,15 @@ export function fileScope(program: unknown): FileScope {
   const references: (readonly [object, Scope])[] = [];
   const writes: (readonly [object, unknown])[] = [];
   const writtenMembers: unknown[] = [];
-  const written = new Map<DeclaredBinding, readonly unknown[]>();
+  const written = new Map<DeclaredBinding, unknown[]>();
   const addWrite = (binding: DeclaredBinding, writer: unknown): void => {
-    written.set(binding, [...(written.get(binding) ?? []), writer]);
+    const writers = written.get(binding);
+
+    if (writers === undefined) {
+      written.set(binding, [writer]);
+    } else {
+      writers.push(writer);
+    }
   };
   const scopeIn = (parent: Scope | undefined, holdsVar: boolean): Scope => ({
     parent,
