@@ -22,7 +22,7 @@ declares it as a regular dependency, so installing one of them installs this one
   its user-event origin, whether it stands in a hook, and the checks that follow it up to what ends them.
 - `waitCall`: whether a call, awaited or not and given as a statement or not, is `waitFor(...)` or
   `waitForElementToBeRemoved(...)`.
-- `definitionTimeStubs`, with the types `StubSite`, `Span` and `StubMethodCall`: the definition-time spy stubs in a
+- `definitionTimeStubs`, with the types `DefinitionTimeStub`, `Span` and `StubMethodCall`: the definition-time spy stubs in a
   program, with their positions.
 - `mockTransformerRewrite`, with the type `StubRewrite`: the rule for which stubs the mock transformer rewrites,
   shared by the transformer and the `lz-storybook` report. The transformer also drops a stub that stands in another

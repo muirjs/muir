@@ -10,7 +10,7 @@ import {
   mayImportItself,
   namedExports,
   storyArgument,
-  type StubSite,
+  type DefinitionTimeStub,
   topLevelBindings,
   unchangedBindings,
   unwrap,
@@ -29,7 +29,7 @@ export interface StoryReset {
   readonly branch: ResetBranch;
 }
 
-export interface ClassifiedStub extends StubSite {
+export interface ClassifiedStub extends DefinitionTimeStub {
   readonly verdict: StubVerdict;
 }
 

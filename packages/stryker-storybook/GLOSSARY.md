@@ -193,7 +193,7 @@ _Avoid_: mock setup, stub (alone), mock implementation
 **Definition-time stub**:
 A spy stub that runs when the story file loads, because it sits outside any function, such as in `args`, in the
 meta or at module scope. The mock reset can erase it before the story renders.
-_Avoid_: module-level stub, static stub, args stub
+_Avoid_: module-level stub, static stub, args stub, stub site (a site is an args or globals site)
 
 **Mock reset**:
 What Storybook does to every spy before a story renders: reset, clear or restore it, as the story's

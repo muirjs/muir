@@ -5,7 +5,7 @@ import {
   stubMethodOf,
   type StubMethod,
   type StubMethodCall,
-  type StubSite,
+  type DefinitionTimeStub,
   writtenMethodOf,
 } from '@layzee/storybook-core';
 
@@ -19,7 +19,7 @@ export function spyStubMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookSpyStub',
     sample: `import { fn } from 'storybook/test';\nexport const Story = {\n  args: { onSave: fn().mockReturnValue(1) },\n};\n`,
     *mutate(path, t) {
-      readStoryFileAt(path, sitesOf);
+      readStoryFileAt(path, definitionTimeStubsIn);
 
       if (isStubStatement(path)) {
         yield t.emptyStatement();
@@ -30,7 +30,7 @@ export function spyStubMutator(): LzStorybookTestMutator & {
       // A definition-time stub is removed by leaving its receiver.
       const call = stubCallAt(path);
 
-      if (call?.site !== undefined) {
+      if (call?.definitionTimeStub !== undefined) {
         yield t.cloneNode(call.callee.object);
       }
     },
@@ -44,7 +44,7 @@ export function spyStubOutcomeMutator(): LzStorybookTestMutator & {
     name: 'LzStorybookSpyStubOutcome',
     sample: `import { fn } from 'storybook/test';\nexport const Story = {\n  args: { onSave: fn().mockResolvedValue(1) },\n};\n`,
     *mutate(path, t) {
-      readStoryFileAt(path, sitesOf);
+      readStoryFileAt(path, definitionTimeStubsIn);
 
       const call = stubCallAt(path);
       const flipped = call === undefined ? undefined : outcomeMutant(call, t);
@@ -56,11 +56,11 @@ export function spyStubOutcomeMutator(): LzStorybookTestMutator & {
   };
 }
 
-/** A stub call: a definition-time stub, with its site, or the call of a stub statement. */
+/** A stub call: a definition-time stub, or the call of a stub statement. */
 interface StubCall {
   readonly node: types.CallExpression | types.OptionalCallExpression;
   readonly callee: types.MemberExpression | types.OptionalMemberExpression;
-  readonly site: StubSite | undefined;
+  readonly definitionTimeStub: DefinitionTimeStub | undefined;
   readonly stub: StubMethodCall;
 }
 
@@ -72,15 +72,17 @@ function stubCallAt(path: NodePath): StubCall | undefined {
   }
 
   const { call: node, callee } = member;
-  const site = sitesOf(path).find(
+  const definitionTimeStub = definitionTimeStubsIn(path).find(
     ({ start, end }) => start === node.start && end === node.end,
   );
   const parent = path.parentPath;
   const stub =
-    site ??
+    definitionTimeStub ??
     (parent !== null && isStubStatement(parent) ? stubOf(node) : undefined);
 
-  return stub === undefined ? undefined : { node, callee, site, stub };
+  return stub === undefined
+    ? undefined
+    : { node, callee, definitionTimeStub, stub };
 }
 
 /** The stub call with a resolved stub made a rejected one or back; `undefined` for a stub that settles no promise. */
@@ -176,7 +178,7 @@ function outcomeOf(
   }
 }
 
-const sitesOf = perFile(
-  (program): readonly StubSite[] => definitionTimeStubs(program.node),
+const definitionTimeStubsIn = perFile(
+  (program): readonly DefinitionTimeStub[] => definitionTimeStubs(program.node),
   [],
 );

@@ -36,7 +36,7 @@ export function writtenMethodOf({
   return once ? `${method}Once` : method;
 }
 
-export interface StubSite extends StubMethodCall, Span {
+export interface DefinitionTimeStub extends StubMethodCall, Span {
   readonly spy: string;
   /** Where the stub call starts: at the start of its chain, before any parentheses or cast around the spy call. */
   readonly start: number;
@@ -61,7 +61,9 @@ export interface Span {
 
 const functionType = /Function|ObjectMethod|ClassMethod|ClassPrivateMethod/;
 
-export function definitionTimeStubs(program: unknown): readonly StubSite[] {
+export function definitionTimeStubs(
+  program: unknown,
+): readonly DefinitionTimeStub[] {
   return collectStubs(program, storybookTestFnNames(program));
 }
 
@@ -85,28 +87,28 @@ function storybookTestFnNames(program: unknown): ReadonlySet<string> {
 function collectStubs(
   node: unknown,
   spies: ReadonlySet<string>,
-): readonly StubSite[] {
+): readonly DefinitionTimeStub[] {
   const type = field(node, 'type');
 
   if (!isRecord(node) || typeof type !== 'string' || functionType.test(type)) {
     return [];
   }
 
-  const site = stubSite(node, spies);
+  const stub = definitionTimeStubAt(node, spies);
   const children: readonly unknown[] = Object.values(node).flatMap(
     (value: unknown) => (Array.isArray(value) ? list(value) : [value]),
   );
 
   return [
-    ...(site ? [site] : []),
+    ...(stub ? [stub] : []),
     ...children.flatMap((child) => collectStubs(child, spies)),
   ];
 }
 
-function stubSite(
+function definitionTimeStubAt(
   node: unknown,
   spies: ReadonlySet<string>,
-): StubSite | undefined {
+): DefinitionTimeStub | undefined {
   const start = field(node, 'start');
   const end = field(node, 'end');
   const line = field(node, 'loc', 'start', 'line');
@@ -157,8 +159,10 @@ function stubSite(
 }
 
 /** The stubs of `stub`'s chain from its first up to `stub`: the stubs that share its spy call and end no later. */
-export function chainUpTo<TStub extends Pick<StubSite, 'spyCall' | 'end'>>(
-  stub: Pick<StubSite, 'spyCall' | 'end'>,
+export function chainUpTo<
+  TStub extends Pick<DefinitionTimeStub, 'spyCall' | 'end'>,
+>(
+  stub: Pick<DefinitionTimeStub, 'spyCall' | 'end'>,
   stubs: readonly TStub[],
 ): readonly TStub[] {
   return stubs.filter(
@@ -174,7 +178,7 @@ export type StubRewrite =
 
 /** How the mock transformer's rule treats `stub`: rewritten, or left alone as a `Once` stub or a stub after the first of its chain. The transformer then drops a rewritten stub that stands in another rewritten stub's spy call, with that call's arguments. */
 export function mockTransformerRewrite(
-  stub: Pick<StubSite, 'once' | 'firstOfChain'>,
+  stub: Pick<DefinitionTimeStub, 'once' | 'firstOfChain'>,
 ): StubRewrite {
   if (stub.once) {
     return 'once-not-rewritten';

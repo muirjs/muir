@@ -6,7 +6,7 @@ import {
   list,
   mockTransformerRewrite,
   type StubMethod,
-  type StubSite,
+  type DefinitionTimeStub,
 } from '@layzee/storybook-core';
 import MagicString, { type SourceMap } from 'magic-string';
 
@@ -71,7 +71,7 @@ export function transform(
 /** Replaces the spy call with `<spy>(<open><arguments><close>)`, its method's wrapper around the stub's arguments (`fn(((value) => () => value)(1))` for `fn().mockReturnValue(1)`), and removes the stub call from the chain. Each `)` that closed parentheses around the stub's callee is written back after the rewritten spy call, where it closes them again. */
 function rewriteStub(
   output: MagicString,
-  { spy, method, end, spyCall, methodStart, calleeEnd }: StubSite,
+  { spy, method, end, spyCall, methodStart, calleeEnd }: DefinitionTimeStub,
   tokens: readonly unknown[],
   file: string,
 ): void {

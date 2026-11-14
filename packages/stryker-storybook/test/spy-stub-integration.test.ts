@@ -1,4 +1,4 @@
-// LzStorybookSpyStub and the lz-storybook ignorer read the same definition-time stub sites, so every SpyStub mutant
+// LzStorybookSpyStub and the lz-storybook ignorer read the same definition-time stubs, so every SpyStub mutant
 // at an erased stub is Ignored with the ignorer's reason and every SpyStub mutant at a kept stub is placed.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
