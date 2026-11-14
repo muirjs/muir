@@ -907,6 +907,26 @@ describe('storybookReporter', () => {
     );
   });
 
+  it('warns, naming a reported file whose interactions it cannot parse for hints', (t) => {
+    const { reporter, lines } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Broken.ts': {
+          source: 'export const = ;\n',
+          mutants: [interactionMutant(5, 'Survived')],
+        },
+      },
+    });
+
+    assert.deepEqual(
+      lines.filter((line) => line.startsWith('warn: ')),
+      [
+        'warn: @layzee/stryker-storybook: Babel could not parse src/Broken.ts, so lz-storybook gave no interaction hints for it: Unexpected token (1:13)',
+      ],
+    );
+  });
+
   it('warns once and reports the other story files when reading one overflows the stack', (t) => {
     const { reporter, findings, lines, projectDir } = setup(t);
     writeStory(

@@ -18,6 +18,28 @@ export const clickBeforeTypeHintCases: readonly InteractionHintCase[] = [
     expect: [[5, 'click-before-type', [interaction]]],
   },
   {
+    id: 'click-before-clear',
+    title:
+      'gives no hint for a click directly before a clear of the same target, as only a type clicks first',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.clear(canvas.getByRole('textbox'));",
+    ),
+    survived: [[interaction, 5]],
+    expect: [],
+  },
+  {
+    id: 'click-before-type-with-options',
+    title:
+      'names a surviving click directly before a type of the same target given options with no skipClick',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('textbox'));",
+      "await userEvent.type(canvas.getByRole('textbox'), 'Ada', { delay: 10 });",
+    ),
+    survived: [[interaction, 5]],
+    expect: [[5, 'click-before-type', [interaction]]],
+  },
+  {
     id: 'hover-before-type',
     title: 'names a surviving hover directly before a type of the same target',
     source: inPlay(

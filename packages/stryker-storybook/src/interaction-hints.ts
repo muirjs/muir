@@ -205,7 +205,9 @@ function locationOf(node: Interaction['node']): schema.Location | undefined {
     typeof endLine === 'number' &&
     typeof endColumn === 'number'
     ? {
+        // Stryker disable next-line ArithmeticOperator: a survivor starts at its interaction statement's start or at a node at least two columns inside it, so moving the first column two to the left lets no other survivor in
         start: { line: startLine, column: startColumn + 1 },
+        // Stryker disable next-line ArithmeticOperator: a survivor starts at an interaction statement's start or at a node that ends before the statement's closing parenthesis, so moving the last column two to the left lets none out
         end: { line: endLine, column: endColumn + 1 },
       }
     : undefined;
