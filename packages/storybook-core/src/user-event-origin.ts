@@ -245,7 +245,12 @@ export function userEventOrigins(
     return originsIn(setupReceiver(node) ?? node);
   };
 
-  /** Each binding's origins, followed once; a local whose value reads itself finds none while it is followed. A cycle member cached mid-cycle may lack origins reached through the entry, but the write or receiver that entered collects them, and every member holds the entry's `undefined`, so no order of resolution changes a result. */
+  /**
+   * Each binding's origins, followed once. While a binding is followed it holds `[undefined]`, so a read of it from
+   * inside its own value, or from another member of its cycle, gets only what its name alone gives. A member cached
+   * mid-cycle may lack origins reached through the entry, but the write or receiver that entered the cycle collects
+   * them, so no order of resolution changes a result.
+   */
   const knownOrigins = new Map<Binding, MayOrigins>();
   /** The origins `receiver` may have; a member under a key the file does not name may be the holder's `userEvent`. */
   const originsIn = (receiver: unknown): MayOrigins => {

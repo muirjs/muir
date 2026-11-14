@@ -116,17 +116,17 @@ head that targets a member. It reaches the origin of the written member and of e
 found as a receiver's is, and a member under a computed key may be `userEvent`. The root of that chain splits
 choices, sequences and `=` assignments at every level and reads what is left as a local's one value is read, so
 `(flag ? userEvent : x).click = f`, `(a || (flag ? userEvent.setup() : x)).click = f` or `(a = userEvent).click = f`
-reaches each origin it may hold. So `userEvent.click`,
-`t.userEvent.click` on a namespace import, `u.click` after `const u = userEvent`, `const u = context.userEvent` or
-`const u = flag ? userEvent : x`, `userEvent.click` after `const { userEvent } = context`, or the `click` of a
-`setup()` instance each refuse every user-event 14 receiver in the file, named imports, namespace imports and the play
-context's alike. A receiver or a member passed whole to a call, as in `Object.assign(userEvent, ...)`,
-`vi.spyOn(userEvent, 'click')` or `Object.assign(context.userEvent, ...)`, is a read and refuses nothing, and so is a
-write through a value the origin search does not follow: an array or object literal that holds the receiver, a
-function parameter, `arguments` in a method or `function` play, a local that holds the module object
-(`const t2 = t`, or an awaited `import()`), or a local with two values. `delete userEvent.click` is no write and
-refuses nothing either. The Storybook test mutators make mutants for every origin; the `lz-storybook` reporter gives
-the `click-before-type` shape only for `userEvent14`.
+reaches each origin it may hold. So `userEvent.click`, `t.userEvent.click` on a namespace import, `u.click` after
+`const u = userEvent`, `const u = context.userEvent` or `const u = flag ? userEvent : x`, `userEvent.click` after
+`const { userEvent } = context`, or the `click` of a `setup()` instance each refuse every user-event 14 receiver in
+the file, named imports, namespace imports and the play context's alike. A receiver or a member passed whole to a
+call, as in `Object.assign(userEvent, ...)`, `vi.spyOn(userEvent, 'click')` or `Object.assign(context.userEvent, ...)`,
+is a read and refuses nothing, and so is a write through a value the origin search does not follow, such as an array
+or object literal that holds the receiver, a function parameter, `arguments` in a method or `function` play, a local
+that holds the module object (`const t2 = t`, or an awaited `import()`), a local with two values, a local whose value
+nests a choice (`const u = a || (flag ? userEvent : x)`), or `(await userEvent).click = f`. `delete userEvent.click`
+is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the `lz-storybook`
+reporter gives the `click-before-type` shape only for `userEvent14`.
 _Avoid_: user-event kind, user-event 14 check
 
 **Composed play**:

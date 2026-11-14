@@ -40,14 +40,16 @@ scope reading written in core.
   `(flag ? userEvent : x).click = f`, `(a || (flag ? userEvent.setup() : x)).click = f` and
   `(a = userEvent).click = f` reach each origin they may hold. Every receiver of such an origin is `unproven`:
   `u.click = f` after `const u = context.userEvent`, and `t.userEvent.click = f` beside a named `userEvent` import of
-  the same module, both refuse. So a write on one
-  user-event 14 object, such as a `setup()` instance, drops every user-event 14 hint in the file; the cost is hints
-  only, in the safe direction, and such stories are rare. A receiver or a member passed whole to a call, such as
-  `Object.assign(userEvent, ...)`, `vi.spyOn(userEvent, 'click')` or `Object.assign(context.userEvent, ...)`, is not
-  seen as a write, nor is a write through a value the origin search does not follow: an array or object literal that
-  holds the receiver, a function parameter, `arguments` in a method or `function` play, a local that holds the module
-  object (`const t2 = t`, or an awaited `import()`), or a local with two values. `delete userEvent.click` is not seen
-  either. These cost hints only, in the unsafe direction, and are rare in stories.
+  the same module, both refuse. So a write on one user-event 14 object, such as a `setup()` instance, drops every
+  user-event 14 hint in the file; the cost is hints only, in the safe direction, and such stories are rare. A receiver
+  or a member passed whole to a call, such as `Object.assign(userEvent, ...)`, `vi.spyOn(userEvent, 'click')` or
+  `Object.assign(context.userEvent, ...)`, is not seen as a write, nor is a write through a value the origin search
+  does not follow, such as an array or object literal that holds the receiver, a function parameter, `arguments` in a
+  method or `function` play, a local that holds the module object (`const t2 = t`, or an awaited `import()`), a local
+  with two values, a local whose value nests a choice (`const u = a || (flag ? userEvent : x)`), or
+  `(await userEvent).click = f`. `delete userEvent.click` is not seen either. Each of these can leave a wrong
+  `click-before-type` hint where the method is replaced, never a missing hint and never a mutant; they are rare in
+  stories.
 - The test mutators make mutants for every origin, `unproven` included, as ADR 0006 asks. Their ADR 0002 stands:
   placement does not change, and the user-event 14 proof is a reading the reporter uses, not a skip.
 - The reporter refuses `negative-only` when the following checks end at a statement that may not run its interaction,
