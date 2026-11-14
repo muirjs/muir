@@ -216,22 +216,12 @@ export function classifyStubs(
       },
     );
   const stories = declared.map(({ story }) => story);
-  const stubs = definitionTimeStubs(program).map(
-    ({ start, end, spyCall, line, method, once }) => {
-      const owner = declared.findIndex(({ init }) => contains(init, start));
-      const users = owner === -1 ? stories.map((_, index) => index) : [owner];
+  const stubs = definitionTimeStubs(program).map((stub) => {
+    const owner = declared.findIndex(({ init }) => contains(init, stub.start));
+    const users = owner === -1 ? stories.map((_, index) => index) : [owner];
 
-      return {
-        start,
-        end,
-        spyCall,
-        line,
-        method,
-        once,
-        verdict: siteVerdict(stories, users),
-      };
-    },
-  );
+    return { ...stub, verdict: siteVerdict(stories, users) };
+  });
 
   return { stories, stubs };
 }
