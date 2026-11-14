@@ -1175,6 +1175,14 @@ package's test (O76 and O153: cycle 16). Three greens reused an existing predica
 cycles 17 to 19). One green changed a mechanism without generalising (O154: cycle 16, a chain keyed by its spy call).
 Evidence: `wave2/cycles.log` cycles 16 to 19.
 
+**O161. O152's test could not fail, and a reviewer's mutant showed it.** In round 6 a test reviewer deleted the visited
+set's `add` from the copied-check walk in a copy of the package. The once-per-function test still passed, after 163 s
+instead of 48 ms, because node:test cannot stop a synchronous body at its `timeout`. Deleting the `has` check survived
+the same way. The fix needed no timer: since round 5 a function's own name is left out inside its body, so only
+functions that call each other need the visited set, and two such functions overflow the stack in 316 ms without it.
+`lz-red` step 5 takes a red that ran and failed, but it has no check that a test can still fail once the green is in.
+Evidence: `wave2/r6-test-analyzer.md` F3; `wave2/cycles.log`, the round 6 `test-after` lines.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
