@@ -33,14 +33,16 @@ export interface StubSite extends StubMethodCall {
   readonly start: number;
   readonly end: number;
   readonly line: number;
-  readonly argumentStart: number | undefined;
-  /** The start of the spy call the chain starts at, such as `fn()`, inside any parentheses around it. */
-  readonly spyCallStart: number;
-  readonly spyCallEnd: number;
-  /** The end of the call the stub method is called on, inside any parentheses around it; past `spyCallEnd` when calls such as `.mockName('load')` stand between. */
-  readonly receiverEnd: number;
-  /** The start of the stub method's name, after the dot before it. */
+  /** From the start of its first argument to the end of its last. */
+  readonly argumentSpan: Span | undefined;
+  /** The spy call the chain starts at, such as `fn()`, inside any parentheses around it. */
+  readonly spyCall: Span;
   readonly methodStart: number;
+}
+
+export interface Span {
+  readonly start: number;
+  readonly end: number;
 }
 
 const functionType = /Function|ObjectMethod|ClassMethod|ClassPrivateMethod/;
@@ -100,7 +102,6 @@ function stubSite(
   const stub = stubMethodOf(writtenMethod);
   const spyCallStart = field(spyCall, 'start');
   const spyCallEnd = field(spyCall, 'end');
-  const receiverEnd = field(node, 'callee', 'object', 'end');
   const methodStart = field(node, 'callee', 'property', 'start');
 
   if (
@@ -110,7 +111,6 @@ function stubSite(
     typeof line !== 'number' ||
     typeof spyCallStart !== 'number' ||
     typeof spyCallEnd !== 'number' ||
-    typeof receiverEnd !== 'number' ||
     typeof methodStart !== 'number' ||
     field(node, 'callee', 'computed') === true ||
     !isCall(spyCall) ||
@@ -123,6 +123,7 @@ function stubSite(
   }
 
   const argumentStart = field(node, 'arguments', '0', 'start');
+  const argumentsEnd = field(list(field(node, 'arguments')).at(-1), 'end');
 
   return {
     spy,
@@ -131,11 +132,11 @@ function stubSite(
     start,
     end,
     line,
-    argumentStart:
-      typeof argumentStart === 'number' ? argumentStart : undefined,
-    spyCallStart,
-    spyCallEnd,
-    receiverEnd,
+    argumentSpan:
+      typeof argumentStart === 'number' && typeof argumentsEnd === 'number'
+        ? { start: argumentStart, end: argumentsEnd }
+        : undefined,
+    spyCall: { start: spyCallStart, end: spyCallEnd },
     methodStart,
   };
 }

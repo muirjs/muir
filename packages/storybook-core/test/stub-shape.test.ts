@@ -117,9 +117,9 @@ describe('definitionTimeStubs', () => {
     });
   });
 
-  it('gives the positions of the stub call, its spy call, its receiver, its method and its first argument', () => {
+  it('gives the positions of the stub call, its spy call, its method and its arguments', () => {
     const source =
-      "import { fn } from 'storybook/test';\nexport const A = { args: { g: (fn()).mockName('g').mockReturnValue('x') } };";
+      "import { fn } from 'storybook/test';\nexport const A = { args: { g: (fn()).mockName('g').mockReturnValue('x', 'y') } };";
 
     assert.deepEqual(definitionTimeStubs(parseTs(source)), [
       {
@@ -130,10 +130,14 @@ describe('definitionTimeStubs', () => {
         start: source.indexOf('(fn()'),
         end: source.lastIndexOf(')') + 1,
         line: 2,
-        argumentStart: source.indexOf("'x'"),
-        spyCallStart: source.indexOf('fn()'),
-        spyCallEnd: source.indexOf('fn()') + 'fn()'.length,
-        receiverEnd: source.indexOf('.mockReturnValue'),
+        argumentSpan: {
+          start: source.indexOf("'x'"),
+          end: source.indexOf("'y'") + "'y'".length,
+        },
+        spyCall: {
+          start: source.indexOf('fn()'),
+          end: source.indexOf('fn()') + 'fn()'.length,
+        },
         methodStart: source.indexOf('mockReturnValue'),
       },
     ]);

@@ -2,8 +2,11 @@ import { parse } from '@babel/parser';
 import {
   appendRecord,
   definitionTimeStubs,
+  field,
+  list,
   mockTransformerRewrite,
   type StubMethod,
+  type StubSite,
 } from '@layzee/storybook-core';
 import MagicString, { type SourceMap } from 'magic-string';
 
@@ -14,26 +17,13 @@ export interface TransformResult {
   readonly map: SourceMap;
 }
 
-/** The parameter that takes the stub's argument, and the implementation the spy call gets from it. */
-const replacements: Readonly<
-  Record<
-    StubMethod,
-    { readonly parameter: string; readonly implementation: string }
-  >
+const implementationFactories: Readonly<
+  Record<StubMethod, string | undefined>
 > = {
-  mockReturnValue: { parameter: 'value', implementation: '() => value' },
-  mockResolvedValue: {
-    parameter: 'value',
-    implementation: 'async () => value',
-  },
-  mockRejectedValue: {
-    parameter: 'value',
-    implementation: 'async () => { throw value; }',
-  },
-  mockImplementation: {
-    parameter: 'implementation',
-    implementation: 'implementation',
-  },
+  mockReturnValue: '(value) => () => value',
+  mockResolvedValue: '(value) => async () => value',
+  mockRejectedValue: '(value) => async () => { throw value; }',
+  mockImplementation: undefined,
 };
 
 export function transform(
@@ -46,7 +36,8 @@ export function transform(
     return undefined;
   }
 
-  const stubs = definitionTimeStubs(parseModule(code, file));
+  const { program, tokens } = parseModule(code, file);
+  const stubs = definitionTimeStubs(program);
   const rewritten = stubs.filter(
     (stub) => mockTransformerRewrite(stub, stubs) === 'rewritten',
   );
@@ -56,31 +47,9 @@ export function transform(
   }
 
   const output = new MagicString(code);
-  // The stub call becomes `((value) => <its receiver, the spy call given the implementation>).call(undefined, <its argument>)`, so the text between the spy call and the stub method, parentheses and calls such as `.mockName('load')` included, stays where it is.
-  rewritten.forEach(
-    ({
-      spy,
-      method,
-      start,
-      end,
-      spyCallStart,
-      spyCallEnd,
-      receiverEnd,
-      methodStart,
-      argumentStart,
-    }) => {
-      const { parameter, implementation } = replacements[method];
-
-      output.overwrite(spyCallStart, spyCallEnd, `${spy}(${implementation})`);
-      output.overwrite(
-        methodStart,
-        argumentStart ?? end,
-        argumentStart === undefined ? 'call(undefined)' : 'call(undefined, ',
-      );
-      output.appendLeft(start, `((${parameter}) => `);
-      output.appendLeft(receiverEnd, ')');
-    },
-  );
+  rewritten.forEach((stub) => {
+    rewriteStub(output, stub, memberAccessStart(tokens, stub.methodStart));
+  });
   appendRecord(file, rewritten.length);
 
   return {
@@ -89,12 +58,69 @@ export function transform(
   };
 }
 
-function parseModule(code: string, file: string): unknown {
+/** Moves the stub's arguments into the spy call, as `fn(((value) => () => value)(<arguments>))`, and removes the stub call from the chain. */
+function rewriteStub(
+  output: MagicString,
+  { spy, method, end, spyCall, argumentSpan }: StubSite,
+  accessStart: number,
+): void {
+  const factory = implementationFactories[method];
+  const [open, close] =
+    factory === undefined ? ['', ''] : [`(${factory})(`, ')'];
+
+  if (argumentSpan === undefined) {
+    output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}${close})`);
+    output.remove(accessStart, end);
+
+    return;
+  }
+
+  output.overwrite(spyCall.start, spyCall.end, `${spy}(${open}`);
+  output.remove(accessStart, argumentSpan.start);
+  output.remove(argumentSpan.end, end);
+  output.appendLeft(argumentSpan.end, `${close})`);
+  output.move(argumentSpan.start, argumentSpan.end, spyCall.end);
+}
+
+function memberAccessStart(
+  tokens: readonly unknown[],
+  nameStart: number,
+): number {
+  const start = field(
+    tokens.findLast((token) => {
+      const end = field(token, 'end');
+      const label = field(token, 'type', 'label');
+
+      return (
+        typeof end === 'number' &&
+        end <= nameStart &&
+        (label === '.' || label === '?.')
+      );
+    }),
+    'start',
+  );
+
+  if (typeof start !== 'number') {
+    throw new Error(
+      `${packageName}: no member access before the stub method at ${nameStart}`,
+    );
+  }
+
+  return start;
+}
+
+function parseModule(
+  code: string,
+  file: string,
+): { readonly program: unknown; readonly tokens: readonly unknown[] } {
   try {
-    return parse(code, {
+    const parsed = parse(code, {
       sourceType: 'module',
       plugins: /\.[cm]?ts$/.test(file) ? ['typescript'] : ['typescript', 'jsx'],
-    }).program;
+      tokens: true,
+    });
+
+    return { program: parsed.program, tokens: list(parsed.tokens) };
   } catch (error: unknown) {
     throw new Error(
       `${packageName}: cannot parse ${file}: ${error instanceof Error ? error.message : String(error)}`,
