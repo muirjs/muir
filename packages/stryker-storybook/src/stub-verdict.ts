@@ -1,4 +1,8 @@
-import { chainUpTo } from '@layzee/storybook-core';
+import {
+  chainUpTo,
+  mockTransformerRewrite,
+  type StubRewrite,
+} from '@layzee/storybook-core';
 
 import {
   classifyStubs,
@@ -15,8 +19,7 @@ export const spyStubName = 'LzStorybookSpyStub';
 
 export type ReasonVerdict =
   | Exclude<StubVerdict, 'kept'>
-  | 'once-not-rewritten'
-  | 'chain-not-rewritten';
+  | Exclude<StubRewrite, 'rewritten'>;
 
 export interface ReasonSite extends Omit<ClassifiedStub, 'verdict'> {
   readonly verdict: ReasonVerdict;
@@ -117,13 +120,9 @@ function siteReasons(
       return [{ ...site, verdict }];
     }
 
-    if (site.once) {
-      return [{ ...site, verdict: 'once-not-rewritten' }];
-    }
+    const rewrite = mockTransformerRewrite(site, stubs);
 
-    return chainUpTo(site, stubs).length > 1
-      ? [{ ...site, verdict: 'chain-not-rewritten' }]
-      : [];
+    return rewrite === 'rewritten' ? [] : [{ ...site, verdict: rewrite }];
   });
 }
 

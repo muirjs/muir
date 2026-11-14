@@ -1,8 +1,8 @@
 import { parse } from '@babel/parser';
 import {
   appendRecord,
-  chainUpTo,
   definitionTimeStubs,
+  mockTransformerRewrite,
   type StubMethod,
 } from '@layzee/storybook-core';
 import MagicString, { type SourceMap } from 'magic-string';
@@ -47,12 +47,8 @@ export function transform(
   }
 
   const stubs = definitionTimeStubs(parseModule(code, file));
-  const rewritten = stubs.flatMap(({ argumentStart, ...stub }) =>
-    chainUpTo(stub, stubs).length === 1 &&
-    !stub.once &&
-    argumentStart !== undefined
-      ? [{ ...stub, argumentStart }]
-      : [],
+  const rewritten = stubs.filter(
+    (stub) => mockTransformerRewrite(stub, stubs) === 'rewritten',
   );
 
   if (rewritten.length === 0) {
@@ -66,6 +62,7 @@ export function transform(
       spy,
       method,
       start,
+      end,
       spyCallStart,
       spyCallEnd,
       receiverEnd,
@@ -75,7 +72,11 @@ export function transform(
       const { parameter, implementation } = replacements[method];
 
       output.overwrite(spyCallStart, spyCallEnd, `${spy}(${implementation})`);
-      output.overwrite(methodStart, argumentStart, 'call(undefined, ');
+      output.overwrite(
+        methodStart,
+        argumentStart ?? end,
+        argumentStart === undefined ? 'call(undefined)' : 'call(undefined, ',
+      );
       output.appendLeft(start, `((${parameter}) => `);
       output.appendLeft(receiverEnd, ')');
     },

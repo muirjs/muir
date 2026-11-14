@@ -145,6 +145,25 @@ export function chainUpTo<TStub extends Pick<StubSite, 'start' | 'end'>>(
   );
 }
 
+export type StubRewrite =
+  | 'rewritten'
+  | 'once-not-rewritten'
+  | 'chain-not-rewritten';
+
+/** Whether the mock transformer rewrites `stub`: only the first stub of its chain, and only when it is not a `Once` stub. */
+export function mockTransformerRewrite(
+  stub: Pick<StubSite, 'start' | 'end' | 'once'>,
+  stubs: readonly Pick<StubSite, 'start' | 'end'>[],
+): StubRewrite {
+  if (stub.once) {
+    return 'once-not-rewritten';
+  }
+
+  return chainUpTo(stub, stubs).length === 1
+    ? 'rewritten'
+    : 'chain-not-rewritten';
+}
+
 /** The spy methods that are no stub but return the spy and leave what it returns alone, so a stub chain goes on through them. */
 const passedThrough: readonly unknown[] = ['mockName', 'mockClear'];
 

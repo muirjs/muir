@@ -428,14 +428,21 @@ describe('transform', () => {
     assert.equal(transform(code, storyFile), undefined);
   });
 
-  it('leaves a stub with no argument alone', () => {
+  it('rewrites a stub with no argument, so the reset keeps it as it keeps one with an argument', () => {
     const code = [
       "import { fn } from 'storybook/test';",
-      'export const Empty = { args: { load: fn().mockReturnValue() } };',
+      'export const Empty = { args: { load: fn().mockResolvedValue() } };',
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(
+      transform(code, storyFile)?.code,
+      [
+        "import { fn } from 'storybook/test';",
+        'export const Empty = { args: { load: ((value) => fn(async () => value)).call(undefined) } };',
+        '',
+      ].join('\n'),
+    );
   });
 
   it('rewrites every definition-time stub in a module', () => {

@@ -3,7 +3,11 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { chainUpTo, definitionTimeStubs } from '../src/stub-shape.ts';
+import {
+  chainUpTo,
+  definitionTimeStubs,
+  mockTransformerRewrite,
+} from '../src/stub-shape.ts';
 
 function parseTs(source: string) {
   return parse(source, {
@@ -161,5 +165,28 @@ describe('chainUpTo', () => {
       first,
       second,
     ]);
+  });
+});
+
+describe('mockTransformerRewrite', () => {
+  const first = { start: 0, end: 10, once: false };
+  const second = { start: 0, end: 20, once: false };
+
+  it('rewrites the first stub of a chain', () => {
+    assert.equal(mockTransformerRewrite(first, [second, first]), 'rewritten');
+  });
+
+  it('leaves a stub after the first of its chain alone', () => {
+    assert.equal(
+      mockTransformerRewrite(second, [second, first]),
+      'chain-not-rewritten',
+    );
+  });
+
+  it('leaves a Once stub alone, also as the first of its chain', () => {
+    assert.equal(
+      mockTransformerRewrite({ ...first, once: true }, [second, first]),
+      'once-not-rewritten',
+    );
   });
 });
