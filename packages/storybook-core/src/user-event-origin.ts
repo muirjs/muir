@@ -144,15 +144,14 @@ export function userEventOrigins(
     scope.bindingOf(reference),
   );
   /** The play context bindings whose every reference uses a member. */
-  const readContexts: ReadonlySet<Binding | undefined> = new Set(
-    [...referencesOf]
-      .filter(
-        ([binding, references]) =>
-          binding?.kind === 'param' &&
-          isUnwrittenContext(binding, binding.identifier) &&
-          references.every(readsMembers),
-      )
-      .map(([binding]) => binding),
+  const readContexts: ReadonlySet<Binding> = new Set(
+    [...referencesOf].flatMap(([binding, references]) =>
+      binding?.kind === 'param' &&
+      isUnwrittenContext(binding, binding.identifier) &&
+      references.every(readsMembers)
+        ? [binding]
+        : [],
+    ),
   );
 
   const importSource = (binding: Binding): unknown =>
@@ -175,7 +174,9 @@ export function userEventOrigins(
       return { module };
     }
 
-    return readContexts.has(scope.bindingOf(unwrap(node)))
+    const binding = scope.bindingOf(unwrap(node));
+
+    return binding !== undefined && readContexts.has(binding)
       ? 'playContext'
       : 'unknown';
   };
@@ -283,8 +284,10 @@ export function userEventOrigins(
       ? [...originsIn(node), ...chainOrigins(unwrap(field(node, 'object')))]
       : valueOrigins(node);
   /** The origins of each member a write targets and of every object in its chain; a receiver of any of them is unproven. */
-  const writtenOrigins = new Set(
-    scope.writtenMembers.flatMap((member) => chainOrigins(unwrap(member))),
+  const writtenOrigins: ReadonlySet<UserEventOrigin> = new Set(
+    scope.writtenMembers
+      .flatMap((member) => chainOrigins(unwrap(member)))
+      .filter((origin) => origin !== undefined),
   );
 
   return (receiver) => {
