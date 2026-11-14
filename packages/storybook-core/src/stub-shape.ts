@@ -28,14 +28,12 @@ export function stubMethodOf(name: unknown): StubMethodCall | undefined {
 
 export interface StubSite extends StubMethodCall {
   readonly spy: string;
-  /** The stub method as the story writes it, such as `mockResolvedValueOnce` where `method` is `mockResolvedValue`. */
   readonly writtenMethod: string;
   readonly start: number;
   readonly end: number;
   readonly line: number;
-  /** From the start of its first argument to the end of its last. */
   readonly argumentSpan: Span | undefined;
-  /** The spy call the chain starts at, such as `fn()`, inside any parentheses around it. */
+  /** Inside any parentheses around it. */
   readonly spyCall: Span;
   readonly methodStart: number;
 }
@@ -141,7 +139,7 @@ function stubSite(
   };
 }
 
-/** The stubs of `stub`'s chain from its first up to `stub` itself: they start where the chain starts, and each earlier one ends sooner. */
+/** The stubs of one chain share its start, and each earlier one ends sooner. */
 export function chainUpTo<TStub extends Pick<StubSite, 'start' | 'end'>>(
   stub: Pick<StubSite, 'start' | 'end'>,
   stubs: readonly TStub[],
@@ -156,7 +154,6 @@ export type StubRewrite =
   | 'once-not-rewritten'
   | 'chain-not-rewritten';
 
-/** Whether the mock transformer rewrites `stub`: only the first stub of its chain, and only when it is not a `Once` stub. */
 export function mockTransformerRewrite(
   stub: Pick<StubSite, 'start' | 'end' | 'once'>,
   stubs: readonly Pick<StubSite, 'start' | 'end'>[],
@@ -173,7 +170,6 @@ export function mockTransformerRewrite(
 /** The spy methods that are no stub but return the spy and leave what it returns alone, so a stub chain goes on through them. */
 const passedThrough: ReadonlySet<unknown> = new Set(['mockName', 'mockClear']);
 
-/** The call a chain of stub calls starts from, such as `fn()` in `fn().mockName('load').mockResolvedValueOnce(1)`. */
 function chainStart(node: unknown): unknown {
   const name = field(node, 'callee', 'property', 'name');
   const chainsOn =

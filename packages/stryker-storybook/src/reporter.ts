@@ -41,7 +41,6 @@ export interface LzStorybookReport {
   readonly staticStoryMutants: readonly StaticStoryMutant[];
 }
 
-/** A finding read from the story file names its stub method; one from a surviving mutant names none. */
 type StubFinding =
   | (SiteFinding & { readonly file: string })
   | (typeof uncheckedFinding & {
