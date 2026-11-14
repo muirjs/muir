@@ -670,6 +670,54 @@ describe('interactionsOf following checks copy', () => {
     );
   });
 
+  it('a name declared between an interaction without positions and the check does not keep it from being copied', () => {
+    const check = "expect(status).toHaveTextContent('Saved');";
+    const source = inPlay(
+      'await userEvent.click(save);',
+      "const status = canvas.getByRole('status');",
+      check,
+    );
+
+    assert.deepEqual(
+      firstCopyWithout(
+        source,
+        (node) => field(node, 'type') === 'ExpressionStatement',
+        'start',
+      ),
+      [check, check],
+    );
+  });
+
+  it('a check statement without positions is copied though it reads a name declared between', () => {
+    const source = inPlay(
+      'await userEvent.click(save);',
+      "const status = canvas.getByRole('status');",
+      "expect(status).toHaveTextContent('Saved');",
+    );
+
+    assert.deepEqual(
+      programsOf(source).map((program) => {
+        const check = descendants(program).find(
+          (node) =>
+            field(node, 'type') === 'ExpressionStatement' &&
+            field(node, 'expression', 'type') === 'CallExpression',
+        );
+
+        if (!isRecord(check)) {
+          throw new Error('The source has no check statement.');
+        }
+
+        Reflect.deleteProperty(check, 'start');
+
+        return (
+          interactionsOf(program, csfShapes(program)).all[0]?.following.copy ===
+          check
+        );
+      }),
+      [true, true],
+    );
+  });
+
   it('a reader made before a placed mutant changes the tree still gives the copy of the file as written', () => {
     const check = 'expect(args.onSave).toHaveBeenCalled();';
     const source = inPlay('await userEvent.click(save);', check);

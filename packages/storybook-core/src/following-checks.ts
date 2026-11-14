@@ -262,7 +262,7 @@ function copyOf(
 ): unknown {
   return tree.listOf(statement) === tree.listOf(read.node) &&
     checksWhenRun(statement) &&
-    !readsNameSetBetween(read.node, statement, scope) &&
+    !readsNameSetBetween(read.node, statement, tree, scope) &&
     !standsEarlier(statement, read.node, equivalentStatements)
     ? statement
     : undefined;
@@ -288,25 +288,25 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
   return tree.ancestors(node).filter(isFunction).at(-1);
 }
 
-/** Whether `statement` reads a name declared or written from the start of `interactionStatement` up to its own start; a node without positions counts as not between. */
+/** Whether `statement` reads a name declared or written in its list's statements from `interactionStatement` up to it, `statement` aside; a node without positions counts as not between. */
 function readsNameSetBetween(
   interactionStatement: unknown,
   statement: unknown,
+  tree: TreeIndex,
   scope: FileScope,
 ): boolean {
-  const from = field(interactionStatement, 'start');
-  const to = field(statement, 'start');
-  const isBetween = (node: unknown): boolean => {
-    const at = field(node, 'start');
-
-    return (
-      typeof at === 'number' &&
-      typeof from === 'number' &&
-      typeof to === 'number' &&
-      at >= from &&
-      at < to
-    );
-  };
+  const statements = list(tree.listOf(statement));
+  const between = new Set(
+    statements.slice(
+      statements.indexOf(interactionStatement),
+      statements.indexOf(statement),
+    ),
+  );
+  const isBetween = (node: unknown): boolean =>
+    typeof field(node, 'start') === 'number' &&
+    typeof field(interactionStatement, 'start') === 'number' &&
+    typeof field(statement, 'start') === 'number' &&
+    [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
   return scope.referencesIn(statement).some((name) => {
     const binding = scope.bindingOf(name);
