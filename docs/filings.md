@@ -1209,6 +1209,17 @@ spec. It has no guidance for a change whose red sits in one package while the ca
 for example to write the dependents' cases first, against the old signature, so each one goes red when the callers
 change. Evidence: `8d/cycles.log`, the two `test-after` lines.
 
+**O165. The smallest green for one case row over-generated across a case table, so the green took a whole rule.**
+Item 9 made the meta's `args` an args site. The red was one row: the meta's args get a mutant for each key a played
+story takes from the meta. The smallest transformation, deleting the filter that dropped meta-only sites, turned the
+row green and five other rows red, each a meta key that its story gives itself. `lz-tpp` step 1 assumes the change
+only has to turn one red test green with every earlier test still green, and offers no move when the smallest
+transformation breaks earlier tests. Backtracking to a simpler test would not help, because the defect was in the
+shared table, not in the test. The green instead took the whole per-key rule (`leftAlone`) in one step, and the
+eleven case rows that pin that rule could then only be logged as `test-after`. A rule such as "when the minimal
+transformation breaks earlier tests, write the narrowest of those broken rows as the next red" would have split it.
+Evidence: `item9/cycles.log` cycle 10 and the three `test-after` lines after it.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
