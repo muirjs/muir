@@ -33,3 +33,6 @@ declares it as a regular dependency, so installing one of them installs this one
 - `appendRecord`, `hasRecords`, `recordVariable`, `mockTransformerPluginName`: write and read the transformer record.
 - `isRecord`, `isStringArray`, `field`, `list`: read values of unknown shape, such as Babel nodes.
 - `fileNameOf`: the path of the file a Babel path's tree was parsed from, as Stryker's instrumenter gives it.
+- `readNamingStoryFile`: runs a read of one story file; an error it throws comes back naming the package and the
+  story file, with the error as its cause, so a mutator run that stops on a file (a member chain too deep for the
+  stack) says which.
