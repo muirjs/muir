@@ -104,10 +104,8 @@ function maySkipClick(options: unknown): boolean {
       field(property, 'type') === 'SpreadElement' ||
       field(property, 'computed') === true ||
       propertyKey(property) === '__proto__' ||
+      // Only a boolean literal has a value field that is false.
       (propertyKey(property) === 'skipClick' &&
-        !(
-          field(property, 'value', 'type') === 'BooleanLiteral' &&
-          field(property, 'value', 'value') === false
-        )),
+        field(property, 'value', 'value') !== false),
   );
 }
