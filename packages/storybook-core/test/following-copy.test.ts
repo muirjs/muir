@@ -35,6 +35,62 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'a then statement whose callback holds the first expect check is copied, as then runs its callback',
+    source: inPlay(
+      'await userEvent.click(open);',
+      "await canvas.findByRole('dialog').then((dialog) => expect(dialog).toBeVisible());",
+    ),
+    expect: [
+      {
+        checks: ['query', 'expect'],
+        end: 'none',
+        copy: "await canvas.findByRole('dialog').then((dialog) => expect(dialog).toBeVisible());",
+      },
+    ],
+  },
+  {
+    title:
+      'the first check after an arrow that holds a check but never runs is copied',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'const later = () => expect(args.onClose).toHaveBeenCalled();',
+      'expect(args.onOpen).toHaveBeenCalled();',
+    ),
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'none',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
+      'an interaction whose first check reads a name that a function called between through a const alias writes has no copy',
+    source: inPlay(
+      "let label = '0 items';",
+      "const count = () => { label = '1 item'; };",
+      'const again = count;',
+      'await userEvent.click(add);',
+      'again();',
+      'await expect(canvas.getByText(label)).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
+  },
+  {
+    title:
+      'an interaction whose first check reads a name that a method of a const object called between writes has no copy',
+    source: inPlay(
+      "let label = '0 items';",
+      "const counter = { count() { label = '1 item'; } };",
+      'await userEvent.click(add);',
+      'counter.count();',
+      'await expect(canvas.getByText(label)).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
+  },
+  {
+    title:
       'a statement that holds the first expect check but is no check statement is not copied',
     source: inPlay(
       'await userEvent.click(save);',
@@ -61,12 +117,12 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
-      'a waitFor statement whose first expect check is in an argument other than its callback is not copied',
+      'a check in a function in the options of waitFor is no following check, as no call is given that function',
     source: inPlay(
       'await userEvent.click(open);',
       'await waitFor(() => args.onPing(), { onTimeout: () => expect(dialog).toBeVisible() });',
     ),
-    expect: [{ checks: ['expect'], end: 'none' }],
+    expect: [{ checks: [], end: 'none' }],
   },
   {
     title:
@@ -75,7 +131,7 @@ const copyCases: readonly FollowingCase[] = [
       'await userEvent.click(open);',
       'await waitFor(() => new expect(dialog), { onTimeout: () => expect(dialog).toBeVisible() });',
     ),
-    expect: [{ checks: ['expect'], end: 'none' }],
+    expect: [{ checks: [], end: 'none' }],
   },
   {
     title:
@@ -216,12 +272,12 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
-      'an interaction whose first check is in a waitFor argument other than its callback has no copy, as the copy would run the callback before the interaction and check nothing',
+      'an interaction whose only check is in the onTimeout block of a waitFor has no following check and no copy',
     source: inPlay(
       'await userEvent.click(open);',
       'await waitFor(() => args.onPing(), { onTimeout: (error) => { expect(dialog).toBeVisible(); return error; } });',
     ),
-    expect: [{ checks: ['expect'], end: 'none' }],
+    expect: [{ checks: [], end: 'none' }],
   },
   {
     title:
@@ -352,7 +408,7 @@ const copyCases: readonly FollowingCase[] = [
       '}',
       'await expect(shown()).toBeVisible();',
     ),
-    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
   },
   {
     title:
@@ -363,7 +419,7 @@ const copyCases: readonly FollowingCase[] = [
       "const label = '1 item';",
       'await expect(shown()).toBeVisible();',
     ),
-    expect: [{ checks: ['expect'], end: 'none' }],
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
   },
   {
     title:
@@ -375,7 +431,7 @@ const copyCases: readonly FollowingCase[] = [
       "const label = '1 item';",
       'await expect(shown()).toBeVisible();',
     ),
-    expect: [{ checks: ['expect'], end: 'none' }],
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
   },
   {
     title:
@@ -398,7 +454,7 @@ const copyCases: readonly FollowingCase[] = [
       "const label = '1 item';",
       'await expect(shown()).toBeVisible();',
     ),
-    expect: [{ checks: ['expect'], end: 'none' }],
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
   },
   {
     title:
@@ -412,7 +468,7 @@ const copyCases: readonly FollowingCase[] = [
       '}',
       'await expect(shown()).toBeVisible();',
     ),
-    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
   },
   {
     title:
@@ -425,7 +481,7 @@ const copyCases: readonly FollowingCase[] = [
       '}',
       'await attempt(1);',
     ),
-    expect: [{ checks: ['expect', 'query'], end: 'none' }],
+    expect: [{ checks: [], end: 'maybe' }],
   },
   {
     title:
@@ -438,7 +494,7 @@ const copyCases: readonly FollowingCase[] = [
       "shown = () => canvas.getByText('2 items');",
       'await expect(shown()).toBeVisible();',
     ),
-    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+    expect: [{ checks: ['expect', 'query', 'query'], end: 'none' }],
   },
   {
     title:
@@ -638,18 +694,14 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
-      'the copied check is the first one past a call that is no step or waitFor, even when a function given to it holds an interaction',
+      'an interaction has no check past a call given a function that holds an interaction, as the call may run it',
     source: inPlay(
       'await userEvent.click(first);',
       'await run(async () => { await userEvent.click(second); });',
       'await expect(args.onClick).toHaveBeenCalled();',
     ),
     expect: [
-      {
-        checks: ['expect'],
-        end: 'none',
-        copy: 'await expect(args.onClick).toHaveBeenCalled();',
-      },
+      { checks: [], end: 'maybe' },
       { checks: [], end: 'none' },
     ],
   },

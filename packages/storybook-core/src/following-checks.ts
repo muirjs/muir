@@ -125,9 +125,69 @@ function isCallbackOf(
   return isCall(call) && list(field(call, 'arguments')).includes(node);
 }
 
-/** `step(...)` or `waitFor(...)`, which run the function given to them. */
-function runsCallback(node: unknown): boolean {
-  return isStepCall(node) || waitCall(node) === 'waitFor';
+/**
+ * `node` and every node below it that runs when it runs: a function runs nothing unless `runsWhereItStands`, and a
+ * call of a name runs the body of each function `functionsNamed` gives that name. Each node is given once. When
+ * `surely`, what `isBranch` holds is left out, as it may not run.
+ */
+function runIn(
+  node: unknown,
+  tree: TreeIndex,
+  scope: FileScope,
+  surely = false,
+): readonly unknown[] {
+  const found: unknown[] = [];
+  const seen = new Set<unknown>();
+  const visit = (each: unknown): void => {
+    if (
+      seen.has(each) ||
+      (isFunction(each) && !runsWhereItStands(each, tree)) ||
+      (surely && isBranch(each, tree))
+    ) {
+      return;
+    }
+
+    seen.add(each);
+    found.push(each);
+    childNodes(each).forEach(visit);
+
+    const call = tree.parentOf(each);
+
+    if (isCall(call) && field(call, 'callee') === each) {
+      functionsNamed(scope.bindingOf(each), scope)
+        .filter((body) => !seen.has(body))
+        .forEach((body) => {
+          seen.add(body);
+          childNodes(body).forEach(visit);
+        });
+    }
+  };
+
+  visit(node);
+
+  return found;
+}
+
+const branchingTypes: ReadonlySet<unknown> = new Set([
+  'IfStatement',
+  'SwitchCase',
+  'CatchClause',
+]);
+
+/** What an `if`, a `switch` case or a `catch` runs, apart from its test. */
+function isBranch(node: unknown, tree: TreeIndex): boolean {
+  const parent = tree.parentOf(node);
+
+  return (
+    branchingTypes.has(field(parent, 'type')) && field(parent, 'test') !== node
+  );
+}
+
+/** A function called where it stands, or given to a call, which may run it. */
+function runsWhereItStands(fn: unknown, tree: TreeIndex): boolean {
+  return (
+    field(tree.parentOf(fn), 'callee') === fn || isCallbackOf(fn, tree, isCall)
+  );
 }
 
 /** The statements after `node` in its list, then after each enclosing statement in its own, up to the function around it unless that function is given to `step(...)`. */
@@ -136,7 +196,7 @@ function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
     !isNode(node) ||
     (isFunction(node) && !isCallbackOf(node, tree, isStepCall))
   ) {
-    // Stryker disable next-line ArrayDeclaration: a string among the later statements changes no result, as holdsInteraction, checkOf and statementAt find nothing in a string
+    // Stryker disable next-line ArrayDeclaration: a string among the later statements changes no result, as runIn, checkOf and statementAt find nothing in a string
     return [];
   }
 
@@ -146,25 +206,6 @@ function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
     ...statements.slice(statements.indexOf(node) + 1),
     ...laterStatements(tree.parentOf(node), tree),
   ];
-}
-
-/** Whether `node` is or holds an interaction's statement outside any function, or anywhere in a function given to `step(...)` or `waitFor(...)`; any other function holds nothing. */
-function holdsInteraction(
-  node: unknown,
-  tree: TreeIndex,
-  isInteractionStatement: (node: unknown) => boolean,
-): boolean {
-  if (isFunction(node) && isCallbackOf(node, tree, runsCallback)) {
-    return descendants(node).some(isInteractionStatement);
-  }
-
-  return (
-    isInteractionStatement(node) ||
-    (!isFunction(node) &&
-      childNodes(node).some((child) =>
-        holdsInteraction(child, tree, isInteractionStatement),
-      ))
-  );
 }
 
 /** An interaction's statement and the arguments of its call. */
@@ -196,11 +237,12 @@ export function followingChecksReader(
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
   /** Interactions in one `switch` or `else if` chain share the statements after it, so each statement is read once. */
+  const runsIn = readOnce((statement) => runIn(statement, tree, scope));
   const holdsAnInteraction = readOnce((statement) =>
-    holdsInteraction(statement, tree, isInteractionStatement),
+    runsIn(statement).some(isInteractionStatement),
   );
   const checksIn = readOnce((statement) =>
-    descendants(statement).flatMap((node) => {
+    runsIn(statement).flatMap((node) => {
       const check = checkOf(node, tree);
 
       return check === undefined ? [] : [check];
@@ -217,7 +259,9 @@ export function followingChecksReader(
 
     return {
       checks,
-      end: endAt(cut, read, tree, statementAt),
+      end: endAt(cut, read, tree, statementAt, (statement) =>
+        runIn(statement, tree, scope, true).some(isInteractionStatement),
+      ),
       copy: copyOf(
         window.find((statement) =>
           checksIn(statement).some((check) => check === firstExpect),
@@ -292,7 +336,7 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
  * Whether `statement` reads a name that is declared or written between the interaction and it: in its list's
  * statements from `interactionStatement` up to `statement`, or in a function those statements name.
  * What `statement` reads includes what each function it names reads from outside that function, and so on for the
- * functions those name; a name holds the functions `functionsOf` gives. A function declaration counts by its writes
+ * functions those name; a name holds the functions `functionsNamed` gives. A function declaration counts by its writes
  * only, as hoisting declares it before the interaction; a node without positions counts as not between.
  */
 function readsNameSetBetween(
@@ -310,7 +354,7 @@ function readsNameSetBetween(
     ...betweenStatements,
     ...betweenStatements
       .flatMap((each) => bindingsReadThroughFunctions(each, scope, tree))
-      .flatMap(functionsOf),
+      .flatMap((binding) => functionsNamed(binding, scope)),
   ]);
   const isBetween = (node: unknown): boolean =>
     typeof field(node, 'start') === 'number' &&
@@ -324,6 +368,38 @@ function readsNameSetBetween(
       : [binding.identifier, ...binding.writes]
     ).some(isBetween),
   );
+}
+
+/**
+ * The functions `functionsOf` gives `binding`; for a `const` declared as an object literal, its methods and the
+ * functions its properties hold; and for a `const` declared as another name, that name's, and so on.
+ */
+function functionsNamed(
+  binding: Binding | undefined,
+  scope: FileScope,
+  aliases: ReadonlySet<Binding> = new Set(),
+): readonly unknown[] {
+  const declaration = binding?.declaration;
+  const value =
+    binding?.kind === 'const' && field(declaration, 'id') === binding.identifier
+      ? field(declaration, 'init')
+      : undefined;
+  const alias =
+    field(value, 'type') === 'Identifier' ? scope.bindingOf(value) : undefined;
+  const methods =
+    field(value, 'type') === 'ObjectExpression'
+      ? list(field(value, 'properties')).flatMap((property) =>
+          [property, field(property, 'value')].filter(isFunction),
+        )
+      : [];
+
+  return [
+    ...functionsOf(binding),
+    ...methods,
+    ...(alias === undefined || aliases.has(alias)
+      ? []
+      : functionsNamed(alias, scope, new Set([...aliases, alias]))),
+  ];
 }
 
 function bindingsReadThroughFunctions(
@@ -341,7 +417,7 @@ function bindingsReadThroughFunctions(
       .filter((binding) => binding !== undefined)
       .filter((binding) => !isDeclaredIn(binding, node))
       .flatMap((binding) => {
-        const bodies = functionsOf(binding).filter(
+        const bodies = functionsNamed(binding, scope).filter(
           (body) => !followed.has(body),
         );
 
@@ -353,14 +429,15 @@ function bindingsReadThroughFunctions(
   return readBy(statement);
 }
 
-/** An expression statement that is a check, or a `waitFor(...)` statement whose callback holds an expect check. */
+/** An expression statement that is a check, or a `waitFor(...)` or `<x>.then(...)` statement whose callback holds an expect check. */
 function checksWhenRun(statement: unknown): boolean {
   const expression = awaited(field(statement, 'expression'));
 
   return (
     field(statement, 'type') === 'ExpressionStatement' &&
     (startsAtExpect(expression) ||
-      (waitCall(statement) === 'waitFor' &&
+      ((waitCall(statement) === 'waitFor' ||
+        memberName(field(expression, 'callee')) === 'then') &&
         descendants(list(field(expression, 'arguments'))[0]).some(
           isExpectCall,
         )))
@@ -373,6 +450,7 @@ function endAt(
   read: StatementRead,
   tree: TreeIndex,
   statementAt: (node: unknown) => StatementRead | undefined,
+  surelyHoldsInteraction: (node: unknown) => boolean,
 ): WindowEnd {
   if (cut === undefined) {
     return { by: 'none' };
@@ -381,7 +459,8 @@ function endAt(
   const ending = statementAt(cut);
 
   if (ending === undefined) {
-    return isStepCall(awaited(field(cut, 'expression')))
+    return isStepCall(awaited(field(cut, 'expression'))) &&
+      surelyHoldsInteraction(cut)
       ? { by: 'step' }
       : { by: 'maybe' };
   }

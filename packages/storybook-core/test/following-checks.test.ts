@@ -209,19 +209,38 @@ const followingCases: readonly FollowingCase[] = [
     ],
   },
   {
-    title: 'a check inside a function in the window is a following check',
+    title:
+      'a check inside a function given to a call in the window is a following check',
     source: inPlay(
       'await userEvent.click(open);',
       'await waitFor(() => expect(args.onOpen).toHaveBeenCalled());',
-      'const later = () => expect(args.onClose).not.toHaveBeenCalled();',
     ),
     expect: [
       {
-        checks: ['expect', 'expect not'],
+        checks: ['expect'],
         end: 'none',
         copy: 'await waitFor(() => expect(args.onOpen).toHaveBeenCalled());',
       },
     ],
+  },
+  {
+    title:
+      'a check inside a function kept in a variable is no following check, as defining it runs nothing',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'const later = () => expect(args.onClose).not.toHaveBeenCalled();',
+    ),
+    expect: [{ checks: [], end: 'none' }],
+  },
+  {
+    title:
+      'a check inside a function that a statement in the window calls by name is a following check',
+    source: inPlay(
+      'const verify = () => expect(args.onOpen).toHaveBeenCalled();',
+      'await userEvent.click(open);',
+      'verify();',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
   },
   {
     title:
@@ -295,6 +314,102 @@ const followingCases: readonly FollowingCase[] = [
       'const retry = async () => {',
       '  await userEvent.click(again);',
       '};',
+      'expect(args.onOpen).toHaveBeenCalled();',
+    ),
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'none',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a forEach call holds an interaction in its callback, so it ends an earlier window by maybe',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'buttons.forEach((button) => userEvent.click(button));',
+      'expect(args.onPress).toHaveBeenCalled();',
+    ),
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a function called where it stands holds its interaction, so it ends an earlier window',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      '(() => userEvent.click(close))();',
+      'expect(args.onClose).toHaveBeenCalled();',
+    ),
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a statement that calls a function by name holds the interaction of that function, so it ends an earlier window',
+    source: inPlay(
+      'const close = () => userEvent.click(closeButton);',
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'await close();',
+      'expect(args.onClose).toHaveBeenCalled();',
+    ),
+    expect: [
+      { checks: [], end: 'none' },
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
+      'a statement that calls a function through a const alias holds the interaction of that function',
+    source: inPlay(
+      'async function close() {',
+      '  await userEvent.click(closeButton);',
+      '}',
+      'const again = close;',
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'await again();',
+    ),
+    expect: [
+      { checks: [], end: 'none' },
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
+      'a step call whose callback only defines a function that clicks holds no interaction',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(open);',
+      "await step('define', async () => {",
+      '  const close = () => userEvent.click(closeButton);',
+      '});',
       'expect(args.onOpen).toHaveBeenCalled();',
     ),
     expect: [
@@ -489,6 +604,75 @@ const followingCases: readonly FollowingCase[] = [
         checks: ['expect'],
         end: 'step',
         copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a step call whose callback clicks only under an if ends the window by maybe, as the step may not click',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(open);',
+      'expect(args.onOpen).not.toHaveBeenCalled();',
+      "await step('close', async () => {",
+      '  if (args.closable) {',
+      '    await userEvent.click(close);',
+      '  }',
+      '});',
+    ),
+    expect: [
+      {
+        checks: ['expect not'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).not.toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a step call whose callback clicks only in a switch case ends the window by maybe',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(open);',
+      'expect(args.onOpen).not.toHaveBeenCalled();',
+      "await step('close', async () => {",
+      '  switch (args.mode) {',
+      "    case 'closable':",
+      '      await userEvent.click(close);',
+      '  }',
+      '});',
+    ),
+    expect: [
+      {
+        checks: ['expect not'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).not.toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a step call whose callback clicks only in a catch block ends the window by maybe',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(open);',
+      'expect(args.onOpen).not.toHaveBeenCalled();',
+      "await step('close', async () => {",
+      '  try {',
+      '    args.onCheck();',
+      '  } catch {',
+      '    await userEvent.click(close);',
+      '  }',
+      '});',
+    ),
+    expect: [
+      {
+        checks: ['expect not'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).not.toHaveBeenCalled();',
       },
       { checks: [], end: 'none' },
     ],

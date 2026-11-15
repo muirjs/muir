@@ -172,12 +172,15 @@ _Avoid_: absence check, negated assertion
 **Following checks**:
 The checks after an interaction, up to the next statement that is or holds an interaction. They are looked for past
 the end of the interaction's block into the enclosing one and out of a step callback that holds it, never out of any
-other function. A statement holds an interaction that runs within it outside any function, such as one in an `if`, and
-every interaction anywhere in a function given to `step(...)` or `waitFor(...)`, including one in a function that
-callback defines; any other function, a function declaration included, holds nothing, even one that the statement
-calls. Checks are found in any function. What ends them is part of them: the next interaction, a `step(...)` that holds
-one, a statement that may not run the interaction it holds (such as an `if` or a `waitFor(...)`), or the end of the
-function.
+other function. A statement holds the interactions and checks that run within it: those outside any function, such as
+one in an `if`; those in a function called where it stands or given to a call, such as `step(...)`, `waitFor(...)`,
+`forEach(...)` or `then(...)`; and those in a function the statement calls by a name the file binds to it, directly,
+through a `const` that holds another name, and so on. A function that is only defined, a function declaration or a
+function kept in a variable or an object, runs nothing where it stands, and a function in the options of a call (such
+as `onTimeout`) is not given to the call. What ends the checks is part of them: the next interaction, a `step(...)`
+in which an interaction surely runs, a statement that may not run the interaction it holds (such as an `if`, a
+`waitFor(...)`, a `forEach(...)`, a call given a function, or a `step(...)` whose interactions all stand in an `if`, a
+`switch` case or a `catch`), or the end of the function.
 _Avoid_: checks after, later checks, assertion window, checks before the next interaction
 
 ### Spies, stubs and the mock reset
