@@ -175,11 +175,16 @@ ships.
 
 ## 6. Built-in mutators in a test-code configuration
 
-Decide per built-in mutator before you exclude any. In this repository the analyses turned all 17 built-ins off in
-the test-code configurations. For Storybook play functions that was approved on 2026-11-05. For Playwright test code
-the analysis drops them as built-ins and brings their useful parts back as named custom mutators; which of those parts
-become mutators, and whether test doubles keep the built-ins, still wait on measurements. Run the steps below again
-for a new kind of test code instead of assuming that result.
+Decide per built-in mutator before you exclude any. The verdict differs by kind of test code:
+
+- Storybook play functions and the rest of story test code: all 17 built-ins off, approved on 2026-11-05.
+  `@layzee/stryker-storybook-test-mutators` removes them, and the interaction mutators bring back the useful part.
+- Playwright test code: all 17 off. `@layzee/stryker-playwright-mutators` removes them, and its named mutators bring
+  back the useful parts.
+- Test doubles such as msw handlers: every built-in stays on. The doubles analysis
+  (`.audit/builtin-mutators/doubles.md`) dropped none, and `@layzee/stryker-msw-mutators` removes none.
+
+Run the steps below again for a new kind of test code instead of assuming one of these results.
 
 1. **Classify the sites.** Run the instrumenter over the test files and sort each mutant by site class: action
    call, assertion, wait, mock or double, setup data, helper logic, hook. Note the test kind (browser e2e, component,
@@ -195,7 +200,8 @@ for a new kind of test code instead of assuming that result.
 
 The Playwright analysis (`.audit/builtin-mutators/analysis.md`) is the worked example, and
 `.audit/builtin-mutators/analysis-play.md` repeats it for Storybook play functions. The reasons per built-in are in
-the "Why Stryker's built-in mutators are off" section of `packages/stryker-playwright-mutators/README.md`.
+the "Why Stryker's built-in mutators are off" sections of `packages/stryker-playwright-mutators/README.md` and
+`packages/stryker-storybook-test-mutators/README.md`.
 
 ## 7. Auditing mutators that already ship
 

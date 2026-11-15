@@ -16,6 +16,20 @@ The answer to whether this works, the evidence, and the limits are in `docs/VERD
 - `packages/stryker-playwright-mutators/README.md`: the mutators for Playwright test code, their tiers and
   limits, and why Stryker's built-in mutators are off in test code.
 
+### Storybook and msw
+
+Five packages mutate Storybook story files and msw handlers under Stryker's Vitest runner. Start with the first
+README: it describes the setup that the other four share.
+
+- `packages/stryker-storybook/README.md`: the CSF ignorer, the stub ignorer, the `lz-storybook` reporter and the
+  sandbox plugin, with the Vite plugins and the two Stryker configurations.
+- `packages/storybook-mock-transformer/README.md`: the Vite plugins that keep definition-time spy stubs through
+  Storybook's mock reset and reset module mock spies before each test.
+- `packages/stryker-storybook-mutators/README.md`: `LzStorybookArgs`, the opt-in mutator for story data.
+- `packages/stryker-storybook-test-mutators/README.md`: the mutators for play functions, their tiers, and why
+  Stryker's built-in mutators are off in story test code.
+- `packages/stryker-msw-mutators/README.md`: `LzMswResponse`, the mutator for msw responses, with any test runner.
+
 These packages ship built JavaScript in `dist`. The workspace's own Stryker runs load the runner and the JSX
 mutators from there, so build first (the Nx targets below do).
 
@@ -33,6 +47,10 @@ mutators from there, so build first (the Nx targets below do).
   default mock reset, package `@layzee/storybook-mock-transformer`.
 - `packages/storybook-core`: the internal code that the Storybook packages share, such as the story file reader,
   package `@layzee/storybook-core`.
+- `packages/stryker-storybook-mutators`: the mutators for Storybook story data, package
+  `@layzee/stryker-storybook-mutators`.
+- `packages/stryker-storybook-test-mutators`: the mutators for Storybook story test code, package
+  `@layzee/stryker-storybook-test-mutators`.
 - `packages/stryker-msw-mutators`: the mutators for the responses of msw request handlers, package
   `@layzee/stryker-msw-mutators`.
 - `packages/<package>/stryker.config.mjs`: in each of the ten packages, a Stryker config that mutates the
