@@ -6,13 +6,14 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { tempRoot, writeTree } from '@layzee/test-util-mutator-packages';
+
 import {
   corePackageJson,
   resolveExpressionPlacer,
   resolveInstrumenter,
 } from '../src/instrumenter.ts';
 import { exported } from './support/exports.ts';
-import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 const packageName = '@layzee/test-mutators';
 

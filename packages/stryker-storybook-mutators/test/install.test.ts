@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
+import { tempRoot, writeTree } from '@layzee/test-util-mutator-packages';
+
 import { install, resolveFromCore } from '../src/install.ts';
 import { mutatorSets } from '../src/mutators.ts';
 import {
@@ -10,7 +12,6 @@ import {
   ownMark,
   sets,
 } from './support/fake-instrumenter.ts';
-import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 const silent = (): undefined => undefined;
 

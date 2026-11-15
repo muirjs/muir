@@ -42,7 +42,8 @@
     "@layzee/stryker-mutator-install": "0.0.0"
   },
   "devDependencies": {
-    "@babel/core": "8.0.9"
+    "@babel/core": "8.0.9",
+    "@layzee/test-util-mutator-packages": "0.0.0"
   },
   "nx": {
     "tags": [

@@ -18,11 +18,11 @@ import {
   propertyKey,
   type ProofReason,
 } from '@layzee/storybook-core';
+import { tempRoot, writeTree } from '@layzee/test-util-mutator-packages';
 import { definePreview, getStoryChildren } from 'storybook/internal/csf';
 import { composeStories } from 'storybook/preview-api';
 
 import type { Case } from './case.ts';
-import { tempRoot, writeTree } from './temp-tree.ts';
 
 export interface Skip {
   readonly property: object;

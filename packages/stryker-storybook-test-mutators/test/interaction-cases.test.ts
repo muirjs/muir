@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
+import { tempRoot, writeTree } from '@layzee/test-util-mutator-packages';
+
 import { lzStorybookTestMutators } from '../src/index.ts';
 import { allInteractionCases, crashCases } from './interaction-cases.ts';
 import { inPlay } from './support/case.ts';
 import { mutantLinesByFile, runCases } from './support/run-cases.ts';
-import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 runCases('LzStorybookInteraction', allInteractionCases);
 describe('cases that once crashed the instrumenter', () => {

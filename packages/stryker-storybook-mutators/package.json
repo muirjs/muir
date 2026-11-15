@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@babel/core": "8.0.9",
+    "@layzee/test-util-mutator-packages": "0.0.0",
     "storybook": "10.6.5"
   },
   "nx": {

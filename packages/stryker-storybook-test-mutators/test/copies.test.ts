@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-const copies: readonly string[] = ['compose-skips.ts', 'temp-tree.ts'];
+const copies: readonly string[] = ['compose-skips.ts'];
 
 function read(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');

@@ -38,6 +38,9 @@
     },
     {
       "path": "./packages/storybook-core"
+    },
+    {
+      "path": "./packages/test-util-mutator-packages"
     }
   ]
 }

@@ -1,3 +1,7 @@
+---
+status: harness-copy consequence superseded by docs/adr ADR-0008
+---
+
 # Every equivalence skip carries a `Proven` that `@layzee/storybook-core` mints from root-gated layers
 
 The Storybook mutators skip a mutant as equivalent only when the story file proves that it changes nothing (docs/adr

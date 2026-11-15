@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import { types } from '@babel/core';
+import { tempRoot, writeTree } from '@layzee/test-util-mutator-packages';
 
 import {
   install,
@@ -22,7 +23,6 @@ import {
 import type { MutantPlacerLike } from '../src/placer.ts';
 import { exportedFunction } from './support/exports.ts';
 import { instrumentFully } from './support/instrument-result.ts';
-import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 const ownMark = Symbol.for('@layzee/stryker-jsx-mutators');
 const strykerMutators = ['StringLiteral', 'BooleanLiteral'] as const;

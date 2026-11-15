@@ -33,6 +33,35 @@ export function withWarningsAsErrors(configs) {
   );
 }
 
+/** A library's files may depend on libraries, and its test files on test-util projects too (docs/adr ADR-0008). */
+function moduleBoundaries(testUtilTags) {
+  return [
+    'error',
+    {
+      enforceBuildableLibDependency: true,
+      allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+      depConstraints: [
+        {
+          sourceTag: 'type:lib',
+          onlyDependOnLibsWithTags: ['type:lib', ...testUtilTags],
+        },
+        {
+          sourceTag: 'type:test-util',
+          onlyDependOnLibsWithTags: ['type:test-util'],
+        },
+        {
+          sourceTag: 'type:app',
+          onlyDependOnLibsWithTags: ['type:lib'],
+        },
+        {
+          sourceTag: 'type:e2e',
+          onlyDependOnLibsWithTags: ['type:app', 'type:lib'],
+        },
+      ],
+    },
+  ];
+}
+
 function dependencyChecks(ignoredDependencies) {
   return [
     'error',
@@ -134,27 +163,13 @@ export default withWarningsAsErrors([
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     rules: {
-      '@nx/enforce-module-boundaries': [
-        'error',
-        {
-          enforceBuildableLibDependency: true,
-          allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
-          depConstraints: [
-            {
-              sourceTag: 'type:lib',
-              onlyDependOnLibsWithTags: ['type:lib'],
-            },
-            {
-              sourceTag: 'type:app',
-              onlyDependOnLibsWithTags: ['type:lib'],
-            },
-            {
-              sourceTag: 'type:e2e',
-              onlyDependOnLibsWithTags: ['type:app', 'type:lib'],
-            },
-          ],
-        },
-      ],
+      '@nx/enforce-module-boundaries': moduleBoundaries([]),
+    },
+  },
+  {
+    files: ['packages/*/test/**/*.ts'],
+    rules: {
+      '@nx/enforce-module-boundaries': moduleBoundaries(['type:test-util']),
     },
   },
   {

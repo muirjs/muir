@@ -11,7 +11,8 @@
   at, and ignore the mutants such tests cannot see.
 - [Mutator install](./packages/stryker-mutator-install/GLOSSARY.md): puts a mutator package's mutators into
   Stryker and checks them before a run starts, and holds the swap engine and the site readers that more than one
-  mutator package uses.
+  mutator package uses. Covers `packages/test-util-mutator-packages` too, the private test support the mutator
+  packages share (docs/adr ADR-0008).
 - [Storybook](./packages/stryker-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
   Covers `packages/stryker-storybook`, `packages/storybook-mock-transformer` and `packages/storybook-core`, the

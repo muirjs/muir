@@ -12,10 +12,13 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../stryker-mutator-install/tsconfig.lib.json"
+    },
+    {
       "path": "../storybook-core/tsconfig.lib.json"
     },
     {
-      "path": "../stryker-mutator-install/tsconfig.lib.json"
+      "path": "../test-util-mutator-packages/tsconfig.lib.json"
     }
   ]
 }
