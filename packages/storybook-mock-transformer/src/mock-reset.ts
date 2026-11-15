@@ -20,7 +20,8 @@ export function mockResetConfig(config: UserConfig): ViteUserConfig {
   const setupFolder = dirname(setupFile);
   const allow =
     config.server?.fs?.allow === undefined
-      ? [searchForWorkspaceRoot(resolve(config.root ?? '.')), setupFolder]
+      ? // Stryker disable next-line StringLiteral: resolve('') and resolve('.') are both the working directory
+        [searchForWorkspaceRoot(resolve(config.root ?? '.')), setupFolder]
       : [setupFolder];
 
   return { test: { setupFiles: [setupFile] }, server: { fs: { allow } } };

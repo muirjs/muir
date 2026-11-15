@@ -139,6 +139,7 @@ function argumentListStart(
       const start = field(token, 'start');
 
       return (
+        // Stryker disable next-line ConditionalExpression: this check only narrows the type, as a token start that is no number compares false with >=
         typeof start === 'number' &&
         start >= calleeEnd &&
         labelOf(token) === '('
