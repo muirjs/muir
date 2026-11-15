@@ -32,9 +32,9 @@ functions of the object literal a name holds.
   fails, so they are no following checks.
 - Every argument counts, so a function given to `.catch(...)`, or as the second argument of `.then(...)`, counts as
   run although it runs only on a rejection. That ends more windows and copies less.
-- A function given to any `new` counts as run too: right for `new Promise(executor)`, more than runs for
-  `new MutationObserver(callback)`, whose check then takes the first `expect` place and keeps the real check from
-  being copied (no mutant).
+- A function given to any `new` counts as run too. That is right for `new Promise(executor)`, but
+  `new MutationObserver(callback)` runs its callback only later, so the callback's check takes the first `expect`
+  place and keeps the real check from being copied (no mutant).
 - A statement that calls a function holding the first `expect` check, such as `verify();`, is where the copy is looked
   for. It is never copied, so a check after it is not copied either (no mutant, where one was placed before).
 - A `.then(...)` statement that is not awaited is not copied, as its callback may run after the play ends.

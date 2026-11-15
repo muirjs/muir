@@ -179,11 +179,11 @@ a function the statement calls or gives to a call by a name the file binds to it
 holds another name, and so on. A destructured variable counts as the whole value, so it names every method and
 function value written in the object literal it comes from. A method call such as `counter.count()` is not followed.
 A function that is only defined (a function declaration, or a function kept in a variable or an object) runs nothing
-where it stands, and a function held by a property of an argument (such as `waitFor`'s `onTimeout`) is not itself an argument. What ends the
-checks is part of them: the next interaction, a `step(...)` in which an interaction runs outside an `if`, a `switch`
-case and a `catch`, a statement that may not run the interaction it holds (such as an `if`, a
-`waitFor(...)`, a `forEach(...)`, a call given a function, or a `step(...)` whose interactions all stand in an `if`, a
-`switch` case or a `catch`), or the end of the function.
+where it stands, and a function held by a property of an argument (such as `waitFor`'s `onTimeout`) is not itself an
+argument. What ends the checks is part of them: the next interaction, a `step(...)` in which an interaction runs
+outside an `if`, a `switch` case and a `catch`, a statement that may not run the interaction it holds (such as an
+`if`, a `waitFor(...)`, a `forEach(...)`, a call given a function, or a `step(...)` whose interactions all stand in an
+`if`, a `switch` case or a `catch`), or the end of the function.
 _Avoid_: checks after, later checks, assertion window, checks before the next interaction
 
 ### Spies, stubs and the mock reset

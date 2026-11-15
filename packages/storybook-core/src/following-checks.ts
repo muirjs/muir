@@ -39,7 +39,7 @@ export type WindowEnd =
   | { readonly by: 'none' };
 
 export interface FollowingChecks {
-  /** For each window statement in turn, the checks it runs, in source order, with those of a function it runs by name where that name stands. */
+  /** For each window statement in turn, the checks it runs, in source order, with those of each function it runs by name where that name first stands. */
   readonly checks: readonly Check[];
   readonly end: WindowEnd;
   /** The statement that may be copied before the interaction, or `undefined`. */
@@ -435,7 +435,10 @@ function functionsRun(
     : chain.flatMap(functionsOf);
 }
 
-/** A binding that is not the whole of what its declaration declares, such as `count` in `const { count } = counter`. */
+/**
+ * A binding whose declaration's `id` is not its identifier: a destructured variable, such as `count` in
+ * `const { count } = counter`, and also a parameter, a catch parameter or an import, which have no value to follow.
+ */
 function isDestructured(binding: Binding): boolean {
   return field(binding.declaration, 'id') !== binding.identifier;
 }
@@ -478,20 +481,18 @@ function bindingsReadThroughFunctions(
 
     found.push(...read);
 
-    for (const body of read.flatMap((binding) =>
-      functionsNamed(binding, scope),
-    )) {
-      if (!followed.has(body)) {
-        followed.add(body);
-        pending.push(body);
-      }
-    }
+    const bodies = [
+      ...new Set(read.flatMap((binding) => functionsNamed(binding, scope))),
+    ].filter((body) => !followed.has(body));
+
+    bodies.forEach((body) => followed.add(body));
+    pending.push(...bodies);
   }
 
   return found;
 }
 
-/** An expression statement that is a check, or one that waits on its first argument whose first argument holds an expect check. */
+/** An expression statement that is a check, or one that `waitsOnFirstArgument` whose first argument holds an expect check. */
 function checksWhenRun(statement: unknown): boolean {
   const expression = awaited(field(statement, 'expression'));
 
@@ -505,7 +506,7 @@ function checksWhenRun(statement: unknown): boolean {
   );
 }
 
-/** A `waitFor(...)` statement, or an awaited `<x>.then(...)` statement: the play waits on what its first argument runs. */
+/** A `waitFor(...)` statement, awaited or not, or an awaited `<x>.then(...)` statement. */
 function waitsOnFirstArgument(statement: unknown): boolean {
   const expression = unwrap(field(statement, 'expression'));
 
@@ -522,7 +523,7 @@ function endAt(
   read: StatementRead,
   tree: TreeIndex,
   statementAt: (node: unknown) => StatementRead | undefined,
-  holdsInteractionOutsideBranches: (node: unknown) => boolean,
+  holdsAnInteractionOutsideBranches: (node: unknown) => boolean,
 ): WindowEnd {
   if (cut === undefined) {
     return { by: 'none' };
@@ -532,7 +533,7 @@ function endAt(
 
   if (ending === undefined) {
     return isStepCall(awaited(field(cut, 'expression'))) &&
-      holdsInteractionOutsideBranches(cut)
+      holdsAnInteractionOutsideBranches(cut)
       ? { by: 'step' }
       : { by: 'maybe' };
   }
