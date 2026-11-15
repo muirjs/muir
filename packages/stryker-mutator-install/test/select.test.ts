@@ -141,6 +141,23 @@ describe('selectMutators', () => {
   });
 
   // The typecheck runs these: each const's type is false or true by the options type, so a wrong type fails to compile.
+  it('types extended and experimental for a package with both tiers', () => {
+    const experimentalWithTier: 'experimental' extends keyof MutatorOptions<
+      'LzOptInA',
+      'LzExperimentalA'
+    >
+      ? true
+      : false = true;
+    const extendedWithTier: 'extended' extends keyof MutatorOptions<
+      'LzOptInA',
+      'LzExperimentalA'
+    >
+      ? true
+      : false = true;
+
+    assert.deepEqual([experimentalWithTier, extendedWithTier], [true, true]);
+  });
+
   it('types no key for a tier that has no mutators, as the install rejects it', () => {
     const experimentalWithoutTier: 'experimental' extends keyof MutatorOptions<
       'LzOptInA',
