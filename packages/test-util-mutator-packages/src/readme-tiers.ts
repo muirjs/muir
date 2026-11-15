@@ -80,51 +80,61 @@ function saysNone(lines: readonly string[], heading: string): boolean {
 /**
  * Registers the tests that the README's opening and its default install line give the size of each tier, that each
  * tier's README table lists that tier's mutators in roster order, and that "None." stands under the heading of each
- * empty tier and only there.
+ * empty tier and only there. `register` takes the place of `it` in this package's own tests.
  */
 export function testReadmeTiers(
   readmePath: string,
   tiers: MutatorTiers,
   { packageName, prefix, builtIns, builtInCount }: ReadmeFacts,
+  register: (name: string, check: () => void) => unknown = it,
 ): void {
   const lines = readmeLines(readmePath);
 
-  it('gives the size of each tier in the opening counts and in the default install line', () => {
-    const { defaults, optIn, experimental } = tiers;
-    const total = defaults.length + optIn.length + experimental.length;
-    // The README as one line, so a sentence the file wraps still matches.
-    const readme = lines.join(' ');
-    const [opening, installLine] =
-      builtIns === 'on'
-        ? [
-            `keeps Stryker's ${builtInCount} built-in mutators on`,
-            `${packageName}: ${defaults.length} ${prefix} mutators on, beside Stryker's built-in mutators.`,
-          ]
-        : [
-            `turns Stryker's ${builtInCount} built-in mutators off`,
-            `${packageName}: Stryker's ${builtInCount} built-in mutators are off for every file in this run; ${defaults.length} ${prefix} mutators on.`,
-          ];
+  register(
+    'gives the size of each tier in the opening counts and in the default install line',
+    () => {
+      const { defaults, optIn, experimental } = tiers;
+      const total = defaults.length + optIn.length + experimental.length;
+      // The README as one line, so a sentence the file wraps still matches.
+      const readme = lines.join(' ');
+      const [opening, installLine] =
+        builtIns === 'on'
+          ? [
+              `keeps Stryker's ${builtInCount} built-in mutators on`,
+              `${packageName}: ${defaults.length} ${prefix} mutators on, beside Stryker's built-in mutators.`,
+            ]
+          : [
+              `turns Stryker's ${builtInCount} built-in mutators off`,
+              `${packageName}: Stryker's ${builtInCount} built-in mutators are off for every file in this run; ${defaults.length} ${prefix} mutators on.`,
+            ];
 
-    assert.ok(
-      readme.includes(
-        `${opening} and adds ${total} of its own: ${countOf(defaults.length, 'runs', 'run')} by default, ${countOf(optIn.length, 'is', 'are')} opt-in and ${countOf(experimental.length, 'is', 'are')} experimental.`,
-      ),
-      'the opening counts',
-    );
-    assert.ok(readme.includes(installLine), 'the default install line');
-  });
+      assert.ok(
+        readme.includes(
+          `${opening} and adds ${total} of its own: ${countOf(defaults.length, 'runs', 'run')} by default, ${countOf(optIn.length, 'is', 'are')} opt-in and ${countOf(experimental.length, 'is', 'are')} experimental.`,
+        ),
+        'the opening counts',
+      );
+      assert.ok(readme.includes(installLine), 'the default install line');
+    },
+  );
 
-  it('lists the mutators of each tier in the README table of that tier, in roster order', () => {
-    assert.deepEqual(
-      perTier((key) => tableNames(lines, tierHeadings[key])),
-      perTier((key) => tiers[key].map(({ name }) => name)),
-    );
-  });
+  register(
+    'lists the mutators of each tier in the README table of that tier, in roster order',
+    () => {
+      assert.deepEqual(
+        perTier((key) => tableNames(lines, tierHeadings[key])),
+        perTier((key) => tiers[key].map(({ name }) => name)),
+      );
+    },
+  );
 
-  it('says None under the heading of each tier that has no mutator, and only there', () => {
-    assert.deepEqual(
-      perTier((key) => saysNone(lines, tierHeadings[key])),
-      perTier((key) => tiers[key].length === 0),
-    );
-  });
+  register(
+    'says None under the heading of each tier that has no mutator, and only there',
+    () => {
+      assert.deepEqual(
+        perTier((key) => saysNone(lines, tierHeadings[key])),
+        perTier((key) => tiers[key].length === 0),
+      );
+    },
+  );
 }
