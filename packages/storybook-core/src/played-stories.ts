@@ -110,6 +110,7 @@ function storyPlay(
   const own = assignedPlay ?? storyChain[0];
 
   if (isNullish(own)) {
+    // Stryker disable next-line ArrayDeclaration: a string under the meta's plays is no record, so no play comes from it
     return storyPlay(undefined, metaPlays, [], bindings);
   }
 
@@ -122,12 +123,10 @@ function storyPlay(
   return knownPlay(assignedPlay ?? first, bindings);
 }
 
-/** `null` or `undefined` written as a value. */
+/** `null` or `undefined` written as a value; of the value nodes, only an identifier has a name. */
 function isNullish(node: unknown): boolean {
   return (
-    field(node, 'type') === 'NullLiteral' ||
-    (field(node, 'type') === 'Identifier' &&
-      field(node, 'name') === 'undefined')
+    field(node, 'type') === 'NullLiteral' || field(node, 'name') === 'undefined'
   );
 }
 

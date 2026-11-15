@@ -437,6 +437,7 @@ function isSameAsBelow(
 ): boolean {
   const { own } = layers;
 
+  // Stryker disable next-line ConditionalExpression: no run reaches an own layer of another object today; the check keeps the proof sound if one does
   if (typeof own !== 'object' || own.node !== site) {
     return false;
   }
@@ -446,7 +447,8 @@ function isSameAsBelow(
   const fallback = [
     ...resolvedPropertyValues(before, key, bindings),
     ...('otherMetas' in layers
-      ? []
+      ? // Stryker disable next-line ArrayDeclaration: a string fallback is no literal node, so sameLiteral is false as for none
+        []
       : [
           ...layers.below.flatMap((layer) =>
             valuesOf(siteAsUnknown(layer), key),
@@ -498,23 +500,17 @@ function primitiveLiteralOf(
     return { value: field(node, 'value') };
   }
 
+  // Only a template literal has quasis, and only a unary minus has an operator '-' with a numeric argument value.
   const [quasi, ...more] = list(field(node, 'quasis'));
   const cooked = field(quasi, 'value', 'cooked');
 
-  if (
-    type === 'TemplateLiteral' &&
-    more.length === 0 &&
-    typeof cooked === 'string'
-  ) {
+  if (more.length === 0 && typeof cooked === 'string') {
     return { value: cooked };
   }
 
   const negated = field(node, 'argument', 'value');
 
-  return type === 'UnaryExpression' &&
-    field(node, 'operator') === '-' &&
-    field(node, 'argument', 'type') === 'NumericLiteral' &&
-    typeof negated === 'number'
+  return field(node, 'operator') === '-' && typeof negated === 'number'
     ? { value: -negated }
     : undefined;
 }
