@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { transformSync, type NodePath } from '@babel/core';
+import { transformSync, types, type NodePath } from '@babel/core';
 
-import { sitesIn } from '../src/args.ts';
+import { argsMutator, sitesIn } from '../src/args.ts';
 
 /** What `sitesIn` throws for a story file whose traversal throws `thrown`, as a deep member chain overflows the stack. */
 function sitesInError(thrown: unknown): unknown {
@@ -51,4 +51,36 @@ test('a story file read that throws names the story file and keeps the error as 
     /^@layzee\/stryker-storybook-mutators: could not read the story file .*deep\.stories\.ts: Maximum call stack size exceeded$/,
   );
   assert.equal(error.cause, deep);
+});
+
+test('the args mutator reads no part of a file at a path that is neither the Program nor an object', () => {
+  let traversals = 0;
+
+  transformSync("export const Story = { args: { label: 'a' } };\n", {
+    configFile: false,
+    babelrc: false,
+    filename: 'statement.stories.ts',
+    code: false,
+    plugins: [
+      () => ({
+        visitor: {
+          ExportNamedDeclaration(path: NodePath) {
+            const counted = new Proxy(path, {
+              get: (target, key, receiver): unknown => {
+                if (key === 'traverse') {
+                  traversals += 1;
+                }
+
+                return Reflect.get(target, key, receiver);
+              },
+            });
+
+            [...argsMutator().mutate(counted, types)];
+          },
+        },
+      }),
+    ],
+  });
+
+  assert.equal(traversals, 0);
 });
