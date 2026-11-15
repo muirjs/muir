@@ -12,7 +12,9 @@ nothing its outcome changes, and until now no finding named that line: in two st
 - The two mutants of one stub pair by their span: they start at the same place, and the removal ends where the
   outcome mutant ends or, for a stub statement, one column later, since it also covers the semicolon (measured on
   the coder corpus: 23 of 27 pairs end one column apart, 4 end together). The stubs of one chain all start where the
-  chain starts, so their ends tell them apart.
+  chain starts, so their ends tell them apart. A stub statement with anything between its call and its semicolon (a
+  space, a comment, parentheses) pairs with no outcome mutant, so its outcome survivor gets no finding; Prettier
+  never writes such a statement.
 - The finding needs both mutators on: with `LzStorybookSpyStub` off, or disabled on the line, an outcome survivor
   gets no finding.
 

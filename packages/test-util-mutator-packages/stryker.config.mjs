@@ -4,8 +4,8 @@ export default {
   ...packageConfig(
     'test-util-mutator-packages',
     [],
-    // Every README test, and the install tests that write temporary trees; the Storybook case tests that also write
-    // them take minutes and add no path through temp-tree.ts.
+    // Every README test, and the install and instrumenter tests that write temporary trees; the Storybook case tests
+    // that also write them render stories, which costs run time and adds no path through temp-tree.ts.
     [
       'packages/stryker-msw-mutators/test/readme.test.ts',
       'packages/stryker-playwright-mutators/test/readme.test.ts',
