@@ -14,9 +14,9 @@ function roster<const T extends MutatorSets<LzMswMutator>>(sets: T): T {
 }
 
 export const mutatorSets = roster({
-  defaults: [],
+  defaults: [mswResponseMutator()],
   optIn: [],
-  experimental: [mswResponseMutator()],
+  experimental: [],
 });
 
 type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];

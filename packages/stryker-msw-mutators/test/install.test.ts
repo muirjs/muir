@@ -13,7 +13,7 @@ import {
 const silent = (): undefined => undefined;
 
 describe('install', () => {
-  it('ships LzMswResponse as experimental, so that no option installs nothing', async () => {
+  it('ships LzMswResponse as a default, so that no option installs it', async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
     await install(
@@ -24,11 +24,7 @@ describe('install', () => {
       silent,
     );
 
-    assert.deepEqual(
-      mutatorSets.experimental.map(({ name }) => name),
-      ['LzMswResponse'],
-    );
-    assert.deepEqual(names(), builtIns);
+    assert.deepEqual(names(), [...builtIns, 'LzMswResponse']);
   });
 
   it("appends the experimental mutators that experimental turns on after Stryker's built-ins, marked", async () => {
