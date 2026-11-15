@@ -76,9 +76,14 @@ function stubCallAt(path: NodePath): StubCall | undefined {
     ({ start, end }) => start === node.start && end === node.end,
   );
   const parent = path.parentPath;
+
+  // Stryker disable next-line ConditionalExpression,BlockStatement: only a Program path has no parent path, and a Program is no member call, so stubCallAt has returned above for it
+  if (parent === null) {
+    return undefined;
+  }
+
   const stub =
-    definitionTimeStub ??
-    (parent !== null && isStubStatement(parent) ? stubOf(node) : undefined);
+    definitionTimeStub ?? (isStubStatement(parent) ? stubOf(node) : undefined);
 
   return stub === undefined
     ? undefined

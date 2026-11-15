@@ -59,8 +59,13 @@ function isTextFieldQuery(query: types.Node): boolean {
 
   return (
     (role !== undefined && textFieldRoles.includes(role)) ||
-    fieldQueries.includes(methodOf(query) ?? '')
+    callsOneOf(query, fieldQueries)
   );
+}
+
+/** Whether `call` is `<x>.<method>(...)` for one of `methods`. */
+function callsOneOf(call: types.Node, methods: readonly unknown[]): boolean {
+  return methods.includes(methodOf(call));
 }
 
 /** The method name of `<x>.<method>(...)`. */
@@ -79,10 +84,7 @@ const roleQueries = queryMethods(elementQueryPrefixes, ['Role']);
 
 /** The role a `*ByRole` query names in a string literal. */
 function queryRole(query: types.Node): string | undefined {
-  if (
-    query.type !== 'CallExpression' ||
-    !roleQueries.includes(methodOf(query) ?? '')
-  ) {
+  if (query.type !== 'CallExpression' || !callsOneOf(query, roleQueries)) {
     return undefined;
   }
 

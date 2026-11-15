@@ -38,7 +38,7 @@ export function waitForMutator(): LzStorybookTestMutator & {
         yield t.callExpression(
           t.memberExpression(
             t.cloneNode(call.callee.object),
-            t.identifier(call.callee.property.name.replace(/^find/, 'get')),
+            t.identifier(call.callee.property.name.replace('find', 'get')),
           ),
           call.arguments.map((argument) => t.cloneNode(argument)),
         );
