@@ -1253,6 +1253,27 @@ forces past the red's scope, and `lz-red` no prompt to write the producer's red 
 producer. Seen before as the cross-package form (O164). Evidence: `item-h/cycles.log` cycle 12 and the `test-after`
 line after it.
 
+**O170. A green that narrowed a shared function dropped a behaviour no test pinned.** The (g2) review's cycle 14
+split one function, which listed the functions a name may run, into a narrow one for one caller and the old one for
+the other. That turned its red green with every test passing, but a destructured method stopped counting as run, a
+behaviour the earlier commit described and no case pinned. It surfaced only while the glossary was being rewritten,
+and became cycle 20's red. `lz-tpp` checks the red and the earlier tests; `lz-refactor` step 5 asks for
+characterization tests only when the target has none. Neither prompts, when a green narrows a function other code
+calls, to list what each caller relied on and pin the unpinned parts first. Evidence: cycles 14 and 20 in
+`g2/cycles.log`.
+
+**O171. A red reached one of two walks that share the defect, so the fix covered only that one.** Cycle 19's red, a
+chain of a thousand named calls overflowing the stack, ran through the walk that reads what a statement holds. The
+copy path's walk recursed the same way, and a review found it overflowing at 1500 links after the cycle closed
+(cycle 22). `lz-red` sizes one failing test for one behaviour; it has no prompt to look for other code with the same
+shape as the defect and pose a red for each. Evidence: `g2/cycles.log` cycles 19 and 22; review report
+`g2c-thermos-bugs.md`, finding 1.
+
+**O172. An expectation copied from the neighbouring case was wrong in a part the cycle does not change.** The audit's
+cycle 1 copied a hook case's expected origin (`unproven`) for a hook given by a second `var`. The reader gives
+`userEvent14` for that shape, and the red's diff showed both the asserted change (`inHook`) and the copied part.
+Copying from a neighbour is the remedy O168 suggests, and here it was the cause. Evidence: `audit/cycles.log` cycle 1.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
