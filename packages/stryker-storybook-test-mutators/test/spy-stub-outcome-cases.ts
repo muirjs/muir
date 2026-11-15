@@ -98,4 +98,18 @@ export const spyStubOutcomeCases: readonly Case[] = [
       [outcome, 'mocked(save)?.mockRejectedValue(new Error("Stryker"))'],
     ],
   },
+  {
+    id: 'spy-stub-outcome-only-the-stub',
+    title:
+      'beside a definition-time stub, a call in the play that sets no stub makes no outcome mutant',
+    source: withFnImport(
+      'export const Story = {',
+      '  args: { save: fn().mockResolvedValue(1) },',
+      '  play: async ({ userEvent }) => {',
+      '    await userEvent.click(button);',
+      '  },',
+      '};',
+    ),
+    expect: [[outcome, 'fn().mockRejectedValue(new Error("Stryker"))']],
+  },
 ];

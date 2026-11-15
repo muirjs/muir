@@ -256,4 +256,10 @@ export const repeatCases: readonly Case[] = [
     source: inPlay('await userEvent[method](button);'),
     expect: [],
   },
+  {
+    id: 'repeat-skip-raw-dom-click',
+    title: "a raw DOM element's click() makes no mutant",
+    source: inPlay('button.click();'),
+    expect: [],
+  },
 ];
