@@ -65,7 +65,7 @@ export function argsMutator(): LzStorybookMutator & {
         t.objectExpression(
           properties
             .filter((property) => !removed.includes(property))
-            .map((property) => t.cloneNode(property, true)),
+            .map((property) => t.cloneNode(property)),
         );
       const eligible = properties.filter((property) => {
         const key = propertyKey(property);
@@ -107,16 +107,14 @@ export function sitesIn(program: NodePath): Sites {
   }
 
   const sites = readNamingStoryFile(packageName, program, () => {
-    const functions: ReadonlyMap<unknown, NodePath> = new Map(
-      descendants(program)
-        .filter((path) => path.isFunction())
-        .map((path) => [path.node, path] as const),
+    const paths: ReadonlyMap<unknown, NodePath> = new Map(
+      descendants(program).map((path) => [path.node, path] as const),
     );
 
     return argsSites(
       list(field(program.node, 'body')),
       fileNameOf(program),
-      (fn) => keysRead(functions.get(fn)),
+      (fn) => keysRead(paths.get(fn)),
     );
   });
 
@@ -190,9 +188,11 @@ function readersOf(
 }
 
 function union(reads: readonly Reads[]): Reads {
-  return reads.includes('whole')
-    ? 'whole'
-    : new Set(reads.flatMap((keys) => (keys === 'whole' ? [] : [...keys])));
+  const sets = reads.filter((keys) => keys !== 'whole');
+
+  return sets.length === reads.length
+    ? new Set(sets.flatMap((keys) => [...keys]))
+    : 'whole';
 }
 
 /** The keys of `args` that a play or test function reads through its context parameter. */
@@ -279,10 +279,13 @@ function boundReads(target: NodePath, read: Read): Reads {
 function readsAt(path: NodePath, read: Read): Reads {
   const parent = path.parentPath;
 
-  if (
-    parent?.isMemberExpression() === true &&
-    parent.node.object === path.node
-  ) {
+  // Stryker disable next-line ConditionalExpression,BlockStatement: a read is an identifier or member expression inside the file, and only a Program path has no parent path
+  if (parent === null) {
+    return 'whole';
+  }
+
+  // A read that is the computed key of its member, as in x[context], gets no key from memberKey, so it reads the whole.
+  if (parent.isMemberExpression()) {
     const key = memberKey(parent.node);
 
     return key === undefined
@@ -290,10 +293,8 @@ function readsAt(path: NodePath, read: Read): Reads {
       : keyReads(key, read, (inner) => readsAt(parent, inner));
   }
 
-  if (
-    parent?.isVariableDeclarator() === true &&
-    parent.node.init === path.node
-  ) {
+  // A read is never the id of its declarator, so it is the init.
+  if (parent.isVariableDeclarator()) {
     return boundReads(parent.get('id'), read);
   }
 
