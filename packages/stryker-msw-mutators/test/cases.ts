@@ -275,6 +275,124 @@ export const cases: readonly Case[] = [
       "export const handlers = [http.get('/a', resolver)];\n",
     expect: [],
   },
+  {
+    id: 'other-http-methods',
+    title:
+      'a response in an all, post, put, patch, delete, head or options callback is a site',
+    source:
+      "import { http, HttpResponse } from 'msw';\n" +
+      'export const handlers = [\n' +
+      "  http.all('/a', () => HttpResponse.text('g')),\n" +
+      "  http.post('/a', () => HttpResponse.text('a')),\n" +
+      "  http.put('/a', () => HttpResponse.text('b')),\n" +
+      "  http.patch('/a', () => HttpResponse.text('c')),\n" +
+      "  http.delete('/a', () => HttpResponse.text('d')),\n" +
+      "  http.head('/a', () => HttpResponse.text('e')),\n" +
+      "  http.options('/a', () => HttpResponse.text('f')),\n" +
+      '];\n',
+    expect: [
+      [response, 'HttpResponse.text("")'],
+      [response, 'HttpResponse.text("")'],
+      [response, 'HttpResponse.text("")'],
+      [response, 'HttpResponse.text("")'],
+      [response, 'HttpResponse.text("")'],
+      [response, 'HttpResponse.text("")'],
+      [response, 'HttpResponse.text("")'],
+      [response, 'HttpResponse.error()'],
+      [response, 'HttpResponse.error()'],
+      [response, 'HttpResponse.error()'],
+      [response, 'HttpResponse.error()'],
+      [response, 'HttpResponse.error()'],
+      [response, 'HttpResponse.error()'],
+      [response, 'HttpResponse.error()'],
+    ],
+  },
+  {
+    id: 'other-graphql-operations',
+    title:
+      'a response in a graphql.mutation or graphql.operation callback is a site',
+    source:
+      "import { graphql, HttpResponse } from 'msw';\n" +
+      'export const handlers = [\n' +
+      "  graphql.mutation('Save', () => HttpResponse.json({ data: { a: 1 } })),\n" +
+      '  graphql.operation(() => HttpResponse.json({ data: { b: 1 } })),\n' +
+      '];\n',
+    expect: [
+      [response, 'HttpResponse.json({})'],
+      [response, 'HttpResponse.json({})'],
+      [response, 'HttpResponse.error()'],
+      [response, 'HttpResponse.error()'],
+    ],
+  },
+  {
+    id: 'computed-factory',
+    title:
+      'a computed HttpResponse member is no site, though the key is a variable named after a factory',
+    source: inHandler(
+      "const json = 'redirect';",
+      'return HttpResponse[json]({ a: 1 });',
+    ),
+    expect: [],
+  },
+  {
+    id: 'new-other-global',
+    title: 'new of a global class that is not Response is no site',
+    source: inHandler("return new Blob(['a']);"),
+    expect: [],
+  },
+  {
+    id: 'destructured-beside-other-key',
+    title:
+      'of a factory and a member that is no factory destructured together, only the factory is a site',
+    source:
+      "import { http, HttpResponse } from 'msw';\n" +
+      'const { json, redirect } = HttpResponse;\n' +
+      'export const handlers = [\n' +
+      "  http.get('/a', () => json({ a: 1 })),\n" +
+      "  http.get('/b', () => redirect('/c')),\n" +
+      '];\n',
+    expect: [
+      [response, 'json({})'],
+      [response, 'HttpResponse.error()'],
+    ],
+  },
+  {
+    id: 'constructed-handler',
+    title:
+      'a callback passed to new http.get(...) is no handler callback, as msw calls its handler functions',
+    source:
+      "import { http, HttpResponse } from 'msw';\n" +
+      "export const handlers = [new http.get('/a', () => HttpResponse.json({ a: 1 }))];\n",
+    expect: [],
+  },
+  {
+    id: 'computed-handler-method',
+    title:
+      'a callback of a computed http member is no handler callback, though the key is a variable named after a method',
+    source:
+      "import { http, HttpResponse } from 'msw';\n" +
+      "const get = 'listen';\n" +
+      "export const handlers = [http[get]('/a', () => HttpResponse.json({ a: 1 }))];\n",
+    expect: [],
+  },
+  {
+    id: 'other-http-member',
+    title:
+      'a callback of an http member that is no handler method is no handler callback',
+    source:
+      "import { http, HttpResponse } from 'msw';\n" +
+      "export const handlers = [http.listen('/a', () => HttpResponse.json({ a: 1 }))];\n",
+    expect: [],
+  },
+  {
+    id: 'other-msw-import',
+    title:
+      'another msw export imported under the name HttpResponse is no HttpResponse',
+    source:
+      "import { http, bypass as HttpResponse } from 'msw';\n" +
+      "export const handlers = [http.get('/a', () => HttpResponse.json({ a: 1 }))];\n",
+    expect: [],
+  },
 ];
 
 function inHandler(...statements: readonly string[]): string {
