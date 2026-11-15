@@ -1,4 +1,5 @@
 import type { Bindings } from './bindings.ts';
+import { primitiveLiteralOf } from './csf-nodes.ts';
 import {
   csfFile,
   mayImportItself,
@@ -479,38 +480,4 @@ function sameLiteral(node: unknown, other: unknown): boolean {
     otherLiteral !== undefined &&
     Object.is(literal.value, otherLiteral.value)
   );
-}
-
-const literalTypes: readonly unknown[] = [
-  'StringLiteral',
-  'NumericLiteral',
-  'BooleanLiteral',
-];
-
-function primitiveLiteralOf(
-  node: unknown,
-): { readonly value: unknown } | undefined {
-  const type = field(node, 'type');
-
-  if (type === 'NullLiteral') {
-    return { value: null };
-  }
-
-  if (literalTypes.includes(type)) {
-    return { value: field(node, 'value') };
-  }
-
-  // Only a template literal has quasis, and only a unary minus has an operator '-' with a numeric argument value.
-  const [quasi, ...more] = list(field(node, 'quasis'));
-  const cooked = field(quasi, 'value', 'cooked');
-
-  if (more.length === 0 && typeof cooked === 'string') {
-    return { value: cooked };
-  }
-
-  const negated = field(node, 'argument', 'value');
-
-  return field(node, 'operator') === '-' && typeof negated === 'number'
-    ? { value: -negated }
-    : undefined;
 }

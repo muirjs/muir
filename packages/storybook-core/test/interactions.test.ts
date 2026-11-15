@@ -374,6 +374,13 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      'an interaction in a function given as a beforeEach under a template literal key stands in a hook',
+    source:
+      'async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  [`beforeEach`]: setup,\n};\n',
+    expect: ['userEvent click unproven inHook'],
+  },
+  {
+    title:
       'an interaction in a function declared in the file and given as a beforeEach under satisfies, a non-null assertion and as stands in a hook',
     source: `async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  beforeEach: setup! satisfies A as B,\n};\n`,
     expect: ['userEvent click unproven inHook'],
@@ -395,6 +402,12 @@ const kindCases: readonly KindCase[] = [
       'an interaction in an arrow given to a variable by an = write and given as a beforeEach stands in a hook',
     source: `let setup;\nsetup = async ({ userEvent }) => {\n  await userEvent.click(button);\n};\nexport default {\n  beforeEach: setup,\n};\n`,
     expect: ['userEvent click unproven inHook'],
+  },
+  {
+    title:
+      'an interaction in an arrow given to a variable by a second var declaration and given as a beforeEach stands in a hook',
+    source: `var setup = undefined;\nvar setup = async ({ userEvent }) => {\n  await userEvent.click(button);\n};\nexport default {\n  beforeEach: setup,\n};\n`,
+    expect: ['userEvent click userEvent14 inHook'],
   },
   {
     title:

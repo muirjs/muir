@@ -14,6 +14,41 @@ export function unwrap(node: unknown): unknown {
     : node;
 }
 
+const literalTypes: readonly unknown[] = [
+  'StringLiteral',
+  'NumericLiteral',
+  'BooleanLiteral',
+];
+
+/** The value of a string, number, boolean or `null` literal, a template literal with no expression, or a negated number literal. */
+export function primitiveLiteralOf(
+  node: unknown,
+): { readonly value: unknown } | undefined {
+  const type = field(node, 'type');
+
+  if (type === 'NullLiteral') {
+    return { value: null };
+  }
+
+  if (literalTypes.includes(type)) {
+    return { value: field(node, 'value') };
+  }
+
+  // Only a template literal has quasis, and only a unary minus has an operator '-' with a numeric argument value.
+  const [quasi, ...more] = list(field(node, 'quasis'));
+  const cooked = field(quasi, 'value', 'cooked');
+
+  if (more.length === 0 && typeof cooked === 'string') {
+    return { value: cooked };
+  }
+
+  const negated = field(node, 'argument', 'value');
+
+  return field(node, 'operator') === '-' && typeof negated === 'number'
+    ? { value: -negated }
+    : undefined;
+}
+
 export function declarationOf(statement: unknown): unknown {
   return field(statement, 'type') === 'ExportNamedDeclaration'
     ? field(statement, 'declaration')
