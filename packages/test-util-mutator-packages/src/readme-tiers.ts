@@ -94,14 +94,16 @@ export function testReadmeTiers(
     const total = defaults.length + optIn.length + experimental.length;
     // The README as one line, so a sentence the file wraps still matches.
     const readme = lines.join(' ');
-    const opening =
+    const [opening, installLine] =
       builtIns === 'on'
-        ? `keeps Stryker's ${builtInCount} built-in mutators on`
-        : `turns Stryker's ${builtInCount} built-in mutators off`;
-    const installLine =
-      builtIns === 'on'
-        ? `${packageName}: ${defaults.length} ${prefix} mutators on, beside Stryker's built-in mutators.`
-        : `${packageName}: Stryker's ${builtInCount} built-in mutators are off for every file in this run; ${defaults.length} ${prefix} mutators on.`;
+        ? [
+            `keeps Stryker's ${builtInCount} built-in mutators on`,
+            `${packageName}: ${defaults.length} ${prefix} mutators on, beside Stryker's built-in mutators.`,
+          ]
+        : [
+            `turns Stryker's ${builtInCount} built-in mutators off`,
+            `${packageName}: Stryker's ${builtInCount} built-in mutators are off for every file in this run; ${defaults.length} ${prefix} mutators on.`,
+          ];
 
     assert.ok(
       readme.includes(
