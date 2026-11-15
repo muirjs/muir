@@ -478,7 +478,7 @@ describe('storybookReporter', () => {
     );
   });
 
-  it("reports no unchecked stub for a Survived LzStorybookSpyStubOutcome mutant, as the stub's removal is what tells whether a check reads it", (t) => {
+  it("reports no unchecked and no outcome-unchecked stub for a Survived LzStorybookSpyStubOutcome mutant alone, as the stub's removal is what tells whether a check reads it", (t) => {
     const { reporter, findings } = setup(t);
 
     reporter.onMutationTestReportReady({
@@ -589,6 +589,46 @@ describe('storybookReporter', () => {
         outcomeUnchecked: [['src/Resolved.stories.tsx', 3]],
       },
     );
+  });
+
+  it('reports no outcome-unchecked stub when only the other stub on its line had its removal killed', (t) => {
+    const { reporter, findings } = setup(t);
+    const otherStub = [10, 30] as const;
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            removalMutant('Killed', otherStub),
+            removalMutant('Survived'),
+            outcomeMutant('Survived'),
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(linesWith(findings(), 'outcome-unchecked'), []);
+  });
+
+  it('reports no outcome-unchecked stub when only a later stub of its chain, which starts where it starts, had its removal killed', (t) => {
+    const { reporter, findings } = setup(t);
+    const firstOfChain = [stubColumns[0], 50] as const;
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            removalMutant('Survived', firstOfChain),
+            removalMutant('Killed'),
+            outcomeMutant('Survived', firstOfChain),
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(linesWith(findings(), 'outcome-unchecked'), []);
   });
 
   it('reports one outcome-unchecked stub for a line where several outcome mutants survived', (t) => {

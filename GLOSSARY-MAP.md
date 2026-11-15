@@ -58,7 +58,7 @@
   `LzStorybookSpyStub` and `LzStorybookSpyStubOutcome` read definition-time stubs from
   the same `@layzee/storybook-core` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
   the `lz-storybook` reporter makes unchecked stubs of surviving `LzStorybookSpyStub` mutants, and outcome-unchecked
-  stubs of surviving `LzStorybookSpyStubOutcome` mutants on lines where the removal was killed or timed out;
+  stubs of surviving `LzStorybookSpyStubOutcome` mutants whose own stub's removal was killed or timed out;
   the `lz-storybook` reporter reads the interaction statements with `interactionsOf` on its own parse of each story
   file, and gives interaction hints for surviving mutants of the five interaction mutators;
   `@layzee/stryker-storybook`'s tests (a devDependency only) check that each mutant carries its name, that

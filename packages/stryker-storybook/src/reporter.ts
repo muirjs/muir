@@ -220,14 +220,13 @@ function stubFindings(
 
 /**
  * The unchecked and outcome-unchecked stubs of one file's mutants (storybook ADR-0007): each line with a surviving
- * removal, and each line with a surviving outcome mutant whose stub's removal was killed or timed out. The removal of
- * a stub statement also covers its semicolon, so an outcome mutant pairs with the removal that starts where it starts.
+ * removal, and each line with a surviving outcome mutant whose stub's removal was killed or timed out.
  */
 function survivorFindings(
   file: string,
   mutants: readonly ReportMutant[],
 ): readonly StubFinding[] {
-  const ended = (
+  const mutantsOf = (
     mutatorName: typeof spyStubName | typeof spyStubOutcomeName,
     statuses: readonly ReportMutant['status'][],
   ): readonly ReportMutant[] =>
@@ -236,12 +235,16 @@ function survivorFindings(
         mutant.mutatorName === mutatorName && statuses.includes(mutant.status),
     );
   const detectedRemovals = new Set(
-    ended(spyStubName, ['Killed', 'Timeout']).map(startOf),
+    mutantsOf(spyStubName, ['Killed', 'Timeout']).flatMap(removalSpans),
   );
-  const uncheckedLines = new Set(ended(spyStubName, ['Survived']).map(lineOf));
+  const uncheckedLines = new Set(
+    mutantsOf(spyStubName, ['Survived']).map(lineOf),
+  );
   const outcomeUncheckedLines = new Set(
-    ended(spyStubOutcomeName, ['Survived'])
-      .filter((mutant) => detectedRemovals.has(startOf(mutant)))
+    mutantsOf(spyStubOutcomeName, ['Survived'])
+      .filter(({ location }) =>
+        detectedRemovals.has(spanKey(location.start, location.end)),
+      )
       .map(lineOf),
   );
 
@@ -263,8 +266,24 @@ function lineOf({ location }: ReportMutant): number {
   return location.start.line;
 }
 
-function startOf({ location: { start } }: ReportMutant): string {
-  return `${start.line}:${start.column}`;
+type Position = ReportMutant['location']['start'];
+
+/**
+ * The spans an outcome mutant of the same stub can have: the removal's own, as for a definition-time stub, and the
+ * removal's less one column, as the removal of a stub statement also covers its semicolon. The stubs of one chain
+ * start at the same place but end apart, so the end tells them apart.
+ */
+function removalSpans({
+  location: { start, end },
+}: ReportMutant): readonly string[] {
+  return [
+    spanKey(start, end),
+    spanKey(start, { line: end.line, column: end.column - 1 }),
+  ];
+}
+
+function spanKey(start: Position, end: Position): string {
+  return `${start.line}:${start.column}-${end.line}:${end.column}`;
 }
 
 /**
