@@ -85,7 +85,8 @@ function identifiersInReadForms(statement: unknown): readonly unknown[] {
           field(statement, 'expression', 'callee', 'object'),
           ...list(field(statement, 'expression', 'arguments')),
         ]
-      : []),
+      : // Stryker disable next-line ArrayDeclaration: this list is only searched for identifier nodes, and a string is none
+        []),
     ...(field(statement, 'expression', 'operator') === '='
       ? [
           assignmentRootWithoutUnwrap(
@@ -93,7 +94,8 @@ function identifiersInReadForms(statement: unknown): readonly unknown[] {
           ),
           field(statement, 'expression', 'right'),
         ]
-      : []),
+      : // Stryker disable next-line ArrayDeclaration: this list is only searched for identifier nodes, and a string is none
+        []),
   ];
 }
 
@@ -127,7 +129,8 @@ function writtenThrough(
             path.every((key, index) => other.path[index] === key),
         ))
       ? [name]
-      : [];
+      : // Stryker disable next-line ArrayDeclaration: the names are looked up as bindings, and the file binds no name with a space in it
+        [];
   });
 }
 
@@ -156,7 +159,7 @@ function reachesOf(
   bindings: Bindings,
 ): readonly Reach[] {
   return inits.flatMap(([from, init]) => {
-    const wholeHeld = wholeHeldIdentifiers(init);
+    const wholeHeld = wholeHeldRoots(init);
 
     return identifiersSharedBy(init).flatMap((identifier) => {
       const to = field(identifier, 'name');
@@ -177,17 +180,17 @@ function reachesOf(
   });
 }
 
-function wholeHeldIdentifiers(init: unknown): readonly unknown[] {
+/** The nodes whose whole object `init` holds: `init` itself as a name, else the root of each spread of its story object. Only looked up by identifier, so a property that is no spread adds an `undefined` root that matches none. */
+function wholeHeldRoots(init: unknown): readonly unknown[] {
   const current = unwrap(init);
 
   if (field(current, 'type') === 'Identifier') {
     return [current];
   }
 
-  return list(field(storyArgument(current), 'properties'))
-    .filter((property) => field(property, 'type') === 'SpreadElement')
-    .map((spread) => memberRoot(field(spread, 'argument')))
-    .filter((argument) => field(argument, 'type') === 'Identifier');
+  return list(field(storyArgument(current), 'properties')).map((property) =>
+    memberRoot(field(property, 'argument')),
+  );
 }
 
 const primitiveTypes: readonly unknown[] = [
