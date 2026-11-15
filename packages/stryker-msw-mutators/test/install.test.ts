@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { join } from 'node:path';
+import { describe, it, type TestContext } from 'node:test';
 
-import { install } from '../src/install.ts';
+import { install, resolveFromCore } from '../src/install.ts';
 import { mutatorSets } from '../src/mutators.ts';
 import {
   builtIns,
@@ -9,6 +10,7 @@ import {
   ownMark,
   sets,
 } from './support/fake-instrumenter.ts';
+import { tempRoot, writeTree } from './support/temp-tree.ts';
 
 const silent = (): undefined => undefined;
 
@@ -112,6 +114,25 @@ describe('install', () => {
     ]);
   });
 
+  it('throws, naming its install function, on options when no tier but the defaults has a mutator', async () => {
+    const { instrumenter } = fakeInstrumenter();
+
+    await assert.rejects(
+      install(
+        sets(['LzOne']),
+        { LzOne: true },
+        async () => instrumenter,
+        silent,
+        silent,
+      ),
+      {
+        message:
+          '@layzee/stryker-msw-mutators: the package has no opt-in or experimental mutators yet, so ' +
+          'lzMswMutators() takes no options. Turn a mutator off with mutator.excludedMutations.',
+      },
+    );
+  });
+
   it('throws when a mutator makes no mutant of its sample, and leaves the list as it was', async () => {
     const { instrumenter, names } = fakeInstrumenter({ silent: ['LzTwo'] });
 
@@ -162,5 +183,46 @@ describe('install', () => {
       '@layzee/stryker-msw-mutators was tested with @stryker-mutator/instrumenter 10.1.1, not 10.2.0 in ' +
         '/stryker/instrumenter; its self-check passed.',
     ]);
+  });
+});
+
+describe('resolveFromCore against a fake instrumenter', () => {
+  const babel = import.meta.resolve('@babel/core');
+
+  function fakeCore(t: TestContext, typesSource: string) {
+    const modules = join(tempRoot(t, 'msw-mutators-core-'), 'node_modules');
+
+    writeTree(modules, {
+      '@stryker-mutator/core/package.json':
+        '{ "name": "@stryker-mutator/core", "version": "9.9.9" }',
+      '@stryker-mutator/instrumenter/package.json':
+        '{ "name": "@stryker-mutator/instrumenter", "version": "9.9.8", "type": "module" }',
+      '@stryker-mutator/instrumenter/dist/src/mutators/mutate.js':
+        'export const allMutators = [];',
+      '@stryker-mutator/instrumenter/dist/src/mutant-placers/index.js':
+        'export const allMutantPlacers = [];',
+      '@stryker-mutator/instrumenter/dist/src/index.js':
+        'export class Instrumenter { async instrument() { return { files: [], mutants: [] }; } }',
+      '@babel/core/package.json':
+        '{ "name": "@babel/core", "type": "module", "main": "index.js" }',
+      '@babel/core/index.js':
+        `import { types as real } from ${JSON.stringify(babel)};\n` +
+        `export const types = ${typesSource};`,
+    });
+
+    return {
+      corePackage: join(modules, '@stryker-mutator', 'core', 'package.json'),
+      dir: join(modules, '@stryker-mutator', 'instrumenter'),
+    };
+  }
+
+  it('throws, listing every Babel types member that is missing', async (t) => {
+    const { corePackage, dir } = fakeCore(t, '{}');
+
+    await assert.rejects(resolveFromCore(corePackage), {
+      message:
+        `@layzee/stryker-msw-mutators: the instrumenter 9.9.8 in ${dir} has no Babel types with arrayExpression, ` +
+        'callExpression, cloneNode, identifier, memberExpression, nullLiteral, objectExpression, stringLiteral.',
+    });
   });
 });
