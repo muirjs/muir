@@ -33,8 +33,9 @@
 - **Storybook test mutators -> Mutator install**: installed the same way, with opt-in and experimental tiers and
   built-in removal; `LzStorybookInteractionTarget` makes its same-file swaps through the same swap engine and site
   readers.
-- **Storybook mutators -> Mutator install**: installed the same way, keeping Stryker's built-in mutators.
-- **msw mutators -> Mutator install**: installed the same way, with an experimental tier, keeping Stryker's
+- **Storybook mutators -> Mutator install**: installed the same way, with an opt-in tier, keeping Stryker's
+  built-in mutators.
+- **msw mutators -> Mutator install**: installed the same way, with every mutator on by default, keeping Stryker's
   built-in mutators. A test mutator package that removes the built-ins in the same Stryker run removes them for msw
   handlers too, since the mutator list is one per run.
 - **msw mutators <-> Storybook**: neither uses the other. The CSF ignorer hides the handlers in a story's
