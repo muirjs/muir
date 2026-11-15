@@ -112,6 +112,7 @@ function hooksOf(program: unknown, scope: FileScope): ReadonlySet<unknown> {
       if (
         !hooks.has(field(node, 'key', 'name') ?? field(node, 'key', 'value'))
       ) {
+        // Stryker disable next-line ArrayDeclaration: the hook set is searched for function nodes, and a string is none
         return [];
       }
 
@@ -120,6 +121,7 @@ function hooksOf(program: unknown, scope: FileScope): ReadonlySet<unknown> {
       }
 
       if (field(node, 'type') !== 'ObjectProperty') {
+        // Stryker disable next-line ArrayDeclaration: the hook set is searched for function nodes, and a string is none
         return [];
       }
 
