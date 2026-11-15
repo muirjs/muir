@@ -50,6 +50,37 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'a then statement that is not awaited has no copy, as its callback may run after the play ends',
+    source: inPlay(
+      'await userEvent.click(open);',
+      "canvas.findByRole('dialog').then((dialog) => expect(dialog).toBeVisible());",
+    ),
+    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+  },
+  {
+    title:
+      'a then statement under a cast that is not awaited has no copy either',
+    source: inPlay(
+      'await userEvent.click(open);',
+      "canvas.findByRole('dialog').then((dialog) => expect(dialog).toBeVisible()) as Promise<void>;",
+    ),
+    expect: [{ checks: ['query', 'expect'], end: 'none' }],
+  },
+  {
+    title:
+      'a call of a function that holds the first expect check is where the copy is looked for, so the check after it has no copy',
+    source: inPlay(
+      'function verify() {',
+      '  expect(args.onPing).toHaveBeenCalled();',
+      '}',
+      'await userEvent.click(open);',
+      'verify();',
+      'await expect(args.onOpen).toHaveBeenCalled();',
+    ),
+    expect: [{ checks: ['expect', 'expect'], end: 'none' }],
+  },
+  {
+    title:
       'the first check after an arrow that holds a check but never runs is copied',
     source: inPlay(
       'await userEvent.click(open);',
@@ -103,6 +134,18 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check reads a name that an arrow held by a property of a const object declared with a cast called between writes has no copy',
+    source: inPlay(
+      "let label = '0 items';",
+      "const counter = { count: () => { label = '1 item'; } } as const;",
+      'await userEvent.click(add);',
+      'counter.count();',
+      'await expect(canvas.getByText(label)).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
+  },
+  {
+    title:
       'the first check is copied when it reads a property an object took from a name before that name is written between',
     source: inPlay(
       "let label = '0 items';",
@@ -121,7 +164,7 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
-      'an interaction whose first check calls a name in a cycle of aliases reads to the end of the cycle',
+      'the first check is copied when it calls a name in a cycle of aliases, as following the cycle stops',
     source: inPlay(
       'const first = second;',
       'const second = first;',
@@ -173,7 +216,7 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
-      'a waitFor statement whose callback holds only a new expression of expect is not copied',
+      'a waitFor statement whose callback holds only a new expression of expect, with its expect call in another argument, is not copied',
     source: inPlay(
       'await userEvent.click(open);',
       'await waitFor(() => new expect(dialog), expect(args.timeout).toBeDefined());',
@@ -519,7 +562,7 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
-      'an interaction whose first check calls the function it is in and reads a name declared between has no copy',
+      'a check that calls the function it is in holds the interaction of that function, so it ends the window and nothing is copied',
     source: inPlay(
       'async function attempt(times) {',
       '  await userEvent.click(add);',

@@ -2,7 +2,8 @@
 
 An interaction's following checks, and what ends them, depend on which functions run at a statement. Until now only
 a function given to `step(...)` or `waitFor(...)` ran there, and checks counted in any function. Four shapes came out
-wrong (D5 to D7 of the SV2 review, all measured; none loses or misplaces a default mutant):
+wrong, all measured; fixing them loses or misplaces no default mutant (the first Consequence below drops one in
+another shape):
 
 - a `forEach`, `.then` or immediately called callback that clicks, or a statement that calls a clicking function by
   name, did not end an earlier window;
@@ -13,19 +14,26 @@ wrong (D5 to D7 of the SV2 review, all measured; none loses or misplaces a defau
 - `await x.then((value) => expect(value)...)` was never copied.
 
 One rule now settles all four in `@layzee/storybook-core`: a function runs where it stands when it is called there or
-given to a call as an argument, and a statement also runs each function it calls or gives to a call by a name the
-file binds to one. A name holds the functions declared as it, given to it, held by the object literal it holds, or
+given to a call or `new` as an argument, through any cast or parentheses, and a statement also runs each function it
+calls or gives to a call by a name the file binds to one. A name runs the functions declared as it, given to it, or
 held by the name it holds. Both what a statement holds (interactions) and what it checks come from that one walk. A
 `step(...)` ends the window by `step` only when an interaction runs in it outside an `if`, a `switch` case and a
-`catch`; otherwise by `maybe`. A `.then(...)` statement whose callback holds an `expect` check is copied as a
-`waitFor(...)` one is. The copy's "name set between" rule follows the same named functions.
+`catch`; otherwise by `maybe`. An awaited `.then(...)` statement whose first argument holds an `expect` check is
+copied as a `waitFor(...)` one is. The copy's "name set between" rule follows the same named functions, and also the
+functions of the object literal a name holds.
 
 ## Consequences
 
 - A function given to any call counts as run, so an unknown call given a clicking function now ends the window by
   `maybe`, and the check past it is no longer copied (one `LzStorybookAssertionBefore` case changed to no mutant).
-- A function in the options of a call, such as `waitFor`'s `onTimeout`, is not given to the call: its checks run only
-  when the wait fails, so they are no following checks.
+- A function held by a property of an argument, such as `waitFor`'s `onTimeout`, is not itself an argument, so it does
+  not count as run, whether the options object is written inline or held by a name. Its checks run only when the wait
+  fails, so they are no following checks.
+- Every argument counts, so a function given to `.catch(...)`, or as the second argument of `.then(...)`, counts as
+  run although it runs only on a rejection. That ends more windows and copies less.
+- A statement that calls a function holding the first `expect` check, such as `verify();`, is where the copy is looked
+  for. It is never copied, so a check after it is not copied either.
+- A `.then(...)` statement that is not awaited is not copied, as its callback may run after the play ends.
 - Inside a step, a loop or a call given a function counts as running its interaction, as before, so a step whose
   callback clicks in `forEach` still ends the window by `step`.
 - A call of an object method (`counter.count()`) is not followed when deciding what a statement holds or checks; it

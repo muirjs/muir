@@ -225,6 +225,25 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'a check in the executor of a new Promise is a following check, as new runs it',
+    source: inPlay(
+      'await userEvent.click(open);',
+      'await new Promise((resolve) => { expect(args.onOpen).toHaveBeenCalled(); resolve(); });',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
+      'a check in a function of an options object given to a call by name is no following check, as it is when written inline',
+    source: inPlay(
+      'const options = { onTimeout: () => expect(dialog).not.toBeVisible() };',
+      'await userEvent.click(open);',
+      'await waitFor(() => args.onPing(), options);',
+    ),
+    expect: [{ checks: [], end: 'none' }],
+  },
+  {
+    title:
       'a check inside a function kept in a variable is no following check, as defining it runs nothing',
     source: inPlay(
       'await userEvent.click(open);',
@@ -403,12 +422,94 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'a statement that calls a chain of a thousand functions by name holds the interaction at its end',
+    source: inPlay(
+      ...Array.from(
+        { length: 1000 },
+        (_, index) => `function link${index}() { link${index + 1}(); }`,
+      ),
+      'async function link1000() {',
+      '  await userEvent.click(closeButton);',
+      '}',
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'link0();',
+    ),
+    expect: [
+      { checks: [], end: 'none' },
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
+      'a statement that calls a name destructured from an object literal holds the interactions of the functions of that object',
+    source: inPlay(
+      'const helpers = { press: async () => { await userEvent.click(closeButton); } };',
+      'const { press } = helpers;',
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'await press();',
+    ),
+    expect: [
+      { checks: [], end: 'none' },
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
+      'a statement that calls a function through an alias declared with a cast holds the interaction of that function',
+    source: inPlay(
+      'async function close() {',
+      '  await userEvent.click(closeButton);',
+      '}',
+      'const again = close as () => Promise<void>;',
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'await again();',
+    ),
+    expect: [
+      { checks: [], end: 'none' },
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
       'a statement that gives a call a function by name holds the interaction of that function',
     source: inPlay(
       'const press = (button) => userEvent.click(button);',
       'await userEvent.click(open);',
       'expect(args.onOpen).toHaveBeenCalled();',
       'buttons.forEach(press);',
+    ),
+    expect: [
+      { checks: [], end: 'none' },
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
+      'a statement that gives a call a function by name through a cast holds the interaction of that function',
+    source: inPlay(
+      'const press = (button) => userEvent.click(button);',
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'buttons.forEach(press as (button: unknown) => void);',
     ),
     expect: [
       { checks: [], end: 'none' },

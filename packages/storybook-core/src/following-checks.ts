@@ -1,4 +1,4 @@
-import { isCall, isMember } from './csf-nodes.ts';
+import { isCall, isMember, unwrap } from './csf-nodes.ts';
 import { field, list } from './node-field.ts';
 import {
   awaited,
@@ -39,7 +39,7 @@ export type WindowEnd =
   | { readonly by: 'none' };
 
 export interface FollowingChecks {
-  /** Source order. */
+  /** For each window statement in turn, its own checks in source order, then those of each function it runs by name. */
   readonly checks: readonly Check[];
   readonly end: WindowEnd;
   /** The statement that may be copied before the interaction, or `undefined`. */
@@ -127,39 +127,44 @@ function isCallbackOf(
 
 /**
  * `node` and every node below it that runs when it runs: a function runs nothing unless `runsWhereItStands`, and a
- * name that `runsWhereItStands` runs the body of each function `functionsNamed` gives it, once. When `surely`, what
- * `isBranch` holds is left out, as it may not run.
+ * name that `runsWhereItStands` runs the body of each function `functionsCalled` gives it, once. When
+ * `outsideBranches`, what `isBranch` holds is left out, as it may not run.
  */
-function runIn(
+function nodesRunBy(
   node: unknown,
   tree: TreeIndex,
   scope: FileScope,
-  surely = false,
+  outsideBranches = false,
 ): readonly unknown[] {
   // Stryker disable next-line ArrayDeclaration: a string among the nodes that run changes no result, as checkOf and statementAt find nothing in a string
   const found: unknown[] = [];
   const called = new Set<unknown>();
-  const visit = (each: unknown): void => {
+  const pending = [node];
+
+  while (pending.length > 0) {
+    const each = pending.pop();
     const runs = runsWhereItStands(each, tree);
 
-    if ((isFunction(each) && !runs) || (surely && isBranch(each, tree))) {
-      return;
+    if (
+      (isFunction(each) && !runs) ||
+      (outsideBranches && isBranch(each, tree))
+    ) {
+      continue;
     }
 
     found.push(each);
-    childNodes(each).forEach(visit);
 
-    if (runs) {
-      functionsNamed(scope.bindingOf(each), scope)
-        .filter((body) => !called.has(body))
-        .forEach((body) => {
-          called.add(body);
-          childNodes(body).forEach(visit);
-        });
-    }
-  };
+    const bodies = runs
+      ? functionsCalled(scope.bindingOf(each), scope).filter(
+          (body) => !called.has(body),
+        )
+      : [];
 
-  visit(node);
+    bodies.forEach((body) => called.add(body));
+    pending.push(
+      ...[...childNodes(each), ...bodies.flatMap(childNodes)].reverse(),
+    );
+  }
 
   return found;
 }
@@ -179,11 +184,27 @@ function isBranch(node: unknown, tree: TreeIndex): boolean {
   );
 }
 
-/** A function called where it stands, or given to a call, which may run it. */
-function runsWhereItStands(fn: unknown, tree: TreeIndex): boolean {
+/** A node called where it stands, or given to a call, which may run it, through any casts and parentheses around it. */
+function runsWhereItStands(node: unknown, tree: TreeIndex): boolean {
+  const outer = outermostWrapper(node, tree);
+
   return (
-    field(tree.parentOf(fn), 'callee') === fn || isCallbackOf(fn, tree, isCall)
+    field(tree.parentOf(outer), 'callee') === outer ||
+    isCallbackOf(
+      outer,
+      tree,
+      (call) => isCall(call) || field(call, 'type') === 'NewExpression',
+    )
   );
+}
+
+/** `node`, or the outermost cast, non-null assertion or parentheses around it. */
+function outermostWrapper(node: unknown, tree: TreeIndex): unknown {
+  const parent = tree.parentOf(node);
+
+  return unwrap(parent) === unwrap(node)
+    ? outermostWrapper(parent, tree)
+    : node;
 }
 
 /** The statements after `node` in its list, then after each enclosing statement in its own, up to the function around it unless that function is given to `step(...)`. */
@@ -192,7 +213,7 @@ function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
     !isNode(node) ||
     (isFunction(node) && !isCallbackOf(node, tree, isStepCall))
   ) {
-    // Stryker disable next-line ArrayDeclaration: a string among the later statements changes no result, as runIn, checkOf and statementAt find nothing in a string
+    // Stryker disable next-line ArrayDeclaration: a string among the later statements changes no result, as nodesRunBy, checkOf and statementAt find nothing in a string
     return [];
   }
 
@@ -233,12 +254,15 @@ export function followingChecksReader(
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
   /** Interactions in one `switch` or `else if` chain share the statements after it, so each statement is read once. */
-  const runsIn = readOnce((statement) => runIn(statement, tree, scope));
+  const runBy = readOnce((statement) => nodesRunBy(statement, tree, scope));
   const holdsAnInteraction = readOnce((statement) =>
-    runsIn(statement).some(isInteractionStatement),
+    runBy(statement).some(isInteractionStatement),
+  );
+  const surelyHoldsAnInteraction = readOnce((statement) =>
+    nodesRunBy(statement, tree, scope, true).some(isInteractionStatement),
   );
   const checksIn = readOnce((statement) =>
-    runsIn(statement).flatMap((node) => {
+    runBy(statement).flatMap((node) => {
       const check = checkOf(node, tree);
 
       return check === undefined ? [] : [check];
@@ -255,9 +279,7 @@ export function followingChecksReader(
 
     return {
       checks,
-      end: endAt(cut, read, tree, statementAt, (statement) =>
-        runIn(statement, tree, scope, true).some(isInteractionStatement),
-      ),
+      end: endAt(cut, read, tree, statementAt, surelyHoldsAnInteraction),
       copy: copyOf(
         window.find((statement) =>
           checksIn(statement).some((check) => check === firstExpect),
@@ -292,7 +314,7 @@ function readOnce<T extends NonNullable<unknown>>(
   };
 }
 
-/** `statement`, the window statement that holds the first expect check, when it may be copied before the interaction at `read`: a check statement, or a `waitFor(...)` statement whose callback holds an expect check, in the interaction's own list. */
+/** `statement`, the window statement that holds the first expect check, when it may be copied before the interaction at `read`: a check statement, a `waitFor(...)` statement whose callback holds an expect check, or an awaited `<x>.then(...)` statement whose first argument holds one, in the interaction's own list. */
 function copyOf(
   statement: unknown,
   read: StatementRead,
@@ -367,28 +389,61 @@ function readsNameSetBetween(
 }
 
 /**
- * The functions `functionsOf` gives `binding`; for a variable declared as an object literal, its methods and the
- * functions its properties hold; and for a variable declared as another name, that name's, and so on. A destructured
- * variable counts as declared as the whole value, which names more functions than it holds, never fewer.
+ * `binding`, and for a variable declared as another name, that name's binding, and so on. A destructured variable
+ * counts as declared as the whole value.
+ */
+function aliasChain(
+  binding: Binding | undefined,
+  scope: FileScope,
+): readonly Binding[] {
+  const chain: Binding[] = [];
+
+  for (
+    let each = binding;
+    each !== undefined && !chain.includes(each);
+    each = scope.bindingOf(initOf(each))
+  ) {
+    chain.push(each);
+  }
+
+  return chain;
+}
+
+/** The value `binding` is declared with, through any casts and parentheses around it. */
+function initOf(binding: Binding): unknown {
+  return unwrap(field(binding.declaration, 'init'));
+}
+
+/**
+ * The functions a call of `binding`'s name may run: those `functionsOf` gives it and each name in its `aliasChain`, or
+ * all `functionsNamed` gives when a name in the chain is destructured, as it may be any function of the value.
+ */
+function functionsCalled(
+  binding: Binding | undefined,
+  scope: FileScope,
+): readonly unknown[] {
+  const chain = aliasChain(binding, scope);
+
+  return chain.some((each) => field(each.declaration, 'id') !== each.identifier)
+    ? functionsNamed(binding, scope)
+    : chain.flatMap(functionsOf);
+}
+
+/**
+ * The functions `binding`'s name may reach: for each name in its `aliasChain`, those `functionsOf` gives it and, when
+ * it is declared as an object literal, its methods and the functions its properties hold. As a destructured variable counts
+ * as the whole value, this names more functions than it holds, never fewer.
  */
 function functionsNamed(
   binding: Binding | undefined,
   scope: FileScope,
-  aliases: ReadonlySet<Binding> = new Set(),
 ): readonly unknown[] {
-  const value = field(binding?.declaration, 'init');
-  const alias = scope.bindingOf(value);
-
-  return [
-    ...functionsOf(binding),
-    ...list(field(value, 'properties')).flatMap((property) =>
+  return aliasChain(binding, scope).flatMap((each) => [
+    ...functionsOf(each),
+    ...list(field(initOf(each), 'properties')).flatMap((property) =>
       [property, field(property, 'value')].filter(isFunction),
     ),
-    ...(alias === undefined || aliases.has(alias)
-      ? // Stryker disable next-line ArrayDeclaration: a string among the functions runs and reads nothing, as childNodes and referencesIn find nothing in it
-        []
-      : functionsNamed(alias, scope, new Set([...aliases, alias]))),
-  ];
+  ]);
 }
 
 function bindingsReadThroughFunctions(
@@ -418,15 +473,17 @@ function bindingsReadThroughFunctions(
   return readBy(statement);
 }
 
-/** An expression statement that is a check, or a `waitFor(...)` or `<x>.then(...)` statement whose callback holds an expect check. */
+/** An expression statement that is a check, a `waitFor(...)` statement, or an awaited `<x>.then(...)` statement, whose first argument holds an expect check. */
 function checksWhenRun(statement: unknown): boolean {
   const expression = awaited(field(statement, 'expression'));
+  const isAwaited =
+    field(unwrap(field(statement, 'expression')), 'type') === 'AwaitExpression';
 
   return (
     field(statement, 'type') === 'ExpressionStatement' &&
     (startsAtExpect(expression) ||
       ((waitCall(statement) === 'waitFor' ||
-        memberName(field(expression, 'callee')) === 'then') &&
+        (isAwaited && memberName(field(expression, 'callee')) === 'then')) &&
         descendants(list(field(expression, 'arguments'))[0]).some(
           isExpectCall,
         )))

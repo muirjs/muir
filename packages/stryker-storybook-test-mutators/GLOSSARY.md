@@ -40,7 +40,8 @@ interaction is not looked at, and an interaction that is an arrow's expression b
 
 Three kinds of statement are not copied:
 
-- one that is neither a check statement nor a `waitFor(...)` or `<x>.then(...)` whose callback holds a check;
+- one that is neither a check statement, a `waitFor(...)` whose callback holds an `expect` check, nor an awaited
+  `<x>.then(...)` whose first argument holds one;
 - one that reads a name declared or written from the start of the interaction up to that statement, a write in a
   function a statement there names (`count();`) included. A function
   declaration there counts only by its writes, since hoisting declares it before the interaction. The names a
