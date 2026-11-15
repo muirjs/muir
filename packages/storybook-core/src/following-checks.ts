@@ -39,7 +39,7 @@ export type WindowEnd =
   | { readonly by: 'none' };
 
 export interface FollowingChecks {
-  /** For each window statement in turn, its own checks in source order, then those of each function it runs by name. */
+  /** For each window statement in turn, the checks it runs, in source order, with those of a function it runs by name where that name stands. */
   readonly checks: readonly Check[];
   readonly end: WindowEnd;
   /** The statement that may be copied before the interaction, or `undefined`. */
@@ -127,7 +127,7 @@ function isCallbackOf(
 
 /**
  * `node` and every node below it that runs when it runs: a function runs nothing unless `runsWhereItStands`, and a
- * name that `runsWhereItStands` runs the body of each function `functionsCalled` gives it, once. When
+ * name that `runsWhereItStands` runs the body of each function `functionsRun` gives it, once. When
  * `outsideBranches`, what `isBranch` holds is left out, as it may not run.
  */
 function nodesRunBy(
@@ -154,12 +154,10 @@ function nodesRunBy(
 
     found.push(each);
 
-    const bodies = runs
-      ? functionsCalled(scope.bindingOf(each), scope).filter(
-          (body) => !called.has(body),
-        )
-      : // Stryker disable next-line ArrayDeclaration: a string among the bodies changes no result, as childNodes finds nothing in a string and no node equals it
-        [];
+    const bodies = functionsRun(
+      runs ? scope.bindingOf(each) : undefined,
+      scope,
+    ).filter((body) => !called.has(body));
 
     bodies.forEach((body) => called.add(body));
     pending.push(
@@ -259,7 +257,7 @@ export function followingChecksReader(
   const holdsAnInteraction = readOnce((statement) =>
     runBy(statement).some(isInteractionStatement),
   );
-  const surelyHoldsAnInteraction = readOnce((statement) =>
+  const holdsAnInteractionOutsideBranches = readOnce((statement) =>
     nodesRunBy(statement, tree, scope, true).some(isInteractionStatement),
   );
   const checksIn = readOnce((statement) =>
@@ -280,7 +278,13 @@ export function followingChecksReader(
 
     return {
       checks,
-      end: endAt(cut, read, tree, statementAt, surelyHoldsAnInteraction),
+      end: endAt(
+        cut,
+        read,
+        tree,
+        statementAt,
+        holdsAnInteractionOutsideBranches,
+      ),
       copy: copyOf(
         window.find((statement) =>
           checksIn(statement).some((check) => check === firstExpect),
@@ -315,7 +319,7 @@ function readOnce<T extends NonNullable<unknown>>(
   };
 }
 
-/** `statement`, the window statement that holds the first expect check, when it may be copied before the interaction at `read`: a check statement, a `waitFor(...)` statement whose callback holds an expect check, or an awaited `<x>.then(...)` statement whose first argument holds one, in the interaction's own list. */
+/** `statement`, the window statement that holds the first expect check, when it may be copied before the interaction at `read`: one that `checksWhenRun`, in the interaction's own list. */
 function copyOf(
   statement: unknown,
   read: StatementRead,
@@ -416,24 +420,30 @@ function initOf(binding: Binding): unknown {
 }
 
 /**
- * The functions a call of `binding`'s name may run: those `functionsOf` gives it and each name in its `aliasChain`, or
- * all `functionsNamed` gives when a name in the chain is destructured, as it may be any function of the value.
+ * The functions that run where `binding`'s name is called or given to a call: those `functionsOf` gives each name in
+ * its `aliasChain`, or all `functionsNamed` gives when a name in the chain is destructured, as it may be any function
+ * of the value.
  */
-function functionsCalled(
+function functionsRun(
   binding: Binding | undefined,
   scope: FileScope,
 ): readonly unknown[] {
   const chain = aliasChain(binding, scope);
 
-  return chain.some((each) => field(each.declaration, 'id') !== each.identifier)
+  return chain.some(isDestructured)
     ? functionsNamed(binding, scope)
     : chain.flatMap(functionsOf);
 }
 
+/** A binding that is not the whole of what its declaration declares, such as `count` in `const { count } = counter`. */
+function isDestructured(binding: Binding): boolean {
+  return field(binding.declaration, 'id') !== binding.identifier;
+}
+
 /**
  * The functions `binding`'s name may reach: for each name in its `aliasChain`, those `functionsOf` gives it and, when
- * it is declared as an object literal, its methods and the functions its properties hold. As a destructured variable counts
- * as the whole value, this names more functions than it holds, never fewer.
+ * it is declared as an object literal, the methods and function values written in that literal. A function a property
+ * holds by name, or one in a nested literal, is not among them.
  */
 function functionsNamed(
   binding: Binding | undefined,
@@ -452,42 +462,57 @@ function bindingsReadThroughFunctions(
   scope: FileScope,
   tree: TreeIndex,
 ): readonly Binding[] {
+  const found: Binding[] = [];
   const followed = new Set<unknown>();
+  const pending = [statement];
   const isDeclaredIn = (binding: Binding, node: unknown): boolean =>
     tree.ancestors(binding.identifier).includes(node);
-  const readBy = (node: unknown): readonly Binding[] =>
-    scope
+
+  while (pending.length > 0) {
+    const node = pending.pop();
+    const read = scope
       .referencesIn(node)
       .map(scope.bindingOf)
       .filter((binding) => binding !== undefined)
-      .filter((binding) => !isDeclaredIn(binding, node))
-      .flatMap((binding) => {
-        const bodies = functionsNamed(binding, scope).filter(
-          (body) => !followed.has(body),
-        );
+      .filter((binding) => !isDeclaredIn(binding, node));
 
-        bodies.forEach((body) => followed.add(body));
+    found.push(...read);
 
-        return [binding, ...bodies.flatMap(readBy)];
-      });
+    for (const body of read.flatMap((binding) =>
+      functionsNamed(binding, scope),
+    )) {
+      if (!followed.has(body)) {
+        followed.add(body);
+        pending.push(body);
+      }
+    }
+  }
 
-  return readBy(statement);
+  return found;
 }
 
-/** An expression statement that is a check, a `waitFor(...)` statement, or an awaited `<x>.then(...)` statement, whose first argument holds an expect check. */
+/** An expression statement that is a check, or one that waits on its first argument whose first argument holds an expect check. */
 function checksWhenRun(statement: unknown): boolean {
   const expression = awaited(field(statement, 'expression'));
-  const isAwaited =
-    field(unwrap(field(statement, 'expression')), 'type') === 'AwaitExpression';
 
   return (
     field(statement, 'type') === 'ExpressionStatement' &&
     (startsAtExpect(expression) ||
-      ((waitCall(statement) === 'waitFor' ||
-        (isAwaited && memberName(field(expression, 'callee')) === 'then')) &&
+      (waitsOnFirstArgument(statement) &&
         descendants(list(field(expression, 'arguments'))[0]).some(
           isExpectCall,
         )))
+  );
+}
+
+/** A `waitFor(...)` statement, or an awaited `<x>.then(...)` statement: the play waits on what its first argument runs. */
+function waitsOnFirstArgument(statement: unknown): boolean {
+  const expression = unwrap(field(statement, 'expression'));
+
+  return (
+    waitCall(statement) === 'waitFor' ||
+    (field(expression, 'type') === 'AwaitExpression' &&
+      memberName(field(awaited(expression), 'callee')) === 'then')
   );
 }
 
@@ -497,7 +522,7 @@ function endAt(
   read: StatementRead,
   tree: TreeIndex,
   statementAt: (node: unknown) => StatementRead | undefined,
-  surelyHoldsInteraction: (node: unknown) => boolean,
+  holdsInteractionOutsideBranches: (node: unknown) => boolean,
 ): WindowEnd {
   if (cut === undefined) {
     return { by: 'none' };
@@ -507,7 +532,7 @@ function endAt(
 
   if (ending === undefined) {
     return isStepCall(awaited(field(cut, 'expression'))) &&
-      surelyHoldsInteraction(cut)
+      holdsInteractionOutsideBranches(cut)
       ? { by: 'step' }
       : { by: 'maybe' };
   }

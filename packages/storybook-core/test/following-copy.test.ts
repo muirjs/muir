@@ -59,6 +59,22 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check reads a name written at the end of a chain of two thousand functions called between has no copy',
+    source: inPlay(
+      'let count = 0;',
+      ...Array.from(
+        { length: 2000 },
+        (_, index) => `function link${index}() { link${index + 1}(); }`,
+      ),
+      'function link2000() { count += 1; }',
+      'await userEvent.click(add);',
+      'link0();',
+      'expect(count).toBe(1);',
+    ),
+    expect: [{ checks: ['expect'], end: 'none' }],
+  },
+  {
+    title:
       'a then statement under a cast that is not awaited has no copy either',
     source: inPlay(
       'await userEvent.click(open);',
