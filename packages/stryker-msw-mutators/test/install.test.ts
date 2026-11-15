@@ -187,9 +187,8 @@ describe('install', () => {
 });
 
 describe('resolveFromCore against a fake instrumenter', () => {
-  const babel = import.meta.resolve('@babel/core');
-
-  function fakeCore(t: TestContext, typesSource: string) {
+  /** A core whose instrumenter resolves a `@babel/core` that has no Babel types members. */
+  function fakeCore(t: TestContext) {
     const modules = join(tempRoot(t, 'msw-mutators-core-'), 'node_modules');
 
     writeTree(modules, {
@@ -205,9 +204,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
         'export class Instrumenter { async instrument() { return { files: [], mutants: [] }; } }',
       '@babel/core/package.json':
         '{ "name": "@babel/core", "type": "module", "main": "index.js" }',
-      '@babel/core/index.js':
-        `import { types as real } from ${JSON.stringify(babel)};\n` +
-        `export const types = ${typesSource};`,
+      '@babel/core/index.js': 'export const types = {};',
     });
 
     return {
@@ -217,7 +214,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
   }
 
   it('throws, listing every Babel types member that is missing', async (t) => {
-    const { corePackage, dir } = fakeCore(t, '{}');
+    const { corePackage, dir } = fakeCore(t);
 
     await assert.rejects(resolveFromCore(corePackage), {
       message:
