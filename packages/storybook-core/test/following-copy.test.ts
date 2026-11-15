@@ -324,6 +324,24 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'the first check is copied when it reads a const set before the interaction from a name written between, as the const keeps the value from before',
+    source: inPlay(
+      'let count = 1;',
+      "const label = count + ' item';",
+      'await userEvent.click(add);',
+      'count += 1;',
+      'await expect(canvas.getByText(label)).toBeVisible();',
+    ),
+    expect: [
+      {
+        checks: ['expect', 'query'],
+        end: 'none',
+        copy: 'await expect(canvas.getByText(label)).toBeVisible();',
+      },
+    ],
+  },
+  {
+    title:
       'an interaction whose first check calls a function that reads a name declared between the interaction and the check has no copy, as the copy would read it before its declaration',
     source: inPlay(
       'await userEvent.click(add);',
