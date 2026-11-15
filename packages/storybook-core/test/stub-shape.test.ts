@@ -149,8 +149,22 @@ describe('definitionTimeStubs', () => {
         methodStart: source.indexOf('mockReturnValue'),
         calleeEnd: source.indexOf("('x'"),
         firstOfChain: true,
+        spyCallHasArguments: false,
       },
     ]);
+  });
+
+  it('tells a stub whose spy call takes an implementation, inside parentheses too', () => {
+    const stubs = definitionTimeStubs(
+      parseTs(
+        "import { fn } from 'storybook/test';\nfn(() => 1).mockReturnValue(2);\n(fn<() => number>(impl)).mockName('a').mockResolvedValue(3);\nfn<() => number>().mockReturnValue(4);",
+      ),
+    );
+
+    assert.deepEqual(
+      stubs.map(({ spyCallHasArguments }) => spyCallHasArguments),
+      [true, true, false],
+    );
   });
 
   it("gives the end of the callee past the stub call's type arguments under Babel 8's key", () => {
@@ -209,8 +223,12 @@ describe('chainUpTo', () => {
 });
 
 describe('mockTransformerRewrite', () => {
-  const first = { once: false, firstOfChain: true };
-  const second = { once: false, firstOfChain: false };
+  const first = { once: false, firstOfChain: true, spyCallHasArguments: false };
+  const second = {
+    once: false,
+    firstOfChain: false,
+    spyCallHasArguments: false,
+  };
 
   it('rewrites the first stub of a chain', () => {
     assert.equal(mockTransformerRewrite(first), 'rewritten');
@@ -247,6 +265,13 @@ describe('mockTransformerRewrite', () => {
       'chain-not-rewritten',
       'once-not-rewritten',
     ]);
+  });
+
+  it('leaves the first stub of a chain alone when its spy call takes an implementation', () => {
+    assert.equal(
+      mockTransformerRewrite({ ...first, spyCallHasArguments: true }),
+      'implementation-not-rewritten',
+    );
   });
 
   it('leaves a Once stub alone, also as the first of its chain', () => {

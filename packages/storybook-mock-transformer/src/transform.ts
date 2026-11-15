@@ -41,26 +41,16 @@ export function transform(
   const rewritten = definitionTimeStubs(program).filter(
     (stub) => mockTransformerRewrite(stub) === 'rewritten',
   );
-  // A stub in another rewritten stub's spy call is dropped with that call's arguments, which the rewrite overwrites.
-  const outermost = rewritten.filter(
-    (stub) =>
-      !rewritten.some(
-        ({ spyCall }) =>
-          spyCall.start < stub.start &&
-          // Stryker disable next-line EqualityOperator: no stub starts where a spy call ends, as that spy call's own chain or argument list goes on there
-          stub.start < spyCall.end,
-      ),
-  );
 
-  if (outermost.length === 0) {
+  if (rewritten.length === 0) {
     return undefined;
   }
 
   const output = new MagicString(code);
-  outermost.forEach((stub) => {
+  rewritten.forEach((stub) => {
     rewriteStub(output, stub, tokens, file);
   });
-  appendRecord(file, outermost.length);
+  appendRecord(file, rewritten.length);
 
   return {
     code: output.toString(),

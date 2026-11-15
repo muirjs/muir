@@ -52,6 +52,8 @@ export interface DefinitionTimeStub extends StubMethodCall, Span {
   readonly calleeEnd: number;
   /** Whether no stub stands between the spy call and this stub in its chain. */
   readonly firstOfChain: boolean;
+  /** Whether the spy call takes arguments, an implementation for `fn(impl)`. */
+  readonly spyCallHasArguments: boolean;
 }
 
 export interface Span {
@@ -155,6 +157,7 @@ function definitionTimeStubAt(
       (call) =>
         stubMethodOf(field(call, 'callee', 'property', 'name')) !== undefined,
     ),
+    spyCallHasArguments: list(field(spyCall, 'arguments')).length > 0,
   };
 }
 
@@ -174,17 +177,27 @@ export function chainUpTo<
 export type StubRewrite =
   | 'rewritten'
   | 'once-not-rewritten'
-  | 'chain-not-rewritten';
+  | 'chain-not-rewritten'
+  | 'implementation-not-rewritten';
 
-/** How the mock transformer's rule treats `stub`: rewritten, or left alone as a `Once` stub or a stub after the first of its chain. The transformer then drops a rewritten stub that stands in another rewritten stub's spy call, with that call's arguments. */
+/** How the mock transformer's rule treats `stub`: rewritten, or left alone as a `Once` stub, a stub after the first of its chain, or a stub whose spy call takes an implementation, which the rewrite would replace. */
 export function mockTransformerRewrite(
-  stub: Pick<DefinitionTimeStub, 'once' | 'firstOfChain'>,
+  stub: Pick<
+    DefinitionTimeStub,
+    'once' | 'firstOfChain' | 'spyCallHasArguments'
+  >,
 ): StubRewrite {
   if (stub.once) {
     return 'once-not-rewritten';
   }
 
-  return stub.firstOfChain ? 'rewritten' : 'chain-not-rewritten';
+  if (!stub.firstOfChain) {
+    return 'chain-not-rewritten';
+  }
+
+  return stub.spyCallHasArguments
+    ? 'implementation-not-rewritten'
+    : 'rewritten';
 }
 
 /** The spy methods that are not stubs but return the spy and leave what it returns alone, so a stub chain goes on through them. */

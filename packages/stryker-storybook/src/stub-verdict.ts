@@ -36,6 +36,8 @@ const reasons: Readonly<Record<ReasonVerdict, string>> = {
     'the mock transformer does not rewrite *Once stubs, so the mock reset still erases this stub',
   'chain-not-rewritten':
     'the mock transformer rewrites a stub only when it is the first of its chain, so the mock reset still erases this stub',
+  'implementation-not-rewritten':
+    'the mock transformer does not rewrite a stub whose spy call takes an implementation, as in fn(impl), so the mock reset still erases this stub',
 };
 
 const fix =
@@ -44,7 +46,7 @@ const fix =
 /** The reason for a chain whose stubs have different verdicts and none is kept, since its ignore covers them all. */
 export const unrewrittenChainReason = reasonText(
   'chain-not-rewritten',
-  'the mock transformer rewrites neither a *Once stub nor a stub after the first of its chain, so the mock reset still erases every stub of this chain',
+  'the mock transformer rewrites no stub of this chain, as none is a stub it rewrites (the first of its chain, not a *Once stub, on a spy call that takes no implementation), so the mock reset still erases every stub of this chain',
 );
 
 export const uncheckedFinding = {

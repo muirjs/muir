@@ -42,10 +42,17 @@ describe('spyStubReason', () => {
     );
   });
 
+  it('says why a stub on a spy call that takes an implementation stays erased with the mock transformer on', () => {
+    assert.equal(
+      spyStubReason('implementation-not-rewritten'),
+      `lz-storybook: implementation-not-rewritten: the mock transformer does not rewrite a stub whose spy call takes an implementation, as in fn(impl), so the mock reset still erases this stub; ${fix}`,
+    );
+  });
+
   it('says why every stub of a chain that the mock transformer leaves whole stays erased', () => {
     assert.equal(
       unrewrittenChainReason,
-      `lz-storybook: chain-not-rewritten: the mock transformer rewrites neither a *Once stub nor a stub after the first of its chain, so the mock reset still erases every stub of this chain; ${fix}`,
+      `lz-storybook: chain-not-rewritten: the mock transformer rewrites no stub of this chain, as none is a stub it rewrites (the first of its chain, not a *Once stub, on a spy call that takes no implementation), so the mock reset still erases every stub of this chain; ${fix}`,
     );
   });
 });

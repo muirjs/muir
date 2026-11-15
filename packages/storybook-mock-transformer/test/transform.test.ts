@@ -401,7 +401,7 @@ describe('transform', () => {
     );
   });
 
-  it('drops a stub in the spy call of a stub it rewrites, with the arguments of that spy call', () => {
+  it('leaves a stub whose spy call takes an implementation as written, and rewrites a stub in that implementation', () => {
     const code = [
       "import { fn } from 'storybook/test';",
       'export const Inner = { args: { load: fn(fn().mockReturnValue(2)).mockReturnValue(1) } };',
@@ -412,10 +412,20 @@ describe('transform', () => {
       transform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
-        'export const Inner = { args: { load: fn(((value) => () => value)(1)) } };',
+        'export const Inner = { args: { load: fn(fn(((value) => () => value)(2))).mockReturnValue(1) } };',
         '',
       ].join('\n'),
     );
+  });
+
+  it('leaves a file whose only stub is on a spy call that takes an implementation unchanged', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export const Impl = { args: { load: fn(() => 0).mockReturnValue(1) } };',
+      '',
+    ].join('\n');
+
+    assert.equal(transform(code, storyFile), undefined);
   });
 
   it('rewrites a stub in the spy call of a stub it leaves alone', () => {

@@ -165,6 +165,23 @@ describe('stubIgnorer', () => {
       ]);
     });
 
+    it('gives the implementation-not-rewritten reason to an erased stub on a spy call that takes an implementation', async () => {
+      const { reasonsOf } = await setup(
+        'transformer',
+        'Stub.stories.tsx',
+        resetCase('F01AllDefault').replaceAll(
+          'fn().mockReturnValue(',
+          "fn(() => 'own').mockReturnValue(",
+        ),
+      );
+
+      // The second mutant is in the spy call's own argument, which the ignored stub call holds.
+      assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
+        spyStubReason('implementation-not-rewritten'),
+        spyStubReason('implementation-not-rewritten'),
+      ]);
+    });
+
     it('leaves a *Once stub the reset keeps placed', async () => {
       const { reasonsOf } = await setup(
         'transformer',

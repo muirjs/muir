@@ -284,13 +284,15 @@ _Avoid_: slow mutant
 
 **Mock transformer**:
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
-form, which survives the mock reset. It rewrites a stub only when it is the first of its chain and not one of the
-`Once` forms, and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
+form, which survives the mock reset. It rewrites a stub only when it is the first of its chain, not one of the
+`Once` forms, and on a spy call that takes no implementation (`fn()`, not `fn(impl)`, as the rewrite would replace
+`impl`), and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
 run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets or
 resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
 the reset, where the story as written gets none. The `lz-storybook` report gives an erased `Once`
-stub the verdict `once-not-rewritten`, and an erased stub after the first of a chain that is not a `Once` stub the
-verdict `chain-not-rewritten`.
+stub the verdict `once-not-rewritten`, an erased stub after the first of a chain that is not a `Once` stub the
+verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes an implementation the verdict
+`implementation-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:

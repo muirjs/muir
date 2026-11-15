@@ -28,6 +28,28 @@ describe('siteFindings', () => {
     );
   });
 
+  it('gives a stub on a spy call that takes an implementation the implementation-not-rewritten finding, and the rewritten stub inside it none', () => {
+    const code = [
+      "import { fn } from 'storybook/test';",
+      'export default {',
+      '  args: { g: fn(fn().mockReturnValue(2)).mockReturnValue(1) },',
+      '};',
+      'export const Primary = {};',
+    ].join('\n');
+
+    const findings = siteFindings(
+      code,
+      'Meta.stories.tsx',
+      project('seen'),
+      () => undefined,
+    );
+
+    assert.deepEqual(
+      findings.map(({ line, verdict }) => [line, verdict]),
+      [[3, 'implementation-not-rewritten']],
+    );
+  });
+
   it('gives a stub after the first of a chain the chain-not-rewritten finding, and the rewritten first stub none', () => {
     const code = [
       "import { fn } from 'storybook/test';",
