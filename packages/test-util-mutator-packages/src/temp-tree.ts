@@ -11,7 +11,7 @@ import type { TestContext } from 'node:test';
 
 export function tempRoot(t: TestContext, prefix: string): string {
   const root = realpathSync(mkdtempSync(join(tmpdir(), prefix)));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.after(() => rmSync(root, { recursive: true }));
 
   return root;
 }

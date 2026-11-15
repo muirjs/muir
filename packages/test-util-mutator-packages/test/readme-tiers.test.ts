@@ -242,6 +242,18 @@ describe('testReadmeTiers', () => {
     assert.throws(() => run(checks, noneCheck), assert.AssertionError);
   });
 
+  it('reads a None line that goes on after None.', (t) => {
+    const checks = checksOf(
+      t,
+      readme.replace(
+        'None.',
+        'None. The package has no experimental mutators yet.',
+      ),
+    );
+
+    run(checks, noneCheck);
+  });
+
   it('reads the last section to the end of a README with no newline at its end', (t) => {
     const checks = checksOf(t, readme.trimEnd());
 
