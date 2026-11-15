@@ -72,8 +72,9 @@ function stubCallAt(path: NodePath): StubCall | undefined {
   }
 
   const { call: node, callee } = member;
+  // No two calls end at the same offset (a chain's calls share their start), so the end alone names this call.
   const definitionTimeStub = definitionTimeStubsIn(path).find(
-    ({ start, end }) => start === node.start && end === node.end,
+    ({ end }) => end === node.end,
   );
   const parent = path.parentPath;
 
