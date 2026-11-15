@@ -13,11 +13,21 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./compose-skips": {
+      "@layzee/source": "./src/compose-skips.ts",
+      "types": "./dist/compose-skips.d.ts",
+      "default": "./dist/compose-skips.js"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,
   "engines": {
     "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@babel/core": "8.0.9",
+    "@layzee/storybook-core": "0.0.0",
+    "storybook": "10.6.5"
   },
   "nx": {
     "tags": [

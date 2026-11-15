@@ -70,8 +70,7 @@
         ],
         "inputs": [
           "default",
-          "^default",
-          "{workspaceRoot}/packages/stryker-storybook-mutators/test/support/compose-skips.ts"
+          "^default"
         ]
       },
       "lint": {

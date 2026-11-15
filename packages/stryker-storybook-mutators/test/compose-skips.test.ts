@@ -1,11 +1,12 @@
 import { isDeepStrictEqual } from 'node:util';
 
+import { composeSkips } from '@layzee/test-util-mutator-packages/compose-skips';
+
 import { sitesIn } from '../src/args.ts';
 import { crashCases, fallbackCases } from './fallback-cases.ts';
 import { playCases } from './play-cases.ts';
 import { readCases } from './read-cases.ts';
 import { shapeCases } from './shape-cases.ts';
-import { composeSkips } from './support/compose-skips.ts';
 
 composeSkips({
   cases: [

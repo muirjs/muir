@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import { field, isRecord } from '@layzee/storybook-core';
+import { composeSkips } from '@layzee/test-util-mutator-packages/compose-skips';
 
 import { proofsBySite } from '../src/story-globals.ts';
 import { assertionBeforeCases } from './assertion-before-cases.ts';
@@ -14,7 +15,6 @@ import {
   storyGlobalsCrashCases,
 } from './story-globals-cases.ts';
 import { storyGlobalsDefaultCases } from './story-globals-default-cases.ts';
-import { composeSkips } from './support/compose-skips.ts';
 import { targetCases } from './target-cases.ts';
 import { waitForCases } from './wait-for-cases.ts';
 

@@ -47,7 +47,7 @@ function moduleBoundaries(testUtilTags) {
         },
         {
           sourceTag: 'type:test-util',
-          onlyDependOnLibsWithTags: ['type:test-util'],
+          onlyDependOnLibsWithTags: ['type:test-util', 'type:lib'],
         },
         {
           sourceTag: 'type:app',
