@@ -127,8 +127,8 @@ function isCallbackOf(
 
 /**
  * `node` and every node below it that runs when it runs: a function runs nothing unless `runsWhereItStands`, and a
- * call of a name runs the body of each function `functionsNamed` gives that name. Each node is given once. When
- * `surely`, what `isBranch` holds is left out, as it may not run.
+ * name that `runsWhereItStands` runs the body of each function `functionsNamed` gives it, once. When `surely`, what
+ * `isBranch` holds is left out, as it may not run.
  */
 function runIn(
   node: unknown,
@@ -136,28 +136,24 @@ function runIn(
   scope: FileScope,
   surely = false,
 ): readonly unknown[] {
+  // Stryker disable next-line ArrayDeclaration: a string among the nodes that run changes no result, as checkOf and statementAt find nothing in a string
   const found: unknown[] = [];
-  const seen = new Set<unknown>();
+  const called = new Set<unknown>();
   const visit = (each: unknown): void => {
-    if (
-      seen.has(each) ||
-      (isFunction(each) && !runsWhereItStands(each, tree)) ||
-      (surely && isBranch(each, tree))
-    ) {
+    const runs = runsWhereItStands(each, tree);
+
+    if ((isFunction(each) && !runs) || (surely && isBranch(each, tree))) {
       return;
     }
 
-    seen.add(each);
     found.push(each);
     childNodes(each).forEach(visit);
 
-    const call = tree.parentOf(each);
-
-    if (isCall(call) && field(call, 'callee') === each) {
+    if (runs) {
       functionsNamed(scope.bindingOf(each), scope)
-        .filter((body) => !seen.has(body))
+        .filter((body) => !called.has(body))
         .forEach((body) => {
-          seen.add(body);
+          called.add(body);
           childNodes(body).forEach(visit);
         });
     }
@@ -371,33 +367,26 @@ function readsNameSetBetween(
 }
 
 /**
- * The functions `functionsOf` gives `binding`; for a `const` declared as an object literal, its methods and the
- * functions its properties hold; and for a `const` declared as another name, that name's, and so on.
+ * The functions `functionsOf` gives `binding`; for a variable declared as an object literal, its methods and the
+ * functions its properties hold; and for a variable declared as another name, that name's, and so on. A destructured
+ * variable counts as declared as the whole value, which names more functions than it holds, never fewer.
  */
 function functionsNamed(
   binding: Binding | undefined,
   scope: FileScope,
   aliases: ReadonlySet<Binding> = new Set(),
 ): readonly unknown[] {
-  const declaration = binding?.declaration;
-  const value =
-    binding?.kind === 'const' && field(declaration, 'id') === binding.identifier
-      ? field(declaration, 'init')
-      : undefined;
-  const alias =
-    field(value, 'type') === 'Identifier' ? scope.bindingOf(value) : undefined;
-  const methods =
-    field(value, 'type') === 'ObjectExpression'
-      ? list(field(value, 'properties')).flatMap((property) =>
-          [property, field(property, 'value')].filter(isFunction),
-        )
-      : [];
+  const value = field(binding?.declaration, 'init');
+  const alias = scope.bindingOf(value);
 
   return [
     ...functionsOf(binding),
-    ...methods,
+    ...list(field(value, 'properties')).flatMap((property) =>
+      [property, field(property, 'value')].filter(isFunction),
+    ),
     ...(alias === undefined || aliases.has(alias)
-      ? []
+      ? // Stryker disable next-line ArrayDeclaration: a string among the functions runs and reads nothing, as childNodes and referencesIn find nothing in it
+        []
       : functionsNamed(alias, scope, new Set([...aliases, alias]))),
   ];
 }

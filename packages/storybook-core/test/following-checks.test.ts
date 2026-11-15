@@ -403,6 +403,24 @@ const followingCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'a statement that gives a call a function by name holds the interaction of that function',
+    source: inPlay(
+      'const press = (button) => userEvent.click(button);',
+      'await userEvent.click(open);',
+      'expect(args.onOpen).toHaveBeenCalled();',
+      'buttons.forEach(press);',
+    ),
+    expect: [
+      { checks: [], end: 'none' },
+      {
+        checks: ['expect'],
+        end: 'maybe',
+        copy: 'expect(args.onOpen).toHaveBeenCalled();',
+      },
+    ],
+  },
+  {
+    title:
       'a step call whose callback only defines a function that clicks holds no interaction',
     source: inPlayWith(
       ['args', 'step', 'userEvent'],
@@ -648,6 +666,28 @@ const followingCases: readonly FollowingCase[] = [
       {
         checks: ['expect not'],
         end: 'maybe',
+        copy: 'expect(args.onOpen).not.toHaveBeenCalled();',
+      },
+      { checks: [], end: 'none' },
+    ],
+  },
+  {
+    title:
+      'a step call whose callback clicks in the test of an if ends the window by step, as the test always runs',
+    source: inPlayWith(
+      ['args', 'step', 'userEvent'],
+      'await userEvent.click(open);',
+      'expect(args.onOpen).not.toHaveBeenCalled();',
+      "await step('press', async () => {",
+      '  if (buttons.every((button) => userEvent.click(button))) {',
+      '    args.onAll();',
+      '  }',
+      '});',
+    ),
+    expect: [
+      {
+        checks: ['expect not'],
+        end: 'step',
         copy: 'expect(args.onOpen).not.toHaveBeenCalled();',
       },
       { checks: [], end: 'none' },

@@ -174,8 +174,9 @@ The checks after an interaction, up to the next statement that is or holds an in
 the end of the interaction's block into the enclosing one and out of a step callback that holds it, never out of any
 other function. A statement holds the interactions and checks that run within it: those outside any function, such as
 one in an `if`; those in a function called where it stands or given to a call, such as `step(...)`, `waitFor(...)`,
-`forEach(...)` or `then(...)`; and those in a function the statement calls by a name the file binds to it, directly,
-through a `const` that holds another name, and so on. A function that is only defined, a function declaration or a
+`forEach(...)` or `then(...)`; and those in a function the statement calls or gives to a call by a name the file
+binds to it, directly or through a variable that holds another name, and so on. A method call such as
+`counter.count()` is not followed. A function that is only defined, a function declaration or a
 function kept in a variable or an object, runs nothing where it stands, and a function in the options of a call (such
 as `onTimeout`) is not given to the call. What ends the checks is part of them: the next interaction, a `step(...)`
 in which an interaction surely runs, a statement that may not run the interaction it holds (such as an `if`, a

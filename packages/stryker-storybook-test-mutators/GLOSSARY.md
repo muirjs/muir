@@ -46,7 +46,7 @@ Three kinds of statement are not copied:
   declaration there counts only by its writes, since hoisting declares it before the interaction. The names a
   statement reads include those that each function it names reads from outside that function, where the function is
   declared, is the initial value of a variable or is given to it by an `=` write, is a method or property value of
-  the object literal a `const` holds (`counter.count();`), or is any of these for the name a `const` holds
+  the object literal a variable holds (`counter.count();`), or is any of these for the name a variable holds
   (`const again = count;`), and so on for each function those name;
 - one whose equal already stands before the interaction in the outermost function around it.
 

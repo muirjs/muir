@@ -91,6 +91,53 @@ const copyCases: readonly FollowingCase[] = [
   },
   {
     title:
+      'an interaction whose first check reads a name that an arrow held by a property of a const object called between writes has no copy',
+    source: inPlay(
+      "let label = '0 items';",
+      "const counter = { count: () => { label = '1 item'; } };",
+      'await userEvent.click(add);',
+      'counter.count();',
+      'await expect(canvas.getByText(label)).toBeVisible();',
+    ),
+    expect: [{ checks: ['expect', 'query'], end: 'none' }],
+  },
+  {
+    title:
+      'the first check is copied when it reads a property an object took from a name before that name is written between',
+    source: inPlay(
+      "let label = '0 items';",
+      'const counter = { text: label };',
+      'await userEvent.click(add);',
+      "label = '1 item';",
+      "await expect(counter.text).toBe('0 items');",
+    ),
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'none',
+        copy: "await expect(counter.text).toBe('0 items');",
+      },
+    ],
+  },
+  {
+    title:
+      'an interaction whose first check calls a name in a cycle of aliases reads to the end of the cycle',
+    source: inPlay(
+      'const first = second;',
+      'const second = first;',
+      'await userEvent.click(add);',
+      'await expect(first()).toBeVisible();',
+    ),
+    expect: [
+      {
+        checks: ['expect'],
+        end: 'none',
+        copy: 'await expect(first()).toBeVisible();',
+      },
+    ],
+  },
+  {
+    title:
       'a statement that holds the first expect check but is no check statement is not copied',
     source: inPlay(
       'await userEvent.click(save);',
@@ -129,9 +176,9 @@ const copyCases: readonly FollowingCase[] = [
       'a waitFor statement whose callback holds only a new expression of expect is not copied',
     source: inPlay(
       'await userEvent.click(open);',
-      'await waitFor(() => new expect(dialog), { onTimeout: () => expect(dialog).toBeVisible() });',
+      'await waitFor(() => new expect(dialog), expect(args.timeout).toBeDefined());',
     ),
-    expect: [{ checks: [], end: 'none' }],
+    expect: [{ checks: ['expect'], end: 'none' }],
   },
   {
     title:

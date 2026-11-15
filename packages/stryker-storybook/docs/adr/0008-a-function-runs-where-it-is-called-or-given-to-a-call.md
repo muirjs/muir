@@ -13,12 +13,12 @@ wrong (D5 to D7 of the SV2 review, all measured; none loses or misplaces a defau
 - `await x.then((value) => expect(value)...)` was never copied.
 
 One rule now settles all four in `@layzee/storybook-core`: a function runs where it stands when it is called there or
-given to a call as an argument, and a statement also runs each function it calls by a name the file binds to one.
-Both what a statement holds (interactions) and what it checks come from that one walk. A `step(...)` ends the window
-by `step` only when an interaction runs in it outside an `if`, a `switch` case and a `catch`; otherwise by `maybe`.
-A `.then(...)` statement whose callback holds an `expect` check is copied as a `waitFor(...)` one is. The copy's
-"name set between" rule follows the same named functions, including the methods of a `const` object literal and a
-`const` that holds another name.
+given to a call as an argument, and a statement also runs each function it calls or gives to a call by a name the
+file binds to one. A name holds the functions declared as it, given to it, held by the object literal it holds, or
+held by the name it holds. Both what a statement holds (interactions) and what it checks come from that one walk. A
+`step(...)` ends the window by `step` only when an interaction runs in it outside an `if`, a `switch` case and a
+`catch`; otherwise by `maybe`. A `.then(...)` statement whose callback holds an `expect` check is copied as a
+`waitFor(...)` one is. The copy's "name set between" rule follows the same named functions.
 
 ## Consequences
 
@@ -30,6 +30,8 @@ A `.then(...)` statement whose callback holds an `expect` check is copied as a `
   callback clicks in `forEach` still ends the window by `step`.
 - A call of an object method (`counter.count()`) is not followed when deciding what a statement holds or checks; it
   is followed only for the copy's "name set between" rule, where following more functions copies less.
+- A destructured variable (`const { count } = counter`) counts as holding the whole value, so it names every function
+  of that object: more than it holds, never fewer, which ends more windows and copies less.
 
 ## Considered Options
 
