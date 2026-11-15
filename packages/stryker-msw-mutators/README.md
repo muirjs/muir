@@ -1,9 +1,9 @@
 # @layzee/stryker-msw-mutators
 
 StrykerJS mutators for the responses that msw request handlers send. A handler is test code: it plays the server
-for the code under test. `LzMswResponse` empties a mocked response's body, or turns the response into a network
-error. When the tests still pass, no test outcome depends on that response. The mutators work with any test runner
-and are not tied to Storybook.
+for the code under test. `LzMswResponse` empties the body of a response that a handler builds, or turns the
+response into a network error. When the tests still pass, no test outcome depends on that response. The mutators
+work with any test runner and are not tied to Storybook.
 
 The package keeps Stryker's 17 built-in mutators on and adds 1 of its own: 1 runs by default, 0 are opt-in and 0 are
 experimental. The package is private and not on npm yet.
@@ -48,7 +48,7 @@ names the instrumenter's folder and version when an internal it patches is missi
 mutators of the first.
 
 The package has no opt-in or experimental mutators, so the call takes no options. It throws on any argument other
-than `undefined` or an empty object:
+than `undefined` or an object whose every value is `undefined`, such as `{}`:
 
 ```text
 @layzee/stryker-msw-mutators: the package has no opt-in or experimental mutators yet, so lzMswMutators() takes no options. Turn a mutator off with mutator.excludedMutations.
@@ -111,8 +111,8 @@ Each response gets two mutants:
 
 A handler behaves like app code for the code under test: it decides what the server answers. An analysis of 130
 built-in mutants sampled from one open-source repository's msw handlers and other test doubles turned no built-in
-off. It kept nine of them and left the rest open, most for lack of test outcomes. `LzMswResponse` adds what the built-ins cannot do: a network error, and a body emptied by its
-kind instead of every object literal emptied.
+off. It kept nine of them and left the rest open, most for lack of test outcomes. `LzMswResponse` adds what the
+built-ins cannot do: a network error, and a body emptied by its kind instead of every object literal emptied.
 
 ## Turn a mutator off
 

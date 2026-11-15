@@ -85,7 +85,7 @@ await lzStorybookTestMutators({ experimental: true });
 - `experimental: true` turns on every experimental mutator.
 - `experimental: { <experimental name>: true }` turns on one experimental mutator.
 
-With opt-in or experimental mutators on, the line names them:
+With opt-in or experimental mutators on, the line names them. For `{ experimental: { LzStorybookSpyStub: true } }`:
 
 ```text
 @layzee/stryker-storybook-test-mutators: Stryker's 17 built-in mutators are off for every file in this run; 3 LzStorybook mutators on. Opt-in or experimental: LzStorybookSpyStub.

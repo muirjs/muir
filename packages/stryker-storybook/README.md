@@ -35,6 +35,8 @@ Five packages work together. This README describes the setup they share.
 - Vitest 4 or 5, tested on 5.1.0. Without Vitest, the plugins cannot read the addon's tag filter and take the stories
   tagged `test` as the tested stories.
 - Vite 5 to 8, for the sandbox plugin.
+- Vitest browser mode for the story tests. The setup below uses `@vitest/browser-playwright` with Chromium, which
+  `npx playwright install chromium` installs.
 - Node.js 22 or later.
 
 Only this package imports Storybook at run time, so only this package declares the `storybook` peer. The other four
@@ -42,7 +44,7 @@ packages read source text and state the same range in their READMEs.
 
 ## Set up two Stryker configurations
 
-To many component libraries, the story files are app code: their `args`, `render` functions and meta describe the
+In many component libraries, the story files are app code: their `args`, `render` functions and meta describe the
 components. Their play functions, `.test()` bodies, `beforeEach` and `afterEach`, and msw handlers are tests. So the
 supported setup has two Stryker configurations:
 
@@ -209,14 +211,14 @@ The `lz-storybook` ignorer reads the reset settings of the preview, the meta and
 definition-time stub a verdict. It reports the mutants of every stub that is not kept as Ignored, with the verdict in
 the reason:
 
-| Verdict                       | Meaning                                                                                                     |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `erased`                      | The mock reset runs before the story renders, so the stub never takes effect.                               |
-| `order-dependent`             | Another story in the file resets mocks before it renders, which erases the stub when that story runs first. |
-| `unknown`                     | The file's `parameters.test` cannot be read without running it.                                             |
-| `once-not-rewritten`          | The mock transformer does not rewrite `Once` stubs, so the reset still erases this one.                     |
-| `chain-not-rewritten`         | The mock transformer rewrites only the first stub of a chain.                                               |
-| `spy-arguments-not-rewritten` | The mock transformer does not rewrite a stub on a spy call that takes arguments, as in `fn(impl)`.          |
+| Verdict                       | Meaning                                                                                                        |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `erased`                      | The mock reset runs before the story renders, so the stub never takes effect.                                  |
+| `order-dependent`             | Another story in the file resets mocks before it renders, which erases the stub when that story renders first. |
+| `unknown`                     | The file's `parameters.test` cannot be read without running it.                                                |
+| `once-not-rewritten`          | The mock transformer does not rewrite `Once` stubs, so the reset still erases this one.                        |
+| `chain-not-rewritten`         | The mock transformer rewrites only the first stub of a chain.                                                  |
+| `spy-arguments-not-rewritten` | The mock transformer does not rewrite a stub on a spy call that takes arguments, as in `fn(impl)`.             |
 
 The last three verdicts appear only when the mock transformer runs. Every finding gives the same fix: pass the
 implementation to `fn()`, as in `fn(() => value)`, return the value from the function `fn()` already takes, or set

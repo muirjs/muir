@@ -1,6 +1,6 @@
 # @layzee/stryker-storybook-mutators
 
-StrykerJS mutators for Storybook story data: the `args` a story renders with. To many component libraries, the
+StrykerJS mutators for Storybook story data: the `args` a story renders with. In many component libraries, the
 story files are app code, so a run of the components can mutate them too. `LzStorybookArgs` removes one arg at a
 time from a story that runs a play function or a `.test()` call. When the story tests still pass, no check depends on
 that arg.
