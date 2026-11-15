@@ -1244,6 +1244,15 @@ when the green ran. `lz-red` step 5 wants an AssertionError on the behavior the 
 expected value is right in the parts the cycle does not change, such as copying them from a neighbouring passing
 case. Evidence: `item-h/cycles.log` cycle 7.
 
+**O169. A required field on an interface makes the green set it everywhere, so a test that would drive the field is
+born green.** Item 10e's red asked only for a new rule verdict on a hand-built stub object. The green had to add a
+required `spyCallHasArguments` field to the stub type that the rule reads, and TypeScript then made the parser set it
+in the same step, so the parse cases could only be logged as `test-after`. Making the field optional would have kept
+the parser's red, at the cost of a type the code does not want. `lz-tpp` has no move for a change that the type system
+forces past the red's scope, and `lz-red` no prompt to write the producer's red first when a new field has one
+producer. Seen before as the cross-package form (O164). Evidence: `item-h/cycles.log` cycle 12 and the `test-after`
+line after it.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
