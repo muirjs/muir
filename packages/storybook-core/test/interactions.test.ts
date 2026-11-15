@@ -368,6 +368,12 @@ const kindCases: readonly KindCase[] = [
   },
   {
     title:
+      'an interaction in a function given as a beforeEach under a computed string key stands in a hook',
+    source: `async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  ['beforeEach']: setup,\n};\n`,
+    expect: ['userEvent click unproven inHook'],
+  },
+  {
+    title:
       'an interaction in a function declared in the file and given as a beforeEach under satisfies, a non-null assertion and as stands in a hook',
     source: `async function setup({ userEvent }) {\n  await userEvent.click(button);\n}\nexport default {\n  beforeEach: setup! satisfies A as B,\n};\n`,
     expect: ['userEvent click unproven inHook'],

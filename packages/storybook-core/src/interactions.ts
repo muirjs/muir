@@ -102,7 +102,7 @@ function callAround(tree: TreeIndex, node: unknown): unknown {
 
 /**
  * The `beforeEach` and `afterEach` functions of a file: a method of such a name, and the value of such a property or
- * each element of its array, under an identifier or a string key. A value is a function, or a name that holds the
+ * each element of its array, under an identifier or a string key, computed or not. A value is a function, or a name that holds the
  * functions `functionsOf` gives. The property's value, the array and each element are read through parentheses,
  * casts and non-null assertions.
  */
