@@ -108,6 +108,16 @@ export const hintLineCases: readonly InteractionHintCase[] = [
     expect: [],
   },
   {
+    id: 'shared-line-ignored-mutant',
+    title:
+      'names the surviving mutator when the other mutant of it on the same line is ignored, as the comment changes nothing for that one',
+    source: inPlay(
+      "await userEvent.click(canvas.getByRole('button')); await expect(args.onSave).not.toHaveBeenCalled(); /* Stryker disable LzStorybookInteraction: ignored here */ await userEvent.click(canvas.getByRole('checkbox')); await expect(args.onChange).not.toHaveBeenCalled();",
+    ),
+    survived: [[interaction, 5, 5]],
+    expect: [[5, 'negative-only', [interaction]]],
+  },
+  {
     id: 'shared-line-every-mutant-survives',
     title:
       'names the mutator when every mutant of it on the line survived with the same shape',
