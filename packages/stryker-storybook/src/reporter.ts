@@ -212,47 +212,59 @@ function stubFindings(
         warn,
       ),
     ),
-    ...Object.entries(files).flatMap(([file, { mutants }]) => {
-      const survivedRemovals = linesOf(mutants, spyStubName, ['Survived']);
-      const detectedRemovals = linesOf(mutants, spyStubName, [
-        'Killed',
-        'Timeout',
-      ]);
-      const outcomeLines = [
-        ...linesOf(mutants, spyStubOutcomeName, ['Survived']),
-      ].filter(
-        (line) => detectedRemovals.has(line) && !survivedRemovals.has(line),
-      );
-
-      return [
-        ...[...survivedRemovals].map((line) => ({
-          file,
-          line,
-          ...uncheckedFinding,
-        })),
-        ...outcomeLines.map((line) => ({
-          file,
-          line,
-          ...outcomeUncheckedFinding,
-        })),
-      ];
-    }),
+    ...Object.entries(files).flatMap(([file, { mutants }]) =>
+      survivorFindings(file, mutants),
+    ),
   ];
 }
 
-/** The lines where a mutant of `mutatorName` ended with one of `statuses`. */
-function linesOf(
+/**
+ * The unchecked and outcome-unchecked stubs of one file's mutants (storybook ADR-0007): each line with a surviving
+ * removal, and each line with a surviving outcome mutant whose stub's removal was killed or timed out. The removal of
+ * a stub statement also covers its semicolon, so an outcome mutant pairs with the removal that starts where it starts.
+ */
+function survivorFindings(
+  file: string,
   mutants: readonly ReportMutant[],
-  mutatorName: string,
-  statuses: readonly ReportMutant['status'][],
-): ReadonlySet<number> {
-  return new Set(
-    mutants.flatMap((mutant) =>
-      mutant.mutatorName === mutatorName && statuses.includes(mutant.status)
-        ? [mutant.location.start.line]
-        : [],
-    ),
+): readonly StubFinding[] {
+  const ended = (
+    mutatorName: typeof spyStubName | typeof spyStubOutcomeName,
+    statuses: readonly ReportMutant['status'][],
+  ): readonly ReportMutant[] =>
+    mutants.filter(
+      (mutant) =>
+        mutant.mutatorName === mutatorName && statuses.includes(mutant.status),
+    );
+  const detectedRemovals = new Set(
+    ended(spyStubName, ['Killed', 'Timeout']).map(startOf),
   );
+  const uncheckedLines = new Set(ended(spyStubName, ['Survived']).map(lineOf));
+  const outcomeUncheckedLines = new Set(
+    ended(spyStubOutcomeName, ['Survived'])
+      .filter((mutant) => detectedRemovals.has(startOf(mutant)))
+      .map(lineOf),
+  );
+
+  return [
+    ...[...uncheckedLines].map((line) => ({
+      file,
+      line,
+      ...uncheckedFinding,
+    })),
+    ...[...outcomeUncheckedLines].map((line) => ({
+      file,
+      line,
+      ...outcomeUncheckedFinding,
+    })),
+  ];
+}
+
+function lineOf({ location }: ReportMutant): number {
+  return location.start.line;
+}
+
+function startOf({ location: { start } }: ReportMutant): string {
+  return `${start.line}:${start.column}`;
 }
 
 /**

@@ -61,7 +61,7 @@ export const uncheckedFinding = {
 export const outcomeUncheckedFinding = {
   verdict: 'outcome-unchecked',
   reason:
-    'a test fails without this stub, but none fails when it settles the other way, so no play checks what its outcome changes',
+    'a test fails or hangs without this stub, but none fails when it settles the other way, so no play checks what its outcome changes',
   fix: 'assert in the play what the story shows for this outcome, such as its success or error message',
 } as const;
 

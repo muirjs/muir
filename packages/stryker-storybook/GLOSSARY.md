@@ -245,9 +245,9 @@ _Avoid_: unobserved stub, surviving stub
 **Outcome-unchecked stub**:
 A spy stub at whose line a surviving outcome mutant (the test mutators' term) shows that no check tells its success
 from its failure, while the `LzStorybookSpyStub` mutant that removes it was killed or timed out, so a play needs the
-stub; the `lz-storybook` report lists the line once as an `outcome-unchecked` stub finding. A line where a removal
-survived is an unchecked stub instead, never both.
-_Avoid_: unasserted outcome, outcome survivor
+stub; the `lz-storybook` report lists the line once as an `outcome-unchecked` stub finding. A stub whose own removal
+survived is an unchecked stub instead; a line with two stubs can carry one of each.
+_Avoid_: unasserted outcome
 
 **Stub finding**:
 One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding

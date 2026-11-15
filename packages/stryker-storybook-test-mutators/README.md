@@ -227,7 +227,8 @@ a ready disable comment for the common shapes below.
   unchecked stub.
 - A surviving outcome mutant shows that no check tells success from failure of that call. Where the removed stub
   was killed or timed out, the reporter lists the line as an outcome-unchecked stub; where it survived, the
-  unchecked stub on that line covers both.
+  unchecked stub on that line covers both. Turn on `LzStorybookSpyStub` too: without the removal, an outcome
+  survivor gets no finding.
 
 ### LzStorybookStoryGlobals
 

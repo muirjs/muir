@@ -5,8 +5,15 @@ the `LzStorybookSpyStub` mutant that removes the same stub also survives, the re
 stub on that line, whose fix covers both. Where the removal is killed or times out, a play needs the stub but checks
 nothing its outcome changes, and until now no finding named that line: in two story files of the coder corpus, 4 of
 20 outcome survivors were such lines. The `lz-storybook` reporter now lists each such line once as an
-`outcome-unchecked` stub, so every outcome survivor is covered by exactly one finding. Lars approved this on
-2026-11-15.
+`outcome-unchecked` stub. Lars approved this on 2026-11-15.
+
+## Consequences
+
+- The two mutants of one stub pair by where they start: the removal of a stub statement also covers its semicolon,
+  so its end is one column later than the outcome mutant's (measured on the coder corpus, 23 of 27 pairs). Two stubs
+  of one chain start at the same place, so their mutants pair as one.
+- The finding needs both mutators on: with `LzStorybookSpyStub` off, or disabled on the line, an outcome survivor
+  gets no finding.
 
 ## Considered Options
 
