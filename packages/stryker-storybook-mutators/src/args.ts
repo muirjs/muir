@@ -315,8 +315,7 @@ function keyReads(
     return readsOfValue('args');
   }
 
-  // Stryker disable next-line StringLiteral: only read === 'args' tells reads apart, so any other string reads as the context
-  return key === 'context' ? readsOfValue('context') : new Set();
+  return key === 'context' ? readsOfValue(read) : new Set();
 }
 
 /** The key of `object.key` or `object['key']`; `undefined` when only running the code gives it. */
