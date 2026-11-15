@@ -28,7 +28,7 @@ describe('siteFindings', () => {
     );
   });
 
-  it('gives a stub on a spy call that takes an implementation the implementation-not-rewritten finding, and the rewritten stub inside it none', () => {
+  it('gives a stub on a spy call that takes an implementation the spy-arguments-not-rewritten finding, and the rewritten stub inside it none', () => {
     const code = [
       "import { fn } from 'storybook/test';",
       'export default {',
@@ -46,7 +46,7 @@ describe('siteFindings', () => {
 
     assert.deepEqual(
       findings.map(({ line, verdict }) => [line, verdict]),
-      [[3, 'implementation-not-rewritten']],
+      [[3, 'spy-arguments-not-rewritten']],
     );
   });
 

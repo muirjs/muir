@@ -270,7 +270,7 @@ describe('mockTransformerRewrite', () => {
   it('leaves the first stub of a chain alone when its spy call takes an implementation', () => {
     assert.equal(
       mockTransformerRewrite({ ...first, spyCallHasArguments: true }),
-      'implementation-not-rewritten',
+      'spy-arguments-not-rewritten',
     );
   });
 

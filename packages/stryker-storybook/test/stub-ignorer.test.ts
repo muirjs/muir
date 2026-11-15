@@ -56,6 +56,22 @@ describe('stubIgnorer', () => {
     ]);
   });
 
+  it("leaves the spy call's arguments of an erased stub placed, as the story runs them after the mock reset", async () => {
+    const { reasonsOf } = await setup(
+      'no-main',
+      'F01AllDefault.stories.tsx',
+      resetCase('F01AllDefault').replaceAll(
+        'fn().mockReturnValue(',
+        "fn(() => 'own').mockReturnValue(",
+      ),
+    );
+
+    assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
+      undefined,
+      spyStubReason('erased'),
+    ]);
+  });
+
   it('leaves the mutants outside the stub placed', async () => {
     const { reasonsOf } = await setup(
       'no-main',
@@ -165,7 +181,7 @@ describe('stubIgnorer', () => {
       ]);
     });
 
-    it('gives the implementation-not-rewritten reason to an erased stub on a spy call that takes an implementation', async () => {
+    it("gives the spy-arguments-not-rewritten reason to an erased stub's arguments on a spy call that takes arguments, and leaves the spy call's arguments placed", async () => {
       const { reasonsOf } = await setup(
         'transformer',
         'Stub.stories.tsx',
@@ -175,10 +191,9 @@ describe('stubIgnorer', () => {
         ),
       );
 
-      // The second mutant is in the spy call's own argument, which the ignored stub call holds.
       assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-        spyStubReason('implementation-not-rewritten'),
-        spyStubReason('implementation-not-rewritten'),
+        undefined,
+        spyStubReason('spy-arguments-not-rewritten'),
       ]);
     });
 

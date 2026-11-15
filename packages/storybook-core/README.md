@@ -25,8 +25,8 @@ declares it as a regular dependency, so installing one of them installs this one
 - `definitionTimeStubs`, with the types `DefinitionTimeStub`, `Span` and `StubMethodCall`: the definition-time spy stubs in a
   program, with their positions.
 - `mockTransformerRewrite`, with the type `StubRewrite`: the rule for which stubs the mock transformer rewrites,
-  shared by the transformer and the `lz-storybook` report. The transformer also drops a stub that stands in another
-  rewritten stub's spy call.
+  shared by the transformer and the `lz-storybook` report: the first stub of a chain, not a `Once` stub, on a spy call
+  that takes no arguments.
 - `chainUpTo`: the stubs of a chain up to one of them.
 - `stubMethodOf` and `writtenMethodOf`, with the types `StubMethod` and `WrittenStubMethod`: a spy method name read
   as a stub method and its `Once` form, and written back.

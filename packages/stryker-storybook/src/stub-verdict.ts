@@ -36,17 +36,25 @@ const reasons: Readonly<Record<ReasonVerdict, string>> = {
     'the mock transformer does not rewrite *Once stubs, so the mock reset still erases this stub',
   'chain-not-rewritten':
     'the mock transformer rewrites a stub only when it is the first of its chain, so the mock reset still erases this stub',
-  'implementation-not-rewritten':
-    'the mock transformer does not rewrite a stub whose spy call takes an implementation, as in fn(impl), so the mock reset still erases this stub',
+  'spy-arguments-not-rewritten':
+    'the mock transformer does not rewrite a stub whose spy call takes arguments, as in fn(impl), since the rewrite would replace them, so the mock reset still erases this stub',
 };
 
 const fix =
   'pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach';
 
+/** The fix for a stub whose spy call already takes the implementation that the usual fix passes. */
+const spyArgumentsFix =
+  'return the value from the function fn() takes, as in fn(() => value), or set the stub in beforeEach';
+
+function fixOf(verdict: ReasonVerdict): string {
+  return verdict === 'spy-arguments-not-rewritten' ? spyArgumentsFix : fix;
+}
+
 /** The reason for a chain whose stubs have different verdicts and none is kept, since its ignore covers them all. */
 export const unrewrittenChainReason = reasonText(
   'chain-not-rewritten',
-  'the mock transformer rewrites no stub of this chain, as none is a stub it rewrites (the first of its chain, not a *Once stub, on a spy call that takes no implementation), so the mock reset still erases every stub of this chain',
+  'the mock transformer rewrites none of the stubs of this chain, so the mock reset still erases every one of them',
 );
 
 export const uncheckedFinding = {
@@ -92,7 +100,11 @@ export function stubIgnores(
     const { start, end, verdict } = site;
     const chain = chainUpTo(site, sites);
 
-    if (chain.length < chainUpTo(site, stubs).length) {
+    // Ignoring the call would also hide the spy call's arguments, which the story runs after the mock reset.
+    if (
+      chain.length < chainUpTo(site, stubs).length ||
+      site.spyCallHasArguments
+    ) {
       return {
         start,
         end,
@@ -132,7 +144,7 @@ function siteReasons(
 }
 
 export function describeVerdict(verdict: ReasonVerdict): SpyStubReason {
-  return { verdict, reason: reasons[verdict], fix };
+  return { verdict, reason: reasons[verdict], fix: fixOf(verdict) };
 }
 
 export function spyStubReason(verdict: ReasonVerdict): string {
@@ -140,5 +152,5 @@ export function spyStubReason(verdict: ReasonVerdict): string {
 }
 
 function reasonText(verdict: ReasonVerdict, reason: string): string {
-  return `${storybookPluginName}: ${verdict}: ${reason}; ${fix}`;
+  return `${storybookPluginName}: ${verdict}: ${reason}; ${fixOf(verdict)}`;
 }

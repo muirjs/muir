@@ -178,9 +178,9 @@ export type StubRewrite =
   | 'rewritten'
   | 'once-not-rewritten'
   | 'chain-not-rewritten'
-  | 'implementation-not-rewritten';
+  | 'spy-arguments-not-rewritten';
 
-/** How the mock transformer's rule treats `stub`: rewritten, or left alone as a `Once` stub, a stub after the first of its chain, or a stub whose spy call takes an implementation, which the rewrite would replace. */
+/** How the mock transformer's rule treats `stub`: rewritten, or left alone as a `Once` stub, a stub after the first of its chain, or a stub whose spy call takes arguments, which the rewrite would replace. */
 export function mockTransformerRewrite(
   stub: Pick<
     DefinitionTimeStub,
@@ -195,9 +195,7 @@ export function mockTransformerRewrite(
     return 'chain-not-rewritten';
   }
 
-  return stub.spyCallHasArguments
-    ? 'implementation-not-rewritten'
-    : 'rewritten';
+  return stub.spyCallHasArguments ? 'spy-arguments-not-rewritten' : 'rewritten';
 }
 
 /** The spy methods that are not stubs but return the spy and leave what it returns alone, so a stub chain goes on through them. */

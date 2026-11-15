@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { spyStubReason, unrewrittenChainReason } from '../src/stub-verdict.ts';
+import {
+  describeVerdict,
+  spyStubReason,
+  unrewrittenChainReason,
+} from '../src/stub-verdict.ts';
 
 const fix =
   'pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach';
@@ -42,17 +46,24 @@ describe('spyStubReason', () => {
     );
   });
 
-  it('says why a stub on a spy call that takes an implementation stays erased with the mock transformer on', () => {
+  it('says why a stub on a spy call that takes arguments stays erased with the mock transformer on, and how to fix it there', () => {
     assert.equal(
-      spyStubReason('implementation-not-rewritten'),
-      `lz-storybook: implementation-not-rewritten: the mock transformer does not rewrite a stub whose spy call takes an implementation, as in fn(impl), so the mock reset still erases this stub; ${fix}`,
+      spyStubReason('spy-arguments-not-rewritten'),
+      'lz-storybook: spy-arguments-not-rewritten: the mock transformer does not rewrite a stub whose spy call takes arguments, as in fn(impl), since the rewrite would replace them, so the mock reset still erases this stub; return the value from the function fn() takes, as in fn(() => value), or set the stub in beforeEach',
+    );
+  });
+
+  it('gives a spy-arguments-not-rewritten finding the fix for a spy that already takes a function', () => {
+    assert.equal(
+      describeVerdict('spy-arguments-not-rewritten').fix,
+      'return the value from the function fn() takes, as in fn(() => value), or set the stub in beforeEach',
     );
   });
 
   it('says why every stub of a chain that the mock transformer leaves whole stays erased', () => {
     assert.equal(
       unrewrittenChainReason,
-      `lz-storybook: chain-not-rewritten: the mock transformer rewrites no stub of this chain, as none is a stub it rewrites (the first of its chain, not a *Once stub, on a spy call that takes no implementation), so the mock reset still erases every stub of this chain; ${fix}`,
+      `lz-storybook: chain-not-rewritten: the mock transformer rewrites none of the stubs of this chain, so the mock reset still erases every one of them; ${fix}`,
     );
   });
 });

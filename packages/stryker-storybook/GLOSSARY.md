@@ -285,14 +285,14 @@ _Avoid_: slow mutant
 **Mock transformer**:
 The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
 form, which survives the mock reset. It rewrites a stub only when it is the first of its chain, not one of the
-`Once` forms, and on a spy call that takes no implementation (`fn()`, not `fn(impl)`, as the rewrite would replace
-`impl`), and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
+`Once` forms, and on a spy call that takes no arguments (`fn()`, not `fn(impl)`, as the rewrite would replace them),
+and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
 run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets or
 resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
 the reset, where the story as written gets none. The `lz-storybook` report gives an erased `Once`
 stub the verdict `once-not-rewritten`, an erased stub after the first of a chain that is not a `Once` stub the
-verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes an implementation the verdict
-`implementation-not-rewritten`.
+verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes arguments the verdict
+`spy-arguments-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:
@@ -325,8 +325,9 @@ _Avoid_: story ignorer, Storybook ignorer
 The `lz-storybook` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
 erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call holds the stubs
 before it in its chain, so when one of those is kept the ignorer reports only the stub's own arguments as Ignored.
-Otherwise it ignores the whole stub call, so the spy call's arguments and those of a `mockName` call in the chain
-are reported as Ignored under the stub's reason too.
+It does the same when the spy call takes arguments (`fn(impl)`), which the story runs after the mock reset.
+Otherwise it ignores the whole stub call, so the arguments of a `mockName` call in the chain are reported as Ignored
+under the stub's reason too.
 _Avoid_: reset ignorer
 
 **Play mode**:
