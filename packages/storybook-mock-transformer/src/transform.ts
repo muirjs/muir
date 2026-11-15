@@ -139,7 +139,7 @@ function argumentListStart(
       const start = field(token, 'start');
 
       return (
-        // Stryker disable next-line ConditionalExpression: this check only narrows the type, as a token start that is no number compares false with >=
+        // Stryker disable next-line ConditionalExpression: every Babel token has a number start, so this check only narrows the type, and without it the type check fails
         typeof start === 'number' &&
         start >= calleeEnd &&
         labelOf(token) === '('
