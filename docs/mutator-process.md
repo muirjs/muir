@@ -187,7 +187,7 @@ Decide per built-in mutator before you exclude any. The verdict differs by kind 
 Run the steps below again for a new kind of test code instead of assuming one of these results.
 
 1. **Classify the sites.** Run the instrumenter over the test files and sort each mutant by site class: action
-   call, assertion, wait, mock or double, setup data, helper logic, hook. Note the test kind (browser e2e, component,
+   call, assertion, wait, mock or double, setup data, shared test logic, hook. Note the test kind (browser e2e, component,
    API, server mock).
 2. **Join measured outcomes.** Where a run exists, join killed, survived and NoCoverage per mutator and site class.
 3. **Judge each cell** as Noise, Coverage or Useful (section 4). Typical results from the Playwright analysis:
