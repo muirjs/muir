@@ -93,6 +93,13 @@ function checksOf(
   return checks;
 }
 
+/** `text` with `from` replaced by `to`; fails when `text` has no `from`, so an edit cannot silently miss. */
+function edited(text: string, from: string, to: string): string {
+  assert.ok(text.includes(from), `the README has ${from}`);
+
+  return text.replace(from, to);
+}
+
 function run(checks: ReadonlyMap<string, () => void>, name: string): void {
   const check = checks.get(name);
 
@@ -127,7 +134,8 @@ describe('testReadmeTiers', () => {
   it('fails the counts when the opening says the built-ins are off while they are on', (t) => {
     const checks = checksOf(
       t,
-      readme.replace(
+      edited(
+        readme,
         "keeps Stryker's 5 built-in mutators on",
         "turns Stryker's 5 built-in mutators off",
       ),
@@ -141,7 +149,8 @@ describe('testReadmeTiers', () => {
   it('fails the counts when the opening says the built-ins are on while they are off', (t) => {
     const checks = checksOf(
       t,
-      offReadme.replace(
+      edited(
+        offReadme,
         "turns Stryker's 17 built-in mutators off",
         "keeps Stryker's 17 built-in mutators on",
       ),
@@ -157,7 +166,7 @@ describe('testReadmeTiers', () => {
   it('fails the counts when the opening gives a wrong total', (t) => {
     const checks = checksOf(
       t,
-      readme.replace('adds 3 of its own', 'adds 4 of its own'),
+      edited(readme, 'adds 3 of its own', 'adds 4 of its own'),
     );
 
     assert.throws(() => run(checks, countsCheck), {
@@ -165,10 +174,30 @@ describe('testReadmeTiers', () => {
     });
   });
 
+  it('fails the counts when one tier has a wrong count and the total is right', (t) => {
+    const checks = checksOf(
+      t,
+      edited(readme, '1 is opt-in and 0 are', '0 are opt-in and 1 is'),
+    );
+
+    assert.throws(() => run(checks, countsCheck), {
+      message: 'the opening counts',
+    });
+  });
+
+  it('passes a README with Windows line endings', (t) => {
+    const checks = checksOf(t, readme.replaceAll('\n', '\r\n'));
+
+    [countsCheck, tablesCheck, noneCheck].forEach((name) => {
+      run(checks, name);
+    });
+  });
+
   it('fails the counts when the default install line gives a wrong count, with the built-ins on', (t) => {
     const checks = checksOf(
       t,
-      readme.replace(
+      edited(
+        readme,
         '2 LzExample mutators on, beside',
         '3 LzExample mutators on, beside',
       ),
@@ -182,7 +211,7 @@ describe('testReadmeTiers', () => {
   it('fails the counts when the default install line gives a wrong count, with the built-ins off', (t) => {
     const checks = checksOf(
       t,
-      offReadme.replace('this run; 1 LzExample', 'this run; 2 LzExample'),
+      edited(offReadme, 'this run; 1 LzExample', 'this run; 2 LzExample'),
       offTiers,
       offFacts,
     );
@@ -195,19 +224,20 @@ describe('testReadmeTiers', () => {
   it('fails the tables when a table lists its mutators out of roster order', (t) => {
     const checks = checksOf(
       t,
-      readme.replace(
+      edited(
+        readme,
         '| `LzA`   | a      |\n| `LzB`   | b      |',
         '| `LzB`   | b      |\n| `LzA`   | a      |',
       ),
     );
 
-    assert.throws(() => run(checks, tablesCheck), assert.AssertionError);
+    assert.throws(() => run(checks, tablesCheck), { generatedMessage: true });
   });
 
   it('fails the tables, naming the heading, when the README has no heading for a tier', (t) => {
     const checks = checksOf(
       t,
-      readme.replace('### Opt-in mutators', '### Opt-in'),
+      edited(readme, '### Opt-in mutators', '### Opt-in'),
     );
 
     assert.throws(() => run(checks, tablesCheck), {
@@ -215,10 +245,11 @@ describe('testReadmeTiers', () => {
     });
   });
 
-  it('reads as table rows only the lines that start with the row', (t) => {
+  it('passes the tables when a quoted row stands under a tier heading, as it is no row of that table', (t) => {
     const checks = checksOf(
       t,
-      readme.replace(
+      edited(
+        readme,
         '| `LzB`   | b      |',
         '| `LzB`   | b      |\n> | `LzZ` | quoted |',
       ),
@@ -228,24 +259,25 @@ describe('testReadmeTiers', () => {
   });
 
   it('fails None when an empty tier has no None under its heading', (t) => {
-    const checks = checksOf(t, readme.replace('None.', 'Nothing yet.'));
+    const checks = checksOf(t, edited(readme, 'None.', 'Nothing yet.'));
 
-    assert.throws(() => run(checks, noneCheck), assert.AssertionError);
+    assert.throws(() => run(checks, noneCheck), { generatedMessage: true });
   });
 
   it('fails None when a tier with a mutator has None under its heading', (t) => {
     const checks = checksOf(
       t,
-      readme.replace('| `LzC` | c |', 'None.\n\n| `LzC` | c |'),
+      edited(readme, '| `LzC` | c |', 'None.\n\n| `LzC` | c |'),
     );
 
-    assert.throws(() => run(checks, noneCheck), assert.AssertionError);
+    assert.throws(() => run(checks, noneCheck), { generatedMessage: true });
   });
 
-  it('reads a None line that goes on after None.', (t) => {
+  it('passes None when the None line goes on after None.', (t) => {
     const checks = checksOf(
       t,
-      readme.replace(
+      edited(
+        readme,
         'None.',
         'None. The package has no experimental mutators yet.',
       ),
@@ -254,7 +286,7 @@ describe('testReadmeTiers', () => {
     run(checks, noneCheck);
   });
 
-  it('reads the last section to the end of a README with no newline at its end', (t) => {
+  it('passes None when the README ends in the None line with no newline after it', (t) => {
     const checks = checksOf(t, readme.trimEnd());
 
     run(checks, noneCheck);
