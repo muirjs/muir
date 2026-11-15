@@ -75,7 +75,7 @@ test('the args mutator reads no part of a file at a path that is neither the Pro
               },
             });
 
-            [...argsMutator().mutate(counted, types)];
+            Array.from(argsMutator().mutate(counted, types));
           },
         },
       }),
