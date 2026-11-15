@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import { install, resolveFromCore } from '../src/install.ts';
+import { mutatorSets } from '../src/mutators.ts';
 import {
   builtIns,
   fakeInstrumenter,
@@ -14,6 +15,31 @@ import { tempRoot, writeTree } from './support/temp-tree.ts';
 const silent = (): undefined => undefined;
 
 describe('install', () => {
+  it('ships LzStorybookArgs as opt-in: no option leaves it out, and its name turns it on', async () => {
+    const without = fakeInstrumenter();
+    const withArgs = fakeInstrumenter();
+
+    await install(
+      mutatorSets,
+      undefined,
+      async () => without.instrumenter,
+      silent,
+      silent,
+    );
+    await install(
+      mutatorSets,
+      { LzStorybookArgs: true },
+      async () => withArgs.instrumenter,
+      silent,
+      silent,
+    );
+
+    assert.deepEqual(
+      [without.names(), withArgs.names()],
+      [builtIns, [...builtIns, 'LzStorybookArgs']],
+    );
+  });
+
   it("keeps Stryker's built-ins and appends the default mutators after them, marked", async () => {
     const { instrumenter, names } = fakeInstrumenter();
 

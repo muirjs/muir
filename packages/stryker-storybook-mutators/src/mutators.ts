@@ -14,8 +14,8 @@ function roster<const T extends MutatorSets<LzStorybookMutator>>(sets: T): T {
 }
 
 export const mutatorSets = roster({
-  defaults: [argsMutator()],
-  optIn: [],
+  defaults: [],
+  optIn: [argsMutator()],
   experimental: [],
 });
 

@@ -24,7 +24,9 @@ interface Mutant {
 }
 
 const ours: ReadonlySet<string> = new Set(
-  mutatorSets.defaults.map(({ name }) => name),
+  Object.values(mutatorSets)
+    .flat()
+    .map(({ name }) => name),
 );
 
 async function mutantsOf(
@@ -71,7 +73,7 @@ export function runCases(cases: readonly Case[]): void {
   let mutants: readonly Mutant[];
 
   before(async () => {
-    await lzStorybookMutators();
+    await lzStorybookMutators({ LzStorybookArgs: true });
     mutants = await mutantsOf(
       cases.map((testCase) => ({
         name: fileOf(testCase),
