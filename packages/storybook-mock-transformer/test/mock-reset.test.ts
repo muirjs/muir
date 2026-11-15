@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { type TestContext, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -41,13 +42,41 @@ describe('lzStorybookMockResetPlugin', () => {
 });
 
 describe('mockResetConfig', () => {
-  it('adds the setup module that resets the spies before each test', () => {
-    const setupFile = fileURLToPath(
-      new URL('../src/mock-reset.setup.ts', import.meta.url),
-    );
+  const setupFile = fileURLToPath(
+    new URL('../src/mock-reset.setup.ts', import.meta.url),
+  );
+  const setupFolder = dirname(setupFile);
+  const repositoryRoot = resolve(
+    fileURLToPath(new URL('../../..', import.meta.url)),
+  );
+  const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
-    assert.deepEqual(mockResetConfig(), { test: { setupFiles: [setupFile] } });
+  it('adds the setup module that resets the spies before each test', () => {
+    assert.deepEqual(mockResetConfig({ root: packageRoot }).test, {
+      setupFiles: [setupFile],
+    });
     assert.ok(existsSync(setupFile), `${setupFile} exists`);
+  });
+
+  // Browser mode serves setup files through the dev server, which refuses a linked package outside fs.allow.
+  it("allows the setup module's folder beside the workspace root Vite allows when the config sets no fs.allow", () => {
+    assert.deepEqual(mockResetConfig({ root: packageRoot }).server, {
+      fs: { allow: [repositoryRoot, setupFolder] },
+    });
+  });
+
+  it("adds only the setup module's folder to an fs.allow the config sets, so that it widens nothing else", () => {
+    assert.deepEqual(
+      mockResetConfig({ root: packageRoot, server: { fs: { allow: ['src'] } } })
+        .server,
+      { fs: { allow: [setupFolder] } },
+    );
+  });
+
+  it('finds the workspace root from the working directory when the config sets no root', () => {
+    assert.deepEqual(mockResetConfig({}).server, {
+      fs: { allow: [repositoryRoot, setupFolder] },
+    });
   });
 });
 
