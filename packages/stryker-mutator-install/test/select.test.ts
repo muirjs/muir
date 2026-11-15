@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { selectMutators, type MutatorSets } from '../src/select.ts';
+import {
+  selectMutators,
+  type MutatorOptions,
+  type MutatorSets,
+} from '../src/select.ts';
 
 const packageName = '@layzee/test-mutators';
 const installName = 'lzTestMutators';
@@ -133,6 +137,33 @@ describe('selectMutators', () => {
           '@layzee/test-mutators: the package has no opt-in mutators yet, so lzTestMutators() takes no ' +
           'extended option.',
       },
+    );
+  });
+
+  // The typecheck runs these: each const's type is false or true by the options type, so a wrong type fails to compile.
+  it('types no key for a tier that has no mutators, as the install rejects it', () => {
+    const experimentalWithoutTier: 'experimental' extends keyof MutatorOptions<
+      'LzOptInA',
+      never
+    >
+      ? true
+      : false = false;
+    const extendedWithoutTier: 'extended' extends keyof MutatorOptions<
+      never,
+      'LzExperimentalA'
+    >
+      ? true
+      : false = false;
+    const onlyUndefinedWithoutTiers: MutatorOptions<
+      never,
+      never
+    >['experimental'] extends undefined
+      ? true
+      : false = true;
+
+    assert.deepEqual(
+      [experimentalWithoutTier, extendedWithoutTier, onlyUndefinedWithoutTiers],
+      [false, false, true],
     );
   });
 

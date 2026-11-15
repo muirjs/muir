@@ -13,17 +13,24 @@ export interface MutatorSets<TMutator extends NamedMutator> {
 /**
  * The mutators a user turns on besides the defaults: every opt-in mutator with `extended`, or one by its name, and every
  * experimental mutator with `experimental`, or one by its name inside it. Only `true` turns one on; Stryker's
- * `mutator.excludedMutations` turns mutators off.
+ * `mutator.excludedMutations` turns mutators off. A tier without mutators has no key, as `selectMutators` rejects it,
+ * and a package with neither tier takes only keys that hold `undefined`.
  */
 export type MutatorOptions<
   TOptIn extends string,
   TExperimental extends string,
-> = {
-  readonly [TName in TOptIn]?: true;
-} & {
-  readonly extended?: true;
-  readonly experimental?: true | { readonly [TName in TExperimental]?: true };
-};
+> = [TOptIn | TExperimental] extends [never]
+  ? { readonly [key: string]: undefined }
+  : { readonly [TName in TOptIn]?: true } & ([TOptIn] extends [never]
+      ? unknown
+      : { readonly extended?: true }) &
+      ([TExperimental] extends [never]
+        ? unknown
+        : {
+            readonly experimental?:
+              | true
+              | { readonly [TName in TExperimental]?: true };
+          });
 
 type Tier = keyof MutatorSets<NamedMutator>;
 
