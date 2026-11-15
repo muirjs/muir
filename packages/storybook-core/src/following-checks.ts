@@ -158,7 +158,8 @@ function nodesRunBy(
       ? functionsCalled(scope.bindingOf(each), scope).filter(
           (body) => !called.has(body),
         )
-      : [];
+      : // Stryker disable next-line ArrayDeclaration: a string among the bodies changes no result, as childNodes finds nothing in a string and no node equals it
+        [];
 
     bodies.forEach((body) => called.add(body));
     pending.push(
@@ -184,17 +185,17 @@ function isBranch(node: unknown, tree: TreeIndex): boolean {
   );
 }
 
-/** A node called where it stands, or given to a call, which may run it, through any casts and parentheses around it. */
+/**
+ * A node called where it stands, or given as an argument to a call or `new`, which may run it, through any casts and
+ * parentheses around it. Only a call or `new` has arguments.
+ */
 function runsWhereItStands(node: unknown, tree: TreeIndex): boolean {
   const outer = outermostWrapper(node, tree);
+  const parent = tree.parentOf(outer);
 
   return (
-    field(tree.parentOf(outer), 'callee') === outer ||
-    isCallbackOf(
-      outer,
-      tree,
-      (call) => isCall(call) || field(call, 'type') === 'NewExpression',
-    )
+    field(parent, 'callee') === outer ||
+    list(field(parent, 'arguments')).includes(outer)
   );
 }
 
