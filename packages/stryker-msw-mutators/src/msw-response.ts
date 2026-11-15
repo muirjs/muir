@@ -41,7 +41,7 @@ export function mswResponseMutator(): LzMswMutator & {
       const empty = body === undefined ? undefined : emptyOf(body, t);
 
       if (empty !== undefined) {
-        const emptied = t.cloneNode(path.node, true);
+        const emptied = t.cloneNode(path.node);
 
         emptied.arguments = [empty, ...emptied.arguments.slice(1)];
 
@@ -135,7 +135,8 @@ function isInHandler(path: NodePath): boolean {
 function isHandlerCallback(fn: NodePath): boolean {
   const call = fn.parentPath;
 
-  if (fn.listKey !== 'arguments' || call?.isCallExpression() !== true) {
+  // Stryker disable next-line OptionalChaining: a function always has a parent path, the program at least, so call is never null
+  if (call?.isCallExpression() !== true) {
     return false;
   }
 
@@ -162,6 +163,7 @@ function isMswImport(path: NodePath, exported: string): boolean {
   return (
     specifier?.isImportSpecifier() === true &&
     importedName(specifier.node.imported) === exported &&
+    // Stryker disable next-line OptionalChaining: declaration is read only once specifier is an ImportSpecifier, whose parent path is always its ImportDeclaration, so it is never null here
     declaration?.isImportDeclaration() === true &&
     declaration.node.source.value === 'msw'
   );
