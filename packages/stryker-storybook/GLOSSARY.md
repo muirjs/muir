@@ -242,10 +242,17 @@ keeps is erased all the same, so its removal survives and the report lists an un
 erased stub on a spy call that takes arguments and its `spy-arguments-not-rewritten` finding.
 _Avoid_: unobserved stub, surviving stub
 
+**Outcome-unchecked stub**:
+A spy stub at whose line a surviving outcome mutant (the test mutators' term) shows that no check tells its success
+from its failure, while the `LzStorybookSpyStub` mutant that removes it was killed or timed out, so a play needs the
+stub; the `lz-storybook` report lists the line once as an `outcome-unchecked` stub finding. A line where a removal
+survived is an unchecked stub instead, never both.
+_Avoid_: unasserted outcome, outcome survivor
+
 **Stub finding**:
 One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
-read from the story file also names the stub method as written (`mockResolvedValueOnce`); an `unchecked` finding comes
-from surviving mutants and names none.
+read from the story file also names the stub method as written (`mockResolvedValueOnce`); an `unchecked` or
+`outcome-unchecked` finding comes from surviving mutants and names none.
 _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:

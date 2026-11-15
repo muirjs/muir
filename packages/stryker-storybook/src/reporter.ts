@@ -22,6 +22,7 @@ import {
   interactionHints,
   type InteractionHint,
   type ReportFiles,
+  type ReportMutant,
   skippedOnRangeError,
 } from './interaction-hints.ts';
 import { packageName } from './package-name.ts';
@@ -33,7 +34,12 @@ import {
   type StorybookProject,
 } from './storybook-project.ts';
 import { siteFindings, type SiteFinding } from './stub-findings.ts';
-import { spyStubName, uncheckedFinding } from './stub-verdict.ts';
+import {
+  outcomeUncheckedFinding,
+  spyStubName,
+  spyStubOutcomeName,
+  uncheckedFinding,
+} from './stub-verdict.ts';
 
 export interface LzStorybookReport {
   readonly findings: readonly StubFinding[];
@@ -43,7 +49,7 @@ export interface LzStorybookReport {
 
 type StubFinding =
   | (SiteFinding & { readonly file: string })
-  | (typeof uncheckedFinding & {
+  | ((typeof uncheckedFinding | typeof outcomeUncheckedFinding) & {
       readonly file: string;
       readonly line: number;
     });
@@ -166,8 +172,7 @@ function consoleBlock({
       ? `${packageName}: no spy stub findings`
       : `${packageName}: ${findings.length} spy stub findings (${counts.join(', ')})`,
     ...findings.map((finding) => {
-      const method =
-        finding.verdict === 'unchecked' ? '' : ` ${finding.method}`;
+      const method = 'method' in finding ? ` ${finding.method}` : '';
 
       return `  ${finding.verdict}  ${finding.file}:${finding.line}${method}  ${finding.reason}; ${finding.fix}`;
     }),
@@ -207,18 +212,47 @@ function stubFindings(
         warn,
       ),
     ),
-    ...Object.entries(files).flatMap(([file, { mutants }]) =>
-      [
-        ...new Set(
-          mutants.flatMap(({ mutatorName, status, location }) =>
-            mutatorName === spyStubName && status === 'Survived'
-              ? [location.start.line]
-              : [],
-          ),
-        ),
-      ].map((line) => ({ file, line, ...uncheckedFinding })),
-    ),
+    ...Object.entries(files).flatMap(([file, { mutants }]) => {
+      const survivedRemovals = linesOf(mutants, spyStubName, ['Survived']);
+      const detectedRemovals = linesOf(mutants, spyStubName, [
+        'Killed',
+        'Timeout',
+      ]);
+      const outcomeLines = [
+        ...linesOf(mutants, spyStubOutcomeName, ['Survived']),
+      ].filter(
+        (line) => detectedRemovals.has(line) && !survivedRemovals.has(line),
+      );
+
+      return [
+        ...[...survivedRemovals].map((line) => ({
+          file,
+          line,
+          ...uncheckedFinding,
+        })),
+        ...outcomeLines.map((line) => ({
+          file,
+          line,
+          ...outcomeUncheckedFinding,
+        })),
+      ];
+    }),
   ];
+}
+
+/** The lines where a mutant of `mutatorName` ended with one of `statuses`. */
+function linesOf(
+  mutants: readonly ReportMutant[],
+  mutatorName: string,
+  statuses: readonly ReportMutant['status'][],
+): ReadonlySet<number> {
+  return new Set(
+    mutants.flatMap((mutant) =>
+      mutant.mutatorName === mutatorName && statuses.includes(mutant.status)
+        ? [mutant.location.start.line]
+        : [],
+    ),
+  );
 }
 
 /**

@@ -225,8 +225,9 @@ a ready disable comment for the common shapes below.
 
 - A removed stub survives when no check reads what the spy returns. The `lz-storybook` reporter lists its line as an
   unchecked stub.
-- A surviving outcome mutant shows that no check tells success from failure of that call. The reporter lists none
-  for it.
+- A surviving outcome mutant shows that no check tells success from failure of that call. Where the removed stub
+  was killed or timed out, the reporter lists the line as an outcome-unchecked stub; where it survived, the
+  unchecked stub on that line covers both.
 
 ### LzStorybookStoryGlobals
 

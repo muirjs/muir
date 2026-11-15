@@ -126,6 +126,13 @@ function uncheckedFindings(findings: readonly unknown[]) {
     .filter((finding) => finding['verdict'] === 'unchecked');
 }
 
+function outcomeUncheckedLines(findings: readonly unknown[]) {
+  return findings
+    .filter(isRecord)
+    .filter((finding) => finding['verdict'] === 'outcome-unchecked')
+    .map((finding) => [finding['file'], finding['line']]);
+}
+
 function ignoredAt(source: string, text: string, mutatorName: string) {
   const lines = source.split('\n');
   const line = lines.findIndex((candidate) => candidate.includes(text)) + 1;
@@ -465,6 +472,136 @@ describe('storybookReporter', () => {
     assert.deepEqual(uncheckedFindings(findings()), []);
   });
 
+  it('reports an outcome-unchecked stub where a LzStorybookSpyStubOutcome mutant survived and the removal of the stub was killed', (t) => {
+    const { reporter, findings } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            { ...survivedStubMutant('fn()'), status: 'Killed' },
+            survivedStubMutant(
+              'fn().mockRejectedValue(new Error("Stryker"))',
+              'LzStorybookSpyStubOutcome',
+            ),
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(
+      findings().filter(
+        (finding) =>
+          isRecord(finding) && finding['verdict'] === 'outcome-unchecked',
+      ),
+      [
+        {
+          file: 'src/Resolved.stories.tsx',
+          line: 3,
+          verdict: 'outcome-unchecked',
+          reason:
+            'a test fails without this stub, but none fails when it settles the other way, so no play checks what its outcome changes',
+          fix: 'assert in the play what the story shows for this outcome, such as its success or error message',
+        },
+      ],
+    );
+  });
+
+  it('reports an outcome-unchecked stub where the removal of the stub timed out', (t) => {
+    const { reporter, findings } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            { ...survivedStubMutant('fn()'), status: 'Timeout' },
+            survivedStubMutant(
+              'fn().mockRejectedValue(new Error("Stryker"))',
+              'LzStorybookSpyStubOutcome',
+            ),
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(outcomeUncheckedLines(findings()), [
+      ['src/Resolved.stories.tsx', 3],
+    ]);
+  });
+
+  it('reports no outcome-unchecked stub on a line that already has an unchecked stub', (t) => {
+    const { reporter, findings } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            { ...survivedStubMutant('fn()'), status: 'Killed' },
+            survivedStubMutant('fn()'),
+            survivedStubMutant(
+              'fn().mockRejectedValue(new Error("Stryker"))',
+              'LzStorybookSpyStubOutcome',
+            ),
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(outcomeUncheckedLines(findings()), []);
+  });
+
+  it('reports one outcome-unchecked stub for a line where several outcome mutants survived', (t) => {
+    const { reporter, findings } = setup(t);
+    const outcome = survivedStubMutant(
+      'fn().mockRejectedValue(new Error("Stryker"))',
+      'LzStorybookSpyStubOutcome',
+    );
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            { ...survivedStubMutant('fn()'), status: 'Killed' },
+            outcome,
+            outcome,
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(outcomeUncheckedLines(findings()), [
+      ['src/Resolved.stories.tsx', 3],
+    ]);
+  });
+
+  it('reports no outcome-unchecked stub where the outcome mutant was killed', (t) => {
+    const { reporter, findings } = setup(t);
+
+    reporter.onMutationTestReportReady({
+      files: {
+        'src/Resolved.stories.tsx': {
+          source: resolvedStub,
+          mutants: [
+            { ...survivedStubMutant('fn()'), status: 'Killed' },
+            {
+              ...survivedStubMutant(
+                'fn().mockRejectedValue(new Error("Stryker"))',
+                'LzStorybookSpyStubOutcome',
+              ),
+              status: 'Killed',
+            },
+          ],
+        },
+      },
+    });
+
+    assert.deepEqual(outcomeUncheckedLines(findings()), []);
+  });
+
   it('reports one unchecked stub for a line where several spy stub mutants survived', (t) => {
     const { reporter, findings } = setup(t);
 
@@ -493,7 +630,13 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(
       findings().map((finding) => isRecord(finding) && finding['verdict']),
-      ['unknown', 'order-dependent', 'erased', 'unchecked'],
+      [
+        'unknown',
+        'order-dependent',
+        'erased',
+        'unchecked',
+        'outcome-unchecked',
+      ],
     );
   });
 
@@ -571,7 +714,7 @@ describe('storybookReporter', () => {
 
     assert.equal(
       consoleBlock()[0],
-      'info: @layzee/stryker-storybook: 4 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked)',
+      'info: @layzee/stryker-storybook: 5 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked, 1 outcome-unchecked)',
     );
   });
 
@@ -619,7 +762,7 @@ describe('storybookReporter', () => {
 
     reporter.onMutationTestReportReady(recordedReport);
 
-    assert.equal(consoleBlock().length, 5);
+    assert.equal(consoleBlock().length, 6);
   });
 
   it('says there are no findings above the static line when only static mutants exist', (t) => {
@@ -1058,11 +1201,12 @@ describe('storybookReporter', () => {
     reporter.onMutationTestReportReady(recordedReport);
 
     assert.deepEqual(consoleBlock(), [
-      'info: @layzee/stryker-storybook: 4 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked)',
+      'info: @layzee/stryker-storybook: 5 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked, 1 outcome-unchecked)',
       "  unknown  src/lzsb/Imported.stories.tsx:14 mockReturnValue  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach",
       '  order-dependent  src/lzsb/OrderDep.stories.tsx:13 mockReturnValue  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach',
       '  erased  src/SpyStubDefault.stories.tsx:15 mockReturnValue  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach',
       '  unchecked  src/SpyStubMetaOff.stories.tsx:24  no test fails without this stub, so no play checks what it changes; assert in the play what the stubbed value changes',
+      '  outcome-unchecked  src/SpyStubOutcome.stories.tsx:17  a test fails without this stub, but none fails when it settles the other way, so no play checks what its outcome changes; assert in the play what the story shows for this outcome, such as its success or error message',
     ]);
   });
 

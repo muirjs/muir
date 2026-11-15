@@ -17,6 +17,9 @@ export const storybookPluginName = 'lz-storybook';
 /** The mutator whose surviving mutants make unchecked stubs: it removes a stub, where `LzStorybookSpyStubOutcome` only flips how a stub settles. */
 export const spyStubName = 'LzStorybookSpyStub';
 
+/** The mutator that flips how a stub settles; its surviving mutants make outcome-unchecked stubs where the stub's removal is detected. */
+export const spyStubOutcomeName = 'LzStorybookSpyStubOutcome';
+
 export type ReasonVerdict =
   | Exclude<StubVerdict, 'kept'>
   | Exclude<StubRewrite, 'rewritten'>;
@@ -53,6 +56,13 @@ export const uncheckedFinding = {
   verdict: 'unchecked',
   reason: 'no test fails without this stub, so no play checks what it changes',
   fix: 'assert in the play what the stubbed value changes',
+} as const;
+
+export const outcomeUncheckedFinding = {
+  verdict: 'outcome-unchecked',
+  reason:
+    'a test fails without this stub, but none fails when it settles the other way, so no play checks what its outcome changes',
+  fix: 'assert in the play what the story shows for this outcome, such as its success or error message',
 } as const;
 
 export interface SpyStubReason {

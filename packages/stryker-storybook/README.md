@@ -236,9 +236,11 @@ The `lz-storybook` reporter writes `reports/lz-storybook.json` and prints a bloc
 
 It holds three lists:
 
-- Spy stub findings: each definition-time stub that is not kept, with its verdict, and each stub whose
-  `LzStorybookSpyStub` mutant survived, as `unchecked`. The reporter reads the stubs of every story file, also the
-  ones this run does not mutate.
+- Spy stub findings: each definition-time stub that is not kept, with its verdict; each stub whose
+  `LzStorybookSpyStub` mutant survived, as `unchecked`; and each stub whose `LzStorybookSpyStubOutcome` mutant
+  survived while its removal was killed or timed out, as `outcome-unchecked` (a play needs the stub, but no check
+  tells its success from its failure). The reporter reads the stubs of every story file, also the ones this run does
+  not mutate.
 - Interaction hints: surviving mutants of the interaction mutators at an interaction of a known shape
   (`negative-only`, `click-before-type` or `cleared-later`), each with the reason, the fix and a ready
   `// Stryker disable next-line` comment.
