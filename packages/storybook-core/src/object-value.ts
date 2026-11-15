@@ -34,14 +34,7 @@ export function propertyKey(property: unknown): string | number | undefined {
 export function maySet(property: unknown, key: string | number): boolean {
   const name = propertyKey(property);
 
-  return name === undefined || sameKey(name, key);
-}
-
-export function sameKey(
-  name: string | number | undefined,
-  key: string | number,
-): boolean {
-  return name !== undefined && String(name) === String(key);
+  return name === undefined || String(name) === String(key);
 }
 
 /** The values the properties of a last-wins-first list that may set `key` give it: `unknownValue` for a spread or a computed key, a method being its own value. */
@@ -69,13 +62,11 @@ function propertyValue(property: unknown): object | undefined {
   return isRecord(value) ? value : undefined;
 }
 
-/** The value node the file writes for `key` in an object literal, as Storybook 10.6.5 CsfFile reads a meta or story property: the last property whose key is the identifier `key`, computed or not (`t.isIdentifier(p.key)`), so a string-literal key gives none, whether or not a later spread or computed key may replace it when the file runs. It tells what role a node has, such as test code or a tag list, not which value runs; `valuesOf` reads that, with JavaScript's keys. */
+/** The value node the file writes for `key` in an object literal, as Storybook 10.6.5 CsfFile reads a meta or story property: the last property whose key is the identifier `key`, computed or not (`t.isIdentifier(p.key)`; of the key nodes, only an identifier has a `name`), so a string-literal key gives none, whether or not a later spread or computed key may replace it when the file runs. It tells what role a node has, such as test code or a tag list, not which value runs; `valuesOf` reads that, with JavaScript's keys. */
 export function writtenValue(object: unknown, key: string): object | undefined {
   return propertyValue(
     list(field(object, 'properties')).findLast(
-      (candidate) =>
-        field(candidate, 'key', 'type') === 'Identifier' &&
-        field(candidate, 'key', 'name') === key,
+      (candidate) => field(candidate, 'key', 'name') === key,
     ),
   );
 }

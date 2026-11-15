@@ -5,7 +5,6 @@ import { field, list } from './node-field.ts';
 import {
   isObjectLiteral,
   propertyKey,
-  sameKey,
   unknownValue,
   valuesIn,
   type LayerValue,
@@ -15,17 +14,17 @@ import {
 /** The value the last property of exactly `key` gives it, as `shownObject` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. `undefined` for an object the file does not show, which is no site. */
 export function ownValue(
   object: unknown,
-  key: string | number,
+  key: string,
   bindings: Bindings,
 ): LayerValue {
   return ownValueOf(shownObject(object, bindings), key);
 }
 
-export function ownValueOf(layer: Layer, key: string | number): LayerValue {
+export function ownValueOf(layer: Layer, key: string): LayerValue {
   return typeof layer === 'object'
     ? valuesIn(
-        layer.lastWinsProperties.filter((property) =>
-          sameKey(propertyKey(property), key),
+        layer.lastWinsProperties.filter(
+          (property) => propertyKey(property) === key,
         ),
         key,
       )[0]
