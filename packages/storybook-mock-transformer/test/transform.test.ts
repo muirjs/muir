@@ -401,7 +401,7 @@ describe('transform', () => {
     );
   });
 
-  it('leaves a stub whose spy call takes an implementation as written, and rewrites a stub in that implementation', () => {
+  it('leaves a stub whose spy call takes arguments as written, and rewrites a stub in those arguments', () => {
     const code = [
       "import { fn } from 'storybook/test';",
       'export const Inner = { args: { load: fn(fn().mockReturnValue(2)).mockReturnValue(1) } };',
@@ -418,7 +418,7 @@ describe('transform', () => {
     );
   });
 
-  it('leaves a file whose only stub is on a spy call that takes an implementation unchanged', () => {
+  it('leaves a file whose only stub is on a spy call that takes arguments unchanged', () => {
     const code = [
       "import { fn } from 'storybook/test';",
       'export const Impl = { args: { load: fn(() => 0).mockReturnValue(1) } };',

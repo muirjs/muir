@@ -238,7 +238,8 @@ lists it once as a stub finding, because no test fails without the stub. A survi
 mutators' term), which `LzStorybookSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
 success from failure, not that none reads the stub. A later stub of a chain whose first stub the mock transformer
 keeps is erased all the same, so its removal survives and the report lists an unchecked stub on the line of its
-`chain-not-rewritten` or `once-not-rewritten` finding; the fix of that finding clears both.
+`chain-not-rewritten` or `once-not-rewritten` finding; the fix of that finding clears both. The same holds for an
+erased stub on a spy call that takes arguments and its `spy-arguments-not-rewritten` finding.
 _Avoid_: unobserved stub, surviving stub
 
 **Stub finding**:

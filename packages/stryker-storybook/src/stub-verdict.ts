@@ -41,15 +41,7 @@ const reasons: Readonly<Record<ReasonVerdict, string>> = {
 };
 
 const fix =
-  'pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach';
-
-/** The fix for a stub whose spy call already takes the implementation that the usual fix passes. */
-const spyArgumentsFix =
-  'return the value from the function fn() takes, as in fn(() => value), or set the stub in beforeEach';
-
-function fixOf(verdict: ReasonVerdict): string {
-  return verdict === 'spy-arguments-not-rewritten' ? spyArgumentsFix : fix;
-}
+  'pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach';
 
 /** The reason for a chain whose stubs have different verdicts and none is kept, since its ignore covers them all. */
 export const unrewrittenChainReason = reasonText(
@@ -88,7 +80,7 @@ export function reasonSites(
   return siteReasons(stubs, transformer);
 }
 
-/** Stryker ignores the whole subtree of an ignored node, so a stub call is ignored only when no stub before it in its chain is kept. */
+/** Stryker ignores the whole subtree of an ignored node, so a stub call is ignored only when no stub before it in its chain is kept and its spy call takes no arguments; otherwise only its own arguments are. */
 export function stubIgnores(
   file: StoryFile,
   { previewTest, testTags, transformer }: StorybookProject,
@@ -144,7 +136,7 @@ function siteReasons(
 }
 
 export function describeVerdict(verdict: ReasonVerdict): SpyStubReason {
-  return { verdict, reason: reasons[verdict], fix: fixOf(verdict) };
+  return { verdict, reason: reasons[verdict], fix };
 }
 
 export function spyStubReason(verdict: ReasonVerdict): string {
@@ -152,5 +144,5 @@ export function spyStubReason(verdict: ReasonVerdict): string {
 }
 
 function reasonText(verdict: ReasonVerdict, reason: string): string {
-  return `${storybookPluginName}: ${verdict}: ${reason}; ${fixOf(verdict)}`;
+  return `${storybookPluginName}: ${verdict}: ${reason}; ${fix}`;
 }

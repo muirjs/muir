@@ -154,7 +154,7 @@ describe('definitionTimeStubs', () => {
     ]);
   });
 
-  it('tells a stub whose spy call takes an implementation, inside parentheses too', () => {
+  it('tells a stub whose spy call takes arguments, inside parentheses too', () => {
     const stubs = definitionTimeStubs(
       parseTs(
         "import { fn } from 'storybook/test';\nfn(() => 1).mockReturnValue(2);\n(fn<() => number>(impl)).mockName('a').mockResolvedValue(3);\nfn<() => number>().mockReturnValue(4);",
@@ -267,7 +267,7 @@ describe('mockTransformerRewrite', () => {
     ]);
   });
 
-  it('leaves the first stub of a chain alone when its spy call takes an implementation', () => {
+  it('leaves the first stub of a chain alone when its spy call takes arguments', () => {
     assert.equal(
       mockTransformerRewrite({ ...first, spyCallHasArguments: true }),
       'spy-arguments-not-rewritten',

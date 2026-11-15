@@ -1059,9 +1059,9 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(consoleBlock(), [
       'info: @layzee/stryker-storybook: 4 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked)',
-      "  unknown  src/lzsb/Imported.stories.tsx:14 mockReturnValue  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach",
-      '  order-dependent  src/lzsb/OrderDep.stories.tsx:13 mockReturnValue  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
-      '  erased  src/SpyStubDefault.stories.tsx:15 mockReturnValue  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach',
+      "  unknown  src/lzsb/Imported.stories.tsx:14 mockReturnValue  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach",
+      '  order-dependent  src/lzsb/OrderDep.stories.tsx:13 mockReturnValue  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach',
+      '  erased  src/SpyStubDefault.stories.tsx:15 mockReturnValue  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach',
       '  unchecked  src/SpyStubMetaOff.stories.tsx:24  no test fails without this stub, so no play checks what it changes; assert in the play what the stubbed value changes',
     ]);
   });

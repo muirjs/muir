@@ -28,7 +28,7 @@ describe('siteFindings', () => {
     );
   });
 
-  it('gives a stub on a spy call that takes an implementation the spy-arguments-not-rewritten finding, and the rewritten stub inside it none', () => {
+  it('gives a stub on a spy call that takes arguments the spy-arguments-not-rewritten finding, and the rewritten stub inside them none', () => {
     const code = [
       "import { fn } from 'storybook/test';",
       'export default {',

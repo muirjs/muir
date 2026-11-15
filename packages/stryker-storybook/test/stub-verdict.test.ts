@@ -8,7 +8,7 @@ import {
 } from '../src/stub-verdict.ts';
 
 const fix =
-  'pass the implementation to fn(), as in fn(() => value), or set the stub in beforeEach';
+  'pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach';
 
 describe('spyStubReason', () => {
   it('names the ignorer, the erased verdict, the reason and the fix', () => {
@@ -49,15 +49,13 @@ describe('spyStubReason', () => {
   it('says why a stub on a spy call that takes arguments stays erased with the mock transformer on, and how to fix it there', () => {
     assert.equal(
       spyStubReason('spy-arguments-not-rewritten'),
-      'lz-storybook: spy-arguments-not-rewritten: the mock transformer does not rewrite a stub whose spy call takes arguments, as in fn(impl), since the rewrite would replace them, so the mock reset still erases this stub; return the value from the function fn() takes, as in fn(() => value), or set the stub in beforeEach',
+      `lz-storybook: spy-arguments-not-rewritten: the mock transformer does not rewrite a stub whose spy call takes arguments, as in fn(impl), since the rewrite would replace them, so the mock reset still erases this stub; ${fix}`,
     );
   });
 
-  it('gives a spy-arguments-not-rewritten finding the fix for a spy that already takes a function', () => {
-    assert.equal(
-      describeVerdict('spy-arguments-not-rewritten').fix,
-      'return the value from the function fn() takes, as in fn(() => value), or set the stub in beforeEach',
-    );
+  it('gives every finding the same fix, which also fits a spy that already takes a function', () => {
+    assert.equal(describeVerdict('spy-arguments-not-rewritten').fix, fix);
+    assert.equal(describeVerdict('erased').fix, fix);
   });
 
   it('says why every stub of a chain that the mock transformer leaves whole stays erased', () => {
