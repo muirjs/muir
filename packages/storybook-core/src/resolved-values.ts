@@ -12,18 +12,13 @@ import {
   type ObjectLiteral,
 } from './object-value.ts';
 
-/** The value the last property of exactly `key` gives it, as `shownObject` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. */
+/** The value the last property of exactly `key` gives it, as `shownObject` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. `undefined` for an object the file does not show, which is no site. */
 export function ownValue(
   object: unknown,
   key: string | number,
   bindings: Bindings,
 ): LayerValue {
-  return ownValueOf(
-    object === undefined || object === unknownValue
-      ? object
-      : (shownObject(object, bindings) ?? unknownValue),
-    key,
-  );
+  return ownValueOf(shownObject(object, bindings), key);
 }
 
 export function ownValueOf(layer: Layer, key: string | number): LayerValue {
@@ -133,7 +128,7 @@ function shownObject(
     return new ResolvedObject(current, bindings);
   }
 
-  if (field(current, 'type') === 'Identifier' && typeof name === 'string') {
+  if (typeof name === 'string') {
     return bindings.has(name)
       ? shownObject(bindings.get(name), withoutBinding(bindings, name))
       : undefined;
@@ -166,9 +161,7 @@ function inLastWinsOrder(
     .toReversed()
     .flatMap(
       (property) =>
-        (field(property, 'type') === 'SpreadElement'
-          ? shownObject(field(property, 'argument'), bindings)
-              ?.lastWinsProperties
-          : undefined) ?? [property],
+        shownObject(field(property, 'argument'), bindings)
+          ?.lastWinsProperties ?? [property],
     );
 }
