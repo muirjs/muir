@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { it } from 'node:test';
 
+import { builtInNames } from '@layzee/stryker-mutator-install';
+
 import { mutatorSets } from '../src/mutators.ts';
+import { packageName } from '../src/package-name.ts';
 
 const readmeLines = readFileSync(
   join(import.meta.dirname, '..', 'README.md'),
@@ -45,12 +48,14 @@ it('gives the size of each tier in the opening counts and in the default install
 
   assert.ok(
     readme.includes(
-      `adds ${total} of its own: ${verb(defaults.length, 'runs', 'run')} by default, ${verb(optIn.length, 'is', 'are')} opt-in and ${verb(experimental.length, 'is', 'are')} experimental.`,
+      `turns Stryker's ${builtInNames.length} built-in mutators off and adds ${total} of its own: ${verb(defaults.length, 'runs', 'run')} by default, ${verb(optIn.length, 'is', 'are')} opt-in and ${verb(experimental.length, 'is', 'are')} experimental.`,
     ),
     'the opening counts',
   );
   assert.ok(
-    readme.includes(`${defaults.length} LzStorybook mutators on.`),
+    readme.includes(
+      `${packageName}: Stryker's ${builtInNames.length} built-in mutators are off for every file in this run; ${defaults.length} LzStorybook mutators on.`,
+    ),
     'the default install line',
   );
 });
