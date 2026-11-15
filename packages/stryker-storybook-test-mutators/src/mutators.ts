@@ -25,13 +25,10 @@ function roster<const T extends MutatorSets<LzStorybookTestMutator>>(
 }
 
 export const mutatorSets = roster({
-  defaults: [
-    interactionMutator(),
-    clickFocusMutator(),
-    interactionTargetMutator(),
-  ],
+  defaults: [interactionMutator(), clickFocusMutator()],
   optIn: [interactionRepeatMutator()],
   experimental: [
+    interactionTargetMutator(),
     waitForMutator(),
     assertionBeforeMutator(),
     spyStubMutator(),

@@ -260,11 +260,7 @@ describe('roster', () => {
     return names();
   }
 
-  const defaults = [
-    'LzStorybookInteraction',
-    'LzStorybookClickFocus',
-    'LzStorybookInteractionTarget',
-  ];
+  const defaults = ['LzStorybookInteraction', 'LzStorybookClickFocus'];
 
   it('installs the default mutators with no options', async () => {
     assert.deepEqual(await namesWith(undefined), defaults);
@@ -275,6 +271,15 @@ describe('roster', () => {
       ...defaults,
       'LzStorybookInteractionRepeat',
     ]);
+  });
+
+  it('turns LzStorybookInteractionTarget on by its name inside experimental', async () => {
+    assert.deepEqual(
+      await namesWith({
+        experimental: { LzStorybookInteractionTarget: true },
+      }),
+      [...defaults, 'LzStorybookInteractionTarget'],
+    );
   });
 
   it('turns LzStorybookWaitFor on by its name inside experimental', async () => {

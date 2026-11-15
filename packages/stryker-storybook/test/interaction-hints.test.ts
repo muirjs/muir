@@ -89,7 +89,10 @@ describe('interactionHints', () => {
   before(async () => {
     await lzStorybookTestMutators({
       LzStorybookInteractionRepeat: true,
-      experimental: { LzStorybookAssertionBefore: true },
+      experimental: {
+        LzStorybookAssertionBefore: true,
+        LzStorybookInteractionTarget: true,
+      },
     });
   });
 
