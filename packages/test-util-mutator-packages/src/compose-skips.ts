@@ -35,6 +35,16 @@ export interface Skip {
   readonly reason: string;
 }
 
+/** What the harness uses of a node:test `TestContext`. */
+export interface HarnessContext {
+  after(fn: () => void): unknown;
+  diagnostic(message: string): void;
+  test(
+    name: string,
+    fn: (t: Pick<HarnessContext, 'diagnostic'>) => void,
+  ): Promise<unknown>;
+}
+
 export interface ComposeSkips {
   readonly cases: readonly Case[];
   readonly skipsOf: (
@@ -85,132 +95,142 @@ interface RowResult {
   readonly failures: readonly string[];
 }
 
-export function composeSkips({
-  cases,
-  skipsOf,
-  layer,
-  same,
-  unloadable,
-  reasonsRowsMustCut,
-}: ComposeSkips): void {
-  test('removing a property the mutator skips leaves every composed story the same', async (t) => {
-    const root = tempRoot(t, 'compose-skips-');
-    const rootUrl = pathToFileURL(root).href;
-    const hooks = registerHooks({
-      resolve(specifier, context, nextResolve) {
-        const parent = context.parentURL;
+/**
+ * Registers one test that composes each case's stories with and without each property the mutator skips and fails a
+ * row where they differ. `register` takes the place of node:test's `test` in this package's own tests.
+ */
+export function composeSkips(
+  { cases, skipsOf, layer, same, unloadable, reasonsRowsMustCut }: ComposeSkips,
+  register: (
+    name: string,
+    fn: (t: HarnessContext) => Promise<void>,
+  ) => unknown = test,
+): void {
+  register(
+    'removing a property the mutator skips leaves every composed story the same',
+    async (t) => {
+      const root = tempRoot(t, 'compose-skips-');
+      const rootUrl = pathToFileURL(root).href;
+      const hooks = registerHooks({
+        resolve(specifier, context, nextResolve) {
+          const parent = context.parentURL;
 
-        if (
-          parent?.startsWith(rootUrl) !== true ||
-          specifier.startsWith('file:')
-        ) {
-          return nextResolve(specifier, context);
-        }
-
-        // Story files import without an extension, as Storybook's bundler allows.
-        if (!specifier.startsWith('.')) {
-          return {
-            url: new URL(`__bare__/${bareFile(specifier)}`, parent).href,
-            shortCircuit: true,
-          };
-        }
-
-        return nextResolve(
-          specifier.endsWith('.ts') ? specifier : `${specifier}.ts`,
-          context,
-        );
-      },
-    });
-    t.after(() => hooks.deregister());
-
-    const keysByRow = new Map<number, readonly string[]>();
-    const stubs = new Map<string, unknown>();
-    Reflect.defineProperty(globalThis, stubGlobal, {
-      configurable: true,
-      value: (row: number, name: string): unknown => {
-        const id = `${row}|${name}`;
-        const found = stubs.get(id);
-
-        if (found !== undefined) {
-          return found;
-        }
-
-        const stub = claimingStub(keysByRow.get(row) ?? []);
-        stubs.set(id, stub);
-
-        return stub;
-      },
-    });
-    t.after(() => Reflect.deleteProperty(globalThis, stubGlobal));
-
-    const results = await Promise.all(
-      cases.map((testCase, index) => {
-        const row = analyse(testCase.source, `${testCase.id}.stories.ts`);
-        keysByRow.set(index, row.keys);
-
-        return checkRow(
-          testCase,
-          row,
-          writeRow(join(root, String(index)), index, row),
-          { skipsOf, layer, same, unloadable },
-        );
-      }),
-    );
-
-    await Promise.all(
-      results.map(({ id, notes, failures }) =>
-        t.test(id, (rowContext) => {
-          notes.forEach((note) => rowContext.diagnostic(note));
-
-          if (failures.length > 0) {
-            assert.fail(failures.join('\n'));
+          if (
+            parent?.startsWith(rootUrl) !== true ||
+            specifier.startsWith('file:')
+          ) {
+            return nextResolve(specifier, context);
           }
+
+          // Story files import without an extension, as Storybook's bundler allows.
+          if (!specifier.startsWith('.')) {
+            return {
+              url: new URL(`__bare__/${bareFile(specifier)}`, parent).href,
+              shortCircuit: true,
+            };
+          }
+
+          return nextResolve(
+            specifier.endsWith('.ts') ? specifier : `${specifier}.ts`,
+            context,
+          );
+        },
+      });
+      t.after(() => hooks.deregister());
+
+      const keysByRow = new Map<number, readonly string[]>();
+      const stubs = new Map<string, unknown>();
+      Reflect.defineProperty(globalThis, stubGlobal, {
+        configurable: true,
+        value: (row: number, name: string): unknown => {
+          const id = `${row}|${name}`;
+          const found = stubs.get(id);
+
+          if (found !== undefined) {
+            return found;
+          }
+
+          const stub = claimingStub(keysByRow.get(row) ?? []);
+          stubs.set(id, stub);
+
+          return stub;
+        },
+      });
+      t.after(() => Reflect.deleteProperty(globalThis, stubGlobal));
+
+      const results = await Promise.all(
+        cases.map((testCase, index) => {
+          const row = analyse(testCase.source, `${testCase.id}.stories.ts`);
+          keysByRow.set(index, row.keys);
+
+          return checkRow(
+            testCase,
+            row,
+            writeRow(join(root, String(index)), index, row),
+            { skipsOf, layer, same, unloadable },
+          );
         }),
-      ),
-    );
+      );
 
-    const cuts = results.flatMap((result) => result.cuts);
-    const unloaded = results.filter(({ loaded }) => !loaded);
-    const withProofs = unloaded
-      .filter(({ proofCount }) => proofCount > 0)
-      .map(({ id }) => id);
-    t.diagnostic(
-      `rows composed: ${results.length - unloaded.length} of ${results.length}`,
-    );
-    t.diagnostic(
-      `proofs checked: ${
-        [
-          ...Map.groupBy(
-            cuts.flatMap(({ reasons }) => reasons),
-            (reason) => reason,
-          ),
-        ]
-          .map(([reason, all]) => `${reason} ${all.length}`)
-          .join(', ') || 'none'
-      }`,
-    );
-    t.diagnostic(
-      `properties cut: ${cuts.filter((cut) => cut.same).length} compose the same, ${cuts.filter((cut) => !cut.same).length} compose differently`,
-    );
-    t.diagnostic(
-      `unloadable rows: ${withProofs.length} with proofs (${withProofs.join(', ')}), ${unloaded.length - withProofs.length} without`,
-    );
+      await Promise.all(
+        results.map(({ id, notes, failures }) =>
+          t.test(id, (rowContext) => {
+            notes.forEach((note) => rowContext.diagnostic(note));
 
-    const ids = new Set(cases.map(({ id }) => id));
-    assert.deepEqual(
-      [...unloadable.keys()].filter((id) => !ids.has(id)),
-      [],
-      'the unloadable list names rows no case table has',
-    );
-    assert.notEqual(cuts.length, 0, 'no row cut a property the mutator skips');
-    assert.deepEqual(
-      reasonsRowsMustCut.filter(
-        (reason) => !cuts.some((cut) => cut.reasons.includes(reason)),
-      ),
-      [],
-      'proof reasons no row cut',
-    );
-  });
+            if (failures.length > 0) {
+              assert.fail(failures.join('\n'));
+            }
+          }),
+        ),
+      );
+
+      const cuts = results.flatMap((result) => result.cuts);
+      const unloaded = results.filter(({ loaded }) => !loaded);
+      const withProofs = unloaded
+        .filter(({ proofCount }) => proofCount > 0)
+        .map(({ id }) => id);
+      t.diagnostic(
+        `rows composed: ${results.length - unloaded.length} of ${results.length}`,
+      );
+      t.diagnostic(
+        `proofs checked: ${
+          [
+            ...Map.groupBy(
+              cuts.flatMap(({ reasons }) => reasons),
+              (reason) => reason,
+            ),
+          ]
+            .map(([reason, all]) => `${reason} ${all.length}`)
+            .join(', ') || 'none'
+        }`,
+      );
+      t.diagnostic(
+        `properties cut: ${cuts.filter((cut) => cut.same).length} compose the same, ${cuts.filter((cut) => !cut.same).length} compose differently`,
+      );
+      t.diagnostic(
+        `unloadable rows: ${withProofs.length} with proofs (${withProofs.join(', ')}), ${unloaded.length - withProofs.length} without`,
+      );
+
+      const ids = new Set(cases.map(({ id }) => id));
+      assert.deepEqual(
+        [...unloadable.keys()].filter((id) => !ids.has(id)),
+        [],
+        'the unloadable list names rows no case table has',
+      );
+      assert.notEqual(
+        cuts.length,
+        0,
+        'no row cut a property the mutator skips',
+      );
+      assert.deepEqual(
+        reasonsRowsMustCut.filter(
+          (reason) => !cuts.some((cut) => cut.reasons.includes(reason)),
+        ),
+        [],
+        'proof reasons no row cut',
+      );
+    },
+  );
 }
 
 interface RowFiles {
