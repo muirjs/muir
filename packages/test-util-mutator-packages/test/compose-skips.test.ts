@@ -485,10 +485,23 @@ describe('composeSkips', () => {
             "export const Story = { args: { label: 'x' , } };",
           ),
         },
+        {
+          id: 'tight',
+          source: file(
+            "export default { title: 'a', args: {label: 'x'} };",
+            "export const Story = { args: {label: 'x'}, tags: ['a', 'b'] };",
+          ),
+        },
       ],
     });
 
-    assert.deepEqual([...rows], [['trailing', undefined]]);
+    assert.deepEqual(
+      [...rows],
+      [
+        ['trailing', undefined],
+        ['tight', undefined],
+      ],
+    );
   });
 
   it('stands in a stub for an import that names its .ts extension', async () => {
