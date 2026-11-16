@@ -312,14 +312,14 @@ async function checkRow(
 
   const base = loaded.composed;
   const cuts = await Promise.all(
-    skips.flatMap(([site, proofs]) =>
+    skips.flatMap(([, proofs]) =>
       [...Map.groupBy(proofs, ({ property }) => property)].map(
         async ([property, propertyProofs]) => {
           const reasons = propertyProofs.map(({ reason }) => reason);
           const label = `${id}: removing ${String(propertyKey(property))} (${reasons.join(', ')})`;
           const cut = await composeOrError(
             files,
-            without(testCase.source, site, property),
+            without(testCase.source, property),
             layer,
           );
 
@@ -552,20 +552,12 @@ function member(value: unknown, key: string): unknown {
   return Reflect.get(Object(value), key);
 }
 
-/**
- * `source` without `property` of the object `site`, up to the next property or, for the last one, through a trailing
- * comma after it; the comma before the last property stays, a trailing comma.
- */
-function without(source: string, site: unknown, property: object): string {
-  const properties = list(field(site, 'properties'));
-  const index = properties.indexOf(property);
+/** `source` without `property` and the comma after it, if one follows; a comma before it then trails the property before. */
+function without(source: string, property: object): string {
   const end = offset(property, 'end');
-  const to =
-    index + 1 < properties.length
-      ? offset(properties[index + 1], 'start')
-      : end + (/^\s*,/.exec(source.slice(end))?.[0].length ?? 0);
+  const comma = /^\s*,/.exec(source.slice(end))?.[0].length ?? 0;
 
-  return source.slice(0, offset(property, 'start')) + source.slice(to);
+  return source.slice(0, offset(property, 'start')) + source.slice(end + comma);
 }
 
 function offset(node: unknown, edge: 'start' | 'end'): number {
@@ -577,7 +569,7 @@ function offset(node: unknown, edge: 'start' | 'end'): number {
 
 function claimingStub(keys: readonly string[]): unknown {
   const claims = (key: string | symbol) =>
-    typeof key === 'string' && keys.includes(key);
+    keys.some((claimed) => claimed === key);
   const stub: object = new Proxy(() => undefined, {
     get: (_target, key) =>
       key === Symbol.iterator

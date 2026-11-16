@@ -482,7 +482,7 @@ describe('composeSkips', () => {
             "    label: 'x',",
             '  },',
             '};',
-            "export const Story = { args: { label: 'x', } };",
+            "export const Story = { args: { label: 'x' , } };",
           ),
         },
       ],
