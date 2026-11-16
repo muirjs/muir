@@ -1274,6 +1274,13 @@ cycle 1 copied a hook case's expected origin (`unproven`) for a hook given by a 
 `userEvent14` for that shape, and the red's diff showed both the asserted change (`inHook`) and the copied part.
 Copying from a neighbour is the remedy O168 suggests, and here it was the cause. Evidence: `audit/cycles.log` cycle 1.
 
+**O173. A red failed for the right reason, and the green showed a second fault in the test.** The audit's cycle 6
+asserted that a meta with no `id`, with a stub spread over it, loads. The red was the expected load failure. After the
+green the row still failed, because the test cut a property the spread stub also claims. lz-red's step 5 checks why
+the red fails, but not that the rest of the test passes once that reason is gone. Cycle 4 of the same log is the
+other way to find such faults: a mutation survivor showed a real bug that the test-after pins had missed. Evidence:
+`audit/cycles.log` cycles 4 and 6.
+
 ### Suggestions
 
 **S1 (from O1).** Give `lz-red` step 5 a third kind beside driver and pin, a guard test: it passes on the current
