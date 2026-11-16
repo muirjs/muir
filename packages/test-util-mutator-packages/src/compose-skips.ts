@@ -111,7 +111,6 @@ export function composeSkips(
             return nextResolve(specifier, context);
           }
 
-          // Story files import without an extension, as Storybook's bundler allows.
           if (!specifier.startsWith('.')) {
             return {
               url: new URL(`__bare__/${bareFile(specifier)}`, parent).href,
@@ -119,13 +118,10 @@ export function composeSkips(
             };
           }
 
-          return nextResolve(
-            specifier.endsWith('.ts') ? specifier : `${specifier}.ts`,
-            context,
-          );
+          return nextResolve(withExtension(specifier), context);
         },
       });
-      // Stryker disable next-line ArrowFunction: a hook left in place resolves only imports from the deleted temporary folder, which nothing makes
+      // Stryker disable next-line ArrowFunction,CallExpression: a hook left in place resolves only imports from the deleted temporary folder, which nothing makes
       t.after(() => hooks.deregister());
 
       const keysByRow = new Map<number, readonly string[]>();
@@ -396,7 +392,7 @@ function writeRow(
       relative(
         dir,
         source.value.startsWith('.')
-          ? resolve(stories, `${source.value}.ts`)
+          ? resolve(stories, withExtension(source.value))
           : join(stories, '__bare__', bareFile(source.value)),
       ),
   );
@@ -420,8 +416,7 @@ function writeRow(
               ),
             ),
           ),
-          '',
-        ].join('\n'),
+        ].join(''),
       ]),
     ),
   });
@@ -436,6 +431,11 @@ function writeRow(
     // Stryker disable next-line UpdateOperator: counting down gives distinct names too
     next: () => `v${variant++}.stories.ts`,
   };
+}
+
+/** A relative specifier as the file it names; story files import without an extension, as Storybook's bundler allows. */
+function withExtension(specifier: string): string {
+  return specifier.endsWith('.ts') ? specifier : `${specifier}.ts`;
 }
 
 function bareFile(specifier: string): string {

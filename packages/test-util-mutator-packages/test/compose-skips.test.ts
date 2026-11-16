@@ -13,6 +13,9 @@ import {
   type Skip,
 } from '../src/compose-skips.ts';
 
+/** The names on globalThis before any run, which every run leaves as it found them. */
+const globalNames = Object.getOwnPropertyNames(globalThis);
+
 interface Run {
   /** The name the harness registers its test under. */
   readonly name: string;
@@ -379,13 +382,13 @@ describe('composeSkips', () => {
   });
 
   it('stands in a stub for each import and free name, which a story can call, spread, iterate and read the file’s keys from', async () => {
-    const globals = Object.getOwnPropertyNames(globalThis);
     const { rows, composed } = await run({
       cases: [
         {
           id: 'stubs',
           source: file(
             "import Button from './button';",
+            "import Icon from './icon';",
             "import { make, list, defaults } from '../shared/data';",
             "import { fn } from 'virtual:spies?raw';",
             "import * as everything from './everything';",
@@ -404,6 +407,7 @@ describe('composeSkips', () => {
             '    tuple: [1, 2] as const,',
             '    spy: fn,',
             '    button: Button,',
+            '    icon: Icon,',
             '    everything,',
             '  },',
             '};',
@@ -434,6 +438,7 @@ describe('composeSkips', () => {
       'tuple',
       'spy',
       'button',
+      'icon',
       'everything',
     ]);
     assert.equal(new Set(Object.values(spread)).size, 1);
@@ -448,16 +453,34 @@ describe('composeSkips', () => {
         alsoFree,
         args['spy'],
         args['button'],
+        args['icon'],
         ...Object.values(spread),
       ]).size,
-      6,
+      7,
     );
     assert.equal(args['max'], 2);
     assert.deepEqual(args['tuple'], [1, 2]);
     const { everything } = args;
     assert.ok(isRecord(everything));
     assert.deepEqual(Object.keys(everything), []);
-    assert.deepEqual(Object.getOwnPropertyNames(globalThis), globals);
+    assert.deepEqual(Object.getOwnPropertyNames(globalThis), globalNames);
+  });
+
+  it('stands in a stub for an import that names its .ts extension', async () => {
+    const { rows } = await run({
+      cases: [
+        {
+          id: 'extension',
+          source: file(
+            "import { value } from './data.ts';",
+            "export default { title: 'a', args: { label: 'x' } };",
+            "export const Story = { args: { label: 'x', value } };",
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual([...rows], [['extension', undefined]]);
   });
 
   it('composes a factory story and each of its .test() children', async () => {
