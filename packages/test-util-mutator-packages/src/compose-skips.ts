@@ -56,7 +56,11 @@ export interface ComposeSkips {
   readonly reasonsRowsMustCut: readonly ProofReason[];
 }
 
-/** Keys Storybook reads while it composes a story; a stub spread over a meta that claimed one stops the file loading. */
+/**
+ * Keys no stub claims, wherever the file names them: Storybook reads them while it composes a story, and a stub spread
+ * over a meta that claimed one stops the file loading. So a stub spread over args gives no arg of these names either,
+ * and a row cannot show what removing such an arg changes there.
+ */
 const structural: readonly string[] = [
   'play',
   'tags',
@@ -105,7 +109,7 @@ export function composeSkips(
     'removing a property the mutator skips leaves every composed story the same',
     async (t) => {
       const root = tempRoot(t, 'compose-skips-');
-      redirectBareImports(t, root);
+      redirectImports(t, root);
       const rows = cases.map((testCase) => ({
         testCase,
         row: analyse(testCase.source, `${testCase.id}.stories.ts`),
@@ -131,8 +135,8 @@ export function composeSkips(
   );
 }
 
-/** Sends each bare import a file under the temporary root makes to its stub module, until the test ends. */
-function redirectBareImports(t: Pick<HarnessContext, 'after'>, root: string) {
+/** Sends each import a file under the temporary root makes to the file `writeRow` writes for it, until the test ends. */
+function redirectImports(t: Pick<HarnessContext, 'after'>, root: string) {
   const rootUrl = pathToFileURL(root).href;
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -140,10 +144,13 @@ function redirectBareImports(t: Pick<HarnessContext, 'after'>, root: string) {
 
       if (
         parent?.startsWith(rootUrl) !== true ||
-        specifier.startsWith('file:') ||
-        specifier.startsWith('.')
+        specifier.startsWith('file:')
       ) {
         return nextResolve(specifier, context);
+      }
+
+      if (specifier.startsWith('.')) {
+        return nextResolve(tsFile(specifier), context);
       }
 
       return {
@@ -417,17 +424,15 @@ function writeRow(
     ({ source }) =>
       relative(
         dir,
-        // A relative import's stub sits at the specifier as written, with or without an extension: Node loads an
-        // extensionless file in a "type": "module" package as an ES module.
         source.value.startsWith('.')
-          ? resolve(stories, source.value)
+          ? resolve(stories, tsFile(source.value))
           : join(stories, '__bare__', bareFile(source.value)),
       ),
   );
 
   writeTree(dir, {
     'package.json': '{ "type": "module" }\n',
-    '.storybook/preview': `import { definePreview } from '${import.meta.resolve('storybook/internal/csf')}';\nexport default definePreview({ render: () => null });\n`,
+    '.storybook/preview.ts': `import { definePreview } from '${import.meta.resolve('storybook/internal/csf')}';\nexport default definePreview({ render: () => null });\n`,
     ...Object.fromEntries(
       [...modules].map(([file, declarations]) => [
         file,
@@ -472,6 +477,14 @@ function exportLine(
         `export const ${specifier.imported.name} = ${stub(specifier.imported.name)};`,
       ]
     : [];
+}
+
+/**
+ * The file a relative specifier names here: the specifier with `.ts` added, whatever it ends in, so `./a`, `./a.ts`,
+ * `./a.stories`, `./a.css` and `./a/b` each name their own TypeScript file, and a folder never shares a file's name.
+ */
+function tsFile(specifier: string): string {
+  return `${specifier}.ts`;
 }
 
 function bareFile(specifier: string): string {
@@ -554,7 +567,12 @@ function member(value: unknown, key: string): unknown {
 
 /** `source` without `property` and the comma after it, if one follows; a comma before it then trails the property before. */
 function without(source: string, property: object): string {
-  const end = offset(property, 'end');
+  const end = Math.max(
+    offset(property, 'end'),
+    ...list(field(property, 'trailingComments')).map((comment) =>
+      offset(comment, 'end'),
+    ),
+  );
   const comma = /^\s*,/.exec(source.slice(end))?.[0].length ?? 0;
 
   return source.slice(0, offset(property, 'start')) + source.slice(end + comma);

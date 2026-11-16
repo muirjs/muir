@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, sep } from 'node:path';
 import { describe, it } from 'node:test';
@@ -446,7 +447,7 @@ describe('composeSkips', () => {
       'everything',
     ]);
     const [defaults, ...spreadStubs] = Object.values(spread);
-    assert.deepEqual(new Set(spreadStubs), new Set([defaults]));
+    assert.ok(spreadStubs.every((value) => value === defaults));
     assert.equal(typeof called, 'function');
     assert.equal(claimed, called);
     assert.equal(unclaimed, undefined);
@@ -504,6 +505,27 @@ describe('composeSkips', () => {
     );
   });
 
+  it('removes a property with a comment between it and its comma', async () => {
+    const { rows } = await run({
+      cases: [
+        {
+          id: 'comments',
+          source: file(
+            "export default { title: 'a', args: { label: 'x' /* why */, other: 1 } };",
+            'export const Story = {',
+            '  args: {',
+            "    label: 'x' // why",
+            '    , other: 1,',
+            '  },',
+            '};',
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual([...rows], [['comments', undefined]]);
+  });
+
   it('stands in a stub for an import that names its .ts extension', async () => {
     const { rows } = await run({
       cases: [
@@ -519,6 +541,26 @@ describe('composeSkips', () => {
     });
 
     assert.deepEqual([...rows], [['extension', undefined]]);
+  });
+
+  it('stands in a stub for a relative import whose last segment has a dot, and for a folder and a file inside it', async () => {
+    const { rows } = await run({
+      cases: [
+        {
+          id: 'dotted',
+          source: file(
+            "import * as self from './dotted.stories';",
+            "import styles from './button.css';",
+            "import { shared } from './shared';",
+            "import { more } from './shared/more';",
+            "export default { title: 'a', args: { label: 'x' } };",
+            "export const Story = { args: { label: 'x', self, styles, shared, more } };",
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual([...rows], [['dotted', undefined]]);
   });
 
   it('composes a factory story and each of its .test() children', async () => {
@@ -629,8 +671,8 @@ describe('composeSkips', () => {
     });
 
     const [note = ''] = notes;
-    const prefix = `missing: cannot load: Cannot find module '${join(tmpdir(), 'compose-skips-')}`;
-    const suffix = `${join(sep, '1', 'stories', 'missing')}'`;
+    const prefix = `missing: cannot load: Cannot find module '${join(realpathSync(tmpdir()), 'compose-skips-')}`;
+    const suffix = `${join(sep, '1', 'stories', 'missing.ts')}'`;
     const folder = note.slice(prefix.length, note.indexOf(suffix));
 
     assert.ok(note.startsWith(prefix), note);
