@@ -264,6 +264,12 @@ describe('testReadmeTiers', () => {
     assert.throws(() => run(checks, noneCheck), { generatedMessage: true });
   });
 
+  it('fails None when nothing stands under the heading of an empty tier', (t) => {
+    const checks = checksOf(t, edited(readme, 'None.', ''));
+
+    assert.throws(() => run(checks, noneCheck), { generatedMessage: true });
+  });
+
   it('fails None when a tier with a mutator has None under its heading', (t) => {
     const checks = checksOf(
       t,

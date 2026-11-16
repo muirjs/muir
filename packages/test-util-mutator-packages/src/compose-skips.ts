@@ -56,24 +56,12 @@ export interface ComposeSkips {
   readonly reasonsRowsMustCut: readonly ProofReason[];
 }
 
-/** Keys Storybook reads as story structure; a stub that claimed them would break composition of every row. */
-const structural: readonly string[] = [
-  'play',
-  'tags',
-  'render',
-  'decorators',
-  'loaders',
-  'beforeEach',
-  'afterEach',
-  'parameters',
-  'title',
-  'component',
-  'name',
-  'id',
-];
+/** Keys Storybook reads while it composes a story; a stub spread over a meta that claimed one stops the file loading. */
+const structural: readonly string[] = ['play', 'tags', 'id'];
 
 const stubGlobal = '__lzComposeSkipsStub';
 
+// Stryker disable next-line ArrowFunction: composing needs a render to exist and never calls it
 const csf3Project = definePreview({ render: () => null }).composed;
 
 interface Row {
@@ -109,6 +97,7 @@ export function composeSkips(
   register(
     'removing a property the mutator skips leaves every composed story the same',
     async (t) => {
+      // Stryker disable next-line StringLiteral: the prefix only names the temporary folder
       const root = tempRoot(t, 'compose-skips-');
       const rootUrl = pathToFileURL(root).href;
       const hooks = registerHooks({
@@ -136,6 +125,7 @@ export function composeSkips(
           );
         },
       });
+      // Stryker disable next-line ArrowFunction: a hook left in place resolves only imports from the deleted temporary folder, which nothing makes
       t.after(() => hooks.deregister());
 
       const keysByRow = new Map<number, readonly string[]>();
@@ -150,6 +140,7 @@ export function composeSkips(
             return found;
           }
 
+          // Stryker disable next-line ArrayDeclaration: every row's keys are set before its file loads
           const stub = claimingStub(keysByRow.get(row) ?? []);
           stubs.set(id, stub);
 
@@ -363,6 +354,7 @@ function analyse(source: string, fileName: string): Row {
     },
   };
 
+  // Stryker disable BooleanLiteral: this repository has no Babel config for the first two to keep out, and code only prints the program
   transformSync(source, {
     configFile: false,
     babelrc: false,
@@ -371,6 +363,7 @@ function analyse(source: string, fileName: string): Row {
     code: false,
     plugins: [() => reader],
   });
+  // Stryker restore BooleanLiteral
   const [program] = programs;
   assert.ok(program);
 
@@ -440,11 +433,13 @@ function writeRow(
       .map((name) => `const ${name} = ${stub(name)};\n`)
       .join(''),
     // The ESM cache is keyed by URL, so each variant needs its own file.
+    // Stryker disable next-line UpdateOperator: counting down gives distinct names too
     next: () => `v${variant++}.stories.ts`,
   };
 }
 
 function bareFile(specifier: string): string {
+  // Stryker disable next-line StringLiteral: any replacement a file name may hold works, as the hook and the file name both use it
   return `${specifier.replaceAll(/[^\w.-]/g, '_')}.ts`;
 }
 
@@ -503,23 +498,19 @@ function withChildren(
 
 /** `value[key]`, for an object or a function such as a composed CSF3 story. */
 function member(value: unknown, key: string): unknown {
-  return (typeof value === 'object' && value !== null) ||
-    typeof value === 'function'
-    ? Reflect.get(value, key)
-    : undefined;
+  return Reflect.get(Object(value), key);
 }
 
+/** `source` without `property` of the object `site`; the comma before the last property stays, a trailing comma. */
 function without(source: string, site: unknown, property: object): string {
   const properties = list(field(site, 'properties'));
   const index = properties.indexOf(property);
-  const [from, to] =
+  const to =
     index + 1 < properties.length
-      ? [offset(property, 'start'), offset(properties[index + 1], 'start')]
-      : index > 0
-        ? [offset(properties[index - 1], 'end'), offset(property, 'end')]
-        : [offset(property, 'start'), offset(property, 'end')];
+      ? offset(properties[index + 1], 'start')
+      : offset(property, 'end');
 
-  return source.slice(0, from) + source.slice(to);
+  return source.slice(0, offset(property, 'start')) + source.slice(to);
 }
 
 function offset(node: unknown, edge: 'start' | 'end'): number {
@@ -541,9 +532,7 @@ function claimingStub(keys: readonly string[]): unknown {
           : undefined,
     ownKeys: () => [...keys],
     getOwnPropertyDescriptor: (_target, key) =>
-      claims(key)
-        ? { value: stub, enumerable: true, configurable: true, writable: true }
-        : undefined,
+      claims(key) ? { enumerable: true, configurable: true } : undefined,
     apply: () => stub,
   });
 
@@ -556,6 +545,7 @@ function show(value: unknown): string {
 
 function message(error: unknown): string {
   return error instanceof Error
-    ? (error.message.split('\n')[0] ?? '')
+    ? // Stryker disable next-line StringLiteral: split always gives a first element
+      (error.message.split('\n')[0] ?? '')
     : String(error);
 }

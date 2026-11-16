@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
+import { basename } from 'node:path';
 import { describe, it } from 'node:test';
 import { isDeepStrictEqual } from 'node:util';
 
-import { propertyKey } from '@layzee/storybook-core';
+import { field, isRecord, propertyKey } from '@layzee/storybook-core';
 
 import {
   type Case,
@@ -13,6 +14,8 @@ import {
 } from '../src/compose-skips.ts';
 
 interface Run {
+  /** The name the harness registers its test under. */
+  readonly name: string;
   /** Each row's failure, or `undefined` for a row that passed. */
   readonly rows: ReadonlyMap<string, string | undefined>;
   /** Each row's notes, as `<row>: <note>`. */
@@ -20,22 +23,26 @@ interface Run {
   readonly diagnostics: readonly string[];
   /** The message of the run's own last check that failed, if one did. */
   readonly error: string | undefined;
+  /** The layer of each story composed with every property, once for each property cut. */
+  readonly composed: readonly unknown[];
 }
 
-/** A mutator that skips every property named `key`, with `reason`. */
-function skipsOfKey(
-  key: string,
-  reason = 'same-as-below',
+/** A mutator that skips every property named by a key of `reasons`, with one proof for each of its reasons. */
+function skipsOfKeys(
+  reasons: Readonly<Record<string, readonly string[]>>,
 ): ComposeSkips['skipsOf'] {
   return (program) => {
     const skips = new Map<unknown, readonly Skip[]>();
 
     program.traverse({
       ObjectProperty(path) {
-        if (propertyKey(path.node) === key) {
+        const key = propertyKey(path.node);
+        const proofs = typeof key === 'string' ? (reasons[key] ?? []) : [];
+
+        if (proofs.length > 0) {
           skips.set(path.parent, [
             ...(skips.get(path.parent) ?? []),
-            { property: path.node, reason },
+            ...proofs.map((reason) => ({ property: path.node, reason })),
           ]);
         }
       },
@@ -45,21 +52,40 @@ function skipsOfKey(
   };
 }
 
-/** Runs the harness's test on a context that records what each row and the run report. */
+/** A mutator that skips every property named `key`, with `reason`. */
+function skipsOfKey(
+  key: string,
+  reason = 'same-as-below',
+): ComposeSkips['skipsOf'] {
+  return skipsOfKeys({ [key]: [reason] });
+}
+
+/**
+ * Runs the harness's test on a context that records what each row and the run report. `whileRegistered` runs as
+ * the first row's result is reported, while the harness's module hook is in place.
+ */
 async function run(
   options: Pick<ComposeSkips, 'cases'> & Partial<ComposeSkips>,
+  whileRegistered?: () => Promise<void>,
 ): Promise<Run> {
-  const tests: ((t: HarnessContext) => Promise<void>)[] = [];
+  const tests: { name: string; fn: (t: HarnessContext) => Promise<void> }[] =
+    [];
+  const composed: unknown[] = [];
+  const { same = isDeepStrictEqual } = options;
   composeSkips(
     {
       skipsOf: skipsOfKey('label'),
       layer: 'args',
-      same: isDeepStrictEqual,
       unloadable: new Map(),
       reasonsRowsMustCut: [],
       ...options,
+      same: (withProperty, withoutProperty) => {
+        composed.push(withProperty);
+
+        return same(withProperty, withoutProperty);
+      },
     },
-    (_name, fn) => tests.push(fn),
+    (name, fn) => tests.push({ name, fn }),
   );
   const [test] = tests;
   assert.ok(test);
@@ -73,6 +99,10 @@ async function run(
       diagnostics.push(message);
     },
     test: async (name, fn) => {
+      if (rows.size === 0) {
+        await whileRegistered?.();
+      }
+
       rows.set(name, undefined);
 
       try {
@@ -89,14 +119,18 @@ async function run(
   let error: string | undefined;
 
   try {
-    await test(context);
+    await test.fn(context);
   } catch (thrown) {
     error = thrown instanceof Error ? thrown.message : String(thrown);
   } finally {
     afters.reverse().forEach((fn) => fn());
   }
 
-  return { rows, notes, diagnostics, error };
+  return { name: test.name, rows, notes, diagnostics, error, composed };
+}
+
+function file(...lines: readonly string[]): string {
+  return `${lines.join('\n')}\n`;
 }
 
 const same: Case = {
@@ -107,12 +141,17 @@ const same: Case = {
 
 describe('composeSkips', () => {
   it('passes a row where removing each skipped property leaves every story the same, and counts what it checked', async () => {
-    const { rows, diagnostics, error } = await run({
+    const { name, rows, notes, diagnostics, error } = await run({
       cases: [same],
       reasonsRowsMustCut: ['same-as-below'],
     });
 
+    assert.equal(
+      name,
+      'removing a property the mutator skips leaves every composed story the same',
+    );
     assert.deepEqual([...rows], [['same', undefined]]);
+    assert.deepEqual(notes, []);
     assert.deepEqual(diagnostics, [
       'rows composed: 1 of 1',
       'proofs checked: same-as-below 2',
@@ -150,7 +189,7 @@ describe('composeSkips', () => {
   });
 
   it('fails a row whose file stops loading without a skipped property', async () => {
-    const { rows } = await run({
+    const { rows, diagnostics } = await run({
       cases: [
         {
           id: 'stops',
@@ -169,6 +208,11 @@ describe('composeSkips', () => {
         ],
       ],
     );
+    assert.ok(
+      diagnostics.includes(
+        'properties cut: 0 compose the same, 1 compose differently',
+      ),
+    );
   });
 
   it('fails a row with proofs that cannot load, unless the unloadable list names it, where it only notes the error', async () => {
@@ -179,8 +223,11 @@ describe('composeSkips', () => {
     };
     const unlisted = await run({ cases: [same, broken] });
     const listed = await run({
-      cases: [same, broken],
-      unloadable: new Map([['broken', 'it throws on import']]),
+      cases: [same, broken, { ...broken, id: 'also' }],
+      unloadable: new Map([
+        ['broken', 'it throws on import'],
+        ['also', 'it throws on import'],
+      ]),
     });
 
     assert.equal(
@@ -188,14 +235,18 @@ describe('composeSkips', () => {
       'broken has 1 proofs but cannot load: no import',
     );
     assert.equal(listed.rows.get('broken'), undefined);
-    assert.deepEqual(listed.notes, ['broken: cannot load: no import']);
+    assert.deepEqual(listed.notes, [
+      'broken: cannot load: no import',
+      'also: cannot load: no import',
+    ]);
     assert.deepEqual(
       listed.diagnostics.filter((line) => /^(rows|unloadable)/.test(line)),
       [
-        'rows composed: 1 of 2',
-        'unloadable rows: 1 with proofs (broken), 0 without',
+        'rows composed: 1 of 3',
+        'unloadable rows: 2 with proofs (broken, also), 0 without',
       ],
     );
+    assert.equal(listed.error, undefined);
   });
 
   it('passes a row with no proof that cannot load, and fails it when the unloadable list names it', async () => {
@@ -210,6 +261,7 @@ describe('composeSkips', () => {
     });
 
     assert.equal(unlisted.rows.get('empty'), undefined);
+    assert.deepEqual(unlisted.notes, []);
     assert.ok(
       unlisted.diagnostics.includes(
         'unloadable rows: 0 with proofs (), 1 without',
@@ -221,8 +273,8 @@ describe('composeSkips', () => {
     );
   });
 
-  it('fails a row the unloadable list names that loads', async () => {
-    const { rows } = await run({
+  it('fails a row the unloadable list names that loads, and cuts nothing in it', async () => {
+    const { rows, notes, diagnostics } = await run({
       cases: [same, { ...same, id: 'loads' }],
       unloadable: new Map([['loads', 'a reason']]),
     });
@@ -231,6 +283,13 @@ describe('composeSkips', () => {
       rows.get('loads'),
       'loads is listed as unloadable (a reason) but loads',
     );
+    assert.deepEqual(notes, []);
+    assert.deepEqual(diagnostics, [
+      'rows composed: 2 of 2',
+      'proofs checked: same-as-below 2',
+      'properties cut: 2 compose the same, 0 compose differently',
+      'unloadable rows: 0 with proofs (), 0 without',
+    ]);
   });
 
   it('fails the run when the unloadable list names a row no case has', async () => {
@@ -261,5 +320,246 @@ describe('composeSkips', () => {
     });
 
     assert.match(error ?? '', /^proof reasons no row cut/);
+  });
+
+  it('names every reason of a cut property, and counts each reason it checked', async () => {
+    const { rows, diagnostics, error } = await run({
+      cases: [
+        {
+          id: 'both',
+          source:
+            "export default { title: 'a', args: { label: 'x', other: 1 } };\nexport const Story = { args: { label: 'x', other: 1 } };\n",
+        },
+        {
+          id: 'changes',
+          source:
+            "export default { title: 'a' };\nexport const Story = { args: { label: 'x' } };\n",
+        },
+      ],
+      skipsOf: skipsOfKeys({
+        label: ['same-as-below', 'overridden'],
+        other: ['overridden'],
+      }),
+      reasonsRowsMustCut: ['overridden'],
+    });
+
+    assert.deepEqual(
+      [...rows],
+      [
+        ['both', undefined],
+        [
+          'changes',
+          "changes: removing label (same-as-below, overridden) changes the args of Story: with it { label: 'x' }, without it {}",
+        ],
+      ],
+    );
+    assert.ok(
+      diagnostics.includes('proofs checked: same-as-below 3, overridden 5'),
+    );
+    assert.equal(error, undefined);
+  });
+
+  it('passes the run when each proof reason the rows must cut is cut for one property, not for all', async () => {
+    const { error } = await run({
+      cases: [
+        {
+          id: 'both',
+          source:
+            "export default { title: 'a', args: { label: 'x', other: 1 } };\nexport const Story = { args: { label: 'x', other: 1 } };\n",
+        },
+      ],
+      skipsOf: skipsOfKeys({
+        label: ['same-as-below'],
+        other: ['overridden'],
+      }),
+      reasonsRowsMustCut: ['same-as-below', 'overridden'],
+    });
+
+    assert.equal(error, undefined);
+  });
+
+  it('stands in a stub for each import and free name, which a story can call, spread, iterate and read the file’s keys from', async () => {
+    const globals = Object.getOwnPropertyNames(globalThis);
+    const { rows, composed } = await run({
+      cases: [
+        {
+          id: 'stubs',
+          source: file(
+            "import Button from './button';",
+            "import { make, list, defaults } from '../shared/data';",
+            "import { fn } from 'virtual:spies?raw';",
+            "import * as everything from './everything';",
+            "export default { title: 'a', component: Button, args: { label: 'x' } };",
+            'export const Story = {',
+            '  args: {',
+            "    label: 'x',",
+            '    spread: { ...defaults },',
+            '    called: make(),',
+            '    claimed: make().label.label,',
+            '    unclaimed: make().other,',
+            '    items: [...list],',
+            '    free: undeclared,',
+            '    alsoFree: alsoUndeclared,',
+            '    max: Math.max(1, 2),',
+            '    tuple: [1, 2] as const,',
+            '    spy: fn,',
+            '    button: Button,',
+            '    everything,',
+            '  },',
+            '};',
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual([...rows], [['stubs', undefined]]);
+    const [args] = composed;
+    assert.ok(isRecord(args));
+    const { spread, called, claimed, unclaimed, items, free, alsoFree } = args;
+    assert.ok(isRecord(spread));
+    assert.deepEqual(Object.keys(spread), [
+      'args',
+      'globals',
+      'title',
+      'component',
+      'label',
+      'spread',
+      'called',
+      'claimed',
+      'unclaimed',
+      'items',
+      'free',
+      'alsoFree',
+      'max',
+      'tuple',
+      'spy',
+      'button',
+      'everything',
+    ]);
+    assert.equal(new Set(Object.values(spread)).size, 1);
+    assert.equal(typeof called, 'function');
+    assert.equal(claimed, called);
+    assert.equal(unclaimed, undefined);
+    assert.deepEqual(items, []);
+    assert.equal(
+      new Set([
+        called,
+        free,
+        alsoFree,
+        args['spy'],
+        args['button'],
+        ...Object.values(spread),
+      ]).size,
+      6,
+    );
+    assert.equal(args['max'], 2);
+    assert.deepEqual(args['tuple'], [1, 2]);
+    const { everything } = args;
+    assert.ok(isRecord(everything));
+    assert.deepEqual(Object.keys(everything), []);
+    assert.deepEqual(Object.getOwnPropertyNames(globalThis), globals);
+  });
+
+  it('composes a factory story and each of its .test() children', async () => {
+    const { rows } = await run({
+      cases: [
+        {
+          id: 'factory',
+          source: file(
+            "import preview from '../.storybook/preview';",
+            "const meta = preview.meta({ title: 'a' });",
+            "export const Story = meta.story({ args: { label: 'x' } });",
+            "Story.test('first', () => {});",
+            "Story.test('second', () => {});",
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual(
+      [...rows],
+      [
+        [
+          'factory',
+          [
+            "factory: removing label (same-as-below) changes the args of Story: with it { label: 'x' }, without it {}",
+            "factory: removing label (same-as-below) changes the args of Story .test() 1: with it { label: 'x' }, without it {}",
+            "factory: removing label (same-as-below) changes the args of Story .test() 2: with it { label: 'x' }, without it {}",
+          ].join('\n'),
+        ],
+      ],
+    );
+  });
+
+  it('composes the globals layer when asked to', async () => {
+    const { rows, composed } = await run({
+      cases: [
+        {
+          id: 'globals',
+          source:
+            "export default { title: 'a', globals: { theme: 'dark' } };\nexport const Story = { globals: { theme: 'dark' } };\n",
+        },
+      ],
+      skipsOf: skipsOfKey('theme'),
+      layer: 'globals',
+    });
+
+    assert.deepEqual([...rows], [['globals', undefined]]);
+    assert.equal(Reflect.get(Object(composed[0]), 'theme'), 'dark');
+  });
+
+  it('lets a stub stand in for the args and globals of a meta, and never for a key Storybook reads while composing', async () => {
+    const { rows, composed } = await run({
+      cases: [
+        {
+          id: 'meta',
+          source: file(
+            "import { shared, story } from './shared';",
+            "export default { title: 'a', id: 'a', play: async () => {}, tags: ['t'], ...shared };",
+            "export const Story = { parameters: { label: 'x' } };",
+            "export const Spread = { args: { label: 'x' }, ...story };",
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual([...rows], [['meta', undefined]]);
+    const [args] = composed;
+    assert.ok(isRecord(args));
+    assert.deepEqual(Object.keys(args), [
+      'args',
+      'globals',
+      'title',
+      'parameters',
+      'label',
+    ]);
+  });
+
+  it('reads each case under its id as a story file name', async () => {
+    const names: unknown[] = [];
+    const skips = skipsOfKey('label');
+    await run({
+      cases: [same],
+      skipsOf: (program) => {
+        names.push(
+          basename(String(field(program, 'hub', 'file', 'opts', 'filename'))),
+        );
+
+        return skips(program);
+      },
+    });
+
+    assert.deepEqual(names, ['same.stories.ts']);
+  });
+
+  it('leaves an import from outside its temporary folder to Node.js while its module hook is in place', async () => {
+    const outside = 'data:text/javascript,export default "outside"';
+    const imported: unknown[] = [];
+    await run({ cases: [same] }, async () => {
+      const module: unknown = await import(outside);
+      imported.push(field(module, 'default'));
+    });
+
+    assert.deepEqual(imported, ['outside']);
   });
 });
