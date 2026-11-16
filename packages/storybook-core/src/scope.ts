@@ -17,7 +17,10 @@ export interface Binding {
   readonly identifier: unknown;
   /** The node that declares it: a variable declarator, an import specifier, a function, a class, a catch clause, or a parameter as the function lists it. */
   readonly declaration: unknown;
-  /** The nodes that give the binding another value after its declaration. */
+  /**
+   * The nodes that give the binding another value after its declaration: each assignment, update or loop head that
+   * writes the name, and each second declaration of the name in its scope, such as a later `var` declarator.
+   */
   readonly writes: readonly unknown[];
 }
 
