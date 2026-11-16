@@ -122,13 +122,13 @@ describe('composeSkips', () => {
     assert.equal(error, undefined);
   });
 
-  it('fails a row where removing a skipped property changes a story, naming the property, the story and both values', async () => {
+  it('fails a row where removing a skipped property changes a story, naming the property, the story and both values on one line', async () => {
     const { rows, diagnostics } = await run({
       cases: [
         {
           id: 'changes',
           source:
-            "export default { title: 'a' };\nexport const Story = { args: { label: 'x' } };\n",
+            "export default { title: 'a' };\nexport const Story = { args: { label: { a: { b: { c: 'a value that runs past eighty characters on its own line' } } } } };\n",
         },
       ],
     });
@@ -138,7 +138,7 @@ describe('composeSkips', () => {
       [
         [
           'changes',
-          "changes: removing label (same-as-below) changes the args of Story: with it { label: 'x' }, without it {}",
+          "changes: removing label (same-as-below) changes the args of Story: with it { label: { a: { b: { c: 'a value that runs past eighty characters on its own line' } } } }, without it {}",
         ],
       ],
     );

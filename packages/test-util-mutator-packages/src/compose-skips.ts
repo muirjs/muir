@@ -551,7 +551,7 @@ function claimingStub(keys: readonly string[]): unknown {
 }
 
 function show(value: unknown): string {
-  return inspect(value, { depth: 4, breakLength: Infinity });
+  return inspect(value, { depth: 4, breakLength: Infinity, compact: true });
 }
 
 function message(error: unknown): string {
