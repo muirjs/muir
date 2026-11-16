@@ -39,11 +39,11 @@ export interface Skip {
 export interface HarnessContext {
   after(fn: () => void): unknown;
   diagnostic(message: string): void;
-  test(
-    name: string,
-    fn: (t: Pick<HarnessContext, 'diagnostic'>) => void,
-  ): Promise<unknown>;
+  test(name: string, fn: (t: RowContext) => void): Promise<unknown>;
 }
+
+/** What the harness uses of the context of one row's test. */
+export type RowContext = Pick<HarnessContext, 'diagnostic'>;
 
 export interface ComposeSkips {
   readonly cases: readonly Case[];
@@ -57,7 +57,14 @@ export interface ComposeSkips {
 }
 
 /** Keys Storybook reads while it composes a story; a stub spread over a meta that claimed one stops the file loading. */
-const structural: readonly string[] = ['play', 'tags', 'id'];
+const structural: readonly string[] = [
+  'play',
+  'tags',
+  'id',
+  'title',
+  'includeStories',
+  'excludeStories',
+];
 
 const stubGlobal = '__lzComposeSkipsStub';
 
@@ -97,126 +104,151 @@ export function composeSkips(
   register(
     'removing a property the mutator skips leaves every composed story the same',
     async (t) => {
-      // Stryker disable next-line StringLiteral: the prefix only names the temporary folder
       const root = tempRoot(t, 'compose-skips-');
-      const rootUrl = pathToFileURL(root).href;
-      const hooks = registerHooks({
-        resolve(specifier, context, nextResolve) {
-          const parent = context.parentURL;
-
-          if (
-            parent?.startsWith(rootUrl) !== true ||
-            specifier.startsWith('file:')
-          ) {
-            return nextResolve(specifier, context);
-          }
-
-          if (!specifier.startsWith('.')) {
-            return {
-              url: new URL(`__bare__/${bareFile(specifier)}`, parent).href,
-              shortCircuit: true,
-            };
-          }
-
-          return nextResolve(withExtension(specifier), context);
-        },
-      });
-      // Stryker disable next-line ArrowFunction,CallExpression: a hook left in place resolves only imports from the deleted temporary folder, which nothing makes
-      t.after(() => hooks.deregister());
-
-      const keysByRow = new Map<number, readonly string[]>();
-      const stubs = new Map<string, unknown>();
-      Reflect.defineProperty(globalThis, stubGlobal, {
-        configurable: true,
-        value: (row: number, name: string): unknown => {
-          const id = `${row}|${name}`;
-          const found = stubs.get(id);
-
-          if (found !== undefined) {
-            return found;
-          }
-
-          // Stryker disable next-line ArrayDeclaration: every row's keys are set before its file loads
-          const stub = claimingStub(keysByRow.get(row) ?? []);
-          stubs.set(id, stub);
-
-          return stub;
-        },
-      });
-      t.after(() => Reflect.deleteProperty(globalThis, stubGlobal));
-
+      redirectBareImports(t, root);
+      const rows = cases.map((testCase) => ({
+        testCase,
+        row: analyse(testCase.source, `${testCase.id}.stories.ts`),
+      }));
+      defineStubs(
+        t,
+        rows.map(({ row }) => row.keys),
+      );
       const results = await Promise.all(
-        cases.map((testCase, index) => {
-          const row = analyse(testCase.source, `${testCase.id}.stories.ts`);
-          keysByRow.set(index, row.keys);
-
-          return checkRow(
+        rows.map(({ testCase, row }, index) =>
+          checkRow(
             testCase,
             row,
             writeRow(join(root, String(index)), index, row),
             { skipsOf, layer, same, unloadable },
-          );
-        }),
-      );
-
-      await Promise.all(
-        results.map(({ id, notes, failures }) =>
-          t.test(id, (rowContext) => {
-            notes.forEach((note) => rowContext.diagnostic(note));
-
-            if (failures.length > 0) {
-              assert.fail(failures.join('\n'));
-            }
-          }),
+          ),
         ),
       );
 
-      const cuts = results.flatMap((result) => result.cuts);
-      const unloaded = results.filter(({ loaded }) => !loaded);
-      const withProofs = unloaded
-        .filter(({ proofCount }) => proofCount > 0)
-        .map(({ id }) => id);
-      t.diagnostic(
-        `rows composed: ${results.length - unloaded.length} of ${results.length}`,
-      );
-      t.diagnostic(
-        `proofs checked: ${
-          [
-            ...Map.groupBy(
-              cuts.flatMap(({ reasons }) => reasons),
-              (reason) => reason,
-            ),
-          ]
-            .map(([reason, all]) => `${reason} ${all.length}`)
-            .join(', ') || 'none'
-        }`,
-      );
-      t.diagnostic(
-        `properties cut: ${cuts.filter((cut) => cut.same).length} compose the same, ${cuts.filter((cut) => !cut.same).length} compose differently`,
-      );
-      t.diagnostic(
-        `unloadable rows: ${withProofs.length} with proofs (${withProofs.join(', ')}), ${unloaded.length - withProofs.length} without`,
-      );
-
-      const ids = new Set(cases.map(({ id }) => id));
-      assert.deepEqual(
-        [...unloadable.keys()].filter((id) => !ids.has(id)),
-        [],
-        'the unloadable list names rows no case table has',
-      );
-      assert.notEqual(
-        cuts.length,
-        0,
-        'no row cut a property the mutator skips',
-      );
-      assert.deepEqual(
-        reasonsRowsMustCut.filter(
-          (reason) => !cuts.some((cut) => cut.reasons.includes(reason)),
-        ),
-        [],
-        'proof reasons no row cut',
-      );
+      await reportRows(t, results);
+      reportRun(t, results, { cases, unloadable, reasonsRowsMustCut });
     },
+  );
+}
+
+/** Sends each bare import a file under the temporary root makes to its stub module, until the test ends. */
+function redirectBareImports(t: Pick<HarnessContext, 'after'>, root: string) {
+  const rootUrl = pathToFileURL(root).href;
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      const parent = context.parentURL;
+
+      if (
+        parent?.startsWith(rootUrl) !== true ||
+        specifier.startsWith('file:') ||
+        specifier.startsWith('.')
+      ) {
+        return nextResolve(specifier, context);
+      }
+
+      return {
+        url: new URL(`__bare__/${bareFile(specifier)}`, parent).href,
+        shortCircuit: true,
+      };
+    },
+  });
+  // Stryker disable next-line ArrowFunction,CallExpression: a hook left in place resolves only imports from the deleted temporary folder, which nothing makes
+  t.after(() => hooks.deregister());
+}
+
+/** Defines the global the stub modules and preludes call for the stub of each row and name, until the test ends. */
+function defineStubs(
+  t: Pick<HarnessContext, 'after'>,
+  keysOfRows: readonly (readonly string[])[],
+) {
+  const stubs = new Map<string, unknown>();
+  Reflect.defineProperty(globalThis, stubGlobal, {
+    configurable: true,
+    value: (row: number, name: string): unknown => {
+      const id = `${row}|${name}`;
+      const found = stubs.get(id);
+
+      if (found !== undefined) {
+        return found;
+      }
+
+      // Stryker disable next-line ArrayDeclaration: a stub module or prelude only calls with the number of its own row
+      const stub = claimingStub(keysOfRows[row] ?? []);
+      stubs.set(id, stub);
+
+      return stub;
+    },
+  });
+  t.after(() => Reflect.deleteProperty(globalThis, stubGlobal));
+}
+
+async function reportRows(
+  t: Pick<HarnessContext, 'test'>,
+  results: readonly RowResult[],
+): Promise<void> {
+  await Promise.all(
+    results.map(({ id, notes, failures }) =>
+      t.test(id, (rowContext) => {
+        notes.forEach((note) => rowContext.diagnostic(note));
+
+        if (failures.length > 0) {
+          assert.fail(failures.join('\n'));
+        }
+      }),
+    ),
+  );
+}
+
+/** Counts what the run checked, and fails it when the unloadable list names a missing row or a check cut nothing. */
+function reportRun(
+  t: Pick<HarnessContext, 'diagnostic'>,
+  results: readonly RowResult[],
+  {
+    cases,
+    unloadable,
+    reasonsRowsMustCut,
+  }: Pick<ComposeSkips, 'cases' | 'unloadable' | 'reasonsRowsMustCut'>,
+): void {
+  const cuts = results.flatMap((result) => result.cuts);
+  const unloaded = results.filter(({ loaded }) => !loaded);
+  const withProofs = unloaded
+    .filter(({ proofCount }) => proofCount > 0)
+    .map(({ id }) => id);
+  t.diagnostic(
+    `rows composed: ${results.length - unloaded.length} of ${results.length}`,
+  );
+  t.diagnostic(
+    `proofs checked: ${
+      [
+        ...Map.groupBy(
+          cuts.flatMap(({ reasons }) => reasons),
+          (reason) => reason,
+        ),
+      ]
+        .map(([reason, all]) => `${reason} ${all.length}`)
+        .join(', ') || 'none'
+    }`,
+  );
+  t.diagnostic(
+    `properties cut: ${cuts.filter((cut) => cut.same).length} compose the same, ${cuts.filter((cut) => !cut.same).length} compose differently`,
+  );
+  t.diagnostic(
+    `unloadable rows: ${withProofs.length} with proofs (${withProofs.join(', ')}), ${unloaded.length - withProofs.length} without`,
+  );
+
+  const ids = new Set(cases.map(({ id }) => id));
+  assert.deepEqual(
+    [...unloadable.keys()].filter((id) => !ids.has(id)),
+    [],
+    'the unloadable list names rows no case table has',
+  );
+  assert.notEqual(cuts.length, 0, 'no row cut a property the mutator skips');
+  assert.deepEqual(
+    reasonsRowsMustCut.filter(
+      (reason) => !cuts.some((cut) => cut.reasons.includes(reason)),
+    ),
+    [],
+    'proof reasons no row cut',
   );
 }
 
@@ -241,10 +273,7 @@ async function checkRow(
   const skips = [...skipsOf(row.program)];
   const proofCount = skips.reduce((n, [, proofs]) => n + proofs.length, 0);
   const listed = unloadable.get(id);
-  const loaded = await compose(files, testCase.source, layer).then(
-    (composed) => ({ composed }),
-    (error: unknown) => ({ error: message(error) }),
-  );
+  const loaded = await composeOrError(files, testCase.source, layer);
 
   if ('error' in loaded) {
     const unloaded = { id, loaded: false, proofCount, cuts: [] };
@@ -288,13 +317,10 @@ async function checkRow(
         async ([property, propertyProofs]) => {
           const reasons = propertyProofs.map(({ reason }) => reason);
           const label = `${id}: removing ${String(propertyKey(property))} (${reasons.join(', ')})`;
-          const cut = await compose(
+          const cut = await composeOrError(
             files,
             without(testCase.source, site, property),
             layer,
-          ).then(
-            (composed) => ({ composed }),
-            (error: unknown) => ({ error: message(error) }),
           );
 
           if ('error' in cut) {
@@ -391,28 +417,25 @@ function writeRow(
     ({ source }) =>
       relative(
         dir,
+        // A relative import's stub sits at the specifier as written, with or without an extension: Node loads an
+        // extensionless file in a "type": "module" package as an ES module.
         source.value.startsWith('.')
-          ? resolve(stories, withExtension(source.value))
+          ? resolve(stories, source.value)
           : join(stories, '__bare__', bareFile(source.value)),
       ),
   );
 
   writeTree(dir, {
     'package.json': '{ "type": "module" }\n',
-    '.storybook/preview.ts': `import { definePreview } from '${import.meta.resolve('storybook/internal/csf')}';\nexport default definePreview({ render: () => null });\n`,
+    '.storybook/preview': `import { definePreview } from '${import.meta.resolve('storybook/internal/csf')}';\nexport default definePreview({ render: () => null });\n`,
     ...Object.fromEntries(
       [...modules].map(([file, declarations]) => [
         file,
         [
           ...new Set(
             declarations.flatMap(({ source, specifiers }) =>
-              specifiers.map((specifier) =>
-                specifier.type === 'ImportDefaultSpecifier'
-                  ? `export default ${stub(`default of ${source.value}`)};`
-                  : specifier.type === 'ImportSpecifier' &&
-                      specifier.imported.type === 'Identifier'
-                    ? `export const ${specifier.imported.name} = ${stub(specifier.imported.name)};`
-                    : '',
+              specifiers.flatMap((specifier) =>
+                exportLine(specifier, source.value, stub),
               ),
             ),
           ),
@@ -433,14 +456,42 @@ function writeRow(
   };
 }
 
-/** A relative specifier as the file it names; story files import without an extension, as Storybook's bundler allows. */
-function withExtension(specifier: string): string {
-  return specifier.endsWith('.ts') ? specifier : `${specifier}.ts`;
+/** The line a stub module exports one imported name by; none for a namespace import, which gets an empty module. */
+function exportLine(
+  specifier: types.ImportDeclaration['specifiers'][number],
+  source: string,
+  stub: (name: string) => string,
+): readonly string[] {
+  if (specifier.type === 'ImportDefaultSpecifier') {
+    return [`export default ${stub(`default of ${source}`)};`];
+  }
+
+  return specifier.type === 'ImportSpecifier' &&
+    specifier.imported.type === 'Identifier'
+    ? [
+        `export const ${specifier.imported.name} = ${stub(specifier.imported.name)};`,
+      ]
+    : [];
 }
 
 function bareFile(specifier: string): string {
   // Stryker disable next-line StringLiteral: any replacement a file name may hold works, as the hook and the file name both use it
   return `${specifier.replaceAll(/[^\w.-]/g, '_')}.ts`;
+}
+
+/** The layer of each story `source` composes, or the first line of the error that stops it loading. */
+function composeOrError(
+  files: RowFiles,
+  source: string,
+  layer: ComposeSkips['layer'],
+): Promise<
+  | { readonly composed: ReadonlyMap<string, unknown> }
+  | { readonly error: string }
+> {
+  return compose(files, source, layer).then(
+    (composed) => ({ composed }),
+    (error: unknown) => ({ error: message(error) }),
+  );
 }
 
 async function compose(
@@ -501,14 +552,18 @@ function member(value: unknown, key: string): unknown {
   return Reflect.get(Object(value), key);
 }
 
-/** `source` without `property` of the object `site`; the comma before the last property stays, a trailing comma. */
+/**
+ * `source` without `property` of the object `site`, up to the next property or, for the last one, through a trailing
+ * comma after it; the comma before the last property stays, a trailing comma.
+ */
 function without(source: string, site: unknown, property: object): string {
   const properties = list(field(site, 'properties'));
   const index = properties.indexOf(property);
+  const end = offset(property, 'end');
   const to =
     index + 1 < properties.length
       ? offset(properties[index + 1], 'start')
-      : offset(property, 'end');
+      : end + (/^\s*,/.exec(source.slice(end))?.[0].length ?? 0);
 
   return source.slice(0, offset(property, 'start')) + source.slice(to);
 }

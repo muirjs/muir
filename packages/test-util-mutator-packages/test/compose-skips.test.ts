@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { basename } from 'node:path';
+import { tmpdir } from 'node:os';
+import { basename, join, sep } from 'node:path';
 import { describe, it } from 'node:test';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -114,8 +115,8 @@ async function run(
             notes.push(`${name}: ${note}`);
           },
         });
-      } catch (error) {
-        rows.set(name, error instanceof Error ? error.message : String(error));
+      } catch (failure) {
+        rows.set(name, messageOf(failure));
       }
     },
   };
@@ -124,12 +125,16 @@ async function run(
   try {
     await test.fn(context);
   } catch (thrown) {
-    error = thrown instanceof Error ? thrown.message : String(thrown);
+    error = messageOf(thrown);
   } finally {
     afters.reverse().forEach((fn) => fn());
   }
 
   return { name: test.name, rows, notes, diagnostics, error, composed };
+}
+
+function messageOf(thrown: unknown): string {
+  return thrown instanceof Error ? thrown.message : String(thrown);
 }
 
 function file(...lines: readonly string[]): string {
@@ -424,7 +429,6 @@ describe('composeSkips', () => {
     assert.deepEqual(Object.keys(spread), [
       'args',
       'globals',
-      'title',
       'component',
       'label',
       'spread',
@@ -441,29 +445,50 @@ describe('composeSkips', () => {
       'icon',
       'everything',
     ]);
-    assert.equal(new Set(Object.values(spread)).size, 1);
+    const [defaults, ...spreadStubs] = Object.values(spread);
+    assert.deepEqual(new Set(spreadStubs), new Set([defaults]));
     assert.equal(typeof called, 'function');
     assert.equal(claimed, called);
     assert.equal(unclaimed, undefined);
     assert.deepEqual(items, []);
-    assert.equal(
-      new Set([
-        called,
-        free,
-        alsoFree,
-        args['spy'],
-        args['button'],
-        args['icon'],
-        ...Object.values(spread),
-      ]).size,
-      7,
-    );
+    const stubs = [
+      called,
+      free,
+      alsoFree,
+      args['spy'],
+      args['button'],
+      args['icon'],
+      defaults,
+    ];
+    assert.equal(new Set(stubs).size, stubs.length);
     assert.equal(args['max'], 2);
     assert.deepEqual(args['tuple'], [1, 2]);
     const { everything } = args;
     assert.ok(isRecord(everything));
     assert.deepEqual(Object.keys(everything), []);
     assert.deepEqual(Object.getOwnPropertyNames(globalThis), globalNames);
+  });
+
+  it('removes the last property of an object, and a lone one, with the trailing comma after it', async () => {
+    const { rows } = await run({
+      cases: [
+        {
+          id: 'trailing',
+          source: file(
+            'export default {',
+            "  title: 'a',",
+            '  args: {',
+            '    other: 1,',
+            "    label: 'x',",
+            '  },',
+            '};',
+            "export const Story = { args: { label: 'x', } };",
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual([...rows], [['trailing', undefined]]);
   });
 
   it('stands in a stub for an import that names its .ts extension', async () => {
@@ -552,10 +577,51 @@ describe('composeSkips', () => {
     assert.deepEqual(Object.keys(args), [
       'args',
       'globals',
-      'title',
       'parameters',
       'label',
     ]);
+  });
+
+  it('composes a meta with no id that a stub is spread over, its title and story filters read while composing', async () => {
+    const { rows } = await run({
+      cases: [
+        {
+          id: 'title',
+          source: file(
+            "import { shared } from './shared';",
+            "export default { title: 'a', includeStories: ['Story'], excludeStories: [], ...shared };",
+            "export const Story = { parameters: { label: 'x' } };",
+          ),
+        },
+      ],
+    });
+
+    assert.deepEqual([...rows], [['title', undefined]]);
+  });
+
+  it('writes each row in a fresh compose-skips folder of the temporary folder', async () => {
+    const { notes } = await run({
+      cases: [
+        same,
+        {
+          id: 'missing',
+          source: file(
+            "export default { title: 'a' };",
+            "export const Story = { args: { label: 'x' } };",
+            "await import('./missing');",
+          ),
+        },
+      ],
+      unloadable: new Map([['missing', 'it imports a file no case writes']]),
+    });
+
+    const [note = ''] = notes;
+    const prefix = `missing: cannot load: Cannot find module '${join(tmpdir(), 'compose-skips-')}`;
+    const suffix = `${join(sep, '1', 'stories', 'missing')}'`;
+    const folder = note.slice(prefix.length, note.indexOf(suffix));
+
+    assert.ok(note.startsWith(prefix), note);
+    assert.match(folder, /^\w+$/);
   });
 
   it('reads each case under its id as a story file name', async () => {
