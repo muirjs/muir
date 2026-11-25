@@ -36,6 +36,8 @@ A paragraph.
 
 ## Turn a mutator off
 `;
+const reasonsCheck =
+  'gives why each opt-in and experimental mutator is in its tier and what would move it, in roster order';
 
 /** Runs the one check `muirTestReadmeTierReasons` registers for `text` as the README. */
 function check(
@@ -44,14 +46,14 @@ function check(
   readmeTiers: MuirMutatorTiers = tiers,
 ): void {
   const path = join(muirTempRoot(t, 'muir-readme-reasons-'), 'README.md');
-  const checks: (() => void)[] = [];
+  const checks = new Map<string, () => void>();
 
   writeFileSync(path, text);
-  muirTestReadmeTierReasons(path, readmeTiers, (_name, registered) => {
-    checks.push(registered);
+  muirTestReadmeTierReasons(path, readmeTiers, (name, registered) => {
+    checks.set(name, registered);
   });
-  assert.equal(checks.length, 1, 'one check');
-  checks[0]?.();
+  assert.deepEqual([...checks.keys()], [reasonsCheck], 'one named check');
+  checks.get(reasonsCheck)?.();
 }
 
 function edited(text: string, from: string, to: string): string {
@@ -99,6 +101,29 @@ describe('muirTestReadmeTierReasons', () => {
         );
       },
       { message: 'every row has a reason and what would move it' },
+    );
+  });
+
+  it('fails a row that ends after the reason', (t) => {
+    assert.throws(
+      () => {
+        check(
+          t,
+          edited(readme, '| Few sites. | 10 sites. |', '| Few sites. |'),
+        );
+      },
+      { message: 'every row has a reason and what would move it' },
+    );
+  });
+
+  it('reads as rows only the lines that start with a mutator cell', (t) => {
+    check(
+      t,
+      edited(
+        readme,
+        'A paragraph.',
+        'A paragraph that quotes a row: | `MuirE` | Why. | What. |',
+      ),
     );
   });
 
