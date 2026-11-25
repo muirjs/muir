@@ -191,6 +191,7 @@ export class MuirSirynPlaywrightTestRunner implements StrykerTestRunner {
   #serverMutant: string | undefined;
   #dryRunServerMutants: MuirSirynPlaywrightServerMutants | undefined;
   #serverMutantsFile: MuirSirynPlaywrightServerMutantsFile | undefined;
+  // Stryker disable next-line StringLiteral: equivalent, as only 'server' is ever compared, so any other kind restarts the same
   #previousRun: MuirSirynPlaywrightRunKind = 'other';
 
   constructor(
@@ -544,7 +545,8 @@ export class MuirSirynPlaywrightTestRunner implements StrykerTestRunner {
     const serverMutants = () => this.#serverMutants(session);
     const kind = session.options.webServer.isolate
       ? muirSirynPlaywrightRunKind(request, serverMutants)
-      : 'other';
+      : // Stryker disable next-line StringLiteral: equivalent, as only 'server' is ever compared, so any other kind restarts the same
+        'other';
     const isolate = muirSirynPlaywrightRestartsToIsolate(
       session.options.webServer.isolate,
       this.#previousRun,
@@ -836,6 +838,7 @@ async function hookedWithin(dir: string, waitMs: number): Promise<boolean> {
       return false;
     }
 
+    // Stryker disable next-line MuirProteusNodeTimerDelay: equivalent, as no test can tell a poll one millisecond apart
     await setTimeout(50);
   }
 
@@ -860,6 +863,7 @@ async function waitUntilStopped(
       return;
     }
 
+    // Stryker disable next-line MuirProteusNodeTimerDelay: equivalent, as no test can tell a poll one millisecond apart
     await setTimeout(50);
   }
 }
