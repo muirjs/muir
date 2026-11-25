@@ -98,7 +98,7 @@ function install(
   instrumenters: readonly Instrumenter[],
   mutators: readonly Mutator[],
   {
-    removeBuiltIns = false,
+    removeBuiltIns,
     by = packageName,
     testedVersion = '10.1.1',
     warnings = [],
@@ -117,7 +117,7 @@ function install(
     packageName: by,
     installName: 'muirSampleMutators',
     testedVersion,
-    removeBuiltIns,
+    ...(removeBuiltIns === undefined ? {} : { removeBuiltIns }),
     sets: { defaults: mutators, optIn: [], experimental: [] },
     options,
     resolve: async () => instrumenters,

@@ -324,8 +324,8 @@ export async function muirMoiraMutatorsCoreInstrument(
 ): Promise<
   (
     files: readonly MuirMoiraMutatorsSourceFile[],
-    excludedMutations?: readonly string[],
-    ignorers?: readonly Ignorer[],
+    excludedMutations: readonly string[],
+    ignorers: readonly Ignorer[],
     mutators?: readonly MuirMoiraMutatorsListedMutator[],
   ) => Promise<unknown>
 > {
@@ -357,7 +357,7 @@ export async function muirMoiraMutatorsCoreInstrument(
     throw missing('transformBabel');
   }
 
-  return async (files, excludedMutations = [], ignorers = [], mutators) => {
+  return async (files, excludedMutations, ignorers, mutators) => {
     const transform =
       mutators &&
       ((ast: unknown, collector: unknown, context: unknown): unknown =>

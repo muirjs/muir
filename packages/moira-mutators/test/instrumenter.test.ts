@@ -13,6 +13,7 @@ import {
 
 import { muirMoiraMutatorsAssertBabelTypes } from '../src/babel-mutator.ts';
 import {
+  muirMoiraMutatorsCoreInstrument,
   muirMoiraMutatorsCorePackageJsons,
   muirMoiraMutatorsResolveEachCore,
   muirMoiraMutatorsResolveExpressionPlacer,
@@ -695,6 +696,35 @@ describe('resolveInstrumenter against a fake instrumenter', () => {
     await instrumenter.instrument([{ name: 'a.tsx', content: 'x' }]);
 
     const calls = await callsOf(modules, bundlePath);
+    assert.ok(Array.isArray(calls));
+    assert.equal(calls.length, 1);
+  });
+
+  it('loads the entry of the instrumenter in its dir also when no node_modules holds that dir, as in a linked checkout', async (t) => {
+    const dir = join(muirTempRoot(t, 'mutator-linked-'), 'instrumenter');
+    muirWriteTree(dir, {
+      'package.json': JSON.stringify({
+        name: '@stryker-mutator/instrumenter',
+        version: '9.9.8',
+        type: 'module',
+        exports: {
+          '.': './dist/src/index.js',
+          './package.json': './package.json',
+        },
+      }),
+      'dist/src/index.js': recordingInstrumenter,
+      'dist/src/transformers/babel-transformer.js':
+        'export function transformBabel() {}',
+    });
+    const instrument = await muirMoiraMutatorsCoreInstrument({
+      packageName,
+      dir,
+      version: '9.9.8',
+    });
+
+    await instrument([{ name: 'a.tsx', content: 'x' }], [], []);
+
+    const calls = await callsOf(dir, 'dist/src/index.js');
     assert.ok(Array.isArray(calls));
     assert.equal(calls.length, 1);
   });

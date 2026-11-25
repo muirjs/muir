@@ -36,7 +36,10 @@ async function mutantsOf(
     packageName: muirProteusStorybookPackageName,
     ...(await muirProteusStorybookResolveFromCore()),
   });
-  const mutants = muirMoiraMutatorsFieldOf(await instrument(files), 'mutants');
+  const mutants = muirMoiraMutatorsFieldOf(
+    await instrument(files, [], []),
+    'mutants',
+  );
 
   if (!Array.isArray(mutants)) {
     throw new Error('Instrumenter.instrument() gave no mutants');
