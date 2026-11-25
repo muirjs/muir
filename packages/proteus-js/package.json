@@ -47,7 +47,8 @@
     "@stryker-mutator/core": "~10.1.0"
   },
   "devDependencies": {
-    "@muirjs/madrox-node-test": "*"
+    "@muirjs/madrox-node-test": "*",
+    "@muirjs/test-util-mutator-packages": "0.0.0"
   },
   "nx": {
     "tags": [

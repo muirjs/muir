@@ -91,8 +91,8 @@ function failOnWarning(message: string): never {
 describe('interactionHints', () => {
   before(async () => {
     await muirProteusStorybookTestMutators({
-      MuirProteusStorybookTestInteractionRepeat: true,
       experimental: {
+        MuirProteusStorybookTestInteractionRepeat: true,
         MuirProteusStorybookTestAssertionBefore: true,
         MuirProteusStorybookTestInteractionTarget: true,
       },

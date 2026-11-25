@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/test-util-mutator-packages
 
 Test support that the `@muirjs` mutator packages share. It is private: no package depends on it at run time,

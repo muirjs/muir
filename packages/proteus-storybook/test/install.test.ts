@@ -22,7 +22,7 @@ import {
 const silent = (): undefined => undefined;
 
 describe('install', () => {
-  it('ships MuirProteusStorybookArgs as opt-in: no option leaves it out, and its name turns it on', async () => {
+  it('ships MuirProteusStorybookArgs as experimental: no option leaves it out, and its name inside experimental turns it on', async () => {
     const without = fakeInstrumenter();
     const withArgs = fakeInstrumenter();
 
@@ -35,7 +35,7 @@ describe('install', () => {
     );
     await muirProteusStorybookInstall(
       muirProteusStorybookMutatorSets,
-      { MuirProteusStorybookArgs: true },
+      { experimental: { MuirProteusStorybookArgs: true } },
       async () => [withArgs.instrumenter],
       silent,
       silent,

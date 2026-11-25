@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/pixie-storybook-vite
 
 Two Vite plugins that make Storybook's spies behave the same in every story test, with or without Stryker:

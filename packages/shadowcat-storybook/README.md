@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/shadowcat-storybook
 
 StrykerJS plugins for Storybook story files. Stories run as Stryker tests through Stryker's Vitest runner and
@@ -109,13 +113,15 @@ Both run the same Vitest configuration.
    });
    ```
 
-3. Write the components configuration. `MuirProteusStorybookArgs` is opt-in, so turn it on by name:
+3. Write the components configuration. `MuirProteusStorybookArgs` is experimental, so turn it on by name inside `experimental`:
 
    ```ts
    // stryker.config.mjs
    import { muirProteusStorybookMutators } from '@muirjs/proteus-storybook';
 
-   await muirProteusStorybookMutators({ MuirProteusStorybookArgs: true });
+   await muirProteusStorybookMutators({
+     experimental: { MuirProteusStorybookArgs: true },
+   });
 
    export default {
      testRunner: 'vitest',

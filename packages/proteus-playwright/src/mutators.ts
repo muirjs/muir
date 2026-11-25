@@ -107,10 +107,6 @@ export const muirProteusPlaywrightMutatorSets = roster({
       muirProteusPlaywrightNetworkWait,
       sampleOf("await page.waitForResponse('/a');"),
     ),
-    muirProteusPlaywrightRemovalMutator(
-      muirProteusPlaywrightClock,
-      sampleOf('await page.clock.runFor(1000);'),
-    ),
     muirMoiraMutatorsSwapMutator(
       'MuirProteusPlaywrightMountStory',
       sampleOf("await mount('a');\n  await mount('b');"),
@@ -130,6 +126,10 @@ export const muirProteusPlaywrightMutatorSets = roster({
       sampleOf(
         "const response = await page.request.get('/a');\n  expect(response.ok()).toBe(true);",
       ),
+    ),
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightClock,
+      sampleOf('await page.clock.runFor(1000);'),
     ),
   ],
 });

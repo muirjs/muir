@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/moira-mutators
 
 The code that puts custom mutators into StrykerJS. It is not a mutator package and has no mutators of its own. Every

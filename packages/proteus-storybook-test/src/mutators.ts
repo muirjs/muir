@@ -32,8 +32,9 @@ export const muirProteusStorybookTestMutatorSets = roster({
     muirProteusStorybookTestInteractionMutator(),
     muirProteusStorybookTestClickFocusMutator(),
   ],
-  optIn: [muirProteusStorybookTestInteractionRepeatMutator()],
+  optIn: [],
   experimental: [
+    muirProteusStorybookTestInteractionRepeatMutator(),
     muirProteusStorybookTestInteractionTargetMutator(),
     muirProteusStorybookTestWaitForMutator(),
     muirProteusStorybookTestAssertionBeforeMutator(),

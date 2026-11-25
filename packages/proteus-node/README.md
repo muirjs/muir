@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/proteus-node
 
 Extra [StrykerJS](https://stryker-mutator.io/) mutators for code that uses Node.js APIs and `node:assert`. It is ESM
@@ -113,15 +117,13 @@ uncaught exception follows is an equivalent mutant, because Node.js then exits w
 
 ### Opt-in mutators
 
-| Mutator                          | What it changes                                                                                                                                                                                                                                                                                  |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `MuirProteusNodeAssertStatement` | Removes a `node:assert` statement. A survivor is an invariant that no test breaks. Production code rarely asserts with `node:assert`, so it makes few mutants.                                                                                                                                   |
-| `MuirProteusNodeListenerOnce`    | Swaps `on` and `once` when a listener is added with a string event name, on any object. A survivor is a listener whose second call, or missing second call, no test sees. It leaves events that fire once, such as `exit` and `close`, and `once('error')`; many survivors are still equivalent. |
+| Mutator                          | What it changes                                                                                                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MuirProteusNodeAssertStatement` | Removes a `node:assert` statement. A survivor is an invariant that no test breaks. Production code rarely asserts with `node:assert`, so it makes few mutants. |
 
-| Mutator                          | Original                       | Mutated                       |
-| -------------------------------- | ------------------------------ | ----------------------------- |
-| `MuirProteusNodeAssertStatement` | `assert.ok(items.length > 0);` | `;`                           |
-| `MuirProteusNodeListenerOnce`    | `socket.on('data', onData)`    | `socket.once('data', onData)` |
+| Mutator                          | Original                       | Mutated |
+| -------------------------------- | ------------------------------ | ------- |
+| `MuirProteusNodeAssertStatement` | `assert.ok(items.length > 0);` | `;`     |
 
 ### Experimental mutators
 
@@ -129,11 +131,28 @@ uncaught exception follows is an equivalent mutant, because Node.js then exits w
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MuirProteusNodeByteLength`    | Turns `Buffer.byteLength(text)`, with no encoding or `'utf8'`, into `text.length`, on the global `Buffer`. A survivor is a byte count that no test checks with multi-byte characters. It leaves the length of a `Buffer.from`, `Buffer.alloc` or `Buffer.concat` result. For a `Buffer` held in a variable, `Buffer.byteLength(b)` into `b.length` is an equivalent mutant that type-checks: disable it with a reason. |
 | `MuirProteusNodeCallbackError` | Drops the error from `cb(err)`, `callback(err)`, `done(err)`, `next(err)` and `stream.destroy(err)`, for an argument named `err`, `error`, `e` or `er`. A survivor is an error that no test sees reach the caller. It goes by names only.                                                                                                                                                                              |
+| `MuirProteusNodeListenerOnce`  | Swaps `on` and `once` when a listener is added with a string event name, on any object. A survivor is a listener whose second call, or missing second call, no test sees. It leaves events that fire once, such as `exit` and `close`, and `once('error')`; many survivors are still equivalent.                                                                                                                       |
 
-| Mutator                        | Original                  | Mutated       |
-| ------------------------------ | ------------------------- | ------------- |
-| `MuirProteusNodeByteLength`    | `Buffer.byteLength(body)` | `body.length` |
-| `MuirProteusNodeCallbackError` | `callback(err)`           | `callback()`  |
+| Mutator                        | Original                    | Mutated                       |
+| ------------------------------ | --------------------------- | ----------------------------- |
+| `MuirProteusNodeByteLength`    | `Buffer.byteLength(body)`   | `body.length`                 |
+| `MuirProteusNodeCallbackError` | `callback(err)`             | `callback()`                  |
+| `MuirProteusNodeListenerOnce`  | `socket.on('data', onData)` | `socket.once('data', onData)` |
+
+### Why a mutator is opt-in or experimental
+
+A mutator moves to the default tier when it has been measured on at least two open-source repositories with at least
+10 sites between them, more than half of its triaged survivors point at a missing or weak check, and none of its
+kills needs a timeout. A run whose survivors are mostly equivalent sends it back for rework or removal. The
+[mutator process](https://github.com/muirjs/muir/blob/main/docs/mutator-process.md#how-a-measured-mutator-ships) has
+the details.
+
+| Mutator                          | Why                                                                                                                                     | What would move it                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `MuirProteusNodeAssertStatement` | Opt-in: production code rarely asserts, with 3 sites over three repositories.                                                           | 10 sites.                                                                                 |
+| `MuirProteusNodeByteLength`      | Experimental: 4 survivors pointed at a weak check against 1 equivalent, on two repositories, but a run confirmed only 1 of the 4.       | More sites, with their survivors triaged.                                                 |
+| `MuirProteusNodeCallbackError`   | Experimental: 13 of 17 mutants were killed on three repositories; 2 of the 3 survivors looked like weak checks, which no run confirmed. | More sites, with their survivors triaged.                                                 |
+| `MuirProteusNodeListenerOnce`    | Experimental: measured on one repository, where 5 survivors pointed at a weak check and 7 were equivalent.                              | A second repository, and a rule that drops the equivalent survivors without losing kills. |
 
 ## Turn a mutator off
 

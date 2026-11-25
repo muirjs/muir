@@ -21,8 +21,12 @@ export const muirProteusNodeMutatorSets = {
     muirProteusNodeReturnAwait,
     muirProteusNodeExitCode,
   ],
-  optIn: [muirProteusNodeAssertStatement, muirProteusNodeListenerOnce],
-  experimental: [muirProteusNodeByteLength, muirProteusNodeCallbackError],
+  optIn: [muirProteusNodeAssertStatement],
+  experimental: [
+    muirProteusNodeByteLength,
+    muirProteusNodeCallbackError,
+    muirProteusNodeListenerOnce,
+  ],
 } satisfies MuirMoiraMutatorsMutatorSets<MuirMoiraMutatorsBabelMutator>;
 
 export const muirProteusNodeMutators =

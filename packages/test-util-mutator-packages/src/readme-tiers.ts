@@ -77,6 +77,64 @@ function saysNone(lines: readonly string[], heading: string): boolean {
   return first?.startsWith('None.') === true;
 }
 
+const reasonsHeading = '### Why a mutator is opt-in or experimental';
+
+/** The rows of the reasons table as `[name, why, what would move it]`, from table rows that name a mutator. */
+function reasonRows(lines: readonly string[]): readonly (readonly string[])[] {
+  return sectionLines(lines, reasonsHeading).flatMap((line) =>
+    /^\| `\w+` +\|/.test(line)
+      ? [
+          line
+            .split('|')
+            .slice(1, -1)
+            .map((cell) => cell.trim()),
+        ]
+      : [],
+  );
+}
+
+/**
+ * Registers the test that the README's reasons table gives, for each opt-in and experimental mutator in roster order,
+ * why it is in its tier and what would move it, and that a package without such mutators has no reasons table.
+ * `register` takes the place of `it` in this package's own tests.
+ */
+export function muirTestReadmeTierReasons(
+  readmePath: string,
+  { optIn, experimental }: MuirMutatorTiers,
+  register: (name: string, check: () => void) => unknown = it,
+): void {
+  const lines = readmeLines(readmePath);
+
+  register(
+    'gives why each opt-in and experimental mutator is in its tier and what would move it, in roster order',
+    () => {
+      const names = [...optIn, ...experimental].map(({ name }) => name);
+
+      if (names.length === 0) {
+        assert.ok(
+          !lines.includes(reasonsHeading),
+          'no reasons table without opt-in or experimental mutators',
+        );
+
+        return;
+      }
+
+      const rows = reasonRows(lines);
+
+      assert.deepEqual(
+        rows.map(([name]) => name),
+        names.map((name) => `\`${name}\``),
+      );
+      assert.ok(
+        rows.every(
+          (cells) => cells.length === 3 && cells.every((cell) => cell !== ''),
+        ),
+        'every row has a reason and what would move it',
+      );
+    },
+  );
+}
+
 /**
  * Registers the tests that the README's opening and its default install line give the size of each tier, that each
  * tier's README table lists that tier's mutators in roster order, and that "None." stands under the heading of each

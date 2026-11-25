@@ -23,14 +23,18 @@ describe('nodeMutatorSets', () => {
   it('names the opt-in mutators', () => {
     assert.deepEqual(
       muirProteusNodeMutatorSets.optIn.map(({ name }) => name),
-      ['MuirProteusNodeAssertStatement', 'MuirProteusNodeListenerOnce'],
+      ['MuirProteusNodeAssertStatement'],
     );
   });
 
   it('names the experimental mutators', () => {
     assert.deepEqual(
       muirProteusNodeMutatorSets.experimental.map(({ name }) => name),
-      ['MuirProteusNodeByteLength', 'MuirProteusNodeCallbackError'],
+      [
+        'MuirProteusNodeByteLength',
+        'MuirProteusNodeCallbackError',
+        'MuirProteusNodeListenerOnce',
+      ],
     );
   });
 });

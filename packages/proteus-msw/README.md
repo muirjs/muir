@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/proteus-msw
 
 StrykerJS mutators for the responses that msw request handlers send. A handler is test code: it plays the server

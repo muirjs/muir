@@ -17,8 +17,8 @@ function roster<
 
 export const muirProteusStorybookMutatorSets = roster({
   defaults: [],
-  optIn: [muirProteusStorybookArgsMutator()],
-  experimental: [],
+  optIn: [],
+  experimental: [muirProteusStorybookArgsMutator()],
 });
 
 type NamesIn<TTier extends readonly MuirMoiraMutatorsSampledMutator[]> =

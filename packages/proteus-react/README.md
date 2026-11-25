@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/proteus-react
 
 Mutators for the parts of JSX that Playwright tests look at. StrykerJS mutates expressions

@@ -13,7 +13,10 @@ playwrightMutatorRows(
     testDir: fixture('opt-in/public'),
     configFile: fixture('opt-in.config.ts'),
     testCount: 5,
-    options: { extended: true },
+    options: {
+      extended: true,
+      experimental: { MuirProteusPlaywrightClock: true },
+    },
   },
   [
     {

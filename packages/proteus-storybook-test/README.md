@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/proteus-storybook-test
 
 StrykerJS mutators for Storybook story test code: play functions, `beforeEach` and `afterEach`, and the bodies of
@@ -6,7 +10,7 @@ change the play instead: they remove an interaction, replace a click with a focu
 interaction it follows, or remove a spy stub. When the story tests still pass, a step of the play does not affect
 what the play checks, or a check is missing.
 
-The package turns Stryker's 17 built-in mutators off and adds 9 of its own: 2 run by default, 1 is opt-in and 6 are
+The package turns Stryker's 17 built-in mutators off and adds 9 of its own: 2 run by default, 0 are opt-in and 7 are
 experimental. The package is private and not on npm yet.
 
 ## Requirements
@@ -62,28 +66,27 @@ The call checks that each mutator it installs makes a mutant of a sample, and th
 stops the run when either check fails, and names the instrumenter's folder and version when an internal it patches
 is missing. A second call replaces the mutators and settings of the first.
 
-### Choose the opt-in and experimental mutators
+### Choose the experimental mutators
 
-The argument turns on mutators beyond the default tier. Each key takes only `true`:
+The argument turns on mutators beyond the default tier:
 
 ```ts
-// The opt-in mutator.
-await muirProteusStorybookTestMutators({ extended: true });
-
-// The opt-in mutator by its name, and one experimental mutator.
+// Two experimental mutators by their names.
 await muirProteusStorybookTestMutators({
-  MuirProteusStorybookTestInteractionRepeat: true,
-  experimental: { MuirProteusStorybookTestSpyStub: true },
+  experimental: {
+    MuirProteusStorybookTestInteractionRepeat: true,
+    MuirProteusStorybookTestSpyStub: true,
+  },
 });
 
 // Every experimental mutator.
 await muirProteusStorybookTestMutators({ experimental: true });
 ```
 
-- `extended: true` turns on every opt-in mutator.
-- `<opt-in name>: true` turns on one opt-in mutator.
 - `experimental: true` turns on every experimental mutator.
 - `experimental: { <experimental name>: true }` turns on one experimental mutator.
+
+The package has no opt-in mutators, so an `extended` key throws.
 
 With opt-in or experimental mutators on, the line names them. For `{ experimental: { MuirProteusStorybookTestSpyStub: true } }`:
 
@@ -92,8 +95,8 @@ With opt-in or experimental mutators on, the line names them. For `{ experimenta
 ```
 
 The call throws, with a message that starts with the package name, on options that are not a plain object, on an
-unknown key, on a value other than `true`, on the name of a default mutator, on an opt-in name inside
-`experimental`, and on an experimental name outside it. The options turn mutators on, never off. To turn one off,
+unknown key, on a value other than `true`, on the name of a default mutator, and on an experimental name outside
+`experimental`. The options turn mutators on, never off. To turn one off,
 see [Turn a mutator off](#turn-a-mutator-off).
 
 ## The mutators
@@ -116,19 +119,16 @@ These run on `await muirProteusStorybookTestMutators()`.
 
 ### Opt-in mutators
 
-These run with `extended: true`, or with the name set to `true`.
-
-| Mutator                                     | What it changes                                                                                                             | Example                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `MuirProteusStorybookTestInteractionRepeat` | Runs a user-event `click`, `dblClick` or `keyboard` call, or a `fireEvent.click`, twice. Leaves `{Home}` and `{End}` alone. | `await userEvent.click(button);` runs twice, so a toggle ends where it started. |
+None.
 
 ### Experimental mutators
 
 These run with `experimental: true`, or each by its name inside `experimental`. They are experimental: each was
-measured on few repositories, and its matching rules or its name can still change.
+measured on few repositories, or none, and its matching rules or its name can still change.
 
 | Mutator                                     | What it changes                                                                                                                                                                                                                      | Example                                                                                                                  |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `MuirProteusStorybookTestInteractionRepeat` | Runs a user-event `click`, `dblClick` or `keyboard` call, or a `fireEvent.click`, twice. Leaves `{Home}` and `{End}` alone.                                                                                                          | `await userEvent.click(button);` runs twice, so a toggle ends where it started.                                          |
 | `MuirProteusStorybookTestInteractionTarget` | Replaces the query an interaction acts on with another one in the same file: the `name` of a `*ByRole` query with a name the file gives the same role, or the text of another query with a value the file passes to the same method. | `canvas.getByRole('button', { name: 'Save' })` becomes `canvas.getByRole('button', { name: 'Cancel' })`.                 |
 | `MuirProteusStorybookTestWaitFor`           | Makes a retrying wait check once: calls a `waitFor` callback once, turns a `findBy` or `findAllBy` query into `getBy` or `getAllBy`, and removes a `waitForElementToBeRemoved` statement.                                            | `await canvas.findByText('Saved')` becomes `await canvas.getByText('Saved')`.                                            |
 | `MuirProteusStorybookTestAssertionBefore`   | Runs the first `expect` check after an interaction before the interaction too, so a check that already passes before the step shows.                                                                                                 | `await userEvent.click(button); await expect(args.onClick).toHaveBeenCalled();` also runs the `expect` before the click. |
@@ -143,6 +143,24 @@ the project's `initialGlobals`.
 `MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` place mutants at definition-time stubs that the mock reset
 erases before the story renders. The `muir-shadowcat-storybook` ignorer of `@muirjs/shadowcat-storybook` reports those mutants as
 Ignored, with the reason, so list it in `ignorers` whenever these mutators are on.
+
+### Why a mutator is opt-in or experimental
+
+A mutator moves to the default tier when it has been measured on at least two open-source repositories with at least
+10 sites between them, more than half of its triaged survivors point at a missing or weak check, and none of its
+kills needs a timeout. A run whose survivors are mostly equivalent sends it back for rework or removal. The
+[mutator process](https://github.com/muirjs/muir/blob/main/docs/mutator-process.md#how-a-measured-mutator-ships) has
+the details.
+
+| Mutator                                     | Why                                                                                                                                                                                                                          | What would move it                                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `MuirProteusStorybookTestInteractionRepeat` | Never measured: 19 sites were counted in one design system and 5 in another. A survivor on an interaction that changes nothing when repeated, such as clicking a selected tab, is equivalent, and no rule tells those apart. | Its first measured run on two repositories.                                                   |
+| `MuirProteusStorybookTestInteractionTarget` | On one design system all 11 mutants were killed, each because the swapped query found nothing, which says nothing about the checks.                                                                                          | Swapping only to names that the same story queries, then a measured run.                      |
+| `MuirProteusStorybookTestWaitFor`           | A survivor says only that the wait was not needed in that run, and a one-shot check that races the component can be flaky.                                                                                                   | More measured repositories.                                                                   |
+| `MuirProteusStorybookTestAssertionBefore`   | No repository yet has a site where it survives, so nothing shows what a survivor means.                                                                                                                                      | A measured run with survivors to triage.                                                      |
+| `MuirProteusStorybookTestSpyStub`           | A stub set at definition time makes a mutant that runs every story test, and that cost is unmeasured.                                                                                                                        | A run that measures the cost and the survivors.                                               |
+| `MuirProteusStorybookTestSpyStubOutcome`    | On a callback the component does not await, the mutant makes an unhandled rejection that fails the story whatever its checks say, and each such kill waits about a second.                                                   | A measured run: if most kills come from an unhandled rejection, it goes opt-in or is removed. |
+| `MuirProteusStorybookTestStoryGlobals`      | Measured on one repository: 30 mutants, 12 survivors, 5 of them pointing at a weak check. No second repository with sites has been found.                                                                                    | A second repository.                                                                          |
 
 ## Why Stryker's built-in mutators are off
 

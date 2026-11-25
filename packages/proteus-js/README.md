@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/proteus-js
 
 Extra [StrykerJS](https://stryker-mutator.io/) mutators for any JavaScript or TypeScript code: statements and literals
@@ -71,6 +75,19 @@ An example mutant of each, in the form of Stryker's
 | ---------------------------------- | ------------------- | ---------------------------------------- |
 | `MuirProteusJsAssignmentStatement` | `latest = id;`      | `;`                                      |
 | `MuirProteusJsNumericLiteral`      | `rows.slice(0, 40)` | `rows.slice(0, 41)`, `rows.slice(0, 39)` |
+
+### Why a mutator is opt-in or experimental
+
+A mutator moves to the default tier when it has been measured on at least two open-source repositories with at least
+10 sites between them, more than half of its triaged survivors point at a missing or weak check, and none of its
+kills needs a timeout. A run whose survivors are mostly equivalent sends it back for rework or removal. The
+[mutator process](https://github.com/muirjs/muir/blob/main/docs/mutator-process.md#how-a-measured-mutator-ships) has
+the details.
+
+| Mutator                            | Why                                                                                                                                                         | What would move it                                                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `MuirProteusJsNumericLiteral`      | Opt-in: it makes a mutant at almost every integer, and 28 of 64 survivors on two repositories pointed at a weak check; tuning values need disable comments. | More than half of its survivors pointing at a weak check, which needs a rule that leaves out the equivalent ones. |
+| `MuirProteusJsAssignmentStatement` | Experimental: 8 of 8 survivors on one repository pointed at a weak check, but 39 of 136 on a second.                                                        | More than half of its survivors pointing at a weak check on two repositories.                                     |
 
 ## Turn a mutator off
 

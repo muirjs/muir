@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
 </p>
 
 # Muir

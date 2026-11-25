@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/proteus-playwright
 
 StrykerJS mutators for Playwright test code. Mutation testing usually changes the app and checks that a test fails.
@@ -5,7 +9,7 @@ These mutators change the tests instead: they remove an action, swap a locator f
 change what a route mock returns. When the suite still passes, a line of the test does not affect what the test
 checks, or an assertion is missing. Run the mutants with `@muirjs/siryn-playwright`.
 
-The package turns Stryker's 17 built-in mutators off and adds 16 of its own: 9 run by default, 5 are opt-in and 2
+The package turns Stryker's 17 built-in mutators off and adds 16 of its own: 9 run by default, 4 are opt-in and 3
 are experimental. The package is private and not on npm yet.
 
 ## Requirements
@@ -146,7 +150,6 @@ These run with `extended: true`, or each with its own name set to `true`.
 | `MuirProteusPlaywrightSleepWait`   | Removes an awaited `waitForTimeout` statement.                                                                    | `await page.waitForTimeout(500);` is removed.                 |
 | `MuirProteusPlaywrightStateWait`   | Removes an awaited `waitForLoadState`, `waitForURL`, `waitFor`, `waitForSelector` or `waitForFunction` statement. | `await page.waitForURL('/cart');` is removed.                 |
 | `MuirProteusPlaywrightNetworkWait` | Removes an awaited `waitForResponse` or `waitForRequest` statement.                                               | `await page.waitForResponse('**/api/cart');` is removed.      |
-| `MuirProteusPlaywrightClock`       | Removes an awaited `runFor` or `fastForward` statement on `clock` or `<x>.clock`.                                 | `await page.clock.runFor(1000);` is removed.                  |
 | `MuirProteusPlaywrightMountStory`  | Replaces the literal story id of `mount(...)` or `<x>.mount(...)` with another id that the same file mounts.      | `mount('Button/Primary')` becomes `mount('Button/Disabled')`. |
 
 The three Wait mutators and `MuirProteusPlaywrightClock` skip teardown, as the Action mutators do.
@@ -178,9 +181,28 @@ measured on few repositories, and its matching rules or its name can still chang
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `MuirProteusPlaywrightRequestData` | In the `data`, `form` or `params` object of an API request, at any depth, adds `x` to a string, adds 1 to a number, and flips a boolean. | `data: { title: 'Dune' }` becomes `data: { title: 'Dunex' }`. |
 | `MuirProteusPlaywrightRequestUrl`  | Empties the URL of a `get`, `head` or `fetch` API request whose result the test reads.                                                   | `request.get('/api/health')` becomes `request.get('')`.       |
+| `MuirProteusPlaywrightClock`       | Removes an awaited `runFor` or `fastForward` statement on `clock` or `<x>.clock`.                                                        | `await page.clock.runFor(1000);` is removed.                  |
 
 `MuirProteusPlaywrightRequestUrl` also empties each URL in the array of a `for (const url of [...])` loop whose variable is
 the URL of such a request.
+
+### Why a mutator is opt-in or experimental
+
+A mutator moves to the default tier when it has been measured on at least two open-source repositories with at least
+10 sites between them, more than half of its triaged survivors point at a missing or weak check, and none of its
+kills needs a timeout. A run whose survivors are mostly equivalent sends it back for rework or removal. The
+[mutator process](https://github.com/muirjs/muir/blob/main/docs/mutator-process.md#how-a-measured-mutator-ships) has
+the details.
+
+| Mutator                            | Why                                                                                                                                                                                                       | What would move it                                                                                                                |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `MuirProteusPlaywrightSleepWait`   | Opt-in: only timing can kill a removed wait, so the same mutant can be killed in one run and survive the next. A survivor means "not needed in this run".                                                 | Nothing planned: the cost comes from what it does.                                                                                |
+| `MuirProteusPlaywrightStateWait`   | Opt-in, for the same reason as `MuirProteusPlaywrightSleepWait`.                                                                                                                                          | Nothing planned.                                                                                                                  |
+| `MuirProteusPlaywrightNetworkWait` | Opt-in, for the same reason as `MuirProteusPlaywrightSleepWait`.                                                                                                                                          | Nothing planned.                                                                                                                  |
+| `MuirProteusPlaywrightMountStory`  | Opt-in: measured on two repositories, where 29 kills came from timeouts and 4 of 23 triaged survivors pointed at a weak check.                                                                            | Back to triage on the next corpus run, which decides between the default tier, opt-in and rework.                                 |
+| `MuirProteusPlaywrightRequestData` | Experimental: measured on one repository, where 20 of 23 mutants survived, 6 of them because the changed request returned an empty list that no check rejects. 6 of 20 survivors pointed at a weak check. | Back to triage on the next corpus run: mostly equivalent survivors send it back for rework.                                       |
+| `MuirProteusPlaywrightRequestUrl`  | Experimental: measured on two repositories, with 23 mutants and 1 survivor, so few survivors to triage.                                                                                                   | At least 5 triaged survivors, mostly pointing at a weak check, on a repository whose tests check only the status of GET requests. |
+| `MuirProteusPlaywrightClock`       | Experimental: never measured, and a removed time jump reads like a removed wait.                                                                                                                          | Its first measured run on two repositories.                                                                                       |
 
 ## Why Stryker's built-in mutators are off
 

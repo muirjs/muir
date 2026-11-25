@@ -1,7 +1,10 @@
 import { join } from 'node:path';
 
 import { muirMoiraMutatorsBuiltInNames } from '@muirjs/moira-mutators';
-import { muirTestReadmeTiers } from '@muirjs/test-util-mutator-packages';
+import {
+  muirTestReadmeTierReasons,
+  muirTestReadmeTiers,
+} from '@muirjs/test-util-mutator-packages';
 
 import { muirProteusPlaywrightMutatorSets } from '../src/mutators.ts';
 import { muirProteusPlaywrightPackageName } from '../src/package-name.ts';
@@ -15,4 +18,9 @@ muirTestReadmeTiers(
     builtIns: 'off',
     builtInCount: muirMoiraMutatorsBuiltInNames.length,
   },
+);
+
+muirTestReadmeTierReasons(
+  join(import.meta.dirname, '..', 'README.md'),
+  muirProteusPlaywrightMutatorSets,
 );

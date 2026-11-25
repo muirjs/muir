@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/proteus-storybook
 
 StrykerJS mutators for Storybook story data: the `args` a story renders with. In many component libraries, the
@@ -5,7 +9,7 @@ story files are app code, so a run of the components can mutate them too. `MuirP
 time from a story that runs a play function or a `.test()` call. When the story tests still pass, no check depends on
 that arg.
 
-The package keeps Stryker's 17 built-in mutators on and adds 1 of its own: 0 run by default, 1 is opt-in and 0 are
+The package keeps Stryker's 17 built-in mutators on and adds 1 of its own: 0 run by default, 0 are opt-in and 1 is
 experimental. So `await muirProteusStorybookMutators()` with no options adds no mutator. The package is private and not on npm
 yet.
 
@@ -29,13 +33,15 @@ and leaves the `args` to this package. Mutate story test code in a separate conf
 `@muirjs/proteus-storybook-test`.
 
 Call `muirProteusStorybookMutators` at the top of the Stryker configuration file, await it, and turn `MuirProteusStorybookArgs` on by
-its name:
+its name inside `experimental`:
 
 ```ts
 // stryker.config.mjs
 import { muirProteusStorybookMutators } from '@muirjs/proteus-storybook';
 
-await muirProteusStorybookMutators({ MuirProteusStorybookArgs: true });
+await muirProteusStorybookMutators({
+  experimental: { MuirProteusStorybookArgs: true },
+});
 
 export default {
   testRunner: 'vitest',
@@ -65,19 +71,20 @@ The call checks that each mutator it installs makes a mutant of a sample, and st
 names the instrumenter's folder and version when an internal it patches is missing. A second call replaces the
 mutators of the first.
 
-### Choose the opt-in mutators
+### Choose the experimental mutators
 
-The argument turns on mutators beyond the default tier. Each key takes only `true`:
+The argument turns on mutators beyond the default tier:
 
-- `extended: true` turns on every opt-in mutator.
-- `<opt-in name>: true` turns on one opt-in mutator, such as `{ MuirProteusStorybookArgs: true }`.
+- `experimental: true` turns on every experimental mutator.
+- `experimental: { <name>: true }` turns on one experimental mutator, such as
+  `{ experimental: { MuirProteusStorybookArgs: true } }`.
 
 The call throws, with a message that starts with the package name, on options that are not a plain object, on an
-unknown key, on a value other than `true`, and on an `experimental` key, since the package has no experimental
-mutators:
+unknown key or name, on a value other than `true`, on an experimental name outside `experimental`, and on an
+`extended` key, since the package has no opt-in mutators:
 
 ```text
-@muirjs/proteus-storybook: the package has no experimental mutators yet, so muirProteusStorybookMutators() takes no experimental option.
+@muirjs/proteus-storybook: the package has no opt-in mutators yet, so muirProteusStorybookMutators() takes no extended option.
 ```
 
 The options turn mutators on, never off. To turn one off, see [Turn a mutator off](#turn-a-mutator-off).
@@ -92,19 +99,27 @@ None. `await muirProteusStorybookMutators()` adds no mutator.
 
 ### Opt-in mutators
 
-These run with `extended: true`, or each with its own name set to `true`.
+None.
+
+### Experimental mutators
+
+These run with `experimental: true`, or each by its name inside `experimental`.
 
 | Mutator                    | What it changes                                                                                                                                        | Example                                                                                                                              |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `MuirProteusStorybookArgs` | Removes one key per mutant from an `args` object that a play or `.test()` call runs for. With two or more such keys, one more mutant removes them all. | `args: { label: 'Save', disabled: true }` becomes `args: { disabled: true }` in one mutant and `args: { label: 'Save' }` in another. |
 
-`MuirProteusStorybookArgs` is opt-in because most of its survivors on one open-source design system were equivalent: 27 of
-its 56 mutants survived, and 18 of those removed a key whose value equals what the story gets without it. See
-[Survivors to expect](#survivors-to-expect-and-limits).
+### Why a mutator is opt-in or experimental
 
-### Experimental mutators
+A mutator moves to the default tier when it has been measured on at least two open-source repositories with at least
+10 sites between them, more than half of its triaged survivors point at a missing or weak check, and none of its
+kills needs a timeout. A run whose survivors are mostly equivalent sends it back for rework or removal. The
+[mutator process](https://github.com/muirjs/muir/blob/main/docs/mutator-process.md#how-a-measured-mutator-ships) has
+the details.
 
-None.
+| Mutator                    | Why                                                                                                                                                                                                                                                                                | What would move it                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `MuirProteusStorybookArgs` | Experimental: measured on one design system, where 27 of its 56 mutants survived and 18 of those removed a key whose value equals what the story gets without it. Only an `undefined` value can be told from the file. See [Survivors to expect](#survivors-to-expect-and-limits). | A second repository, and a rule that tells the equal-value removals apart, so that most survivors point at a weak check. |
 
 ## What MuirProteusStorybookArgs mutates
 

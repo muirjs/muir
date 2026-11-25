@@ -10,7 +10,11 @@ describe('testMutatorSets', () => {
   it('names the default test-code mutators', () => {
     assert.deepEqual(
       muirProteusNodeTestTestMutatorSets.defaults.map(({ name }) => name),
-      ['MuirProteusNodeTestAssertCall', 'MuirProteusNodeTestAssertValidator'],
+      [
+        'MuirProteusNodeTestAssertCall',
+        'MuirProteusNodeTestAssertValidator',
+        'MuirProteusNodeTestCatchAssert',
+      ],
     );
   });
 
@@ -18,11 +22,8 @@ describe('testMutatorSets', () => {
     assert.deepEqual(muirProteusNodeTestTestMutatorSets.optIn, []);
   });
 
-  it('names the experimental test-code mutators', () => {
-    assert.deepEqual(
-      muirProteusNodeTestTestMutatorSets.experimental.map(({ name }) => name),
-      ['MuirProteusNodeTestCatchAssert'],
-    );
+  it('has no experimental test-code mutators', () => {
+    assert.deepEqual(muirProteusNodeTestTestMutatorSets.experimental, []);
   });
 });
 

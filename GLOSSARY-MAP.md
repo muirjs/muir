@@ -60,7 +60,7 @@
 - **Storybook test mutators -> Mutator install**: installed the same way, with opt-in and experimental tiers and
   built-in removal; `MuirProteusStorybookTestInteractionTarget` makes its same-file swaps through the same swap engine and site
   readers.
-- **Storybook mutators -> Mutator install**: installed the same way, with an opt-in tier, keeping Stryker's
+- **Storybook mutators -> Mutator install**: installed the same way, with an experimental tier, keeping Stryker's
   built-in mutators.
 - **msw mutators -> Mutator install**: installed the same way, with every mutator on by default, keeping Stryker's
   built-in mutators. A test mutator package that removes the built-ins in the same Stryker run removes them for msw

@@ -76,7 +76,9 @@ export function runCases(cases: readonly Case[]): void {
   let mutants: readonly Mutant[];
 
   before(async () => {
-    await muirProteusStorybookMutators({ MuirProteusStorybookArgs: true });
+    await muirProteusStorybookMutators({
+      experimental: { MuirProteusStorybookArgs: true },
+    });
     mutants = await mutantsOf(
       cases.map((testCase) => ({
         name: fileOf(testCase),

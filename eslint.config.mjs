@@ -235,6 +235,12 @@ const nodeTestConfigs = [
     },
   },
   {
+    files: ['test/**/*.ts'],
+    rules: {
+      '@nx/enforce-module-boundaries': moduleBoundaries(['type:test-util']),
+    },
+  },
+  {
     files: ['**/*.ts', '**/*.mjs'],
     rules: { '@nx/workspace-require-windows-hide': 'error' },
   },

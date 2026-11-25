@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/siryn-playwright
 
 A StrykerJS test runner for Playwright Test. It runs Playwright e2e tests and Playwright component

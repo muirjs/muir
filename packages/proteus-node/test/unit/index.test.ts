@@ -10,8 +10,8 @@ describe('muirProteusNodeMutators', () => {
     const warn = t.mock.method(console, 'warn', () => undefined);
 
     await muirProteusNodeMutators({
-      MuirProteusNodeListenerOnce: true,
-      experimental: { MuirProteusNodeByteLength: true },
+      MuirProteusNodeAssertStatement: true,
+      experimental: { MuirProteusNodeListenerOnce: true },
     });
 
     const names = (
@@ -25,9 +25,9 @@ describe('muirProteusNodeMutators', () => {
         [
           'StringLiteral',
           'MuirProteusNodeTimerDelay',
+          'MuirProteusNodeAssertStatement',
           'MuirProteusNodeListenerOnce',
           'MuirProteusNodeByteLength',
-          'MuirProteusNodeAssertStatement',
           'MuirProteusNodeCallbackError',
         ].map((name) => names.includes(name)),
         warn.mock.callCount(),

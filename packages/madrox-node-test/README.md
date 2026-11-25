@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/muirjs/muir/main/docs/images/muirjs-badge-small.png" alt="Muir logo" width="200">
+</p>
+
 # @muirjs/madrox-node-test
 
 Table tests for `node:test`: `muirTestEach` and `muirTestFor` work like Vitest's `test.each` and `test.for`. It is ESM

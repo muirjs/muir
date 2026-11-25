@@ -312,9 +312,11 @@ describe('roster', () => {
     assert.deepEqual(await namesWith(undefined), defaults);
   });
 
-  it('turns MuirProteusStorybookTestInteractionRepeat on by its name, after the defaults', async () => {
+  it('turns MuirProteusStorybookTestInteractionRepeat on by its name inside experimental, after the defaults', async () => {
     assert.deepEqual(
-      await namesWith({ MuirProteusStorybookTestInteractionRepeat: true }),
+      await namesWith({
+        experimental: { MuirProteusStorybookTestInteractionRepeat: true },
+      }),
       [...defaults, 'MuirProteusStorybookTestInteractionRepeat'],
     );
   });
@@ -392,23 +394,11 @@ describe('roster', () => {
     );
   });
 
-  it('refuses MuirProteusStorybookTestInteractionRepeat inside experimental, as it is opt-in', async () => {
-    await assert.rejects(
-      namesWith({
-        experimental: { MuirProteusStorybookTestInteractionRepeat: true },
-      }),
-      {
-        message:
-          '@muirjs/proteus-storybook-test: no experimental mutator is named MuirProteusStorybookTestInteractionRepeat; ' +
-          'it is opt-in, so it goes outside experimental.',
-      },
-    );
-  });
-
-  it('turns every opt-in mutator on with extended', async () => {
-    assert.deepEqual(await namesWith({ extended: true }), [
-      ...defaults,
-      'MuirProteusStorybookTestInteractionRepeat',
-    ]);
+  it('refuses extended, as the package has no opt-in mutators', async () => {
+    await assert.rejects(namesWith({ extended: true }), {
+      message:
+        '@muirjs/proteus-storybook-test: the package has no opt-in mutators yet, so ' +
+        'muirProteusStorybookTestMutators() takes no extended option.',
+    });
   });
 });

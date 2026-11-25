@@ -8,9 +8,13 @@ import { muirProteusNodeTestAssertValidator } from './node-test-assert-validator
 import { muirProteusNodeTestCatchAssert } from './node-test-catch-assert.ts';
 
 export const muirProteusNodeTestTestMutatorSets = {
-  defaults: [muirProteusNodeTestAssertCall, muirProteusNodeTestAssertValidator],
+  defaults: [
+    muirProteusNodeTestAssertCall,
+    muirProteusNodeTestAssertValidator,
+    muirProteusNodeTestCatchAssert,
+  ],
   optIn: [],
-  experimental: [muirProteusNodeTestCatchAssert],
+  experimental: [],
 } satisfies MuirMoiraMutatorsMutatorSets<MuirMoiraMutatorsBabelMutator>;
 
 export const muirProteusNodeTestTestMutators =

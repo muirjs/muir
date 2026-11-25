@@ -31,7 +31,7 @@ it('turns every opt-in mutator on with extended', async () => {
 
   assert.match(
     line,
-    / Opt-in or experimental: MuirProteusPlaywrightSleepWait, MuirProteusPlaywrightStateWait, MuirProteusPlaywrightNetworkWait, MuirProteusPlaywrightClock, MuirProteusPlaywrightMountStory\.$/,
+    / Opt-in or experimental: MuirProteusPlaywrightSleepWait, MuirProteusPlaywrightStateWait, MuirProteusPlaywrightNetworkWait, MuirProteusPlaywrightMountStory\.$/,
   );
 });
 
@@ -49,13 +49,14 @@ it('turns every experimental mutator on with experimental', async () => {
 
   assert.match(
     line,
-    / Opt-in or experimental: MuirProteusPlaywrightRequestData, MuirProteusPlaywrightRequestUrl\.$/,
+    / Opt-in or experimental: MuirProteusPlaywrightRequestData, MuirProteusPlaywrightRequestUrl, MuirProteusPlaywrightClock\.$/,
   );
 });
 
 for (const name of [
   'MuirProteusPlaywrightRequestData',
   'MuirProteusPlaywrightRequestUrl',
+  'MuirProteusPlaywrightClock',
 ]) {
   it(`turns ${name} on alone by its name inside experimental`, async () => {
     const line = await startLineWith({ experimental: { [name]: true } });
@@ -86,5 +87,8 @@ it('names muirProteusPlaywrightMutators when options reach a roster with no opt-
 it('leaves every experimental mutator off with extended', async () => {
   const line = await startLineWith({ extended: true });
 
-  assert.doesNotMatch(line, /MuirProteusPlaywrightRequest/);
+  assert.doesNotMatch(
+    line,
+    /MuirProteusPlaywrightRequest|MuirProteusPlaywrightClock/,
+  );
 });

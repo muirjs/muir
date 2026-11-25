@@ -1,4 +1,5 @@
 export {
+  muirTestReadmeTierReasons,
   muirTestReadmeTiers,
   type MuirMutatorTiers,
   type MuirReadmeFacts,
