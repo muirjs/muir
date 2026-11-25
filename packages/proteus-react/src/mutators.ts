@@ -246,10 +246,10 @@ export type MuirProteusReactMutatorName = ReturnType<
 >[number]['name'];
 
 function isNamed(
-  names: ReadonlySet<string>,
+  names: ReadonlySet<string | undefined>,
   name: string | undefined,
 ): boolean {
-  return name !== undefined && names.has(name);
+  return names.has(name);
 }
 
 function isJsxBranch(node: types.Node, t: MuirProteusReactBabelTypes): boolean {

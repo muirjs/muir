@@ -126,9 +126,16 @@ export function muirProteusReactToNodeMutator(
       const site = attributeSite(path, t);
 
       for (const rule of mutator.rules) {
-        yield* rule.kind === 'node'
-          ? rule.mutate(path, t)
-          : attributeMutants(rule, site, t);
+        switch (rule.kind) {
+          case 'node': {
+            yield* rule.mutate(path, t);
+            break;
+          }
+          case 'attribute': {
+            yield* attributeMutants(rule, site, t);
+            break;
+          }
+        }
       }
     },
   };
@@ -235,15 +242,22 @@ function readValue(
 ): MuirProteusReactAttributeValue | undefined {
   const decoded = muirProteusReactDecodeValue(value, t);
 
-  if (decoded.kind === 'other') {
-    return undefined;
+  switch (decoded.kind) {
+    // Stryker disable next-line StringLiteral: an attribute with any other value gets no mutant either way, as no rule has a replacement for it
+    case 'other': {
+      return undefined;
+    }
+    case 'expression': {
+      // The built-in StringLiteral, BooleanLiteral, ArrowFunction and BlockStatement mutators own these.
+      return t.isLiteral(decoded.expression) || t.isFunction(decoded.expression)
+        ? undefined
+        : decoded;
+    }
+    case 'bare':
+    case 'string': {
+      return decoded;
+    }
   }
-
-  // The built-in StringLiteral, BooleanLiteral, ArrowFunction and BlockStatement mutators own these.
-  return decoded.kind === 'expression' &&
-    (t.isLiteral(decoded.expression) || t.isFunction(decoded.expression))
-    ? undefined
-    : decoded;
 }
 
 function* replaced(
