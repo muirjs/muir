@@ -21,7 +21,7 @@ import { setTimeout } from 'node:timers/promises';
 
 import { muirExec } from '../../src/exec.ts';
 import {
-  muirMoiraNodeTestInstall,
+  muirInstallPacked,
   muirPack,
   muirReportFile,
   muirStryker,
@@ -851,7 +851,7 @@ describe('muirRunDriver', () => {
 
   it('runs the real pack, install, Stryker and process sampler by default', () => {
     assert.equal(muirRunSteps.pack, muirPack);
-    assert.equal(muirRunSteps.install, muirMoiraNodeTestInstall);
+    assert.equal(muirRunSteps.install, muirInstallPacked);
     assert.equal(muirRunSteps.stryker, muirStryker);
     assert.equal(muirRunSteps.startSampler, muirStartSampler);
     assert.equal(muirRunSteps.snapshot, muirSnapshot);

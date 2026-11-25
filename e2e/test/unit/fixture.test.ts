@@ -17,7 +17,7 @@ import { describe, it, type TestContext } from 'node:test';
 import {
   muirConcurrency,
   muirConsumerEnv,
-  muirMoiraNodeTestInstall,
+  muirInstallPacked,
   muirLeftover,
   muirMutant,
   muirMutants,
@@ -579,12 +579,12 @@ describe('muirPack', () => {
   });
 });
 
-describe('muirMoiraNodeTestInstall', () => {
+describe('muirInstallPacked', () => {
   it('installs the tarballs and the pinned packages exactly, as of a date', async (t) => {
     const npmRuns = useFakeNpm(t);
     const dir = tempDir(t, 'muir-install-');
 
-    await muirMoiraNodeTestInstall(dir, ['a.tgz'], '2026-01-01');
+    await muirInstallPacked(dir, ['a.tgz'], '2026-01-01');
 
     assert.deepEqual(npmRuns(), [
       [
@@ -607,7 +607,7 @@ describe('muirMoiraNodeTestInstall', () => {
     const npmRuns = useFakeNpm(t);
     const dir = tempDir(t, 'muir-install-');
 
-    await muirMoiraNodeTestInstall(dir, ['a.tgz']);
+    await muirInstallPacked(dir, ['a.tgz']);
 
     assert.deepEqual(npmRuns(), [
       [
@@ -638,7 +638,7 @@ describe('muirMoiraNodeTestInstall', () => {
       'fail',
     ];
 
-    await assert.rejects(muirMoiraNodeTestInstall(dir, ['fail']), {
+    await assert.rejects(muirInstallPacked(dir, ['fail']), {
       message: `npm ${[...command, ...workspacePins()].join(' ')} ended with exit code 3:\nout\nerr\n`,
     });
   });

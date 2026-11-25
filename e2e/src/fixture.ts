@@ -71,7 +71,7 @@ export async function muirFixture(name: string): Promise<MuirFixture> {
   muirRemoveOnExit(dir);
   cpSync(join(fixturesDir, name), dir, { recursive: true });
   mkdirSync(join(dir, 'tmp'));
-  await muirMoiraNodeTestInstall(dir, await muirPack(join(dir, 'tarballs')));
+  await muirInstallPacked(dir, await muirPack(join(dir, 'tarballs')));
 
   return {
     stryker: (configFile = 'stryker.config.mjs') =>
@@ -80,7 +80,7 @@ export async function muirFixture(name: string): Promise<MuirFixture> {
 }
 
 /** Installs the packed packages and the workspace's pinned Stryker, TypeScript and Node.js types into `dir`. */
-export async function muirMoiraNodeTestInstall(
+export async function muirInstallPacked(
   dir: string,
   tarballs: readonly string[],
   before?: string,
