@@ -1735,10 +1735,13 @@ to the next statement.
 
 ## stryker-mutator/stryker-js: the TypeScript checker misses compile errors when a mutant lands in the last emit's millisecond (already reported)
 
-Status: nothing to file (2026-11-25). Issue #6141, "`typescript-checker` sometimes misses compile errors in build
-mode under concurrency", reports it; a comment there (2026-10-01) traces it to the same millisecond tie, and open
-PR #6143 carries the fix, a strictly increasing clock in `ScriptFile`. Neither is merged or released as of
-2026-11-25. Add our numbers to #6141 only if Lars wants to; they confirm, they add no new cause.
+Status: comment drafted for #6141, not posted (2026-11-25). Issue #6141, "`typescript-checker` sometimes misses
+compile errors in build mode under concurrency", reports it. [A comment on PR #6143](https://github.com/stryker-mutator/stryker-js/pull/6143#issuecomment-5940174496)
+(2026-10-01) traces it to the same
+millisecond tie, and the PR carries the fix, a strictly increasing clock in `ScriptFile`. Neither is merged or
+released as of 2026-11-25. The issue says the miss needs concurrency and has no comments. The draft below adds only
+what the issue and the PR thread lack: a miss in a single checker process, the versions 10.1.1 and TypeScript 6.0.3,
+and a standalone script. It links the cause to the PR thread instead of repeating it.
 
 **Versions.** `@stryker-mutator/typescript-checker` 10.1.1, TypeScript 6.0.3, Node.js 26.13.0, Windows 11 arm64.
 
@@ -1756,6 +1759,69 @@ mutant written in the emit's millisecond leaves the project up to date and is ne
 
 **Fix (measured).** Stamping a touched file 1 ms ahead (`new Date(Date.now() + 1)`) gave 0 of 49 misses against 39
 of 49 unpatched, at the same speed. PR #6143 uses `max(Date.now() + 1, last + 1)`.
+
+**Draft comment for #6141 (measured 2026-11-25; the script ran as written).**
+
+<!-- prettier-ignore -->
+````markdown
+I can reproduce this in a single checker process, so it doesn't need concurrency. The script below drives the
+checker's `TypescriptCompiler` directly on a two-file project with `references`. It checks a mutant that can't
+compile 200 times in a row. With `@stryker-mutator/typescript-checker` 10.1.1, TypeScript 6.0.3, Node.js 26.13.0
+and Windows 11 arm64, it took about 5 minutes and printed:
+
+```text
+back to back: 165 of 200 checks missed the error
+each check in a new millisecond: 0 of 200 checks missed the error
+```
+
+Waiting for the next millisecond before each check removes every miss, which fits the timestamp tie traced in
+[this comment on #6143](https://github.com/stryker-mutator/stryker-js/pull/6143#issuecomment-5940174496).
+
+<details>
+<summary>repro.mjs</summary>
+
+```js
+// npm i @stryker-mutator/typescript-checker@10.1.1 typescript@6.0.3 && node repro.mjs
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const dist = join(dirname(createRequire(import.meta.url).resolve('@stryker-mutator/typescript-checker/package.json')), 'dist/src');
+const { TypescriptCompiler } = await import(pathToFileURL(join(dist, 'typescript-compiler.js')).href);
+const { HybridFileSystem } = await import(pathToFileURL(join(dist, 'fs/hybrid-file-system.js')).href);
+
+const dir = resolve('project').replaceAll('\\', '/');
+mkdirSync(join(dir, 'dep'), { recursive: true });
+const write = (file, value) => writeFileSync(join(dir, file), typeof value === 'string' ? value : JSON.stringify(value));
+write('a.ts', 'export const x: number = 1;\n');
+write('dep/b.ts', 'export const y = 2;\n');
+write('dep/tsconfig.json', { compilerOptions: { composite: true, outDir: 'out' }, files: ['b.ts'] });
+// The `references` key puts the checker in build mode. Without it, nothing is missed.
+write('tsconfig.json', { compilerOptions: { composite: true, outDir: 'out' }, files: ['a.ts'], references: [{ path: './dep' }] });
+
+const log = new Proxy({}, { get: (_, key) => (String(key).startsWith('is') ? () => false : () => {}) });
+const compiler = new TypescriptCompiler(log, { tsconfigFile: `${dir}/tsconfig.json` }, new HybridFileSystem(log));
+await compiler.init();
+// `export const x: number = 'mutant'` cannot compile.
+const mutant = { id: '1', fileName: `${dir}/a.ts`, mutatorName: 'repro', replacement: "'mutant'",
+  location: { start: { line: 0, column: 25 }, end: { line: 0, column: 26 } } };
+
+const nextMillisecond = () => { const now = Date.now(); while (Date.now() === now); };
+for (const wait of [false, true]) {
+  let missed = 0;
+  for (let i = 0; i < 200; i++) {
+    if (wait) nextMillisecond();
+    if ((await compiler.check([mutant])).length === 0) missed++;
+    if (wait) nextMillisecond();
+    await compiler.check([]);
+  }
+  console.log(`${wait ? 'each check in a new millisecond' : 'back to back'}: ${missed} of 200 checks missed the error`);
+}
+```
+
+</details>
+````
 
 ## stryker-mutator/stryker-js: incremental mode places tests one line low in a file that starts with a block comment
 
