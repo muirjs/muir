@@ -6,18 +6,18 @@ import { describe, it } from 'node:test';
 // dictionary mode, as deleting a property that is not the last one added does, makes V8 deoptimize them, and tests
 // that check V8's optimization, such as fast-json-stringify's test/deopt.test.js on Node.js 22, then fail.
 const child = [
-  `import { install } from ${JSON.stringify(new URL('../../src/hook-core.ts', import.meta.url).href)};`,
-  `import { envNames } from ${JSON.stringify(new URL('../../src/record.ts', import.meta.url).href)};`,
+  `import { muirSirynNodeTestInstall } from ${JSON.stringify(new URL('../../src/hook-core.ts', import.meta.url).href)};`,
+  `import { muirSirynNodeTestEnvNames } from ${JSON.stringify(new URL('../../src/record.ts', import.meta.url).href)};`,
   `import { muirSirynNodeTestCurrentTests } from ${JSON.stringify(new URL('../../src/wrap.ts', import.meta.url).href)};`,
   `import { harness, out } from ${JSON.stringify(new URL('../hook-core.fixtures.ts', import.meta.url).href)};`,
   'const ended = {};',
   "const end = muirSirynNodeTestCurrentTests({ ns: ended, env: {}, now: () => 0 }).makeCurrent('a.test.ts > first');",
   'ended.mutantCoverage = { static: {}, perTest: {} };',
   'end();',
-  'const { deps } = harness({ [envNames.out]: out });',
+  'const { deps } = harness({ [muirSirynNodeTestEnvNames.out]: out });',
   "const installed = { currentTestId: 'stale', mutantCoverage: { static: {}, perTest: {} } };",
   'deps.global.__stryker__ = installed;',
-  'install(deps);',
+  'muirSirynNodeTestInstall(deps);',
   'console.log(JSON.stringify({',
   '  ended: [ended.currentTestId, %HasFastProperties(ended)],',
   '  installed: [installed.currentTestId, %HasFastProperties(installed)],',

@@ -20,7 +20,7 @@ import { muirSirynNodeTestWorkersAllowed } from './watchdog.ts';
 const watchdog = `Promise.all([
   import('node:worker_threads'),
   import(${JSON.stringify(new URL(`./watchdog${extname(import.meta.filename)}`, import.meta.url).href)}),
-]).then(([{ workerData }, { watch }]) => watch(workerData));`;
+]).then(([{ workerData }, { muirSirynNodeTestWatch }]) => muirSirynNodeTestWatch(workerData));`;
 
 // Exported so the tests can call them in their own process: those of the test files they start report no coverage.
 // process.exit(undefined) sets the exit code to undefined, so it would exit with 0.
