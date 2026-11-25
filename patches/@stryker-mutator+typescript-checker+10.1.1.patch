@@ -1,0 +1,21 @@
+diff --git a/node_modules/@stryker-mutator/typescript-checker/dist/src/fs/script-file.js b/node_modules/@stryker-mutator/typescript-checker/dist/src/fs/script-file.js
+index ce936a0..51b99e6 100644
+--- a/node_modules/@stryker-mutator/typescript-checker/dist/src/fs/script-file.js
++++ b/node_modules/@stryker-mutator/typescript-checker/dist/src/fs/script-file.js
+@@ -40,8 +40,14 @@ export class ScriptFile {
+         }
+     }
+     touch() {
+-        this.modifiedTime = new Date();
++        this.modifiedTime = nextModifiedTime();
+         this.watcher?.(this.fileName, ts.FileWatcherEventKind.Changed);
+     }
+ }
++// Stryker-js PR #6143: a change must be newer than an emit in the same millisecond, or the build skips it.
++let lastModifiedTimeMs = 0;
++function nextModifiedTime() {
++    lastModifiedTimeMs = Math.max(Date.now() + 1, lastModifiedTimeMs + 1);
++    return new Date(lastModifiedTimeMs);
++}
+ //# sourceMappingURL=script-file.js.map
+\ No newline at end of file

@@ -1758,6 +1758,12 @@ is stamped with the current time at emit, and `getUpToDateStatusWorker` rebuilds
 than an input (`buildInfoTime < inputTime`). `ScriptFile.touch` stamps a mutated file with `new Date()`, so a
 mutant written in the emit's millisecond leaves the project up to date and is never type-checked.
 
+**Carried locally (2026-11-25).** The workspace root applies PR #6143's clock change to the installed checker with
+patch-package (`patches/@stryker-mutator+typescript-checker+10.1.1.patch`, run by the root `postinstall`). Only the
+private workspace root installs the checker, so no published package carries the patch. When the checker's version
+changes, the install fails until the patch is removed or remade. Measured with the patch: 0 of 99 checks that
+started in the previous check's millisecond missed the error.
+
 **Fix (measured).** Stamping a touched file 1 ms ahead (`new Date(Date.now() + 1)`) gave 0 of 49 misses against 39
 of 49 unpatched, at the same speed. PR #6143 uses `max(Date.now() + 1, last + 1)`.
 

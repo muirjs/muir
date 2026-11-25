@@ -7,6 +7,9 @@
     "node": ">=22.18"
   },
   "private": true,
+  "scripts": {
+    "postinstall": "patch-package --error-on-fail"
+  },
   "dependencies": {
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -55,6 +58,7 @@
     "jiti": "2.4.2",
     "jsonc-eslint-parser": "2.4.2",
     "nx": "24.0.1",
+    "patch-package": "8.0.1",
     "prettier": "3.6.2",
     "tinybench": "6.2.2",
     "tslib": "2.8.1",
