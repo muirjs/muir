@@ -254,8 +254,8 @@ export function muirMoiraStorybookIndexTree(
   const lists = new WeakMap<object, readonly unknown[]>();
   const visit = (node: unknown): void => {
     const listKey = statementLists.get(muirMoiraStorybookField(node, 'type'));
-    // Stryker disable next-line StringLiteral: no Babel node has a field named '' or the mutant's text, so both read no list
     const statements = muirMoiraStorybookList(
+      // Stryker disable next-line StringLiteral: no Babel node has a field named '' or the mutant's text, so both read no list
       muirMoiraStorybookField(node, listKey ?? ''),
     );
     const snapshot = [...statements];

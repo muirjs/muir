@@ -40,8 +40,8 @@ export async function muirSirynNodeTestRemoveDir(
   log: Logger,
   {
     waitMs = removeWaitMs,
-    // Stryker disable next-line MuirProteusJsNumericLiteral: tuning values, not a contract a test should pin
     remove = (path: string) =>
+      // Stryker disable next-line MuirProteusJsNumericLiteral: tuning values, not a contract a test should pin
       rm(path, { recursive: true, maxRetries: 10, retryDelay: 20 }),
   } = {},
 ): Promise<void> {

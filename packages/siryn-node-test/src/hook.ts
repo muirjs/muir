@@ -99,10 +99,10 @@ muirSirynNodeTestInstall({
   canWatchMemory:
     isMainThread && muirSirynNodeTestWorkersAllowed(process.permission),
   watchMemory: (options) => {
-    // Stryker disable next-line ArrayDeclaration: equivalent, as hook-core always passes execArgv: []
     const worker = new Worker(watchdog, {
       eval: true,
       ...options,
+      // Stryker disable next-line ArrayDeclaration: equivalent, as hook-core always passes execArgv: []
       execArgv: [...options.execArgv],
     });
     // Listening keeps a watchdog error from ending the process; the line reaches the runner's stderr tail.

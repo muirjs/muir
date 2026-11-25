@@ -56,8 +56,8 @@ export function muirSirynNodeTestCopySandbox(
 
         // A junction, as Stryker links node_modules, needs no symlink privilege on Windows, so a link whose target is
         // missing becomes one too; POSIX ignores the type.
-        // Stryker disable next-line LogicalOperator,BooleanLiteral: Windows only, as POSIX ignores the link type; the Windows run kills it
         const isDirectory =
+          // Stryker disable next-line LogicalOperator,BooleanLiteral: Windows only, as POSIX ignores the link type; the Windows run kills it
           statSync(source, { throwIfNoEntry: false })?.isDirectory() ?? true;
         const link = muirSirynNodeTestRebase(source, sandbox, copy);
         symlinkSync(
