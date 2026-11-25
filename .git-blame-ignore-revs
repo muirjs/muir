@@ -1,0 +1,5 @@
+# Repo-wide formatting commits. `git blame` skips them with
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs`; GitHub reads this file by default.
+
+# style: format the workspace with Prettier at 80 columns
+206a393bf81ed8e40418bab8e9e6c45b9cefd1fa
