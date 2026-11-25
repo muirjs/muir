@@ -2,11 +2,13 @@
 
 Base URL: `<api_url>` = `https://real-world-app-39656dff2ddc.herokuapp.com/api` in the app
 (`apps/conduit/src/environments/environment.ts:8`, `environment.prod.ts:3`), `http://localhost:3100/api` for the double.
-App paths are relative to the clone `angular-ngrx-nx-realworld-example-app`; e2e paths relative to `apps/conduit-e2e/src`.
+App paths are relative to the clone `angular-ngrx-nx-realworld-example-app`, and e2e paths to
+`apps/conduit-e2e/src`.
 
-How the app authenticates: `libs/core/http-client/src/lib/api.service.ts` sends no `Authorization` header; every request uses
-`withCredentials: true`, so the real backend relies on a cookie. The double sets an `HttpOnly` cookie named `jwt` on register and login,
-clears it on logout, and accepts either that cookie or `Authorization: Token <jwt>` (also `Bearer`).
+The app sends no `Authorization` header (`libs/core/http-client/src/lib/api.service.ts`). Every request uses
+`withCredentials: true`, so the real backend relies on a cookie. The double sets an `HttpOnly` cookie named `jwt` on
+register and login, and clears it on logout. It accepts either that cookie or `Authorization: Token <jwt>`, and
+`Bearer` in place of `Token`.
 
 | Method | Path                                                                 | App caller                                                      | E2E exercise                                                                                                                                       | Implemented |
 | ------ | -------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
@@ -33,11 +35,23 @@ clears it on logout, and accepts either that cookie or `Authorization: Token <jw
 
 ## Behaviour notes
 
-- Success codes: 201 for register, create article, add comment; 204 (empty body) for the two DELETE calls that remove a resource; 200 otherwise.
-- Errors: 422 `{ errors: { field: [msg] } }` for validation, duplicate email or username, and failed login (`{ errors: { message: ["User not found"] } }`, which the app renders as `message User not found`);
-  401 `{ errors: { token: [...] } }` for a missing or invalid token on protected routes; 403 when editing or deleting another user's article or comment; 404 for unknown article, user, comment or route.
-- The app treats a 401 as "go to /login" (`libs/core/error-handler`) and a 404 as "go to /", so those codes are not interchangeable.
-- `POST /users` answers `{ user }` per the RealWorld spec. `AuthStore.register` (`libs/auth/data-access/src/auth.store.ts:48-52`) stores the whole response as `user`; that is how the app is written, not something the double can fix.
-- Tags sent as `"e2e, testing, playwright"` arrive from the editor as `["e2e"," testing"," playwright"]`; the double trims them and drops empties.
-- Seed: users `jake`, `anne`, and `carl`, five articles, tags, and one comment. Each seed user's email is the user name at the reserved `example.com` domain, and every password is `password123`. `anne` follows `jake`.
-- Every endpoint the app or the specs call was determined and is implemented. Spec extras the app never calls (for example `GET /user` variants or pagination headers) are not implemented.
+- Success codes: 201 for register, create article and add comment. 204, with an empty body, for the two DELETE
+  calls that remove a resource. 200 otherwise.
+- Errors:
+  - 422 `{ errors: { field: [msg] } }` for a validation error, a duplicate email or username, and a failed login.
+    A failed login answers `{ errors: { message: ["User not found"] } }`, which the app renders as
+    `message User not found`.
+  - 401 `{ errors: { token: [...] } }` for a missing or invalid token on a protected route.
+  - 403 when a user edits or deletes another user's article or comment.
+  - 404 for an unknown article, user, comment or route.
+- The app treats a 401 as "go to /login" (`libs/core/error-handler`) and a 404 as "go to /", so the double must
+  answer the right one of the two.
+- `POST /users` answers `{ user }`, as the RealWorld spec says. `AuthStore.register`
+  (`libs/auth/data-access/src/auth.store.ts:48-52`) stores the whole response as `user`. That is how the app is
+  written, and the double cannot change it.
+- Tags typed as `"e2e, testing, playwright"` arrive from the editor as `["e2e"," testing"," playwright"]`. The double
+  trims them and drops empty ones.
+- Seed data: the users `jake`, `anne` and `carl`, five articles, tags, and one comment. Each seed user's email is
+  the user name at the reserved `example.com` domain, and every password is `password123`. `anne` follows `jake`.
+- The double implements every endpoint that the app or the specs call. It does not implement what the RealWorld
+  spec has and the app never calls, such as variants of `GET /user` or pagination headers.

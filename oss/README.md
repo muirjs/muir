@@ -1,14 +1,14 @@
 # Open-source copies used to validate the runner
 
 Each folder holds what a disposable copy of an upstream repo needed for a Stryker run with this runner.
-Never apply these to the upstream clone itself. `docs/VERDICT.md` (Evidence) has the results.
+Never apply these to the upstream clone itself. The Evidence section of `docs/VERDICT.md` has the results.
 
-Every copy also needs this runner and StrykerJS installed. Link the runner as a directory junction or
-an absolute link. Node resolves the link and strips the runner's TypeScript outside `node_modules`.
-Every Stryker config here loads the runner by its package name, `@muirjs/siryn-playwright`.
+Every copy also needs this runner and StrykerJS installed. Install the runner from this repo, or link it as a
+directory junction or an absolute link. Every Stryker config here loads the runner by its package name,
+`@muirjs/siryn-playwright`.
 
-Build both packages in this repo first. A copy loads each package from its `dist` folder, which a fresh
-clone does not have; without it the import fails with `ERR_MODULE_NOT_FOUND`.
+Build the packages in this repo first. A copy loads each package from its `dist` folder, which a fresh clone does
+not have. Without it, the import fails with `ERR_MODULE_NOT_FOUND`.
 
 ```sh
 npx nx run-many -t build
@@ -25,10 +25,10 @@ use-debouncy and punktlandung leave the option unset.
 
 ## Resuming a stopped run
 
-Stryker writes its incremental file when a run ends, or on SIGINT, SIGTERM, SIGHUP or SIGABRT. On Windows a
-run stopped with `Stop-Process -Force` or `taskkill /F` gets none of these, so it keeps nothing.
+Stryker writes its incremental file when a run ends, or on SIGINT, SIGTERM, SIGHUP or SIGABRT. On Windows, a
+run stopped with `Stop-Process -Force` or `taskkill /F` gets none of these signals, so it keeps nothing.
 `tools/stryker-checkpoint.ts` is a reporter that writes the mutants tested so far to the incremental file
-as they finish, at most once every 5 seconds. Add it to the run, with the config's own reporters listed again:
+as they finish, at most once every 5 seconds. Add it to the run, and list the config's own reporters again:
 
 ```sh
 npx stryker run <config> --incremental --appendPlugins <this repo>/tools/stryker-checkpoint.ts --reporters <the config's reporters>,muir-checkpoint
@@ -36,10 +36,9 @@ npx stryker run <config> --incremental --appendPlugins <this repo>/tools/stryker
 
 Run the same command again to resume. Stryker reuses each result whose code and tests did not change.
 
-An in-place run that was stopped leaves its changed files behind: the instrumented source, and
-`// @ts-nocheck` at the top of every file Stryker checked. Restore them before you resume, from git or from
-`.stryker-tmp/backup-*`. The checkpoint reads each file's original from that backup, so the resumed run sees
-the original source.
+A stopped in-place run leaves its changed files behind: the instrumented source, and `// @ts-nocheck` at the
+top of every file that Stryker checked. Restore them from git or from `.stryker-tmp/backup-*` before you resume.
+The checkpoint reporter reads each file's original from that backup, so the resumed run sees the original source.
 
 ## realworld: stefanoslig/angular-ngrx-nx-realworld-example-app at bc7158d
 
@@ -107,7 +106,8 @@ dev server (`npm run dev`), which compiles Stryker's sandbox on the fly.
      page renders.
 4. Run the repo's setup steps: `npx prisma migrate deploy`, then `npx prisma generate --sql`, which
    reads the tables the migration creates ("no such table: User" otherwise), then `npm run build`,
-   `npx playwright install chromium`, and `npx react-router typegen` for the checker. Plain `npx playwright test --workers=1` then passes 25 tests and skips 1.
+   `npx playwright install chromium`, and `npx react-router typegen` for the checker. Plain
+   `npx playwright test --workers=1` then passes 25 tests and skips 1.
 5. Run `npx stryker run stryker.playwright.config.ts`. When the type checker finishes, Stryker starts a
    second test runner. With `webServer.mutate` on, the runner moves each test runner's dev server to a
    port of its own. Keep the copy's `reuseExistingServer: true` for a run where server support is off,
@@ -172,8 +172,9 @@ screenshots, against the repo's own e2e tests on its Vite dev server (`pnpm dev`
      finds neither Visual Studio 2026 nor the Windows 11 SDK, so `apps/docs` fails to install;
    - adds `apps/examples/e2e/playwright.stryker.config.ts`: the seven specs, chromium only, no retries,
      and the Vite dev server instead of upstream's build and preview. It leaves out the `text measurement`
-     tests, whose expected widths come from another platform's fonts: on Windows 11 arm64 "measures
-     text" measured 88.06 px against 87, and the custom `renderMethod` case 168.53 px against at most 167. The other specs then pass: 31 tests, 2 skipped;
+     tests, whose expected widths come from another platform's fonts. On Windows 11 arm64, "measures
+     text" measured 88.06 px against 87, and the custom `renderMethod` case 168.53 px against at most 167.
+     The other specs then pass 31 tests and skip 2;
    - adds `.stryker-tmp`, `/reports` and `.muir-playwright-server-mutants` to `.gitignore`. An in-place run
      writes the server mutants file into the copy's root.
 2. Run `pnpm install` with the `pnpm` on your `PATH`, not the npm line above; it switches to the
@@ -215,16 +216,17 @@ config (2026-11-04):
 | `comment-composer.tsx`                      |      40 |      7 |         1 |       31 |           1 |   20% |  4 min |
 | `TldrawUiMenuItem.tsx`                      |      79 |     14 |         4 |       51 |          10 |   23% | 31 min |
 
-The `A11y.tsx` run includes Vite's cold start, the first of the JSX runs. `PlainTextLabel.tsx` is not in the config: only the
-speech-bubble example uses it, and no spec opens that example, so its run stopped in the dry run
+The `A11y.tsx` run, the first of the JSX runs, includes Vite's cold start. `PlainTextLabel.tsx` is not in the
+config. Only the speech-bubble example uses it, and no spec opens that example, so its run stopped in the dry run
 with "No page loaded instrumented code".
 
 ## sigma: jacomyal/sigma.js at 1db3385
 
 The WebGL case. sigma draws graphs with WebGL2, and its regression suite compares screenshots of the canvas,
 so a mutant in a shader string or in the geometry code is killed only when the picture changes. The config
-mutates the node shapes and their instance registry, the arrow edge extremity and the line, curved and loop
-edge paths, the code the 12 regression scenarios run when they render, against `packages/browser-tests/regression` on its Vite dev server.
+mutates the code that the 12 regression scenarios run when they render: the node shapes and their instance
+registry, the arrow edge extremity, and the line, curved and loop edge paths. It runs them against
+`packages/browser-tests/regression` on its Vite dev server.
 
 1. Apply `sigma/copy.patch` and copy `sigma/stryker.webgl.config.ts` into the copy's root. The patch:
    - adds `packages/browser-tests/playwright.stryker.config.ts`: the regression suite only, no retries, and
@@ -284,10 +286,9 @@ own specs on its webpack dev server. The 3,551-line player core and the ad code 
 4. Run `npx stryker run stryker.video.config.ts`. It runs in Stryker's sandbox: webpack builds the sandbox's
    `src`. The config runs at `concurrency: 3`, so the runner moves each process's dev server to a port of
    its own: it rewrites the `--port 8080` in the command along with the `url`. Without that port in the
-   command, `webServer.mutate: true` stops the run at startup. To
-   split the run, pass one file at a time with `--mutate`; the incremental file carries finished files into the next run.
-   `--mutate` takes a comma-separated list, so a brace glob such as `{a,b}.js` breaks into pieces that match
-   nothing.
+   command, `webServer.mutate: true` stops the run at startup. To split the run, pass one file at a time with
+   `--mutate`. The incremental file carries the finished files into the next run. `--mutate` takes a
+   comma-separated list, so a brace glob such as `{a,b}.js` breaks into pieces that match nothing.
 
 Results on Windows 11 arm64, one file per run, concurrency 2 to 4 as free memory allowed (2026-11-04):
 
@@ -325,7 +326,7 @@ mutates the hook's one source file, `src/index.ts`, against the 8 spec files in 
    passes 47 tests in 14 seconds.
 4. Run `npx stryker run stryker.ct.config.ts`. It sets `inPlace: true`: Stryker 10.1.1 rewrites a sandbox's
    `tsconfig.json` through TypeScript's JavaScript API, and the call it makes (`parseConfigFileTextToJson`)
-   is missing from TypeScript 7, this repo's version. A sandbox run stopped with
+   is missing from TypeScript 7, the version use-debouncy uses. A sandbox run stopped with
    "ts.parseConfigFileTextToJson is not a function". Stryker skips that rewrite in place.
 
 Result on Windows 11 arm64, concurrency 2, 5.4 minutes (2026-11-04): 43 mutants, 37 killed, 6 survived, none
@@ -344,7 +345,8 @@ config mutates 10 feature components that the specs mount, with the built-in mut
      no retries and a `webServer` that runs `node node_modules/vite/bin/vite.js`. Upstream runs
      `./node_modules/.bin/vite`, which cmd.exe cannot run, and `npx vite` is no way out: bun writes only `.exe`
      shims to `node_modules/.bin`, which npx does not see, so it can fetch a package of that name from the
-     registry instead, as `npx stryker` does (step 3). The server is also reused (`reuseExistingServer: true`), so all test runner processes share it;
+     registry instead, as `npx stryker` does (step 3). The config also sets `reuseExistingServer: true`, so all
+     test runner processes share the server;
    - adds `.stryker-tmp` and `/reports` to a new `apps/web/.gitignore`.
 2. Run `bun install` at the repo root (bun 1.4.4 was used; the repo names 1.4.3), then in `apps/web`
    `bun add -d @stryker-mutator/core@10.1.1 <runner tarball> <JSX mutators tarball>`.

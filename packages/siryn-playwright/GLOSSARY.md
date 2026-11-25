@@ -66,8 +66,8 @@ the run's folder, tagged with the test it belongs to.
 _Avoid_: coverage dump, coverage file
 
 **Page helpers**:
-Stryker's per-file helper functions, which the runner defines in every page and frame so that a mutated
-callback that Playwright sends to the page as source text can run there.
+The per-file functions that Stryker's instrumented code calls, which the runner defines in every page and
+frame so that a mutated callback that Playwright sends to the page as source text can run there.
 _Avoid_: init script, Stryker helpers
 
 ### Server support

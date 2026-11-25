@@ -148,11 +148,12 @@ exports as `strykerValidationSchema`.
   that takes a few minutes on Playwright's default workers can take longer than that on one, so raise
   `workers` or `dryRunTimeoutMinutes`.
 - `retries`: how many times to retry a failed test, in every project. Without it, each project keeps the
-  `retries` that the Playwright config gives it. See Flaky tests.
+  `retries` that the Playwright config gives it. See [Flaky tests](#flaky-tests).
 - `survivorTraces`: a folder, relative to the folder you run Stryker from, for the Playwright traces of
-  surviving mutants, such as `reports/muir-siryn-playwright-traces`. See Traces of surviving mutants.
+  surviving mutants, such as `reports/muir-siryn-playwright-traces`. See
+  [Traces of surviving mutants](#traces-of-surviving-mutants).
 - `traceScreenshots`: add screenshots to the traces that `survivorTraces` records. The default is
-  `false`. See Traces of surviving mutants.
+  `false`. See [Traces of surviving mutants](#traces-of-surviving-mutants).
 - `webServer`: an object that controls the mutants in the code that the Playwright config's `webServer`
   runs. `mutate` is `false` (the default), `true`, or `'auto'`. `isolate` restarts the server around runs
   that test server-side mutants, and is `true` by default. See [Server-side code](#server-side-code).
@@ -267,9 +268,9 @@ slow or loaded machine a restart can take longer than that one, so raise `timeou
 restart of the `webServer`. With `isolate: false`, the timeout includes no restart, so raise `timeoutMS`
 by one restart when the report shows Timeouts for server-side mutants that Stryker ran against every
 test. When global setup fails with a static mutant, the runner starts the `webServer` up to three more times
-in the same mutant run, as [How a mutant reaches the server](#how-a-mutant-reaches-the-server) describes, and those starts count
-against the same timeout. Raise `timeoutMS` by about two more starts to cover a start that fails once at
-random.
+in the same mutant run, as [How a mutant reaches the server](#how-a-mutant-reaches-the-server) describes.
+Those starts count against the same timeout. Raise `timeoutMS` by about two more starts to cover a start that
+fails once at random.
 
 Stryker runs the dry run in one test runner process. With `mutate: true` or `'auto'`, that
 process writes the server-side mutants it found to `.muir-playwright-server-mutants` in Stryker's sandbox,
@@ -446,8 +447,9 @@ a survivor whose result Stryker reused has no trace. Run it again with that comm
 The traces have no screenshots unless `traceScreenshots` is `true`. Without them, the trace viewer cannot
 show what a `<canvas>` drew, 2D or WebGL: it shows a gray checkerboard in its place, and a canvas that
 covers the page hides the page behind it. A `<video>` that loads its file from a URL plays in the viewer
-either way, since the trace holds that file. The viewer plays the file, not the frame the test saw. To see canvas content, set `traceScreenshots: true` and turn on "Display canvas
-content" in the trace viewer's settings, which is off by default. Screenshots made one short test's trace
+either way, since the trace holds that file. The viewer plays the file, not the frame the test saw. To see
+canvas content, set `traceScreenshots: true` and turn on "Display canvas content" in the trace viewer's
+settings, which is off by default. Screenshots made one short test's trace
 about 8 times as large, but a trace of tldraw's minimap test only 4% larger, since its network resources
 made up most of it.
 
@@ -502,10 +504,11 @@ counts as detected too.
 ## Faster mutation runs
 
 Stryker's `concurrency` sets how many test runner processes run at once. Each one starts its own
-`webServer`, so give each process its own port from `STRYKER_MUTATOR_WORKER`, as the example in Configure
-Stryker shows. With `webServer.mutate` on, the runner moves the ports itself. On this repository's demo, concurrency 2 ran 1.9 times as fast as concurrency 1
-and concurrency 4 ran 3.2 times as fast, with the same status for every mutant (2 rounds each, e2e and
-component tests).
+`webServer`, so give each process its own port from `STRYKER_MUTATOR_WORKER`, as the example in
+[Configure Stryker](#configure-stryker) shows. With `webServer.mutate` on, the runner moves the ports itself.
+On this repository's demo, concurrency 2 ran 1.9 times as fast as concurrency 1, and concurrency 4 ran 3.2
+times as fast, with the same status for every mutant. That was 2 rounds each, of the e2e tests and of the
+component tests.
 
 Playwright 1.64's source shows that each mutant run loads the Playwright config twice, in two new processes:
 the test loader and the worker. So what the config imports adds to each run. Keep the config's imports light: on the
@@ -531,8 +534,8 @@ On this repository's demo, 1000 ms cut a component-test run from a median of 58 
 run from 111 s to 56 s. Those are 5 runs per side, interleaved, at concurrency 3. The e2e runs varied
 more: the default side ranged from 89 s to 150 s, a spread larger than the 55 s gain. No mutant changed
 between Killed and Survived. If the page needs longer than the shorter wait to show the right result, the
-assertion fails without any mutant at fault, and the mutant counts as killed. So run once with each setting and compare the statuses in the
-two JSON reports before you keep the shorter wait.
+assertion fails without any mutant at fault, and the mutant counts as killed. So run once with each setting,
+and compare the statuses in the two JSON reports before you keep the shorter wait.
 
 Set `use.actionTimeout` too, since Playwright's default is none. A mutant that removes an element makes a
 click on it wait out the whole test timeout, and the mutant counts as a Timeout instead of Killed. On the
@@ -553,8 +556,8 @@ npx stryker run --incremental
 ```
 
 Stryker always runs the dry run, so an incremental run takes at least as long as the sandbox copy, the
-`webServer` start and the dry run. On this repository's demo e2e config, at concurrency 7, with the median of 5 alternated
-runs per side and the range in brackets:
+`webServer` start and the dry run. On this repository's demo e2e config, at concurrency 7, with the median of 5
+alternated runs per side and the range in brackets:
 
 | Change since the last run  | Results reused | Incremental  | Full         |
 | -------------------------- | -------------- | ------------ | ------------ |
@@ -567,7 +570,7 @@ the next test in the file. It does not see the changes below, and keeps a result
 change:
 
 - Application files outside `mutate` that the app under test loads: other modules, styles and assets.
-- Code in a spec file outside every test: imports, top-level helpers, and hooks above the first test. A hook
+- Code in a spec file outside every test: imports, top-level functions, and hooks above the first test. A hook
   between two tests counts as part of the test above it.
 - In a spec file that starts with a block comment, such as a license header, Stryker places each test one
   line below its `test(` call. An edit on that line counts against the test above it, unless the edit
@@ -598,7 +601,7 @@ Replace the paths with your lockfile, Node.js version file, Stryker config, Play
 folders. If you set `incrementalFile`, put that path in `path`. The cache step saves the file only when the
 job succeeds, so a run that fails `thresholds.break` leaves the older file in the cache.
 
-The hash does not cover the hooks and helpers in the spec files, or the application files outside `mutate`.
+The hash does not cover the hooks and top-level functions in the spec files, or the application files outside `mutate`.
 Add them to the hash if a full run after each such edit costs less than a result that is wrong and goes
 unnoticed.
 
@@ -627,7 +630,8 @@ otherwise:
   This catches a looping test that raised its own timeout. When
   Stryker's timeout is under 7.6 s, there is no such stop, and Stryker's own timer ends the run. The dry
   run has no such stop either.
-- `repeatEach` is 1. `retries` is the Playwright config's or the `retries` option, as Flaky tests says.
+- `repeatEach` is 1. `retries` is the Playwright config's or the `retries` option, as
+  [Flaky tests](#flaky-tests) says.
 - With `webServer.mutate` on and more than one Stryker test runner process, each `webServer` and the
   projects' `baseURL` move to a free port, as
   [More than one Stryker process](#more-than-one-stryker-process) says.
@@ -729,10 +733,10 @@ run sets.
   active. Login in `globalSetup` runs once instead.
 - Playwright sends the source text of a callback to the browser for `evaluate`, `evaluateHandle`, `$eval`,
   `$$eval`, `evaluateAll`, `waitForFunction`, and `addInitScript`. When `mutate` includes a spec file,
-  Stryker puts calls to its helper functions in that text. The runner defines those helpers in every page
+  Stryker puts calls to its per-file functions in that text. The runner defines those functions in every page
   and frame of every browser context with an init script, so a mutant in such a callback gets coverage and
   can be killed. Init scripts do not reach web workers, service workers, or Electron's main process. In a
-  callback for `worker.evaluate` or `electronApplication.evaluate`, the first helper call throws a
+  callback for `worker.evaluate` or `electronApplication.evaluate`, the first call to one of them throws a
   `ReferenceError`, so the test fails, in the dry run too. Turn off the mutants in such a callback with a
   `// Stryker disable` comment, or leave that spec file out of `mutate`.
 - Web workers and service workers never get the active mutant, because the runner sets it with a script
