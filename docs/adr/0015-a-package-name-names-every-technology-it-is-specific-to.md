@@ -40,6 +40,12 @@ rename with "Yes".
   with the options keys `muirShadowcatReactStyling`, `muirShadowcatTelemetry` and `muirShadowcatJsConsole`. A
   configuration lists each ignorer's package in `appendPlugins`; `@muirjs/proteus-react` no longer exports
   `strykerPlugins` or `strykerValidationSchema`.
+- The Storybook split left the CSF ignorer in `@muirjs/shadowcat-storybook`. The stub ignorer is now
+  `muir-shadowcat-storybook-vitest` in `@muirjs/shadowcat-storybook-vitest`. The reporter is now
+  `muir-banshee-storybook-vitest` in `@muirjs/banshee-storybook-vitest`. The sandbox plugin is now
+  `muirPixieStorybookViteStrykerPlugin` in `@muirjs/pixie-storybook-vite`. The two ignorers and the reporter read one
+  option, `muirShadowcatStorybook.configDir`, which `@muirjs/shadowcat-storybook` declares (Lars, 2026-11-25:
+  "2: OK"). Their messages start with the name of the package the user configured.
 - `@muirjs/shadowcat-telemetry` and `@muirjs/shadowcat-react` depend on `@muirjs/shadowcat-js` for the call matcher
   and the option reader.
 - The ignorer packages share their test support through `@muirjs/test-util-ignorer-packages`, not
