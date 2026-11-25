@@ -35,6 +35,9 @@ package on first use.
   check; a Storybook release that changes their exports fails at the call, not at compile time.
 - The reader's messages take the calling package's name, so they name the plugin the user configured.
 - The Storybook loader child, which runs in its own process, imports Storybook as before.
+- With the reader inside, the package imports in a median 50.7 ms (p25 46.5, p75 58.6; same method, 2026-11-25),
+  against 427.5 ms with Storybook's internals loaded as well. Of the 27 ms the reader added, `@babel/parser`, which
+  the reader's parse step imports, takes about 11.5 ms on its own.
 
 Evidence: ADR-0005; the benchmark in the 2026-11-25 session log; Storybook 10.6.5's `exports` map, which gives the
 internal modules only a `default` condition.

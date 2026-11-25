@@ -27,8 +27,8 @@ export const strykerValidationSchema = {
       type: 'object',
       default: {},
       additionalProperties: false,
-      // Stryker disable next-line StringLiteral: documentation for readers of the exported strykerValidationSchema, which Stryker's messages never print
       description:
+        // Stryker disable next-line StringLiteral: documentation for readers of the exported strykerValidationSchema, which Stryker's messages never print
         'Options of the muir-shadowcat-storybook and muir-shadowcat-storybook-csf plugins.',
       properties: {
         configDir: {
