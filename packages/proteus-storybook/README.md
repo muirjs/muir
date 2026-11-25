@@ -5,13 +5,13 @@
 # @muirjs/proteus-storybook
 
 StrykerJS mutators for Storybook story data: the `args` a story renders with. In many component libraries, the
-story files are app code, so a run of the components can mutate them too. `MuirProteusStorybookArgs` removes one arg at a
-time from a story that runs a play function or a `.test()` call. When the story tests still pass, no check depends on
-that arg.
+story files are app code, so a run of the components can mutate them too. `MuirProteusStorybookArgs` removes one arg
+at a time from a story that runs a play function or a `.test()` call. When the story tests still pass, no check
+depends on that arg.
 
 The package keeps Stryker's 17 built-in mutators on and adds 1 of its own: 0 run by default, 0 are opt-in and 1 is
-experimental. So `await muirProteusStorybookMutators()` with no options adds no mutator. The package is private and not on npm
-yet.
+experimental. So `await muirProteusStorybookMutators()` with no options adds no mutator. The package is private and
+not on npm yet.
 
 ## Requirements
 
@@ -35,8 +35,8 @@ CSF ignorer's play mode left at its default, `ignore`. That mode keeps the mutan
 and leaves the `args` to this package. Mutate story test code in a separate configuration, with
 `@muirjs/proteus-storybook-test`.
 
-Call `muirProteusStorybookMutators` at the top of the Stryker configuration file, await it, and turn `MuirProteusStorybookArgs` on by
-its name inside `experimental`:
+Call `muirProteusStorybookMutators` at the top of the Stryker configuration file, await it, and turn
+`MuirProteusStorybookArgs` on by its name inside `experimental`:
 
 ```ts
 // stryker.config.mjs
@@ -127,8 +127,9 @@ the details.
 ## What MuirProteusStorybookArgs mutates
 
 Under Storybook's Vitest addon, a story without a play function or a `.test()` call only renders. A removed arg there
-survives unless the render crashes, and the survivor says nothing about the story's checks. So `MuirProteusStorybookArgs`
-mutates `args` only where a play or test function runs for them, decided from the story file alone:
+survives unless the render crashes, and the survivor says nothing about the story's checks. So
+`MuirProteusStorybookArgs` mutates `args` only where a play or test function runs for them, decided from the story
+file alone:
 
 - The `args` of a story that runs a play (its own, the meta's or a composed one) or a `.test()` call: a CSF3 story
   object, `.story({ args })` and `.extend({ args })`.
@@ -151,8 +152,8 @@ places the mutant, and you disable a survivor you judge equivalent.
 ## Stryker's built-in mutators stay on
 
 Story data is app code, so the install removes no built-in mutator. The built-ins mutate the story files in this run
-as they mutate the components. Do not install `@muirjs/proteus-storybook-test` in the same configuration:
-its install turns the built-ins off for every file in the run, the components included.
+as they mutate the components. Do not install `@muirjs/proteus-storybook-test` in the same configuration: its install
+turns the built-ins off for every file in the run, the components included.
 
 ## Turn a mutator off
 

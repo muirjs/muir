@@ -91,7 +91,8 @@ await muirProteusStorybookTestMutators({ experimental: true });
 
 The package has no opt-in mutators, so an `extended` key throws.
 
-With opt-in or experimental mutators on, the line names them. For `{ experimental: { MuirProteusStorybookTestSpyStub: true } }`:
+With opt-in or experimental mutators on, the line names them. For
+`{ experimental: { MuirProteusStorybookTestSpyStub: true } }`:
 
 ```text
 @muirjs/proteus-storybook-test: Stryker's 17 built-in mutators are off for every file in this run; 3 MuirProteusStorybookTest mutators on. Opt-in or experimental: MuirProteusStorybookTestSpyStub.
@@ -143,9 +144,10 @@ measured on few repositories, or none, and its matching rules or its name can st
 `viewport: 'responsive'` or `outline: false`, when nothing in the file may set that global below it. It does not read
 the project's `initialGlobals`.
 
-`MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` place mutants at definition-time stubs that the mock reset
-erases before the story renders. The `muir-shadowcat-storybook-vitest` ignorer of `@muirjs/shadowcat-storybook-vitest` reports those mutants as
-Ignored, with the reason, so list it in `ignorers` whenever these mutators are on.
+`MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` place mutants at definition-time stubs
+that the mock reset erases before the story renders. The `muir-shadowcat-storybook-vitest` ignorer of
+`@muirjs/shadowcat-storybook-vitest` reports those mutants as Ignored, with the reason, so list it in `ignorers`
+whenever these mutators are on.
 
 ### Why a mutator is opt-in or experimental
 
@@ -214,16 +216,16 @@ await userEvent.click(input);
 ```
 
 A disable comment matches each mutator name exactly, ignoring case only. `MuirProteusStorybookTestSpyStub` and
-`MuirProteusStorybookTestSpyStubOutcome` are two names, so silence both with
-`// Stryker disable next-line MuirProteusStorybookTestSpyStub,MuirProteusStorybookTestSpyStubOutcome: <reason>` or with `all`.
+`MuirProteusStorybookTestSpyStubOutcome` are two names, so silence both with `all` or with
+`// Stryker disable next-line MuirProteusStorybookTestSpyStub,MuirProteusStorybookTestSpyStubOutcome: <reason>`.
 
 For a block, use `// Stryker disable <name>: <reason>` and `// Stryker restore <name>`.
 
 ## Survivors to expect and limits
 
 The mutators place a mutant unless the story file proves that it changes nothing. Where a survivor changes nothing
-that any check could see, disable it with a reason. The `muir-banshee-storybook-vitest` reporter of `@muirjs/banshee-storybook-vitest` writes
-a ready disable comment for the common shapes below.
+that any check could see, disable it with a reason. The `muir-banshee-storybook-vitest` reporter of
+`@muirjs/banshee-storybook-vitest` writes a ready disable comment for the common shapes below.
 
 ### The interaction mutators
 
@@ -235,21 +237,21 @@ a ready disable comment for the common shapes below.
 - The mutators match calls by name and by where the receiver comes from, as far as the file shows it. A `userEvent`
   the file does not prove to be user-event's, such as one destructured from a function's own parameter, still gets
   mutants.
-- On one open-source design system, every `MuirProteusStorybookTestClickFocus` survivor (3 of 23 placed mutants) was a play that
-  clicks and then checks nothing that the click does.
-- On the same design system, every `MuirProteusStorybookTestInteractionTarget` mutant (11) was killed, and each kill came from the
-  swapped query finding nothing: the name came from another story in the file, which the rendered story lacks (read
-  from each story, as the Vitest runner reports no kill reason). Such a kill shows only that the swapped element is
-  absent. That is why the mutator is experimental.
+- On one open-source design system, every `MuirProteusStorybookTestClickFocus` survivor (3 of 23 placed mutants) was
+  a play that clicks and then checks nothing that the click does.
+- On the same design system, every `MuirProteusStorybookTestInteractionTarget` mutant (11) was killed, and each kill
+  came from the swapped query finding nothing: the name came from another story in the file, which the rendered story
+  lacks (read from each story, as the Vitest runner reports no kill reason). Such a kill shows only that the swapped
+  element is absent. That is why the mutator is experimental.
 
 ### The spy stub mutators
 
-- A removed stub survives when no check reads what the spy returns. The `muir-banshee-storybook-vitest` reporter lists its line as an
-  unchecked stub.
+- A removed stub survives when no check reads what the spy returns. The `muir-banshee-storybook-vitest` reporter lists
+  its line as an unchecked stub.
 - A surviving outcome mutant shows that no check tells success from failure of that call. Where the removed stub
   was killed or timed out, the reporter lists the line as an outcome-unchecked stub; where it survived, the
-  unchecked stub on that line covers both. Turn on `MuirProteusStorybookTestSpyStub` too: without the removal, an outcome
-  survivor gets no finding.
+  unchecked stub on that line covers both. Turn on `MuirProteusStorybookTestSpyStub` too: without the removal, an
+  outcome survivor gets no finding.
 
 ### MuirProteusStorybookTestStoryGlobals
 

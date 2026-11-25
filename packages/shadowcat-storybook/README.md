@@ -45,10 +45,10 @@ Seven packages work together. This README describes the setup they share.
   `npx playwright install chromium` installs.
 - Node.js 22 or later.
 
-Only `@muirjs/moira-storybook`, the internal package that this package, `@muirjs/pixie-storybook-vite`,
-`@muirjs/proteus-storybook` and `@muirjs/proteus-storybook-test` depend on, loads Storybook at run time, the first
-time a plugin reads the Storybook project. So only it declares the `storybook` peer, and the peer reaches the four
-packages through it. `@muirjs/proteus-msw` reads source text and states the same range in its README.
+Every package in the table apart from `@muirjs/proteus-msw` depends on `@muirjs/moira-storybook`, an internal
+package. Only that package loads Storybook at run time, the first time a plugin reads the Storybook project. So only
+it declares the `storybook` peer, and the peer reaches the other six packages through it. `@muirjs/proteus-msw` reads
+source text and states the same range in its README.
 
 ## Set up two Stryker configurations
 
@@ -116,7 +116,8 @@ Both run the same Vitest configuration.
    });
    ```
 
-3. Write the components configuration. `MuirProteusStorybookArgs` is experimental, so turn it on by name inside `experimental`:
+3. Write the components configuration. `MuirProteusStorybookArgs` is experimental, so turn it on by name inside
+   `experimental`:
 
    ```ts
    // stryker.config.mjs
@@ -159,8 +160,8 @@ Both run the same Vitest configuration.
    };
    ```
 
-   Keep the components out of this `mutate`. `muirProteusStorybookTestMutators()` turns the built-in mutators off for every
-   file in the run.
+   Keep the components out of this `mutate`. `muirProteusStorybookTestMutators()` turns the built-in mutators off for
+   every file in the run.
 
 5. Run each configuration:
 
@@ -173,9 +174,9 @@ Both run the same Vitest configuration.
 
 ## Point the plugins at the Storybook config folder
 
-`muirShadowcatStorybook.configDir` names the Storybook config folder, as Storybook takes it with `--config-dir`. It defaults to
-`.storybook`, and a relative path is read from the folder Stryker runs in. Set it in both configurations when the
-folder has another name.
+`muirShadowcatStorybook.configDir` names the Storybook config folder, as Storybook takes it with `--config-dir`. It
+defaults to `.storybook`, and a relative path is read from the folder Stryker runs in. Set it in both configurations
+when the folder has another name.
 
 The plugins read three things from that folder, once per run:
 
@@ -205,10 +206,11 @@ The values Storybook reads without running the file are `title`, `id`, `tags`, `
 `includeStories` and `excludeStories` on the meta and the stories. A mutant of one of them could
 change which stories Storybook finds, so the ignorer keeps them as written in both modes.
 
-In `ignore` mode the meta's `args` stay unignored. They are story data, which `MuirProteusStorybookArgs` and the built-in
-mutators mutate.
+In `ignore` mode the ignorer does not report the meta's `args` as Ignored. They are story data, which
+`MuirProteusStorybookArgs` and the built-in mutators mutate.
 
-The ignorer reads only story files. Each Ignored mutant carries a reason that starts with `muir-shadowcat-storybook-csf:`.
+The ignorer reads only story files. Each Ignored mutant carries a reason that starts with
+`muir-shadowcat-storybook-csf:`.
 
 ## Find the stubs the mock reset erases
 

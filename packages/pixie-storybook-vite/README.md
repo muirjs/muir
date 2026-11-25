@@ -6,10 +6,10 @@
 
 Three Vite plugins for Storybook's story tests:
 
-- `muirPixieStorybookViteMockTransformerPlugin()`, the mock transformer, rewrites spy stubs that Storybook's mock reset would
-  erase into a form the reset keeps.
-- `muirPixieStorybookViteMockResetPlugin()`, the mock reset plugin, resets every module mock spy before each test, so a stub one
-  story sets cannot leak into the next.
+- `muirPixieStorybookViteMockTransformerPlugin()`, the mock transformer, rewrites spy stubs that Storybook's mock
+  reset would erase into a form the reset keeps.
+- `muirPixieStorybookViteMockResetPlugin()`, the mock reset plugin, resets every module mock spy before each test, so
+  a stub one story sets cannot leak into the next.
 - `muirPixieStorybookViteStrykerPlugin()`, the sandbox plugin, lets the story tests run in Stryker's sandbox.
 
 The first two make Storybook's spies behave the same in every story test, with or without Stryker. The sandbox
@@ -81,8 +81,8 @@ const config: StorybookConfig = {
 export default config;
 ```
 
-There, the Storybook UI and Storybook's Vitest addon both run the rewritten stories, and the `muir-shadowcat-storybook-vitest`
-ignorer of `@muirjs/shadowcat-storybook-vitest` learns that the transformer is on.
+There, the Storybook UI and Storybook's Vitest addon both run the rewritten stories, and the
+`muir-shadowcat-storybook-vitest` ignorer of `@muirjs/shadowcat-storybook-vitest` learns that the transformer is on.
 
 ### What the transformer leaves as written
 
@@ -94,8 +94,9 @@ mock reset still erases them:
 - A stub after the first of its chain, as in `fn().mockResolvedValueOnce(a).mockResolvedValue(b)`.
 - A stub on a spy call that takes arguments, as in `fn(impl).mockReturnValue(1)`. The rewrite would replace `impl`.
 
-The `muir-banshee-storybook-vitest` report of `@muirjs/banshee-storybook-vitest` lists each of these, with a fix: pass the implementation to `fn()`, as in
-`fn(() => value)`, return the value from the function `fn()` already takes, or set the stub in `beforeEach`.
+The `muir-banshee-storybook-vitest` reporter of `@muirjs/banshee-storybook-vitest` lists each of these, with a fix:
+pass the implementation to `fn()`, as in `fn(() => value)`, return the value from the function `fn()` already takes,
+or set the stub in `beforeEach`.
 
 A later call in a rewritten chain that resets the implementation, such as `mockReset()`, then falls back to the
 stub's value, where the story as written gets none.
@@ -111,8 +112,8 @@ one story sets on a module mock spy is still there when a later story renders. A
 passes in a full run and fails when it runs alone. Stryker runs a story alone when only that story covers a mutant,
 and then reports the mutant Killed whatever it changes.
 
-`muirPixieStorybookViteMockResetPlugin()` adds a Vitest setup file that resets every spy in the registry before each test. Add
-it to the Vitest configuration that runs the story tests:
+`muirPixieStorybookViteMockResetPlugin()` adds a Vitest setup file that resets every spy in the registry before each
+test. Add it to the Vitest configuration that runs the story tests:
 
 ```ts
 // vitest.config.ts

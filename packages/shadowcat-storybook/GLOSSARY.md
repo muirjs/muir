@@ -3,9 +3,10 @@
 Stryker plugins for Storybook story files, and three Vite plugins: one rewrites definition-time stubs so they survive
 the mock reset, one resets module mock spies before each test, and one lets Storybook's tests run in Stryker's
 sandbox. This context covers `@muirjs/shadowcat-storybook`, `@muirjs/shadowcat-storybook-vitest`,
-`@muirjs/banshee-storybook-vitest`, `@muirjs/pixie-storybook-vite` and `@muirjs/moira-storybook`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
-same spy stub shape from `@muirjs/moira-storybook`, which holds the code they share, the Storybook project reader and
-the stub verdict included.
+`@muirjs/banshee-storybook-vitest`, `@muirjs/pixie-storybook-vite` and `@muirjs/moira-storybook`. The transformer
+exists only to rewrite the stubs that the stub ignorer and the reporter diagnose, and all three read the same spy stub
+shape from `@muirjs/moira-storybook`. That package holds the code they share, the Storybook project reader and the
+stub verdict included.
 _Avoid_: `@layzee/storybook-csf` (the shared package's former name)
 
 ## Language
@@ -135,8 +136,8 @@ is a read and refuses nothing, and so is a write through a value the origin sear
 or object literal that holds the receiver, a function parameter, `arguments` in a method or `function` play, a local
 that holds the module object (`const t2 = t`, or an awaited `import()`), a local with two values, a local whose value
 nests a choice (`const u = a || (flag ? userEvent : x)`), or `(await userEvent).click = f`. `delete userEvent.click`
-is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the `muir-banshee-storybook-vitest`
-reporter gives the `click-before-type` shape only for `userEvent14`.
+is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the
+`muir-banshee-storybook-vitest` reporter gives the `click-before-type` shape only for `userEvent14`.
 _Avoid_: user-event kind, user-event 14 check
 
 **Composed play**:
@@ -240,33 +241,36 @@ returns `undefined` or the original implementation.
 _Avoid_: lost stub, reset stub
 
 **Unchecked stub**:
-A spy stub at whose line an `MuirProteusStorybookTestSpyStub` mutant, which removes a stub, survived; the `muir-banshee-storybook-vitest` report
-lists it once as a stub finding, because no test fails without the stub. A surviving outcome mutant (the test
-mutators' term), which `MuirProteusStorybookTestSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
-success from failure, not that none reads the stub. A later stub of a chain whose first stub the mock transformer
-keeps is erased all the same, so its removal survives and the report lists an unchecked stub on the line of its
-`chain-not-rewritten` or `once-not-rewritten` finding; the fix of that finding clears both. The same holds for an
-erased stub on a spy call that takes arguments and its `spy-arguments-not-rewritten` finding.
+A spy stub at whose line a `MuirProteusStorybookTestSpyStub` mutant, which removes a stub, survived; the
+`muir-banshee-storybook-vitest` report lists it once as a stub finding, because no test fails without the stub. A
+surviving outcome mutant (the test mutators' term), which `MuirProteusStorybookTestSpyStubOutcome` makes, makes no
+unchecked stub: it shows that no check tells success from failure, not that none reads the stub. A later stub of a
+chain whose first stub the mock transformer keeps is erased all the same, so its removal survives and the report
+lists an unchecked stub on the line of its `chain-not-rewritten` or `once-not-rewritten` finding; the fix of that
+finding clears both. The same holds for an erased stub on a spy call that takes arguments and its
+`spy-arguments-not-rewritten` finding.
 _Avoid_: unobserved stub, surviving stub
 
 **Outcome-unchecked stub**:
 A spy stub at whose line a surviving outcome mutant (the test mutators' term) shows that no check tells its success
-from its failure, while the `MuirProteusStorybookTestSpyStub` mutant that removes it was killed or timed out, so a play needs the
-stub; the `muir-banshee-storybook-vitest` report lists the line once as an `outcome-unchecked` stub finding. A stub whose own removal
-survived is an unchecked stub instead; a line with two stubs can carry one of each.
+from its failure, while the `MuirProteusStorybookTestSpyStub` mutant that removes it was killed or timed out, so a
+play needs the stub; the `muir-banshee-storybook-vitest` report lists the line once as an `outcome-unchecked` stub
+finding. A stub whose own removal survived is an unchecked stub instead; a line with two stubs can carry one of each.
 _Avoid_: unasserted outcome
 
 **Stub finding**:
-One entry in the `muir-banshee-storybook-vitest` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
-read from the story file also names the stub method as written (`mockResolvedValueOnce`); an `unchecked` or
-`outcome-unchecked` finding comes from surviving mutants and names none.
+One entry in the `muir-banshee-storybook-vitest` report: a spy stub's file and line, its verdict, the reason, and
+the fix. A finding read from the story file also names the stub method as written (`mockResolvedValueOnce`); an
+`unchecked` or `outcome-unchecked` finding comes from surviving mutants and names none.
 _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:
-One entry in the `muir-banshee-storybook-vitest` report for the surviving mutants of the interaction mutators (`MuirProteusStorybookTestInteraction`,
-`MuirProteusStorybookTestClickFocus`, `MuirProteusStorybookTestInteractionRepeat` and `MuirProteusStorybookTestInteractionTarget`, the Storybook test
+One entry in the `muir-banshee-storybook-vitest` report for the surviving mutants of the interaction mutators
+(`MuirProteusStorybookTestInteraction`, `MuirProteusStorybookTestClickFocus`,
+`MuirProteusStorybookTestInteractionRepeat` and `MuirProteusStorybookTestInteractionTarget`, the Storybook test
 mutators' names) that start on one line and whose interaction has an interaction shape. The reporter reads
-`MuirProteusStorybookTestAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
+`MuirProteusStorybookTestAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a
+shape. A hint
 holds the file and line, the shape, the reason, the fix, and a ready `// Stryker disable next-line` comment for the
 line above. The comment names a mutator only when every mutant of it placed on that line survived with that
 shape, since one comment disables them all. The reporter finds the interactions with the `@muirjs/moira-storybook`
@@ -291,33 +295,34 @@ shape:
 _Avoid_: skip reason, interaction pattern
 
 **Static story mutant**:
-A mutant in a story file that Stryker runs against every test, listed in the `muir-banshee-storybook-vitest` report with its net
-time.
+A mutant in a story file that Stryker runs against every test, listed in the `muir-banshee-storybook-vitest` report
+with its net time.
 _Avoid_: slow mutant
 
 ### Plugins
 
 **Mock transformer**:
-The Vite plugin `muir-pixie-storybook-vite-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
-form, which survives the mock reset. It rewrites a stub only when it is the first of its chain, not one of the
-`Once` forms, and on a spy call that takes no arguments (`fn()`, not `fn(impl)`, as the rewrite would replace them),
-and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
-run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets or
-resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
-the reset, where the story as written gets none. The `muir-banshee-storybook-vitest` report gives an erased `Once`
-stub the verdict `once-not-rewritten`, an erased stub after the first of a chain that is not a `Once` stub the
-verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes arguments the verdict
-`spy-arguments-not-rewritten`.
+The Vite plugin `muir-pixie-storybook-vite-mock-transformer` that rewrites each definition-time stub into
+`fn(implementation)` form, which survives the mock reset. It rewrites a stub only when it is the first of its chain,
+not one of the `Once` forms, and on a spy call that takes no arguments (`fn()`, not `fn(impl)`, as the rewrite would
+replace them), and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so
+they run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets
+or resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
+the reset, where the story as written gets none. The stub ignorer and the `muir-banshee-storybook-vitest` report give
+an erased `Once` stub the verdict `once-not-rewritten`, an erased stub after the first of a chain that is not a
+`Once` stub the verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes arguments the
+verdict `spy-arguments-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:
-The Vite plugin `muir-pixie-storybook-vite-mock-reset` that resets every module mock spy before each test, in every run of the
-Vitest configuration, so a story that relies on a module mock leak fails in every run, not only under Stryker.
+The Vite plugin `muir-pixie-storybook-vite-mock-reset` that resets every module mock spy before each test, in every
+run of the Vitest configuration, so a story that relies on a module mock leak fails in every run, not only under
+Stryker.
 _Avoid_: module mock reset plugin, reset plugin
 
 **Sandbox plugin**:
-The Vite plugin `muir-pixie-storybook-vite-stryker` that lets Storybook's tests run in Stryker's sandbox, where the project's
-installed packages sit outside the folders Vite serves by default. It changes nothing outside a Stryker run.
+The Vite plugin `muir-pixie-storybook-vite-stryker` that lets Storybook's tests run in Stryker's sandbox, where the
+project's installed packages sit outside the folders Vite serves by default. It changes nothing outside a Stryker run.
 _Avoid_: fs-allow plugin
 
 **Rewritten stub**:
@@ -331,21 +336,22 @@ reporter whether the transformer really ran.
 _Avoid_: record file, rewrite log
 
 **CSF ignorer**:
-The `muir-shadowcat-storybook-csf` ignorer, which reports as Ignored the mutants of static CSF values and, in the default play
-mode, also those of story test code, MSW handlers and the meta object apart from its `args`, which are story data
-(an `args` object written on the meta's first line keeps its own `{}` mutant out, as a story's does).
+The `muir-shadowcat-storybook-csf` ignorer, which reports as Ignored the mutants of static CSF values and, in the
+default play mode, also those of story test code, MSW handlers and the meta object apart from its `args`, which are
+story data (an `args` object written on the meta's first line keeps its own `{}` mutant out, as a story's does).
 _Avoid_: story ignorer, Storybook ignorer
 
 **Stub ignorer**:
-The `muir-shadowcat-storybook-vitest` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
-erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call holds the stubs
-before it in its chain, so when one of those is kept the ignorer reports only the stub's own arguments as Ignored.
+The `muir-shadowcat-storybook-vitest` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset
+erases, may erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call
+holds the stubs before it in its chain, so when one of those is kept the ignorer reports only the stub's own
+arguments as Ignored.
 It does the same when the spy call takes arguments (`fn(impl)`), which the story runs after the mock reset.
 Otherwise it ignores the whole stub call, so the arguments of a `mockName` call in the chain are reported as Ignored
 under the stub's reason too.
 _Avoid_: reset ignorer
 
 **Play mode**:
-The `muirShadowcatStorybookCsf.play` option: `ignore` for a Stryker configuration that mutates app code and leaves story
-test code alone, `mutate` for one that mutates story test code.
+The `muirShadowcatStorybookCsf.play` option: `ignore` for a Stryker configuration that mutates app code and leaves
+story test code alone, `mutate` for one that mutates story test code.
 _Avoid_: test mode, play option
