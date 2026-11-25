@@ -7,7 +7,7 @@ export default await testCode({
   incrementalFile:
     'reports/stryker-incremental/@muirjs/proteus-node.test-code.json',
   ...reportFiles('@muirjs/proteus-node.test-code'),
-  muirProteusNodeNodeTest: {
+  muirSirynNodeTest: {
     testFiles: ['packages/proteus-node/test/**/*.test.ts'],
     nodeArgs: [source],
   },
