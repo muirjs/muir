@@ -1733,6 +1733,30 @@ node carries it as a leading comment.
 in its `innerComments`, apply the directive to the next JSX sibling, the way a leading comment applies
 to the next statement.
 
+## stryker-mutator/stryker-js: the TypeScript checker misses compile errors when a mutant lands in the last emit's millisecond (already reported)
+
+Status: nothing to file (2026-11-25). Issue #6141, "`typescript-checker` sometimes misses compile errors in build
+mode under concurrency", reports it; a comment there (2026-10-01) traces it to the same millisecond tie, and open
+PR #6143 carries the fix, a strictly increasing clock in `ScriptFile`. Neither is merged or released as of
+2026-11-25. Add our numbers to #6141 only if Lars wants to; they confirm, they add no new cause.
+
+**Versions.** `@stryker-mutator/typescript-checker` 10.1.1, TypeScript 6.0.3, Node.js 26.13.0, Windows 11 arm64.
+
+**Reproduction (measured 2026-11-25).** `.scratch/checker-spike.ts` drives the checker's own `TypescriptCompiler`
+on a two-file project with a `references` key (build mode, as every package's `tsconfig.lib.json` here), and
+alternates a mutant that cannot compile (`export const x: number = 'mutant'`) with a reset. Back to back, 159 of the
+199 checks that started in the same millisecond the previous check ended came back with no errors; 0 of 400
+checks missed when the loop first waited for the next millisecond or 2 ms. Without `references` (single-project
+mode, no emit) 0 of 300 missed.
+
+**Cause (read in TypeScript 6.0.3 `src/compiler/tsbuildPublic.ts`, confirmed by the spike).** The build info cache
+is stamped with the current time at emit, and `getUpToDateStatusWorker` rebuilds only when that stamp is older
+than an input (`buildInfoTime < inputTime`). `ScriptFile.touch` stamps a mutated file with `new Date()`, so a
+mutant written in the emit's millisecond leaves the project up to date and is never type-checked.
+
+**Fix (measured).** Stamping a touched file 1 ms ahead (`new Date(Date.now() + 1)`) gave 0 of 49 misses against 39
+of 49 unpatched, at the same speed. PR #6143 uses `max(Date.now() + 1, last + 1)`.
+
 ## stryker-mutator/stryker-js: incremental mode places tests one line low in a file that starts with a block comment
 
 Status: draft, not filed (2026-11-01). A search of the repo's issues for "ts-nocheck line", "startPosition
