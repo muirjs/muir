@@ -5,30 +5,33 @@ import {
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { muirProteusReactListOption } from './list-option.ts';
-import { muirProteusReactHideableCallee } from './statement-call.ts';
+import {
+  muirShadowcatJsHideableCallee,
+  muirShadowcatJsListOption,
+} from '@muirjs/shadowcat-js';
 
-export const muirProteusReactTelemetryIgnorerName =
-  'muir-proteus-react-telemetry';
+import { muirShadowcatTelemetryPackageName } from './package-name.ts';
+
+export const muirShadowcatTelemetryIgnorerName = 'muir-shadowcat-telemetry';
 
 const calleePattern = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/;
 
-export const muirProteusReactTelemetrySchema = {
+export const muirShadowcatTelemetrySchema = {
   type: 'object',
   additionalProperties: false,
-  description: `Options of the ${muirProteusReactTelemetryIgnorerName} ignorer.`,
+  description: `Options of the ${muirShadowcatTelemetryIgnorerName} ignorer.`,
   properties: {
     calls: {
       type: 'array',
       items: { type: 'string', pattern: calleePattern.source },
       description:
-        `Callees, such as track or analytics.track, added to the built-in ones. ${muirProteusReactTelemetryIgnorerName} hides the ` +
+        `Callees, such as track or analytics.track, added to the built-in ones. ${muirShadowcatTelemetryIgnorerName} hides the ` +
         'mutants of a statement that is just a call to one of them, unless an argument can act on the page.',
     },
   },
 };
 
-const analyticsReason = `${muirProteusReactTelemetryIgnorerName}: analytics call; DOM tests do not observe what it sends`;
+const analyticsReason = `${muirShadowcatTelemetryIgnorerName}: analytics call; DOM tests do not observe what it sends`;
 const analyticsCalls: readonly unknown[] = [
   'gtag',
   'window.gtag',
@@ -59,7 +62,7 @@ const analyticsCalls: readonly unknown[] = [
   'amplitude.logEvent',
   'amplitude.identify',
 ];
-const errorReason = `${muirProteusReactTelemetryIgnorerName}: error-monitoring call; DOM tests do not observe what it reports`;
+const errorReason = `${muirShadowcatTelemetryIgnorerName}: error-monitoring call; DOM tests do not observe what it reports`;
 const errorCalls: readonly unknown[] = [
   'Sentry.captureException',
   'Sentry.captureMessage',
@@ -76,12 +79,13 @@ const sentryImportedFunctions: readonly unknown[] = [
   'captureMessage',
 ];
 
-const callsReason = `${muirProteusReactTelemetryIgnorerName}: telemetry call from muirProteusReactTelemetry.calls; DOM tests do not observe what it sends`;
+const callsReason = `${muirShadowcatTelemetryIgnorerName}: telemetry call from muirShadowcatTelemetry.calls; DOM tests do not observe what it sends`;
 
-export function muirProteusReactTelemetryIgnorer(options: object): Ignorer {
-  const calls = muirProteusReactListOption(
+export function muirShadowcatTelemetryIgnorer(options: object): Ignorer {
+  const calls = muirShadowcatJsListOption(
+    muirShadowcatTelemetryPackageName,
     options,
-    'muirProteusReactTelemetry',
+    'muirShadowcatTelemetry',
     'calls',
     [],
     isCallee,
@@ -95,7 +99,7 @@ export function muirProteusReactTelemetryIgnorer(options: object): Ignorer {
 
   return {
     shouldIgnore(path) {
-      const callee = muirProteusReactHideableCallee(
+      const callee = muirShadowcatJsHideableCallee(
         muirMoiraMutatorsFieldOf(path, 'node'),
       );
 
@@ -106,7 +110,7 @@ export function muirProteusReactTelemetryIgnorer(options: object): Ignorer {
     },
   };
 }
-muirProteusReactTelemetryIgnorer.inject = tokens(commonTokens.options);
+muirShadowcatTelemetryIgnorer.inject = tokens(commonTokens.options);
 
 function isCallee(name: unknown): name is string {
   return typeof name === 'string' && calleePattern.test(name);

@@ -1,31 +1,36 @@
-// The muir-proteus-react-styling ignorer, through StrykerJS's own instrumenter with only its built-in mutators.
+// The muir-shadowcat-react-styling ignorer, through StrykerJS's own instrumenter with only its built-in mutators.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import {
+  muirAssertEveryOutcome,
+  muirIgnorerOutcomes,
+  muirValidateOptions,
+} from '@muirjs/test-util-ignorer-packages';
+
 import { strykerValidationSchema } from '../src/index.ts';
 import {
-  muirProteusReactStylingSchema,
-  muirProteusReactStylingIgnorer,
+  muirShadowcatReactStylingSchema,
+  muirShadowcatReactStylingIgnorer,
 } from '../src/styling-ignorer.ts';
-import {
-  assertEveryOutcome,
-  ignorerOutcomes,
-} from './support/ignorer-outcomes.ts';
-import { validateOptions } from './support/validate-options.ts';
 
 const classReason =
-  'muir-proteus-react-styling: class names only style the element; DOM tests do not observe them';
+  'muir-shadowcat-react-styling: class names only style the element; DOM tests do not observe them';
 const styleReason =
-  'muir-proteus-react-styling: inline styles only style the element; DOM tests do not observe them';
+  'muir-shadowcat-react-styling: inline styles only style the element; DOM tests do not observe them';
 const builderReason =
-  'muir-proteus-react-styling: class-name builder call; DOM tests do not observe class names';
+  'muir-shadowcat-react-styling: class-name builder call; DOM tests do not observe class names';
 
 const outcomes = (code: string) =>
-  ignorerOutcomes(muirProteusReactStylingIgnorer({}), code);
+  muirIgnorerOutcomes(muirShadowcatReactStylingIgnorer({}), code);
 const assertEvery = (code: string, outcome: string, options: object = {}) =>
-  assertEveryOutcome(muirProteusReactStylingIgnorer(options), code, outcome);
+  muirAssertEveryOutcome(
+    muirShadowcatReactStylingIgnorer(options),
+    code,
+    outcome,
+  );
 
-describe('muir-proteus-react-styling', () => {
+describe('muir-shadowcat-react-styling', () => {
   it('ignores every mutant in a className expression, with the class reason', async () => {
     await assertEvery(
       "export const a = <a className={cn('a', on && 'b')} />;",
@@ -128,7 +133,7 @@ describe('muir-proteus-react-styling', () => {
 
   it('keeps the mutants of a className with a visibility class from visibilityClasses, also as a variant', async () => {
     const options = {
-      muirProteusReactStyling: { visibilityClasses: ['closed'] },
+      muirShadowcatReactStyling: { visibilityClasses: ['closed'] },
     };
 
     await assertEvery(
@@ -159,7 +164,7 @@ describe('muir-proteus-react-styling', () => {
     await assertEvery(
       "export const a = <a className={on ? 'p-2' : 'm-2'} />;",
       classReason,
-      { muirProteusReactStyling: { visibilityClasses: ['was', 'here'] } },
+      { muirShadowcatReactStyling: { visibilityClasses: ['was', 'here'] } },
     );
   });
 
@@ -323,11 +328,11 @@ describe('muir-proteus-react-styling', () => {
     it(`refuses visibilityClasses ${JSON.stringify(visibilityClasses)} when it is created`, () => {
       assert.throws(
         () =>
-          muirProteusReactStylingIgnorer({
-            muirProteusReactStyling: { visibilityClasses },
+          muirShadowcatReactStylingIgnorer({
+            muirShadowcatReactStyling: { visibilityClasses },
           }),
         {
-          message: `@muirjs/proteus-react: muirProteusReactStyling.visibilityClasses must be an array of class names, each without whitespace, not ${JSON.stringify(visibilityClasses)}.`,
+          message: `@muirjs/shadowcat-react: muirShadowcatReactStyling.visibilityClasses must be an array of class names, each without whitespace, not ${JSON.stringify(visibilityClasses)}.`,
         },
       );
     });
@@ -335,11 +340,11 @@ describe('muir-proteus-react-styling', () => {
 
   [
     {},
-    { muirProteusReactStyling: {} },
-    { muirProteusReactStyling: { visibilityClasses: [] } },
+    { muirShadowcatReactStyling: {} },
+    { muirShadowcatReactStyling: { visibilityClasses: [] } },
   ].forEach((options) => {
     it(`accepts the options ${JSON.stringify(options)}`, () => {
-      assert.doesNotThrow(() => muirProteusReactStylingIgnorer(options));
+      assert.doesNotThrow(() => muirShadowcatReactStylingIgnorer(options));
     });
   });
 
@@ -374,33 +379,33 @@ describe('muir-proteus-react-styling', () => {
   });
 });
 
-describe('the muir-proteus-react-styling options schema', () => {
+describe('the muir-shadowcat-react-styling options schema', () => {
   const unknownOption =
-    /^warn Unknown stryker config option "muirProteusReactStyling"/;
+    /^warn Unknown stryker config option "muirShadowcatReactStyling"/;
 
-  it('describes muirProteusReactStyling.visibilityClasses as a list of class names', () => {
-    assert.deepEqual(muirProteusReactStylingSchema, {
+  it('describes muirShadowcatReactStyling.visibilityClasses as a list of class names', () => {
+    assert.deepEqual(muirShadowcatReactStylingSchema, {
       type: 'object',
       additionalProperties: false,
-      description: 'Options of the muir-proteus-react-styling ignorer.',
+      description: 'Options of the muir-shadowcat-react-styling ignorer.',
       properties: {
         visibilityClasses: {
           type: 'array',
           items: { type: 'string', pattern: '^\\S+$' },
           description:
-            'Class names that hide an element, added to the built-in ones. muir-proteus-react-styling keeps the mutants of ' +
+            'Class names that hide an element, added to the built-in ones. muir-shadowcat-react-styling keeps the mutants of ' +
             'a class expression that holds one of them.',
         },
       },
     });
   });
 
-  it('lets core accept muirProteusReactStyling without the unknown-option warning it gives when the schema is missing', async () => {
+  it('lets core accept muirShadowcatReactStyling without the unknown-option warning it gives when the schema is missing', async () => {
     const options = {
-      muirProteusReactStyling: { visibilityClasses: ['closed'] },
+      muirShadowcatReactStyling: { visibilityClasses: ['closed'] },
     };
-    const without = await validateOptions(options, []);
-    const withSchema = await validateOptions(options, [
+    const without = await muirValidateOptions(options, []);
+    const withSchema = await muirValidateOptions(options, [
       strykerValidationSchema,
     ]);
 
@@ -417,10 +422,10 @@ describe('the muir-proteus-react-styling options schema', () => {
     { classes: ['closed'] },
     [],
     'closed',
-  ].forEach((muirProteusReactStyling) => {
-    it(`lets core refuse muirProteusReactStyling ${JSON.stringify(muirProteusReactStyling)}`, async () => {
-      const { valid, log } = await validateOptions(
-        { muirProteusReactStyling },
+  ].forEach((muirShadowcatReactStyling) => {
+    it(`lets core refuse muirShadowcatReactStyling ${JSON.stringify(muirShadowcatReactStyling)}`, async () => {
+      const { valid, log } = await muirValidateOptions(
+        { muirShadowcatReactStyling },
         [strykerValidationSchema],
       );
 
@@ -429,7 +434,7 @@ describe('the muir-proteus-react-styling options schema', () => {
         log.some(
           (line) =>
             line.startsWith('error') &&
-            line.includes('muirProteusReactStyling'),
+            line.includes('muirShadowcatReactStyling'),
         ),
         log.join('\n'),
       );

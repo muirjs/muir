@@ -62,6 +62,18 @@
     },
     {
       "path": "./packages/test-util-mutator-packages"
+    },
+    {
+      "path": "./packages/test-util-ignorer-packages"
+    },
+    {
+      "path": "./packages/shadowcat-js"
+    },
+    {
+      "path": "./packages/shadowcat-telemetry"
+    },
+    {
+      "path": "./packages/shadowcat-react"
     }
   ]
 }

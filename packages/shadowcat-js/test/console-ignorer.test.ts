@@ -2,15 +2,18 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  muirProteusReactConsoleIgnorer,
-  muirProteusReactConsoleSchema,
+  muirAssertEveryOutcome,
+  muirValidateOptions,
+} from '@muirjs/test-util-ignorer-packages';
+
+import {
+  muirShadowcatJsConsoleIgnorer,
+  muirShadowcatJsConsoleSchema,
 } from '../src/console-ignorer.ts';
 import { strykerValidationSchema } from '../src/index.ts';
-import { assertEveryOutcome } from './support/ignorer-outcomes.ts';
-import { validateOptions } from './support/validate-options.ts';
 
 const consoleReason =
-  'muir-proteus-react-console: console output; DOM tests do not observe it';
+  'muir-shadowcat-js-console: console output; DOM tests do not observe it';
 const consoleMethods = [
   'assert',
   'clear',
@@ -34,9 +37,9 @@ const consoleMethods = [
 ];
 
 const assertEvery = (code: string, outcome: string, options: object = {}) =>
-  assertEveryOutcome(muirProteusReactConsoleIgnorer(options), code, outcome);
+  muirAssertEveryOutcome(muirShadowcatJsConsoleIgnorer(options), code, outcome);
 
-describe('muir-proteus-react-console', () => {
+describe('muir-shadowcat-js-console', () => {
   ['log', 'debug', 'info', 'trace'].forEach((method) => {
     it(`ignores every mutant of a console.${method} statement by default, with the console reason`, async () => {
       await assertEvery(
@@ -82,18 +85,18 @@ describe('muir-proteus-react-console', () => {
   });
 
   ['warn', 'error'].forEach((method) => {
-    it(`ignores a console.${method} statement when muirProteusReactConsole.methods lists it`, async () => {
+    it(`ignores a console.${method} statement when muirShadowcatJsConsole.methods lists it`, async () => {
       await assertEvery(
         `console.${method}('saved', on ? 'a' : 'b');`,
         consoleReason,
-        { muirProteusReactConsole: { methods: ['warn', 'error'] } },
+        { muirShadowcatJsConsole: { methods: ['warn', 'error'] } },
       );
     });
   });
 
-  it('keeps a console.log statement when muirProteusReactConsole.methods replaces the default list without it', async () => {
+  it('keeps a console.log statement when muirShadowcatJsConsole.methods replaces the default list without it', async () => {
     await assertEvery("console.log('saved', on ? 'a' : 'b');", 'placed', {
-      muirProteusReactConsole: { methods: ['warn'] },
+      muirShadowcatJsConsole: { methods: ['warn'] },
     });
   });
 
@@ -111,11 +114,11 @@ describe('muir-proteus-react-console', () => {
     it(`refuses methods ${JSON.stringify(methods)} when it is created`, () => {
       assert.throws(
         () =>
-          muirProteusReactConsoleIgnorer({
-            muirProteusReactConsole: { methods },
+          muirShadowcatJsConsoleIgnorer({
+            muirShadowcatJsConsole: { methods },
           }),
         {
-          message: `@muirjs/proteus-react: muirProteusReactConsole.methods must be an array of console method names, such as log or warn, not ${JSON.stringify(methods)}.`,
+          message: `@muirjs/shadowcat-js: muirShadowcatJsConsole.methods must be an array of console method names, such as log or warn, not ${JSON.stringify(methods)}.`,
         },
       );
     });
@@ -123,12 +126,12 @@ describe('muir-proteus-react-console', () => {
 
   [
     {},
-    { muirProteusReactConsole: {} },
-    { muirProteusReactConsole: { methods: [] } },
-    { muirProteusReactConsole: { methods: consoleMethods } },
+    { muirShadowcatJsConsole: {} },
+    { muirShadowcatJsConsole: { methods: [] } },
+    { muirShadowcatJsConsole: { methods: consoleMethods } },
   ].forEach((options) => {
     it(`accepts the options ${JSON.stringify(options)}`, () => {
-      assert.doesNotThrow(() => muirProteusReactConsoleIgnorer(options));
+      assert.doesNotThrow(() => muirShadowcatJsConsoleIgnorer(options));
     });
   });
 
@@ -185,8 +188,8 @@ describe('muir-proteus-react-console', () => {
     ] as const
   ).forEach(([effect, code]) => {
     it(`keeps the mutants of a console.log statement in a .jsx file whose argument holds ${effect}`, async () => {
-      await assertEveryOutcome(
-        muirProteusReactConsoleIgnorer({}),
+      await muirAssertEveryOutcome(
+        muirShadowcatJsConsoleIgnorer({}),
         code,
         'placed',
         'a.jsx',
@@ -203,28 +206,28 @@ describe('muir-proteus-react-console', () => {
   );
 });
 
-describe('the muir-proteus-react-console options schema', () => {
-  it('describes muirProteusReactConsole.methods as a list of console method names', () => {
-    assert.deepEqual(muirProteusReactConsoleSchema, {
+describe('the muir-shadowcat-js-console options schema', () => {
+  it('describes muirShadowcatJsConsole.methods as a list of console method names', () => {
+    assert.deepEqual(muirShadowcatJsConsoleSchema, {
       type: 'object',
       additionalProperties: false,
-      description: 'Options of the muir-proteus-react-console ignorer.',
+      description: 'Options of the muir-shadowcat-js-console ignorer.',
       properties: {
         methods: {
           type: 'array',
           items: { enum: consoleMethods },
           description:
-            'The console methods whose call statements muir-proteus-react-console hides, unless an argument can act on the ' +
+            'The console methods whose call statements muir-shadowcat-js-console hides, unless an argument can act on the ' +
             'page. Replaces the default list: log, debug, info and trace.',
         },
       },
     });
   });
 
-  it('lets core accept muirProteusReactConsole without an unknown-option warning', async () => {
+  it('lets core accept muirShadowcatJsConsole without an unknown-option warning', async () => {
     assert.deepEqual(
-      await validateOptions(
-        { muirProteusReactConsole: { methods: ['log', 'warn'] } },
+      await muirValidateOptions(
+        { muirShadowcatJsConsole: { methods: ['log', 'warn'] } },
         [strykerValidationSchema],
       ),
       { valid: true, log: [] },
@@ -237,10 +240,10 @@ describe('the muir-proteus-react-console options schema', () => {
     { methods: [1] },
     { calls: ['log'] },
     [],
-  ].forEach((muirProteusReactConsole) => {
-    it(`lets core refuse muirProteusReactConsole ${JSON.stringify(muirProteusReactConsole)}`, async () => {
-      const { valid, log } = await validateOptions(
-        { muirProteusReactConsole },
+  ].forEach((muirShadowcatJsConsole) => {
+    it(`lets core refuse muirShadowcatJsConsole ${JSON.stringify(muirShadowcatJsConsole)}`, async () => {
+      const { valid, log } = await muirValidateOptions(
+        { muirShadowcatJsConsole },
         [strykerValidationSchema],
       );
 
@@ -248,8 +251,7 @@ describe('the muir-proteus-react-console options schema', () => {
       assert.ok(
         log.some(
           (line) =>
-            line.startsWith('error') &&
-            line.includes('muirProteusReactConsole'),
+            line.startsWith('error') && line.includes('muirShadowcatJsConsole'),
         ),
         log.join('\n'),
       );

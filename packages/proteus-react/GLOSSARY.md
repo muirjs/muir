@@ -1,7 +1,7 @@
 # JSX mutators
 
-Mutators and ignorers for React JSX and TSX, made so that a Playwright test, which finds elements by role, label
-and text, has mutants it can kill, and so that mutants such a test cannot see stay out of the score.
+Mutators for React JSX and TSX, made so that a Playwright test, which finds elements by role, label and text, has
+mutants it can kill.
 
 ## Language
 
@@ -62,47 +62,3 @@ _Avoid_: redundant role
 The `ElementToSpan` mutation: an element whose implicit role is `button` or `link` becomes a `span`, keeping only
 the attributes a `span` can take.
 _Avoid_: tag swap, element replacement
-
-### Ignorers
-
-**Styling ignorer**:
-The opt-in `muir-proteus-react-styling` ignorer, for mutants in class names and inline styles, which a DOM test does not
-observe.
-_Avoid_: class ignorer, CSS ignorer
-
-**Telemetry ignorer**:
-The opt-in `muir-proteus-react-telemetry` ignorer, for mutants in analytics and error-monitoring calls.
-_Avoid_: analytics ignorer, tracking ignorer
-
-**Console ignorer**:
-The opt-in `muir-proteus-react-console` ignorer, for mutants in calls to the chosen `console` methods.
-_Avoid_: logging ignorer
-
-**Class-name builder**:
-A function that joins class names, such as `cn`, `clsx` or `cva`, whose call the styling ignorer treats like a
-class attribute.
-
-**Visibility class**:
-A class name that can hide an element, such as `hidden` or `sr-only`; the styling ignorer keeps the mutants of
-any class value that holds one.
-_Avoid_: hiding class
-
-**Paint-only style key**:
-An inline style key that changes only how an element is painted, not its size, position or visibility, such as
-`color` or `boxShadow`. Only a `style` object with nothing but such keys has its mutants ignored.
-_Avoid_: cosmetic style, visual-only property
-
-**Telemetry callee**:
-The dotted name of a function, such as `analytics.track` or `Sentry.captureException`, whose call statements the
-telemetry ignorer ignores; a project adds its own through `muirProteusReactTelemetry.calls`.
-_Avoid_: tracker, telemetry call (for the name)
-
-**Call statement**:
-A statement that is nothing but one call, optionally under `await` or `void`, whose result no code uses. The
-telemetry and console ignorers ignore only call statements.
-_Avoid_: bare call, standalone call
-
-**Effect argument**:
-An argument of a call statement that can act on the page, such as a function, another call, an assignment or
-`await`. A call statement with one keeps all its mutants.
-_Avoid_: side-effect argument, callback (too narrow)

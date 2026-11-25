@@ -5,7 +5,7 @@ import {
   muirMoiraMutatorsMemberTypes,
 } from '@muirjs/moira-mutators';
 
-import { muirProteusReactTypeOf } from './type-of.ts';
+import { muirShadowcatJsTypeOf } from './type-of.ts';
 
 const effectTypes: readonly unknown[] = [
   ...muirMoiraMutatorsCallTypes,
@@ -27,22 +27,22 @@ const effectTypes: readonly unknown[] = [
 
 const effectOperators: readonly unknown[] = ['delete', 'throw', '|>'];
 
-export function muirProteusReactHideableCallee(
+export function muirShadowcatJsHideableCallee(
   node: unknown,
 ): string | undefined {
-  if (muirProteusReactTypeOf(node) !== 'ExpressionStatement') {
+  if (muirShadowcatJsTypeOf(node) !== 'ExpressionStatement') {
     return undefined;
   }
 
   const expression = muirMoiraMutatorsFieldOf(node, 'expression');
   const call =
-    muirProteusReactTypeOf(expression) === 'AwaitExpression' ||
+    muirShadowcatJsTypeOf(expression) === 'AwaitExpression' ||
     muirMoiraMutatorsFieldOf(expression, 'operator') === 'void'
       ? muirMoiraMutatorsFieldOf(expression, 'argument')
       : expression;
 
   if (
-    !muirMoiraMutatorsCallTypes.includes(muirProteusReactTypeOf(call)) ||
+    !muirMoiraMutatorsCallTypes.includes(muirShadowcatJsTypeOf(call)) ||
     holdsEffect(muirMoiraMutatorsFieldOf(call, 'arguments'))
   ) {
     return undefined;
@@ -53,19 +53,19 @@ export function muirProteusReactHideableCallee(
 
 function holdsEffect(node: unknown): boolean {
   return (
-    effectTypes.includes(muirProteusReactTypeOf(node)) ||
+    effectTypes.includes(muirShadowcatJsTypeOf(node)) ||
     effectOperators.includes(muirMoiraMutatorsFieldOf(node, 'operator')) ||
     (muirMoiraMutatorsIsRecord(node) && Object.values(node).some(holdsEffect))
   );
 }
 
 function dottedName(node: unknown): string | undefined {
-  if (muirProteusReactTypeOf(node) === 'Identifier') {
+  if (muirShadowcatJsTypeOf(node) === 'Identifier') {
     return String(muirMoiraMutatorsFieldOf(node, 'name'));
   }
 
   if (
-    !muirMoiraMutatorsMemberTypes.includes(muirProteusReactTypeOf(node)) ||
+    !muirMoiraMutatorsMemberTypes.includes(muirShadowcatJsTypeOf(node)) ||
     muirMoiraMutatorsFieldOf(node, 'computed')
   ) {
     return undefined;

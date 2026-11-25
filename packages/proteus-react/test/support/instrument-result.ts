@@ -1,6 +1,5 @@
 import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 import type { MutantStatus, Position } from '@stryker-mutator/api/core';
-import type { Ignorer } from '@stryker-mutator/api/ignore';
 
 import {
   muirMoiraMutatorsCoreInstrument,
@@ -42,13 +41,12 @@ export async function instrumentFully(
   instrumenter: MuirProteusReactInstrumenter,
   files: readonly MuirMoiraMutatorsSourceFile[],
   excludedMutations: readonly string[] = [],
-  ignorers: readonly Ignorer[] = [],
 ): Promise<InstrumentResult> {
   const instrument = await muirMoiraMutatorsCoreInstrument({
     packageName: muirProteusReactPackageName,
     ...instrumenter,
   });
-  const result = await instrument(files, excludedMutations, ignorers);
+  const result = await instrument(files, excludedMutations, []);
   const fileList = muirMoiraMutatorsFieldOf(result, 'files');
   const mutants = muirMoiraMutatorsFieldOf(result, 'mutants');
 

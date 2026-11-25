@@ -212,17 +212,41 @@ jobs:
             config: src
             mutated: '!packages/proteus-storybook-test/src/**/*.ts'
             timeout: 60
+          - project: '@muirjs/shadowcat-js'
+            slug: shadowcat-js
+            root: packages/shadowcat-js
+            config: src
+            mutated: '!packages/shadowcat-js/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/shadowcat-react'
+            slug: shadowcat-react
+            root: packages/shadowcat-react
+            config: src
+            mutated: '!packages/shadowcat-react/src/**/*.ts'
+            timeout: 60
           - project: '@muirjs/shadowcat-storybook'
             slug: shadowcat-storybook
             root: packages/shadowcat-storybook
             config: src
             mutated: '!packages/shadowcat-storybook/src/**/*.ts'
             timeout: 60
+          - project: '@muirjs/shadowcat-telemetry'
+            slug: shadowcat-telemetry
+            root: packages/shadowcat-telemetry
+            config: src
+            mutated: '!packages/shadowcat-telemetry/src/**/*.ts'
+            timeout: 60
           - project: '@muirjs/siryn-playwright'
             slug: siryn-playwright
             root: packages/siryn-playwright
             config: src
             mutated: '!packages/siryn-playwright/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/test-util-ignorer-packages'
+            slug: test-util-ignorer-packages
+            root: packages/test-util-ignorer-packages
+            config: src
+            mutated: '!packages/test-util-ignorer-packages/src/**/*.ts'
             timeout: 60
           - project: '@muirjs/test-util-mutator-packages'
             slug: test-util-mutator-packages

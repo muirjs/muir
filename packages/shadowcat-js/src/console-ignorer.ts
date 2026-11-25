@@ -2,8 +2,9 @@ import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { muirProteusReactListOption } from './list-option.ts';
-import { muirProteusReactHideableCallee } from './statement-call.ts';
+import { muirShadowcatJsListOption } from './list-option.ts';
+import { muirShadowcatJsPackageName } from './package-name.ts';
+import { muirShadowcatJsHideableCallee } from './statement-call.ts';
 
 const consoleMethods: readonly unknown[] = [
   'assert',
@@ -28,27 +29,28 @@ const consoleMethods: readonly unknown[] = [
 ];
 const defaultMethods: readonly string[] = ['log', 'debug', 'info', 'trace'];
 
-export const muirProteusReactConsoleIgnorerName = 'muir-proteus-react-console';
+export const muirShadowcatJsConsoleIgnorerName = 'muir-shadowcat-js-console';
 
-export const muirProteusReactConsoleSchema = {
+export const muirShadowcatJsConsoleSchema = {
   type: 'object',
   additionalProperties: false,
-  description: `Options of the ${muirProteusReactConsoleIgnorerName} ignorer.`,
+  description: `Options of the ${muirShadowcatJsConsoleIgnorerName} ignorer.`,
   properties: {
     methods: {
       type: 'array',
       items: { enum: consoleMethods },
       description:
-        `The console methods whose call statements ${muirProteusReactConsoleIgnorerName} hides, unless an argument can act on the ` +
+        `The console methods whose call statements ${muirShadowcatJsConsoleIgnorerName} hides, unless an argument can act on the ` +
         'page. Replaces the default list: log, debug, info and trace.',
     },
   },
 };
 
-export function muirProteusReactConsoleIgnorer(options: object): Ignorer {
-  const callees: readonly unknown[] = muirProteusReactListOption(
+export function muirShadowcatJsConsoleIgnorer(options: object): Ignorer {
+  const callees: readonly unknown[] = muirShadowcatJsListOption(
+    muirShadowcatJsPackageName,
     options,
-    'muirProteusReactConsole',
+    'muirShadowcatJsConsole',
     'methods',
     defaultMethods,
     isMethod,
@@ -59,19 +61,17 @@ export function muirProteusReactConsoleIgnorer(options: object): Ignorer {
     shouldIgnore(path) {
       if (
         callees.includes(
-          muirProteusReactHideableCallee(
-            muirMoiraMutatorsFieldOf(path, 'node'),
-          ),
+          muirShadowcatJsHideableCallee(muirMoiraMutatorsFieldOf(path, 'node')),
         )
       ) {
-        return `${muirProteusReactConsoleIgnorerName}: console output; DOM tests do not observe it`;
+        return `${muirShadowcatJsConsoleIgnorerName}: console output; DOM tests do not observe it`;
       }
 
       return undefined;
     },
   };
 }
-muirProteusReactConsoleIgnorer.inject = tokens(commonTokens.options);
+muirShadowcatJsConsoleIgnorer.inject = tokens(commonTokens.options);
 
 function isMethod(name: unknown): name is string {
   return consoleMethods.includes(name);

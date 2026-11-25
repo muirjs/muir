@@ -16,7 +16,11 @@
 - [Playwright mutators](./packages/proteus-playwright/GLOSSARY.md): mutate Playwright test code, so a
   test-code run shows which test steps no test outcome depends on.
 - [JSX mutators](./packages/proteus-react/GLOSSARY.md): mutate the parts of JSX that Playwright tests look
-  at, and ignore the mutants such tests cannot see.
+  at.
+- [Shadowcat ignorers](./packages/shadowcat-js/GLOSSARY.md): report as Ignored the mutants a DOM test does not
+  observe: console output, analytics and error-monitoring calls, and React class names and inline styles. Covers
+  `packages/shadowcat-js`, `packages/shadowcat-telemetry` and `packages/shadowcat-react`, and
+  `packages/test-util-ignorer-packages`, the private test support the ignorer packages share.
 - [Mutator install](./packages/moira-mutators/GLOSSARY.md): puts a mutator package's mutators into
   Stryker and checks them before a run starts, and holds the Babel mutator model, the swap engine and the site
   readers that more than one mutator package uses. Covers the three Node mutator packages, `packages/proteus-node`,
@@ -88,8 +92,12 @@
   names makes mutants.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
   the name check keeps their mutator names distinct.
-- **JSX mutators -> Playwright runner**: JSX mutants are meant for Playwright tests, which the runner runs; the
-  ignorers work with any test runner.
+- **JSX mutators -> Playwright runner**: JSX mutants are meant for Playwright tests, which the runner runs.
+- **Shadowcat ignorers -> Mutator install**: the ignorers read Babel nodes with Mutator install's field reader; they
+  install no mutators. `shadowcat-telemetry` and `shadowcat-react` take the call matcher and the option reader from
+  `shadowcat-js`. They work with any test runner.
+- **Shadowcat ignorers <-> JSX mutators**: neither uses the other. The styling ignorer also hides StrykerJS's own
+  class name and style mutants, so it is useful without the JSX mutators.
 - **Playwright mutators -> Playwright runner**: the runner runs test-code mutants. The serialized-callback ignorer
   reports as Ignored the mutants of callbacks that Playwright sends to another realm; the runner's page helpers
   make such callbacks work in pages, but not in workers, service workers or Electron.

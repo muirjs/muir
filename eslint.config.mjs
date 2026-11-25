@@ -23,9 +23,13 @@ const playwrightProjects = [
   'packages/moira-mutators/**',
   'packages/proteus-playwright/**',
   'packages/siryn-playwright/**',
+  'packages/shadowcat-js/**',
+  'packages/shadowcat-react/**',
   'packages/shadowcat-storybook/**',
+  'packages/shadowcat-telemetry/**',
   'packages/proteus-storybook/**',
   'packages/proteus-storybook-test/**',
+  'packages/test-util-ignorer-packages/**',
   'packages/test-util-mutator-packages/**',
 ];
 

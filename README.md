@@ -53,6 +53,10 @@ Mutators:
 
 Ignorers and reporters:
 
+- [`@muirjs/shadowcat-js`](packages/shadowcat-js/README.md): console output in any JavaScript or TypeScript code.
+- [`@muirjs/shadowcat-telemetry`](packages/shadowcat-telemetry/README.md): analytics and error-monitoring calls,
+  Sentry's included.
+- [`@muirjs/shadowcat-react`](packages/shadowcat-react/README.md): React class names and inline styles.
 - [`@muirjs/shadowcat-storybook`](packages/shadowcat-storybook/README.md): the ignorers, the reporter and the
   sandbox plugin for Storybook stories and their play functions.
 
@@ -84,7 +88,8 @@ The workspace mutation tests itself with its own packages: every package's Stryk
 `@muirjs/proteus-node-test` mutators. Every config fails below a mutation score of 100
 ([ADR 0011](docs/adr/0011-gate-on-a-mutation-score-of-100.md)).
 
-- `packages/`: the published packages, and `test-util-mutator-packages`, the test support they share.
+- `packages/`: the published packages, and `test-util-mutator-packages` and `test-util-ignorer-packages`, the test
+  support they share.
 - `apps/demo-app`, `apps/demo-app-e2e`: a React demo app and its Playwright tests, which the Playwright runner
   and the JSX mutators run against.
 - `e2e/`: end-to-end tests of the `node:test` runner on fixture projects and open-source projects.

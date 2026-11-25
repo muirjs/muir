@@ -5,31 +5,36 @@ import {
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { muirProteusReactListOption } from './list-option.ts';
-import { muirProteusReactTypeOf } from './type-of.ts';
+import {
+  muirShadowcatJsListOption,
+  muirShadowcatJsTypeOf,
+} from '@muirjs/shadowcat-js';
 
-export const muirProteusReactStylingIgnorerName = 'muir-proteus-react-styling';
+import { muirShadowcatReactPackageName } from './package-name.ts';
+
+export const muirShadowcatReactStylingIgnorerName =
+  'muir-shadowcat-react-styling';
 
 const classNamePattern = /^\S+$/;
 
-export const muirProteusReactStylingSchema = {
+export const muirShadowcatReactStylingSchema = {
   type: 'object',
   additionalProperties: false,
-  description: `Options of the ${muirProteusReactStylingIgnorerName} ignorer.`,
+  description: `Options of the ${muirShadowcatReactStylingIgnorerName} ignorer.`,
   properties: {
     visibilityClasses: {
       type: 'array',
       items: { type: 'string', pattern: classNamePattern.source },
       description:
-        `Class names that hide an element, added to the built-in ones. ${muirProteusReactStylingIgnorerName} keeps the mutants of ` +
+        `Class names that hide an element, added to the built-in ones. ${muirShadowcatReactStylingIgnorerName} keeps the mutants of ` +
         'a class expression that holds one of them.',
     },
   },
 };
 
-const classReason = `${muirProteusReactStylingIgnorerName}: class names only style the element; DOM tests do not observe them`;
-const builderReason = `${muirProteusReactStylingIgnorerName}: class-name builder call; DOM tests do not observe class names`;
-const styleReason = `${muirProteusReactStylingIgnorerName}: inline styles only style the element; DOM tests do not observe them`;
+const classReason = `${muirShadowcatReactStylingIgnorerName}: class names only style the element; DOM tests do not observe them`;
+const builderReason = `${muirShadowcatReactStylingIgnorerName}: class-name builder call; DOM tests do not observe class names`;
+const styleReason = `${muirShadowcatReactStylingIgnorerName}: inline styles only style the element; DOM tests do not observe them`;
 const visibilityClasses = [
   'hidden',
   'invisible',
@@ -79,12 +84,13 @@ const paintKeys: readonly string[] = [
   'stroke',
 ];
 
-export function muirProteusReactStylingIgnorer(options: object): Ignorer {
+export function muirShadowcatReactStylingIgnorer(options: object): Ignorer {
   const hiding = new Set([
     ...visibilityClasses,
-    ...muirProteusReactListOption(
+    ...muirShadowcatJsListOption(
+      muirShadowcatReactPackageName,
       options,
-      'muirProteusReactStyling',
+      'muirShadowcatReactStyling',
       'visibilityClasses',
       [],
       isClassName,
@@ -116,7 +122,7 @@ export function muirProteusReactStylingIgnorer(options: object): Ignorer {
     },
   };
 }
-muirProteusReactStylingIgnorer.inject = tokens(commonTokens.options);
+muirShadowcatReactStylingIgnorer.inject = tokens(commonTokens.options);
 
 function isClassName(name: unknown): name is string {
   return typeof name === 'string' && classNamePattern.test(name);
@@ -132,7 +138,7 @@ function isClassAttribute(node: unknown): boolean {
     (name === 'className' ||
       name === 'class' ||
       (typeof name === 'string' && name.endsWith('ClassName'))) &&
-    muirProteusReactTypeOf(muirMoiraMutatorsFieldOf(node, 'value')) ===
+    muirShadowcatJsTypeOf(muirMoiraMutatorsFieldOf(node, 'value')) ===
       'JSXExpressionContainer'
   );
 }
@@ -177,14 +183,14 @@ function isClassVariable(node: unknown): boolean {
     typeof name === 'string' &&
     (name.endsWith('ClassName') || name.endsWith('Classes')) &&
     classValueTypes.includes(
-      muirProteusReactTypeOf(muirMoiraMutatorsFieldOf(node, 'init')),
+      muirShadowcatJsTypeOf(muirMoiraMutatorsFieldOf(node, 'init')),
     )
   );
 }
 
 function isClassBuilderCall(node: unknown): boolean {
   return (
-    muirProteusReactTypeOf(node) === 'CallExpression' &&
+    muirShadowcatJsTypeOf(node) === 'CallExpression' &&
     classBuilders.includes(
       muirMoiraMutatorsFieldOf(
         muirMoiraMutatorsFieldOf(node, 'callee'),
@@ -210,9 +216,7 @@ function classTexts(node: unknown): string[] {
   }
 
   const own = [
-    muirProteusReactTypeOf(node) === 'StringLiteral'
-      ? node['value']
-      : undefined,
+    muirShadowcatJsTypeOf(node) === 'StringLiteral' ? node['value'] : undefined,
     muirMoiraMutatorsFieldOf(node['value'], 'cooked'),
     node['computed'] === false
       ? muirMoiraMutatorsFieldOf(node['key'], 'name')

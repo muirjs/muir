@@ -1,5 +1,5 @@
 import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 
-export function muirProteusReactTypeOf(node: unknown): unknown {
+export function muirShadowcatJsTypeOf(node: unknown): unknown {
   return muirMoiraMutatorsFieldOf(node, 'type');
 }

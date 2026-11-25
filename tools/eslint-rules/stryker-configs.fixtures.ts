@@ -126,16 +126,40 @@ export const configs: readonly StrykerConfigRow[] = [
     mutate: ['packages/proteus-storybook-test/src/**/*.ts'],
   },
   {
+    file: 'packages/shadowcat-js/stryker.config.mjs',
+    project: '@muirjs/shadowcat-js',
+    config: 'src',
+    mutate: ['packages/shadowcat-js/src/**/*.ts'],
+  },
+  {
+    file: 'packages/shadowcat-react/stryker.config.mjs',
+    project: '@muirjs/shadowcat-react',
+    config: 'src',
+    mutate: ['packages/shadowcat-react/src/**/*.ts'],
+  },
+  {
     file: 'packages/shadowcat-storybook/stryker.config.mjs',
     project: '@muirjs/shadowcat-storybook',
     config: 'src',
     mutate: ['packages/shadowcat-storybook/src/**/*.ts'],
   },
   {
+    file: 'packages/shadowcat-telemetry/stryker.config.mjs',
+    project: '@muirjs/shadowcat-telemetry',
+    config: 'src',
+    mutate: ['packages/shadowcat-telemetry/src/**/*.ts'],
+  },
+  {
     file: 'packages/siryn-playwright/stryker.config.mjs',
     project: '@muirjs/siryn-playwright',
     config: 'src',
     mutate: ['packages/siryn-playwright/src/**/*.ts'],
+  },
+  {
+    file: 'packages/test-util-ignorer-packages/stryker.config.mjs',
+    project: '@muirjs/test-util-ignorer-packages',
+    config: 'src',
+    mutate: ['packages/test-util-ignorer-packages/src/**/*.ts'],
   },
   {
     file: 'packages/test-util-mutator-packages/stryker.config.mjs',

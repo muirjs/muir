@@ -1,8 +1,8 @@
 import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 
-import { muirProteusReactPackageName } from './package-name.ts';
-
-export function muirProteusReactListOption(
+/** Reads the list `options[key][field]` of an ignorer's options, or `fallback` when it is not set; throws, naming `packageName`, when it is not a list of items `isItem` accepts. */
+export function muirShadowcatJsListOption(
+  packageName: string,
   options: object,
   key: string,
   field: string,
@@ -18,7 +18,7 @@ export function muirProteusReactListOption(
 
   if (!Array.isArray(list) || !list.every(isItem)) {
     throw new Error(
-      `${muirProteusReactPackageName}: ${key}.${field} must be ${expected}, not ${JSON.stringify(own)}.`,
+      `${packageName}: ${key}.${field} must be ${expected}, not ${JSON.stringify(own)}.`,
     );
   }
 

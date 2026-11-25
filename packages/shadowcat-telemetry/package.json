@@ -1,0 +1,84 @@
+{
+  "name": "@muirjs/shadowcat-telemetry",
+  "version": "0.0.0",
+  "private": true,
+  "description": "StrykerJS ignorer for analytics and error-monitoring calls, such as Google Analytics, PostHog and Sentry",
+  "keywords": [
+    "stryker",
+    "mutation testing",
+    "ignorer",
+    "analytics",
+    "telemetry",
+    "sentry"
+  ],
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/shadowcat-telemetry#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muirjs/muir.git",
+    "directory": "packages/shadowcat-telemetry"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@stryker-mutator/core": "~10.1.0"
+  },
+  "dependencies": {
+    "@muirjs/moira-mutators": "0.0.0",
+    "@muirjs/shadowcat-js": "0.0.0",
+    "@stryker-mutator/api": "10.1.1"
+  },
+  "devDependencies": {
+    "@muirjs/test-util-ignorer-packages": "0.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      },
+      "mutate-src": {}
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test test/*.test.ts"
+  }
+}

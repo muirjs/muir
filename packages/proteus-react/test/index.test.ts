@@ -5,27 +5,11 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { muirProteusReactConsoleSchema } from '../src/console-ignorer.ts';
-import { muirProteusReactMutators } from '../src/index.ts';
-import { muirProteusReactStylingSchema } from '../src/styling-ignorer.ts';
-import { muirProteusReactTelemetrySchema } from '../src/telemetry-ignorer.ts';
+import * as entry from '../src/index.ts';
 import { mutatorNames } from './support/installed.ts';
 
+const { muirProteusReactMutators } = entry;
 const entryPath = join(import.meta.dirname, 'fixture', 'entry.ts');
-const ignorers = [
-  'Ignore muir-proteus-react-styling undefined',
-  'Ignore muir-proteus-react-telemetry undefined',
-  'Ignore muir-proteus-react-console undefined',
-];
-const schema = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {
-    muirProteusReactStyling: muirProteusReactStylingSchema,
-    muirProteusReactTelemetry: muirProteusReactTelemetrySchema,
-    muirProteusReactConsole: muirProteusReactConsoleSchema,
-  },
-};
 const noOptions =
   '@muirjs/proteus-react: the package has no opt-in or experimental mutators yet, so muirProteusReactMutators() takes ' +
   'no options. Turn a mutator off with mutator.excludedMutations.';
@@ -43,16 +27,18 @@ async function callWith(options: unknown): Promise<void> {
 }
 
 describe('index.ts', () => {
-  it('installs nothing on import, and exports the ignorers and one options schema for them all', () => {
+  it('installs nothing on import', () => {
     const { status, stdout, stderr } = runEntry('import');
 
     assert.equal(status, 0, stderr);
     assert.deepEqual(JSON.parse(stdout), {
       registered: [],
       placerWrapped: false,
-      ignorers,
-      schema,
     });
+  });
+
+  it('exports only the install function, no Stryker plugins', () => {
+    assert.deepEqual(Object.keys(entry), ['muirProteusReactMutators']);
   });
 
   it('registers every mutator of the table and wraps the placer when muirProteusReactMutators() is awaited', () => {
@@ -62,8 +48,6 @@ describe('index.ts', () => {
     assert.deepEqual(JSON.parse(stdout), {
       registered: mutatorNames,
       placerWrapped: true,
-      ignorers,
-      schema,
     });
   });
 
@@ -99,8 +83,6 @@ describe('index.ts', () => {
     assert.deepEqual(JSON.parse(stdout), {
       registered: mutatorNames,
       placerWrapped: true,
-      ignorers,
-      schema,
     });
   });
 });

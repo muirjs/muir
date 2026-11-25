@@ -1,0 +1,81 @@
+{
+  "name": "@muirjs/shadowcat-js",
+  "version": "0.0.0",
+  "private": true,
+  "description": "StrykerJS ignorer for console output in JavaScript and TypeScript, and the call matcher the other Shadowcat ignorers share",
+  "keywords": [
+    "stryker",
+    "mutation testing",
+    "ignorer",
+    "console"
+  ],
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/shadowcat-js#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muirjs/muir.git",
+    "directory": "packages/shadowcat-js"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@stryker-mutator/core": "~10.1.0"
+  },
+  "dependencies": {
+    "@muirjs/moira-mutators": "0.0.0",
+    "@stryker-mutator/api": "10.1.1"
+  },
+  "devDependencies": {
+    "@muirjs/test-util-ignorer-packages": "0.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      },
+      "mutate-src": {}
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test test/*.test.ts"
+  }
+}

@@ -1,28 +1,29 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import {
+  muirAssertEveryOutcome,
+  muirIgnorerOutcomes,
+  muirValidateOptions,
+} from '@muirjs/test-util-ignorer-packages';
+
 import { strykerValidationSchema } from '../src/index.ts';
 import {
-  muirProteusReactTelemetrySchema,
-  muirProteusReactTelemetryIgnorer,
+  muirShadowcatTelemetrySchema,
+  muirShadowcatTelemetryIgnorer,
 } from '../src/telemetry-ignorer.ts';
-import {
-  assertEveryOutcome,
-  ignorerOutcomes,
-} from './support/ignorer-outcomes.ts';
-import { validateOptions } from './support/validate-options.ts';
 
 const analyticsReason =
-  'muir-proteus-react-telemetry: analytics call; DOM tests do not observe what it sends';
+  'muir-shadowcat-telemetry: analytics call; DOM tests do not observe what it sends';
 const callsReason =
-  'muir-proteus-react-telemetry: telemetry call from muirProteusReactTelemetry.calls; DOM tests do not observe what it sends';
+  'muir-shadowcat-telemetry: telemetry call from muirShadowcatTelemetry.calls; DOM tests do not observe what it sends';
 const errorReason =
-  'muir-proteus-react-telemetry: error-monitoring call; DOM tests do not observe what it reports';
+  'muir-shadowcat-telemetry: error-monitoring call; DOM tests do not observe what it reports';
 
 const assertEvery = (code: string, outcome: string, options: object = {}) =>
-  assertEveryOutcome(muirProteusReactTelemetryIgnorer(options), code, outcome);
+  muirAssertEveryOutcome(muirShadowcatTelemetryIgnorer(options), code, outcome);
 
-describe('muir-proteus-react-telemetry', () => {
+describe('muir-shadowcat-telemetry', () => {
   [
     'gtag',
     'window.gtag',
@@ -172,9 +173,9 @@ describe('muir-proteus-react-telemetry', () => {
   });
 
   ['track', 'telemetry.send'].forEach((callee) => {
-    it(`ignores every mutant of a ${callee} call statement listed in muirProteusReactTelemetry.calls, with the calls reason`, async () => {
+    it(`ignores every mutant of a ${callee} call statement listed in muirShadowcatTelemetry.calls, with the calls reason`, async () => {
       await assertEvery(`${callee}('event', on ? 'a' : 'b');`, callsReason, {
-        muirProteusReactTelemetry: { calls: ['track', 'telemetry.send'] },
+        muirShadowcatTelemetry: { calls: ['track', 'telemetry.send'] },
       });
     });
   });
@@ -185,9 +186,9 @@ describe('muir-proteus-react-telemetry', () => {
       ['Sentry.flush', errorReason],
     ] as const
   ).forEach(([callee, reason]) => {
-    it(`gives a ${callee} call statement its built-in reason when muirProteusReactTelemetry.calls lists it too`, async () => {
+    it(`gives a ${callee} call statement its built-in reason when muirShadowcatTelemetry.calls lists it too`, async () => {
       await assertEvery(`${callee}('event', on ? 'a' : 'b');`, reason, {
-        muirProteusReactTelemetry: { calls: [callee] },
+        muirShadowcatTelemetry: { calls: [callee] },
       });
     });
   });
@@ -210,11 +211,11 @@ describe('muir-proteus-react-telemetry', () => {
     it(`refuses calls ${JSON.stringify(calls)} when it is created`, () => {
       assert.throws(
         () =>
-          muirProteusReactTelemetryIgnorer({
-            muirProteusReactTelemetry: { calls },
+          muirShadowcatTelemetryIgnorer({
+            muirShadowcatTelemetry: { calls },
           }),
         {
-          message: `@muirjs/proteus-react: muirProteusReactTelemetry.calls must be an array of callee names such as track or analytics.track, not ${JSON.stringify(calls)}.`,
+          message: `@muirjs/shadowcat-telemetry: muirShadowcatTelemetry.calls must be an array of callee names such as track or analytics.track, not ${JSON.stringify(calls)}.`,
         },
       );
     });
@@ -222,12 +223,12 @@ describe('muir-proteus-react-telemetry', () => {
 
   [
     {},
-    { muirProteusReactTelemetry: {} },
-    { muirProteusReactTelemetry: { calls: [] } },
-    { muirProteusReactTelemetry: { calls: ['$track', '_t.send', 'a1.b2.c3'] } },
+    { muirShadowcatTelemetry: {} },
+    { muirShadowcatTelemetry: { calls: [] } },
+    { muirShadowcatTelemetry: { calls: ['$track', '_t.send', 'a1.b2.c3'] } },
   ].forEach((options) => {
     it(`accepts the options ${JSON.stringify(options)}`, () => {
-      assert.doesNotThrow(() => muirProteusReactTelemetryIgnorer(options));
+      assert.doesNotThrow(() => muirShadowcatTelemetryIgnorer(options));
     });
   });
 
@@ -248,8 +249,8 @@ describe('muir-proteus-react-telemetry', () => {
   it('keeps the mutants of the statement beside an ignored telemetry call statement', async () => {
     assert.deepEqual(
       new Set(
-        await ignorerOutcomes(
-          muirProteusReactTelemetryIgnorer({}),
+        await muirIgnorerOutcomes(
+          muirShadowcatTelemetryIgnorer({}),
           "gtag('event', on ? 'a' : 'b');\nsetOpen(on ? 1 : 2);",
         ),
       ),
@@ -269,12 +270,12 @@ describe('muir-proteus-react-telemetry', () => {
   });
 });
 
-describe('the muir-proteus-react-telemetry options schema', () => {
-  it('describes muirProteusReactTelemetry.calls as a list of callee names', () => {
-    assert.deepEqual(muirProteusReactTelemetrySchema, {
+describe('the muir-shadowcat-telemetry options schema', () => {
+  it('describes muirShadowcatTelemetry.calls as a list of callee names', () => {
+    assert.deepEqual(muirShadowcatTelemetrySchema, {
       type: 'object',
       additionalProperties: false,
-      description: 'Options of the muir-proteus-react-telemetry ignorer.',
+      description: 'Options of the muir-shadowcat-telemetry ignorer.',
       properties: {
         calls: {
           type: 'array',
@@ -283,17 +284,17 @@ describe('the muir-proteus-react-telemetry options schema', () => {
             pattern: '^[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*)*$',
           },
           description:
-            'Callees, such as track or analytics.track, added to the built-in ones. muir-proteus-react-telemetry hides the ' +
+            'Callees, such as track or analytics.track, added to the built-in ones. muir-shadowcat-telemetry hides the ' +
             'mutants of a statement that is just a call to one of them, unless an argument can act on the page.',
         },
       },
     });
   });
 
-  it('lets core accept muirProteusReactTelemetry without an unknown-option warning', async () => {
+  it('lets core accept muirShadowcatTelemetry without an unknown-option warning', async () => {
     assert.deepEqual(
-      await validateOptions(
-        { muirProteusReactTelemetry: { calls: ['track'] } },
+      await muirValidateOptions(
+        { muirShadowcatTelemetry: { calls: ['track'] } },
         [strykerValidationSchema],
       ),
       { valid: true, log: [] },
@@ -306,10 +307,10 @@ describe('the muir-proteus-react-telemetry options schema', () => {
     { calls: ['a b'] },
     { callees: ['track'] },
     [],
-  ].forEach((muirProteusReactTelemetry) => {
-    it(`lets core refuse muirProteusReactTelemetry ${JSON.stringify(muirProteusReactTelemetry)}`, async () => {
-      const { valid, log } = await validateOptions(
-        { muirProteusReactTelemetry },
+  ].forEach((muirShadowcatTelemetry) => {
+    it(`lets core refuse muirShadowcatTelemetry ${JSON.stringify(muirShadowcatTelemetry)}`, async () => {
+      const { valid, log } = await muirValidateOptions(
+        { muirShadowcatTelemetry },
         [strykerValidationSchema],
       );
 
@@ -317,8 +318,7 @@ describe('the muir-proteus-react-telemetry options schema', () => {
       assert.ok(
         log.some(
           (line) =>
-            line.startsWith('error') &&
-            line.includes('muirProteusReactTelemetry'),
+            line.startsWith('error') && line.includes('muirShadowcatTelemetry'),
         ),
         log.join('\n'),
       );
