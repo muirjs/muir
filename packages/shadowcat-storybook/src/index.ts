@@ -1,4 +1,3 @@
-import { muirMoiraStorybookShadowcatPluginName } from '@muirjs/moira-storybook';
 import { declareFactoryPlugin, PluginKind } from '@stryker-mutator/api/plugin';
 
 import {
@@ -6,9 +5,10 @@ import {
   muirShadowcatStorybookCsfIgnorerName,
 } from './csf-ignorer.ts';
 import { muirShadowcatStorybookPlayModes } from './options.ts';
+import { muirShadowcatStorybookPluginName } from './package-name.ts';
 import { muirShadowcatStorybookReporter } from './reporter.ts';
-import { muirShadowcatStorybookStubIgnorer } from './stub-ignorer.ts';
 
+export { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
 export { muirShadowcatStorybookStrykerPlugin } from './stryker-vite-plugin.ts';
 export type {
   MuirShadowcatStorybookCsfOptions,
@@ -29,7 +29,7 @@ export const strykerValidationSchema = {
       additionalProperties: false,
       description:
         // Stryker disable next-line StringLiteral: documentation for readers of the exported strykerValidationSchema, which Stryker's messages never print
-        'Options of the muir-shadowcat-storybook and muir-shadowcat-storybook-csf plugins.',
+        'Options of the muir-shadowcat-storybook, muir-shadowcat-storybook-csf and muir-shadowcat-storybook-vitest plugins.',
       properties: {
         configDir: {
           type: 'string',
@@ -66,13 +66,8 @@ export const strykerPlugins = [
     muirShadowcatStorybookCsfIgnorer,
   ),
   declareFactoryPlugin(
-    PluginKind.Ignore,
-    muirMoiraStorybookShadowcatPluginName,
-    muirShadowcatStorybookStubIgnorer,
-  ),
-  declareFactoryPlugin(
     PluginKind.Reporter,
-    muirMoiraStorybookShadowcatPluginName,
+    muirShadowcatStorybookPluginName,
     muirShadowcatStorybookReporter,
   ),
 ];

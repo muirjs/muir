@@ -54,9 +54,9 @@ declares it as a regular dependency, so installing one of them installs this one
   `muirMoiraStorybookDescribeVerdict`, `muirMoiraStorybookUnrewrittenChainReason`, `muirMoiraStorybookUncheckedFinding`,
   `muirMoiraStorybookOutcomeUncheckedFinding`, with the types `MuirMoiraStorybookReasonSite`,
   `MuirMoiraStorybookSpyStubReason` and `MuirMoiraStorybookStubIgnore`: the stub verdict of each definition-time stub
-  in a story file, and the reasons and fixes the `muir-shadowcat-storybook` ignorer and report give.
-- `muirMoiraStorybookShadowcatPluginName`, `muirMoiraStorybookSpyStubName`, `muirMoiraStorybookSpyStubOutcomeName`:
-  the name of the `muir-shadowcat-storybook` ignorer and reporter, and the names of the two test mutators whose
+  in a story file, and the reasons and fixes the stub ignorer and the report give. Each ignore reason starts with the
+  name of the plugin that passes it.
+- `muirMoiraStorybookSpyStubName`, `muirMoiraStorybookSpyStubOutcomeName`: the names of the two test mutators whose
   surviving mutants make stub findings.
 - `muirMoiraStorybookIsRecord`, `muirMoiraStorybookIsStringArray`, `muirMoiraStorybookField`, `muirMoiraStorybookList`: read values of unknown shape, such as Babel nodes.
 - `muirMoiraStorybookFileNameOf`: the path of the file a Babel path's tree was parsed from, as Stryker's instrumenter gives it.

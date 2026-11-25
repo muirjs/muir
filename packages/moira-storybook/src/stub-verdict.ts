@@ -11,8 +11,6 @@ import {
   type MuirMoiraStorybookStubRewrite,
 } from './stub-shape.ts';
 
-export const muirMoiraStorybookShadowcatPluginName = 'muir-shadowcat-storybook';
-
 /** The mutator whose surviving mutants make unchecked stubs: it removes a stub, where `MuirProteusStorybookTestSpyStubOutcome` only flips how a stub settles. */
 export const muirMoiraStorybookSpyStubName = 'MuirProteusStorybookTestSpyStub';
 
@@ -48,10 +46,15 @@ const fix =
   'pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach';
 
 /** The reason for a chain whose stubs have different verdicts and none is kept, since its ignore covers them all. */
-export const muirMoiraStorybookUnrewrittenChainReason = reasonText(
-  'chain-not-rewritten',
-  'the mock transformer rewrites none of the stubs of this chain, so the mock reset still erases every one of them',
-);
+export function muirMoiraStorybookUnrewrittenChainReason(
+  pluginName: string,
+): string {
+  return reasonText(
+    pluginName,
+    'chain-not-rewritten',
+    'the mock transformer rewrites none of the stubs of this chain, so the mock reset still erases every one of them',
+  );
+}
 
 export const muirMoiraStorybookUncheckedFinding = {
   verdict: 'unchecked',
@@ -72,7 +75,7 @@ export interface MuirMoiraStorybookSpyStubReason {
   readonly fix: string;
 }
 
-/** A node the muir-shadowcat-storybook ignorer ignores: a stub call with everything before it in its chain (the spy call, every stub and any `mockName` or `mockClear` call, with their arguments), or only its arguments. */
+/** A node the stub ignorer ignores: a stub call with everything before it in its chain (the spy call, every stub and any `mockName` or `mockClear` call, with their arguments), or only its arguments. */
 export interface MuirMoiraStorybookStubIgnore {
   /** Where the stub call starts, also when only its arguments are ignored. */
   readonly start: number;
@@ -95,10 +98,11 @@ export function muirMoiraStorybookReasonSites(
   return siteReasons(stubs, transformer);
 }
 
-/** Stryker ignores the whole subtree of an ignored node, so a stub call is ignored only when no stub before it in its chain is kept and its spy call takes no arguments; otherwise only its own arguments are. */
+/** Stryker ignores the whole subtree of an ignored node, so a stub call is ignored only when no stub before it in its chain is kept and its spy call takes no arguments; otherwise only its own arguments are. Each reason starts with `pluginName`, the ignorer the user configured. */
 export function muirMoiraStorybookStubIgnores(
   file: MuirMoiraStorybookStoryFile,
   { previewTest, testTags, transformer }: MuirMoiraStorybookProject,
+  pluginName: string,
 ): readonly MuirMoiraStorybookStubIgnore[] {
   const { stubs } = muirMoiraStorybookClassifyStubs(
     file,
@@ -120,7 +124,7 @@ export function muirMoiraStorybookStubIgnores(
         start,
         end,
         covers: 'arguments',
-        reason: muirMoiraStorybookSpyStubReason(verdict),
+        reason: muirMoiraStorybookSpyStubReason(verdict, pluginName),
       };
     }
 
@@ -129,8 +133,8 @@ export function muirMoiraStorybookStubIgnores(
       end,
       covers: 'call',
       reason: chain.every((other) => other.verdict === verdict)
-        ? muirMoiraStorybookSpyStubReason(verdict)
-        : muirMoiraStorybookUnrewrittenChainReason,
+        ? muirMoiraStorybookSpyStubReason(verdict, pluginName)
+        : muirMoiraStorybookUnrewrittenChainReason(pluginName),
     };
   });
 }
@@ -164,13 +168,15 @@ export function muirMoiraStorybookDescribeVerdict(
 
 export function muirMoiraStorybookSpyStubReason(
   verdict: MuirMoiraStorybookReasonVerdict,
+  pluginName: string,
 ): string {
-  return reasonText(verdict, reasons[verdict]);
+  return reasonText(pluginName, verdict, reasons[verdict]);
 }
 
 function reasonText(
+  pluginName: string,
   verdict: MuirMoiraStorybookReasonVerdict,
   reason: string,
 ): string {
-  return `${muirMoiraStorybookShadowcatPluginName}: ${verdict}: ${reason}; ${fix}`;
+  return `${pluginName}: ${verdict}: ${reason}; ${fix}`;
 }

@@ -7,9 +7,9 @@ import { Ajv } from 'ajv';
 import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
 import * as entry from '../src/index.ts';
 import { strykerPlugins, strykerValidationSchema } from '../src/index.ts';
+import { muirShadowcatStorybookStrykerStorybookProject } from '../src/options.ts';
 import { muirShadowcatStorybookReporter } from '../src/reporter.ts';
 import { muirShadowcatStorybookStrykerPlugin } from '../src/stryker-vite-plugin.ts';
-import { muirShadowcatStorybookStubIgnorer } from '../src/stub-ignorer.ts';
 
 describe('package entry', () => {
   // Stryker loads a plugin module by its package name.
@@ -27,7 +27,14 @@ describe('package entry', () => {
     );
   });
 
-  it('declares the CSF ignorer, the stub ignorer and the reporter', () => {
+  it('exports the Storybook project reader for the packages that share the muirShadowcatStorybook options', () => {
+    assert.equal(
+      entry.muirShadowcatStorybookStrykerStorybookProject,
+      muirShadowcatStorybookStrykerStorybookProject,
+    );
+  });
+
+  it('declares the CSF ignorer and the reporter', () => {
     assert.deepEqual(
       strykerPlugins.map(({ kind, name, factory }) => ({
         kind,
@@ -39,11 +46,6 @@ describe('package entry', () => {
           kind: 'Ignore',
           name: 'muir-shadowcat-storybook-csf',
           factory: muirShadowcatStorybookCsfIgnorer,
-        },
-        {
-          kind: 'Ignore',
-          name: 'muir-shadowcat-storybook',
-          factory: muirShadowcatStorybookStubIgnorer,
         },
         {
           kind: 'Reporter',
@@ -60,7 +62,6 @@ describe('package entry', () => {
         'inject' in factory ? factory.inject : undefined,
       ),
       [
-        [commonTokens.options, commonTokens.logger],
         [commonTokens.options, commonTokens.logger],
         [commonTokens.options, commonTokens.logger],
       ],

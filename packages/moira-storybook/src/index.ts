@@ -49,7 +49,6 @@ export {
   muirMoiraStorybookDescribeVerdict,
   muirMoiraStorybookOutcomeUncheckedFinding,
   muirMoiraStorybookReasonSites,
-  muirMoiraStorybookShadowcatPluginName,
   muirMoiraStorybookSpyStubName,
   muirMoiraStorybookSpyStubOutcomeName,
   muirMoiraStorybookSpyStubReason,

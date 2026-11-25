@@ -13,6 +13,7 @@ import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
 import { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
+import { muirShadowcatStorybookPackageName } from './package-name.ts';
 
 export const muirShadowcatStorybookCsfIgnorerName =
   'muir-shadowcat-storybook-csf';
@@ -38,7 +39,11 @@ export function muirShadowcatStorybookCsfIgnorer(
     if (
       fileName === undefined ||
       !muirMoiraStorybookIsStoryFile(
-        muirShadowcatStorybookStrykerStorybookProject(options, log),
+        muirShadowcatStorybookStrykerStorybookProject(
+          options,
+          log,
+          muirShadowcatStorybookPackageName,
+        ),
         fileName,
       )
     ) {

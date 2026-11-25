@@ -6,12 +6,17 @@ import {
   type MuirMoiraStorybookProjectLog,
   type MuirMoiraStorybookStubIgnore,
 } from '@muirjs/moira-storybook';
+import { muirShadowcatStorybookStrykerStorybookProject } from '@muirjs/shadowcat-storybook';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
+export const muirShadowcatStorybookVitestPackageName =
+  '@muirjs/shadowcat-storybook-vitest';
 
-export function muirShadowcatStorybookStubIgnorer(
+export const muirShadowcatStorybookVitestPluginName =
+  'muir-shadowcat-storybook-vitest';
+
+export function muirShadowcatStorybookVitestStubIgnorer(
   options: object,
   log: MuirMoiraStorybookProjectLog,
 ): Ignorer {
@@ -27,6 +32,7 @@ export function muirShadowcatStorybookStubIgnorer(
         const project = muirShadowcatStorybookStrykerStorybookProject(
           options,
           log,
+          muirShadowcatStorybookVitestPackageName,
         );
         ignores =
           fileName !== undefined &&
@@ -35,6 +41,7 @@ export function muirShadowcatStorybookStubIgnorer(
             ? muirMoiraStorybookStubIgnores(
                 { program: node, code, fileName },
                 project,
+                muirShadowcatStorybookVitestPluginName,
               )
             : [];
       }
@@ -60,7 +67,7 @@ function callOfArgument(path: unknown): unknown {
     : undefined;
 }
 
-muirShadowcatStorybookStubIgnorer.inject = tokens(
+muirShadowcatStorybookVitestStubIgnorer.inject = tokens(
   commonTokens.options,
   commonTokens.logger,
 );

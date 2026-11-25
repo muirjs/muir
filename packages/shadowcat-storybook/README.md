@@ -10,26 +10,28 @@ Storybook's Vitest addon. This package adds what those two lack for story files:
 - The `muir-shadowcat-storybook-csf` ignorer, the CSF ignorer, keeps the values that Storybook reads without running the file,
   such as `title` and `tags`, as written. It also splits a story file into story data, which a run of the components
   mutates, and story test code, which a run of its own mutates.
-- The `muir-shadowcat-storybook` ignorer, the stub ignorer, reports as Ignored the mutants of spy stubs that Storybook's mock
-  reset erases before the story renders.
 - The `muir-shadowcat-storybook` reporter lists those stubs, the stubs no play checks, hints for surviving interaction mutants,
   and the story mutants that run every test.
 - `muirShadowcatStorybookStrykerPlugin()`, the sandbox plugin, is a Vite plugin that lets the story tests run in Stryker's
   sandbox.
 
+The stub ignorer, which reports as Ignored the mutants of spy stubs that the mock reset erases, is in
+[`@muirjs/shadowcat-storybook-vitest`](../shadowcat-storybook-vitest/README.md).
+
 The package is private and not on npm yet.
 
 ## The Storybook packages
 
-Five packages work together. This README describes the setup they share.
+Six packages work together. This README describes the setup they share.
 
-| Package                          | What it adds                                                                | Where it goes                       |
-| -------------------------------- | --------------------------------------------------------------------------- | ----------------------------------- |
-| `@muirjs/shadowcat-storybook`    | the CSF ignorer, the stub ignorer, the reporter and the sandbox plugin      | both Stryker configurations; Vitest |
-| `@muirjs/pixie-storybook-vite`   | the mock transformer and the mock reset plugin, two Vite plugins            | Storybook's `viteFinal`; Vitest     |
-| `@muirjs/proteus-storybook`      | `MuirProteusStorybookArgs`, which mutates story data                        | the components configuration        |
-| `@muirjs/proteus-storybook-test` | the mutators for play functions, which turn Stryker's built-in mutators off | the story test code configuration   |
-| `@muirjs/proteus-msw`            | `MuirProteusMswResponse`, which mutates msw responses with any test runner  | a test code configuration           |
+| Package                              | What it adds                                                                | Where it goes                       |
+| ------------------------------------ | --------------------------------------------------------------------------- | ----------------------------------- |
+| `@muirjs/shadowcat-storybook`        | the CSF ignorer, the reporter and the sandbox plugin                        | both Stryker configurations; Vitest |
+| `@muirjs/shadowcat-storybook-vitest` | the stub ignorer                                                            | both Stryker configurations         |
+| `@muirjs/pixie-storybook-vite`       | the mock transformer and the mock reset plugin, two Vite plugins            | Storybook's `viteFinal`; Vitest     |
+| `@muirjs/proteus-storybook`          | `MuirProteusStorybookArgs`, which mutates story data                        | the components configuration        |
+| `@muirjs/proteus-storybook-test`     | the mutators for play functions, which turn Stryker's built-in mutators off | the story test code configuration   |
+| `@muirjs/proteus-msw`                | `MuirProteusMswResponse`, which mutates msw responses with any test runner  | a test code configuration           |
 
 ## Requirements
 
@@ -129,8 +131,8 @@ Both run the same Vitest configuration.
      testRunner: 'vitest',
      vitest: { configFile: 'vitest.config.ts' },
      mutate: ['src/**/*.tsx', '!src/**/*.test.tsx'],
-     appendPlugins: ['@muirjs/shadowcat-storybook'],
-     ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook'],
+     appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest'],
+     ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook-vitest'],
      muirShadowcatStorybook: { configDir: '.storybook' },
      reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
    };
@@ -150,8 +152,8 @@ Both run the same Vitest configuration.
      testRunner: 'vitest',
      vitest: { configFile: 'vitest.config.ts' },
      mutate: ['src/**/*.stories.tsx'],
-     appendPlugins: ['@muirjs/shadowcat-storybook'],
-     ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook'],
+     appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest'],
+     ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook-vitest'],
      muirShadowcatStorybook: { configDir: '.storybook' },
      muirShadowcatStorybookCsf: { play: 'mutate' },
      reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
@@ -211,26 +213,10 @@ The ignorer reads only story files. Each Ignored mutant carries a reason that st
 
 ## Find the stubs the mock reset erases
 
-Storybook resets, clears or restores every spy before a story renders, as `parameters.test` chooses. It restores by
-default. A spy stub that runs when the story file loads, such as `onSave: fn().mockResolvedValue(note)` in `args`, is
-a definition-time stub. The mock reset can erase it, so the story renders with a spy that returns `undefined`.
-
-The `muir-shadowcat-storybook` ignorer reads the reset settings of the preview, the meta and each story, and gives each
-definition-time stub a verdict. It reports the mutants of every stub that is not kept as Ignored, with the verdict in
-the reason:
-
-| Verdict                       | Meaning                                                                                                        |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `erased`                      | The mock reset runs before the story renders, so the stub never takes effect.                                  |
-| `order-dependent`             | Another story in the file resets mocks before it renders, which erases the stub when that story renders first. |
-| `unknown`                     | The file's `parameters.test` cannot be read without running it.                                                |
-| `once-not-rewritten`          | The mock transformer does not rewrite `Once` stubs, so the reset still erases this one.                        |
-| `chain-not-rewritten`         | The mock transformer rewrites only the first stub of a chain.                                                  |
-| `spy-arguments-not-rewritten` | The mock transformer does not rewrite a stub on a spy call that takes arguments, as in `fn(impl)`.             |
-
-The last three verdicts appear only when the mock transformer runs. Every finding gives the same fix: pass the
-implementation to `fn()`, as in `fn(() => value)`, return the value from the function `fn()` already takes, or set
-the stub in `beforeEach`.
+The `muir-shadowcat-storybook-vitest` ignorer gives each spy stub that runs when the story file loads a verdict, and
+reports the mutants of the stubs the mock reset erases as Ignored. Its
+[README](../shadowcat-storybook-vitest/README.md) lists the verdicts and the fix. The report below lists the same
+stubs.
 
 ## Read the muir-shadowcat-storybook report
 

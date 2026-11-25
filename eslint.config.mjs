@@ -26,6 +26,7 @@ const playwrightProjects = [
   'packages/shadowcat-js/**',
   'packages/shadowcat-react/**',
   'packages/shadowcat-storybook/**',
+  'packages/shadowcat-storybook-vitest/**',
   'packages/shadowcat-telemetry/**',
   'packages/proteus-storybook/**',
   'packages/proteus-storybook-test/**',

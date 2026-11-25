@@ -6,8 +6,6 @@ import {
   type MuirMoiraStorybookProjectLog,
 } from '@muirjs/moira-storybook';
 
-import { muirShadowcatStorybookPackageName } from './package-name.ts';
-
 export interface MuirShadowcatStorybookOptions {
   readonly configDir: string;
 }
@@ -28,8 +26,10 @@ export function muirShadowcatStorybookVitestConfigFile(
   return typeof configFile === 'string' ? configFile : undefined;
 }
 
+/** Reads `muirShadowcatStorybook`; an error names `packageName`, the package of the plugin the user configured. */
 export function muirShadowcatStorybookOptions(
   options: object,
+  packageName: string,
 ): MuirShadowcatStorybookOptions {
   const muirShadowcatStorybook: unknown = Reflect.get(
     options,
@@ -45,7 +45,7 @@ export function muirShadowcatStorybookOptions(
 
   if (typeof configDir !== 'string') {
     throw new Error(
-      `${muirShadowcatStorybookPackageName}: muirShadowcatStorybook.configDir must be a string, not ${String(configDir)}`,
+      `${packageName}: muirShadowcatStorybook.configDir must be a string, not ${String(configDir)}`,
     );
   }
 
@@ -55,10 +55,11 @@ export function muirShadowcatStorybookOptions(
 export function muirShadowcatStorybookStrykerStorybookProject(
   options: object,
   log: MuirMoiraStorybookProjectLog,
+  packageName: string,
 ): MuirMoiraStorybookProject {
   return muirMoiraStorybookProject(
-    muirShadowcatStorybookPackageName,
-    muirShadowcatStorybookOptions(options).configDir,
+    packageName,
+    muirShadowcatStorybookOptions(options, packageName).configDir,
     log,
     muirShadowcatStorybookVitestConfigFile(options),
   );

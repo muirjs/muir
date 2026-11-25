@@ -2,8 +2,8 @@
 
 Stryker plugins for Storybook story files, and three Vite plugins: one rewrites definition-time stubs so they survive
 the mock reset, one resets module mock spies before each test, and one lets Storybook's tests run in Stryker's
-sandbox. This context covers `@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook-vite` and
-`@muirjs/moira-storybook`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
+sandbox. This context covers `@muirjs/shadowcat-storybook`, `@muirjs/shadowcat-storybook-vitest`,
+`@muirjs/pixie-storybook-vite` and `@muirjs/moira-storybook`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
 same spy stub shape from `@muirjs/moira-storybook`, which holds the code they share, the Storybook project reader and
 the stub verdict included.
 _Avoid_: `@layzee/storybook-csf` (the shared package's former name)
@@ -337,7 +337,7 @@ mode, also those of story test code, MSW handlers and the meta object apart from
 _Avoid_: story ignorer, Storybook ignorer
 
 **Stub ignorer**:
-The `muir-shadowcat-storybook` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
+The `muir-shadowcat-storybook-vitest` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
 erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call holds the stubs
 before it in its chain, so when one of those is kept the ignorer reports only the stub's own arguments as Ignored.
 It does the same when the spy call takes arguments (`fn(impl)`), which the story runs after the mock reset.

@@ -263,6 +263,12 @@ jobs:
             config: src
             mutated: '!packages/shadowcat-storybook/src/**/*.ts'
             timeout: 60
+          - project: '@muirjs/shadowcat-storybook-vitest'
+            slug: shadowcat-storybook-vitest
+            root: packages/shadowcat-storybook-vitest
+            config: src
+            mutated: '!packages/shadowcat-storybook-vitest/src/**/*.ts'
+            timeout: 60
           - project: '@muirjs/shadowcat-telemetry'
             slug: shadowcat-telemetry
             root: packages/shadowcat-telemetry

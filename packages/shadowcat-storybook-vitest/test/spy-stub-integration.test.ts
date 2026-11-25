@@ -1,4 +1,4 @@
-// MuirProteusStorybookTestSpyStub and the muir-shadowcat-storybook ignorer read the same definition-time stubs, so every SpyStub mutant
+// MuirProteusStorybookTestSpyStub and the muir-shadowcat-storybook-vitest ignorer read the same definition-time stubs, so every SpyStub mutant
 // at an erased stub is Ignored with the ignorer's reason and every SpyStub mutant at a kept stub is placed.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,13 +12,19 @@ import {
 } from '@muirjs/moira-storybook';
 import { muirProteusStorybookTestMutators } from '@muirjs/proteus-storybook-test';
 
-import { muirShadowcatStorybookStubIgnorer } from '../src/stub-ignorer.ts';
+import {
+  muirShadowcatStorybookVitestPluginName,
+  muirShadowcatStorybookVitestStubIgnorer,
+} from '../src/stub-ignorer.ts';
 import { instrument } from './support/instrument.ts';
 
-const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
+// The Storybook projects of @muirjs/moira-storybook's tests; the test and mutate-src targets list them as inputs.
+const fixtures = fileURLToPath(
+  new URL('../../moira-storybook/test/fixtures/', import.meta.url),
+);
 
 async function spyStubMutants(name: string) {
-  const ignorer = muirShadowcatStorybookStubIgnorer(
+  const ignorer = muirShadowcatStorybookVitestStubIgnorer(
     {
       muirShadowcatStorybook: {
         configDir: join(fixtures, 'no-main', '.storybook'),
@@ -62,7 +68,7 @@ async function namedStubMutants(stub: string) {
     .map(({ mutatorName, replacement }) => [mutatorName, replacement]);
 }
 
-describe('MuirProteusStorybookTestSpyStub with the muir-shadowcat-storybook ignorer', () => {
+describe('MuirProteusStorybookTestSpyStub with the muir-shadowcat-storybook-vitest ignorer', () => {
   before(async () => {
     await muirProteusStorybookTestMutators({
       experimental: {
@@ -74,8 +80,20 @@ describe('MuirProteusStorybookTestSpyStub with the muir-shadowcat-storybook igno
 
   it('reports each SpyStub mutant at a stub the reset erases as Ignored with the erased reason', async () => {
     assert.deepEqual(await spyStubMutants('F01AllDefault'), [
-      { line: 14, ignoreReason: muirMoiraStorybookSpyStubReason('erased') },
-      { line: 21, ignoreReason: muirMoiraStorybookSpyStubReason('erased') },
+      {
+        line: 14,
+        ignoreReason: muirMoiraStorybookSpyStubReason(
+          'erased',
+          muirShadowcatStorybookVitestPluginName,
+        ),
+      },
+      {
+        line: 21,
+        ignoreReason: muirMoiraStorybookSpyStubReason(
+          'erased',
+          muirShadowcatStorybookVitestPluginName,
+        ),
+      },
     ]);
   });
 

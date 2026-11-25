@@ -57,8 +57,10 @@ Ignorers and reporters:
 - [`@muirjs/shadowcat-telemetry`](packages/shadowcat-telemetry/README.md): analytics and error-monitoring calls,
   Sentry's included.
 - [`@muirjs/shadowcat-react`](packages/shadowcat-react/README.md): React class names and inline styles.
-- [`@muirjs/shadowcat-storybook`](packages/shadowcat-storybook/README.md): the ignorers, the reporter and the
+- [`@muirjs/shadowcat-storybook`](packages/shadowcat-storybook/README.md): the CSF ignorer, the reporter and the
   sandbox plugin for Storybook stories and their play functions.
+- [`@muirjs/shadowcat-storybook-vitest`](packages/shadowcat-storybook-vitest/README.md): spy stubs that the mock
+  reset of Storybook's Vitest addon erases.
 
 Extensions and utilities:
 

@@ -4,10 +4,11 @@ import {
   type MuirMoiraStorybookInteraction,
   muirMoiraStorybookInteractionsOf,
   muirMoiraStorybookParseProgram,
-  muirMoiraStorybookShadowcatPluginName,
   type MuirMoiraStorybookStoryInteractions,
 } from '@muirjs/moira-storybook';
 import type { schema } from '@stryker-mutator/api/core';
+
+import { muirShadowcatStorybookPluginName } from './package-name.ts';
 
 import {
   type MuirShadowcatStorybookInteractionShape,
@@ -314,6 +315,6 @@ function hintOf(
     mutatorNames,
     reason,
     fix,
-    comment: `// Stryker disable next-line ${mutatorNames.join(', ')}: ${muirMoiraStorybookShadowcatPluginName}: ${shape}: ${short}`,
+    comment: `// Stryker disable next-line ${mutatorNames.join(', ')}: ${muirShadowcatStorybookPluginName}: ${shape}: ${short}`,
   };
 }

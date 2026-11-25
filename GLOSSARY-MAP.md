@@ -28,8 +28,8 @@
   support the mutator packages share (docs/adr ADR-0008).
 - [Storybook](./packages/shadowcat-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
-  Covers `packages/shadowcat-storybook`, `packages/pixie-storybook-vite` and `packages/moira-storybook`, the
-  internal package that holds the code the Storybook packages share.
+  Covers `packages/shadowcat-storybook`, `packages/shadowcat-storybook-vitest`, `packages/pixie-storybook-vite` and
+  `packages/moira-storybook`, the internal package that holds the code the Storybook packages share.
 - [Storybook test mutators](./packages/proteus-storybook-test/GLOSSARY.md): mutate story test code, so
   a test-code run shows which steps of a play function no check depends on.
 - [Storybook mutators](./packages/proteus-storybook/GLOSSARY.md): mutate story data, so a run of the
