@@ -2,6 +2,17 @@
   "name": "tools",
   "$schema": "../node_modules/nx/schemas/project-schema.json",
   "targets": {
+    "test": {
+      "command": "node --conditions=@muirjs/source --test stryker-checkpoint.test.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/stryker-checkpoint.ts",
+        "{projectRoot}/stryker-checkpoint.test.ts",
+        { "externalDependencies": ["@stryker-mutator/api"] }
+      ],
+      "outputs": []
+    },
     "lint": {
       "inputs": [
         "...",
