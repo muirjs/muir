@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import type { HookDependencies, TestEvent } from '../../src/hook-core.ts';
-import { envNames } from '../../src/record.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import type {
+  MuirSirynNodeTestHookDependencies,
+  MuirSirynNodeTestTestEvent,
+} from '../../src/hook-core.ts';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 import {
   afterHook,
   bodyOf,
@@ -28,7 +31,10 @@ function fireOnlyTimer(h: Harness): void {
 }
 
 /** node:test enqueues a top-level suite or test as it registers it, unless one of its filters leaves it out. */
-function enqueue(deps: HookDependencies, ...names: readonly string[]): void {
+function enqueue(
+  deps: MuirSirynNodeTestHookDependencies,
+  ...names: readonly string[]
+): void {
   send(
     deps,
     ...names.map((name) => ({
@@ -167,14 +173,14 @@ describe('install', () => {
       );
     });
 
-    lzTestFor<readonly [string, string | undefined, number]>([
+    muirTestFor<readonly [string, string | undefined, number]>([
       ['the default of', undefined, 30_000],
       ['the default of, for 0,', '0', 30_000],
       ['250 ms, as set in', '250', 250],
     ])('waits %s the held-open variable', ([, heldOpen, ms]) => {
       const h = installedHarness({
         ...fileEnv(),
-        [envNames.heldOpen]: heldOpen,
+        [muirSirynNodeTestEnvNames.heldOpen]: heldOpen,
       });
       h.wrapped().it('passes', () => {});
       afterHook(h.fake, 0)();
@@ -185,7 +191,7 @@ describe('install', () => {
       );
     });
 
-    lzTestFor<readonly [string, boolean, Record<string, unknown>]>([
+    muirTestFor<readonly [string, boolean, Record<string, unknown>]>([
       [
         'node:test reported every top-level test',
         true,
@@ -230,7 +236,8 @@ describe('install', () => {
     function stalling(stall: number | undefined): Harness {
       const h = installedHarness({
         ...fileEnv(),
-        [envNames.stall]: stall === undefined ? undefined : String(stall),
+        [muirSirynNodeTestEnvNames.stall]:
+          stall === undefined ? undefined : String(stall),
       });
       h.wrapped().it('waits', () => {});
       enqueue(h.deps, 'waits');
@@ -255,7 +262,7 @@ describe('install', () => {
       });
     });
 
-    lzTestFor<readonly [string, (h: Harness) => void]>([
+    muirTestFor<readonly [string, (h: Harness) => void]>([
       [
         'a test result follows',
         (h) => {
@@ -286,7 +293,7 @@ describe('install', () => {
       assert.deepEqual(h.exits, []);
     });
 
-    lzTestFor<readonly [string, number | undefined]>([
+    muirTestFor<readonly [string, number | undefined]>([
       ['without the stall variable, as in a dry run', undefined],
       ['for no stall time', 0],
       ['for a negative stall time', -1],
@@ -299,7 +306,7 @@ describe('install', () => {
       assert.deepEqual(h.timers, []);
     });
 
-    lzTestFor([1, 2 ** 31 - 1])(
+    muirTestFor([1, 2 ** 31 - 1])(
       'waits a stall time of %s ms, which a timer can hold',
       (stall) => {
         const h = stalling(stall);
@@ -315,7 +322,7 @@ describe('install', () => {
     it('takes the stall variable out of the environment that the tests and the processes they start see', () => {
       const h = stalling(300);
 
-      assert.equal(h.deps.env[envNames.stall], undefined);
+      assert.equal(h.deps.env[muirSirynNodeTestEnvNames.stall], undefined);
     });
 
     it('names only what the tests opened, also when something the process had before is gone', () => {
@@ -360,7 +367,7 @@ describe('install', () => {
       assert.deepEqual([h.timers.length, h.exits], [1, [1]]);
     });
 
-    lzTestFor<
+    muirTestFor<
       readonly [string, (context?: unknown, done?: unknown) => unknown]
     >([
       [
@@ -397,7 +404,7 @@ describe('install', () => {
       },
     );
 
-    lzTestFor([
+    muirTestFor([
       ['with no error, once it calls back', undefined],
       ['with an error, stopping the wait', new Error('after failed')],
     ])('passes a callback hook its `done` and settles %s', ([, error]) => {
@@ -440,12 +447,12 @@ describe('install', () => {
       assert.equal(h.timers.length, 1);
     });
 
-    const fileFailure: TestEvent = {
+    const fileFailure: MuirSirynNodeTestTestEvent = {
       type: 'test:fail',
       data: { name: testFile, nesting: 0, details: { duration_ms: 1 } },
     };
 
-    lzTestFor<readonly [string, string, TestEvent, number]>([
+    muirTestFor<readonly [string, string, MuirSirynNodeTestTestEvent, number]>([
       [
         'starts',
         'node:test reports the file failed once the tests finished',

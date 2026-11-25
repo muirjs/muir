@@ -2,29 +2,35 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import * as entry from '../src/index.ts';
-import { lzStorybookMockTransformerPlugin } from '../src/index.ts';
-import { lzStorybookMockResetPlugin } from '../src/mock-reset.ts';
-import { transform } from '../src/transform.ts';
+import { muirPixieStorybookMockTransformerPlugin } from '../src/index.ts';
+import { muirPixieStorybookMockResetPlugin } from '../src/mock-reset.ts';
+import { muirPixieStorybookTransform } from '../src/transform.ts';
 
-describe('lzStorybookMockTransformerPlugin', () => {
-  it('is named lz-storybook-mock-transformer', () => {
+describe('muirPixieStorybookMockTransformerPlugin', () => {
+  it('is named muir-pixie-storybook-mock-transformer', () => {
     assert.equal(
-      lzStorybookMockTransformerPlugin().name,
-      'lz-storybook-mock-transformer',
+      muirPixieStorybookMockTransformerPlugin().name,
+      'muir-pixie-storybook-mock-transformer',
     );
   });
 
   it('runs before other plugins transform', () => {
-    assert.equal(lzStorybookMockTransformerPlugin().enforce, 'pre');
+    assert.equal(muirPixieStorybookMockTransformerPlugin().enforce, 'pre');
   });
 
   it('transforms modules with the stub rewrite', () => {
-    assert.equal(lzStorybookMockTransformerPlugin().transform, transform);
+    assert.equal(
+      muirPixieStorybookMockTransformerPlugin().transform,
+      muirPixieStorybookTransform,
+    );
   });
 });
 
 describe('package entry', () => {
   it('exports the mock reset plugin', () => {
-    assert.equal(entry.lzStorybookMockResetPlugin, lzStorybookMockResetPlugin);
+    assert.equal(
+      entry.muirPixieStorybookMockResetPlugin,
+      muirPixieStorybookMockResetPlugin,
+    );
   });
 });

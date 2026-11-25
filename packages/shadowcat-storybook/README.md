@@ -3,14 +3,14 @@
 StrykerJS plugins for Storybook story files. Stories run as Stryker tests through Stryker's Vitest runner and
 Storybook's Vitest addon. This package adds what those two lack for story files:
 
-- The `lz-storybook-csf` ignorer, the CSF ignorer, keeps the values that Storybook reads without running the file,
+- The `muir-shadowcat-storybook-csf` ignorer, the CSF ignorer, keeps the values that Storybook reads without running the file,
   such as `title` and `tags`, as written. It also splits a story file into story data, which a run of the components
   mutates, and story test code, which a run of its own mutates.
-- The `lz-storybook` ignorer, the stub ignorer, reports as Ignored the mutants of spy stubs that Storybook's mock
+- The `muir-shadowcat-storybook` ignorer, the stub ignorer, reports as Ignored the mutants of spy stubs that Storybook's mock
   reset erases before the story renders.
-- The `lz-storybook` reporter lists those stubs, the stubs no play checks, hints for surviving interaction mutants,
+- The `muir-shadowcat-storybook` reporter lists those stubs, the stubs no play checks, hints for surviving interaction mutants,
   and the story mutants that run every test.
-- `lzStorybookStrykerPlugin()`, the sandbox plugin, is a Vite plugin that lets the story tests run in Stryker's
+- `muirShadowcatStorybookStrykerPlugin()`, the sandbox plugin, is a Vite plugin that lets the story tests run in Stryker's
   sandbox.
 
 The package is private and not on npm yet.
@@ -23,9 +23,9 @@ Five packages work together. This README describes the setup they share.
 | -------------------------------- | --------------------------------------------------------------------------- | ----------------------------------- |
 | `@muirjs/shadowcat-storybook`    | the CSF ignorer, the stub ignorer, the reporter and the sandbox plugin      | both Stryker configurations; Vitest |
 | `@muirjs/pixie-storybook`        | the mock transformer and the mock reset plugin, two Vite plugins            | Storybook's `viteFinal`; Vitest     |
-| `@muirjs/proteus-storybook`      | `LzStorybookArgs`, which mutates story data                                 | the components configuration        |
+| `@muirjs/proteus-storybook`      | `MuirProteusStorybookArgs`, which mutates story data                        | the components configuration        |
 | `@muirjs/proteus-storybook-test` | the mutators for play functions, which turn Stryker's built-in mutators off | the story test code configuration   |
-| `@muirjs/proteus-msw`            | `LzMswResponse`, which mutates msw responses with any test runner           | a test code configuration           |
+| `@muirjs/proteus-msw`            | `MuirProteusMswResponse`, which mutates msw responses with any test runner  | a test code configuration           |
 
 ## Requirements
 
@@ -57,7 +57,7 @@ Both run the same Vitest configuration.
 
    ```ts
    // .storybook/main.ts
-   import { lzStorybookMockTransformerPlugin } from '@muirjs/pixie-storybook';
+   import { muirPixieStorybookMockTransformerPlugin } from '@muirjs/pixie-storybook';
    import type { StorybookConfig } from '@storybook/react-vite';
    import { mergeConfig } from 'vite';
 
@@ -67,7 +67,7 @@ Both run the same Vitest configuration.
      addons: ['@storybook/addon-vitest'],
      viteFinal: (viteConfig) =>
        mergeConfig(viteConfig, {
-         plugins: [lzStorybookMockTransformerPlugin()],
+         plugins: [muirPixieStorybookMockTransformerPlugin()],
        }),
    };
 
@@ -81,14 +81,14 @@ Both run the same Vitest configuration.
 
    ```ts
    // vitest.config.ts
-   import { lzStorybookMockResetPlugin } from '@muirjs/pixie-storybook';
-   import { lzStorybookStrykerPlugin } from '@muirjs/shadowcat-storybook';
+   import { muirPixieStorybookMockResetPlugin } from '@muirjs/pixie-storybook';
+   import { muirShadowcatStorybookStrykerPlugin } from '@muirjs/shadowcat-storybook';
    import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
    import { playwright } from '@vitest/browser-playwright';
    import { defineConfig } from 'vitest/config';
 
    export default defineConfig({
-     plugins: [lzStorybookStrykerPlugin(), lzStorybookMockResetPlugin()],
+     plugins: [muirShadowcatStorybookStrykerPlugin(), muirPixieStorybookMockResetPlugin()],
      test: {
        projects: [
          {
@@ -109,22 +109,22 @@ Both run the same Vitest configuration.
    });
    ```
 
-3. Write the components configuration. `LzStorybookArgs` is opt-in, so turn it on by name:
+3. Write the components configuration. `MuirProteusStorybookArgs` is opt-in, so turn it on by name:
 
    ```ts
    // stryker.config.mjs
-   import { lzStorybookMutators } from '@muirjs/proteus-storybook';
+   import { muirProteusStorybookMutators } from '@muirjs/proteus-storybook';
 
-   await lzStorybookMutators({ LzStorybookArgs: true });
+   await muirProteusStorybookMutators({ MuirProteusStorybookArgs: true });
 
    export default {
      testRunner: 'vitest',
      vitest: { configFile: 'vitest.config.ts' },
      mutate: ['src/**/*.tsx', '!src/**/*.test.tsx'],
      appendPlugins: ['@muirjs/shadowcat-storybook'],
-     ignorers: ['lz-storybook-csf', 'lz-storybook'],
-     lzStorybook: { configDir: '.storybook' },
-     reporters: ['clear-text', 'html', 'lz-storybook'],
+     ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook'],
+     muirShadowcatStorybook: { configDir: '.storybook' },
+     reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
    };
    ```
 
@@ -132,25 +132,25 @@ Both run the same Vitest configuration.
 
    ```ts
    // stryker.test-code.config.mjs
-   import { lzMswMutators } from '@muirjs/proteus-msw';
-   import { lzStorybookTestMutators } from '@muirjs/proteus-storybook-test';
+   import { muirProteusMswMutators } from '@muirjs/proteus-msw';
+   import { muirProteusStorybookTestMutators } from '@muirjs/proteus-storybook-test';
 
-   await lzStorybookTestMutators();
-   await lzMswMutators();
+   await muirProteusStorybookTestMutators();
+   await muirProteusMswMutators();
 
    export default {
      testRunner: 'vitest',
      vitest: { configFile: 'vitest.config.ts' },
      mutate: ['src/**/*.stories.tsx'],
      appendPlugins: ['@muirjs/shadowcat-storybook'],
-     ignorers: ['lz-storybook-csf', 'lz-storybook'],
-     lzStorybook: { configDir: '.storybook' },
-     lzStorybookCsf: { play: 'mutate' },
-     reporters: ['clear-text', 'html', 'lz-storybook'],
+     ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook'],
+     muirShadowcatStorybook: { configDir: '.storybook' },
+     muirShadowcatStorybookCsf: { play: 'mutate' },
+     reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
    };
    ```
 
-   Keep the components out of this `mutate`. `lzStorybookTestMutators()` turns the built-in mutators off for every
+   Keep the components out of this `mutate`. `muirProteusStorybookTestMutators()` turns the built-in mutators off for every
    file in the run.
 
 5. Run each configuration:
@@ -164,7 +164,7 @@ Both run the same Vitest configuration.
 
 ## Point the plugins at the Storybook config folder
 
-`lzStorybook.configDir` names the Storybook config folder, as Storybook takes it with `--config-dir`. It defaults to
+`muirShadowcatStorybook.configDir` names the Storybook config folder, as Storybook takes it with `--config-dir`. It defaults to
 `.storybook`, and a relative path is read from the folder Stryker runs in. Set it in both configurations when the
 folder has another name.
 
@@ -185,7 +185,7 @@ installed, the run warns and takes the stories tagged `test`.
 
 ## Choose the play mode of the CSF ignorer
 
-`lzStorybookCsf.play` decides which parts of a story file the CSF ignorer reports as Ignored:
+`muirShadowcatStorybookCsf.play` decides which parts of a story file the CSF ignorer reports as Ignored:
 
 | Play mode          | Use it in                         | Reported as Ignored                                                                                                                        |
 | ------------------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -196,10 +196,10 @@ The values Storybook reads without running the file are `title`, `id`, `tags`, `
 `includeStories` and `excludeStories` on the meta and the stories. A mutant of one of them could
 change which stories Storybook finds, so the ignorer keeps them as written in both modes.
 
-In `ignore` mode the meta's `args` stay unignored. They are story data, which `LzStorybookArgs` and the built-in
+In `ignore` mode the meta's `args` stay unignored. They are story data, which `MuirProteusStorybookArgs` and the built-in
 mutators mutate.
 
-The ignorer reads only story files. Each Ignored mutant carries a reason that starts with `lz-storybook-csf:`.
+The ignorer reads only story files. Each Ignored mutant carries a reason that starts with `muir-shadowcat-storybook-csf:`.
 
 ## Find the stubs the mock reset erases
 
@@ -207,7 +207,7 @@ Storybook resets, clears or restores every spy before a story renders, as `param
 default. A spy stub that runs when the story file loads, such as `onSave: fn().mockResolvedValue(note)` in `args`, is
 a definition-time stub. The mock reset can erase it, so the story renders with a spy that returns `undefined`.
 
-The `lz-storybook` ignorer reads the reset settings of the preview, the meta and each story, and gives each
+The `muir-shadowcat-storybook` ignorer reads the reset settings of the preview, the meta and each story, and gives each
 definition-time stub a verdict. It reports the mutants of every stub that is not kept as Ignored, with the verdict in
 the reason:
 
@@ -224,9 +224,9 @@ The last three verdicts appear only when the mock transformer runs. Every findin
 implementation to `fn()`, as in `fn(() => value)`, return the value from the function `fn()` already takes, or set
 the stub in `beforeEach`.
 
-## Read the lz-storybook report
+## Read the muir-shadowcat-storybook report
 
-The `lz-storybook` reporter writes `reports/lz-storybook.json` and prints a block such as this one:
+The `muir-shadowcat-storybook` reporter writes `reports/muir-shadowcat-storybook.json` and prints a block such as this one:
 
 ```text
 @muirjs/shadowcat-storybook: 2 spy stub findings (1 erased, 1 unchecked)
@@ -237,7 +237,7 @@ The `lz-storybook` reporter writes `reports/lz-storybook.json` and prints a bloc
 It holds three lists:
 
 - Spy stub findings: each definition-time stub that is not kept, with its verdict; each stub whose
-  `LzStorybookSpyStub` mutant survived, as `unchecked`; and each stub whose `LzStorybookSpyStubOutcome` mutant
+  `MuirProteusStorybookTestSpyStub` mutant survived, as `unchecked`; and each stub whose `MuirProteusStorybookTestSpyStubOutcome` mutant
   survived while its removal was killed or timed out, as `outcome-unchecked` (a play needs the stub, but no check
   tells its success from its failure). The reporter reads the stubs of every story file, also the ones this run does
   not mutate.
@@ -249,17 +249,17 @@ It holds three lists:
 
 ### Silence a stub finding
 
-To silence one finding, put a Stryker disable comment that names `LzStorybookSpyStub`, or `all`, on the line before
+To silence one finding, put a Stryker disable comment that names `MuirProteusStorybookTestSpyStub`, or `all`, on the line before
 the stub:
 
 ```ts
 args: {
-  // Stryker disable next-line LzStorybookSpyStub: the story only checks that the form renders
+  // Stryker disable next-line MuirProteusStorybookTestSpyStub: the story only checks that the form renders
   onSave: fn().mockResolvedValue(note),
 },
 ```
 
-To silence every finding, list `LzStorybookSpyStub` in `mutator.excludedMutations`.
+To silence every finding, list `MuirProteusStorybookTestSpyStub` in `mutator.excludedMutations`.
 
 ### Warnings about the mock transformer
 
@@ -274,7 +274,7 @@ The reporter compares what the main file's `viteFinal` says with what the mock t
 
 Stryker copies the project to a sandbox and links its `node_modules`. Vitest resolves a setup file, such as the
 Vitest addon's, through that link to its real path, which Vite's `server.fs.allow` refuses. In a Stryker worker,
-`lzStorybookStrykerPlugin()` adds the workspace root and the real `node_modules` folders from the project up to the
+`muirShadowcatStorybookStrykerPlugin()` adds the workspace root and the real `node_modules` folders from the project up to the
 workspace root to `server.fs.allow`. Outside a Stryker run it changes nothing. A list that your configuration sets
 stays, and the plugin's list is added to it.
 

@@ -7,25 +7,34 @@ import http2 from 'node:http2';
 import https from 'node:https';
 import path from 'node:path';
 
-import { fieldOf, isRecord } from './is-record.ts';
-import { globalNamespace, markInstrumentedReads } from './namespace.ts';
-import { readHookTestNamespace, snapshotSuffix } from './protocol.ts';
 import {
-  hookedPrefix,
-  hostKey,
-  serverDirEnv,
-  serverSnapshotPrefix,
-  testIdHeader,
-  untaggedKey,
+  muirSirynPlaywrightFieldOf,
+  muirSirynPlaywrightIsRecord,
+} from './is-record.ts';
+import {
+  muirSirynPlaywrightGlobalNamespace,
+  muirSirynPlaywrightMarkInstrumentedReads,
+} from './namespace.ts';
+import {
+  muirSirynPlaywrightReadHookTestNamespace,
+  muirSirynPlaywrightSnapshotSuffix,
+} from './protocol.ts';
+import {
+  muirSirynPlaywrightHookedPrefix,
+  muirSirynPlaywrightHostKey,
+  muirSirynPlaywrightServerDirEnv,
+  muirSirynPlaywrightServerSnapshotPrefix,
+  muirSirynPlaywrightTestIdHeader,
+  muirSirynPlaywrightUntaggedKey,
 } from './server-protocol.ts';
-import { runSwitch } from './server-run-switch.ts';
+import { muirSirynPlaywrightRunSwitch } from './server-run-switch.ts';
 
 interface RequestTag {
   readonly testId: string | undefined;
   readonly arrivedAt: number;
 }
 
-const serverDir = process.env[serverDirEnv];
+const serverDir = process.env[muirSirynPlaywrightServerDirEnv];
 // `Symbol.for`, so a second copy of this package in the process leaves the server to the first.
 const installed: unique symbol = Symbol.for(
   '@muirjs/siryn-playwright/server-hook',
@@ -33,25 +42,28 @@ const installed: unique symbol = Symbol.for(
 
 if (serverDir !== undefined && !(installed in globalThis)) {
   Reflect.set(globalThis, installed, installed);
-  installServerHook(serverDir, readHookTestNamespace(process.env));
+  muirSirynPlaywrightInstallServerHook(
+    serverDir,
+    muirSirynPlaywrightReadHookTestNamespace(process.env),
+  );
 }
 
 /**
  * Switches the active mutant per request from the control file the runner writes before each run, and
  * writes the coverage of each request to that run's folder before its response ends.
  */
-export function installServerHook(
+export function muirSirynPlaywrightInstallServerHook(
   dir: string,
   ns: string,
   now: () => number = Date.now,
 ): void {
-  const namespace = globalNamespace(ns);
-  markInstrumentedReads(namespace);
+  const namespace = muirSirynPlaywrightGlobalNamespace(ns);
+  muirSirynPlaywrightMarkInstrumentedReads(namespace);
   const requests = new AsyncLocalStorage<RequestTag>();
-  const run = runSwitch(
+  const run = muirSirynPlaywrightRunSwitch(
     dir,
     namespace,
-    `${serverSnapshotPrefix}${process.pid}-${randomUUID()}${snapshotSuffix}`,
+    `${muirSirynPlaywrightServerSnapshotPrefix}${process.pid}-${randomUUID()}${muirSirynPlaywrightSnapshotSuffix}`,
   );
   let marked = false;
   let moduleScopeRunning = false;
@@ -82,7 +94,7 @@ export function installServerHook(
         return undefined;
       }
 
-      return tag.testId ?? untaggedKey(tag.arrivedAt);
+      return tag.testId ?? muirSirynPlaywrightUntaggedKey(tag.arrivedAt);
     },
   });
 
@@ -92,7 +104,10 @@ export function installServerHook(
     }
 
     marked = true;
-    const file = path.join(dir, `${hookedPrefix}${process.pid}`);
+    const file = path.join(
+      dir,
+      `${muirSirynPlaywrightHookedPrefix}${process.pid}`,
+    );
     // Stryker disable next-line StringLiteral: the runner reads only the names of the hooked files
     fs.writeFileSync(file, '');
   }
@@ -140,7 +155,7 @@ export function installServerHook(
 
           run.startRequest();
           flushBeforeEnd(response, run.flush);
-          const header = request.headers[testIdHeader];
+          const header = request.headers[muirSirynPlaywrightTestIdHeader];
 
           return requests.run(
             {
@@ -159,16 +174,20 @@ export function installServerHook(
   function testIdFor(target: URL): string | undefined {
     const testId = requests.getStore()?.testId;
 
-    return run.control()?.testIdHosts?.includes(hostKey(target))
+    return run
+      .control()
+      ?.testIdHosts?.includes(muirSirynPlaywrightHostKey(target))
       ? testId
       : undefined;
   }
 
   // Each hop of a fetch, redirects included, creates its own undici request with its own origin.
   diagnosticsChannel.subscribe('undici:request:create', (message) => {
-    const request = isRecord(message) ? message['request'] : undefined;
+    const request = muirSirynPlaywrightIsRecord(message)
+      ? message['request']
+      : undefined;
 
-    if (!isRecord(request)) {
+    if (!muirSirynPlaywrightIsRecord(request)) {
       return;
     }
 
@@ -179,9 +198,12 @@ export function installServerHook(
     if (
       typeof addHeader === 'function' &&
       Array.isArray(headers) &&
-      !hasUndiciHeader(headers, testIdHeader)
+      !hasUndiciHeader(headers, muirSirynPlaywrightTestIdHeader)
     ) {
-      Reflect.apply(addHeader, request, [testIdHeader, testId]);
+      Reflect.apply(addHeader, request, [
+        muirSirynPlaywrightTestIdHeader,
+        testId,
+      ]);
     }
   });
 
@@ -206,9 +228,9 @@ export function installServerHook(
           testId !== undefined &&
           request instanceof http.ClientRequest &&
           !request.headersSent &&
-          !request.hasHeader(testIdHeader)
+          !request.hasHeader(muirSirynPlaywrightTestIdHeader)
         ) {
-          request.setHeader(testIdHeader, testId);
+          request.setHeader(muirSirynPlaywrightTestIdHeader, testId);
         }
 
         return Reflect.apply(addRequest, this, [request, options, ...rest]);
@@ -220,13 +242,13 @@ export function installServerHook(
 }
 
 function agentTarget(options: unknown): URL | undefined {
-  const host = fieldOf(options, 'host');
+  const host = muirSirynPlaywrightFieldOf(options, 'host');
 
   if (typeof host !== 'string') {
     return undefined;
   }
 
-  const port = String(fieldOf(options, 'port'));
+  const port = String(muirSirynPlaywrightFieldOf(options, 'port'));
   const url = `http://${host.includes(':') ? `[${host}]` : host}:${port}`;
 
   return URL.canParse(url) ? new URL(url) : undefined;

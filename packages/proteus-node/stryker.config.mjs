@@ -12,10 +12,10 @@ export default await production(
     incrementalFile:
       'reports/stryker-incremental/@muirjs/proteus-node.src.json',
     ...reportFiles('@muirjs/proteus-node.src'),
-    lzNodeTest: {
+    muirProteusNodeNodeTest: {
       testFiles: ['packages/proteus-node/test/**/*.test.ts'],
       nodeArgs: [source],
     },
   },
-  { LzJsNumericLiteral: true },
+  { MuirProteusJsNumericLiteral: true },
 );

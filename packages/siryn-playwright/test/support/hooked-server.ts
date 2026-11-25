@@ -11,13 +11,16 @@ import { fileURLToPath } from 'node:url';
 import { INSTRUMENTER_CONSTANTS } from '@stryker-mutator/api/core';
 import { Instrumenter } from '@stryker-mutator/instrumenter';
 
-import { hookTestNamespaceEnv, readSnapshotDir } from '../../src/protocol.ts';
-import { mergeCoverage } from '../../src/run-result.ts';
 import {
-  type ServerControl,
-  serverDirEnv,
-  testIdHeader,
-  writeServerControl,
+  muirSirynPlaywrightHookTestNamespaceEnv,
+  muirSirynPlaywrightReadSnapshotDir,
+} from '../../src/protocol.ts';
+import { muirSirynPlaywrightMergeCoverage } from '../../src/run-result.ts';
+import {
+  type MuirSirynPlaywrightServerControl,
+  muirSirynPlaywrightServerDirEnv,
+  muirSirynPlaywrightTestIdHeader,
+  muirSirynPlaywrightWriteServerControl,
 } from '../../src/server-protocol.ts';
 import {
   hookTestActiveMutantEnv,
@@ -134,8 +137,8 @@ export async function startServer(
     {
       env: {
         ...process.env,
-        [serverDirEnv]: serverDir,
-        [hookTestNamespaceEnv]: hookTestNamespace,
+        [muirSirynPlaywrightServerDirEnv]: serverDir,
+        [muirSirynPlaywrightHookTestNamespaceEnv]: hookTestNamespace,
         ...env,
       },
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -179,10 +182,10 @@ export async function startServer(
     serverDir,
     port,
     exited,
-    run(control: Omit<ServerControl, 'outDir'>) {
+    run(control: Omit<MuirSirynPlaywrightServerControl, 'outDir'>) {
       const outDir = path.join(dir, 'runs', String(runs++));
       mkdirSync(outDir, { recursive: true });
-      writeServerControl(serverDir, {
+      muirSirynPlaywrightWriteServerControl(serverDir, {
         outDir,
         issuedTestIds: testIdsTheseTestsSend,
         testIdHosts: [`localhost:${port}`],
@@ -206,7 +209,10 @@ export async function startServer(
       const response = await fetch(
         `http://127.0.0.1:${port}/${via}?${search}`,
         {
-          headers: testId === undefined ? {} : { [testIdHeader]: testId },
+          headers:
+            testId === undefined
+              ? {}
+              : { [muirSirynPlaywrightTestIdHeader]: testId },
         },
       );
 
@@ -220,7 +226,7 @@ export async function startHeaderEcho(
   host = '127.0.0.1',
 ): Promise<number> {
   const echo = http.createServer((request, response) =>
-    response.end(String(request.headers[testIdHeader])),
+    response.end(String(request.headers[muirSirynPlaywrightTestIdHeader])),
   );
   echo.listen(0, host);
   await once(echo, 'listening');
@@ -232,12 +238,14 @@ export async function startHeaderEcho(
 }
 
 export function coverageOf(outDir: string) {
-  return mergeCoverage(readSnapshotDir(outDir).snapshots);
+  return muirSirynPlaywrightMergeCoverage(
+    muirSirynPlaywrightReadSnapshotDir(outDir).snapshots,
+  );
 }
 
 export function perTestKeysOf(outDir: string): string[] {
-  return readSnapshotDir(outDir).snapshots.flatMap(({ coverage }) =>
-    Object.keys(coverage?.perTest ?? {}),
+  return muirSirynPlaywrightReadSnapshotDir(outDir).snapshots.flatMap(
+    ({ coverage }) => Object.keys(coverage?.perTest ?? {}),
   );
 }
 

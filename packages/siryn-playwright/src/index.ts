@@ -1,19 +1,19 @@
 import { declareClassPlugin, PluginKind } from '@stryker-mutator/api/plugin';
 
-import { LzPlaywrightTestRunner } from './lz-playwright-test-runner.ts';
-import { LzPlaywrightTracesReporter } from './traces-reporter.ts';
+import { MuirSirynPlaywrightTestRunner } from './muir-siryn-playwright-test-runner.ts';
+import { MuirSirynPlaywrightTracesReporter } from './traces-reporter.ts';
 
-export { strykerValidationSchema } from './lz-playwright-runner-options-with-stryker-options.ts';
+export { strykerValidationSchema } from './muir-siryn-playwright-runner-options-with-stryker-options.ts';
 
 export const strykerPlugins = [
   declareClassPlugin(
     PluginKind.TestRunner,
-    'lz-playwright',
-    LzPlaywrightTestRunner,
+    'muir-siryn-playwright',
+    MuirSirynPlaywrightTestRunner,
   ),
   declareClassPlugin(
     PluginKind.Reporter,
-    'lz-playwright-traces',
-    LzPlaywrightTracesReporter,
+    'muir-siryn-playwright-traces',
+    MuirSirynPlaywrightTracesReporter,
   ),
 ];

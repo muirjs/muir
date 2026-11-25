@@ -8,17 +8,17 @@ import {
 import { storyGlobalsDefaultCases } from './story-globals-default-cases.ts';
 
 runCases(
-  'LzStorybookStoryGlobals',
+  'MuirProteusStorybookTestStoryGlobals',
   [...storyGlobalsCases, ...storyGlobalsDefaultCases],
   {
-    experimental: { LzStorybookStoryGlobals: true },
+    experimental: { MuirProteusStorybookTestStoryGlobals: true },
   },
 );
 // One instrumentation per case, so that a crash fails only its own case.
 storyGlobalsCrashCases.forEach((crashCase) => {
   describe(crashCase.id, () => {
-    runCases('LzStorybookStoryGlobals', [crashCase], {
-      experimental: { LzStorybookStoryGlobals: true },
+    runCases('MuirProteusStorybookTestStoryGlobals', [crashCase], {
+      experimental: { MuirProteusStorybookTestStoryGlobals: true },
     });
   });
 });

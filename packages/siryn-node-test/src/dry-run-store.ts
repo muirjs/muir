@@ -3,17 +3,20 @@ import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { lzDirPrefix, ownDir } from './dirs.ts';
-import { envNames } from './record.ts';
+import { muirSirynNodeTestDirPrefix, muirSirynNodeTestOwnDir } from './dirs.ts';
+import { muirSirynNodeTestEnvNames } from './record.ts';
 
 /**
  * Where the runners of one Stryker run keep which test files the dry run ran, which mutants it reached outside every
  * test, and what it measured of each file: its memory peak and its start-up. Stryker runs the dry run in one worker and
  * the mutants in all of them, each a process it forks and may replace, so the directory is named after the process
- * that owns it (see `lzOwnDryRun`).
+ * that owns it (see `muirSirynNodeTestOwnDryRun`).
  */
-export function lzDryRunDir(ownerPid: number): string {
-  return join(tmpdir(), `${lzDirPrefix('dryRun', ownerPid)}store`);
+export function muirSirynNodeTestDryRunDir(ownerPid: number): string {
+  return join(
+    tmpdir(),
+    `${muirSirynNodeTestDirPrefix('dryRun', ownerPid)}store`,
+  );
 }
 
 /**
@@ -24,15 +27,17 @@ export function lzDryRunDir(ownerPid: number): string {
  * so two runs never share a store. The owner removes the directory when it exits. A killed owner leaves it to a later
  * runner's `removeLeftDirs`.
  */
-export function lzOwnDryRun(): number {
-  if (process.env[envNames.dryRunOwner] === String(process.ppid)) {
+export function muirSirynNodeTestOwnDryRun(): number {
+  if (
+    process.env[muirSirynNodeTestEnvNames.dryRunOwner] === String(process.ppid)
+  ) {
     return process.ppid;
   }
 
-  process.env[envNames.dryRunOwner] = String(process.pid);
+  process.env[muirSirynNodeTestEnvNames.dryRunOwner] = String(process.pid);
   process.once('exit', () => {
     try {
-      rmSync(lzDryRunDir(process.pid), { recursive: true });
+      rmSync(muirSirynNodeTestDryRunDir(process.pid), { recursive: true });
     } catch {
       // Left for a later runner's removeLeftDirs.
     }
@@ -45,23 +50,29 @@ export function lzOwnDryRun(): number {
  * What the dry run keeps of a test file, each in a file of its own, and, as `files` and `outside-tests`, the test files
  * it ran and the mutants it reached outside every test.
  */
-export type LzDryRunKind = 'peak' | 'start-up' | 'files' | 'outside-tests';
+export type MuirSirynNodeTestDryRunKind =
+  | 'peak'
+  | 'start-up'
+  | 'files'
+  | 'outside-tests';
 
-export interface LzDryRunStore {
+export interface MuirSirynNodeTestDryRunStore {
   /** Creates the directory for this user alone, or empties the one that exists. */
   start(): void;
-  write(file: string, kind: LzDryRunKind, content: string): void;
+  write(file: string, kind: MuirSirynNodeTestDryRunKind, content: string): void;
   /** What `write` kept, or undefined when there is none or it cannot be read. */
-  read(file: string, kind: LzDryRunKind): string | undefined;
+  read(file: string, kind: MuirSirynNodeTestDryRunKind): string | undefined;
 }
 
-export function lzDryRunStore(dir: string): LzDryRunStore {
-  const path = (file: string, kind: LzDryRunKind) =>
+export function muirSirynNodeTestDryRunStore(
+  dir: string,
+): MuirSirynNodeTestDryRunStore {
+  const path = (file: string, kind: MuirSirynNodeTestDryRunKind) =>
     join(dir, `${createHash('sha256').update(file).digest('hex')}.${kind}`);
 
   return {
     start() {
-      ownDir(dir);
+      muirSirynNodeTestOwnDir(dir);
 
       // Nothing a reused owner directory holds is from this dry run, and a mutant run would read it as if it were.
       for (const name of readdirSync(dir)) {

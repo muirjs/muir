@@ -20,16 +20,16 @@ import {
 } from '@stryker-mutator/api/test-runner';
 
 import {
-  lzCheckpointArgs,
-  lzCheckpointKey,
-  type LzCheckpointKeyInputs,
-  lzCheckpointMutants,
-  lzCheckpointReport,
-  LzCheckpointReporter,
-  lzCheckpointReporterName,
-  lzEndCheckpoint,
-  lzInstalledVersions,
-  lzStartCheckpoint,
+  muirCheckpointArgs,
+  muirCheckpointKey,
+  type MuirCheckpointKeyInputs,
+  muirCheckpointMutants,
+  muirCheckpointReport,
+  MuirCheckpointReporter,
+  muirCheckpointReporterName,
+  muirEndCheckpoint,
+  muirInstalledVersions,
+  muirStartCheckpoint,
   strykerPlugins,
 } from '../../src/oss/checkpoint.ts';
 
@@ -72,9 +72,9 @@ function sources(file: string): string {
   return `source of ${file.slice(root.length + 1).replaceAll('\\', '/')}`;
 }
 
-describe('lzCheckpointReport', () => {
+describe('muirCheckpointReport', () => {
   it('groups the tested mutants by their file relative to the root, with its source and no fileName', () => {
-    const report = lzCheckpointReport(
+    const report = muirCheckpointReport(
       [
         mutant('lib/a.js', '1'),
         mutant('index.js', '2'),
@@ -99,7 +99,7 @@ describe('lzCheckpointReport', () => {
   });
 
   it("lists the dry run's tests by file with 1-based start positions, and tests without a file under ''", () => {
-    const report = lzCheckpointReport(
+    const report = muirCheckpointReport(
       [],
       [testResult('t1', 'test/a.test.js'), testResult('t2', undefined)],
       root,
@@ -122,7 +122,7 @@ describe('lzCheckpointReport', () => {
   });
 
   it("leaves out a test file's source it cannot read, and gives a mutated file it cannot read an empty one, as Stryker does", () => {
-    const report = lzCheckpointReport(
+    const report = muirCheckpointReport(
       [mutant('index.js', '1')],
       [testResult('t1', 'test/a.test.js')],
       root,
@@ -143,7 +143,7 @@ describe('lzCheckpointReport', () => {
 
   it('marks each TypeScript extension as typescript and any other file as javascript', () => {
     const files = ['a.ts', 'a.tsx', 'a.mts', 'a.cts', 'a.mjs'];
-    const report = lzCheckpointReport(
+    const report = muirCheckpointReport(
       files.map((file, index) => mutant(file, String(index))),
       [],
       root,
@@ -157,7 +157,7 @@ describe('lzCheckpointReport', () => {
   });
 
   it("is a report of schema version 1.0 with Stryker's default thresholds, which Stryker reads", () => {
-    const { schemaVersion, thresholds } = lzCheckpointReport(
+    const { schemaVersion, thresholds } = muirCheckpointReport(
       [],
       [],
       root,
@@ -172,7 +172,7 @@ describe('lzCheckpointReport', () => {
 });
 
 describe('strykerPlugins', () => {
-  it('declares the reporter under the name lz-checkpoint, which the driver passes in --reporters', () => {
+  it('declares the reporter under the name muir-checkpoint, which the driver passes in --reporters', () => {
     assert.deepEqual(
       strykerPlugins.map(({ kind, name, injectableClass }) => ({
         kind,
@@ -182,17 +182,17 @@ describe('strykerPlugins', () => {
       [
         {
           kind: PluginKind.Reporter,
-          name: 'lz-checkpoint',
-          injectableClass: LzCheckpointReporter,
+          name: 'muir-checkpoint',
+          injectableClass: MuirCheckpointReporter,
         },
       ],
     );
-    assert.equal(lzCheckpointReporterName, 'lz-checkpoint');
+    assert.equal(muirCheckpointReporterName, 'muir-checkpoint');
   });
 });
 
 function setup(t: TestContext): string {
-  const dir = mkdtempSync(join(tmpdir(), 'lz-oss-checkpoint-'));
+  const dir = mkdtempSync(join(tmpdir(), 'muir-oss-checkpoint-'));
 
   t.after(() => {
     rmSync(dir, { recursive: true, force: true });
@@ -201,7 +201,7 @@ function setup(t: TestContext): string {
   return dir;
 }
 
-function dryRun(reporter: LzCheckpointReporter): void {
+function dryRun(reporter: MuirCheckpointReporter): void {
   reporter.onDryRunCompleted({
     result: {
       status: DryRunStatus.Complete,
@@ -212,11 +212,11 @@ function dryRun(reporter: LzCheckpointReporter): void {
   });
 }
 
-describe('LzCheckpointReporter', () => {
+describe('MuirCheckpointReporter', () => {
   it("writes the tested mutants to Stryker's incrementalFile once the interval has passed since its last write", (t) => {
-    const file = join(setup(t), 'lz.checkpoint.json');
+    const file = join(setup(t), 'muir.checkpoint.json');
     let now = 0;
-    const reporter = new LzCheckpointReporter(
+    const reporter = new MuirCheckpointReporter(
       { incrementalFile: file },
       { cwd: root, now: () => now, readSource: sources },
       5_000,
@@ -228,24 +228,24 @@ describe('LzCheckpointReporter', () => {
 
     now = 5_000;
     reporter.onMutantTested(mutant('index.js', '2'));
-    assert.equal(lzCheckpointMutants(file), 2);
+    assert.equal(muirCheckpointMutants(file), 2);
 
     now = 9_999;
     reporter.onMutantTested(mutant('index.js', '3'));
-    assert.equal(lzCheckpointMutants(file), 2);
+    assert.equal(muirCheckpointMutants(file), 2);
 
     now = 10_000;
     reporter.onMutantTested(mutant('index.js', '4'));
-    assert.equal(lzCheckpointMutants(file), 4);
+    assert.equal(muirCheckpointMutants(file), 4);
     assert.match(readFileSync(file, 'utf8'), /"test\/a\.test\.js"/);
   });
 
   it('replaces the file whole through a temporary file beside it, which it leaves no trace of', (t) => {
     const dir = setup(t);
-    const file = join(dir, 'lz.checkpoint.json');
+    const file = join(dir, 'muir.checkpoint.json');
 
     writeFileSync(file, 'earlier');
-    const reporter = new LzCheckpointReporter(
+    const reporter = new MuirCheckpointReporter(
       { incrementalFile: file },
       { cwd: root, now: () => 0, readSource: sources },
       0,
@@ -253,17 +253,17 @@ describe('LzCheckpointReporter', () => {
 
     reporter.onMutantTested(mutant('index.js', '1'));
 
-    assert.equal(lzCheckpointMutants(file), 1);
-    assert.deepEqual(readdirSync(dir), ['lz.checkpoint.json']);
+    assert.equal(muirCheckpointMutants(file), 1);
+    assert.deepEqual(readdirSync(dir), ['muir.checkpoint.json']);
   });
 
   it("by default reads each mutated file's source from disk, and writes an empty one for a file it cannot read", (t) => {
     const dir = setup(t);
-    const file = join(dir, 'lz.checkpoint.json');
+    const file = join(dir, 'muir.checkpoint.json');
     const source = join(dir, 'index.js');
 
     writeFileSync(source, 'export const a = 1;\n');
-    const reporter = new LzCheckpointReporter(
+    const reporter = new MuirCheckpointReporter(
       { incrementalFile: file },
       undefined,
       0,
@@ -284,14 +284,14 @@ describe('LzCheckpointReporter', () => {
   });
 });
 
-describe('lzStartCheckpoint', () => {
+describe('muirStartCheckpoint', () => {
   function checkpoint(dir: string): string {
-    const file = join(dir, 'lz.checkpoint.json');
+    const file = join(dir, 'muir.checkpoint.json');
 
     writeFileSync(
       file,
       JSON.stringify(
-        lzCheckpointReport([mutant('a.js', '1')], [], root, sources),
+        muirCheckpointReport([mutant('a.js', '1')], [], root, sources),
       ),
     );
 
@@ -303,8 +303,8 @@ describe('lzStartCheckpoint', () => {
 
     writeFileSync(`${file}.key`, 'key A');
 
-    assert.equal(lzStartCheckpoint(file, 'key A'), 1);
-    assert.equal(lzCheckpointMutants(file), 1);
+    assert.equal(muirStartCheckpoint(file, 'key A'), 1);
+    assert.equal(muirCheckpointMutants(file), 1);
   });
 
   it('removes a checkpoint written under another key, and records the new key', (t) => {
@@ -312,7 +312,7 @@ describe('lzStartCheckpoint', () => {
 
     writeFileSync(`${file}.key`, 'key A');
 
-    assert.equal(lzStartCheckpoint(file, 'key B'), 0);
+    assert.equal(muirStartCheckpoint(file, 'key B'), 0);
     assert.equal(existsSync(file), false);
     assert.equal(readFileSync(`${file}.key`, 'utf8'), 'key B');
   });
@@ -320,7 +320,7 @@ describe('lzStartCheckpoint', () => {
   it('removes a checkpoint that has no key beside it', (t) => {
     const file = checkpoint(setup(t));
 
-    assert.equal(lzStartCheckpoint(file, 'key A'), 0);
+    assert.equal(muirStartCheckpoint(file, 'key A'), 0);
     assert.equal(readFileSync(`${file}.key`, 'utf8'), 'key A');
   });
 
@@ -329,8 +329,8 @@ describe('lzStartCheckpoint', () => {
     const file = checkpoint(dir);
     const write = t.mock.method(process.stdout, 'write', () => true);
 
-    lzStartCheckpoint(file, 'key A');
-    lzStartCheckpoint(join(dir, 'none.json'), 'key A');
+    muirStartCheckpoint(file, 'key A');
+    muirStartCheckpoint(join(dir, 'none.json'), 'key A');
     write.mock.restore();
 
     assert.deepEqual(
@@ -342,49 +342,48 @@ describe('lzStartCheckpoint', () => {
   });
 
   it('starts afresh when neither a checkpoint nor its key exists', (t) => {
-    const file = join(setup(t), 'lz.checkpoint.json');
+    const file = join(setup(t), 'muir.checkpoint.json');
 
-    assert.equal(lzStartCheckpoint(file, 'key A'), 0);
+    assert.equal(muirStartCheckpoint(file, 'key A'), 0);
     assert.equal(readFileSync(`${file}.key`, 'utf8'), 'key A');
   });
 });
 
-describe('lzEndCheckpoint', () => {
+describe('muirEndCheckpoint', () => {
   it('removes the checkpoint, its key and a write cut short, so a later run of the part starts afresh', (t) => {
     const dir = setup(t);
-    const file = join(dir, 'lz.checkpoint.json');
+    const file = join(dir, 'muir.checkpoint.json');
 
     writeFileSync(file, '{}');
     writeFileSync(`${file}.key`, 'key A');
     writeFileSync(`${file}.tmp`, '{"fi');
-    writeFileSync(join(dir, 'lz.mutation.json'), '{}');
+    writeFileSync(join(dir, 'muir.mutation.json'), '{}');
 
-    lzEndCheckpoint(file);
+    muirEndCheckpoint(file);
 
-    assert.deepEqual(readdirSync(dir), ['lz.mutation.json']);
+    assert.deepEqual(readdirSync(dir), ['muir.mutation.json']);
   });
 
   it('does nothing when there is nothing to remove', (t) => {
     const dir = setup(t);
 
-    lzEndCheckpoint(join(dir, 'lz.checkpoint.json'));
+    muirEndCheckpoint(join(dir, 'muir.checkpoint.json'));
 
     assert.deepEqual(readdirSync(dir), []);
   });
 });
 
-describe('lzCheckpointArgs', () => {
+describe('muirCheckpointArgs', () => {
   it("has Stryker read and write the checkpoint as its incremental file, and load this module's reporter", () => {
-    const [incremental, fileFlag, file, pluginsFlag, plugin] = lzCheckpointArgs(
-      'out/lz.checkpoint.json',
-    );
+    const [incremental, fileFlag, file, pluginsFlag, plugin] =
+      muirCheckpointArgs('out/muir.checkpoint.json');
 
     assert.deepEqual(
       [incremental, fileFlag, file, pluginsFlag],
       [
         '--incremental',
         '--incrementalFile',
-        'out/lz.checkpoint.json',
+        'out/muir.checkpoint.json',
         '--appendPlugins',
       ],
     );
@@ -392,14 +391,14 @@ describe('lzCheckpointArgs', () => {
   });
 });
 
-describe('lzCheckpointMutants', () => {
+describe('muirCheckpointMutants', () => {
   it('counts the mutants of every file', (t) => {
-    const file = join(setup(t), 'lz.checkpoint.json');
+    const file = join(setup(t), 'muir.checkpoint.json');
 
     writeFileSync(
       file,
       JSON.stringify(
-        lzCheckpointReport(
+        muirCheckpointReport(
           [mutant('a.js', '1'), mutant('b.js', '2')],
           [],
           root,
@@ -407,19 +406,19 @@ describe('lzCheckpointMutants', () => {
         ),
       ),
     );
-    assert.equal(lzCheckpointMutants(file), 2);
+    assert.equal(muirCheckpointMutants(file), 2);
   });
 
   it('throws for a file that holds no report', (t) => {
-    const file = join(setup(t), 'lz.checkpoint.json');
+    const file = join(setup(t), 'muir.checkpoint.json');
 
     writeFileSync(file, '{"files": 3}');
 
-    assert.throws(() => lzCheckpointMutants(file), /not a mutation report/);
+    assert.throws(() => muirCheckpointMutants(file), /not a mutation report/);
   });
 });
 
-describe('lzInstalledVersions', () => {
+describe('muirInstalledVersions', () => {
   it("lists each installed package's path and version, sorted, whatever the order npm wrote them in", () => {
     const lockfile = JSON.stringify({
       name: 'p',
@@ -429,7 +428,7 @@ describe('lzInstalledVersions', () => {
       },
     });
 
-    assert.deepEqual(lzInstalledVersions(lockfile), [
+    assert.deepEqual(muirInstalledVersions(lockfile), [
       'node_modules/a@1.0.0',
       'node_modules/b@2.0.0',
     ]);
@@ -440,19 +439,19 @@ describe('lzInstalledVersions', () => {
       packages: { '': { name: 'p' }, 'node_modules/a': true },
     });
 
-    assert.deepEqual(lzInstalledVersions(lockfile), ['@', 'node_modules/a@']);
+    assert.deepEqual(muirInstalledVersions(lockfile), ['@', 'node_modules/a@']);
   });
 
   it('refuses a file that lists no packages', () => {
     assert.throws(
-      () => lzInstalledVersions('{"name": "p"}'),
+      () => muirInstalledVersions('{"name": "p"}'),
       /lists no "packages"/,
     );
   });
 });
 
-describe('lzCheckpointKey', () => {
-  const inputs: LzCheckpointKeyInputs = {
+describe('muirCheckpointKey', () => {
+  const inputs: MuirCheckpointKeyInputs = {
     project: 'p',
     sourceCommit: 'c1',
     node: 'v22.23.1',
@@ -470,7 +469,7 @@ describe('lzCheckpointKey', () => {
   };
 
   it('differs when any input differs', () => {
-    const changed: readonly LzCheckpointKeyInputs[] = [
+    const changed: readonly MuirCheckpointKeyInputs[] = [
       { ...inputs, project: 'q' },
       { ...inputs, sourceCommit: 'c2' },
       { ...inputs, node: 'v24.18.1' },
@@ -491,7 +490,7 @@ describe('lzCheckpointKey', () => {
 
     assert.deepEqual(
       changed.map(
-        (other) => lzCheckpointKey(other) === lzCheckpointKey(inputs),
+        (other) => muirCheckpointKey(other) === muirCheckpointKey(inputs),
       ),
       changed.map(() => false),
     );

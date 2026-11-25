@@ -1,29 +1,39 @@
-import { field, isRecord } from '@muirjs/moira-storybook';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+} from '@muirjs/moira-storybook';
 
-import { packageName } from './package-name.ts';
+import { muirShadowcatStorybookPackageName } from './package-name.ts';
 
-export interface LzStorybookOptions {
+export interface MuirShadowcatStorybookOptions {
   readonly configDir: string;
 }
 
-export const playModes = ['ignore', 'mutate'] as const;
+export const muirShadowcatStorybookPlayModes = ['ignore', 'mutate'] as const;
 
-/** The `lzStorybookCsf` options of a Stryker config. */
-export interface LzStorybookCsfOptions {
-  readonly play?: (typeof playModes)[number];
+/** The `muirShadowcatStorybookCsf` options of a Stryker config. */
+export interface MuirShadowcatStorybookCsfOptions {
+  readonly play?: (typeof muirShadowcatStorybookPlayModes)[number];
 }
 
 /** Stryker's Vitest runner passes `vitest.configFile` to `createVitest` as `config` (vitest-test-runner.ts 207-208 at v10.1.1). */
-export function vitestConfigFile(options: object): string | undefined {
-  const configFile = field(options, 'vitest', 'configFile');
+export function muirShadowcatStorybookVitestConfigFile(
+  options: object,
+): string | undefined {
+  const configFile = muirMoiraStorybookField(options, 'vitest', 'configFile');
 
   return typeof configFile === 'string' ? configFile : undefined;
 }
 
-export function lzStorybookOptions(options: object): LzStorybookOptions {
-  const lzStorybook: unknown = Reflect.get(options, 'lzStorybook');
-  const configDir = isRecord(lzStorybook)
-    ? lzStorybook['configDir']
+export function muirShadowcatStorybookOptions(
+  options: object,
+): MuirShadowcatStorybookOptions {
+  const muirShadowcatStorybook: unknown = Reflect.get(
+    options,
+    'muirShadowcatStorybook',
+  );
+  const configDir = muirMoiraStorybookIsRecord(muirShadowcatStorybook)
+    ? muirShadowcatStorybook['configDir']
     : undefined;
 
   if (configDir === undefined) {
@@ -32,7 +42,7 @@ export function lzStorybookOptions(options: object): LzStorybookOptions {
 
   if (typeof configDir !== 'string') {
     throw new Error(
-      `${packageName}: lzStorybook.configDir must be a string, not ${String(configDir)}`,
+      `${muirShadowcatStorybookPackageName}: muirShadowcatStorybook.configDir must be a string, not ${String(configDir)}`,
     );
   }
 

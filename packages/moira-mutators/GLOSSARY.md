@@ -16,7 +16,7 @@ A `@muirjs` package whose mutators reach Stryker through an install: `@muirjs/pr
 _Avoid_: mutator plugin
 
 **Install**:
-The awaited call at the top of a Stryker config file, such as `lzPlaywrightMutators()`, that puts a mutator
+The awaited call at the top of a Stryker config file, such as `muirProteusPlaywrightMutators()`, that puts a mutator
 package's mutators into the instrumenter's mutator list. Listing the package in `plugins` or `appendPlugins` is no
 install.
 _Avoid_: registration, plugin loading, setup
@@ -55,13 +55,13 @@ _Avoid_: beta mutator, unstable mutator
 **Same-file swap**:
 A mutant that replaces a literal with the nearest distinct value of the same kind before or after it in the same
 file, so each swap site gets at most two. The Playwright Locator and MountStory mutators and
-`LzStorybookInteractionTarget` make them.
+`MuirProteusStorybookTestInteractionTarget` make them.
 _Avoid_: replacement, substitution
 
 **Swap site**:
 A literal that a same-file swap may replace or take a replacement from, together with what tells it apart from
 another literal of the same kind, such as a role's name or a mounted story id. A mutator may replace only some of
-its sites, as `LzStorybookInteractionTarget` replaces only those in a target query.
+its sites, as `MuirProteusStorybookTestInteractionTarget` replaces only those in a target query.
 _Avoid_: site (alone), target, candidate
 
 **Swap engine**:

@@ -1,12 +1,17 @@
-import { lzAllMutators, type LzMutatorSets } from '@muirjs/moira-node-test';
-import { nodeTestAssertCall } from './node-test-assert-call.ts';
-import { nodeTestAssertValidator } from './node-test-assert-validator.ts';
-import { nodeTestCatchAssert } from './node-test-catch-assert.ts';
+import {
+  muirMoiraNodeTestAllMutators,
+  type MuirMoiraNodeTestMutatorSets,
+} from '@muirjs/moira-node-test';
+import { muirProteusNodeTestAssertCall } from './node-test-assert-call.ts';
+import { muirProteusNodeTestAssertValidator } from './node-test-assert-validator.ts';
+import { muirProteusNodeTestCatchAssert } from './node-test-catch-assert.ts';
 
-export const testMutatorSets = {
-  defaults: [nodeTestAssertCall, nodeTestAssertValidator],
+export const muirProteusNodeTestTestMutatorSets = {
+  defaults: [muirProteusNodeTestAssertCall, muirProteusNodeTestAssertValidator],
   optIn: [],
-  experimental: [nodeTestCatchAssert],
-} satisfies LzMutatorSets;
+  experimental: [muirProteusNodeTestCatchAssert],
+} satisfies MuirMoiraNodeTestMutatorSets;
 
-export const testMutators = lzAllMutators(testMutatorSets);
+export const muirProteusNodeTestTestMutators = muirMoiraNodeTestAllMutators(
+  muirProteusNodeTestTestMutatorSets,
+);

@@ -1,24 +1,24 @@
 import { describe, it } from 'node:test';
 
 import { report } from '../reported.fixtures.ts';
-import { lzTestEach } from '../../src/test-each.ts';
-import { lzTestFor } from '../../src/test-for.ts';
+import { muirTestEach } from '../../src/test-each.ts';
+import { muirTestFor } from '../../src/test-for.ts';
 
-describe('the modifiers of lzTestEach and lzTestFor', () => {
+describe('the modifiers of muirTestEach and muirTestFor', () => {
   it('skips, marks todo, and inverts the outcome, composed in any order', async (t) => {
     await t.assert.reports(() => {
-      lzTestEach.skip([1])('skip %s', report);
-      lzTestFor.todo([1])('todo %s', () => {});
-      lzTestEach.fails([1, 2])('fails %s', (n) => {
+      muirTestEach.skip([1])('skip %s', report);
+      muirTestFor.todo([1])('todo %s', () => {});
+      muirTestEach.fails([1, 2])('fails %s', (n) => {
         if (n === 1) {
           throw new Error('one');
         }
       });
-      lzTestFor.fails([1])('fails async %s', () =>
+      muirTestFor.fails([1])('fails async %s', () =>
         Promise.reject(new Error('rejects')),
       );
-      lzTestEach.todo.fails([1])('todo fails %s', () => {});
-      lzTestEach.fails.todo([1])('fails todo %s', () => {});
+      muirTestEach.todo.fails([1])('todo fails %s', () => {});
+      muirTestEach.fails.todo([1])('fails todo %s', () => {});
     }, [
       { name: 'skip 1', outcome: 'pass', skip: true },
       { name: 'todo 1', outcome: 'pass', todo: true },
@@ -46,14 +46,14 @@ describe('the modifiers of lzTestEach and lzTestFor', () => {
 
   it('skips with skipIf a truthy condition and with runIf a falsy one, keeping a skip on either side', async (t) => {
     await t.assert.reports(() => {
-      lzTestEach.skipIf(1)([1])('skipIf truthy %s', () => {});
-      lzTestEach.skipIf(0)([1])('skipIf falsy %s', () => {});
-      lzTestFor.runIf('')([1])('runIf falsy %s', () => {});
-      lzTestFor.runIf('yes')([1])('runIf truthy %s', () => {});
-      lzTestEach.skip.skipIf(0)([1])('skip then skipIf falsy %s', () => {});
-      lzTestFor.skip.runIf('yes')([1])('skip then runIf truthy %s', () => {});
-      lzTestEach.skipIf(0).skip([1])('skipIf falsy then skip %s', () => {});
-      lzTestEach.skipIf(0).fails([1])('then fails %s', report);
+      muirTestEach.skipIf(1)([1])('skipIf truthy %s', () => {});
+      muirTestEach.skipIf(0)([1])('skipIf falsy %s', () => {});
+      muirTestFor.runIf('')([1])('runIf falsy %s', () => {});
+      muirTestFor.runIf('yes')([1])('runIf truthy %s', () => {});
+      muirTestEach.skip.skipIf(0)([1])('skip then skipIf falsy %s', () => {});
+      muirTestFor.skip.runIf('yes')([1])('skip then runIf truthy %s', () => {});
+      muirTestEach.skipIf(0).skip([1])('skipIf falsy then skip %s', () => {});
+      muirTestEach.skipIf(0).fails([1])('then fails %s', report);
     }, [
       { name: 'skipIf truthy 1', outcome: 'pass', skip: true },
       { name: 'skipIf falsy 1', outcome: 'pass' },
@@ -69,8 +69,8 @@ describe('the modifiers of lzTestEach and lzTestFor', () => {
   it('runs only the tests marked only when node:test runs only those', async (t) => {
     await t.assert.reports(
       () => {
-        lzTestEach.only([1])('only %s', () => {});
-        lzTestFor([2])('other %s', () => {});
+        muirTestEach.only([1])('only %s', () => {});
+        muirTestFor([2])('other %s', () => {});
       },
       [{ name: 'only 1', outcome: 'pass' }],
       { only: true },

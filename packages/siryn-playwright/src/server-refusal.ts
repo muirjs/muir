@@ -1,15 +1,26 @@
-import type { WebServerOptions } from './lz-playwright-runner-options-with-stryker-options.ts';
+import type { MuirSirynPlaywrightWebServerOptions } from './muir-siryn-playwright-runner-options-with-stryker-options.ts';
 
-export const mutateOption = 'lzPlaywright.webServer.mutate';
+export const muirSirynPlaywrightMutateOption =
+  'muirSirynPlaywright.webServer.mutate';
 
-export type ServerMutate = Exclude<WebServerOptions['mutate'], false>;
+export type MuirSirynPlaywrightServerMutate = Exclude<
+  MuirSirynPlaywrightWebServerOptions['mutate'],
+  false
+>;
 
-function describeRefusal(mutate: ServerMutate, reason: string): string {
-  return `${mutateOption} is ${mutate === 'auto' ? "'auto'" : 'true'}, but ${reason}`;
+function describeRefusal(
+  mutate: MuirSirynPlaywrightServerMutate,
+  reason: string,
+): string {
+  return `${muirSirynPlaywrightMutateOption} is ${mutate === 'auto' ? "'auto'" : 'true'}, but ${reason}`;
 }
 
-export class ServerSupportRefused extends Error {
-  constructor(mutate: ServerMutate, reason: string, options?: ErrorOptions) {
+export class MuirSirynPlaywrightServerSupportRefused extends Error {
+  constructor(
+    mutate: MuirSirynPlaywrightServerMutate,
+    reason: string,
+    options?: ErrorOptions,
+  ) {
     super(describeRefusal(mutate, reason), options);
   }
 }

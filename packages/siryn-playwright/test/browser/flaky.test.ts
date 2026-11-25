@@ -12,7 +12,7 @@ import {
 } from '@stryker-mutator/api/test-runner';
 import { Instrumenter } from '@stryker-mutator/instrumenter';
 
-import { LzPlaywrightTestRunner } from '../../src/lz-playwright-test-runner.ts';
+import { MuirSirynPlaywrightTestRunner } from '../../src/muir-siryn-playwright-test-runner.ts';
 import { logger } from '../support/doubles.ts';
 import { transpile } from './support/session.ts';
 
@@ -21,18 +21,21 @@ const fixture = (file: string) =>
 const source = readFileSync(fixture('src/sign.ts'), 'utf8');
 const loadedMachineBudgetMs = 60_000;
 const { log, lines } = logger();
-const live: LzPlaywrightTestRunner[] = [];
+const live: MuirSirynPlaywrightTestRunner[] = [];
 let mutants: readonly Mutant[];
-let runner: LzPlaywrightTestRunner;
+let runner: MuirSirynPlaywrightTestRunner;
 let dryRun: CompleteDryRunResult;
 let flakyTest: CompleteDryRunResult['tests'][number];
 
 async function startRunner(
-  lzPlaywright: object = {},
+  muirSirynPlaywright: object = {},
   configFile = fixture('playwright.config.ts'),
 ) {
-  const started = new LzPlaywrightTestRunner(
-    { lzPlaywright: { configFile, ...lzPlaywright }, timeoutMS: 18_600 },
+  const started = new MuirSirynPlaywrightTestRunner(
+    {
+      muirSirynPlaywright: { configFile, ...muirSirynPlaywright },
+      timeoutMS: 18_600,
+    },
     log,
   );
   live.push(started);
@@ -53,7 +56,7 @@ function mutantEmptying(text: string): Mutant {
   return found;
 }
 
-async function statusOf(on: LzPlaywrightTestRunner, m: Mutant) {
+async function statusOf(on: MuirSirynPlaywrightTestRunner, m: Mutant) {
   const result = await on.mutantRun({
     activeMutant: m,
     testFilter: [flakyTest.id],

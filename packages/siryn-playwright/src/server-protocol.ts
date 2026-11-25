@@ -2,28 +2,33 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { fieldOf, isRecord, isStringArray } from './is-record.ts';
-import type { RunSettings } from './protocol.ts';
+import {
+  muirSirynPlaywrightFieldOf,
+  muirSirynPlaywrightIsRecord,
+  muirSirynPlaywrightIsStringArray,
+} from './is-record.ts';
+import type { MuirSirynPlaywrightRunSettings } from './protocol.ts';
 
 /** Tells the server hook, in the processes global setup starts, the folder that holds its control file. */
-export const serverDirEnv = 'LZ_STRYKER_PLAYWRIGHT_SERVER';
+export const muirSirynPlaywrightServerDirEnv = 'MUIR_SIRYN_PLAYWRIGHT_SERVER';
 /** The header the worker hook adds to a test's requests to the webServer. */
-export const testIdHeader = 'x-lz-stryker-test';
+export const muirSirynPlaywrightTestIdHeader = 'x-muir-stryker-test';
 
-export const controlFile = 'control.json';
-export const hookedPrefix = 'hooked-';
-export const serverSnapshotPrefix = 'server-';
+export const muirSirynPlaywrightControlFile = 'control.json';
+export const muirSirynPlaywrightHookedPrefix = 'hooked-';
+export const muirSirynPlaywrightServerSnapshotPrefix = 'server-';
 /** A per-test coverage key for a request that came without a test id header, followed by its arrival time. */
-export const untaggedPrefix = 'lz-stryker-untagged@';
+export const muirSirynPlaywrightUntaggedPrefix = 'muir-stryker-untagged@';
 
-export interface ServerControl extends RunSettings {
+export interface MuirSirynPlaywrightServerControl
+  extends MuirSirynPlaywrightRunSettings {
   readonly activeMutant?: string | undefined;
   readonly issuedTestIds?: readonly string[];
 }
 
-export function parseServerControl(
+export function muirSirynPlaywrightParseServerControl(
   raw: string | undefined,
-): ServerControl | undefined {
+): MuirSirynPlaywrightServerControl | undefined {
   let value: unknown;
 
   try {
@@ -32,7 +37,7 @@ export function parseServerControl(
     // value stays undefined and reads as no control below.
   }
 
-  if (!isRecord(value)) {
+  if (!muirSirynPlaywrightIsRecord(value)) {
     return undefined;
   }
 
@@ -50,8 +55,10 @@ export function parseServerControl(
     typeof perTest !== 'boolean' ||
     (activeMutant !== undefined && typeof activeMutant !== 'string') ||
     (hitLimit !== undefined && typeof hitLimit !== 'number') ||
-    (issuedTestIds !== undefined && !isStringArray(issuedTestIds)) ||
-    (testIdHosts !== undefined && !isStringArray(testIdHosts))
+    (issuedTestIds !== undefined &&
+      !muirSirynPlaywrightIsStringArray(issuedTestIds)) ||
+    (testIdHosts !== undefined &&
+      !muirSirynPlaywrightIsStringArray(testIdHosts))
   ) {
     return undefined;
   }
@@ -66,21 +73,37 @@ export function parseServerControl(
   };
 }
 
-export function writeFileAtomic(dir: string, name: string, text: string) {
+export function muirSirynPlaywrightWriteFileAtomic(
+  dir: string,
+  name: string,
+  text: string,
+) {
   const temp = path.join(dir, `${name}.${randomUUID()}`);
   fs.writeFileSync(temp, text);
   fs.renameSync(temp, path.join(dir, name));
 }
 
-export function writeServerControl(dir: string, control: ServerControl) {
-  writeFileAtomic(dir, controlFile, JSON.stringify(control));
+export function muirSirynPlaywrightWriteServerControl(
+  dir: string,
+  control: MuirSirynPlaywrightServerControl,
+) {
+  muirSirynPlaywrightWriteFileAtomic(
+    dir,
+    muirSirynPlaywrightControlFile,
+    JSON.stringify(control),
+  );
 }
 
-export function readServerControlText(dir: string): string | undefined {
+export function muirSirynPlaywrightReadServerControlText(
+  dir: string,
+): string | undefined {
   try {
-    return fs.readFileSync(path.join(dir, controlFile), 'utf8');
+    return fs.readFileSync(
+      path.join(dir, muirSirynPlaywrightControlFile),
+      'utf8',
+    );
   } catch (error) {
-    if (fieldOf(error, 'code') === 'ENOENT') {
+    if (muirSirynPlaywrightFieldOf(error, 'code') === 'ENOENT') {
       return undefined;
     }
 
@@ -88,17 +111,23 @@ export function readServerControlText(dir: string): string | undefined {
   }
 }
 
-export function readServerControl(dir: string): ServerControl | undefined {
-  return parseServerControl(readServerControlText(dir));
+export function muirSirynPlaywrightReadServerControl(
+  dir: string,
+): MuirSirynPlaywrightServerControl | undefined {
+  return muirSirynPlaywrightParseServerControl(
+    muirSirynPlaywrightReadServerControlText(dir),
+  );
 }
 
-export function anyHooked(dir: string): boolean {
-  return fs.readdirSync(dir).some((file) => file.startsWith(hookedPrefix));
+export function muirSirynPlaywrightAnyHooked(dir: string): boolean {
+  return fs
+    .readdirSync(dir)
+    .some((file) => file.startsWith(muirSirynPlaywrightHookedPrefix));
 }
 
-export function forgetHooked(dir: string) {
+export function muirSirynPlaywrightForgetHooked(dir: string) {
   fs.readdirSync(dir)
-    .filter((file) => file.startsWith(hookedPrefix))
+    .filter((file) => file.startsWith(muirSirynPlaywrightHookedPrefix))
     .forEach((file) => fs.rmSync(path.join(dir, file)));
 }
 
@@ -109,21 +138,24 @@ const localhostAliases: ReadonlySet<string> = new Set([
   '[::]',
 ]);
 
-export function hostKey(url: URL): string {
+export function muirSirynPlaywrightHostKey(url: URL): string {
   const host = localhostAliases.has(url.hostname) ? 'localhost' : url.hostname;
   const port = url.port || (url.protocol === 'https:' ? '443' : '80');
 
   return `${host}:${port}`;
 }
 
-export function untaggedKey(arrivedAt: number): string {
-  return `${untaggedPrefix}${arrivedAt}`;
+export function muirSirynPlaywrightUntaggedKey(arrivedAt: number): string {
+  return `${muirSirynPlaywrightUntaggedPrefix}${arrivedAt}`;
 }
 
-export function untaggedArrival(key: string): number | undefined {
-  const arrivedAt = key.slice(untaggedPrefix.length);
+export function muirSirynPlaywrightUntaggedArrival(
+  key: string,
+): number | undefined {
+  const arrivedAt = key.slice(muirSirynPlaywrightUntaggedPrefix.length);
 
-  return key.startsWith(untaggedPrefix) && /^\d+$/.test(arrivedAt)
+  return key.startsWith(muirSirynPlaywrightUntaggedPrefix) &&
+    /^\d+$/.test(arrivedAt)
     ? Number(arrivedAt)
     : undefined;
 }

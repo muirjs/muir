@@ -9,7 +9,7 @@ now get none):
   name, did not end an earlier window;
 - a `step(...)` that only defined a clicking function, or clicked only under an `if`, ended the window by `step`;
 - a check in a function that never runs, such as `const later = () => expect(...)`, counted as a following check,
-  could make the reporter's `negative-only` hint, and kept `LzStorybookAssertionBefore` from copying the real check
+  could make the reporter's `negative-only` hint, and kept `MuirProteusStorybookTestAssertionBefore` from copying the real check
   after it;
 - `await x.then((value) => expect(value)...)` was never copied.
 
@@ -26,7 +26,7 @@ functions of the object literal a name holds.
 ## Consequences
 
 - A function given to any call counts as run, so an unknown call given a clicking function now ends the window by
-  `maybe`, and the check past it is no longer copied (one `LzStorybookAssertionBefore` case changed to no mutant).
+  `maybe`, and the check past it is no longer copied (one `MuirProteusStorybookTestAssertionBefore` case changed to no mutant).
 - A function held by a property of an argument, such as `waitFor`'s `onTimeout`, is not itself an argument, so it does
   not count as run, whether the options object is written inline or held by a name. Its checks run only when the wait
   fails, so they are no following checks.

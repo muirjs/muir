@@ -1,37 +1,40 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { jsMutators, jsMutatorSets } from '../../src/mutators.ts';
+import {
+  muirProteusJsMutators,
+  muirProteusJsMutatorSets,
+} from '../../src/mutators.ts';
 
 describe('jsMutatorSets', () => {
   it('names the default mutators', () => {
     assert.deepEqual(
-      jsMutatorSets.defaults.map(({ name }) => name),
+      muirProteusJsMutatorSets.defaults.map(({ name }) => name),
       [],
     );
   });
 
   it('names the opt-in mutators', () => {
     assert.deepEqual(
-      jsMutatorSets.optIn.map(({ name }) => name),
-      ['LzJsNumericLiteral'],
+      muirProteusJsMutatorSets.optIn.map(({ name }) => name),
+      ['MuirProteusJsNumericLiteral'],
     );
   });
 
   it('names the experimental mutators', () => {
     assert.deepEqual(
-      jsMutatorSets.experimental.map(({ name }) => name),
-      ['LzJsAssignmentStatement'],
+      muirProteusJsMutatorSets.experimental.map(({ name }) => name),
+      ['MuirProteusJsAssignmentStatement'],
     );
   });
 });
 
 describe('jsMutators', () => {
   it('lists every mutator of the sets', () => {
-    assert.deepEqual(jsMutators, [
-      ...jsMutatorSets.defaults,
-      ...jsMutatorSets.optIn,
-      ...jsMutatorSets.experimental,
+    assert.deepEqual(muirProteusJsMutators, [
+      ...muirProteusJsMutatorSets.defaults,
+      ...muirProteusJsMutatorSets.optIn,
+      ...muirProteusJsMutatorSets.experimental,
     ]);
   });
 });

@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import net from 'node:net';
 import { before, test } from 'node:test';
 
-import { untaggedArrival } from '../src/server-protocol.ts';
+import { muirSirynPlaywrightUntaggedArrival } from '../src/server-protocol.ts';
 import {
   bigRequestIds,
   coverageOf,
@@ -119,7 +119,9 @@ before(instrumentApp);
 
     assert.ok(keys.length > 0);
     assert.ok(
-      keys.every((key) => untaggedArrival(key) !== undefined),
+      keys.every(
+        (key) => muirSirynPlaywrightUntaggedArrival(key) !== undefined,
+      ),
       keys.join(),
     );
   });

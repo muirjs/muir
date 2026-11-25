@@ -1,31 +1,40 @@
 import { basename, dirname, resolve, win32 } from 'node:path';
 
-import { withoutBinding, type Bindings } from './bindings.ts';
 import {
-  assignmentOf,
-  declarationOf,
-  isStoryFactoryCall,
-  storyArgument,
-  unwrap,
-  type Assignment,
+  muirMoiraStorybookWithoutBinding,
+  type MuirMoiraStorybookBindings,
+} from './bindings.ts';
+import {
+  muirMoiraStorybookAssignmentOf,
+  muirMoiraStorybookDeclarationOf,
+  muirMoiraStorybookIsStoryFactoryCall,
+  muirMoiraStorybookStoryArgument,
+  muirMoiraStorybookUnwrap,
+  type MuirMoiraStorybookAssignment,
 } from './csf-nodes.ts';
-import { namesReadElsewhere } from './names-read-elsewhere.ts';
-import { field, list } from './node-field.ts';
-import { everyRecordIn, loadedSpecifierOf } from './node-tree.ts';
+import { muirMoiraStorybookNamesReadElsewhere } from './names-read-elsewhere.ts';
 import {
-  isObjectLiteral,
-  writtenValue,
-  type ObjectLiteral,
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
+import {
+  muirMoiraStorybookEveryRecordIn,
+  muirMoiraStorybookLoadedSpecifierOf,
+} from './node-tree.ts';
+import {
+  muirMoiraStorybookIsObjectLiteral,
+  muirMoiraStorybookWrittenValue,
+  type MuirMoiraStorybookObjectLiteral,
 } from './object-value.ts';
 
-export interface IndexedStory {
+export interface MuirMoiraStorybookIndexedStory {
   /** The story's static tags, the meta's first. */
   readonly tags: readonly string[];
   /** The name of each `.test()` call on the story that the index lists. */
   readonly tests: readonly unknown[];
 }
 
-export interface CsfShapes {
+export interface MuirMoiraStorybookCsfShapes {
   readonly metaObjects: ReadonlySet<unknown>;
   /** Story objects and functions, `parameters` objects that hold `__id`, and `.test()` options objects. */
   readonly literalContainers: ReadonlySet<unknown>;
@@ -47,13 +56,18 @@ const staticKeys: readonly string[] = [
   'storyName',
 ];
 
-export function csfShapes(program: unknown): CsfShapes {
-  const body = list(field(program, 'body'));
-  const bindings = topLevelBindings(body);
+export function muirMoiraStorybookCsfShapes(
+  program: unknown,
+): MuirMoiraStorybookCsfShapes {
+  const body = muirMoiraStorybookList(muirMoiraStorybookField(program, 'body'));
+  const bindings = muirMoiraStorybookTopLevelBindings(body);
   const specifiers = body.flatMap((statement) =>
-    list(field(statement, 'specifiers')),
+    muirMoiraStorybookList(muirMoiraStorybookField(statement, 'specifiers')),
   );
-  const { metas, stories: exported } = csfFile(body, bindings);
+  const { metas, stories: exported } = muirMoiraStorybookCsfFile(
+    body,
+    bindings,
+  );
   const metaObjects: readonly unknown[] = metas.map(({ object }) => object);
   const assignments = exported.flatMap((story) => story.assignments);
   const runtime = exported.flatMap((story) => story.runtimeAssignments);
@@ -61,19 +75,22 @@ export function csfShapes(program: unknown): CsfShapes {
     ...exported.map(({ init }) => init),
     ...assignedIn(assignments, 'story').map(({ value }) => value),
   ]
-    .map((init) => storyNode(unwrap(init), bindings))
+    .map((init) => storyNode(muirMoiraStorybookUnwrap(init), bindings))
     .filter(
       (init) =>
-        (isObjectLiteral(init) ||
-          field(init, 'type') === 'ArrowFunctionExpression') &&
+        (muirMoiraStorybookIsObjectLiteral(init) ||
+          muirMoiraStorybookField(init, 'type') ===
+            'ArrowFunctionExpression') &&
         !metaObjects.includes(init),
     );
   const annotationsIn = (
-    from: readonly Assignment[],
+    from: readonly MuirMoiraStorybookAssignment[],
     key: string,
   ): readonly unknown[] =>
     [
-      ...[...metaObjects, ...stories].map((owner) => writtenValue(owner, key)),
+      ...[...metaObjects, ...stories].map((owner) =>
+        muirMoiraStorybookWrittenValue(owner, key),
+      ),
       ...assignedIn(from, key).map(({ value }) => value),
     ].flatMap((value) => withInit(value, bindings));
   const testCodeOf = (key: string): readonly unknown[] => [
@@ -82,12 +99,17 @@ export function csfShapes(program: unknown): CsfShapes {
   ];
   const locals = exported.map(({ local }) => local);
   const idParameters = stories
-    .map((story) => writtenValue(story, 'parameters'))
-    .filter((parameters) => writtenValue(parameters, '__id') !== undefined);
-  const calls = body.flatMap(testCallOf);
+    .map((story) => muirMoiraStorybookWrittenValue(story, 'parameters'))
+    .filter(
+      (parameters) =>
+        muirMoiraStorybookWrittenValue(parameters, '__id') !== undefined,
+    );
+  const calls = body.flatMap(muirMoiraStorybookTestCallOf);
   const testCalls = locals
     .flatMap((local) =>
-      firstTestCalls(calls.filter(({ target }) => target === local)),
+      muirMoiraStorybookFirstTestCalls(
+        calls.filter(({ target }) => target === local),
+      ),
     )
     .flatMap((call) => {
       // Storybook 10.6.5 CsfFile indexes a .test() call only with two or more arguments; a spread counts as one.
@@ -95,7 +117,7 @@ export function csfShapes(program: unknown): CsfShapes {
         return [];
       }
 
-      const { options, testFunction } = testArguments(call);
+      const { options, testFunction } = muirMoiraStorybookTestArguments(call);
 
       return [
         {
@@ -127,57 +149,75 @@ export function csfShapes(program: unknown): CsfShapes {
     ),
     mswValues: new Set(
       annotationsIn(runtime, 'parameters').flatMap((parameters) =>
-        withInit(writtenValue(parameters, 'msw'), bindings),
+        withInit(muirMoiraStorybookWrittenValue(parameters, 'msw'), bindings),
       ),
     ),
     staticValues: new Set([
       ...staticKeys.flatMap((key) => annotationsIn(assignments, key)),
-      ...idParameters.map((parameters) => writtenValue(parameters, '__id')),
+      ...idParameters.map((parameters) =>
+        muirMoiraStorybookWrittenValue(parameters, '__id'),
+      ),
       bindings.get('__namedExportsOrder'),
       ...testCalls.flatMap(({ name, options }) => [
         name,
-        ...withInit(writtenValue(options, 'tags'), bindings),
+        ...withInit(muirMoiraStorybookWrittenValue(options, 'tags'), bindings),
       ]),
-      ...specifiers.map((specifier) => field(specifier, 'exported')),
+      ...specifiers.map((specifier) =>
+        muirMoiraStorybookField(specifier, 'exported'),
+      ),
     ]),
   };
 }
 
 function assignedIn(
-  from: readonly Assignment[],
+  from: readonly MuirMoiraStorybookAssignment[],
   key: string,
-): readonly Assignment[] {
+): readonly MuirMoiraStorybookAssignment[] {
   return from.filter(({ path }) => path.length === 1 && path[0] === key);
 }
 
-export function defaultExport(body: readonly unknown[]): unknown {
-  const declaration = field(
+export function muirMoiraStorybookDefaultExport(
+  body: readonly unknown[],
+): unknown {
+  const declaration = muirMoiraStorybookField(
     body.find(
-      (statement) => field(statement, 'type') === 'ExportDefaultDeclaration',
+      (statement) =>
+        muirMoiraStorybookField(statement, 'type') ===
+        'ExportDefaultDeclaration',
     ),
     'declaration',
   );
 
-  return declaration ?? field(defaultSpecifier(body), 'local');
+  return (
+    declaration ?? muirMoiraStorybookField(defaultSpecifier(body), 'local')
+  );
 }
 
 function defaultSpecifier(body: readonly unknown[]): unknown {
   return body
-    .flatMap((statement) => list(field(statement, 'specifiers')))
+    .flatMap((statement) =>
+      muirMoiraStorybookList(muirMoiraStorybookField(statement, 'specifiers')),
+    )
     .find(
       (specifier) =>
-        (field(specifier, 'exported', 'name') ??
-          field(specifier, 'exported', 'value')) === 'default',
+        (muirMoiraStorybookField(specifier, 'exported', 'name') ??
+          muirMoiraStorybookField(specifier, 'exported', 'value')) ===
+        'default',
     );
 }
 
 /** Storybook 10.6.5's Vitest transform names the meta only through `export default`, so it fails on a meta object exported by specifier as default and tests no story. */
 function isMetaObjectExportedBySpecifier(
   body: readonly unknown[],
-  bindings: Bindings,
+  bindings: MuirMoiraStorybookBindings,
 ): boolean {
-  return isObjectLiteral(
-    unwrap(followed(field(defaultSpecifier(body), 'local'), bindings)),
+  return muirMoiraStorybookIsObjectLiteral(
+    muirMoiraStorybookUnwrap(
+      followed(
+        muirMoiraStorybookField(defaultSpecifier(body), 'local'),
+        bindings,
+      ),
+    ),
   );
 }
 
@@ -185,43 +225,49 @@ function isMetaObjectExportedBySpecifier(
 const defaultExportName = Symbol('export default');
 
 /** The owner, as `MetaObject.owner` names it, of the meta a story is made from, given the initializer `extendLevels` ends its chain at: the default export's for a CSF3 story, the name a `.story()` call is made on for a factory story. */
-export function storyMetaOwner(rootInit: unknown): unknown {
-  const call = unwrap(rootInit);
+export function muirMoiraStorybookStoryMetaOwner(rootInit: unknown): unknown {
+  const call = muirMoiraStorybookUnwrap(rootInit);
 
-  return isStoryFactoryCall(call)
-    ? field(call, 'callee', 'object', 'name')
+  return muirMoiraStorybookIsStoryFactoryCall(call)
+    ? muirMoiraStorybookField(call, 'callee', 'object', 'name')
     : defaultExportName;
 }
 
-export interface CsfFile {
+export interface MuirMoiraStorybookCsfFile {
   /** Each meta object with the family name a write to it marks in `written`: the default export's, or the factory meta's local name. */
-  readonly metas: readonly MetaObject[];
-  readonly stories: readonly StoryExport[];
+  readonly metas: readonly MuirMoiraStorybookMetaObject[];
+  readonly stories: readonly MuirMoiraStorybookStoryExport[];
   /** The top-level names in a family with a written member, a name assigned to a member the file writes below or whose object it hands on included, so what the file declares for them is not what runs. */
   readonly written: ReadonlySet<unknown>;
   /** The top-level names another top-level object or meta reads when the file loads, so what they hold also reaches code outside their own runs. */
   readonly readByOtherObjects: ReadonlySet<unknown>;
 }
 
-export interface MetaObject {
-  readonly object: ObjectLiteral;
+export interface MuirMoiraStorybookMetaObject {
+  readonly object: MuirMoiraStorybookObjectLiteral;
   readonly owner: unknown;
 }
 
 /** `index` gives the stories and their `.test()` children, as Storybook's story index lists them, in place of the package's own reading of the exports. */
-export function csfFile(
+export function muirMoiraStorybookCsfFile(
   body: readonly unknown[],
-  bindings: Bindings,
-  index?: ReadonlyMap<string, IndexedStory>,
-): CsfFile {
+  bindings: MuirMoiraStorybookBindings,
+  index?: ReadonlyMap<string, MuirMoiraStorybookIndexedStory>,
+): MuirMoiraStorybookCsfFile {
   const factories = factoryMetas(body, bindings);
   const isFactoryFile = factories.length > 0;
   const metaBindings: readonly (readonly [unknown, unknown])[] = [
-    [defaultExportName, defaultExport(body)],
+    [defaultExportName, muirMoiraStorybookDefaultExport(body)],
     ...[...bindings]
       .filter(([, init]) => factories.includes(init))
       .map(
-        ([name, init]) => [name, list(field(init, 'arguments'))[0]] as const,
+        ([name, init]) =>
+          [
+            name,
+            muirMoiraStorybookList(
+              muirMoiraStorybookField(init, 'arguments'),
+            )[0],
+          ] as const,
       ),
   ];
   const metas = metaBindings.flatMap(([owner, meta]) =>
@@ -232,7 +278,7 @@ export function csfFile(
     sharingWithWritten,
     written,
     readByOtherObjects,
-  } = namesReadElsewhere(body, bindings, metaBindings);
+  } = muirMoiraStorybookNamesReadElsewhere(body, bindings, metaBindings);
 
   return {
     metas,
@@ -246,7 +292,7 @@ export function csfFile(
             isFactoryFile,
           )
         : ({ name }) => index.has(name),
-      (name) => list(index?.get(name)?.tests),
+      (name) => muirMoiraStorybookList(index?.get(name)?.tests),
       (local) =>
         metaBindings.some(([name]) => written.has(name)) ||
         usedOutsideReadForms.has(local) ||
@@ -260,35 +306,36 @@ export function csfFile(
 function storyFilter(
   metaObjects: readonly unknown[],
   isFactoryFile: boolean,
-): (named: NamedExport) => boolean {
+): (named: MuirMoiraStorybookNamedExport) => boolean {
   const [includeStories, excludeStories] = [
     'includeStories',
     'excludeStories',
   ].map((key) =>
     metaObjects
-      .map((meta) => writtenValue(meta, key))
+      .map((meta) => muirMoiraStorybookWrittenValue(meta, key))
       .find((value) => value !== undefined),
   );
 
   return ({ name, init }) =>
     name !== '__namedExportsOrder' &&
     isExportStory(name, includeStories, excludeStories) &&
-    (!isFactoryFile || isStoryFactoryCall(unwrap(init)));
+    (!isFactoryFile ||
+      muirMoiraStorybookIsStoryFactoryCall(muirMoiraStorybookUnwrap(init)));
 }
 
 function storyExports(
   body: readonly unknown[],
-  bindings: Bindings,
+  bindings: MuirMoiraStorybookBindings,
   isFactoryFile: boolean,
-  isStory: (named: NamedExport) => boolean,
+  isStory: (named: MuirMoiraStorybookNamedExport) => boolean,
   testNames: (name: string) => readonly unknown[],
   isReferencedElsewhere: (local: unknown) => boolean,
-): readonly StoryExport[] {
-  const assignments = body.flatMap(assignmentOf);
-  const testCalls = body.flatMap(testCallOf);
+): readonly MuirMoiraStorybookStoryExport[] {
+  const assignments = body.flatMap(muirMoiraStorybookAssignmentOf);
+  const testCalls = body.flatMap(muirMoiraStorybookTestCallOf);
   const metaBySpecifier = isMetaObjectExportedBySpecifier(body, bindings);
 
-  return namedExports(body, bindings)
+  return muirMoiraStorybookNamedExports(body, bindings)
     .filter(isStory)
     .map(({ name, local, init, form }) => {
       const storyAssignments = assignments.filter(
@@ -300,44 +347,53 @@ function storyExports(
         name,
         local,
         init,
-        children: isStoryFactoryCall(unwrap(init))
+        children: muirMoiraStorybookIsStoryFactoryCall(
+          muirMoiraStorybookUnwrap(init),
+        )
           ? testNames(name).map((testName) => childOf(testName, storyCalls))
           : [],
         tested:
           !metaBySpecifier &&
           (form === 'declaration' ||
             (init !== undefined &&
-              field(init, 'type') !== 'FunctionDeclaration')),
+              muirMoiraStorybookField(init, 'type') !== 'FunctionDeclaration')),
         referencedElsewhere: isReferencedElsewhere(local),
         assignments: storyAssignments,
         runtimeAssignments: runtimeAssignments(storyAssignments, isFactoryFile),
         extendsBase:
-          field(unwrap(init), 'callee', 'property', 'name') === 'extend',
+          muirMoiraStorybookField(
+            muirMoiraStorybookUnwrap(init),
+            'callee',
+            'property',
+            'name',
+          ) === 'extend',
       };
     });
 }
 
-export interface StoryExport {
+export interface MuirMoiraStorybookStoryExport {
   readonly name: string;
   readonly local: unknown;
   readonly init: unknown;
   /** Each `.test()` child of a factory story that the index lists; Storybook 10.6.5 runs other stories' `.test()` calls as the story itself. */
-  readonly children: readonly TestChild[];
+  readonly children: readonly MuirMoiraStorybookTestChild[];
   /** Storybook 10.6.5's Vitest transform tests a story only when the file's meta object is not exported by specifier and the story's export declares it or names a local variable. */
   readonly tested: boolean;
   /** The file names the story outside its declaration, its export, the `.test()` calls Storybook 10.6.5 CsfFile indexes and their arguments, member assignments and the values of top-level objects and `.story()` or `.extend()` calls, or writes to a top-level object that shares nested objects with it or with the meta, so what runs can differ from what the package reads. */
   readonly referencedElsewhere: boolean;
-  readonly assignments: readonly Assignment[];
+  readonly assignments: readonly MuirMoiraStorybookAssignment[];
   /** The writes that the story Storybook runs is composed from, with a factory story's `input` stripped from the path. */
-  readonly runtimeAssignments: readonly Assignment[];
+  readonly runtimeAssignments: readonly MuirMoiraStorybookAssignment[];
   /** Storybook 10.6.5 `extend()` merges the base story into the new input at run time, so the argument is only part of the story. */
   readonly extendsBase: boolean;
 }
 
 /** The options argument (`undefined` for a call without one) and the test function of a story's `.test()` call, or `'unmatched'` when that call or its arguments cannot be told. */
-export type TestChild = TestArguments | 'unmatched';
+export type MuirMoiraStorybookTestChild =
+  | MuirMoiraStorybookTestArguments
+  | 'unmatched';
 
-export interface TestArguments {
+export interface MuirMoiraStorybookTestArguments {
   readonly options: unknown;
   readonly testFunction: unknown;
 }
@@ -348,36 +404,47 @@ const functionTypes: readonly unknown[] = [
 ];
 
 /** The options and test function of a `.test(name, [options,] fn)` call, as Storybook 10.6.5 `test()` reads them: the second argument is the test function when it is the last or a function, else the options, and any later argument is ignored. */
-export function testArguments({ args }: TestCall): TestArguments {
+export function muirMoiraStorybookTestArguments({
+  args,
+}: MuirMoiraStorybookTestCall): MuirMoiraStorybookTestArguments {
   const [, second, third] = args;
 
-  return third === undefined || functionTypes.includes(field(second, 'type'))
+  return third === undefined ||
+    functionTypes.includes(muirMoiraStorybookField(second, 'type'))
     ? { options: undefined, testFunction: second }
     : { options: second, testFunction: third };
 }
 
 /** The first `.test()` call of each name, as Storybook 10.6.5 test-utils.ts `testStory` runs the first child that has the row's name; its CsfFile indexes only a call whose name is a string literal. */
-export function firstTestCalls(
-  calls: readonly TestCall[],
-): readonly TestCall[] {
+export function muirMoiraStorybookFirstTestCalls(
+  calls: readonly MuirMoiraStorybookTestCall[],
+): readonly MuirMoiraStorybookTestCall[] {
   const named = calls.filter(
-    ({ args: [name] }) => field(name, 'type') === 'StringLiteral',
+    ({ args: [name] }) =>
+      muirMoiraStorybookField(name, 'type') === 'StringLiteral',
   );
 
   return named.filter(
     ({ args: [name] }, index) =>
       named.findIndex(
-        ({ args: [other] }) => field(other, 'value') === field(name, 'value'),
+        ({ args: [other] }) =>
+          muirMoiraStorybookField(other, 'value') ===
+          muirMoiraStorybookField(name, 'value'),
       ) === index,
   );
 }
 
-function childOf(testName: unknown, calls: readonly TestCall[]): TestChild {
-  const call = firstTestCalls(calls).find(
-    ({ args: [name] }) => field(name, 'value') === testName,
+function childOf(
+  testName: unknown,
+  calls: readonly MuirMoiraStorybookTestCall[],
+): MuirMoiraStorybookTestChild {
+  const call = muirMoiraStorybookFirstTestCalls(calls).find(
+    ({ args: [name] }) => muirMoiraStorybookField(name, 'value') === testName,
   );
 
-  return call === undefined ? 'unmatched' : testArguments(call);
+  return call === undefined
+    ? 'unmatched'
+    : muirMoiraStorybookTestArguments(call);
 }
 
 const previewPath = /\/preview(.(js|jsx|mjs|ts|tsx))?$/;
@@ -385,39 +452,44 @@ const previewPath = /\/preview(.(js|jsx|mjs|ts|tsx))?$/;
 /** Storybook 10.6.5 CsfFile: a top-level `X.meta()` or `X.type().meta()` call, where `X` is imported from a preview file. */
 function factoryMetas(
   body: readonly unknown[],
-  bindings: Bindings,
+  bindings: MuirMoiraStorybookBindings,
 ): readonly unknown[] {
   const importSources = new Map(
     body
-      .filter((statement) => field(statement, 'type') === 'ImportDeclaration')
+      .filter(
+        (statement) =>
+          muirMoiraStorybookField(statement, 'type') === 'ImportDeclaration',
+      )
       .flatMap((statement) =>
-        list(field(statement, 'specifiers')).map(
+        muirMoiraStorybookList(
+          muirMoiraStorybookField(statement, 'specifiers'),
+        ).map(
           (specifier) =>
             [
-              field(specifier, 'local', 'name'),
-              field(statement, 'source', 'value'),
+              muirMoiraStorybookField(specifier, 'local', 'name'),
+              muirMoiraStorybookField(statement, 'source', 'value'),
             ] as const,
         ),
       ),
   );
 
   return [...bindings.values()].filter((init) => {
-    const object = field(init, 'callee', 'object');
+    const object = muirMoiraStorybookField(init, 'callee', 'object');
     const root =
-      field(object, 'type') === 'CallExpression'
-        ? field(object, 'callee', 'object')
+      muirMoiraStorybookField(object, 'type') === 'CallExpression'
+        ? muirMoiraStorybookField(object, 'callee', 'object')
         : object;
-    const source = importSources.get(field(root, 'name'));
+    const source = importSources.get(muirMoiraStorybookField(root, 'name'));
 
     return (
-      field(init, 'callee', 'property', 'name') === 'meta' &&
+      muirMoiraStorybookField(init, 'callee', 'property', 'name') === 'meta' &&
       typeof source === 'string' &&
       previewPath.test(source)
     );
   });
 }
 
-export interface NamedExport {
+export interface MuirMoiraStorybookNamedExport {
   readonly name: string;
   readonly local: unknown;
   readonly init: unknown;
@@ -426,46 +498,62 @@ export interface NamedExport {
   readonly typeOnly: boolean;
 }
 
-export function namedExports(
+export function muirMoiraStorybookNamedExports(
   body: readonly unknown[],
-  bindings: Bindings,
-): readonly NamedExport[] {
+  bindings: MuirMoiraStorybookBindings,
+): readonly MuirMoiraStorybookNamedExport[] {
   return body
     .flatMap((statement) => {
-      const typeOnly = field(statement, 'exportKind') === 'type';
+      const typeOnly =
+        muirMoiraStorybookField(statement, 'exportKind') === 'type';
 
       return [
-        ...list(field(statement, 'declaration', 'declarations')).map(
-          (declarator) => ({
-            name: field(declarator, 'id', 'name'),
-            local: field(declarator, 'id', 'name'),
-            init: field(declarator, 'init'),
-            form: 'declaration' as const,
-            typeOnly,
-          }),
-        ),
-        ...(field(statement, 'declaration', 'type') === 'FunctionDeclaration'
+        ...muirMoiraStorybookList(
+          muirMoiraStorybookField(statement, 'declaration', 'declarations'),
+        ).map((declarator) => ({
+          name: muirMoiraStorybookField(declarator, 'id', 'name'),
+          local: muirMoiraStorybookField(declarator, 'id', 'name'),
+          init: muirMoiraStorybookField(declarator, 'init'),
+          form: 'declaration' as const,
+          typeOnly,
+        })),
+        ...(muirMoiraStorybookField(statement, 'declaration', 'type') ===
+        'FunctionDeclaration'
           ? [
               {
-                name: field(statement, 'declaration', 'id', 'name'),
-                local: field(statement, 'declaration', 'id', 'name'),
-                init: field(statement, 'declaration'),
+                name: muirMoiraStorybookField(
+                  statement,
+                  'declaration',
+                  'id',
+                  'name',
+                ),
+                local: muirMoiraStorybookField(
+                  statement,
+                  'declaration',
+                  'id',
+                  'name',
+                ),
+                init: muirMoiraStorybookField(statement, 'declaration'),
                 form: 'declaration' as const,
                 typeOnly,
               },
             ]
           : []),
-        ...list(field(statement, 'specifiers')).map((specifier) => ({
+        ...muirMoiraStorybookList(
+          muirMoiraStorybookField(statement, 'specifiers'),
+        ).map((specifier) => ({
           name:
-            field(specifier, 'exported', 'name') ??
-            field(specifier, 'exported', 'value'),
-          local: field(specifier, 'local', 'name'),
+            muirMoiraStorybookField(specifier, 'exported', 'name') ??
+            muirMoiraStorybookField(specifier, 'exported', 'value'),
+          local: muirMoiraStorybookField(specifier, 'local', 'name'),
           init:
-            field(specifier, 'local', 'type') === 'Identifier'
-              ? followed(field(specifier, 'local'), bindings)
+            muirMoiraStorybookField(specifier, 'local', 'type') === 'Identifier'
+              ? followed(muirMoiraStorybookField(specifier, 'local'), bindings)
               : undefined,
           form: 'specifier' as const,
-          typeOnly: typeOnly || field(specifier, 'exportKind') === 'type',
+          typeOnly:
+            typeOnly ||
+            muirMoiraStorybookField(specifier, 'exportKind') === 'type',
         })),
       ];
     })
@@ -476,22 +564,27 @@ export function namedExports(
     );
 }
 
-export function topLevelBindings(body: readonly unknown[]): Bindings {
+export function muirMoiraStorybookTopLevelBindings(
+  body: readonly unknown[],
+): MuirMoiraStorybookBindings {
   return new Map(
     body.flatMap((statement) => {
-      const declaration = declarationOf(statement);
-      const functionName = field(declaration, 'id', 'name');
+      const declaration = muirMoiraStorybookDeclarationOf(statement);
+      const functionName = muirMoiraStorybookField(declaration, 'id', 'name');
 
       if (
-        field(declaration, 'type') === 'FunctionDeclaration' &&
+        muirMoiraStorybookField(declaration, 'type') ===
+          'FunctionDeclaration' &&
         typeof functionName === 'string'
       ) {
         return [[functionName, declaration] as const];
       }
 
-      return list(field(declaration, 'declarations')).flatMap((declarator) => {
-        const name = field(declarator, 'id', 'name');
-        const init = field(declarator, 'init');
+      return muirMoiraStorybookList(
+        muirMoiraStorybookField(declaration, 'declarations'),
+      ).flatMap((declarator) => {
+        const name = muirMoiraStorybookField(declarator, 'id', 'name');
+        const init = muirMoiraStorybookField(declarator, 'init');
 
         return typeof name === 'string' && init !== null
           ? [[name, init] as const]
@@ -502,31 +595,37 @@ export function topLevelBindings(body: readonly unknown[]): Bindings {
 }
 
 /** The top-level bindings whose value the file leaves as declared: none in its `written` set, which holds every name it writes, reassigns or hands to code it does not read. */
-export function unchangedBindings(
-  bindings: Bindings,
+export function muirMoiraStorybookUnchangedBindings(
+  bindings: MuirMoiraStorybookBindings,
   written: ReadonlySet<unknown>,
-): Bindings {
+): MuirMoiraStorybookBindings {
   return new Map([...bindings].filter(([name]) => !written.has(name)));
 }
 
 /** `value` is an export specifier's local, a call argument, a property or assigned value, or a `.bind()` callee's object; of these only an Identifier has a string `name`. */
-function followed(value: unknown, bindings: Bindings): unknown {
-  const name = field(value, 'name');
+function followed(
+  value: unknown,
+  bindings: MuirMoiraStorybookBindings,
+): unknown {
+  const name = muirMoiraStorybookField(value, 'name');
 
   return typeof name === 'string' ? bindings.get(name) : value;
 }
 
 /** A name's top-level value; a name the file does not bind, or any other node, as it is. */
-export function topLevelValueOrSelf(
+export function muirMoiraStorybookTopLevelValueOrSelf(
   node: unknown,
-  bindings: Bindings,
+  bindings: MuirMoiraStorybookBindings,
 ): unknown {
-  const name = field(node, 'name');
+  const name = muirMoiraStorybookField(node, 'name');
 
   return (typeof name === 'string' ? bindings.get(name) : undefined) ?? node;
 }
 
-function withInit(value: unknown, bindings: Bindings): readonly unknown[] {
+function withInit(
+  value: unknown,
+  bindings: MuirMoiraStorybookBindings,
+): readonly unknown[] {
   return [value, followed(value, bindings)];
 }
 
@@ -542,17 +641,17 @@ function isExportStory(
 }
 
 function matchesStories(name: unknown, descriptor: unknown): boolean {
-  if (field(descriptor, 'type') === 'ArrayExpression') {
-    return list(field(descriptor, 'elements')).some(
-      (element) => field(element, 'value') === name,
-    );
+  if (muirMoiraStorybookField(descriptor, 'type') === 'ArrayExpression') {
+    return muirMoiraStorybookList(
+      muirMoiraStorybookField(descriptor, 'elements'),
+    ).some((element) => muirMoiraStorybookField(element, 'value') === name);
   }
 
   const pattern =
-    field(descriptor, 'type') === 'StringLiteral'
-      ? field(descriptor, 'value')
-      : field(descriptor, 'pattern');
-  const flags = field(descriptor, 'flags') ?? '';
+    muirMoiraStorybookField(descriptor, 'type') === 'StringLiteral'
+      ? muirMoiraStorybookField(descriptor, 'value')
+      : muirMoiraStorybookField(descriptor, 'pattern');
+  const flags = muirMoiraStorybookField(descriptor, 'flags') ?? '';
 
   return (
     typeof name === 'string' &&
@@ -564,9 +663,9 @@ function matchesStories(name: unknown, descriptor: unknown): boolean {
 
 /** Storybook 10.6.5 composes a factory story from the keys of the `input` that `defineStory` closed over, so only writes below `input` count. */
 function runtimeAssignments(
-  assignments: readonly Assignment[],
+  assignments: readonly MuirMoiraStorybookAssignment[],
   isFactory: boolean,
-): readonly Assignment[] {
+): readonly MuirMoiraStorybookAssignment[] {
   if (!isFactory) {
     return assignments;
   }
@@ -578,28 +677,32 @@ function runtimeAssignments(
   );
 }
 
-export interface TestCall {
+export interface MuirMoiraStorybookTestCall {
   readonly statement: unknown;
   readonly target: unknown;
   readonly args: readonly unknown[];
 }
 
-export function testCallOf(statement: unknown): readonly TestCall[] {
-  const callee = field(statement, 'expression', 'callee');
+export function muirMoiraStorybookTestCallOf(
+  statement: unknown,
+): readonly MuirMoiraStorybookTestCall[] {
+  const callee = muirMoiraStorybookField(statement, 'expression', 'callee');
 
-  return field(callee, 'property', 'name') === 'test'
+  return muirMoiraStorybookField(callee, 'property', 'name') === 'test'
     ? [
         {
           statement,
-          target: field(callee, 'object', 'name'),
-          args: list(field(statement, 'expression', 'arguments')),
+          target: muirMoiraStorybookField(callee, 'object', 'name'),
+          args: muirMoiraStorybookList(
+            muirMoiraStorybookField(statement, 'expression', 'arguments'),
+          ),
         },
       ]
     : [];
 }
 
 /** The file holds a relative string literal that names this file in any letter case, loads a module whose specifier is not a string literal or is a path whose last segment names this file, or calls `import.meta.glob`. Storybook 10.6.5's Vitest transform composes each story from the file's own bindings, so a write through an import of the file itself changes what runs without naming the story. */
-export function mayImportItself(
+export function muirMoiraStorybookMayImportItself(
   body: readonly unknown[],
   fileName: string,
 ): boolean {
@@ -616,7 +719,7 @@ export function mayImportItself(
       : /[\\/]/.test(path) &&
         withoutScriptExtension(win32.basename(path.toLowerCase())) === baseName;
 
-  return everyRecordIn(body).some((node) => {
+  return muirMoiraStorybookEveryRecordIn(body).some((node) => {
     const held = stringLiteralValue(node);
 
     // A relative string counts wherever the file holds it, as a vi.mock path or a name passed to import() later; a
@@ -625,7 +728,7 @@ export function mayImportItself(
       return true;
     }
 
-    const specifier = loadedSpecifierOf(node);
+    const specifier = muirMoiraStorybookLoadedSpecifierOf(node);
 
     if (specifier !== undefined) {
       const loaded = stringLiteralValue(specifier);
@@ -638,9 +741,10 @@ export function mayImportItself(
 }
 
 function stringLiteralValue(node: unknown): string | undefined {
-  const value = field(node, 'value');
+  const value = muirMoiraStorybookField(node, 'value');
 
-  return field(node, 'type') === 'StringLiteral' && typeof value === 'string'
+  return muirMoiraStorybookField(node, 'type') === 'StringLiteral' &&
+    typeof value === 'string'
     ? value
     : undefined;
 }
@@ -652,45 +756,58 @@ function withoutScriptExtension(path: string): string {
 /** A call of `import.meta.glob`: only a `MetaProperty` node has a `meta` field. */
 function isImportMetaGlob(node: unknown): boolean {
   return (
-    field(node, 'callee', 'object', 'meta', 'name') === 'import' &&
-    field(node, 'callee', 'property', 'name') === 'glob'
+    muirMoiraStorybookField(node, 'callee', 'object', 'meta', 'name') ===
+      'import' &&
+    muirMoiraStorybookField(node, 'callee', 'property', 'name') === 'glob'
   );
 }
 
-function storyNode(init: unknown, bindings: Bindings): unknown {
-  if (isTemplateBind(init)) {
-    return followed(field(init, 'callee', 'object'), bindings);
+function storyNode(
+  init: unknown,
+  bindings: MuirMoiraStorybookBindings,
+): unknown {
+  if (muirMoiraStorybookIsTemplateBind(init)) {
+    return followed(
+      muirMoiraStorybookField(init, 'callee', 'object'),
+      bindings,
+    );
   }
 
-  return storyArgument(init);
+  return muirMoiraStorybookStoryArgument(init);
 }
 
-export function isTemplateBind(init: unknown): boolean {
-  const [context, ...more] = list(field(init, 'arguments'));
+export function muirMoiraStorybookIsTemplateBind(init: unknown): boolean {
+  const [context, ...more] = muirMoiraStorybookList(
+    muirMoiraStorybookField(init, 'arguments'),
+  );
 
   return (
-    field(init, 'callee', 'property', 'name') === 'bind' &&
+    muirMoiraStorybookField(init, 'callee', 'property', 'name') === 'bind' &&
     more.length === 0 &&
     (context === undefined ||
-      (isObjectLiteral(context) &&
-        list(field(context, 'properties')).length === 0))
+      (muirMoiraStorybookIsObjectLiteral(context) &&
+        muirMoiraStorybookList(muirMoiraStorybookField(context, 'properties'))
+          .length === 0))
   );
 }
 
 function objectOf(
   expression: unknown,
-  bindings: Bindings,
-): readonly ObjectLiteral[] {
-  const node = unwrap(expression);
+  bindings: MuirMoiraStorybookBindings,
+): readonly MuirMoiraStorybookObjectLiteral[] {
+  const node = muirMoiraStorybookUnwrap(expression);
 
-  if (isObjectLiteral(node)) {
+  if (muirMoiraStorybookIsObjectLiteral(node)) {
     return [node];
   }
 
-  return field(node, 'type') === 'Identifier'
+  return muirMoiraStorybookField(node, 'type') === 'Identifier'
     ? objectOf(
         followed(node, bindings),
-        withoutBinding(bindings, field(node, 'name')),
+        muirMoiraStorybookWithoutBinding(
+          bindings,
+          muirMoiraStorybookField(node, 'name'),
+        ),
       )
     : [];
 }

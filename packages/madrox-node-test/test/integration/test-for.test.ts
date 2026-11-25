@@ -1,15 +1,15 @@
 import { describe, it } from 'node:test';
 
 import { report } from '../reported.fixtures.ts';
-import { lzTestFor } from '../../src/test-for.ts';
+import { muirTestFor } from '../../src/test-for.ts';
 
-describe('lzTestFor', () => {
+describe('muirTestFor', () => {
   it("passes each case whole with the test's context, and names a missing case as no values", async (t) => {
     await t.assert.reports(() => {
-      lzTestFor([[1, 2], 'x', null])('%s and %s', (row, t) =>
+      muirTestFor([[1, 2], 'x', null])('%s and %s', (row, t) =>
         report(row, t.name),
       );
-      lzTestFor`
+      muirTestFor`
           a    | b
           ${1} | ${'x'}
         `('$a $b', (row, t) => report(row, t.name));

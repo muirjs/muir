@@ -6,7 +6,7 @@ import { describe, it, mock } from 'node:test';
 import timers from 'node:timers';
 import timersPromises from 'node:timers/promises';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
   closed,
   idle,
@@ -57,7 +57,7 @@ async function callsOf(
 describe('the timers', () => {
   const callback = () => {};
 
-  lzTestEach([
+  muirTestEach([
     [
       'pause',
       () => mock.method(timersPromises, 'setTimeout', timer),

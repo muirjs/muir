@@ -2,39 +2,39 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 import {
-  lzIsRecord,
-  lzIsStrings,
-  lzMutantKey,
-  lzParseReport,
-  type LzReport,
+  muirIsRecord,
+  muirIsStrings,
+  muirMutantKey,
+  muirParseReport,
+  type MuirReport,
 } from '../report.ts';
-import { lzSides, type LzSide } from './options.ts';
+import { muirSides, type MuirSide } from './options.ts';
 import {
-  lzDecidingFields,
-  lzParseOssResult,
-  type LzDecidingFields,
-  type LzMergeResult,
+  muirDecidingFields,
+  muirParseOssResult,
+  type MuirDecidingFields,
+  type MuirMergeResult,
 } from './result.ts';
-import { lzBySide, lzComparison, lzReportScore } from './verdicts.ts';
+import { muirBySide, muirComparison, muirReportScore } from './verdicts.ts';
 
 /** One side's report from one run. */
-interface LzBatch {
+interface MuirBatch {
   /** The result.json it came from. */
   readonly file: string;
-  readonly side: LzSide;
+  readonly side: MuirSide;
   /** Batches of one side must share it, whichever workspace commit wrote them. */
   readonly strykerConfig: string;
-  readonly report: LzReport;
+  readonly report: MuirReport;
 }
 
-interface LzRun {
+interface MuirRun {
   readonly project: string;
-  readonly deciding: ReadonlyMap<keyof LzDecidingFields, unknown>;
-  readonly reports: readonly LzBatch[];
+  readonly deciding: ReadonlyMap<keyof MuirDecidingFields, unknown>;
+  readonly reports: readonly MuirBatch[];
 }
 
 /** Merges the driver's result.json files into one comparison, written to `out`'s result.json, whose path it returns. */
-export function lzMerge(files: readonly string[], out: string): string {
+export function muirMerge(files: readonly string[], out: string): string {
   const resolved = files.map((file) => resolve(file));
   const repeated = resolved.find(
     (file, index) => resolved.indexOf(file) !== index,
@@ -61,7 +61,7 @@ export function lzMerge(files: readonly string[], out: string): string {
     throw new Error('--merge takes at least one result.json.');
   }
 
-  lzDecidingFields.forEach((field) => {
+  muirDecidingFields.forEach((field) => {
     const values = runs.map(({ deciding }) => deciding.get(field));
     const json = values.map((value) => JSON.stringify(value));
     const distinct = json.flatMap((text, index) =>
@@ -69,7 +69,7 @@ export function lzMerge(files: readonly string[], out: string): string {
     );
 
     if (distinct.length !== 1) {
-      const lists = values.filter((value) => lzIsStrings(value));
+      const lists = values.filter((value) => muirIsStrings(value));
       const entries =
         lists.length === values.length ? entriesNotInEvery(lists) : [];
       const found =
@@ -83,15 +83,15 @@ export function lzMerge(files: readonly string[], out: string): string {
 
   const { project } = first;
   const reports = runs.flatMap((run) => run.reports);
-  const merged = lzSides
+  const merged = muirSides
     .filter((side) => reports.some((report) => report.side === side))
     .map((side) => ({ side, report: reportOf(reports, side) }));
-  const result: LzMergeResult = {
+  const result: MuirMergeResult = {
     project,
     mergedFrom: files,
-    scores: lzBySide(merged, ({ report }) => lzReportScore(report)),
-    ...lzComparison(
-      lzBySide(merged, ({ report }) => ({ reported: true, report })),
+    scores: muirBySide(merged, ({ report }) => muirReportScore(report)),
+    ...muirComparison(
+      muirBySide(merged, ({ report }) => ({ reported: true, report })),
     ),
   };
 
@@ -101,12 +101,12 @@ export function lzMerge(files: readonly string[], out: string): string {
   return file;
 }
 
-function readRun(file: string): LzRun {
-  const { project, deciding, sides } = lzParseOssResult(
+function readRun(file: string): MuirRun {
+  const { project, deciding, sides } = muirParseOssResult(
     file,
     JSON.parse(readFileSync(file, 'utf8')),
   );
-  const ran = lzSides.filter((side) => side in sides);
+  const ran = muirSides.filter((side) => side in sides);
 
   if (ran.length === 0) {
     throw new Error(`${file} holds no side's results.`);
@@ -120,8 +120,8 @@ function readRun(file: string): LzRun {
       const reportFile = `${side}.mutation.json`;
 
       if (
-        !lzIsRecord(entry) ||
-        !lzIsRecord(entry['stryker']) ||
+        !muirIsRecord(entry) ||
+        !muirIsRecord(entry['stryker']) ||
         entry['stryker']['reported'] !== true
       ) {
         throw new Error(
@@ -149,7 +149,7 @@ function readRun(file: string): LzRun {
         file,
         side,
         strykerConfig,
-        report: lzParseReport(readFileSync(reportPath, 'utf8')),
+        report: muirParseReport(readFileSync(reportPath, 'utf8')),
       };
     }),
   };
@@ -167,7 +167,7 @@ function shown(value: unknown): string {
 }
 
 /** One report of all the side's batches. */
-function reportOf(reports: readonly LzBatch[], side: LzSide): LzReport {
+function reportOf(reports: readonly MuirBatch[], side: MuirSide): MuirReport {
   const ofSide = reports.filter((report) => report.side === side);
   const [first] = ofSide;
   const other = ofSide.find(
@@ -185,7 +185,7 @@ function reportOf(reports: readonly LzBatch[], side: LzSide): LzReport {
   ofSide.forEach(({ file, report }) => {
     report.forEach((mutants, path) => {
       mutants.forEach((mutant) => {
-        const key = lzMutantKey(path, mutant);
+        const key = muirMutantKey(path, mutant);
         const holder = holders.get(key);
 
         // Two mutants at one key inside one report are for the comparison to refuse.

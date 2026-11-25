@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 
 import { add, isEven } from '../src/math.ts';
 
 describe('add', () => {
-  lzTestEach([
+  muirTestEach([
     [2, 3, 5],
     [-1, 1, 0],
   ])('adds %d and %d to %d', (a, b, sum) => {
@@ -15,7 +15,7 @@ describe('add', () => {
 });
 
 describe('isEven', () => {
-  lzTestEach([
+  muirTestEach([
     [4, true],
     [5, false],
   ])('says %d is even: %s', (n, even) => {

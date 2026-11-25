@@ -6,14 +6,14 @@ import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { Worker } from 'node:worker_threads';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import {
-  installed,
-  reporting,
-  type GlobalSlots,
-  type HookDependencies,
-  type TestEvent,
-  watchdog,
+  muirSirynNodeTestInstalled,
+  muirSirynNodeTestReporting,
+  type MuirSirynNodeTestGlobalSlots,
+  type MuirSirynNodeTestHookDependencies,
+  type MuirSirynNodeTestTestEvent,
+  muirSirynNodeTestWatchdog,
 } from '../../src/hook-core.ts';
 import {
   readRecords,
@@ -29,18 +29,23 @@ import {
   shareCompileCache,
 } from '../runner.fixtures.ts';
 import {
-  envNames,
-  lzParseRecordName,
-  type ProcessRecord,
+  muirSirynNodeTestEnvNames,
+  muirSirynNodeTestParseRecordName,
+  type MuirSirynNodeTestProcessRecord,
 } from '../../src/record.ts';
-import { lzEndingSignals } from '../../src/record-writer.ts';
+import { muirSirynNodeTestEndingSignals } from '../../src/record-writer.ts';
 import reporter from '../../src/reporter.ts';
 
 // Loaded here, outside any test, the hook stays inactive (the runner did not start this process, or its own hook is
 // installed), and Stryker counts the hook's mutants as covered by every test, including those that run it in a child.
-const { activeResources, exit, later, lzEvery, lzSignals, now } = await import(
-  '../../src/hook.ts'
-);
+const {
+  muirSirynNodeTestActiveResources: activeResources,
+  muirSirynNodeTestExit: exit,
+  muirSirynNodeTestLater: later,
+  muirSirynNodeTestEvery: muirSirynNodeTestEvery,
+  muirSirynNodeTestSignals: muirSirynNodeTestSignals,
+  muirSirynNodeTestNow: now,
+} = await import('../../src/hook.ts');
 
 shareCompileCache();
 
@@ -53,20 +58,20 @@ async function loadRunnerStartedHook(
     signals: Record<string, number>;
   }
 > {
-  const global: HookDependencies['global'] = globalThis;
-  const previousMark = global[installed];
+  const global: MuirSirynNodeTestHookDependencies['global'] = globalThis;
+  const previousMark = global[muirSirynNodeTestInstalled];
   // Without a current test, the hook leaves this process's hits outside its tests in place, where the runner credits
   // them to every test of this file, instead of moving them under the current test as it does a started process's.
   const ns = global.__stryker__;
   const currentTestId = ns?.currentTestId;
-  const previousEnv = Object.values(envNames).map(
+  const previousEnv = Object.values(muirSirynNodeTestEnvNames).map(
     (key): readonly [string, string | undefined] => [key, process.env[key]],
   );
   const listeners = {
     exit: process.listeners('exit'),
     beforeExit: process.listeners('beforeExit'),
   };
-  const signalListeners = lzEndingSignals.map((signal) => ({
+  const signalListeners = muirSirynNodeTestEndingSignals.map((signal) => ({
     signal,
     before: process.listeners(signal),
   }));
@@ -75,8 +80,11 @@ async function loadRunnerStartedHook(
     Reflect.deleteProperty(process.env, key);
   }
 
-  Object.assign(process.env, { [envNames.out]: outDir, ...env });
-  Reflect.deleteProperty(global, installed);
+  Object.assign(process.env, {
+    [muirSirynNodeTestEnvNames.out]: outDir,
+    ...env,
+  });
+  Reflect.deleteProperty(global, muirSirynNodeTestInstalled);
 
   try {
     // A query of its own makes each load run the hook's module again.
@@ -91,9 +99,9 @@ async function loadRunnerStartedHook(
     }
 
     if (previousMark) {
-      global[installed] = previousMark;
+      global[muirSirynNodeTestInstalled] = previousMark;
     } else {
-      Reflect.deleteProperty(global, installed);
+      Reflect.deleteProperty(global, muirSirynNodeTestInstalled);
     }
 
     if (ns && currentTestId !== undefined) {
@@ -136,8 +144,8 @@ function takeAddedListeners(
 
 /** The record without its lifetime, once that runs from when the hook ran up to now on the clock this process reads. */
 function untimed(
-  record: ProcessRecord | undefined,
-): Omit<ProcessRecord, 'lifetime'> | undefined {
+  record: MuirSirynNodeTestProcessRecord | undefined,
+): Omit<MuirSirynNodeTestProcessRecord, 'lifetime'> | undefined {
   if (record === undefined) {
     return undefined;
   }
@@ -155,18 +163,21 @@ function untimed(
 describe('hook', () => {
   it('writes the record of a process the runner started when the process exits', async (t) => {
     const outDir = tempDir(t);
-    const bail = process.env[envNames.bail];
-    process.env[envNames.bail] = 'true';
+    const bail = process.env[muirSirynNodeTestEnvNames.bail];
+    process.env[muirSirynNodeTestEnvNames.bail] = 'true';
     t.after(() => {
       if (bail === undefined) {
-        Reflect.deleteProperty(process.env, envNames.bail);
+        Reflect.deleteProperty(process.env, muirSirynNodeTestEnvNames.bail);
       } else {
-        process.env[envNames.bail] = bail;
+        process.env[muirSirynNodeTestEnvNames.bail] = bail;
       }
     });
     const hookEnv = () =>
       Object.fromEntries(
-        Object.values(envNames).map((key) => [key, process.env[key]]),
+        Object.values(muirSirynNodeTestEnvNames).map((key) => [
+          key,
+          process.env[key],
+        ]),
       );
     const before = hookEnv();
     const added = await loadRunnerStartedHook(outDir);
@@ -212,15 +223,15 @@ describe('hook', () => {
 
   it('starts the memory watchdog, survives its failure with a line on stderr, and records the peak memory, when the runner asks', async (t) => {
     const outDir = tempDir(t);
-    const global: GlobalSlots = globalThis;
+    const global: MuirSirynNodeTestGlobalSlots = globalThis;
     const unref = t.mock.method(Worker.prototype, 'unref');
 
     const added = await loadRunnerStartedHook(outDir, {
-      [envNames.dryRun]: 'true',
-      [envNames.memoryLimit]: '1000000',
+      [muirSirynNodeTestEnvNames.dryRun]: 'true',
+      [muirSirynNodeTestEnvNames.memoryLimit]: '1000000',
     });
 
-    const watching = global[watchdog];
+    const watching = global[muirSirynNodeTestWatchdog];
     assert.ok(watching instanceof Worker, String(watching));
     t.after(() => watching.terminate());
     assert.deepEqual(
@@ -236,10 +247,10 @@ describe('hook', () => {
       stderr.mock.calls.map((call) => call.arguments),
       [
         [
-          'lz-node-test: the memory watchdog failed, so no memory limit guards this process: preload failed\n',
+          'muir-siryn-node-test: the memory watchdog failed, so no memory limit guards this process: preload failed\n',
         ],
         [
-          "lz-node-test: the memory watchdog failed, so no memory limit guards this process: 'thrown string'\n",
+          "muir-siryn-node-test: the memory watchdog failed, so no memory limit guards this process: 'thrown string'\n",
         ],
       ],
     );
@@ -280,7 +291,7 @@ describe('hook', () => {
     assert.equal(record?.main, true);
     assert.deepEqual(
       workers.map(([name, worker]) => {
-        const parsed = lzParseRecordName(name);
+        const parsed = muirSirynNodeTestParseRecordName(name);
 
         return [
           parsed?.pid === pid && parsed.thread !== 0,
@@ -342,17 +353,17 @@ describe('hook', () => {
     );
     const callback = () => {};
 
-    lzEvery(callback, 250);
+    muirSirynNodeTestEvery(callback, 250);
 
     assert.deepEqual([timers, unrefs], [[[callback, 250]], 1]);
   });
 
   it('gives no signals on Windows, where every kill is TerminateProcess', () => {
-    assert.equal(lzSignals('win32'), undefined);
+    assert.equal(muirSirynNodeTestSignals('win32'), undefined);
   });
 
   it("listens for, counts and stops listening for the process's signals on POSIX", (t) => {
-    const signals = lzSignals('linux');
+    const signals = muirSirynNodeTestSignals('linux');
     assert.ok(signals);
     const listener = () => {};
     const before = process.listenerCount('SIGHUP');
@@ -374,7 +385,7 @@ describe('hook', () => {
   });
 
   it("finds the emitters of signal-exit's versions 4 and 3 on POSIX", (t) => {
-    const signals = lzSignals('linux');
+    const signals = muirSirynNodeTestSignals('linux');
     assert.ok(signals);
     const version4Key = Symbol.for('signal-exit emitter');
     const version3Key = '__signal_exit_emitter__';
@@ -395,7 +406,7 @@ describe('hook', () => {
   });
 
   it('sends the process a signal again on POSIX', (t) => {
-    const signals = lzSignals('linux');
+    const signals = muirSirynNodeTestSignals('linux');
     assert.ok(signals);
     const kills: unknown[] = [];
     t.mock.method(process, 'kill', (pid: number, signal?: string | number) => {
@@ -436,7 +447,7 @@ describe('hook', () => {
   const leavesServer = (name: string, then = '') =>
     `it('${name}', async () => { await new Promise((resolve) => createServer().listen(0, resolve)); ${then} });`;
 
-  lzTestFor<
+  muirTestFor<
     readonly [
       string,
       {
@@ -481,7 +492,7 @@ describe('hook', () => {
           "import { createServer } from 'node:http';",
           leavesServer(name, then),
         ),
-        { env: { [envNames.heldOpen]: heldOpenMs } },
+        { env: { [muirSirynNodeTestEnvNames.heldOpen]: heldOpenMs } },
       );
 
       assert.equal(code, exitCode);
@@ -512,7 +523,7 @@ describe('hook', () => {
         t,
         fixture("it('passes', () => {});"),
         {
-          env: { [envNames.heldOpen]: '60000' },
+          env: { [muirSirynNodeTestEnvNames.heldOpen]: '60000' },
         },
       );
 
@@ -525,7 +536,7 @@ describe('hook', () => {
     const { code, testFile, records, record } = await runTestFile(
       t,
       fixture("it('covers', () => { cover('fixture-1'); });"),
-      { env: { [envNames.dryRun]: 'true' } },
+      { env: { [muirSirynNodeTestEnvNames.dryRun]: 'true' } },
     );
 
     assert.equal(code, 0);
@@ -559,7 +570,7 @@ describe('hook', () => {
         "required.it('required it', cover);",
         '',
       ].join('\n'),
-      { env: { [envNames.dryRun]: 'true' } },
+      { env: { [muirSirynNodeTestEnvNames.dryRun]: 'true' } },
     );
 
     assert.equal(code, 0);
@@ -581,7 +592,7 @@ describe('hook', () => {
     assert.deepEqual(Object.keys(record.mutantCoverage?.perTest ?? {}), ids);
   });
 
-  lzTestFor<readonly [string, string, Record<string, unknown>]>([
+  muirTestFor<readonly [string, string, Record<string, unknown>]>([
     ['ends by itself', '', {}],
     ['ends through process.exit()', 'process.exit(0);\n', { unfinished: true }],
   ])(
@@ -628,7 +639,7 @@ describe('hook', () => {
     );
   };
 
-  lzTestFor<
+  muirTestFor<
     readonly [string, string, string, { line: number; column: number }]
   >([
     [
@@ -740,8 +751,8 @@ describe('hook', () => {
     const outDir = tempDir(t);
 
     const { code, pid } = await runWithHook(['-e', 'process.exitCode = 0'], {
-      [envNames.out]: outDir,
-      [envNames.file]: join(outDir, 'some.test.mjs'),
+      [muirSirynNodeTestEnvNames.out]: outDir,
+      [muirSirynNodeTestEnvNames.file]: join(outDir, 'some.test.mjs'),
     });
     const records = readRecords(outDir);
     const record = recordOf(records, pid, 0);
@@ -751,7 +762,7 @@ describe('hook', () => {
     assert.deepEqual(untimed(record), { tests: [] });
   });
 
-  lzTestFor<readonly [string, Record<string, string>]>([
+  muirTestFor<readonly [string, Record<string, string>]>([
     ['', {}],
     // The watchdog's thread gets none of the process's environment, so it stays CommonJS.
     [' run as an ES module', { NODE_OPTIONS: '--input-type=module' }],
@@ -761,8 +772,8 @@ describe('hook', () => {
       const outDir = tempDir(t);
 
       const { code, pid } = await runWithHook(['-e', grows], {
-        [envNames.out]: outDir,
-        [envNames.memoryLimit]: '200',
+        [muirSirynNodeTestEnvNames.out]: outDir,
+        [muirSirynNodeTestEnvNames.memoryLimit]: '200',
         ...env,
       });
 
@@ -789,8 +800,8 @@ describe('hook', () => {
     const outDir = tempDir(t);
 
     const { pid } = await runWithHook(['-e', 'new Int32Array(25e6).fill(1);'], {
-      [envNames.out]: outDir,
-      [envNames.dryRun]: 'true',
+      [muirSirynNodeTestEnvNames.out]: outDir,
+      [muirSirynNodeTestEnvNames.dryRun]: 'true',
     });
 
     const peakMB = recordOf(readRecords(outDir), pid, 0)?.peakMemoryMB;
@@ -804,7 +815,7 @@ describe('hook', () => {
   it("watches memory from the main thread only, not from a test's own worker threads", async (t) => {
     const dir = tempDir(t);
     const outDir = tempDir(t);
-    const symbol = `Symbol.for(${JSON.stringify(watchdog.description)})`;
+    const symbol = `Symbol.for(${JSON.stringify(muirSirynNodeTestWatchdog.description)})`;
     writeFileSync(
       join(dir, 'worker.mjs'),
       `import { parentPort } from 'node:worker_threads';\nparentPort.postMessage(globalThis[${symbol}] !== undefined);\n`,
@@ -825,14 +836,14 @@ describe('hook', () => {
     );
 
     const { code } = await runWithHook([join(dir, 'main.mjs')], {
-      [envNames.out]: outDir,
-      [envNames.memoryLimit]: '1500',
+      [muirSirynNodeTestEnvNames.out]: outDir,
+      [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
     });
 
     assert.equal(code, 0);
   });
 
-  lzTestFor([
+  muirTestFor([
     ['the arguments', true],
     ['NODE_OPTIONS', false],
   ])(
@@ -850,8 +861,8 @@ describe('hook', () => {
       const { code } = await runWithHook(
         inArgs ? ['--require', preload, ...script] : script,
         {
-          [envNames.out]: outDir,
-          [envNames.memoryLimit]: '1500',
+          [muirSirynNodeTestEnvNames.out]: outDir,
+          [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
           ...(!inArgs && {
             NODE_OPTIONS: `--require ${JSON.stringify(preload)}`,
           }),
@@ -871,8 +882,8 @@ describe('hook', () => {
     writeFileSync(join(dir, 'chdir.cjs'), 'process.chdir(__dirname);\n');
 
     const { code, pid } = await runWithHook(['-e', grows], {
-      [envNames.out]: outDir,
-      [envNames.memoryLimit]: '200',
+      [muirSirynNodeTestEnvNames.out]: outDir,
+      [muirSirynNodeTestEnvNames.memoryLimit]: '200',
       NODE_OPTIONS: `--require ${JSON.stringify(join(dir, 'chdir.cjs'))}`,
     });
 
@@ -894,8 +905,8 @@ describe('hook', () => {
     ];
 
     const { code, pid } = await runWithHook(args, {
-      [envNames.out]: outDir,
-      [envNames.memoryLimit]: '1500',
+      [muirSirynNodeTestEnvNames.out]: outDir,
+      [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
     });
     const records = readRecords(outDir);
 
@@ -909,8 +920,8 @@ describe('hook', () => {
     const outDir = join(tempDir(t), 'removed');
 
     const { code } = await runWithHook(['-e', 'void 0'], {
-      [envNames.out]: outDir,
-      [envNames.file]: join(outDir, 'some.test.mjs'),
+      [muirSirynNodeTestEnvNames.out]: outDir,
+      [muirSirynNodeTestEnvNames.file]: join(outDir, 'some.test.mjs'),
     });
 
     assert.equal(code, 0);
@@ -922,7 +933,9 @@ describe('hook', () => {
     // A script that sets process.exitCode would hide a throw from the exit listener: the process still exits 0.
     const args = ['--permission', '--allow-fs-read=*', '-e', 'void 0'];
 
-    const { code } = await runWithHook(args, { [envNames.out]: outDir });
+    const { code } = await runWithHook(args, {
+      [muirSirynNodeTestEnvNames.out]: outDir,
+    });
 
     assert.equal(code, 0);
     assert.deepEqual(readRecords(outDir), {});
@@ -931,27 +944,27 @@ describe('hook', () => {
 
 describe('reporter', () => {
   it('passes each event to the hook of the test file, and ignores the events of other processes', () => {
-    const global: HookDependencies['global'] = globalThis;
-    const previous = global[reporting];
-    const events: TestEvent[] = [];
+    const global: MuirSirynNodeTestHookDependencies['global'] = globalThis;
+    const previous = global[muirSirynNodeTestReporting];
+    const events: MuirSirynNodeTestTestEvent[] = [];
     const errors: unknown[] = [];
-    const event = (name: string): TestEvent => ({
+    const event = (name: string): MuirSirynNodeTestTestEvent => ({
       type: 'test:start',
       data: { name, nesting: 0 },
     });
     reporter.on('error', (error) => errors.push(error));
 
     try {
-      global[reporting] = (received) => events.push(received);
+      global[muirSirynNodeTestReporting] = (received) => events.push(received);
       reporter.write(event('first'));
       reporter.write(event('second'));
-      Reflect.deleteProperty(global, reporting);
+      Reflect.deleteProperty(global, muirSirynNodeTestReporting);
       reporter.write(event('elsewhere'));
     } finally {
       if (previous === undefined) {
-        Reflect.deleteProperty(global, reporting);
+        Reflect.deleteProperty(global, muirSirynNodeTestReporting);
       } else {
-        global[reporting] = previous;
+        global[muirSirynNodeTestReporting] = previous;
       }
     }
 

@@ -4,8 +4,8 @@ import base from './stryker.base.ts';
 export default {
   ...base,
   appendPlugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
-  lzPlaywright: {
+  testRunner: 'muir-siryn-playwright',
+  muirSirynPlaywright: {
     configFile: 'apps/demo-app/playwright.components.config.mts',
   },
   mutate: ['apps/demo-app/src/app/price-tag.tsx'],

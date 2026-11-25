@@ -1,4 +1,4 @@
-import { isRecord } from './is-record.ts';
+import { muirSirynPlaywrightIsRecord } from './is-record.ts';
 
 type Writable<T> = { -readonly [K in keyof T]: T[K] };
 
@@ -6,7 +6,8 @@ type Writable<T> = { -readonly [K in keyof T]: T[K] };
  * The global that Stryker's instrumented code and the hooks share, in a worker, a page or a server.
  * Instrumented code may create it first, so each field claims nothing.
  */
-export type StrykerNamespace = Writable<StrykerNamespaceFields>;
+export type MuirSirynPlaywrightStrykerNamespace =
+  Writable<StrykerNamespaceFields>;
 
 interface StrykerNamespaceFields {
   readonly activeMutant?: unknown;
@@ -23,7 +24,9 @@ interface StrykerNamespaceFields {
  * (`instrumentationBabelHeader` in @stryker-mutator/instrumenter's src/util/syntax-helpers.ts, 10.1.1), and the
  * runner only writes it, so its first read marks the namespace instrumented.
  */
-export function markInstrumentedReads(namespace: StrykerNamespace): void {
+export function muirSirynPlaywrightMarkInstrumentedReads(
+  namespace: MuirSirynPlaywrightStrykerNamespace,
+): void {
   let activeMutant = namespace.activeMutant;
   Object.defineProperty(namespace, 'activeMutant', {
     get: () => {
@@ -37,15 +40,17 @@ export function markInstrumentedReads(namespace: StrykerNamespace): void {
   });
 }
 
-export function globalNamespace(name: string): StrykerNamespace {
+export function muirSirynPlaywrightGlobalNamespace(
+  name: string,
+): MuirSirynPlaywrightStrykerNamespace {
   const scope: Record<string, unknown> = globalThis;
   const found = scope[name];
 
-  if (isRecord(found)) {
+  if (muirSirynPlaywrightIsRecord(found)) {
     return found;
   }
 
-  const created: StrykerNamespace = {};
+  const created: MuirSirynPlaywrightStrykerNamespace = {};
   scope[name] = created;
 
   return created;

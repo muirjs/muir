@@ -1,9 +1,9 @@
 import type { Case } from './cases.ts';
 
-const sleep = 'LzPlaywrightSleepWait';
-const state = 'LzPlaywrightStateWait';
-const network = 'LzPlaywrightNetworkWait';
-const clock = 'LzPlaywrightClock';
+const sleep = 'MuirProteusPlaywrightSleepWait';
+const state = 'MuirProteusPlaywrightStateWait';
+const network = 'MuirProteusPlaywrightNetworkWait';
+const clock = 'MuirProteusPlaywrightClock';
 
 function inTest(statement: string): string {
   return `test('case', async ({ page }) => {\n  ${statement}\n});`;

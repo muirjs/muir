@@ -1,12 +1,12 @@
 import { globSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { LzOssPatch } from './options.ts';
+import type { MuirOssPatch } from './options.ts';
 
 /** Makes each patch in the project's copy, refusing one whose `from` is not in its file exactly once. */
-export function lzApplyPatches(
+export function muirApplyPatches(
   dir: string,
-  patches: readonly LzOssPatch[],
+  patches: readonly MuirOssPatch[],
 ): void {
   patches.forEach(({ file, from, to }) => {
     const path = join(dir, file);
@@ -34,7 +34,7 @@ const fileWrite =
  * sandbox, so such a test can collide with itself in another worker when it writes a fixed path; this flags the file
  * for a look, it cannot tell a fixed path from a unique one. `patched` names the files a patch already deals with.
  */
-export function lzFileWriters(
+export function muirFileWriters(
   dir: string,
   testFiles: readonly string[],
   patched: readonly string[],

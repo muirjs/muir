@@ -1,66 +1,70 @@
 import {
-  csfShapes,
-  field,
-  type Interaction,
-  interactionsOf,
-  type StoryInteractions,
+  muirMoiraStorybookCsfShapes,
+  muirMoiraStorybookField,
+  type MuirMoiraStorybookInteraction,
+  muirMoiraStorybookInteractionsOf,
+  type MuirMoiraStorybookStoryInteractions,
 } from '@muirjs/moira-storybook';
 import type { schema } from '@stryker-mutator/api/core';
 
-import { type InteractionShape, shapesOf } from './interaction-shapes.ts';
-import { packageName } from './package-name.ts';
-import { parseProgram } from './parse.ts';
-import { storybookPluginName } from './stub-verdict.ts';
+import {
+  type MuirShadowcatStorybookInteractionShape,
+  muirShadowcatStorybookShapesOf,
+} from './interaction-shapes.ts';
+import { muirShadowcatStorybookPackageName } from './package-name.ts';
+import { muirShadowcatStorybookParseProgram } from './parse.ts';
+import { muirShadowcatStorybookPluginName } from './stub-verdict.ts';
 
-export const interactionMutatorNames = [
-  'LzStorybookInteraction',
-  'LzStorybookClickFocus',
-  'LzStorybookInteractionRepeat',
-  'LzStorybookInteractionTarget',
-  'LzStorybookAssertionBefore',
+export const muirShadowcatStorybookInteractionMutatorNames = [
+  'MuirProteusStorybookTestInteraction',
+  'MuirProteusStorybookTestClickFocus',
+  'MuirProteusStorybookTestInteractionRepeat',
+  'MuirProteusStorybookTestInteractionTarget',
+  'MuirProteusStorybookTestAssertionBefore',
 ] as const;
 
-type InteractionMutatorName = (typeof interactionMutatorNames)[number];
+type InteractionMutatorName =
+  (typeof muirShadowcatStorybookInteractionMutatorNames)[number];
 
-export interface InteractionHint {
+export interface MuirShadowcatStorybookInteractionHint {
   readonly file: string;
   readonly line: number;
-  readonly shape: InteractionShape;
+  readonly shape: MuirShadowcatStorybookInteractionShape;
   readonly mutatorNames: readonly InteractionMutatorName[];
   readonly reason: string;
   readonly fix: string;
   readonly comment: string;
 }
 
-export type ReportMutant = Pick<
+export type MuirShadowcatStorybookReportMutant = Pick<
   schema.MutantResult,
   'mutatorName' | 'status' | 'location'
 >;
 
-export type ReportFiles = Readonly<
+export type MuirShadowcatStorybookReportFiles = Readonly<
   Record<
     string,
     Pick<schema.FileResult, 'source'> & {
-      readonly mutants: readonly ReportMutant[];
+      readonly mutants: readonly MuirShadowcatStorybookReportMutant[];
     }
   >
 >;
 
 /** A surviving interaction mutant, with the shape of the interaction it belongs to. */
 interface ShapedSurvivor {
-  readonly mutant: ReportMutant;
+  readonly mutant: MuirShadowcatStorybookReportMutant;
   readonly name: InteractionMutatorName;
-  readonly shape: InteractionShape;
+  readonly shape: MuirShadowcatStorybookInteractionShape;
 }
 
 /**
  * One hint per line and shape of the surviving interaction mutants in `files`; `warn` names each file or survivor that
  * gets none for a reason the run should show.
  */
-export function interactionHints(
-  files: ReportFiles,
+export function muirShadowcatStorybookInteractionHints(
+  files: MuirShadowcatStorybookReportFiles,
   warn: (message: string) => void,
-): readonly InteractionHint[] {
+): readonly MuirShadowcatStorybookInteractionHint[] {
   return Object.entries(files).flatMap(([file, { source, mutants }]) => {
     const survivors = mutants.flatMap((mutant) => {
       const name = survivingName(mutant);
@@ -89,13 +93,16 @@ export function interactionHints(
       if (statement === undefined) {
         const { line, column } = mutant.location.start;
         warn(
-          `${packageName}: ${file}:${line}:${column} has a surviving interaction mutant outside every interaction, so lz-storybook gave it no interaction hint`,
+          `${muirShadowcatStorybookPackageName}: ${file}:${line}:${column} has a surviving interaction mutant outside every interaction, so muir-shadowcat-storybook gave it no interaction hint`,
         );
 
         return [];
       }
 
-      const [shape] = shapesOf(statement.interaction, interactions);
+      const [shape] = muirShadowcatStorybookShapesOf(
+        statement.interaction,
+        interactions,
+      );
 
       return shape === undefined ? [] : [{ mutant, name, shape }];
     });
@@ -108,9 +115,11 @@ export function interactionHints(
 function survivingName({
   mutatorName,
   status,
-}: ReportMutant): InteractionMutatorName | undefined {
+}: MuirShadowcatStorybookReportMutant): InteractionMutatorName | undefined {
   return status === 'Survived'
-    ? interactionMutatorNames.find((name) => name === mutatorName)
+    ? muirShadowcatStorybookInteractionMutatorNames.find(
+        (name) => name === mutatorName,
+      )
     : undefined;
 }
 
@@ -119,24 +128,28 @@ function interactionsOfSource(
   source: string,
   file: string,
   warn: (message: string) => void,
-): StoryInteractions | undefined {
-  let program: ReturnType<typeof parseProgram>;
+): MuirMoiraStorybookStoryInteractions | undefined {
+  let program: ReturnType<typeof muirShadowcatStorybookParseProgram>;
 
   try {
-    program = parseProgram(source, file);
+    program = muirShadowcatStorybookParseProgram(source, file);
   } catch (error) {
     warn(
-      `${packageName}: Babel could not parse ${file}, so lz-storybook gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
+      `${muirShadowcatStorybookPackageName}: Babel could not parse ${file}, so muir-shadowcat-storybook gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
     );
 
     return undefined;
   }
 
-  return skippedOnRangeError(
-    () => interactionsOf(program, csfShapes(program)),
+  return muirShadowcatStorybookSkippedOnRangeError(
+    () =>
+      muirMoiraStorybookInteractionsOf(
+        program,
+        muirMoiraStorybookCsfShapes(program),
+      ),
     (message) =>
       warn(
-        `${packageName}: lz-storybook could not read the interactions of ${file}, so it gave no interaction hints for it: ${message}`,
+        `${muirShadowcatStorybookPackageName}: muir-shadowcat-storybook could not read the interactions of ${file}, so it gave no interaction hints for it: ${message}`,
       ),
   );
 }
@@ -146,7 +159,7 @@ function interactionsOfSource(
  * overflows the stack with one, but a reader bug such as `'x'.repeat(-1)` is skipped the same way. Any other error
  * propagates.
  */
-export function skippedOnRangeError<T>(
+export function muirShadowcatStorybookSkippedOnRangeError<T>(
   read: () => T,
   warn: (message: string) => void,
 ): T | undefined {
@@ -165,7 +178,7 @@ export function skippedOnRangeError<T>(
 
 /** An interaction with the range of its statement in the report. */
 interface InteractionStatement {
-  readonly interaction: Interaction;
+  readonly interaction: MuirMoiraStorybookInteraction;
   readonly location: schema.Location;
 }
 
@@ -192,13 +205,15 @@ function isBefore(first: schema.Position, second: schema.Position): boolean {
 }
 
 /** The report's 1-based range of an interaction's statement, whose Babel columns are 0-based; `undefined` for a statement with no `loc`. */
-function locationOf(node: Interaction['node']): schema.Location | undefined {
-  const start = field(node, 'loc', 'start');
-  const end = field(node, 'loc', 'end');
-  const startLine = field(start, 'line');
-  const startColumn = field(start, 'column');
-  const endLine = field(end, 'line');
-  const endColumn = field(end, 'column');
+function locationOf(
+  node: MuirMoiraStorybookInteraction['node'],
+): schema.Location | undefined {
+  const start = muirMoiraStorybookField(node, 'loc', 'start');
+  const end = muirMoiraStorybookField(node, 'loc', 'end');
+  const startLine = muirMoiraStorybookField(start, 'line');
+  const startColumn = muirMoiraStorybookField(start, 'column');
+  const endLine = muirMoiraStorybookField(end, 'line');
+  const endColumn = muirMoiraStorybookField(end, 'column');
 
   return typeof startLine === 'number' &&
     typeof startColumn === 'number' &&
@@ -216,16 +231,16 @@ function locationOf(node: Interaction['node']): schema.Location | undefined {
 /** The survivors that share a line and a shape. */
 interface HintGroup {
   readonly line: number;
-  readonly shape: InteractionShape;
+  readonly shape: MuirShadowcatStorybookInteractionShape;
   readonly members: readonly ShapedSurvivor[];
 }
 
 /** One hint per line and shape, naming only the mutators whose every placed mutant on that line is in it. */
 function groupedHints(
   file: string,
-  mutants: readonly ReportMutant[],
+  mutants: readonly MuirShadowcatStorybookReportMutant[],
   shaped: readonly ShapedSurvivor[],
-): readonly InteractionHint[] {
+): readonly MuirShadowcatStorybookInteractionHint[] {
   const groups = new Map<string, HintGroup>();
   shaped.forEach((survivor) => {
     const line = survivor.mutant.location.start.line;
@@ -239,7 +254,7 @@ function groupedHints(
 
   return [...groups.values()].flatMap(({ line, shape, members }) => {
     // A next-line comment disables every mutant of a named mutator that starts on its line.
-    const names = interactionMutatorNames.filter(
+    const names = muirShadowcatStorybookInteractionMutatorNames.filter(
       (name) =>
         members.some((member) => member.name === name) &&
         mutants
@@ -260,7 +275,7 @@ function groupedHints(
 
 const shapeTexts: Readonly<
   Record<
-    InteractionShape,
+    MuirShadowcatStorybookInteractionShape,
     { readonly reason: string; readonly fix: string; readonly short: string }
   >
 > = {
@@ -287,9 +302,9 @@ const shapeTexts: Readonly<
 function hintOf(
   file: string,
   line: number,
-  shape: InteractionShape,
+  shape: MuirShadowcatStorybookInteractionShape,
   mutatorNames: readonly InteractionMutatorName[],
-): InteractionHint {
+): MuirShadowcatStorybookInteractionHint {
   const { reason, fix, short } = shapeTexts[shape];
 
   return {
@@ -299,6 +314,6 @@ function hintOf(
     mutatorNames,
     reason,
     fix,
-    comment: `// Stryker disable next-line ${mutatorNames.join(', ')}: ${storybookPluginName}: ${shape}: ${short}`,
+    comment: `// Stryker disable next-line ${mutatorNames.join(', ')}: ${muirShadowcatStorybookPluginName}: ${shape}: ${short}`,
   };
 }

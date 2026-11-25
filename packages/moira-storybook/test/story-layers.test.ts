@@ -1,44 +1,53 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { topLevelBindings } from '../src/csf.ts';
-import { field } from '../src/node-field.ts';
+import { muirMoiraStorybookTopLevelBindings } from '../src/csf.ts';
+import { muirMoiraStorybookField } from '../src/node-field.ts';
 import {
-  isObjectLiteral,
-  objectValue,
-  unknownValue,
+  muirMoiraStorybookIsObjectLiteral,
+  muirMoiraStorybookObjectValue,
+  muirMoiraStorybookUnknownValue,
 } from '../src/object-value.ts';
 import {
-  asWrittenLayer,
-  rootLayer,
-  valuesOf,
-  type Layer,
+  muirMoiraStorybookAsWrittenLayer,
+  muirMoiraStorybookRootLayer,
+  muirMoiraStorybookValuesOf,
+  type MuirMoiraStorybookLayer,
 } from '../src/resolved-values.ts';
-import { extendLevels } from '../src/story-layers.ts';
+import { muirMoiraStorybookExtendLevels } from '../src/story-layers.ts';
 import { bodyOf } from './support/parse-module.ts';
 
 function rootLayers(
   bindings: ReadonlyMap<string, unknown>,
   written: ReadonlySet<unknown>,
-): readonly Layer[] {
-  return extendLevels(bindings.get('B'), 'B', bindings).map((level) =>
-    level === unknownValue
-      ? level
-      : rootLayer(level.argument, level.owner, written, level.bindings),
+): readonly MuirMoiraStorybookLayer[] {
+  return muirMoiraStorybookExtendLevels(bindings.get('B'), 'B', bindings).map(
+    (level) =>
+      level === muirMoiraStorybookUnknownValue
+        ? level
+        : muirMoiraStorybookRootLayer(
+            level.argument,
+            level.owner,
+            written,
+            level.bindings,
+          ),
   );
 }
 
 function storyGlobals(source: readonly string[]): readonly unknown[] {
-  const bindings = topLevelBindings(bodyOf(...source));
+  const bindings = muirMoiraStorybookTopLevelBindings(bodyOf(...source));
 
   return rootLayers(bindings, new Set()).map(
-    (layer) => valuesOf(layer, 'globals')[0],
+    (layer) => muirMoiraStorybookValuesOf(layer, 'globals')[0],
   );
 }
 
 function localeOf(globals: unknown): unknown {
-  return isObjectLiteral(globals)
-    ? field(objectValue(globals, 'locale'), 'value')
+  return muirMoiraStorybookIsObjectLiteral(globals)
+    ? muirMoiraStorybookField(
+        muirMoiraStorybookObjectValue(globals, 'locale'),
+        'value',
+      )
     : globals;
 }
 
@@ -67,20 +76,31 @@ describe('extendLevels', () => {
   });
 
   it('reads a story the file writes as unknown through its root, and as its literal as written', () => {
-    const bindings = topLevelBindings(
+    const bindings = muirMoiraStorybookTopLevelBindings(
       bodyOf(
         "export const B = { globals: { locale: 'de' } };",
         "B.globals.locale = 'fr';",
       ),
     );
-    const typesOf = (layers: readonly Layer[]) =>
-      layers.map((layer) => field(valuesOf(layer, 'globals')[0], 'type'));
-    const [own] = extendLevels(bindings.get('B'), 'B', bindings);
+    const typesOf = (layers: readonly MuirMoiraStorybookLayer[]) =>
+      layers.map((layer) =>
+        muirMoiraStorybookField(
+          muirMoiraStorybookValuesOf(layer, 'globals')[0],
+          'type',
+        ),
+      );
+    const [own] = muirMoiraStorybookExtendLevels(
+      bindings.get('B'),
+      'B',
+      bindings,
+    );
 
     assert.deepEqual(
       {
         root: typesOf(rootLayers(bindings, new Set(['B']))),
-        asWritten: typesOf([asWrittenLayer(own.argument, own.bindings)]),
+        asWritten: typesOf([
+          muirMoiraStorybookAsWrittenLayer(own.argument, own.bindings),
+        ]),
       },
       { root: [undefined], asWritten: ['ObjectExpression'] },
     );
@@ -92,7 +112,7 @@ describe('extendLevels', () => {
         "import { A } from './a';",
         "export const B = A.extend({ globals: { locale: 'fr' } });",
       ]).slice(1),
-      [unknownValue],
+      [muirMoiraStorybookUnknownValue],
     );
   });
 });

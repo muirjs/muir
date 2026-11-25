@@ -5,9 +5,9 @@ import path from 'node:path';
 import { type TestContext, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { fieldOf } from '../src/is-record.ts';
-import { loadPlaywright } from '../src/playwright-internals.ts';
-import { serverTarget } from '../src/server-checks.ts';
+import { muirSirynPlaywrightFieldOf } from '../src/is-record.ts';
+import { muirSirynPlaywrightLoadPlaywright } from '../src/playwright-internals.ts';
+import { muirSirynPlaywrightServerTarget } from '../src/server-checks.ts';
 import { tempTree } from './support/doubles.ts';
 
 type Decision =
@@ -19,13 +19,13 @@ type Decision =
     )[];
 
 const packageJson = fileURLToPath(new URL('../package.json', import.meta.url));
-const playwright = loadPlaywright(packageJson);
+const playwright = muirSirynPlaywrightLoadPlaywright(packageJson);
 const playwrightRequire = createRequire(
   createRequire(packageJson).resolve('@playwright/test'),
 );
 
 function writeConfig(t: TestContext, webServer: string): string {
-  const dir = tempTree(t, 'lz-web-server-', {
+  const dir = tempTree(t, 'muir-web-server-', {
     'playwright.config.cjs': `module.exports = { webServer: ${webServer} };\n`,
   });
 
@@ -35,9 +35,15 @@ function writeConfig(t: TestContext, webServer: string): string {
 async function playwrightDecision(configFile: string): Promise<Decision> {
   const runnerModule: unknown = playwrightRequire('playwright/lib/runner');
   const commonModule: unknown = playwrightRequire('playwright/lib/common');
-  const TestRunner = fieldOf(fieldOf(runnerModule, 'testRunner'), 'TestRunner');
-  const configLoader = fieldOf(commonModule, 'configLoader');
-  const resolveConfigLocation = fieldOf(configLoader, 'resolveConfigLocation');
+  const TestRunner = muirSirynPlaywrightFieldOf(
+    muirSirynPlaywrightFieldOf(runnerModule, 'testRunner'),
+    'TestRunner',
+  );
+  const configLoader = muirSirynPlaywrightFieldOf(commonModule, 'configLoader');
+  const resolveConfigLocation = muirSirynPlaywrightFieldOf(
+    configLoader,
+    'resolveConfigLocation',
+  );
   assert.ok(
     typeof TestRunner === 'function' &&
       typeof resolveConfigLocation === 'function',
@@ -46,7 +52,7 @@ async function playwrightDecision(configFile: string): Promise<Decision> {
     Reflect.apply(resolveConfigLocation, configLoader, [configFile]),
     {},
   ]);
-  const loadConfig = fieldOf(runner, 'loadConfig');
+  const loadConfig = muirSirynPlaywrightFieldOf(runner, 'loadConfig');
   assert.ok(typeof loadConfig === 'function');
   let config: unknown;
 
@@ -56,16 +62,19 @@ async function playwrightDecision(configFile: string): Promise<Decision> {
     return 'refused';
   }
 
-  const plugins = fieldOf(config, 'plugins');
+  const plugins = muirSirynPlaywrightFieldOf(config, 'plugins');
   assert.ok(Array.isArray(plugins));
 
   // Playwright's WebServerPlugin checks the url's port when checkPortOnly is set, else the url itself.
   return plugins
-    .map((plugin: unknown) => fieldOf(plugin, 'factory'))
-    .filter((factory) => fieldOf(factory, 'name') === 'playwright:webserver')
+    .map((plugin: unknown) => muirSirynPlaywrightFieldOf(plugin, 'factory'))
+    .filter(
+      (factory) =>
+        muirSirynPlaywrightFieldOf(factory, 'name') === 'playwright:webserver',
+    )
     .map((factory) => {
-      const options = fieldOf(factory, '_options');
-      const url = fieldOf(options, 'url');
+      const options = muirSirynPlaywrightFieldOf(factory, '_options');
+      const url = muirSirynPlaywrightFieldOf(options, 'url');
 
       if (url === undefined || url === '') {
         return undefined;
@@ -74,11 +83,12 @@ async function playwrightDecision(configFile: string): Promise<Decision> {
       assert.ok(typeof url === 'string' || url instanceof URL);
       const target = new URL(url);
 
-      return fieldOf(factory, '_checkPortOnly') === true
+      return muirSirynPlaywrightFieldOf(factory, '_checkPortOnly') === true
         ? { port: Number(target.port) }
         : {
             url: target.href,
-            ignoreHTTPSErrors: fieldOf(options, 'ignoreHTTPSErrors') === true,
+            ignoreHTTPSErrors:
+              muirSirynPlaywrightFieldOf(options, 'ignoreHTTPSErrors') === true,
           };
     });
 }
@@ -94,7 +104,7 @@ async function runnerDecision(configFile: string): Promise<Decision> {
   }
 
   return webServers.map((server) => {
-    const target = serverTarget(server);
+    const target = muirSirynPlaywrightServerTarget(server);
 
     if (target === undefined) {
       return undefined;

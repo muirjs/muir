@@ -1,11 +1,14 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  lzImportOf,
-  lzPropertyName,
-  type LzMutator,
+  muirMoiraNodeTestImportOf,
+  muirMoiraNodeTestPropertyName,
+  type MuirMoiraNodeTestMutator,
 } from '@muirjs/moira-node-test';
-import { lzAssertMethod, lzNodeTest } from '@muirjs/proteus-node/bindings';
+import {
+  muirProteusNodeAssertMethod,
+  muirProteusNodeNodeTest,
+} from '@muirjs/proteus-node/bindings';
 
 const message = 'Stryker';
 const testFunctions: ReadonlySet<string | undefined> = new Set(['it', 'test']);
@@ -24,8 +27,8 @@ const matcherTypes: ReadonlySet<string> = new Set([
  * `expectFailure` names what the failure must match, throw an unrelated error, so a survivor is a validator that
  * accepts any error.
  */
-export const nodeTestAssertValidator: LzMutator = {
-  name: 'LzNodeTestAssertValidator',
+export const muirProteusNodeTestAssertValidator: MuirMoiraNodeTestMutator = {
+  name: 'MuirProteusNodeTestAssertValidator',
   sample:
     "import assert from 'node:assert/strict';\n\nassert.throws(() => {}, /x/);\n",
   *mutate(path, t) {
@@ -62,7 +65,7 @@ function checkedBy(
   call: types.CallExpression,
 ): string | undefined {
   if (path.key === 0) {
-    return lzAssertMethod(path, call.callee);
+    return muirProteusNodeAssertMethod(path, call.callee);
   }
 
   return path.key === call.arguments.length - 1 &&
@@ -161,34 +164,38 @@ function keyOf(
  */
 function isNodeTest(path: NodePath, callee: types.Node): boolean {
   const test =
-    callee.type === 'MemberExpression' && lzPropertyName(callee) === 'only'
+    callee.type === 'MemberExpression' &&
+    muirMoiraNodeTestPropertyName(callee) === 'only'
       ? callee.object
       : callee;
 
   if (test.type === 'Identifier') {
-    return isTestImport(lzImportOf(path, test.name));
+    return isTestImport(muirMoiraNodeTestImportOf(path, test.name));
   }
 
   if (
     test.type !== 'MemberExpression' ||
     test.object.type !== 'Identifier' ||
-    !testFunctions.has(lzPropertyName(test))
+    !testFunctions.has(muirMoiraNodeTestPropertyName(test))
   ) {
     return false;
   }
 
-  const from = lzImportOf(path, test.object.name);
+  const from = muirMoiraNodeTestImportOf(path, test.object.name);
 
   return from === undefined
-    ? lzPropertyName(test) === 'test' && isTestContext(path, test.object)
+    ? muirMoiraNodeTestPropertyName(test) === 'test' &&
+        isTestContext(path, test.object)
     : isTestImport(from);
 }
 
 /** node:test's default or namespace import, or its `it` or `test`, which also carry the other test functions. */
-function isTestImport(from: ReturnType<typeof lzImportOf>): boolean {
+function isTestImport(
+  from: ReturnType<typeof muirMoiraNodeTestImportOf>,
+): boolean {
   return (
     from !== undefined &&
-    lzNodeTest.has(from.source) &&
+    muirProteusNodeNodeTest.has(from.source) &&
     (from.imported === undefined || testFunctions.has(from.imported))
   );
 }

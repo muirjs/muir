@@ -1,37 +1,41 @@
 import {
-  argumentOf,
-  fieldOf,
-  firstArgumentSite,
-  literalText,
-  type Site,
+  muirMoiraMutatorsArgumentOf,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsFirstArgumentSite,
+  muirMoiraMutatorsLiteralText,
+  type MuirMoiraMutatorsSite,
 } from '@muirjs/moira-mutators';
 
-import { isNamedReceiver } from './ast.ts';
+import { muirProteusPlaywrightIsNamedReceiver } from './ast.ts';
 
 /** `Button/Primary` and `components/Button/Primary` name the same story. */
-export function isSameStory(one: string, other: string): boolean {
+export function muirProteusPlaywrightIsSameStory(
+  one: string,
+  other: string,
+): boolean {
   return (
     one === other || one.endsWith(`/${other}`) || other.endsWith(`/${one}`)
   );
 }
 
-export function mountStorySite(call: unknown): Site | undefined {
+export function muirProteusPlaywrightMountStorySite(
+  call: unknown,
+): MuirMoiraMutatorsSite | undefined {
   const receiver = 'mount';
-  const argument = argumentOf(call, 0);
-  const value = literalText(argument);
+  const argument = muirMoiraMutatorsArgumentOf(call, 0);
+  const value = muirMoiraMutatorsLiteralText(argument);
 
-  return isNamedReceiver(fieldOf(call, 'callee'), receiver) &&
-    value !== undefined
+  return muirProteusPlaywrightIsNamedReceiver(
+    muirMoiraMutatorsFieldOf(call, 'callee'),
+    receiver,
+  ) && value !== undefined
     ? { key: receiver, value, node: argument }
     : undefined;
 }
 
-export const testIdSite = firstArgumentSite(['getByTestId']);
+export const muirProteusPlaywrightTestIdSite =
+  muirMoiraMutatorsFirstArgumentSite(['getByTestId']);
 
-export const textSite = firstArgumentSite([
-  'getByText',
-  'getByLabel',
-  'getByPlaceholder',
-  'getByAltText',
-  'getByTitle',
-]);
+export const muirProteusPlaywrightTextSite = muirMoiraMutatorsFirstArgumentSite(
+  ['getByText', 'getByLabel', 'getByPlaceholder', 'getByAltText', 'getByTitle'],
+);

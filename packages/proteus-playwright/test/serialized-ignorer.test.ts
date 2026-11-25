@@ -1,20 +1,20 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { builtInNames } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsBuiltInNames } from '@muirjs/moira-mutators';
 
 import { strykerPlugins } from '../src/index.ts';
-import { resolveFromCore } from '../src/install.ts';
-import { serializedIgnorer } from '../src/serialized-ignorer.ts';
+import { muirProteusPlaywrightResolveFromCore } from '../src/install.ts';
+import { muirProteusPlaywrightSerializedIgnorer } from '../src/serialized-ignorer.ts';
 import { assertEveryOutcome } from './support/ignorer-outcomes.ts';
 
 const reasonFor = (method: string) =>
-  `lz-playwright-serialized: Playwright's ${method} runs this function's source text where Stryker's helpers do not exist`;
+  `muir-proteus-playwright-serialized: Playwright's ${method} runs this function's source text where Stryker's helpers do not exist`;
 
 const assertEvery = (code: string, outcome: string) =>
-  assertEveryOutcome(serializedIgnorer, code, outcome);
+  assertEveryOutcome(muirProteusPlaywrightSerializedIgnorer, code, outcome);
 
-describe('lz-playwright-serialized', () => {
+describe('muir-proteus-playwright-serialized', () => {
   it('ignores every mutant of an arrow function passed to evaluate, with a reason naming evaluate', async () => {
     await assertEvery(
       "export const title = page.evaluate(() => document.title === 'a' ? 1 : 2);",
@@ -89,22 +89,22 @@ describe('lz-playwright-serialized', () => {
 });
 
 describe('strykerPlugins', () => {
-  it('declares the ignorer as the Ignore plugin lz-playwright-serialized', () => {
+  it('declares the ignorer as the Ignore plugin muir-proteus-playwright-serialized', () => {
     assert.deepEqual(strykerPlugins, [
       {
         kind: 'Ignore',
-        name: 'lz-playwright-serialized',
-        value: serializedIgnorer,
+        name: 'muir-proteus-playwright-serialized',
+        value: muirProteusPlaywrightSerializedIgnorer,
       },
     ]);
   });
 
   it("leaves Stryker's mutators as they are when the package is imported for its plugins", async () => {
-    const { allMutators } = await resolveFromCore();
+    const { allMutators } = await muirProteusPlaywrightResolveFromCore();
 
     assert.deepEqual(
       allMutators.map(({ name }) => name).sort(),
-      [...builtInNames].sort(),
+      [...muirMoiraMutatorsBuiltInNames].sort(),
     );
   });
 });

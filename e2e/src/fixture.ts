@@ -11,13 +11,13 @@ import {
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 
-import { lzExec } from './exec.ts';
+import { muirExec } from './exec.ts';
 import {
-  lzIsRecord,
-  lzMutantLine,
-  lzParseReport,
-  type LzMutantDetail,
-  type LzReport,
+  muirIsRecord,
+  muirMutantLine,
+  muirParseReport,
+  type MuirMutantDetail,
+  type MuirReport,
 } from './report.ts';
 
 const workspaceDir = join(import.meta.dirname, '..', '..');
@@ -36,48 +36,51 @@ const strykerBin = join(
   'bin',
   'stryker.js',
 );
-/** Where `lzStryker` has Stryker write its JSON report, relative to the run's folder. */
-export const lzReportFile = join('reports', 'mutation', 'mutation.json');
-export const lzStrykerTimeoutMs = 15 * 60_000;
-const dirPrefix = 'lz-node-test-e2e-';
-const concurrencyVariable = 'LZ_E2E_CONCURRENCY';
+/** Where `muirStryker` has Stryker write its JSON report, relative to the run's folder. */
+export const muirReportFile = join('reports', 'mutation', 'mutation.json');
+export const muirStrykerTimeoutMs = 15 * 60_000;
+const dirPrefix = 'muir-node-test-e2e-';
+const concurrencyVariable = 'MUIR_E2E_CONCURRENCY';
 
-interface LzStrykerOutcome {
+interface MuirStrykerOutcome {
   readonly exitCode: number;
   readonly output: string;
   readonly leftover: readonly string[];
   readonly timedOut: boolean;
 }
 
-export type LzStrykerRun =
-  | (LzStrykerOutcome & { readonly reported: true; readonly report: LzReport })
-  | (LzStrykerOutcome & { readonly reported: false });
+export type MuirStrykerRun =
+  | (MuirStrykerOutcome & {
+      readonly reported: true;
+      readonly report: MuirReport;
+    })
+  | (MuirStrykerOutcome & { readonly reported: false });
 
-export interface LzFixture {
-  stryker(configFile?: string): Promise<LzStrykerRun>;
+export interface MuirFixture {
+  stryker(configFile?: string): Promise<MuirStrykerRun>;
 }
 
-export async function lzFixture(name: string): Promise<LzFixture> {
-  const concurrency = lzConcurrency(process.env);
+export async function muirFixture(name: string): Promise<MuirFixture> {
+  const concurrency = muirConcurrency(process.env);
 
-  lzRemoveDeadRunDirs(tmpdir(), dirPrefix);
+  muirRemoveDeadRunDirs(tmpdir(), dirPrefix);
   const dir = realpathSync.native(
     mkdtempSync(join(tmpdir(), `${dirPrefix}${process.pid}-`)),
   );
 
-  lzRemoveOnExit(dir);
+  muirRemoveOnExit(dir);
   cpSync(join(fixturesDir, name), dir, { recursive: true });
   mkdirSync(join(dir, 'tmp'));
-  await lzInstall(dir, await lzPack(join(dir, 'tarballs')));
+  await muirMoiraNodeTestInstall(dir, await muirPack(join(dir, 'tarballs')));
 
   return {
     stryker: (configFile = 'stryker.config.mjs') =>
-      lzStryker(dir, configFile, concurrency),
+      muirStryker(dir, configFile, concurrency),
   };
 }
 
 /** Installs the packed packages and the workspace's pinned Stryker, TypeScript and Node.js types into `dir`. */
-export async function lzInstall(
+export async function muirMoiraNodeTestInstall(
   dir: string,
   tarballs: readonly string[],
   before?: string,
@@ -93,14 +96,14 @@ export async function lzInstall(
     '--no-fund',
     ...(before === undefined ? [] : ['--before', before]),
     ...tarballs,
-    ...lzPinned(
+    ...muirPinned(
       JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8')),
     ),
   ]);
 }
 
 /** Required, so that no run falls back to Stryker's default of all cores but one on a machine that other work shares. */
-export function lzConcurrency(env: NodeJS.ProcessEnv): number {
+export function muirConcurrency(env: NodeJS.ProcessEnv): number {
   const value = env[concurrencyVariable];
 
   if (value === undefined || !/^[1-9]\d*$/.test(value)) {
@@ -113,7 +116,7 @@ export function lzConcurrency(env: NodeJS.ProcessEnv): number {
   return Number(value);
 }
 
-export function lzMutants(run: LzStrykerRun, file: string): string[] {
+export function muirMutants(run: MuirStrykerRun, file: string): string[] {
   const report = reportOf(run);
   const mutants = report.get(file);
 
@@ -123,17 +126,17 @@ export function lzMutants(run: LzStrykerRun, file: string): string[] {
     );
   }
 
-  return mutants.map(lzMutantLine);
+  return mutants.map(muirMutantLine);
 }
 
-export function lzLeftover(run: LzStrykerRun): string[] {
+export function muirLeftover(run: MuirStrykerRun): string[] {
   return run.leftover.map((name) => name.replace(/-\d+-/, '-<pid>-'));
 }
 
-export function lzMutant(
-  run: LzStrykerRun,
+export function muirMutant(
+  run: MuirStrykerRun,
   { at, replacement }: { at: string; replacement: string },
-): LzMutantDetail {
+): MuirMutantDetail {
   const matches = [...reportOf(run)].flatMap(([file, mutants]) =>
     mutants.filter(
       (mutant) =>
@@ -152,10 +155,10 @@ export function lzMutant(
   return mutant;
 }
 
-function reportOf(run: LzStrykerRun): LzReport {
+function reportOf(run: MuirStrykerRun): MuirReport {
   if (!run.reported) {
     throw new Error(
-      `Stryker wrote no report (exit code ${run.exitCode}${run.timedOut ? `, ended after ${lzStrykerTimeoutMs / 60_000} minutes` : ''}):\n` +
+      `Stryker wrote no report (exit code ${run.exitCode}${run.timedOut ? `, ended after ${muirStrykerTimeoutMs / 60_000} minutes` : ''}):\n` +
         run.output,
     );
   }
@@ -169,7 +172,7 @@ function reportOf(run: LzStrykerRun): LzReport {
   return run.report;
 }
 
-export interface LzStrykerRunOptions {
+export interface MuirStrykerRunOptions {
   /** Stryker's temporary directory, which must exist; `dir`'s `tmp` by default. */
   readonly tmp?: string;
   readonly timeoutMs?: number;
@@ -182,7 +185,7 @@ export interface LzStrykerRunOptions {
 }
 
 /** The arguments of `node` that run Stryker, reporting to clear-text, json and `reporters`. */
-export function lzStrykerCommand(
+export function muirStrykerCommand(
   configFile: string,
   concurrency: number,
   args: readonly string[],
@@ -200,33 +203,33 @@ export function lzStrykerCommand(
   ];
 }
 
-export async function lzStryker(
+export async function muirStryker(
   dir: string,
   configFile: string,
   concurrency: number,
   {
     tmp = join(dir, 'tmp'),
-    timeoutMs = lzStrykerTimeoutMs,
+    timeoutMs = muirStrykerTimeoutMs,
     args = [],
     logFile,
     reporters = [],
-  }: LzStrykerRunOptions = {},
-): Promise<LzStrykerRun> {
-  const report = join(dir, lzReportFile);
+  }: MuirStrykerRunOptions = {},
+): Promise<MuirStrykerRun> {
+  const report = join(dir, muirReportFile);
   const before = new Set(readdirSync(tmp));
 
   // A second run on the same install must not read the first one's report.
   rmSync(report, { force: true });
-  const { exitCode, stdout, stderr, timedOut } = await lzExec(
+  const { exitCode, stdout, stderr, timedOut } = await muirExec(
     process.execPath,
     // A run followed through a log gets Stryker's progress line every 10 s.
-    lzStrykerCommand(configFile, concurrency, args, [
+    muirStrykerCommand(configFile, concurrency, args, [
       ...(logFile === undefined ? [] : ['progress-append-only']),
       ...reporters,
     ]),
-    { cwd: dir, env: lzConsumerEnv(tmp, process.env), timeoutMs, logFile },
+    { cwd: dir, env: muirConsumerEnv(tmp, process.env), timeoutMs, logFile },
   );
-  const outcome: LzStrykerOutcome = {
+  const outcome: MuirStrykerOutcome = {
     exitCode,
     output: stdout + stderr,
     leftover: readdirSync(tmp)
@@ -239,7 +242,7 @@ export async function lzStryker(
     ? {
         ...outcome,
         reported: true,
-        report: lzParseReport(readFileSync(report, 'utf8')),
+        report: muirParseReport(readFileSync(report, 'utf8')),
       }
     : { ...outcome, reported: false };
 }
@@ -248,7 +251,7 @@ export async function lzStryker(
  * Drops what the suite's own `node --test` sets and a consumer's Stryker runs without, and puts this Node.js first on
  * PATH, so the `node` that Stryker's command runner finds is the one that runs Stryker.
  */
-export function lzConsumerEnv(
+export function muirConsumerEnv(
   tmp: string,
   env: NodeJS.ProcessEnv,
 ): NodeJS.ProcessEnv {
@@ -270,7 +273,7 @@ export function lzConsumerEnv(
 }
 
 /** Packs each workspace package from its built `dist` into `into`, and returns the tarballs' paths. */
-export async function lzPack(into: string): Promise<string[]> {
+export async function muirPack(into: string): Promise<string[]> {
   mkdirSync(into);
   const tarballs: string[] = [];
 
@@ -283,24 +286,24 @@ export async function lzPack(into: string): Promise<string[]> {
       join(packagesDir, name),
     ]);
 
-    tarballs.push(join(into, lzPackedFile(stdout)));
+    tarballs.push(join(into, muirPackedFile(stdout)));
   }
 
   return tarballs;
 }
 
 /** npm 11 prints an array of packed packages, npm 12 an object keyed by package name. */
-export function lzPackedFile(stdout: string): string {
+export function muirPackedFile(stdout: string): string {
   const packed: unknown = JSON.parse(stdout);
   // Stryker disable next-line ArrayDeclaration: a non-empty fallback holds only strings, which the record check below refuses with the same error as an empty one
   const entries: readonly unknown[] = Array.isArray(packed)
     ? packed
-    : lzIsRecord(packed)
+    : muirIsRecord(packed)
       ? Object.values(packed)
       : [];
   const [entry] = entries;
 
-  if (!lzIsRecord(entry) || typeof entry['filename'] !== 'string') {
+  if (!muirIsRecord(entry) || typeof entry['filename'] !== 'string') {
     throw new Error(`npm pack --json printed no filename:\n${stdout}`);
   }
 
@@ -308,13 +311,13 @@ export function lzPackedFile(stdout: string): string {
 }
 
 /** The `name@version` of each pinned package in the workspace's `package.json` `manifest`. */
-export function lzPinned(manifest: unknown): string[] {
-  const devDependencies = lzIsRecord(manifest)
+export function muirPinned(manifest: unknown): string[] {
+  const devDependencies = muirIsRecord(manifest)
     ? manifest['devDependencies']
     : undefined;
 
   return pinnedNames.map((name) => {
-    const version = lzIsRecord(devDependencies)
+    const version = muirIsRecord(devDependencies)
       ? devDependencies[name]
       : undefined;
 
@@ -330,9 +333,9 @@ export function lzPinned(manifest: unknown): string[] {
 
 /** Runs npm as `node <npm-cli.js>`, so no shell and no `npm.cmd` on Windows. */
 async function npm(cwd: string, args: readonly string[]): Promise<string> {
-  const { exitCode, stdout, stderr } = await lzExec(
+  const { exitCode, stdout, stderr } = await muirExec(
     process.execPath,
-    [lzNpmCli(process.env, process.execPath), ...args],
+    [muirNpmCli(process.env, process.execPath), ...args],
     {
       cwd,
     },
@@ -351,7 +354,7 @@ async function npm(cwd: string, args: readonly string[]): Promise<string> {
  * The npm that started this process (`npm_execpath`, which npm, npx and `npm exec` set to a file in npm's `bin`), else
  * the one installed beside the Node.js binary, in the Windows or the POSIX layout.
  */
-export function lzNpmCli(env: NodeJS.ProcessEnv, execPath: string): string {
+export function muirNpmCli(env: NodeJS.ProcessEnv, execPath: string): string {
   const started = env['npm_execpath'];
   const nodeDir = dirname(execPath);
   const candidates = [
@@ -369,7 +372,7 @@ export function lzNpmCli(env: NodeJS.ProcessEnv, execPath: string): string {
 }
 
 /** A killed run cannot remove its own `<prefix><pid>-*` directory, so a later run removes those of dead pids. */
-export function lzRemoveDeadRunDirs(dir: string, prefix: string): void {
+export function muirRemoveDeadRunDirs(dir: string, prefix: string): void {
   const runDirPattern = new RegExp(`^${prefix}(\\d+)-`);
 
   for (const name of readdirSync(dir)) {
@@ -404,10 +407,10 @@ function isRunning(pid: number): boolean {
  * directory still refused is reported, not failed. Node.js 24.18.1 and earlier 24.x releases retry neither that
  * refusal nor with a pause in rmSync, which an exit listener must use.
  */
-export function lzRemoveOnExit(dir: string): void {
+export function muirRemoveOnExit(dir: string): void {
   process.on('exit', () => {
     try {
-      // Stryker disable next-line LzJsNumericLiteral: tuning values, not a contract a test should pin
+      // Stryker disable next-line MuirProteusJsNumericLiteral: tuning values, not a contract a test should pin
       rmSync(dir, {
         recursive: true,
         force: true,

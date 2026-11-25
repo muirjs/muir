@@ -1,6 +1,6 @@
 import { type Case, inPlay, withFnImport } from './support/case.ts';
 
-const outcome = 'LzStorybookSpyStubOutcome';
+const outcome = 'MuirProteusStorybookTestSpyStubOutcome';
 
 export const spyStubOutcomeCases: readonly Case[] = [
   {

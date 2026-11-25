@@ -1,24 +1,29 @@
-import { lzAllMutators, type LzMutatorSets } from '@muirjs/moira-node-test';
-import { nodeAssertStatement } from './node-assert-statement.ts';
-import { nodeAwaitStatement } from './node-await-statement.ts';
-import { nodeByteLength } from './node-byte-length.ts';
-import { nodeCallbackError } from './node-callback-error.ts';
-import { nodeEventName } from './node-event-name.ts';
-import { nodeExitCode } from './node-exit-code.ts';
-import { nodeListenerOnce } from './node-listener-once.ts';
-import { nodeReturnAwait } from './node-return-await.ts';
-import { nodeTimerDelay } from './node-timer-delay.ts';
+import {
+  muirMoiraNodeTestAllMutators,
+  type MuirMoiraNodeTestMutatorSets,
+} from '@muirjs/moira-node-test';
+import { muirProteusNodeAssertStatement } from './node-assert-statement.ts';
+import { muirProteusNodeAwaitStatement } from './node-await-statement.ts';
+import { muirProteusNodeByteLength } from './node-byte-length.ts';
+import { muirProteusNodeCallbackError } from './node-callback-error.ts';
+import { muirProteusNodeEventName } from './node-event-name.ts';
+import { muirProteusNodeExitCode } from './node-exit-code.ts';
+import { muirProteusNodeListenerOnce } from './node-listener-once.ts';
+import { muirProteusNodeReturnAwait } from './node-return-await.ts';
+import { muirProteusNodeTimerDelay } from './node-timer-delay.ts';
 
-export const nodeMutatorSets = {
+export const muirProteusNodeMutatorSets = {
   defaults: [
-    nodeTimerDelay,
-    nodeEventName,
-    nodeAwaitStatement,
-    nodeReturnAwait,
-    nodeExitCode,
+    muirProteusNodeTimerDelay,
+    muirProteusNodeEventName,
+    muirProteusNodeAwaitStatement,
+    muirProteusNodeReturnAwait,
+    muirProteusNodeExitCode,
   ],
-  optIn: [nodeAssertStatement, nodeListenerOnce],
-  experimental: [nodeByteLength, nodeCallbackError],
-} satisfies LzMutatorSets;
+  optIn: [muirProteusNodeAssertStatement, muirProteusNodeListenerOnce],
+  experimental: [muirProteusNodeByteLength, muirProteusNodeCallbackError],
+} satisfies MuirMoiraNodeTestMutatorSets;
 
-export const nodeMutators = lzAllMutators(nodeMutatorSets);
+export const muirProteusNodeMutators = muirMoiraNodeTestAllMutators(
+  muirProteusNodeMutatorSets,
+);

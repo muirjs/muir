@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import { ESLint, type Linter } from 'eslint';
-import { lzIsRecord } from './stryker-report.ts';
+import { muirIsRecord } from './stryker-report.ts';
 
 const workspaceRoot = join(import.meta.dirname, '..', '..');
 
@@ -51,9 +51,9 @@ async function rulesAtWarn(
   const config: unknown = await eslint.calculateConfigForFile(
     join(workspaceRoot, file),
   );
-  assert.ok(lzIsRecord(config), `ESLint computed no config for ${file}`);
+  assert.ok(muirIsRecord(config), `ESLint computed no config for ${file}`);
   const rules = config['rules'];
-  assert.ok(lzIsRecord(rules), `${file} has no rules`);
+  assert.ok(muirIsRecord(rules), `${file} has no rules`);
 
   return Object.entries(rules)
     .filter(([, entry]) => isWarn(entry))
@@ -61,13 +61,13 @@ async function rulesAtWarn(
 }
 
 describe('ESLint severity', () => {
-  lzTestEach(samples)('%s runs every enabled rule at error', async (file) => {
+  muirTestEach(samples)('%s runs every enabled rule at error', async (file) => {
     const warn = await rulesAtWarn(file);
 
     assert.deepEqual({ file, warn }, { file, warn: [] });
   });
 
-  lzTestEach(warnSettings)('reports a rule set to %s', async (severity) => {
+  muirTestEach(warnSettings)('reports a rule set to %s', async (severity) => {
     const eslint = new ESLint({
       cwd: workspaceRoot,
       overrideConfig: { rules: { 'no-debugger': severity } },

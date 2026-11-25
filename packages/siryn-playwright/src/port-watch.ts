@@ -1,20 +1,26 @@
 import { setTimeout } from 'node:timers/promises';
 
-import type { ServerCheck } from './server-checks.ts';
-import type { ServerMove } from './server-ports.ts';
-import { type ServerMutate, ServerSupportRefused } from './server-refusal.ts';
+import type { MuirSirynPlaywrightServerCheck } from './server-checks.ts';
+import type { MuirSirynPlaywrightServerMove } from './server-ports.ts';
+import {
+  type MuirSirynPlaywrightServerMutate,
+  MuirSirynPlaywrightServerSupportRefused,
+} from './server-refusal.ts';
 
-export interface MovedServers {
-  readonly moves: readonly ServerMove[];
-  readonly configuredChecks: readonly (ServerCheck | undefined)[];
+export interface MuirSirynPlaywrightMovedServers {
+  readonly moves: readonly MuirSirynPlaywrightServerMove[];
+  readonly configuredChecks: readonly (
+    | MuirSirynPlaywrightServerCheck
+    | undefined
+  )[];
 }
 
 const boundPollMs = 250;
 
-export async function globalSetupWatchingConfiguredPorts(
+export async function muirSirynPlaywrightGlobalSetupWatchingConfiguredPorts(
   globalSetup: () => Promise<void>,
-  moved: MovedServers,
-  mutate: ServerMutate,
+  moved: MuirSirynPlaywrightMovedServers,
+  mutate: MuirSirynPlaywrightServerMutate,
 ): Promise<void> {
   const answering = new Set(await boundMoves(moved));
   const watched = {
@@ -38,7 +44,7 @@ export async function globalSetupWatchingConfiguredPorts(
     return undefined;
   };
 
-  let early: ServerMove | undefined;
+  let early: MuirSirynPlaywrightServerMove | undefined;
 
   try {
     early = await Promise.race([setup.then(() => undefined), watch()]);
@@ -77,7 +83,7 @@ export async function globalSetupWatchingConfiguredPorts(
 async function boundMoves({
   moves,
   configuredChecks,
-}: MovedServers): Promise<ServerMove[]> {
+}: MuirSirynPlaywrightMovedServers): Promise<MuirSirynPlaywrightServerMove[]> {
   const bound = await Promise.all(
     moves.map(async (move) =>
       (await configuredChecks[move.index]?.isUp()) ? [move] : [],
@@ -88,10 +94,10 @@ async function boundMoves({
 }
 
 function boundConfiguredPort(
-  mutate: ServerMutate,
-  { index, from, to }: ServerMove,
+  mutate: MuirSirynPlaywrightServerMutate,
+  { index, from, to }: MuirSirynPlaywrightServerMove,
   cause: unknown,
-): ServerSupportRefused {
+): MuirSirynPlaywrightServerSupportRefused {
   return movedPortRefusal(
     mutate,
     `the command of webServer ${index} bound port ${from} instead of ${to}`,
@@ -100,9 +106,9 @@ function boundConfiguredPort(
 }
 
 function heldConfiguredPort(
-  { index, from }: ServerMove,
+  { index, from }: MuirSirynPlaywrightServerMove,
   cause: unknown,
-): ServerSupportRefused {
+): MuirSirynPlaywrightServerSupportRefused {
   const setupError =
     cause instanceof Error ? cause.message.trim() : String(cause);
 
@@ -115,11 +121,11 @@ function heldConfiguredPort(
 }
 
 function movedPortRefusal(
-  mutate: ServerMutate,
+  mutate: MuirSirynPlaywrightServerMutate,
   problem: string,
   cause: unknown,
-): ServerSupportRefused {
-  return new ServerSupportRefused(
+): MuirSirynPlaywrightServerSupportRefused {
+  return new MuirSirynPlaywrightServerSupportRefused(
     mutate,
     "Stryker starts more than one test runner process, so each process's webServer " +
       `moves to a port of its own, and ${problem}. ` +

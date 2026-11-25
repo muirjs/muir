@@ -1,26 +1,26 @@
 import {
-  field,
-  isStringArray,
-  list,
-  type IndexedStory,
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsStringArray,
+  muirMoiraStorybookList,
+  type MuirMoiraStorybookIndexedStory,
 } from '@muirjs/moira-storybook';
 import { loadCsf } from 'storybook/internal/csf-tools';
 
 /** The stories Storybook's CsfFile indexes; none when Storybook cannot read the file. */
-export function storyIndex(
+export function muirShadowcatStorybookStoryIndex(
   code: string,
   fileName: string,
-): ReadonlyMap<string, IndexedStory> {
-  const inputs = list(indexInputs(code, fileName));
+): ReadonlyMap<string, MuirMoiraStorybookIndexedStory> {
+  const inputs = muirMoiraStorybookList(indexInputs(code, fileName));
 
   return new Map(
     inputs.flatMap((input) => {
-      const exportName = field(input, 'exportName');
-      const tags = field(input, 'tags');
+      const exportName = muirMoiraStorybookField(input, 'exportName');
+      const tags = muirMoiraStorybookField(input, 'tags');
 
-      return field(input, 'subtype') === 'story' &&
+      return muirMoiraStorybookField(input, 'subtype') === 'story' &&
         typeof exportName === 'string' &&
-        isStringArray(tags)
+        muirMoiraStorybookIsStringArray(tags)
         ? [
             [
               exportName,
@@ -29,10 +29,11 @@ export function storyIndex(
                 tests: inputs
                   .filter(
                     (test) =>
-                      field(test, 'subtype') === 'test' &&
-                      field(test, 'exportName') === exportName,
+                      muirMoiraStorybookField(test, 'subtype') === 'test' &&
+                      muirMoiraStorybookField(test, 'exportName') ===
+                        exportName,
                   )
-                  .map((test) => field(test, 'name')),
+                  .map((test) => muirMoiraStorybookField(test, 'name')),
               },
             ] as const,
           ]

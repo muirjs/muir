@@ -1,27 +1,27 @@
 import {
-  builtInNames,
-  checkBuiltInsRemoved,
-  checkNames,
-  corePackageJson,
-  fieldOf,
-  isRecord,
-  isSelfCheckFile,
-  register,
-  removeBuiltIns,
-  resolveInstrumenter,
-  selectMutators,
-  selfCheck,
-  undoOnThrow,
-  warnUntested,
-  type Instrumenter as CoreInstrumenter,
-  type MutatorSets,
+  muirMoiraMutatorsBuiltInNames,
+  muirMoiraMutatorsCheckBuiltInsRemoved,
+  muirMoiraMutatorsCheckNames,
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsIsRecord,
+  muirMoiraMutatorsIsSelfCheckFile,
+  muirMoiraMutatorsRegister,
+  muirMoiraMutatorsRemoveBuiltIns,
+  muirMoiraMutatorsResolveInstrumenter,
+  muirMoiraMutatorsSelectMutators,
+  muirMoiraMutatorsSelfCheck,
+  muirMoiraMutatorsUndoOnThrow,
+  muirMoiraMutatorsWarnUntested,
+  type MuirMoiraMutatorsInstrumenter as CoreInstrumenter,
+  type MuirMoiraMutatorsMutatorSets,
 } from '@muirjs/moira-mutators';
 
-import type { LzPlaywrightMutator } from './mutators.ts';
-import { packageName } from './package-name.ts';
-import { looksLikePlaywrightTest } from './playwright-test.ts';
+import type { MuirProteusPlaywrightMutator } from './mutators.ts';
+import { muirProteusPlaywrightPackageName } from './package-name.ts';
+import { muirProteusPlaywrightLooksLikePlaywrightTest } from './playwright-test.ts';
 
-export interface BabelTypes {
+export interface MuirProteusPlaywrightBabelTypes {
   emptyStatement(): unknown;
   cloneNode(node: unknown): unknown;
   objectExpression(properties: readonly unknown[]): unknown;
@@ -35,7 +35,7 @@ export interface BabelTypes {
 }
 
 const babelTypeMembers: Readonly<{
-  [TMember in keyof BabelTypes]: TMember;
+  [TMember in keyof MuirProteusPlaywrightBabelTypes]: TMember;
 }> = {
   emptyStatement: 'emptyStatement',
   cloneNode: 'cloneNode',
@@ -49,21 +49,26 @@ const babelTypeMembers: Readonly<{
   identifier: 'identifier',
 };
 
-export type Instrumenter = CoreInstrumenter<BabelTypes>;
+export type MuirProteusPlaywrightInstrumenter =
+  CoreInstrumenter<MuirProteusPlaywrightBabelTypes>;
 
-export const testedVersion = '10.1.1';
+export const muirProteusPlaywrightTestedVersion = '10.1.1';
 
-export function resolveFromCore(
-  corePackage: string = corePackageJson(),
-): Promise<Instrumenter> {
-  return resolveInstrumenter(packageName, assertBabelTypes, corePackage);
+export function muirProteusPlaywrightResolveFromCore(
+  corePackage: string = muirMoiraMutatorsCorePackageJson(),
+): Promise<MuirProteusPlaywrightInstrumenter> {
+  return muirMoiraMutatorsResolveInstrumenter(
+    muirProteusPlaywrightPackageName,
+    muirProteusPlaywrightAssertBabelTypes,
+    corePackage,
+  );
 }
 
-export function assertBabelTypes(
+export function muirProteusPlaywrightAssertBabelTypes(
   value: unknown,
   missing: (name: string) => Error,
-): asserts value is BabelTypes {
-  if (!isRecord(value)) {
+): asserts value is MuirProteusPlaywrightBabelTypes {
+  if (!muirMoiraMutatorsIsRecord(value)) {
     throw missing('Babel types');
   }
 
@@ -76,16 +81,16 @@ export function assertBabelTypes(
   }
 }
 
-export async function install(
-  sets: MutatorSets<LzPlaywrightMutator>,
+export async function muirProteusPlaywrightInstall(
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusPlaywrightMutator>,
   options: unknown,
-  resolve: () => Promise<Instrumenter>,
+  resolve: () => Promise<MuirProteusPlaywrightInstrumenter>,
   warn: (message: string) => void = console.warn,
   info: (message: string) => void = console.info,
 ): Promise<void> {
-  const mutators = selectMutators(
-    packageName,
-    'lzPlaywrightMutators',
+  const mutators = muirMoiraMutatorsSelectMutators(
+    muirProteusPlaywrightPackageName,
+    'muirProteusPlaywrightMutators',
     sets,
     options,
   );
@@ -93,11 +98,19 @@ export async function install(
 
   const { allMutators } = instrumenter;
 
-  checkNames(packageName, mutators, allMutators);
-  await undoOnThrow([allMutators], async () => {
-    removeBuiltIns(packageName, instrumenter, warn);
-    register(
-      packageName,
+  muirMoiraMutatorsCheckNames(
+    muirProteusPlaywrightPackageName,
+    mutators,
+    allMutators,
+  );
+  await muirMoiraMutatorsUndoOnThrow([allMutators], async () => {
+    muirMoiraMutatorsRemoveBuiltIns(
+      muirProteusPlaywrightPackageName,
+      instrumenter,
+      warn,
+    );
+    muirMoiraMutatorsRegister(
+      muirProteusPlaywrightPackageName,
       allMutators,
       mutators.map(({ name, mutate }) => ({
         name,
@@ -108,11 +121,23 @@ export async function install(
         },
       })),
     );
-    await selfCheck(packageName, instrumenter, mutators);
-    await checkBuiltInsRemoved(packageName, instrumenter);
+    await muirMoiraMutatorsSelfCheck(
+      muirProteusPlaywrightPackageName,
+      instrumenter,
+      mutators,
+    );
+    await muirMoiraMutatorsCheckBuiltInsRemoved(
+      muirProteusPlaywrightPackageName,
+      instrumenter,
+    );
   });
 
-  warnUntested(packageName, testedVersion, instrumenter, warn);
+  muirMoiraMutatorsWarnUntested(
+    muirProteusPlaywrightPackageName,
+    muirProteusPlaywrightTestedVersion,
+    instrumenter,
+    warn,
+  );
   info(startLine(sets, mutators));
 }
 
@@ -123,22 +148,25 @@ function warnAboutProgram(
   path: unknown,
   warn: (message: string) => void,
 ): void {
-  const file = fieldOf(
-    fieldOf(fieldOf(fieldOf(path, 'hub'), 'file'), 'opts'),
+  const file = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFieldOf(muirMoiraMutatorsFieldOf(path, 'hub'), 'file'),
+      'opts',
+    ),
     'filename',
   );
-  const node = fieldOf(path, 'node');
+  const node = muirMoiraMutatorsFieldOf(path, 'node');
 
   if (
     typeof file === 'string' &&
-    fieldOf(node, 'type') === 'Program' &&
-    !isSelfCheckFile(file) &&
+    muirMoiraMutatorsFieldOf(node, 'type') === 'Program' &&
+    !muirMoiraMutatorsIsSelfCheckFile(file) &&
     !warnedFiles.has(file) &&
-    !looksLikePlaywrightTest(node)
+    !muirProteusPlaywrightLooksLikePlaywrightTest(node)
   ) {
     warnedFiles.add(file);
     warn(
-      `${file}: ${packageName} turned Stryker's built-in mutators off for every file in this run, and this ` +
+      `${file}: ${muirProteusPlaywrightPackageName} turned Stryker's built-in mutators off for every file in this run, and this ` +
         'file does not look like Playwright test code (no @playwright/ import, no top-level test call). Mutate ' +
         'app code in a separate Stryker config.',
     );
@@ -146,15 +174,15 @@ function warnAboutProgram(
 }
 
 function startLine(
-  sets: MutatorSets<LzPlaywrightMutator>,
-  mutators: readonly LzPlaywrightMutator[],
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusPlaywrightMutator>,
+  mutators: readonly MuirProteusPlaywrightMutator[],
 ): string {
   const defaults = new Set(sets.defaults);
   const optional = mutators.filter((mutator) => !defaults.has(mutator));
 
   return (
-    `${packageName}: Stryker's ${builtInNames.length} built-in mutators are off for every file in this run; ` +
-    `${mutators.length} LzPlaywright mutators on.` +
+    `${muirProteusPlaywrightPackageName}: Stryker's ${muirMoiraMutatorsBuiltInNames.length} built-in mutators are off for every file in this run; ` +
+    `${mutators.length} MuirProteusPlaywright mutators on.` +
     (optional.length > 0
       ? ` Opt-in or experimental: ${optional.map(({ name }) => name).join(', ')}.`
       : '')

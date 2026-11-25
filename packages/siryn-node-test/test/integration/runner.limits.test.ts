@@ -8,8 +8,8 @@ import {
   TestStatus,
 } from '@stryker-mutator/api/test-runner';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import { envNames } from '../../src/record.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 import {
   complete,
   dryRun,
@@ -26,7 +26,7 @@ import {
 
 shareCompileCache();
 
-describe('LzNodeTestTestRunner limits', () => {
+describe('MuirSirynNodeTestTestRunner limits', () => {
   const loop = (hits: number) =>
     [
       'const ns = globalThis.__stryker__;',
@@ -120,7 +120,7 @@ describe('LzNodeTestTestRunner limits', () => {
   });
 
   it("limits each mutant run's processes to their file's dry-run peak, times 1.5, plus 1024 MB, in every runner", async (t) => {
-    const limit = `process.env.${envNames.memoryLimit}`;
+    const limit = `process.env.${muirSirynNodeTestEnvNames.memoryLimit}`;
     project(t, {
       'a.test.mjs': fixture(
         `it('fails with its memory limit', () => { if (${limit}) throw new Error(${limit}); });`,
@@ -164,12 +164,12 @@ describe('LzNodeTestTestRunner limits', () => {
     assert.ok(first < 1024 + 1.5 * 500, String(limits));
     assert.deepEqual(limits, [first, first, first]);
   });
-  lzTestFor<
+  muirTestFor<
     readonly [string, number | undefined, readonly [number, number], number]
   >([
     ['the 1024 MB floor, with a warning once,', undefined, [1024, 1024], 1],
     [
-      'lzNodeTest.maxMemoryMB when set, without a warning,',
+      'muirSirynNodeTest.maxMemoryMB when set, without a warning,',
       1500,
       [1500, 1500],
       0,
@@ -177,7 +177,7 @@ describe('LzNodeTestTestRunner limits', () => {
   ])(
     'gives the processes of a file that the dry run did not run %s in every mutant run',
     async ([, maxMemoryMB, expected, warningCount], t) => {
-      const limit = `process.env.${envNames.memoryLimit}`;
+      const limit = `process.env.${muirSirynNodeTestEnvNames.memoryLimit}`;
       const dir = project(t, {
         'a.test.mjs': fixture(
           `it('fails with its memory limit', () => { throw new Error(${limit}); });`,
@@ -221,7 +221,7 @@ describe('LzNodeTestTestRunner limits', () => {
     },
   );
 
-  it('ends a dry run under lzNodeTest.maxMemoryMB as an error that names the first file, in order, that held more', async (t) => {
+  it('ends a dry run under muirSirynNodeTest.maxMemoryMB as an error that names the first file, in order, that held more', async (t) => {
     const waits = fixture(
       "it('waits', async () => { await new Promise((resolve) => setTimeout(resolve, 1_000)); });",
     );
@@ -243,8 +243,8 @@ describe('LzNodeTestTestRunner limits', () => {
     assert.ok(rssMB > 10, result.errorMessage);
     assert.equal(
       result.errorMessage,
-      `A process of "${join(dir, 'a.test.mjs')}" held ${rssMB} MB in the dry run, more than lzNodeTest.maxMemoryMB ` +
-        "(10 MB), so its mutant runs would time out. Raise lzNodeTest.maxMemoryMB, or leave it out to derive each file's " +
+      `A process of "${join(dir, 'a.test.mjs')}" held ${rssMB} MB in the dry run, more than muirSirynNodeTest.maxMemoryMB ` +
+        "(10 MB), so its mutant runs would time out. Raise muirSirynNodeTest.maxMemoryMB, or leave it out to derive each file's " +
         'limit from the dry run.',
     );
   });

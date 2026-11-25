@@ -2,21 +2,24 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  hookTestNamespaceEnv,
-  parseSnapshotLine,
-  readHookTestNamespace,
-  readRunSettings,
-  readSnapshotDir,
-  runSettingsEnv,
-  serializeSnapshot,
+  muirSirynPlaywrightHookTestNamespaceEnv,
+  muirSirynPlaywrightParseSnapshotLine,
+  muirSirynPlaywrightReadHookTestNamespace,
+  muirSirynPlaywrightReadRunSettings,
+  muirSirynPlaywrightReadSnapshotDir,
+  muirSirynPlaywrightRunSettingsEnv,
+  muirSirynPlaywrightSerializeSnapshot,
 } from '../src/protocol.ts';
 import { tempTree, withoutPrototypes } from './support/doubles.ts';
 
 test('a snapshot with a BigInt hit count is written as a lost frame', () => {
-  const line = serializeSnapshot({ hitCount: 1n, outlivedItsTest: true });
+  const line = muirSirynPlaywrightSerializeSnapshot({
+    hitCount: 1n,
+    outlivedItsTest: true,
+  });
 
   assert.deepEqual(JSON.parse(line), { lost: true, outlivedItsTest: true });
-  assert.equal(parseSnapshotLine(line)?.lost, true);
+  assert.equal(muirSirynPlaywrightParseSnapshotLine(line)?.lost, true);
 });
 
 test('a snapshot with cyclic coverage is written as a lost frame', () => {
@@ -25,7 +28,10 @@ test('a snapshot with cyclic coverage is written as a lost frame', () => {
 
   assert.deepEqual(
     JSON.parse(
-      serializeSnapshot({ mutantCoverage: cyclic, outlivedItsTest: true }),
+      muirSirynPlaywrightSerializeSnapshot({
+        mutantCoverage: cyclic,
+        outlivedItsTest: true,
+      }),
     ),
     {
       lost: true,
@@ -35,25 +41,40 @@ test('a snapshot with cyclic coverage is written as a lost frame', () => {
 });
 
 test('a line that is cut off or not an object is skipped', () => {
-  assert.equal(parseSnapshotLine('{"mutantCoverage":{"sta'), undefined);
-  assert.equal(parseSnapshotLine('3'), undefined);
-  assert.equal(parseSnapshotLine('null'), undefined);
+  assert.equal(
+    muirSirynPlaywrightParseSnapshotLine('{"mutantCoverage":{"sta'),
+    undefined,
+  );
+  assert.equal(muirSirynPlaywrightParseSnapshotLine('3'), undefined);
+  assert.equal(muirSirynPlaywrightParseSnapshotLine('null'), undefined);
 });
 
 test('a parsed line sets every flag and a valid hit count', () => {
-  assert.deepEqual(parseSnapshotLine('{}'), {
+  assert.deepEqual(muirSirynPlaywrightParseSnapshotLine('{}'), {
     coverage: undefined,
     hitCount: 0,
     outlivedItsTest: false,
     lost: false,
     instrumented: false,
   });
-  assert.equal(parseSnapshotLine('{"hitCount":-1}')?.hitCount, 0);
-  assert.equal(parseSnapshotLine('{"hitCount":"3"}')?.hitCount, 0);
-  assert.equal(parseSnapshotLine('{"hitCount":7}')?.hitCount, 7);
-  assert.equal(parseSnapshotLine('{"instrumented":1}')?.instrumented, false);
+  assert.equal(
+    muirSirynPlaywrightParseSnapshotLine('{"hitCount":-1}')?.hitCount,
+    0,
+  );
+  assert.equal(
+    muirSirynPlaywrightParseSnapshotLine('{"hitCount":"3"}')?.hitCount,
+    0,
+  );
+  assert.equal(
+    muirSirynPlaywrightParseSnapshotLine('{"hitCount":7}')?.hitCount,
+    7,
+  );
+  assert.equal(
+    muirSirynPlaywrightParseSnapshotLine('{"instrumented":1}')?.instrumented,
+    false,
+  );
   assert.deepEqual(
-    parseSnapshotLine(
+    muirSirynPlaywrightParseSnapshotLine(
       '{"lost":true,"outlivedItsTest":true,"instrumented":true}',
     ),
     {
@@ -67,43 +88,54 @@ test('a parsed line sets every flag and a valid hit count', () => {
 });
 
 test('a parsed line keeps no coverage that is not a map', () => {
-  assert.equal(parseSnapshotLine('{"mutantCoverage":3}')?.coverage, undefined);
+  assert.equal(
+    muirSirynPlaywrightParseSnapshotLine('{"mutantCoverage":3}')?.coverage,
+    undefined,
+  );
   assert.deepEqual(
     withoutPrototypes(
-      parseSnapshotLine('{"mutantCoverage":{"static":3,"perTest":{"a":3}}}')
-        ?.coverage,
+      muirSirynPlaywrightParseSnapshotLine(
+        '{"mutantCoverage":{"static":3,"perTest":{"a":3}}}',
+      )?.coverage,
     ),
     { static: {}, perTest: { a: {} } },
   );
 });
 
 test("the hooks' namespace is Stryker's unless the environment names a test namespace", () => {
-  assert.equal(readHookTestNamespace({}), '__stryker__');
+  assert.equal(muirSirynPlaywrightReadHookTestNamespace({}), '__stryker__');
   assert.equal(
-    readHookTestNamespace({ [hookTestNamespaceEnv]: '' }),
+    muirSirynPlaywrightReadHookTestNamespace({
+      [muirSirynPlaywrightHookTestNamespaceEnv]: '',
+    }),
     '__stryker__',
   );
   assert.equal(
-    readHookTestNamespace({ [hookTestNamespaceEnv]: '__test__' }),
+    muirSirynPlaywrightReadHookTestNamespace({
+      [muirSirynPlaywrightHookTestNamespaceEnv]: '__test__',
+    }),
     '__test__',
   );
 });
 
 test('the run settings are read from the environment, with a hit limit only when one is set', () => {
-  assert.equal(readRunSettings({}), undefined);
+  assert.equal(muirSirynPlaywrightReadRunSettings({}), undefined);
   assert.deepEqual(
-    readRunSettings({ [runSettingsEnv]: '{"outDir":"out","perTest":true}' }),
+    muirSirynPlaywrightReadRunSettings({
+      [muirSirynPlaywrightRunSettingsEnv]: '{"outDir":"out","perTest":true}',
+    }),
     { outDir: 'out', perTest: true },
   );
   assert.deepEqual(
-    readRunSettings({
-      [runSettingsEnv]: '{"outDir":"out","perTest":false,"hitLimit":5}',
+    muirSirynPlaywrightReadRunSettings({
+      [muirSirynPlaywrightRunSettingsEnv]:
+        '{"outDir":"out","perTest":false,"hitLimit":5}',
     }),
     { outDir: 'out', perTest: false, hitLimit: 5 },
   );
   assert.deepEqual(
-    readRunSettings({
-      [runSettingsEnv]:
+    muirSirynPlaywrightReadRunSettings({
+      [muirSirynPlaywrightRunSettingsEnv]:
         '{"outDir":"out","perTest":true,"testIdHosts":["localhost:1"]}',
     }),
     { outDir: 'out', perTest: true, testIdHosts: ['localhost:1'] },
@@ -112,8 +144,9 @@ test('the run settings are read from the environment, with a hit limit only when
 
 test("the run settings carry the init script with Stryker's page helpers", () => {
   assert.deepEqual(
-    readRunSettings({
-      [runSettingsEnv]: '{"outDir":"out","perTest":true,"pageHelpers":"h();"}',
+    muirSirynPlaywrightReadRunSettings({
+      [muirSirynPlaywrightRunSettingsEnv]:
+        '{"outDir":"out","perTest":true,"pageHelpers":"h();"}',
     }),
     { outDir: 'out', perTest: true, pageHelpers: 'h();' },
   );
@@ -121,7 +154,7 @@ test("the run settings carry the init script with Stryker's page helpers", () =>
 
 test("a run folder's server snapshots merge with the workers', but only a worker file shows the worker hook installed", (t) => {
   const line = (testId: string) =>
-    serializeSnapshot({
+    muirSirynPlaywrightSerializeSnapshot({
       mutantCoverage: { static: {}, perTest: { [testId]: { '1': 1 } } },
       outlivedItsTest: false,
     });
@@ -133,15 +166,24 @@ test("a run folder's server snapshots merge with the workers', but only a worker
     'worker-2-b.ndjson': line('b') + '\n',
   });
 
-  assert.equal(readSnapshotDir(serverOnly).hookInstalled, false);
-  assert.equal(readSnapshotDir(serverOnly).snapshots.length, 1);
-  assert.equal(readSnapshotDir(both).hookInstalled, true);
-  assert.equal(readSnapshotDir(both).snapshots.length, 2);
+  assert.equal(
+    muirSirynPlaywrightReadSnapshotDir(serverOnly).hookInstalled,
+    false,
+  );
+  assert.equal(
+    muirSirynPlaywrightReadSnapshotDir(serverOnly).snapshots.length,
+    1,
+  );
+  assert.equal(muirSirynPlaywrightReadSnapshotDir(both).hookInstalled, true);
+  assert.equal(muirSirynPlaywrightReadSnapshotDir(both).snapshots.length, 2);
 });
 
 test('a run folder names each mutant the server snapshots cover once, static or per test, and none a worker covers', (t) => {
   const line = (mutantCoverage: unknown) =>
-    serializeSnapshot({ mutantCoverage, outlivedItsTest: false }) + '\n';
+    muirSirynPlaywrightSerializeSnapshot({
+      mutantCoverage,
+      outlivedItsTest: false,
+    }) + '\n';
   const dir = tempTree(t, 'protocol-dir-', {
     'server-1-a.ndjson':
       line({ static: { '1': 1 }, perTest: { a: { '2': 1 } } }) +
@@ -154,12 +196,10 @@ test('a run folder names each mutant the server snapshots cover once, static or 
     }),
   });
 
-  assert.deepEqual([...readSnapshotDir(dir).serverMutants].sort(), [
-    '1',
-    '2',
-    '3',
-    '4',
-  ]);
+  assert.deepEqual(
+    [...muirSirynPlaywrightReadSnapshotDir(dir).serverMutants].sort(),
+    ['1', '2', '3', '4'],
+  );
 });
 
 test('run settings that are not JSON, not an object or have a field of the wrong type are refused', () => {
@@ -175,15 +215,24 @@ test('run settings that are not JSON, not an object or have a field of the wrong
     '{"outDir":"out","perTest":true,"testIdHosts":[1]}',
     '{"outDir":"out","perTest":true,"pageHelpers":1}',
   ].forEach((raw) => {
-    assert.throws(() => readRunSettings({ [runSettingsEnv]: raw }), {
-      message: `${runSettingsEnv} holds no valid run settings: ${raw}`,
-    });
+    assert.throws(
+      () =>
+        muirSirynPlaywrightReadRunSettings({
+          [muirSirynPlaywrightRunSettingsEnv]: raw,
+        }),
+      {
+        message: `${muirSirynPlaywrightRunSettingsEnv} holds no valid run settings: ${raw}`,
+      },
+    );
   });
 });
 
 test('run settings that are not JSON are refused with the parse error as the cause', () => {
   assert.throws(
-    () => readRunSettings({ [runSettingsEnv]: '{oops' }),
+    () =>
+      muirSirynPlaywrightReadRunSettings({
+        [muirSirynPlaywrightRunSettingsEnv]: '{oops',
+      }),
     (error) => error instanceof Error && error.cause instanceof SyntaxError,
   );
 });

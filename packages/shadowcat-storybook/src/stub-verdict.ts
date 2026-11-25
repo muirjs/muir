@@ -1,34 +1,37 @@
 import {
-  chainUpTo,
-  mockTransformerRewrite,
-  type StubRewrite,
+  muirMoiraStorybookChainUpTo,
+  muirMoiraStorybookMockTransformerRewrite,
+  type MuirMoiraStorybookStubRewrite,
 } from '@muirjs/moira-storybook';
 
 import {
-  classifyStubs,
-  type ClassifiedStub,
-  type StoryFile,
-  type StubVerdict,
+  muirShadowcatStorybookClassifyStubs,
+  type MuirShadowcatStorybookClassifiedStub,
+  type MuirShadowcatStorybookStoryFile,
+  type MuirShadowcatStorybookStubVerdict,
 } from './reset-setting.ts';
-import type { StorybookProject } from './storybook-project.ts';
+import type { MuirShadowcatStorybookProject } from './storybook-project.ts';
 
-export const storybookPluginName = 'lz-storybook';
+export const muirShadowcatStorybookPluginName = 'muir-shadowcat-storybook';
 
-/** The mutator whose surviving mutants make unchecked stubs: it removes a stub, where `LzStorybookSpyStubOutcome` only flips how a stub settles. */
-export const spyStubName = 'LzStorybookSpyStub';
+/** The mutator whose surviving mutants make unchecked stubs: it removes a stub, where `MuirProteusStorybookTestSpyStubOutcome` only flips how a stub settles. */
+export const muirShadowcatStorybookSpyStubName =
+  'MuirProteusStorybookTestSpyStub';
 
 /** The mutator that flips how a stub settles; its surviving mutants make outcome-unchecked stubs where the stub's removal is detected. */
-export const spyStubOutcomeName = 'LzStorybookSpyStubOutcome';
+export const muirShadowcatStorybookSpyStubOutcomeName =
+  'MuirProteusStorybookTestSpyStubOutcome';
 
-export type ReasonVerdict =
-  | Exclude<StubVerdict, 'kept'>
-  | Exclude<StubRewrite, 'rewritten'>;
+export type MuirShadowcatStorybookReasonVerdict =
+  | Exclude<MuirShadowcatStorybookStubVerdict, 'kept'>
+  | Exclude<MuirMoiraStorybookStubRewrite, 'rewritten'>;
 
-export interface ReasonSite extends Omit<ClassifiedStub, 'verdict'> {
-  readonly verdict: ReasonVerdict;
+export interface MuirShadowcatStorybookReasonSite
+  extends Omit<MuirShadowcatStorybookClassifiedStub, 'verdict'> {
+  readonly verdict: MuirShadowcatStorybookReasonVerdict;
 }
 
-const reasons: Readonly<Record<ReasonVerdict, string>> = {
+const reasons: Readonly<Record<MuirShadowcatStorybookReasonVerdict, string>> = {
   erased:
     'the mock reset runs before the story renders, so this stub never takes effect',
   'order-dependent':
@@ -47,32 +50,32 @@ const fix =
   'pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach';
 
 /** The reason for a chain whose stubs have different verdicts and none is kept, since its ignore covers them all. */
-export const unrewrittenChainReason = reasonText(
+export const muirShadowcatStorybookUnrewrittenChainReason = reasonText(
   'chain-not-rewritten',
   'the mock transformer rewrites none of the stubs of this chain, so the mock reset still erases every one of them',
 );
 
-export const uncheckedFinding = {
+export const muirShadowcatStorybookUncheckedFinding = {
   verdict: 'unchecked',
   reason: 'no test fails without this stub, so no play checks what it changes',
   fix: 'assert in the play what the stubbed value changes',
 } as const;
 
-export const outcomeUncheckedFinding = {
+export const muirShadowcatStorybookOutcomeUncheckedFinding = {
   verdict: 'outcome-unchecked',
   reason:
     'a test fails or hangs without this stub, but none fails when it settles the other way, so no play checks what its outcome changes',
   fix: 'assert in the play what the story shows for this outcome, such as its success or error message',
 } as const;
 
-export interface SpyStubReason {
-  readonly verdict: ReasonVerdict;
+export interface MuirShadowcatStorybookSpyStubReason {
+  readonly verdict: MuirShadowcatStorybookReasonVerdict;
   readonly reason: string;
   readonly fix: string;
 }
 
-/** A node the lz-storybook ignorer ignores: a stub call with everything before it in its chain (the spy call, every stub and any `mockName` or `mockClear` call, with their arguments), or only its arguments. */
-export interface StubIgnore {
+/** A node the muir-shadowcat-storybook ignorer ignores: a stub call with everything before it in its chain (the spy call, every stub and any `mockName` or `mockClear` call, with their arguments), or only its arguments. */
+export interface MuirShadowcatStorybookStubIgnore {
   /** Where the stub call starts, also when only its arguments are ignored. */
   readonly start: number;
   /** Where the stub call ends, also when only its arguments are ignored. */
@@ -81,37 +84,45 @@ export interface StubIgnore {
   readonly reason: string;
 }
 
-export function reasonSites(
-  file: StoryFile,
-  { previewTest, testTags, transformer }: StorybookProject,
-): readonly ReasonSite[] {
-  const { stubs } = classifyStubs(file, previewTest, testTags);
+export function muirShadowcatStorybookReasonSites(
+  file: MuirShadowcatStorybookStoryFile,
+  { previewTest, testTags, transformer }: MuirShadowcatStorybookProject,
+): readonly MuirShadowcatStorybookReasonSite[] {
+  const { stubs } = muirShadowcatStorybookClassifyStubs(
+    file,
+    previewTest,
+    testTags,
+  );
 
   return siteReasons(stubs, transformer);
 }
 
 /** Stryker ignores the whole subtree of an ignored node, so a stub call is ignored only when no stub before it in its chain is kept and its spy call takes no arguments; otherwise only its own arguments are. */
-export function stubIgnores(
-  file: StoryFile,
-  { previewTest, testTags, transformer }: StorybookProject,
-): readonly StubIgnore[] {
-  const { stubs } = classifyStubs(file, previewTest, testTags);
+export function muirShadowcatStorybookStubIgnores(
+  file: MuirShadowcatStorybookStoryFile,
+  { previewTest, testTags, transformer }: MuirShadowcatStorybookProject,
+): readonly MuirShadowcatStorybookStubIgnore[] {
+  const { stubs } = muirShadowcatStorybookClassifyStubs(
+    file,
+    previewTest,
+    testTags,
+  );
   const sites = siteReasons(stubs, transformer);
 
   return sites.map((site) => {
     const { start, end, verdict } = site;
-    const chain = chainUpTo(site, sites);
+    const chain = muirMoiraStorybookChainUpTo(site, sites);
 
     // Ignoring the call would also hide the spy call's arguments, which the story runs after the mock reset.
     if (
-      chain.length < chainUpTo(site, stubs).length ||
+      chain.length < muirMoiraStorybookChainUpTo(site, stubs).length ||
       site.spyCallHasArguments
     ) {
       return {
         start,
         end,
         covers: 'arguments',
-        reason: spyStubReason(verdict),
+        reason: muirShadowcatStorybookSpyStubReason(verdict),
       };
     }
 
@@ -120,39 +131,48 @@ export function stubIgnores(
       end,
       covers: 'call',
       reason: chain.every((other) => other.verdict === verdict)
-        ? spyStubReason(verdict)
-        : unrewrittenChainReason,
+        ? muirShadowcatStorybookSpyStubReason(verdict)
+        : muirShadowcatStorybookUnrewrittenChainReason,
     };
   });
 }
 
 function siteReasons(
-  stubs: readonly ClassifiedStub[],
-  transformer: StorybookProject['transformer'],
-): readonly ReasonSite[] {
-  return stubs.flatMap(({ verdict, ...site }): readonly ReasonSite[] => {
-    if (verdict === 'kept') {
-      return [];
-    }
+  stubs: readonly MuirShadowcatStorybookClassifiedStub[],
+  transformer: MuirShadowcatStorybookProject['transformer'],
+): readonly MuirShadowcatStorybookReasonSite[] {
+  return stubs.flatMap(
+    ({ verdict, ...site }): readonly MuirShadowcatStorybookReasonSite[] => {
+      if (verdict === 'kept') {
+        return [];
+      }
 
-    if (transformer !== 'seen') {
-      return [{ ...site, verdict }];
-    }
+      if (transformer !== 'seen') {
+        return [{ ...site, verdict }];
+      }
 
-    const rewrite = mockTransformerRewrite(site);
+      const rewrite = muirMoiraStorybookMockTransformerRewrite(site);
 
-    return rewrite === 'rewritten' ? [] : [{ ...site, verdict: rewrite }];
-  });
+      return rewrite === 'rewritten' ? [] : [{ ...site, verdict: rewrite }];
+    },
+  );
 }
 
-export function describeVerdict(verdict: ReasonVerdict): SpyStubReason {
+export function muirShadowcatStorybookDescribeVerdict(
+  verdict: MuirShadowcatStorybookReasonVerdict,
+): MuirShadowcatStorybookSpyStubReason {
   return { verdict, reason: reasons[verdict], fix };
 }
 
-export function spyStubReason(verdict: ReasonVerdict): string {
+export function muirShadowcatStorybookSpyStubReason(
+  verdict: MuirShadowcatStorybookReasonVerdict,
+): string {
   return reasonText(verdict, reasons[verdict]);
 }
 
-function reasonText(verdict: ReasonVerdict, reason: string): string {
-  return `${storybookPluginName}: ${verdict}: ${reason}; ${fix}`;
+function reasonText(
+  verdict: MuirShadowcatStorybookReasonVerdict,
+  reason: string,
+): string {
+  return `${muirShadowcatStorybookPluginName}: ${verdict}: ${reason}; ${fix}`;
 }

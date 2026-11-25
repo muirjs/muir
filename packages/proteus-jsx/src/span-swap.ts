@@ -1,6 +1,6 @@
 const spanSwapRoles: ReadonlySet<string> = new Set(['button', 'link']);
 
-export function swapsToSpan(role: string | undefined): boolean {
+export function muirProteusJsxSwapsToSpan(role: string | undefined): boolean {
   return role !== undefined && spanSwapRoles.has(role);
 }
 
@@ -8,7 +8,7 @@ export function swapsToSpan(role: string | undefined): boolean {
  * The attributes of `a`, `area` and `button` that a span cannot take under @types/react 19.3.0 (TS2322); a span
  * ignores them at run time.
  */
-export const notOnSpan: ReadonlySet<string> = new Set([
+export const muirProteusJsxNotOnSpan: ReadonlySet<string> = new Set([
   'alt',
   'coords',
   'disabled',

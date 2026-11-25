@@ -8,7 +8,7 @@ import { describe, it, type TestContext } from 'node:test';
 const main = join(import.meta.dirname, '..', '..', 'src', 'oss', 'main.ts');
 
 function setup(t: TestContext) {
-  const dir = mkdtempSync(join(tmpdir(), 'lz-oss-main-'));
+  const dir = mkdtempSync(join(tmpdir(), 'muir-oss-main-'));
 
   t.after(() => {
     rmSync(dir, { recursive: true, force: true });
@@ -32,7 +32,7 @@ describe('main', () => {
 
     mkdirSync(runDir);
     writeFileSync(
-      join(runDir, 'lz.mutation.json'),
+      join(runDir, 'muir.mutation.json'),
       JSON.stringify({
         files: {
           'index.js': {
@@ -67,7 +67,7 @@ describe('main', () => {
           patches: [],
         },
         sides: {
-          lz: { stryker: { reported: true }, strykerConfig: 'lz config' },
+          muir: { stryker: { reported: true }, strykerConfig: 'muir config' },
         },
       }),
     );

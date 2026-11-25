@@ -3,32 +3,32 @@ import { EventEmitter } from 'node:events';
 import net from 'node:net';
 import { test } from 'node:test';
 
-import { setEnv } from '../src/process-env.ts';
-import { acceptsConnections } from '../src/server-checks.ts';
+import { muirSirynPlaywrightSetEnv } from '../src/process-env.ts';
+import { muirSirynPlaywrightAcceptsConnections } from '../src/server-checks.ts';
 import type {
-  ConfigHandles,
-  ConfigProject,
-  ConfigWebServer,
+  MuirSirynPlaywrightConfigHandles,
+  MuirSirynPlaywrightConfigProject,
+  MuirSirynPlaywrightConfigWebServer,
 } from '../src/playwright-internals.ts';
 import {
-  freePort,
-  moveApart,
-  moveServersApart,
-  moveWebServerOptions,
-  type ServerMove,
-  type ServersApart,
-  startsMoreRunners,
+  muirSirynPlaywrightFreePort,
+  muirSirynPlaywrightMoveApart,
+  muirSirynPlaywrightMoveServersApart,
+  muirSirynPlaywrightMoveWebServerOptions,
+  type MuirSirynPlaywrightServerMove,
+  type MuirSirynPlaywrightServersApart,
+  muirSirynPlaywrightStartsMoreRunners,
 } from '../src/server-ports.ts';
 
 const server = (
-  fields: Pick<ConfigWebServer, 'url' | 'port'>,
-): ConfigWebServer => ({
+  fields: Pick<MuirSirynPlaywrightConfigWebServer, 'url' | 'port'>,
+): MuirSirynPlaywrightConfigWebServer => ({
   ignoreHTTPSErrors: false,
   reuseExistingServer: true,
   setsNodeOptions: false,
   ...fields,
 });
-const project = (baseURL?: string): ConfigProject => ({
+const project = (baseURL?: string): MuirSirynPlaywrightConfigProject => ({
   default: true,
   project: { name: 'chromium', timeout: 1000, retries: 0 },
   baseURL,
@@ -45,23 +45,35 @@ const ports = (...given: number[]) => {
 };
 
 test('Stryker starts one test runner process at concurrency 1 without a checker', () => {
-  assert.equal(startsMoreRunners({ concurrency: 1, checkers: [] }, 8), false);
+  assert.equal(
+    muirSirynPlaywrightStartsMoreRunners({ concurrency: 1, checkers: [] }, 8),
+    false,
+  );
 });
 
 test('Stryker starts more test runner processes at concurrency 2', () => {
-  assert.equal(startsMoreRunners({ concurrency: 2, checkers: [] }, 8), true);
+  assert.equal(
+    muirSirynPlaywrightStartsMoreRunners({ concurrency: 2, checkers: [] }, 8),
+    true,
+  );
 });
 
 test('a checker process becomes another test runner process when checking ends', () => {
   assert.equal(
-    startsMoreRunners({ concurrency: 1, checkers: ['typescript'] }, 8),
+    muirSirynPlaywrightStartsMoreRunners(
+      { concurrency: 1, checkers: ['typescript'] },
+      8,
+    ),
     true,
   );
 });
 
 test('a percentage concurrency is that share of the available parallelism', () => {
   assert.equal(
-    startsMoreRunners({ concurrency: '50%', checkers: [] }, 8),
+    muirSirynPlaywrightStartsMoreRunners(
+      { concurrency: '50%', checkers: [] },
+      8,
+    ),
     true,
   );
 });
@@ -69,23 +81,32 @@ test('a percentage concurrency is that share of the available parallelism', () =
 test('a percentage concurrency rounds its share of the available parallelism', () => {
   assert.deepEqual(
     [
-      startsMoreRunners({ concurrency: '10%', checkers: [] }, 8),
-      startsMoreRunners({ concurrency: '100%', checkers: [] }, 2),
-      startsMoreRunners({ concurrency: '100%', checkers: [] }, 1),
+      muirSirynPlaywrightStartsMoreRunners(
+        { concurrency: '10%', checkers: [] },
+        8,
+      ),
+      muirSirynPlaywrightStartsMoreRunners(
+        { concurrency: '100%', checkers: [] },
+        2,
+      ),
+      muirSirynPlaywrightStartsMoreRunners(
+        { concurrency: '100%', checkers: [] },
+        1,
+      ),
     ],
     [false, true, false],
   );
 });
 
 test("without a concurrency, Stryker's default starts more test runner processes on more than one core", () => {
-  assert.equal(startsMoreRunners({ checkers: [] }, 2), true);
+  assert.equal(muirSirynPlaywrightStartsMoreRunners({ checkers: [] }, 2), true);
 });
 
 test('a free port accepts no connection', async () => {
-  const port = await freePort();
+  const port = await muirSirynPlaywrightFreePort();
 
   assert.ok(port > 0);
-  assert.equal(await acceptsConnections(port), false);
+  assert.equal(await muirSirynPlaywrightAcceptsConnections(port), false);
 });
 
 function fakeListener(address: unknown, error?: Error) {
@@ -115,7 +136,7 @@ test('a free port comes from the loopback interface', async (t) => {
   const { server, listened } = fakeListener({ port: 50_100 });
   t.mock.method(net, 'createServer', () => server);
 
-  assert.equal(await freePort(), 50_100);
+  assert.equal(await muirSirynPlaywrightFreePort(), 50_100);
   assert.deepEqual(listened, [[0, '127.0.0.1']]);
 });
 
@@ -123,7 +144,7 @@ test('a free port that cannot be bound rejects with the bind error', async (t) =
   const error = new Error('EACCES');
   t.mock.method(net, 'createServer', () => fakeListener({}, error).server);
 
-  await assert.rejects(freePort(), error);
+  await assert.rejects(muirSirynPlaywrightFreePort(), error);
 });
 
 test('a free port refuses a listener address that is no port', async (t) => {
@@ -133,13 +154,13 @@ test('a free port refuses a listener address that is no port', async (t) => {
     () => fakeListener('\\\\.\\pipe\\probe').server,
   );
 
-  await assert.rejects(freePort(), {
+  await assert.rejects(muirSirynPlaywrightFreePort(), {
     message: 'Port 0 bound to \\\\.\\pipe\\probe.',
   });
 });
 
 test('nothing moves when no webServer has a port or url', async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     { projects: [project()], webServers: [server({})] },
     {},
     true,
@@ -150,7 +171,7 @@ test('nothing moves when no webServer has a port or url', async () => {
 });
 
 test('a url webServer moves to a free port, and PORT names it', async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     {
       projects: [project()],
       webServers: [server({ url: 'http://127.0.0.1:4830/health' })],
@@ -169,7 +190,7 @@ test('a url webServer moves to a free port, and PORT names it', async () => {
 });
 
 test("the projects' baseURL moves with the webServer it names, in the first project's spelling", async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     {
       projects: [
         project('http://localhost:4830'),
@@ -186,7 +207,7 @@ test("the projects' baseURL moves with the webServer it names, in the first proj
 });
 
 test('a port webServer moves to a free port', async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     { projects: [project()], webServers: [server({ port: 3313 })] },
     {},
     true,
@@ -202,7 +223,7 @@ test('a port webServer moves to a free port', async () => {
 });
 
 test('two webServers each move, and PORT is left alone since it could name only one of them', async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     {
       projects: [project()],
       webServers: [
@@ -232,7 +253,7 @@ test('two webServers each move, and PORT is left alone since it could name only 
 });
 
 test("a url without a port moves from its scheme's default port", async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     {
       projects: [project()],
       webServers: [server({ url: 'https://localhost/api' })],
@@ -250,7 +271,7 @@ test("a url without a port moves from its scheme's default port", async () => {
 });
 
 test('an http url without a port moves from port 80', async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     {
       projects: [project()],
       webServers: [server({ url: 'http://localhost/api' })],
@@ -264,13 +285,13 @@ test('an http url without a port moves from port 80', async () => {
 });
 
 const cannotMove = (reason: string) =>
-  "lzPlaywright.webServer.mutate is true, but Stryker starts more than one test runner process, so each process needs a webServer port of its own, and the runner cannot move the projects' baseURL along: " +
+  "muirSirynPlaywright.webServer.mutate is true, but Stryker starts more than one test runner process, so each process needs a webServer port of its own, and the runner cannot move the projects' baseURL along: " +
   `${reason}. Point the baseURL of every project that runs at the url or port of the same webServer, or leave it unset, ` +
   'or run Stryker with concurrency 1 and no checker (see More than one Stryker process in the README).';
 
 test('a baseURL that points at no webServer cannot be moved along', async () => {
   await assert.rejects(
-    moveServersApart(
+    muirSirynPlaywrightMoveServersApart(
       {
         projects: [project('https://staging.example.com')],
         webServers: [server({ port: 3000 })],
@@ -289,7 +310,7 @@ test('a baseURL that points at no webServer cannot be moved along', async () => 
 
 test("every project's baseURL must name a moved webServer, and the refusal names each one that does not", async () => {
   await assert.rejects(
-    moveServersApart(
+    muirSirynPlaywrightMoveServersApart(
       {
         projects: [
           project('http://localhost:3000'),
@@ -312,7 +333,7 @@ test("every project's baseURL must name a moved webServer, and the refusal names
 
 test('projects whose baseURLs name different webServers cannot share the one baseURL the runner moves', async () => {
   await assert.rejects(
-    moveServersApart(
+    muirSirynPlaywrightMoveServersApart(
       {
         projects: [
           project('http://localhost:3000'),
@@ -334,7 +355,7 @@ test('projects whose baseURLs name different webServers cannot share the one bas
 
 test('projects whose baseURLs name one webServer but differ in path cannot share the one baseURL the runner moves', async () => {
   await assert.rejects(
-    moveServersApart(
+    muirSirynPlaywrightMoveServersApart(
       {
         projects: [
           project('http://localhost:3000/api/'),
@@ -360,7 +381,7 @@ test('moving a webServer rewrites the port of the url it waits for', () => {
     reuseExistingServer: true,
   };
 
-  moveWebServerOptions(options, 4200, 50_010);
+  muirSirynPlaywrightMoveWebServerOptions(options, 4200, 50_010);
 
   assert.deepEqual(options, {
     url: 'http://localhost:50010/health',
@@ -373,7 +394,7 @@ test('moving a webServer rewrites each env value that is its port, and only thos
     env: { PORT: '4200', APP_PORT: '4200', OTHER: '42000', NODE_ENV: 'test' },
   };
 
-  moveWebServerOptions(options, 4200, 50_010);
+  muirSirynPlaywrightMoveWebServerOptions(options, 4200, 50_010);
 
   assert.deepEqual(options, {
     env: { PORT: '50010', APP_PORT: '50010', OTHER: '42000', NODE_ENV: 'test' },
@@ -384,7 +405,7 @@ test("moving a webServer leaves the env object it had as it was, since Playwrigh
   const env = { PORT: '4200' };
   const options = { env };
 
-  moveWebServerOptions(options, 4200, 50_010);
+  muirSirynPlaywrightMoveWebServerOptions(options, 4200, 50_010);
 
   assert.deepEqual(
     { moved: options.env, configured: env },
@@ -395,7 +416,7 @@ test("moving a webServer leaves the env object it had as it was, since Playwrigh
 test('moving a webServer rewrites an env value that is its port as a number, to a string', () => {
   const options = { env: { PORT: 4200, OTHER: 42_000 } };
 
-  moveWebServerOptions(options, 4200, 50_010);
+  muirSirynPlaywrightMoveWebServerOptions(options, 4200, 50_010);
 
   assert.deepEqual(options, { env: { PORT: '50010', OTHER: 42_000 } });
 });
@@ -405,7 +426,7 @@ test('moving a webServer rewrites its port where it stands as a word in the comm
     command: 'npm run dev -- --port 4200 --host 0.0.0.0 -p 4200 --id 14200',
   };
 
-  moveWebServerOptions(options, 4200, 50_010);
+  muirSirynPlaywrightMoveWebServerOptions(options, 4200, 50_010);
 
   assert.deepEqual(options, {
     command: 'npm run dev -- --port 50010 --host 0.0.0.0 -p 50010 --id 14200',
@@ -415,12 +436,14 @@ test('moving a webServer rewrites its port where it stands as a word in the comm
 test('moving a webServer leaves a url, env or command that is not what Playwright takes alone', () => {
   const options = { url: 1, env: 'x', command: 2 };
 
-  moveWebServerOptions(options, 1, 2);
+  muirSirynPlaywrightMoveWebServerOptions(options, 1, 2);
 
   assert.deepEqual(options, { url: 1, env: 'x', command: 2 });
 });
 
-const handles = (...webServers: Record<string, unknown>[]): ConfigHandles => ({
+const handles = (
+  ...webServers: Record<string, unknown>[]
+): MuirSirynPlaywrightConfigHandles => ({
   webServerOptions(index) {
     const options = webServers[index];
 
@@ -432,7 +455,9 @@ const handles = (...webServers: Record<string, unknown>[]): ConfigHandles => ({
   },
   cliOverrides: () => ({}),
 });
-const apartBy = (...moves: ServerMove[]): ServersApart => ({
+const apartBy = (
+  ...moves: MuirSirynPlaywrightServerMove[]
+): MuirSirynPlaywrightServersApart => ({
   moves,
   webServers: [],
   baseURL: undefined,
@@ -442,13 +467,16 @@ const apartBy = (...moves: ServerMove[]): ServersApart => ({
 test('undoing a move puts back the environment variables the move set', (t) => {
   const port = process.env['PORT'];
   t.after(() => {
-    setEnv({ PORT: port });
+    muirSirynPlaywrightSetEnv({ PORT: port });
   });
-  setEnv({ PORT: '3000' });
-  const undo = moveApart(handles({ url: 'http://localhost:3000/' }), {
-    ...apartBy({ index: 0, from: 3000, to: 50_100 }),
-    env: { PORT: '50100' },
-  });
+  muirSirynPlaywrightSetEnv({ PORT: '3000' });
+  const undo = muirSirynPlaywrightMoveApart(
+    handles({ url: 'http://localhost:3000/' }),
+    {
+      ...apartBy({ index: 0, from: 3000, to: 50_100 }),
+      env: { PORT: '50100' },
+    },
+  );
   const moved = process.env['PORT'];
 
   undo();
@@ -457,7 +485,7 @@ test('undoing a move puts back the environment variables the move set', (t) => {
 });
 
 test('PLAYWRIGHT_TEST_BASE_URL, which Playwright sets from a port webServer, moves with it', async () => {
-  const apart = await moveServersApart(
+  const apart = await muirSirynPlaywrightMoveServersApart(
     { projects: [project()], webServers: [server({ port: 3313 })] },
     { PLAYWRIGHT_TEST_BASE_URL: 'http://localhost:3313' },
     true,

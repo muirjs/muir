@@ -3,7 +3,7 @@ import {
   type InteractionHintCase,
 } from './support/interaction-hint-case.ts';
 
-const interaction = 'LzStorybookInteraction';
+const interaction = 'MuirProteusStorybookTestInteraction';
 
 export const clearedLaterHintCases: readonly InteractionHintCase[] = [
   {

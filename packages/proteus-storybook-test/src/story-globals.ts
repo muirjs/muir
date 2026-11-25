@@ -1,31 +1,40 @@
 import {
-  fileNameOf,
-  list,
-  sitesOf,
-  type Proven,
+  muirMoiraStorybookFileNameOf,
+  muirMoiraStorybookList,
+  muirMoiraStorybookSitesOf,
+  type MuirMoiraStorybookProven,
 } from '@muirjs/moira-storybook';
 
-import type { LzStorybookTestMutator } from './mutator.ts';
-import { perFile, readStoryFileAt } from './story-file.ts';
+import type { MuirProteusStorybookTestMutator } from './mutator.ts';
+import {
+  muirProteusStorybookTestPerFile,
+  muirProteusStorybookTestReadStoryFileAt,
+} from './story-file.ts';
 
-export const proofsBySite = perFile(
-  (program): ReadonlyMap<unknown, readonly Proven[]> =>
-    new Map(
-      sitesOf(list(program.node.body), 'globals', fileNameOf(program)).map(
-        ({ node, proofs }) => [node, proofs],
+export const muirProteusStorybookTestProofsBySite =
+  muirProteusStorybookTestPerFile(
+    (program): ReadonlyMap<unknown, readonly MuirMoiraStorybookProven[]> =>
+      new Map(
+        muirMoiraStorybookSitesOf(
+          muirMoiraStorybookList(program.node.body),
+          'globals',
+          muirMoiraStorybookFileNameOf(program),
+        ).map(({ node, proofs }) => [node, proofs]),
       ),
-    ),
-  new Map<unknown, readonly Proven[]>(),
-);
+    new Map<unknown, readonly MuirMoiraStorybookProven[]>(),
+  );
 
-export function storyGlobalsMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookStoryGlobals';
+export function muirProteusStorybookTestStoryGlobalsMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestStoryGlobals';
 } {
   return {
-    name: 'LzStorybookStoryGlobals',
+    name: 'MuirProteusStorybookTestStoryGlobals',
     sample: `export default { title: 'Sample' };\nexport const Story = {\n  globals: { viewport: { value: 'mobile1' } },\n  play: async () => {},\n};\n`,
     *mutate(path, t) {
-      readStoryFileAt(path, proofsBySite);
+      muirProteusStorybookTestReadStoryFileAt(
+        path,
+        muirProteusStorybookTestProofsBySite,
+      );
 
       const { node } = path;
 
@@ -33,7 +42,7 @@ export function storyGlobalsMutator(): LzStorybookTestMutator & {
         return;
       }
 
-      const proofs = proofsBySite(path).get(node);
+      const proofs = muirProteusStorybookTestProofsBySite(path).get(node);
 
       if (proofs === undefined) {
         return;

@@ -1,14 +1,18 @@
 import { join } from 'node:path';
 
-import { builtInNames } from '@muirjs/moira-mutators';
-import { testReadmeTiers } from '@muirjs/test-util-mutator-packages';
+import { muirMoiraMutatorsBuiltInNames } from '@muirjs/moira-mutators';
+import { muirTestReadmeTiers } from '@muirjs/test-util-mutator-packages';
 
-import { mutatorSets } from '../src/mutators.ts';
-import { packageName } from '../src/package-name.ts';
+import { muirProteusStorybookMutatorSets } from '../src/mutators.ts';
+import { muirProteusStorybookPackageName } from '../src/package-name.ts';
 
-testReadmeTiers(join(import.meta.dirname, '..', 'README.md'), mutatorSets, {
-  packageName,
-  prefix: 'LzStorybook',
-  builtIns: 'on',
-  builtInCount: builtInNames.length,
-});
+muirTestReadmeTiers(
+  join(import.meta.dirname, '..', 'README.md'),
+  muirProteusStorybookMutatorSets,
+  {
+    packageName: muirProteusStorybookPackageName,
+    prefix: 'MuirProteusStorybook',
+    builtIns: 'on',
+    builtInCount: muirMoiraMutatorsBuiltInNames.length,
+  },
+);

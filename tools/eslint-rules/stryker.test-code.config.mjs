@@ -13,7 +13,7 @@ export default await testCode({
   incrementalFile:
     'reports/stryker-incremental/@muirjs/eslint-rules.test-code.json',
   ...reportFiles('@muirjs/eslint-rules.test-code'),
-  lzNodeTest: {
+  muirSirynNodeTest: {
     testFiles: ['tools/eslint-rules/*.test.ts'],
     nodeArgs: [source],
   },

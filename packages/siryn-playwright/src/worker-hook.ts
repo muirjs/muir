@@ -6,45 +6,48 @@ import { isMainThread } from 'node:worker_threads';
 
 import { INSTRUMENTER_CONSTANTS } from '@stryker-mutator/api/core';
 
-import { isRecord } from './is-record.ts';
+import { muirSirynPlaywrightIsRecord } from './is-record.ts';
 import {
-  globalNamespace,
-  markInstrumentedReads,
-  type StrykerNamespace,
+  muirSirynPlaywrightGlobalNamespace,
+  muirSirynPlaywrightMarkInstrumentedReads,
+  type MuirSirynPlaywrightStrykerNamespace,
 } from './namespace.ts';
 import {
-  type HookedBrowser,
-  type HookedContext,
-  type HookedFrame,
-  type HookedPage,
-  type HookedRequestContext,
-  instrumentationOf,
-  internalsChanged,
-  playwrightVersion,
-  type RunningSlot,
-  runningSlotOf,
-  type SlotType,
-  workerEntry,
+  type MuirSirynPlaywrightHookedBrowser,
+  type MuirSirynPlaywrightHookedContext,
+  type MuirSirynPlaywrightHookedFrame,
+  type MuirSirynPlaywrightHookedPage,
+  type MuirSirynPlaywrightHookedRequestContext,
+  muirSirynPlaywrightInstrumentationOf,
+  muirSirynPlaywrightInternalsChanged,
+  muirSirynPlaywrightVersion,
+  type MuirSirynPlaywrightRunningSlot,
+  muirSirynPlaywrightRunningSlotOf,
+  type MuirSirynPlaywrightSlotType,
+  muirSirynPlaywrightWorkerEntry,
 } from './playwright-internals.ts';
 import {
-  frameReadTimeoutMs,
-  installErrorSuffix,
-  type PageSettings,
-  readHookTestNamespace,
-  readRunSettings,
-  type RunSettings,
-  serializeSnapshot,
-  snapshotSuffix,
-  type SnapshotLine,
-  workerFilePrefix,
+  muirSirynPlaywrightFrameReadTimeoutMs,
+  muirSirynPlaywrightInstallErrorSuffix,
+  type MuirSirynPlaywrightPageSettings,
+  muirSirynPlaywrightReadHookTestNamespace,
+  muirSirynPlaywrightReadRunSettings,
+  type MuirSirynPlaywrightRunSettings,
+  muirSirynPlaywrightSerializeSnapshot,
+  muirSirynPlaywrightSnapshotSuffix,
+  type MuirSirynPlaywrightSnapshotLine,
+  muirSirynPlaywrightWorkerFilePrefix,
 } from './protocol.ts';
-import { hostKey, testIdHeader } from './server-protocol.ts';
+import {
+  muirSirynPlaywrightHostKey,
+  muirSirynPlaywrightTestIdHeader,
+} from './server-protocol.ts';
 
-type FrameRead = Omit<SnapshotLine, 'outlivedItsTest'>;
+type FrameRead = Omit<MuirSirynPlaywrightSnapshotLine, 'outlivedItsTest'>;
 
 /** The namespace fields of a value that only passed an object check, such as another frame's or a stored namespace. */
 type UncheckedNamespace = Readonly<
-  Partial<Record<keyof StrykerNamespace, unknown>>
+  Partial<Record<keyof MuirSirynPlaywrightStrykerNamespace, unknown>>
 >;
 
 class ContextState {
@@ -73,14 +76,14 @@ class ContextState {
 
 interface RunningTest {
   readonly testId: string;
-  readonly slot: RunningSlot | undefined;
+  readonly slot: MuirSirynPlaywrightRunningSlot | undefined;
 }
 
 type CurrentTest = () => RunningTest | undefined;
 
 // Playwright's `test` is a function, and playwright/test exports that function as the module itself.
 function memberOf(value: unknown, key: string): unknown {
-  return typeof value === 'function' || isRecord(value)
+  return typeof value === 'function' || muirSirynPlaywrightIsRecord(value)
     ? Reflect.get(value, key)
     : undefined;
 }
@@ -91,7 +94,7 @@ function currentTestOf(playwrightTest: unknown, version: string): CurrentTest {
   const info = memberOf(test, 'info');
 
   if (typeof info !== 'function') {
-    throw internalsChanged(
+    throw muirSirynPlaywrightInternalsChanged(
       version,
       'playwright/test test.info(), which tells the worker hook the test that runs',
     );
@@ -107,20 +110,26 @@ function currentTestOf(playwrightTest: unknown, version: string): CurrentTest {
       return undefined;
     }
 
-    if (!isRecord(found) || typeof found['testId'] !== 'string') {
-      throw internalsChanged(
+    if (
+      !muirSirynPlaywrightIsRecord(found) ||
+      typeof found['testId'] !== 'string'
+    ) {
+      throw muirSirynPlaywrightInternalsChanged(
         version,
         "playwright/test test.info() returning the running test's testId",
       );
     }
 
-    return { testId: found['testId'], slot: runningSlotOf(found, version) };
+    return {
+      testId: found['testId'],
+      slot: muirSirynPlaywrightRunningSlotOf(found, version),
+    };
   };
 }
 
 // Undefined under `node -e`, which a worker's NODE_OPTIONS can reach.
 const entry = process.argv[1];
-const settings = readRunSettings(process.env);
+const settings = muirSirynPlaywrightReadRunSettings(process.env);
 // `Symbol.for`, so a second copy of this package in the worker, from another install, sees the mark
 // of the first and leaves the worker's coverage to it.
 const installed: unique symbol = Symbol.for(
@@ -131,19 +140,23 @@ if (
   settings &&
   isMainThread &&
   entry !== undefined &&
-  workerEntry.test(entry) &&
+  muirSirynPlaywrightWorkerEntry.test(entry) &&
   !(installed in globalThis)
 ) {
   Reflect.set(globalThis, installed, installed);
 
   try {
-    install(createRequire(entry), settings, readHookTestNamespace(process.env));
+    muirSirynPlaywrightInstall(
+      createRequire(entry),
+      settings,
+      muirSirynPlaywrightReadHookTestNamespace(process.env),
+    );
   } catch (error) {
     try {
       fs.writeFileSync(
         path.join(
           settings.outDir,
-          `${workerFilePrefix}${process.pid}${installErrorSuffix}`,
+          `${muirSirynPlaywrightWorkerFilePrefix}${process.pid}${muirSirynPlaywrightInstallErrorSuffix}`,
         ),
         String(error),
       );
@@ -155,16 +168,22 @@ if (
   }
 }
 
-export function install(
+export function muirSirynPlaywrightInstall(
   playwrightRequire: (id: string) => unknown,
-  { outDir, perTest, hitLimit, testIdHosts, pageHelpers }: RunSettings,
+  {
+    outDir,
+    perTest,
+    hitLimit,
+    testIdHosts,
+    pageHelpers,
+  }: MuirSirynPlaywrightRunSettings,
   ns: string,
 ): void {
   const tagHosts = perTest ? testIdHosts : undefined;
-  const version = playwrightVersion(playwrightRequire);
+  const version = muirSirynPlaywrightVersion(playwrightRequire);
   const test = currentTestOf(playwrightRequire('playwright/test'), version);
   const owningTest = () => owningTestId(test);
-  const instrumentation = instrumentationOf(
+  const instrumentation = muirSirynPlaywrightInstrumentationOf(
     playwrightRequire('playwright-core'),
     version,
   );
@@ -172,29 +191,34 @@ export function install(
     process.env[INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE];
   const outFile = path.join(
     outDir,
-    `${workerFilePrefix}${process.pid}-${randomUUID()}${snapshotSuffix}`,
+    `${muirSirynPlaywrightWorkerFilePrefix}${process.pid}-${randomUUID()}${muirSirynPlaywrightSnapshotSuffix}`,
   );
-  const contexts = new WeakMap<HookedContext, ContextState>();
-  const alreadyRead = new WeakSet<HookedPage>();
-  const patchedBrowsers = new WeakSet<HookedBrowser>();
+  const contexts = new WeakMap<
+    MuirSirynPlaywrightHookedContext,
+    ContextState
+  >();
+  const alreadyRead = new WeakSet<MuirSirynPlaywrightHookedPage>();
+  const patchedBrowsers = new WeakSet<MuirSirynPlaywrightHookedBrowser>();
 
   fs.writeFileSync(outFile, '');
-  recordNodeCoverage(
-    globalNamespace(ns),
+  muirSirynPlaywrightRecordNodeCoverage(
+    muirSirynPlaywrightGlobalNamespace(ns),
     { perTest, hitLimit },
     () => nodeTestId(test),
     (line) => fs.appendFileSync(outFile, line + '\n'),
   );
 
   // Closing a page that owns its context closes the context first, so the same page can come up twice.
-  function readOnce(pages: HookedPage[]): Promise<FrameRead[]> {
+  function readOnce(
+    pages: MuirSirynPlaywrightHookedPage[],
+  ): Promise<FrameRead[]> {
     const fresh = pages.filter((page) => !alreadyRead.has(page));
     fresh.forEach((page) => alreadyRead.add(page));
 
     return readPages(fresh, ns);
   }
 
-  async function collect(context: HookedContext) {
+  async function collect(context: MuirSirynPlaywrightHookedContext) {
     const state = contexts.get(context);
     const closedPageSnapshots = state?.collectOnce();
 
@@ -209,7 +233,7 @@ export function install(
     const outlivedItsTest =
       perTest && (state.testId === undefined || state.testId !== owningTest());
     const lines = snapshots.map((snapshot) =>
-      serializeSnapshot({ ...snapshot, outlivedItsTest }),
+      muirSirynPlaywrightSerializeSnapshot({ ...snapshot, outlivedItsTest }),
     );
 
     if (lines.length) {
@@ -219,7 +243,10 @@ export function install(
 
   // browser.close(), and page.close() on a page whose context stays open, skip the before-close hook for
   // what they close, so read first.
-  function collectBeforePageCloses(state: ContextState, page: HookedPage) {
+  function collectBeforePageCloses(
+    state: ContextState,
+    page: MuirSirynPlaywrightHookedPage,
+  ) {
     const close = page.close.bind(page);
     page.close = async (options) => {
       state.keepClosedPage(await readOnce([page]));
@@ -228,7 +255,9 @@ export function install(
     };
   }
 
-  function collectBeforeBrowserCloses(browser: HookedBrowser | null) {
+  function collectBeforeBrowserCloses(
+    browser: MuirSirynPlaywrightHookedBrowser | null,
+  ) {
     if (!browser || patchedBrowsers.has(browser)) {
       return;
     }
@@ -254,12 +283,12 @@ export function install(
         await context.addInitScript({ content: pageHelpers });
       }
 
-      await context.addInitScript(initPage, {
+      await context.addInitScript(muirSirynPlaywrightInitPage, {
         ns,
         activeMutant,
         testId: state.testId,
         hitLimit,
-      } satisfies PageSettings);
+      } satisfies MuirSirynPlaywrightPageSettings);
 
       if (tagHosts !== undefined) {
         await tagPageRequests(context, owningTest, tagHosts);
@@ -280,12 +309,12 @@ export function install(
  * routes the test adds, which Playwright runs first.
  */
 function tagPageRequests(
-  context: HookedContext,
+  context: MuirSirynPlaywrightHookedContext,
   currentTestId: () => string | undefined,
   hosts: readonly string[],
 ) {
   return context.route(
-    (url) => hosts.includes(hostKey(url)),
+    (url) => hosts.includes(muirSirynPlaywrightHostKey(url)),
     (route) => {
       const testId = currentTestId();
 
@@ -294,7 +323,10 @@ function tagPageRequests(
       }
 
       return route.fallback({
-        headers: { ...route.request().headers(), [testIdHeader]: testId },
+        headers: {
+          ...route.request().headers(),
+          [muirSirynPlaywrightTestIdHeader]: testId,
+        },
       });
     },
   );
@@ -306,11 +338,14 @@ function tagPageRequests(
  * lib/index.js:128), so setting extraHTTPHeaders at creation would drop the test's own.
  */
 function tagFetches(
-  context: HookedRequestContext,
+  context: MuirSirynPlaywrightHookedRequestContext,
   currentTestId: () => string | undefined,
 ) {
   const fetch = context.fetch.bind(context);
-  const tagged: HookedRequestContext['fetch'] = (target, options = {}) => {
+  const tagged: MuirSirynPlaywrightHookedRequestContext['fetch'] = (
+    target,
+    options = {},
+  ) => {
     const testId = currentTestId();
 
     if (testId === undefined) {
@@ -322,7 +357,7 @@ function tagFetches(
       headers: {
         ...(options.headers ??
           (typeof target === 'string' ? {} : target.headers())),
-        [testIdHeader]: testId,
+        [muirSirynPlaywrightTestIdHeader]: testId,
       },
     });
   };
@@ -333,9 +368,12 @@ function tagFetches(
   });
 }
 
-export function recordNodeCoverage(
-  ns: StrykerNamespace,
-  { perTest, hitLimit }: Pick<RunSettings, 'perTest' | 'hitLimit'>,
+export function muirSirynPlaywrightRecordNodeCoverage(
+  ns: MuirSirynPlaywrightStrykerNamespace,
+  {
+    perTest,
+    hitLimit,
+  }: Pick<MuirSirynPlaywrightRunSettings, 'perTest' | 'hitLimit'>,
   currentTestId: () => string | undefined,
   write: (line: string) => void,
   onExit: (listener: () => void) => void = (listener) => {
@@ -355,7 +393,7 @@ export function recordNodeCoverage(
     // its 5-minute force-kill, so a write with nowhere to go is dropped.
     try {
       write(
-        serializeSnapshot({
+        muirSirynPlaywrightSerializeSnapshot({
           mutantCoverage: ns.mutantCoverage,
           hitCount: ns.hitCount,
           outlivedItsTest: false,
@@ -367,7 +405,7 @@ export function recordNodeCoverage(
     }
   };
 
-  markInstrumentedReads(ns);
+  muirSirynPlaywrightMarkInstrumentedReads(ns);
 
   if (hitLimit !== undefined) {
     let hits = 0;
@@ -401,12 +439,15 @@ export function recordNodeCoverage(
 // needs, so test.info() alone names the first test of a group for code that serves the whole group.
 // Fixtures differ between the two rules: Node code cannot tell a worker fixture from a test's own, so
 // it counts for no test, while a context a fixture opens is checked again at close (outlivedItsTest).
-const perTestSlots: ReadonlySet<SlotType> = new Set([
+const perTestSlots: ReadonlySet<MuirSirynPlaywrightSlotType> = new Set([
   'test',
   'beforeEach',
   'afterEach',
 ]);
-const groupHooks: ReadonlySet<SlotType> = new Set(['beforeAll', 'afterAll']);
+const groupHooks: ReadonlySet<MuirSirynPlaywrightSlotType> = new Set([
+  'beforeAll',
+  'afterAll',
+]);
 
 /** The test that Node code running now belongs to: none in a beforeAll or afterAll hook or a fixture. */
 function nodeTestId(test: CurrentTest): string | undefined {
@@ -438,7 +479,7 @@ function owningTestId(test: CurrentTest): string | undefined {
 }
 
 async function readPages(
-  pages: HookedPage[],
+  pages: MuirSirynPlaywrightHookedPage[],
   ns: string,
 ): Promise<FrameRead[]> {
   const snapshots = await Promise.all(
@@ -451,11 +492,14 @@ async function readPages(
 }
 
 async function readNamespace(
-  frame: HookedFrame,
+  frame: MuirSirynPlaywrightHookedFrame,
   ns: string,
 ): Promise<FrameRead | undefined> {
   const { promise: lost, resolve } = Promise.withResolvers<FrameRead>();
-  const timer = setTimeout(() => resolve({ lost: true }), frameReadTimeoutMs);
+  const timer = setTimeout(
+    () => resolve({ lost: true }),
+    muirSirynPlaywrightFrameReadTimeoutMs,
+  );
   const read = frame
     // Reaches the page as source text, like initPage.
     .evaluate((name) => {
@@ -484,7 +528,7 @@ async function readNamespace(
 }
 
 function frameRead(value: unknown): FrameRead | undefined {
-  return isRecord(value)
+  return muirSirynPlaywrightIsRecord(value)
     ? {
         mutantCoverage: value['mutantCoverage'],
         hitCount: value['hitCount'],
@@ -496,15 +540,15 @@ function frameRead(value: unknown): FrameRead | undefined {
 // Reaches the page as source text, where an instrumented copy calls Stryker's per-file helper functions
 // (`stryNS_`, `stryCov_`, `stryMutAct_`), which the page lacks: mutating it is safe only while no test in the
 // Stryker run opens a real page.
-export function initPage({
+export function muirSirynPlaywrightInitPage({
   ns,
   activeMutant,
   testId,
   hitLimit,
-}: PageSettings): void {
+}: MuirSirynPlaywrightPageSettings): void {
   const scope: Record<string, unknown> = globalThis;
   const found = scope[ns];
-  const s: StrykerNamespace =
+  const s: MuirSirynPlaywrightStrykerNamespace =
     typeof found === 'object' && found !== null ? found : (scope[ns] = {});
   const key = `${ns}:carry`;
 

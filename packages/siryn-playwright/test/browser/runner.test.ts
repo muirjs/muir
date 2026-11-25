@@ -21,15 +21,18 @@ import {
 } from '@stryker-mutator/api/test-runner';
 import { Instrumenter } from '@stryker-mutator/instrumenter';
 
-import { acceptsConnections } from '../../src/server-checks.ts';
-import { namespaceToken, ownerFile } from '../../src/temp-root.ts';
-import { stopHeadroomMs } from '../../src/timeouts.ts';
+import { muirSirynPlaywrightAcceptsConnections } from '../../src/server-checks.ts';
+import {
+  muirSirynPlaywrightNamespaceToken,
+  muirSirynPlaywrightOwnerFile,
+} from '../../src/temp-root.ts';
+import { muirSirynPlaywrightStopHeadroomMs } from '../../src/timeouts.ts';
 import { logger } from '../support/doubles.ts';
 import { type Session, startSession, transpile } from './support/session.ts';
 
 // A pid that ran and exited, so no process owns it now.
 const deadPid = spawnSync(process.execPath, ['-e', '']).pid;
-const deadRoot = path.join(tmpdir(), `lz-playwright-${deadPid}-left00`);
+const deadRoot = path.join(tmpdir(), `muir-playwright-${deadPid}-left00`);
 const oldSchemeRoot = path.join(tmpdir(), 'stryker-pw-0-runner-test');
 
 const fixture = (file: string) =>
@@ -121,7 +124,7 @@ function runKnownKill(): Promise<MutantRunResult> {
 }
 
 const loopRunTimeout = 8000;
-const deadlineMs = loopRunTimeout - stopHeadroomMs;
+const deadlineMs = loopRunTimeout - muirSirynPlaywrightStopHeadroomMs;
 
 async function timedLoopRun(title: string) {
   const loggedBefore = logged.length;
@@ -168,7 +171,10 @@ before(async () => {
 
   rmSync(fixture('test-results'), { recursive: true, force: true });
   mkdirSync(deadRoot, { recursive: true });
-  writeFileSync(path.join(deadRoot, ownerFile), namespaceToken());
+  writeFileSync(
+    path.join(deadRoot, muirSirynPlaywrightOwnerFile),
+    muirSirynPlaywrightNamespaceToken(),
+  );
   mkdirSync(oldSchemeRoot, { recursive: true });
 
   session = await startSession(
@@ -517,7 +523,7 @@ test('a loop in a test that raised its own timeout stops at the deadline, withou
 test('a webServer that dies between runs is restarted instead of failing every test', async () => {
   await fetch('http://127.0.0.1:4321/__exit').catch(() => undefined);
   assert.equal(
-    await acceptsConnections(4321),
+    await muirSirynPlaywrightAcceptsConnections(4321),
     false,
     'the fixture server stopped',
   );
@@ -539,7 +545,7 @@ test('no Playwright artifacts are written next to the config', () => {
 test('dispose removes the temp directory the runner kept its output and runs in', async () => {
   const ownRoots = () =>
     readdirSync(tmpdir()).filter((name) =>
-      name.startsWith(`lz-playwright-${process.pid}-`),
+      name.startsWith(`muir-playwright-${process.pid}-`),
     );
   assert.equal(
     ownRoots().length,

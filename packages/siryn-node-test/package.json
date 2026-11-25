@@ -17,7 +17,7 @@
     "directory": "packages/siryn-node-test"
   },
   "bugs": {
-    "url": "https://github.com/LayZeeDK/lz-node-test/issues"
+    "url": "https://github.com/muirjs/muir/issues"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -50,7 +50,7 @@
     "@muirjs/madrox-node-test": "*"
   },
   "initStrykerConfig": {
-    "testRunner": "lz-node-test",
+    "testRunner": "muir-siryn-node-test",
     "appendPlugins": [
       "@muirjs/siryn-node-test"
     ]

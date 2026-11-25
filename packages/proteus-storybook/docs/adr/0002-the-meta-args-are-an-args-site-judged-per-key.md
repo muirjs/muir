@@ -1,6 +1,6 @@
 # The meta's args are an args site, and each key is judged by the played stories that take it from the meta
 
-`LzStorybookArgs` left the meta's `args` alone, so a meta key that a played story falls back to got no mutant. Lars
+`MuirProteusStorybookArgs` left the meta's `args` alone, so a meta key that a played story falls back to got no mutant. Lars
 approved making them a site on 2026-11-12: "Should the meta's args become an args mutation site: Approve
 recommendation." Storybook 10.6.5 merges a story's args from the preview, then the meta, then the story, then a
 `.test()` call's options, key by key, so a meta key reaches a played run only where nothing above the meta gives it.
@@ -22,7 +22,7 @@ does not supersede it: a story's own args are always taken by its own run, so no
 - One read set for the whole meta site, the union of every played story's reads. It leaves a meta key alone when only
   a story that gives the key itself reads it, though the stories that take it from the meta check nothing about it.
 - Runs of the meta site only for the stories made from that meta. It changes the runs of the meta's globals site,
-  whose default-global proofs read every run, so `LzStorybookStoryGlobals` would change with it.
+  whose default-global proofs read every run, so `MuirProteusStorybookTestStoryGlobals` would change with it.
 
 ## Consequences
 

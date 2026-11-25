@@ -3,25 +3,28 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { type TestContext, test } from 'node:test';
 
-import type { StrykerNamespace } from '../src/namespace.ts';
-import { readSnapshotDir, snapshotSuffix } from '../src/protocol.ts';
-import { mergeCoverage } from '../src/run-result.ts';
+import type { MuirSirynPlaywrightStrykerNamespace } from '../src/namespace.ts';
 import {
-  controlFile,
-  type ServerControl,
-  serverSnapshotPrefix,
-  writeServerControl,
+  muirSirynPlaywrightReadSnapshotDir,
+  muirSirynPlaywrightSnapshotSuffix,
+} from '../src/protocol.ts';
+import { muirSirynPlaywrightMergeCoverage } from '../src/run-result.ts';
+import {
+  muirSirynPlaywrightControlFile,
+  type MuirSirynPlaywrightServerControl,
+  muirSirynPlaywrightServerSnapshotPrefix,
+  muirSirynPlaywrightWriteServerControl,
 } from '../src/server-protocol.ts';
-import { runSwitch } from '../src/server-run-switch.ts';
+import { muirSirynPlaywrightRunSwitch } from '../src/server-run-switch.ts';
 import { tempTree, withoutPrototypes } from './support/doubles.ts';
 
 function switched(t: TestContext) {
   const dir = tempTree(t, 'server-run-switch-');
-  const namespace: StrykerNamespace = {};
-  const run = runSwitch(
+  const namespace: MuirSirynPlaywrightStrykerNamespace = {};
+  const run = muirSirynPlaywrightRunSwitch(
     dir,
     namespace,
-    `${serverSnapshotPrefix}1-x${snapshotSuffix}`,
+    `${muirSirynPlaywrightServerSnapshotPrefix}1-x${muirSirynPlaywrightSnapshotSuffix}`,
   );
   let runs = 0;
 
@@ -29,10 +32,10 @@ function switched(t: TestContext) {
     dir,
     namespace,
     run,
-    write(control: Omit<ServerControl, 'outDir'>) {
+    write(control: Omit<MuirSirynPlaywrightServerControl, 'outDir'>) {
       const outDir = path.join(dir, 'runs', String(runs++));
       mkdirSync(outDir, { recursive: true });
-      writeServerControl(dir, { outDir, ...control });
+      muirSirynPlaywrightWriteServerControl(dir, { outDir, ...control });
 
       return outDir;
     },
@@ -40,7 +43,7 @@ function switched(t: TestContext) {
 }
 
 function hitsOf(outDir: string): number {
-  return readSnapshotDir(outDir).snapshots.reduce(
+  return muirSirynPlaywrightReadSnapshotDir(outDir).snapshots.reduce(
     (sum, { hitCount }) => sum + hitCount,
     0,
   );
@@ -82,7 +85,7 @@ test('a control rewritten for the same run folder is the control a later request
   const { dir, run, write } = switched(t);
   const outDir = write({ perTest: true, testIdHosts: ['localhost:4200'] });
   run.startRequest();
-  writeServerControl(dir, {
+  muirSirynPlaywrightWriteServerControl(dir, {
     outDir,
     perTest: true,
     testIdHosts: ['localhost:4300'],
@@ -96,7 +99,7 @@ test('a control file that is gone leaves no control, not the previous run', (t) 
   const { dir, namespace, run, write } = switched(t);
   write({ perTest: false, activeMutant: '2' });
   run.startRequest();
-  rmSync(path.join(dir, controlFile));
+  rmSync(path.join(dir, muirSirynPlaywrightControlFile));
   run.startRequest();
 
   assert.equal(run.control(), undefined);
@@ -108,8 +111,8 @@ test('a control file that cannot be read keeps the previous control, and warns o
   const emitWarning = t.mock.method(process, 'emitWarning', () => undefined);
   write({ perTest: false, activeMutant: '2' });
   run.startRequest();
-  rmSync(path.join(dir, controlFile));
-  mkdirSync(path.join(dir, controlFile));
+  rmSync(path.join(dir, muirSirynPlaywrightControlFile));
+  mkdirSync(path.join(dir, muirSirynPlaywrightControlFile));
   run.startRequest();
   run.startRequest();
 
@@ -127,7 +130,7 @@ test('an invalid control file leaves no control, not the previous run, and warns
   const emitWarning = t.mock.method(process, 'emitWarning', () => undefined);
   write({ perTest: false, activeMutant: '2' });
   run.startRequest();
-  writeFileSync(path.join(dir, controlFile), '{"outDir":');
+  writeFileSync(path.join(dir, muirSirynPlaywrightControlFile), '{"outDir":');
   run.startRequest();
   run.startRequest();
 
@@ -181,11 +184,19 @@ test('coverage before the first run goes to the first run, and each run gets onl
   run.flush();
 
   assert.deepEqual(
-    withoutPrototypes(mergeCoverage(readSnapshotDir(first).snapshots)),
+    withoutPrototypes(
+      muirSirynPlaywrightMergeCoverage(
+        muirSirynPlaywrightReadSnapshotDir(first).snapshots,
+      ),
+    ),
     { static: { '0': 1 }, perTest: { small: { '7': 1 } } },
   );
   assert.deepEqual(
-    withoutPrototypes(mergeCoverage(readSnapshotDir(second).snapshots)),
+    withoutPrototypes(
+      muirSirynPlaywrightMergeCoverage(
+        muirSirynPlaywrightReadSnapshotDir(second).snapshots,
+      ),
+    ),
     { static: {}, perTest: { small: { '7': 1 } } },
   );
 });
@@ -197,7 +208,7 @@ test('a valid control file, a changed one and a removed one warn nothing', (t) =
   run.startRequest();
   write({ perTest: false, activeMutant: '3' });
   run.startRequest();
-  rmSync(path.join(dir, controlFile));
+  rmSync(path.join(dir, muirSirynPlaywrightControlFile));
   run.startRequest();
 
   assert.equal(emitWarning.mock.callCount(), 0);
@@ -231,7 +242,7 @@ test('a flush writes only what was hit since the last one, and nothing when noth
   run.flush();
 
   assert.deepEqual(
-    readSnapshotDir(outDir).snapshots.map(({ coverage }) =>
+    muirSirynPlaywrightReadSnapshotDir(outDir).snapshots.map(({ coverage }) =>
       withoutPrototypes(coverage),
     ),
     [{ static: {}, perTest: { small: { '7': 1 } } }],
@@ -246,7 +257,11 @@ test('a flush writes static coverage without per-test coverage', (t) => {
   run.flush();
 
   assert.deepEqual(
-    withoutPrototypes(mergeCoverage(readSnapshotDir(outDir).snapshots)),
+    withoutPrototypes(
+      muirSirynPlaywrightMergeCoverage(
+        muirSirynPlaywrightReadSnapshotDir(outDir).snapshots,
+      ),
+    ),
     { static: { '0': 1 }, perTest: {} },
   );
 });
@@ -259,7 +274,9 @@ test('a flush tells the run that the server loaded instrumented code, though no 
   run.flush();
 
   assert.deepEqual(
-    readSnapshotDir(outDir).snapshots.map(({ instrumented }) => instrumented),
+    muirSirynPlaywrightReadSnapshotDir(outDir).snapshots.map(
+      ({ instrumented }) => instrumented,
+    ),
     [true],
   );
 });
@@ -277,14 +294,19 @@ test('each run hears once that the server loaded instrumented code', (t) => {
   run.flush();
 
   assert.deepEqual(
-    runs.map((outDir) => readSnapshotDir(outDir).snapshots.length),
+    runs.map(
+      (outDir) => muirSirynPlaywrightReadSnapshotDir(outDir).snapshots.length,
+    ),
     [1, 1],
   );
 });
 
 test('a run folder that is gone drops the coverage without a throw', (t) => {
   const { dir, namespace, run } = switched(t);
-  writeServerControl(dir, { outDir: path.join(dir, 'gone'), perTest: true });
+  muirSirynPlaywrightWriteServerControl(dir, {
+    outDir: path.join(dir, 'gone'),
+    perTest: true,
+  });
   run.startRequest();
   namespace.mutantCoverage = { static: {}, perTest: { small: { '7': 1 } } };
 

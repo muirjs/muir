@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseArguments, type LzTestTableOptions } from '../../src/register.ts';
-import { lzTestEach } from '../../src/test-each.ts';
+import {
+  muirParseArguments,
+  type MuirTestTableOptions,
+} from '../../src/register.ts';
+import { muirTestEach } from '../../src/test-each.ts';
 import { signatures } from '../reported.fixtures.ts';
 
 describe('parseArguments', () => {
@@ -11,7 +14,7 @@ describe('parseArguments', () => {
   const cases: readonly (readonly [
     string,
     readonly [
-      (() => void) | LzTestTableOptions | undefined,
+      (() => void) | MuirTestTableOptions | undefined,
       (() => void) | number | undefined,
     ],
     unknown,
@@ -31,22 +34,25 @@ describe('parseArguments', () => {
     ['(name)', [undefined, undefined], { options: {} }],
   ];
 
-  lzTestEach(cases)(
+  muirTestEach(cases)(
     'reads %s',
     (_shape, [optionsOrFn, fnOrTimeout], expected) => {
-      assert.deepEqual(parseArguments(optionsOrFn, fnOrTimeout), expected);
+      assert.deepEqual(muirParseArguments(optionsOrFn, fnOrTimeout), expected);
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     { shape: 'options after a function', args: [fn, {}] },
     { shape: 'two functions', args: [fn, fn] },
     { shape: 'null options', args: [null, fn] },
   ])('rejects $shape', ({ args: [optionsOrFn, fnOrTimeout] }) => {
-    assert.throws(() => parseArguments(optionsOrFn, fnOrTimeout), signatures);
+    assert.throws(
+      () => muirParseArguments(optionsOrFn, fnOrTimeout),
+      signatures,
+    );
   });
 
   it('accepts a null after a function', () => {
-    assert.deepEqual(parseArguments(fn, null), { options: {}, fn });
+    assert.deepEqual(muirParseArguments(fn, null), { options: {}, fn });
   });
 });

@@ -3,13 +3,13 @@ import {
   type InteractionHintCase,
 } from './support/interaction-hint-case.ts';
 
-const interaction = 'LzStorybookInteraction';
+const interaction = 'MuirProteusStorybookTestInteraction';
 
 export const negativeOnlyHintCases: readonly InteractionHintCase[] = [
   {
     id: 'negative-only',
     title:
-      'names a surviving LzStorybookInteraction mutant whose following checks are all negative',
+      'names a surviving MuirProteusStorybookTestInteraction mutant whose following checks are all negative',
     source: inPlay(
       "await userEvent.click(canvas.getByRole('button', { name: 'Save' }));",
       'await expect(args.onSave).not.toHaveBeenCalled();',

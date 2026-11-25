@@ -1,35 +1,38 @@
-import type { Flags, Register } from './register.ts';
+import type { MuirFlags, MuirRegister } from './register.ts';
 
 /**
  * A table function with its modifiers, chained before the table. `skip`, `only`, `todo` and `fails` each turn their
  * flag on, so they compose in any order. `skipIf` and `runIf` turn `skip` on when their condition asks for it and
  * otherwise leave it as it is, as in Vitest, so a `skip` before or after them always holds.
  */
-export type LzTestModified<TFunction> = TFunction & {
-  readonly skip: LzTestModified<TFunction>;
-  readonly only: LzTestModified<TFunction>;
-  readonly todo: LzTestModified<TFunction>;
-  readonly fails: LzTestModified<TFunction>;
-  skipIf(condition: unknown): LzTestModified<TFunction>;
-  runIf(condition: unknown): LzTestModified<TFunction>;
+export type MuirTestModified<TFunction> = TFunction & {
+  readonly skip: MuirTestModified<TFunction>;
+  readonly only: MuirTestModified<TFunction>;
+  readonly todo: MuirTestModified<TFunction>;
+  readonly fails: MuirTestModified<TFunction>;
+  skipIf(condition: unknown): MuirTestModified<TFunction>;
+  runIf(condition: unknown): MuirTestModified<TFunction>;
 };
 
 type Table<TCallback> = (
   cases: readonly unknown[],
   ...values: unknown[]
-) => Register<TCallback>;
+) => MuirRegister<TCallback>;
 
 /** The table function for `cases`, which turns a table into its tests' `Register`, with `flags` and the modifiers. */
-export function modified<TCallback>(
-  cases: (flags: Flags, rows: readonly unknown[]) => Register<TCallback>,
-  flags: Flags,
-): LzTestModified<Table<TCallback>> {
+export function muirModified<TCallback>(
+  cases: (
+    flags: MuirFlags,
+    rows: readonly unknown[],
+  ) => MuirRegister<TCallback>,
+  flags: MuirFlags,
+): MuirTestModified<Table<TCallback>> {
   const table: Table<TCallback> = (rows, ...values) =>
-    cases(flags, values.length > 0 ? templateRows(rows, values) : rows);
-  const flag = (key: keyof Flags) => () =>
-    modified(cases, { ...flags, [key]: true });
+    cases(flags, values.length > 0 ? muirTemplateRows(rows, values) : rows);
+  const flag = (key: keyof MuirFlags) => () =>
+    muirModified(cases, { ...flags, [key]: true });
   const skipWhen = (skip: boolean) =>
-    modified(cases, skip ? { ...flags, skip } : flags);
+    muirModified(cases, skip ? { ...flags, skip } : flags);
   const withConditions = Object.assign(table, {
     skipIf: (condition: unknown) => skipWhen(Boolean(condition)),
     runIf: (condition: unknown) => skipWhen(!condition),
@@ -45,7 +48,7 @@ export function modified<TCallback>(
 }
 
 /** The rows of a template literal table: one object per row, keyed by the column names of its first line. */
-export function templateRows(
+export function muirTemplateRows(
   strings: readonly unknown[],
   values: readonly unknown[],
 ): Record<string, unknown>[] {

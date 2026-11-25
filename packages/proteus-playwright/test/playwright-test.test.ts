@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { looksLikePlaywrightTest } from '../src/playwright-test.ts';
+import { muirProteusPlaywrightLooksLikePlaywrightTest } from '../src/playwright-test.ts';
 import { programOf } from './support/parse.ts';
 
 describe('looksLikePlaywrightTest', () => {
@@ -10,7 +10,7 @@ describe('looksLikePlaywrightTest', () => {
       'export function total(a: number, b: number) {\n  return a + b;\n}\n',
     );
 
-    assert.equal(looksLikePlaywrightTest(program), false);
+    assert.equal(muirProteusPlaywrightLooksLikePlaywrightTest(program), false);
   });
 
   for (const source of [
@@ -19,7 +19,10 @@ describe('looksLikePlaywrightTest', () => {
     "import type { Page } from '@playwright/test';\n",
   ]) {
     it(`is true for a file with an @playwright/ import: ${source.trim()}`, async () => {
-      assert.equal(looksLikePlaywrightTest(await programOf(source)), true);
+      assert.equal(
+        muirProteusPlaywrightLooksLikePlaywrightTest(await programOf(source)),
+        true,
+      );
     });
   }
 
@@ -30,7 +33,10 @@ describe('looksLikePlaywrightTest', () => {
     "export { expect } from '@playwright/test';\n",
   ]) {
     it(`is false for a file whose imports are not @playwright/: ${source.trim()}`, async () => {
-      assert.equal(looksLikePlaywrightTest(await programOf(source)), false);
+      assert.equal(
+        muirProteusPlaywrightLooksLikePlaywrightTest(await programOf(source)),
+        false,
+      );
     });
   }
 
@@ -45,7 +51,10 @@ describe('looksLikePlaywrightTest', () => {
     "test?.('a', async () => {});\n",
   ]) {
     it(`is true for a file with a top-level test call: ${source.trim()}`, async () => {
-      assert.equal(looksLikePlaywrightTest(await programOf(source)), true);
+      assert.equal(
+        muirProteusPlaywrightLooksLikePlaywrightTest(await programOf(source)),
+        true,
+      );
     });
   }
 
@@ -58,7 +67,10 @@ describe('looksLikePlaywrightTest', () => {
     "export = test('a', () => {});\n",
   ]) {
     it(`is false for a file with no top-level test call: ${source.trim().replace(/\n/g, ' ')}`, async () => {
-      assert.equal(looksLikePlaywrightTest(await programOf(source)), false);
+      assert.equal(
+        muirProteusPlaywrightLooksLikePlaywrightTest(await programOf(source)),
+        false,
+      );
     });
   }
 });

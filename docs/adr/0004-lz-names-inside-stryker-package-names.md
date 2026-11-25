@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0012
+---
+
 # Packages are named `@layzee/stryker-*`; the names Stryker reads carry the `lz` prefix
 
 Package names follow StrykerJS's convention, `@layzee/stryker-<target>[-<kind>]`, while every name a Stryker config

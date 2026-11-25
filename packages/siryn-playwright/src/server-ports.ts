@@ -1,39 +1,45 @@
 import net from 'node:net';
 
-import { isRecord } from './is-record.ts';
+import { muirSirynPlaywrightIsRecord } from './is-record.ts';
 import type {
-  ConfigHandles,
-  ConfigProject,
-  ConfigWebServer,
+  MuirSirynPlaywrightConfigHandles,
+  MuirSirynPlaywrightConfigProject,
+  MuirSirynPlaywrightConfigWebServer,
 } from './playwright-internals.ts';
-import { envOf, setEnv } from './process-env.ts';
-import { hostKey } from './server-protocol.ts';
-import { type ServerMutate, ServerSupportRefused } from './server-refusal.ts';
+import {
+  muirSirynPlaywrightEnvOf,
+  muirSirynPlaywrightSetEnv,
+} from './process-env.ts';
+import { muirSirynPlaywrightHostKey } from './server-protocol.ts';
+import {
+  type MuirSirynPlaywrightServerMutate,
+  MuirSirynPlaywrightServerSupportRefused,
+} from './server-refusal.ts';
 
-export interface ServerMove {
+export interface MuirSirynPlaywrightServerMove {
   readonly index: number;
   readonly from: number;
   readonly to: number;
 }
 
-export interface ServersApart {
-  readonly moves: readonly ServerMove[];
-  readonly webServers: readonly ConfigWebServer[];
+export interface MuirSirynPlaywrightServersApart {
+  readonly moves: readonly MuirSirynPlaywrightServerMove[];
+  readonly webServers: readonly MuirSirynPlaywrightConfigWebServer[];
   readonly baseURL: string | undefined;
   readonly env: Readonly<Record<string, string>>;
 }
 
 const baseUrlEnv = 'PLAYWRIGHT_TEST_BASE_URL';
 
-export async function moveServersApart(
+export async function muirSirynPlaywrightMoveServersApart(
   config: {
-    readonly projects: readonly ConfigProject[];
-    readonly webServers: readonly ConfigWebServer[];
+    readonly projects: readonly MuirSirynPlaywrightConfigProject[];
+    readonly webServers: readonly MuirSirynPlaywrightConfigWebServer[];
   },
   env: NodeJS.ProcessEnv,
-  mutate: ServerMutate,
-  nextPort: () => Promise<number> = freePort,
-): Promise<ServersApart | undefined> {
+  mutate: MuirSirynPlaywrightServerMutate,
+  nextPort: () => Promise<number> = muirSirynPlaywrightFreePort,
+): Promise<MuirSirynPlaywrightServersApart | undefined> {
   const planned = await Promise.all(
     config.webServers.map((server, index) => planMove(server, index, nextPort)),
   );
@@ -49,7 +55,9 @@ export async function moveServersApart(
   );
   const movedUrl = (url: string): string | undefined => {
     const to = URL.canParse(url)
-      ? moves.find(({ host }) => host === hostKey(new URL(url)))?.to
+      ? moves.find(
+          ({ host }) => host === muirSirynPlaywrightHostKey(new URL(url)),
+        )?.to
       : undefined;
 
     return to === undefined ? undefined : withPort(url, to);
@@ -63,7 +71,10 @@ export async function moveServersApart(
     );
   }
 
-  if (new Set(baseUrls.map((url) => hostKey(new URL(url)))).size > 1) {
+  if (
+    new Set(baseUrls.map((url) => muirSirynPlaywrightHostKey(new URL(url))))
+      .size > 1
+  ) {
     throw cannotMove(
       mutate,
       `the projects' baseURLs point at different webServers (${baseUrls.join(', ')})`,
@@ -96,7 +107,7 @@ export async function moveServersApart(
 }
 
 async function planMove(
-  server: ConfigWebServer,
+  server: MuirSirynPlaywrightConfigWebServer,
   index: number,
   nextPort: () => Promise<number>,
 ) {
@@ -121,16 +132,16 @@ async function planMove(
       index,
       from: Number(url.port || (url.protocol === 'https:' ? 443 : 80)),
       to,
-      host: hostKey(url),
+      host: muirSirynPlaywrightHostKey(url),
     },
   };
 }
 
 function cannotMove(
-  mutate: ServerMutate,
+  mutate: MuirSirynPlaywrightServerMutate,
   reason: string,
-): ServerSupportRefused {
-  return new ServerSupportRefused(
+): MuirSirynPlaywrightServerSupportRefused {
+  return new MuirSirynPlaywrightServerSupportRefused(
     mutate,
     'Stryker starts more than one test runner process, so each process ' +
       `needs a webServer port of its own, and the runner cannot move the projects' baseURL along: ${reason}. ` +
@@ -141,7 +152,7 @@ function cannotMove(
 
 function withHostKey(url: string): string {
   const keyed = new URL(url);
-  keyed.host = hostKey(keyed);
+  keyed.host = muirSirynPlaywrightHostKey(keyed);
 
   return keyed.href;
 }
@@ -153,36 +164,43 @@ function withPort(url: string, port: number): string {
   return moved.href;
 }
 
-export function moveApart(
-  playwright: ConfigHandles,
-  apart: ServersApart,
+export function muirSirynPlaywrightMoveApart(
+  playwright: MuirSirynPlaywrightConfigHandles,
+  apart: MuirSirynPlaywrightServersApart,
 ): () => void {
-  const previousEnv = envOf(Object.keys(apart.env));
-  moveWebServers(playwright, apart.moves, apart.baseURL);
-  setEnv(apart.env);
+  const previousEnv = muirSirynPlaywrightEnvOf(Object.keys(apart.env));
+  muirSirynPlaywrightMoveWebServers(playwright, apart.moves, apart.baseURL);
+  muirSirynPlaywrightSetEnv(apart.env);
 
   return () => {
-    setEnv(previousEnv);
+    muirSirynPlaywrightSetEnv(previousEnv);
   };
 }
 
-export function moveWebServers(
-  playwright: ConfigHandles,
-  moves: readonly ServerMove[],
+export function muirSirynPlaywrightMoveWebServers(
+  playwright: MuirSirynPlaywrightConfigHandles,
+  moves: readonly MuirSirynPlaywrightServerMove[],
   baseURL: string | undefined,
 ): void {
   const overrides = playwright.cliOverrides();
   moves.forEach(({ index, from, to }) => {
-    moveWebServerOptions(playwright.webServerOptions(index), from, to);
+    muirSirynPlaywrightMoveWebServerOptions(
+      playwright.webServerOptions(index),
+      from,
+      to,
+    );
   });
 
   if (baseURL !== undefined) {
     const use = overrides['use'];
-    overrides['use'] = { ...(isRecord(use) ? use : {}), baseURL };
+    overrides['use'] = {
+      ...(muirSirynPlaywrightIsRecord(use) ? use : {}),
+      baseURL,
+    };
   }
 }
 
-export function moveWebServerOptions(
+export function muirSirynPlaywrightMoveWebServerOptions(
   options: Record<string, unknown>,
   from: number,
   to: number,
@@ -193,7 +211,7 @@ export function moveWebServerOptions(
     options['url'] = withPort(url, to);
   }
 
-  if (isRecord(env)) {
+  if (muirSirynPlaywrightIsRecord(env)) {
     options['env'] = Object.fromEntries(
       Object.entries(env).map(([name, value]) => [
         name,
@@ -211,7 +229,7 @@ export function moveWebServerOptions(
 }
 
 // ponytail: another process may take the port before the webServer binds it; Playwright then reports the bind error.
-export function freePort(): Promise<number> {
+export function muirSirynPlaywrightFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
     server.once('error', reject);
@@ -228,7 +246,7 @@ export function freePort(): Promise<number> {
   });
 }
 
-export function startsMoreRunners(
+export function muirSirynPlaywrightStartsMoreRunners(
   options: {
     readonly concurrency?: number | string | undefined;
     readonly checkers?: readonly string[] | undefined;

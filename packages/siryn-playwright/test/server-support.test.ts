@@ -9,8 +9,8 @@ import {
   MutantRunStatus,
 } from '@stryker-mutator/api/test-runner';
 
-import { serializeSnapshot } from '../src/protocol.ts';
-import { serverDirEnv } from '../src/server-protocol.ts';
+import { muirSirynPlaywrightSerializeSnapshot } from '../src/protocol.ts';
+import { muirSirynPlaywrightServerDirEnv } from '../src/server-protocol.ts';
 import {
   dryRunOptions,
   fakeTestCase,
@@ -38,7 +38,7 @@ test('without webServer.mutate, global setup gets neither the server hook nor it
   const fake = fakePlaywright(t, {
     webServers: [webServer],
     globalSetup: () => {
-      setups.push(process.env[serverDirEnv]);
+      setups.push(process.env[muirSirynPlaywrightServerDirEnv]);
 
       return 'passed';
     },
@@ -64,7 +64,7 @@ test('webServer.mutate: true gives global setup the server folder and tags the d
 });
 
 const hint =
-  'Server-side mutants stay NoCoverage: the code the Playwright webServer runs is mutated only with lzPlaywright.webServer.mutate: true.';
+  'Server-side mutants stay NoCoverage: the code the Playwright webServer runs is mutated only with muirSirynPlaywright.webServer.mutate: true.';
 
 test('without webServer.mutate, the dry run of a config with a webServer logs one hint to turn it on', async (t) => {
   const fake = fakePlaywright(t, { webServers: [webServer] });
@@ -117,7 +117,11 @@ test('global setup starts the webServer with the server hook before the base NOD
   assert.equal(setup.nodeOptions, `--import "${serverHookUrl}" --no-warnings`);
   assert.equal(path.basename(setup.serverDir ?? ''), 'server');
   assert.equal(setup.activeMutant, undefined);
-  assert.equal(process.env[serverDirEnv], undefined, 'restored after setup');
+  assert.equal(
+    process.env[muirSirynPlaywrightServerDirEnv],
+    undefined,
+    'restored after setup',
+  );
 });
 
 test('without base NODE_OPTIONS, global setup starts the webServer with only the server hook', async (t) => {
@@ -357,7 +361,7 @@ test('a webServer restart whose stopped server keeps answering stops waiting aft
     shell.mutantRun(mutantRunOptions({ mutantActivation: 'static' })),
     {
       message:
-        /^lzPlaywright\.webServer\.mutate is true, but no process that Playwright global setup started loaded the server hook\./,
+        /^muirSirynPlaywright\.webServer\.mutate is true, but no process that Playwright global setup started loaded the server hook\./,
     },
   );
   assert.ok(performance.now() - startedAt < stoppedWaitMs + hookedWaitMs + 500);
@@ -469,7 +473,7 @@ test('a static mutant run whose webServer, started without the mutant after it f
     shell.mutantRun(mutantRunOptions({ mutantActivation: 'static' })),
     {
       message:
-        /^lzPlaywright\.webServer\.mutate is true, but no process that Playwright global setup started loaded the server hook\./,
+        /^muirSirynPlaywright\.webServer\.mutate is true, but no process that Playwright global setup started loaded the server hook\./,
     },
   );
 });
@@ -495,7 +499,7 @@ test('a static mutant run whose webServer, started with the mutant again after a
     shell.mutantRun(mutantRunOptions({ mutantActivation: 'static' })),
     {
       message:
-        /^lzPlaywright\.webServer\.mutate is true, but no process that Playwright global setup started loaded the server hook\./,
+        /^muirSirynPlaywright\.webServer\.mutate is true, but no process that Playwright global setup started loaded the server hook\./,
     },
   );
 });
@@ -602,7 +606,7 @@ test("the dry run merges the server's snapshots with the workers'", async (t) =>
       run.reporter.onTestEnd(finishedTest('b', 'passed'));
       writeFileSync(
         path.join(run.settings.outDir, 'server-9-x.ndjson'),
-        serializeSnapshot({
+        muirSirynPlaywrightSerializeSnapshot({
           mutantCoverage: { static: { '3': 1 }, perTest: { b: { '2': 1 } } },
           outlivedItsTest: false,
         }) + '\n',

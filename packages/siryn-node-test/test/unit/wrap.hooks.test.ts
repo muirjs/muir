@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { envNames } from '../../src/record.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 import {
   bodyOf,
   callable,
@@ -123,7 +123,7 @@ describe('wrapNodeTest', () => {
         seen,
         Array.from({ length: 8 }, () => undefined),
       );
-      assert.ok(!(envNames.current in env));
+      assert.ok(!(muirSirynNodeTestEnvNames.current in env));
     });
 
     it('keeps a test current after its body until its after hooks run, and through them while its body runs', async () => {
@@ -204,7 +204,7 @@ describe('wrapNodeTest', () => {
       ]);
     });
 
-    lzTestEach([
+    muirTestEach([
       [
         'makes t.runOnly do nothing in every hook without --test-only',
         false,

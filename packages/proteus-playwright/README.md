@@ -26,18 +26,18 @@ this configuration proves something only when the report shows mutants in the sp
 When a file in `mutate` has no `@playwright/` import and no top-level `test(...)` call, the run prints one warning
 for that file and goes on.
 
-Call `lzPlaywrightMutators` at the top of the Stryker configuration file and await it:
+Call `muirProteusPlaywrightMutators` at the top of the Stryker configuration file and await it:
 
 ```ts
 // stryker.test-code.config.mjs
-import { lzPlaywrightMutators } from '@muirjs/proteus-playwright';
+import { muirProteusPlaywrightMutators } from '@muirjs/proteus-playwright';
 
-await lzPlaywrightMutators();
+await muirProteusPlaywrightMutators();
 
 export default {
   mutate: ['e2e/**/*.spec.ts', 'e2e/pages/**/*.ts', 'e2e/fixtures.ts'],
   appendPlugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
+  testRunner: 'muir-siryn-playwright',
 };
 ```
 
@@ -48,7 +48,7 @@ TypeScript ES module, because a JSON configuration cannot import a module. Listi
 The call prints one line:
 
 ```text
-@muirjs/proteus-playwright: Stryker's 17 built-in mutators are off for every file in this run; 9 LzPlaywright mutators on.
+@muirjs/proteus-playwright: Stryker's 17 built-in mutators are off for every file in this run; 9 MuirProteusPlaywright mutators on.
 ```
 
 The call checks that each mutator it installs makes a mutant of a sample, and that no built-in mutator makes one. It
@@ -61,16 +61,16 @@ The first argument turns on mutators beyond the default tier. Each key takes onl
 
 ```ts
 // Every opt-in mutator.
-await lzPlaywrightMutators({ extended: true });
+await muirProteusPlaywrightMutators({ extended: true });
 
 // One opt-in mutator, and one experimental mutator.
-await lzPlaywrightMutators({
-  LzPlaywrightSleepWait: true,
-  experimental: { LzPlaywrightRequestUrl: true },
+await muirProteusPlaywrightMutators({
+  MuirProteusPlaywrightSleepWait: true,
+  experimental: { MuirProteusPlaywrightRequestUrl: true },
 });
 
 // Every experimental mutator.
-await lzPlaywrightMutators({ experimental: true });
+await muirProteusPlaywrightMutators({ experimental: true });
 ```
 
 - `extended: true` turns on every opt-in mutator.
@@ -81,7 +81,7 @@ await lzPlaywrightMutators({ experimental: true });
 With opt-in or experimental mutators on, the line names them:
 
 ```text
-@muirjs/proteus-playwright: Stryker's 17 built-in mutators are off for every file in this run; 11 LzPlaywright mutators on. Opt-in or experimental: LzPlaywrightSleepWait, LzPlaywrightRequestUrl.
+@muirjs/proteus-playwright: Stryker's 17 built-in mutators are off for every file in this run; 11 MuirProteusPlaywright mutators on. Opt-in or experimental: MuirProteusPlaywrightSleepWait, MuirProteusPlaywrightRequestUrl.
 ```
 
 The call throws, with a message that starts with the package name, on options that are not a plain object, such as
@@ -90,7 +90,7 @@ on the name of a default mutator, on an opt-in name inside `experimental`, and o
 For example:
 
 ```text
-@muirjs/proteus-playwright: no opt-in mutator is named LzPlaywrightRequestUrl; it is experimental, so it goes inside experimental.
+@muirjs/proteus-playwright: no opt-in mutator is named MuirProteusPlaywrightRequestUrl; it is experimental, so it goes inside experimental.
 ```
 
 The options turn mutators on, never off. To turn one off, see [Turn a mutator off](#turn-a-mutator-off).
@@ -98,10 +98,10 @@ The options turn mutators on, never off. To turn one off, see [Turn a mutator of
 ### Name your navigation fixtures
 
 The second argument holds settings. `navigationFixtures` lists the fixture names whose awaited calls
-`LzPlaywrightNavigationAction` removes. It replaces the default list, `['navigate']`:
+`MuirProteusPlaywrightNavigationAction` removes. It replaces the default list, `['navigate']`:
 
 ```ts
-await lzPlaywrightMutators({}, { navigationFixtures: ['navigate', 'visit'] });
+await muirProteusPlaywrightMutators({}, { navigationFixtures: ['navigate', 'visit'] });
 ```
 
 The call throws when the settings are not an object, when they hold a key other than `navigationFixtures`, or when
@@ -115,22 +115,22 @@ that stands alone as a statement, such as `await page.goto('/');`. A call whose 
 
 ### Default mutators
 
-These run on `await lzPlaywrightMutators()`.
+These run on `await muirProteusPlaywrightMutators()`.
 
-| Mutator                        | What it changes                                                                                                                                                                                                                                                                                                                                | Example                                                                                    |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `LzPlaywrightClickAction`      | Removes an awaited `click`, `dblclick`, `tap`, `dragTo`, `dispatchEvent` or `dragAndDrop` statement.                                                                                                                                                                                                                                           | `await page.getByRole('button').click();` is removed.                                      |
-| `LzPlaywrightInputAction`      | Removes an awaited `fill`, `clear`, `press`, `pressSequentially`, `type`, `selectOption`, `selectText`, `setInputFiles`, `drop`, `check`, `uncheck` or `setChecked` statement, and an awaited API request (`delete`, `fetch`, `get`, `head`, `patch`, `post`, `put` on a `request` parameter or `<x>.request`) whose result the test discards. | `await page.getByLabel('Name').fill('Ada');` is removed.                                   |
-| `LzPlaywrightFocusAction`      | Removes an awaited `focus`, `blur` or `hover` statement.                                                                                                                                                                                                                                                                                       | `await page.getByRole('link').hover();` is removed.                                        |
-| `LzPlaywrightNavigationAction` | Removes an awaited `goto`, `reload`, `goBack` or `goForward` statement, and an awaited call to a navigation fixture that a test, hook or fixture takes from its fixtures, also inside `test.step`.                                                                                                                                             | `await navigate('/cart');` is removed.                                                     |
-| `LzPlaywrightTestIdLocator`    | Replaces the argument of `getByTestId` with another test id that the same file passes to `getByTestId`.                                                                                                                                                                                                                                        | `getByTestId('badge')` becomes `getByTestId('total')`.                                     |
-| `LzPlaywrightRoleLocator`      | Replaces the `name` of `getByRole(role, { name })` with another name that the same file gives the same role.                                                                                                                                                                                                                                   | `getByRole('button', { name: 'Save' })` becomes `getByRole('button', { name: 'Cancel' })`. |
-| `LzPlaywrightTextLocator`      | Replaces the first argument of `getByText`, `getByLabel`, `getByPlaceholder`, `getByAltText` or `getByTitle` with another value that the same file passes to the same method.                                                                                                                                                                  | `getByLabel('Email')` becomes `getByLabel('Password')`.                                    |
-| `LzPlaywrightFulfill`          | Empties the `json` or `body` of `route.fulfill({ ... })`, and turns a literal `status` from 200-399 into 500 and from 400-599 into 200.                                                                                                                                                                                                        | `json: { items: [1] }` becomes `json: {}`; `status: 404` becomes `status: 200`.            |
-| `LzPlaywrightRouteOutcome`     | In a route handler, turns `route.abort(...)` into `route.continue()`, and `route.continue(...)` or `route.fallback(...)` into `route.abort()`.                                                                                                                                                                                                 | `await route.abort();` becomes `await route.continue();`.                                  |
+| Mutator                                 | What it changes                                                                                                                                                                                                                                                                                                                                | Example                                                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `MuirProteusPlaywrightClickAction`      | Removes an awaited `click`, `dblclick`, `tap`, `dragTo`, `dispatchEvent` or `dragAndDrop` statement.                                                                                                                                                                                                                                           | `await page.getByRole('button').click();` is removed.                                      |
+| `MuirProteusPlaywrightInputAction`      | Removes an awaited `fill`, `clear`, `press`, `pressSequentially`, `type`, `selectOption`, `selectText`, `setInputFiles`, `drop`, `check`, `uncheck` or `setChecked` statement, and an awaited API request (`delete`, `fetch`, `get`, `head`, `patch`, `post`, `put` on a `request` parameter or `<x>.request`) whose result the test discards. | `await page.getByLabel('Name').fill('Ada');` is removed.                                   |
+| `MuirProteusPlaywrightFocusAction`      | Removes an awaited `focus`, `blur` or `hover` statement.                                                                                                                                                                                                                                                                                       | `await page.getByRole('link').hover();` is removed.                                        |
+| `MuirProteusPlaywrightNavigationAction` | Removes an awaited `goto`, `reload`, `goBack` or `goForward` statement, and an awaited call to a navigation fixture that a test, hook or fixture takes from its fixtures, also inside `test.step`.                                                                                                                                             | `await navigate('/cart');` is removed.                                                     |
+| `MuirProteusPlaywrightTestIdLocator`    | Replaces the argument of `getByTestId` with another test id that the same file passes to `getByTestId`.                                                                                                                                                                                                                                        | `getByTestId('badge')` becomes `getByTestId('total')`.                                     |
+| `MuirProteusPlaywrightRoleLocator`      | Replaces the `name` of `getByRole(role, { name })` with another name that the same file gives the same role.                                                                                                                                                                                                                                   | `getByRole('button', { name: 'Save' })` becomes `getByRole('button', { name: 'Cancel' })`. |
+| `MuirProteusPlaywrightTextLocator`      | Replaces the first argument of `getByText`, `getByLabel`, `getByPlaceholder`, `getByAltText` or `getByTitle` with another value that the same file passes to the same method.                                                                                                                                                                  | `getByLabel('Email')` becomes `getByLabel('Password')`.                                    |
+| `MuirProteusPlaywrightFulfill`          | Empties the `json` or `body` of `route.fulfill({ ... })`, and turns a literal `status` from 200-399 into 500 and from 400-599 into 200.                                                                                                                                                                                                        | `json: { items: [1] }` becomes `json: {}`; `status: 404` becomes `status: 200`.            |
+| `MuirProteusPlaywrightRouteOutcome`     | In a route handler, turns `route.abort(...)` into `route.continue()`, and `route.continue(...)` or `route.fallback(...)` into `route.abort()`.                                                                                                                                                                                                 | `await route.abort();` becomes `await route.continue();`.                                  |
 
 The four Action mutators skip teardown: `test.afterEach` and `test.afterAll` bodies, and the code after
-`await use(...)` in a fixture. The API request removals of `LzPlaywrightInputAction` also skip `test.beforeEach` and
+`await use(...)` in a fixture. The API request removals of `MuirProteusPlaywrightInputAction` also skip `test.beforeEach` and
 `test.beforeAll` bodies and `finally` blocks, where a request usually prepares or cleans up data.
 
 The Locator mutators replace a value with the nearest distinct value before it and the nearest after it in the
@@ -141,19 +141,19 @@ file, so a site gets at most two mutants. They change locators in assertions too
 
 These run with `extended: true`, or each with its own name set to `true`.
 
-| Mutator                   | What it changes                                                                                                   | Example                                                       |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `LzPlaywrightSleepWait`   | Removes an awaited `waitForTimeout` statement.                                                                    | `await page.waitForTimeout(500);` is removed.                 |
-| `LzPlaywrightStateWait`   | Removes an awaited `waitForLoadState`, `waitForURL`, `waitFor`, `waitForSelector` or `waitForFunction` statement. | `await page.waitForURL('/cart');` is removed.                 |
-| `LzPlaywrightNetworkWait` | Removes an awaited `waitForResponse` or `waitForRequest` statement.                                               | `await page.waitForResponse('**/api/cart');` is removed.      |
-| `LzPlaywrightClock`       | Removes an awaited `runFor` or `fastForward` statement on `clock` or `<x>.clock`.                                 | `await page.clock.runFor(1000);` is removed.                  |
-| `LzPlaywrightMountStory`  | Replaces the literal story id of `mount(...)` or `<x>.mount(...)` with another id that the same file mounts.      | `mount('Button/Primary')` becomes `mount('Button/Disabled')`. |
+| Mutator                            | What it changes                                                                                                   | Example                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `MuirProteusPlaywrightSleepWait`   | Removes an awaited `waitForTimeout` statement.                                                                    | `await page.waitForTimeout(500);` is removed.                 |
+| `MuirProteusPlaywrightStateWait`   | Removes an awaited `waitForLoadState`, `waitForURL`, `waitFor`, `waitForSelector` or `waitForFunction` statement. | `await page.waitForURL('/cart');` is removed.                 |
+| `MuirProteusPlaywrightNetworkWait` | Removes an awaited `waitForResponse` or `waitForRequest` statement.                                               | `await page.waitForResponse('**/api/cart');` is removed.      |
+| `MuirProteusPlaywrightClock`       | Removes an awaited `runFor` or `fastForward` statement on `clock` or `<x>.clock`.                                 | `await page.clock.runFor(1000);` is removed.                  |
+| `MuirProteusPlaywrightMountStory`  | Replaces the literal story id of `mount(...)` or `<x>.mount(...)` with another id that the same file mounts.      | `mount('Button/Primary')` becomes `mount('Button/Disabled')`. |
 
-The three Wait mutators and `LzPlaywrightClock` skip teardown, as the Action mutators do.
+The three Wait mutators and `MuirProteusPlaywrightClock` skip teardown, as the Action mutators do.
 
 #### Run the Wait and Clock mutators with failOnFlakyTests
 
-Set `failOnFlakyTests: true` in the Playwright configuration whenever a Wait mutator or `LzPlaywrightClock` is on:
+Set `failOnFlakyTests: true` in the Playwright configuration whenever a Wait mutator or `MuirProteusPlaywrightClock` is on:
 
 ```ts
 // playwright.config.ts
@@ -174,12 +174,12 @@ time, which does not prove that the wait is never needed. Run the mutant again b
 These run with `experimental: true`, or each by its name inside `experimental`. They are experimental: each was
 measured on few repositories, and its matching rules or its name can still change.
 
-| Mutator                   | What it changes                                                                                                                          | Example                                                       |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `LzPlaywrightRequestData` | In the `data`, `form` or `params` object of an API request, at any depth, adds `x` to a string, adds 1 to a number, and flips a boolean. | `data: { title: 'Dune' }` becomes `data: { title: 'Dunex' }`. |
-| `LzPlaywrightRequestUrl`  | Empties the URL of a `get`, `head` or `fetch` API request whose result the test reads.                                                   | `request.get('/api/health')` becomes `request.get('')`.       |
+| Mutator                            | What it changes                                                                                                                          | Example                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `MuirProteusPlaywrightRequestData` | In the `data`, `form` or `params` object of an API request, at any depth, adds `x` to a string, adds 1 to a number, and flips a boolean. | `data: { title: 'Dune' }` becomes `data: { title: 'Dunex' }`. |
+| `MuirProteusPlaywrightRequestUrl`  | Empties the URL of a `get`, `head` or `fetch` API request whose result the test reads.                                                   | `request.get('/api/health')` becomes `request.get('')`.       |
 
-`LzPlaywrightRequestUrl` also empties each URL in the array of a `for (const url of [...])` loop whose variable is
+`MuirProteusPlaywrightRequestUrl` also empties each URL in the array of a `for (const url of [...])` loop whose variable is
 the URL of such a request.
 
 ## Why Stryker's built-in mutators are off
@@ -197,25 +197,25 @@ be mutating your test code." The owner of PIT, hcoles, wrote "Pitest should not 
 This package mutates test code on purpose, so it decided each built-in mutator on its own, from what its mutants did
 in Playwright e2e, component and API tests. None of the 17 stays on in test code. The reasons:
 
-| Built-in mutator        | Why it is off in test code                                                                                                                                            | Replaced by                                                                                                                        |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `ArithmeticOperator`    | The analysed suites had two sites, both boundary data, and no rule tells boundary data from expected values.                                                          | -                                                                                                                                  |
-| `ArrayDeclaration`      | `Promise.race([])` never settles, so the mutant times out; an emptied loop list makes the loop pass.                                                                  | -                                                                                                                                  |
-| `ArrowFunction`         | An emptied callback never resolves or leaves a dialog open: killed, mostly after the full timeout.                                                                    | -                                                                                                                                  |
-| `AssignmentOperator`    | Spec files had no sites; the `??=` sites in fixtures break setup, so they die whenever the line runs.                                                                 | -                                                                                                                                  |
-| `BlockStatement`        | An emptied test body always survives (10 of 10 measured); emptied hooks time out or survive.                                                                          | The Action mutators, one statement at a time                                                                                       |
-| `BooleanLiteral`        | `exact: true` to `false` only loosens a locator; setup flags die whenever the line runs.                                                                              | The Locator mutators                                                                                                               |
-| `CallExpression`        | It removes `expect(...)` calls and `test(...)` registrations, so the test passes by construction.                                                                     | -                                                                                                                                  |
-| `ConditionalExpression` | Its sites are console filters and guards: changes no test can see, or mutants that die whenever the line runs.                                                        | -                                                                                                                                  |
-| `EqualityOperator`      | The same sites as `ConditionalExpression`, with the same results.                                                                                                     | -                                                                                                                                  |
-| `LogicalOperator`       | `name \|\| username` in a locator name dies whenever the line runs.                                                                                                   | -                                                                                                                                  |
-| `MethodExpression`      | Case changes on expected values die whenever the line runs; removing `.filter()` loosens a locator.                                                                   | -                                                                                                                                  |
-| `ObjectLiteral`         | `{ name, level }` to `{}` loosens a locator (4 of 4 measured survivors were equivalent); emptied test data breaks setup.                                              | `LzPlaywrightRoleLocator`; `LzPlaywrightFulfill` for mocked bodies                                                                 |
-| `OptionalChaining`      | A passing test never takes the `null` path, so the mutant is equivalent.                                                                                              | -                                                                                                                                  |
-| `Regex`                 | Locator-name regexes only get looser; extraction regexes die whenever the line runs.                                                                                  | The Locator mutators                                                                                                               |
-| `StringLiteral`         | Emptied titles always survive (10 of 10 measured); `''` matches every locator name; an emptied role throws whenever the line runs; messages never change the outcome. | The Locator mutators, `LzPlaywrightNavigationAction`, `LzPlaywrightInputAction`, `LzPlaywrightStateWait`, `LzPlaywrightRequestUrl` |
-| `UnaryOperator`         | Spec files had no sites.                                                                                                                                              | -                                                                                                                                  |
-| `UpdateOperator`        | Spec files had no sites.                                                                                                                                              | -                                                                                                                                  |
+| Built-in mutator        | Why it is off in test code                                                                                                                                            | Replaced by                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ArithmeticOperator`    | The analysed suites had two sites, both boundary data, and no rule tells boundary data from expected values.                                                          | -                                                                                                                                                                      |
+| `ArrayDeclaration`      | `Promise.race([])` never settles, so the mutant times out; an emptied loop list makes the loop pass.                                                                  | -                                                                                                                                                                      |
+| `ArrowFunction`         | An emptied callback never resolves or leaves a dialog open: killed, mostly after the full timeout.                                                                    | -                                                                                                                                                                      |
+| `AssignmentOperator`    | Spec files had no sites; the `??=` sites in fixtures break setup, so they die whenever the line runs.                                                                 | -                                                                                                                                                                      |
+| `BlockStatement`        | An emptied test body always survives (10 of 10 measured); emptied hooks time out or survive.                                                                          | The Action mutators, one statement at a time                                                                                                                           |
+| `BooleanLiteral`        | `exact: true` to `false` only loosens a locator; setup flags die whenever the line runs.                                                                              | The Locator mutators                                                                                                                                                   |
+| `CallExpression`        | It removes `expect(...)` calls and `test(...)` registrations, so the test passes by construction.                                                                     | -                                                                                                                                                                      |
+| `ConditionalExpression` | Its sites are console filters and guards: changes no test can see, or mutants that die whenever the line runs.                                                        | -                                                                                                                                                                      |
+| `EqualityOperator`      | The same sites as `ConditionalExpression`, with the same results.                                                                                                     | -                                                                                                                                                                      |
+| `LogicalOperator`       | `name \|\| username` in a locator name dies whenever the line runs.                                                                                                   | -                                                                                                                                                                      |
+| `MethodExpression`      | Case changes on expected values die whenever the line runs; removing `.filter()` loosens a locator.                                                                   | -                                                                                                                                                                      |
+| `ObjectLiteral`         | `{ name, level }` to `{}` loosens a locator (4 of 4 measured survivors were equivalent); emptied test data breaks setup.                                              | `MuirProteusPlaywrightRoleLocator`; `MuirProteusPlaywrightFulfill` for mocked bodies                                                                                   |
+| `OptionalChaining`      | A passing test never takes the `null` path, so the mutant is equivalent.                                                                                              | -                                                                                                                                                                      |
+| `Regex`                 | Locator-name regexes only get looser; extraction regexes die whenever the line runs.                                                                                  | The Locator mutators                                                                                                                                                   |
+| `StringLiteral`         | Emptied titles always survive (10 of 10 measured); `''` matches every locator name; an emptied role throws whenever the line runs; messages never change the outcome. | The Locator mutators, `MuirProteusPlaywrightNavigationAction`, `MuirProteusPlaywrightInputAction`, `MuirProteusPlaywrightStateWait`, `MuirProteusPlaywrightRequestUrl` |
+| `UnaryOperator`         | Spec files had no sites.                                                                                                                                              | -                                                                                                                                                                      |
+| `UpdateOperator`        | Spec files had no sites.                                                                                                                                              | -                                                                                                                                                                      |
 
 A mutant that dies whenever its line runs is killed by every test that reaches the line, so it shows only that the
 line runs, not what the test checks. It costs run time and finds nothing.
@@ -224,7 +224,7 @@ The install removes the built-ins by name. Mutators from other packages, such as
 on. When the instrumenter holds a mutator that is neither one of the 17 nor from a `@muirjs` package, the install
 warns that it stays on and that this package has not reviewed it.
 
-## Hide browser callbacks with lz-playwright-serialized
+## Hide browser callbacks with muir-proteus-playwright-serialized
 
 Playwright sends some functions to another realm as source text: a browser page, a worker, a service worker or an
 Electron process. A mutant inside such a function carries Stryker's helper calls along, which do not exist there, so
@@ -232,18 +232,18 @@ the function throws a `ReferenceError` and the mutant counts as killed whatever 
 `@muirjs/siryn-playwright` defines the helpers in pages, so `page.evaluate` callbacks work there. Workers,
 service workers and Electron get no helpers.
 
-The opt-in `lz-playwright-serialized` ignorer reports the mutants of such functions as Ignored, with a reason such
-as "lz-playwright-serialized: Playwright's evaluate runs this function's source text where Stryker's helpers do not
+The opt-in `muir-proteus-playwright-serialized` ignorer reports the mutants of such functions as Ignored, with a reason such
+as "muir-proteus-playwright-serialized: Playwright's evaluate runs this function's source text where Stryker's helpers do not
 exist". Ignored mutants stay in the report and are left out of the score.
 
 List the package in `appendPlugins`, then the ignorer:
 
 ```ts
 appendPlugins: ['@muirjs/siryn-playwright', '@muirjs/proteus-playwright'],
-ignorers: ['lz-playwright-serialized'],
+ignorers: ['muir-proteus-playwright-serialized'],
 ```
 
-Listing the package loads the ignorer and installs no mutator. The `lzPlaywrightMutators` call still turns the
+Listing the package loads the ignorer and installs no mutator. The `muirProteusPlaywrightMutators` call still turns the
 mutators on.
 
 The ignorer hides every mutant inside a function or arrow function passed directly as an argument to `evaluate`,
@@ -268,7 +268,7 @@ Ignored.
 For one mutant, put a Stryker disable comment with a reason on the line before the statement:
 
 ```ts
-// Stryker disable next-line LzPlaywrightSleepWait: the chart animates for 300 ms and has no settled state to wait for
+// Stryker disable next-line MuirProteusPlaywrightSleepWait: the chart animates for 300 ms and has no settled state to wait for
 await page.waitForTimeout(300);
 ```
 
@@ -302,7 +302,7 @@ These mutants survive or are missed by design. Each entry says what to do with i
   `use.actionTimeout`, it waits out the test timeout and counts as a Timeout. See
   [Set a short actionTimeout](#set-a-short-actiontimeout).
 
-### The Wait mutators and LzPlaywrightClock
+### The Wait mutators and MuirProteusPlaywrightClock
 
 - A survivor means "not needed in this run". Run with `failOnFlakyTests: true`, as
   [above](#run-the-wait-and-clock-mutators-with-failonflakytests).
@@ -315,9 +315,9 @@ These mutants survive or are missed by design. Each entry says what to do with i
 - A string and a regex never count as equal, so `getByText('Save')` and `getByText(/Save/)` replace each other.
 - A file with one distinct value for a method, or for a role, gets no mutant for it.
 
-### LzPlaywrightFulfill
+### MuirProteusPlaywrightFulfill
 
-- It takes `fulfill` only on the route parameter of a handler, found as `LzPlaywrightRouteOutcome` finds it, and
+- It takes `fulfill` only on the route parameter of a handler, found as `MuirProteusPlaywrightRouteOutcome` finds it, and
   only the object literal that is its first argument. A `fulfill` on another receiver, such as a deferred promise,
   gets no mutant.
 - An options object under `satisfies`, `!` or `<T>` keeps its mutants. One under `as` gets none: Stryker's
@@ -326,7 +326,7 @@ These mutants survive or are missed by design. Each entry says what to do with i
 - A fulfill with a `response` option gets no mutant at all, its `status` included.
 - A `json` value that is not a literal, such as a variable or a number, becomes `{}`.
 
-### LzPlaywrightRouteOutcome
+### MuirProteusPlaywrightRouteOutcome
 
 - It finds a handler passed inline to `<x>.route(url, handler)`, or a function whose first parameter is typed
   `Route`. A handler held in a variable whose parameter has no `Route` type gets no mutant.
@@ -335,7 +335,7 @@ These mutants survive or are missed by design. Each entry says what to do with i
 - A `'**/*'` guard handler that only lets your own origin through survives when every test is hermetic. Leave it
   with a disable comment, or test that a third-party request is blocked.
 
-### LzPlaywrightMountStory
+### MuirProteusPlaywrightMountStory
 
 - Ids where one is a path suffix of the other, such as `Button/Primary` and `components/Button/Primary`, name the
   same story and never replace each other.
@@ -343,17 +343,17 @@ These mutants survive or are missed by design. Each entry says what to do with i
 - A swapped story often renders without the element the test waits for, so the mutant waits out the test timeout.
   See [Set a short actionTimeout](#set-a-short-actiontimeout).
 
-### LzPlaywrightRequestData
+### MuirProteusPlaywrightRequestData
 
 - It follows only `<x>.request` and a bare `request` that a parameter binds: the `request` fixture or a helper's
   argument. An imported `request`, such as superagent's, gets no mutant, and neither does a context from
-  `request.newContext()`, although `LzPlaywrightRequestUrl` follows one.
+  `request.newContext()`, although `MuirProteusPlaywrightRequestUrl` follows one.
 - It never empties a value or drops a key. Identifiers, raw string bodies and negative numbers get no mutant.
 - A payload or options object under `satisfies`, `!` or `<T>` keeps its mutants. One under `as` gets none: Stryker's
   instrumenter mutates nothing under `as`.
 - Values that set up data or pick a page, such as a page size, often survive. Leave them with a disable comment.
 
-### LzPlaywrightRequestUrl
+### MuirProteusPlaywrightRequestUrl
 
 - It follows `<x>.request`, a bare `request` that a parameter binds, and a context from `request.newContext()`. An
   imported `request`, such as superagent's, gets no mutant, but a context from its `newContext()` does: a bare

@@ -4,19 +4,22 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { appendRecord, recordVariable } from '../src/stryker-record.ts';
+import {
+  muirMoiraStorybookAppendRecord,
+  muirMoiraStorybookRecordVariable,
+} from '../src/stryker-record.ts';
 
 function setup(t: TestContext) {
-  const folder = mkdtempSync(join(tmpdir(), 'lz-record-'));
+  const folder = mkdtempSync(join(tmpdir(), 'muir-record-'));
   const recordFile = join(folder, 'records.jsonl');
-  const previousRecord = process.env[recordVariable];
+  const previousRecord = process.env[muirMoiraStorybookRecordVariable];
   writeFileSync(recordFile, '');
-  process.env[recordVariable] = recordFile;
+  process.env[muirMoiraStorybookRecordVariable] = recordFile;
   t.after(() => {
     if (previousRecord === undefined) {
-      delete process.env[recordVariable];
+      delete process.env[muirMoiraStorybookRecordVariable];
     } else {
-      process.env[recordVariable] = previousRecord;
+      process.env[muirMoiraStorybookRecordVariable] = previousRecord;
     }
 
     rmSync(folder, { recursive: true });
@@ -29,7 +32,10 @@ describe('appendRecord', () => {
   it('appends one line with the project-relative file and the rewrite count', (t) => {
     const { recordFile } = setup(t);
 
-    appendRecord(join(process.cwd(), 'src', 'Button.stories.tsx'), 2);
+    muirMoiraStorybookAppendRecord(
+      join(process.cwd(), 'src', 'Button.stories.tsx'),
+      2,
+    );
 
     assert.equal(
       readFileSync(recordFile, 'utf8'),

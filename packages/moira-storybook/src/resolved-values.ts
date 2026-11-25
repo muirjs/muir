@@ -1,30 +1,44 @@
-import { withoutBinding, type Bindings } from './bindings.ts';
-import { isMember, keyOf, memberRoot, unwrap } from './csf-nodes.ts';
-import { isRecord } from './is-record.ts';
-import { field, list } from './node-field.ts';
 import {
-  isObjectLiteral,
-  propertyKey,
-  unknownValue,
-  valuesIn,
-  type LayerValue,
-  type ObjectLiteral,
+  muirMoiraStorybookWithoutBinding,
+  type MuirMoiraStorybookBindings,
+} from './bindings.ts';
+import {
+  muirMoiraStorybookIsMember,
+  muirMoiraStorybookKeyOf,
+  muirMoiraStorybookMemberRoot,
+  muirMoiraStorybookUnwrap,
+} from './csf-nodes.ts';
+import { muirMoiraStorybookIsRecord } from './is-record.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
+import {
+  muirMoiraStorybookIsObjectLiteral,
+  muirMoiraStorybookPropertyKey,
+  muirMoiraStorybookUnknownValue,
+  muirMoiraStorybookValuesIn,
+  type MuirMoiraStorybookLayerValue,
+  type MuirMoiraStorybookObjectLiteral,
 } from './object-value.ts';
 
 /** The value the last property of exactly `key` gives it, as `shownObject` reads `object`, past any spread or computed key the file does not resolve, which may or may not set it: the object a site is when nothing the file reads replaces it. `undefined` for an object the file does not show, which is no site. */
-export function ownValue(
+export function muirMoiraStorybookOwnValue(
   object: unknown,
   key: string,
-  bindings: Bindings,
-): LayerValue {
-  return ownValueOf(shownObject(object, bindings), key);
+  bindings: MuirMoiraStorybookBindings,
+): MuirMoiraStorybookLayerValue {
+  return muirMoiraStorybookOwnValueOf(shownObject(object, bindings), key);
 }
 
-export function ownValueOf(layer: Layer, key: string): LayerValue {
+export function muirMoiraStorybookOwnValueOf(
+  layer: MuirMoiraStorybookLayer,
+  key: string,
+): MuirMoiraStorybookLayerValue {
   return typeof layer === 'object'
-    ? valuesIn(
+    ? muirMoiraStorybookValuesIn(
         layer.lastWinsProperties.filter(
-          (property) => propertyKey(property) === key,
+          (property) => muirMoiraStorybookPropertyKey(property) === key,
         ),
         key,
       )[0]
@@ -32,83 +46,95 @@ export function ownValueOf(layer: Layer, key: string): LayerValue {
 }
 
 /** Every value that `properties`, in source order, give `key`, the one JavaScript keeps first, each spread read as `shownObject` reads it. */
-export function resolvedPropertyValues(
+export function muirMoiraStorybookResolvedPropertyValues(
   properties: readonly unknown[],
   key: string | number,
-  bindings: Bindings,
-): readonly LayerValue[] {
-  return valuesIn(inLastWinsOrder(properties, bindings), key);
+  bindings: MuirMoiraStorybookBindings,
+): readonly MuirMoiraStorybookLayerValue[] {
+  return muirMoiraStorybookValuesIn(inLastWinsOrder(properties, bindings), key);
 }
 
-class ResolvedObject {
-  readonly #node: ObjectLiteral;
-  readonly #bindings: Bindings;
+class MuirMoiraStorybookResolvedObject {
+  readonly #node: MuirMoiraStorybookObjectLiteral;
+  readonly #bindings: MuirMoiraStorybookBindings;
 
-  constructor(node: ObjectLiteral, bindings: Bindings) {
+  constructor(
+    node: MuirMoiraStorybookObjectLiteral,
+    bindings: MuirMoiraStorybookBindings,
+  ) {
     this.#node = node;
     this.#bindings = bindings;
   }
 
-  get node(): ObjectLiteral {
+  get node(): MuirMoiraStorybookObjectLiteral {
     return this.#node;
   }
 
   get lastWinsProperties(): readonly unknown[] {
     return inLastWinsOrder(
-      list(field(this.#node, 'properties')),
+      muirMoiraStorybookList(muirMoiraStorybookField(this.#node, 'properties')),
       this.#bindings,
     );
   }
 
-  layerOf(key: string | number): Layer {
-    const value = valuesIn(this.lastWinsProperties, key)[0];
+  layerOf(key: string | number): MuirMoiraStorybookLayer {
+    const value = muirMoiraStorybookValuesIn(this.lastWinsProperties, key)[0];
 
     return typeof value === 'object'
-      ? (shownObject(value, this.#bindings) ?? unknownValue)
+      ? (shownObject(value, this.#bindings) ?? muirMoiraStorybookUnknownValue)
       : value;
   }
 }
 
-export type { ResolvedObject };
+export type { MuirMoiraStorybookResolvedObject };
 
-export type Layer = ResolvedObject | typeof unknownValue | undefined;
+export type MuirMoiraStorybookLayer =
+  | MuirMoiraStorybookResolvedObject
+  | typeof muirMoiraStorybookUnknownValue
+  | undefined;
 
-export function rootLayer(
+export function muirMoiraStorybookRootLayer(
   expression: unknown,
   owner: unknown,
   written: ReadonlySet<unknown>,
-  unchanged: Bindings,
-): Layer {
+  unchanged: MuirMoiraStorybookBindings,
+): MuirMoiraStorybookLayer {
   if (expression === undefined) {
     return undefined;
   }
 
   return written.has(owner)
-    ? unknownValue
-    : (shownObject(expression, unchanged) ?? unknownValue);
+    ? muirMoiraStorybookUnknownValue
+    : (shownObject(expression, unchanged) ?? muirMoiraStorybookUnknownValue);
 }
 
-export function asWrittenLayer(expression: unknown, bindings: Bindings): Layer {
-  return isObjectLiteral(expression)
-    ? new ResolvedObject(expression, bindings)
+export function muirMoiraStorybookAsWrittenLayer(
+  expression: unknown,
+  bindings: MuirMoiraStorybookBindings,
+): MuirMoiraStorybookLayer {
+  return muirMoiraStorybookIsObjectLiteral(expression)
+    ? new MuirMoiraStorybookResolvedObject(expression, bindings)
     : undefined;
 }
 
-export function layerOf(layer: Layer, key: string | number): Layer {
+export function muirMoiraStorybookLayerOf(
+  layer: MuirMoiraStorybookLayer,
+  key: string | number,
+): MuirMoiraStorybookLayer {
   return typeof layer === 'object' ? layer.layerOf(key) : layer;
 }
 
-export function valuesOf(
-  layer: Layer,
+export function muirMoiraStorybookValuesOf(
+  layer: MuirMoiraStorybookLayer,
   key: string | number,
-): readonly LayerValue[] {
+): readonly MuirMoiraStorybookLayerValue[] {
   if (layer === undefined) {
     return [];
   }
 
-  return layer === unknownValue
-    ? [unknownValue]
-    : valuesIn(layer.lastWinsProperties, key);
+  return layer === muirMoiraStorybookUnknownValue
+    ? [muirMoiraStorybookUnknownValue]
+    : muirMoiraStorybookValuesIn(layer.lastWinsProperties, key);
 }
 
 /**
@@ -118,35 +144,44 @@ export function valuesOf(
  */
 function shownObject(
   node: unknown,
-  bindings: Bindings,
-): ResolvedObject | undefined {
-  const current = unwrap(node);
-  const name = field(current, 'name');
+  bindings: MuirMoiraStorybookBindings,
+): MuirMoiraStorybookResolvedObject | undefined {
+  const current = muirMoiraStorybookUnwrap(node);
+  const name = muirMoiraStorybookField(current, 'name');
 
-  if (isObjectLiteral(current)) {
-    return new ResolvedObject(current, bindings);
+  if (muirMoiraStorybookIsObjectLiteral(current)) {
+    return new MuirMoiraStorybookResolvedObject(current, bindings);
   }
 
   if (typeof name === 'string') {
     return bindings.has(name)
-      ? shownObject(bindings.get(name), withoutBinding(bindings, name))
+      ? shownObject(
+          bindings.get(name),
+          muirMoiraStorybookWithoutBinding(bindings, name),
+        )
       : undefined;
   }
 
-  const key = keyOf(current);
-  const object = isMember(current)
-    ? shownObject(field(current, 'object'), bindings)
+  const key = muirMoiraStorybookKeyOf(current);
+  const object = muirMoiraStorybookIsMember(current)
+    ? shownObject(muirMoiraStorybookField(current, 'object'), bindings)
     : undefined;
   const value =
     object === undefined || typeof key !== 'string'
       ? undefined
-      : valuesIn(object.lastWinsProperties, key)[0];
+      : muirMoiraStorybookValuesIn(object.lastWinsProperties, key)[0];
 
   // Without the member's root name, a value that names the member again, as in `const A = { b: A.b }`, ends.
-  return isRecord(value)
+  return muirMoiraStorybookIsRecord(value)
     ? shownObject(
         value,
-        withoutBinding(bindings, field(memberRoot(current), 'name')),
+        muirMoiraStorybookWithoutBinding(
+          bindings,
+          muirMoiraStorybookField(
+            muirMoiraStorybookMemberRoot(current),
+            'name',
+          ),
+        ),
       )
     : undefined;
 }
@@ -154,13 +189,13 @@ function shownObject(
 /** `properties` last-wins first, each spread of an object `shownObject` reads replaced by that object's properties; a spread it does not read stays in place, for `valuesIn` to read as one that may set any key. */
 function inLastWinsOrder(
   properties: readonly unknown[],
-  bindings: Bindings,
+  bindings: MuirMoiraStorybookBindings,
 ): readonly unknown[] {
   return properties
     .toReversed()
     .flatMap(
       (property) =>
-        shownObject(field(property, 'argument'), bindings)
+        shownObject(muirMoiraStorybookField(property, 'argument'), bindings)
           ?.lastWinsProperties ?? [property],
     );
 }

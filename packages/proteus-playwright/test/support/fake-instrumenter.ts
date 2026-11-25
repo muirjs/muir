@@ -1,15 +1,22 @@
-import { builtInNames, markOf, selfCheckFile } from '@muirjs/moira-mutators';
-import type { ListedMutator, MutatorSets } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsBuiltInNames,
+  muirMoiraMutatorsMarkOf,
+  muirMoiraMutatorsSelfCheckFile,
+} from '@muirjs/moira-mutators';
+import type {
+  MuirMoiraMutatorsListedMutator,
+  MuirMoiraMutatorsMutatorSets,
+} from '@muirjs/moira-mutators';
 
 import {
-  testedVersion,
-  type BabelTypes,
-  type Instrumenter,
+  muirProteusPlaywrightTestedVersion,
+  type MuirProteusPlaywrightBabelTypes,
+  type MuirProteusPlaywrightInstrumenter,
 } from '../../src/install.ts';
-import type { LzPlaywrightMutator } from '../../src/mutators.ts';
-import { packageName } from '../../src/package-name.ts';
+import type { MuirProteusPlaywrightMutator } from '../../src/mutators.ts';
+import { muirProteusPlaywrightPackageName } from '../../src/package-name.ts';
 
-export const fakeTypes: BabelTypes = {
+export const fakeTypes: MuirProteusPlaywrightBabelTypes = {
   emptyStatement: () => ({}),
   cloneNode: (node) => node,
   objectExpression: () => ({}),
@@ -22,9 +29,11 @@ export const fakeTypes: BabelTypes = {
   identifier: () => ({}),
 };
 
-export const ownMark = markOf(packageName);
+export const ownMark = muirMoiraMutatorsMarkOf(
+  muirProteusPlaywrightPackageName,
+);
 
-export function mutator(name: string): LzPlaywrightMutator {
+export function mutator(name: string): MuirProteusPlaywrightMutator {
   return {
     name,
     sample: `export const ${name.toLowerCase()} = 1;\n`,
@@ -36,7 +45,7 @@ export function sets(
   defaults: readonly string[],
   optIn: readonly string[] = [],
   experimental: readonly string[] = [],
-): MutatorSets<LzPlaywrightMutator> {
+): MuirMoiraMutatorsMutatorSets<MuirProteusPlaywrightMutator> {
   return {
     defaults: defaults.map(mutator),
     optIn: optIn.map(mutator),
@@ -51,20 +60,23 @@ export function sets(
 export function fakeInstrumenter({
   silent = [],
   leaking = [],
-  version = testedVersion,
+  version = muirProteusPlaywrightTestedVersion,
   extra = [],
 }: {
   readonly silent?: readonly string[];
   readonly leaking?: readonly string[];
   readonly version?: string;
-  readonly extra?: readonly ListedMutator[];
+  readonly extra?: readonly MuirMoiraMutatorsListedMutator[];
 } = {}) {
-  const allMutators: ListedMutator[] = [
-    ...builtInNames.map((name) => ({ name, mutate: () => undefined })),
+  const allMutators: MuirMoiraMutatorsListedMutator[] = [
+    ...muirMoiraMutatorsBuiltInNames.map((name) => ({
+      name,
+      mutate: () => undefined,
+    })),
     ...extra,
   ];
   const instrumented: { name: string; content: string }[][] = [];
-  const instrumenter: Instrumenter = {
+  const instrumenter: MuirProteusPlaywrightInstrumenter = {
     dir: '/stryker/instrumenter',
     version,
     types: fakeTypes,
@@ -78,11 +90,11 @@ export function fakeInstrumenter({
             (listed) => ownMark in listed && !silent.includes(listed.name),
           )
           .map((listed) => ({
-            fileName: selfCheckFile(listed.name),
+            fileName: muirMoiraMutatorsSelfCheckFile(listed.name),
             mutatorName: listed.name,
           })),
         ...leaking.map((mutatorName) => ({
-          fileName: selfCheckFile('built-ins'),
+          fileName: muirMoiraMutatorsSelfCheckFile('built-ins'),
           mutatorName,
         })),
       ];

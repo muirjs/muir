@@ -1,26 +1,26 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  lzImportOf,
-  lzPropertyName,
-  type LzMutator,
+  muirMoiraNodeTestImportOf,
+  muirMoiraNodeTestPropertyName,
+  type MuirMoiraNodeTestMutator,
 } from '@muirjs/moira-node-test';
-import { lzBuiltin } from './bindings.ts';
+import { muirProteusNodeBuiltin } from './bindings.ts';
 
 const timers: ReadonlySet<string | undefined> = new Set([
   'setTimeout',
   'setInterval',
 ]);
-const nodeTimers = lzBuiltin('timers');
-const nodeTimersPromises = lzBuiltin('timers/promises');
+const nodeTimers = muirProteusNodeBuiltin('timers');
+const nodeTimersPromises = muirProteusNodeBuiltin('timers/promises');
 
 /**
  * Moves a timer's delay by 1 ms each way. Node.js runs a delay below 1 after 1 ms, so the moves of a literal 0, 1 or
  * negative number that leave the delay Node.js runs unchanged are left out. A string delay is left out too, as `+ 1`
  * would append.
  */
-export const nodeTimerDelay: LzMutator = {
-  name: 'LzNodeTimerDelay',
+export const muirProteusNodeTimerDelay: MuirMoiraNodeTestMutator = {
+  name: 'MuirProteusNodeTimerDelay',
   sample: 'setTimeout(() => {}, 10);\n',
   *mutate(path, t) {
     if (
@@ -65,7 +65,7 @@ function isDelay(path: NodePath): boolean {
 
 function delayIndex(path: NodePath, callee: types.Node): number | undefined {
   if (callee.type === 'Identifier') {
-    const from = lzImportOf(path, callee.name);
+    const from = muirMoiraNodeTestImportOf(path, callee.name);
 
     if (from === undefined) {
       return timers.has(callee.name) && !path.scope.hasBinding(callee.name)
@@ -85,8 +85,8 @@ function delayIndex(path: NodePath, callee: types.Node): number | undefined {
     return undefined;
   }
 
-  const from = lzImportOf(path, callee.object.name);
-  const method = lzPropertyName(callee);
+  const from = muirMoiraNodeTestImportOf(path, callee.object.name);
+  const method = muirMoiraNodeTestPropertyName(callee);
 
   if (from === undefined) {
     return undefined;

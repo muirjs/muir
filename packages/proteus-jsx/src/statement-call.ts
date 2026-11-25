@@ -1,14 +1,14 @@
 import {
-  callTypes,
-  fieldOf,
-  isRecord,
-  memberTypes,
+  muirMoiraMutatorsCallTypes,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsIsRecord,
+  muirMoiraMutatorsMemberTypes,
 } from '@muirjs/moira-mutators';
 
-import { typeOf } from './type-of.ts';
+import { muirProteusJsxTypeOf } from './type-of.ts';
 
 const effectTypes: readonly unknown[] = [
-  ...callTypes,
+  ...muirMoiraMutatorsCallTypes,
   'ArrowFunctionExpression',
   'AssignmentExpression',
   'AwaitExpression',
@@ -27,48 +27,54 @@ const effectTypes: readonly unknown[] = [
 
 const effectOperators: readonly unknown[] = ['delete', 'throw', '|>'];
 
-export function hideableCallee(node: unknown): string | undefined {
-  if (typeOf(node) !== 'ExpressionStatement') {
+export function muirProteusJsxHideableCallee(
+  node: unknown,
+): string | undefined {
+  if (muirProteusJsxTypeOf(node) !== 'ExpressionStatement') {
     return undefined;
   }
 
-  const expression = fieldOf(node, 'expression');
+  const expression = muirMoiraMutatorsFieldOf(node, 'expression');
   const call =
-    typeOf(expression) === 'AwaitExpression' ||
-    fieldOf(expression, 'operator') === 'void'
-      ? fieldOf(expression, 'argument')
+    muirProteusJsxTypeOf(expression) === 'AwaitExpression' ||
+    muirMoiraMutatorsFieldOf(expression, 'operator') === 'void'
+      ? muirMoiraMutatorsFieldOf(expression, 'argument')
       : expression;
 
   if (
-    !callTypes.includes(typeOf(call)) ||
-    holdsEffect(fieldOf(call, 'arguments'))
+    !muirMoiraMutatorsCallTypes.includes(muirProteusJsxTypeOf(call)) ||
+    holdsEffect(muirMoiraMutatorsFieldOf(call, 'arguments'))
   ) {
     return undefined;
   }
 
-  return dottedName(fieldOf(call, 'callee'));
+  return dottedName(muirMoiraMutatorsFieldOf(call, 'callee'));
 }
 
 function holdsEffect(node: unknown): boolean {
   return (
-    effectTypes.includes(typeOf(node)) ||
-    effectOperators.includes(fieldOf(node, 'operator')) ||
-    (isRecord(node) && Object.values(node).some(holdsEffect))
+    effectTypes.includes(muirProteusJsxTypeOf(node)) ||
+    effectOperators.includes(muirMoiraMutatorsFieldOf(node, 'operator')) ||
+    (muirMoiraMutatorsIsRecord(node) && Object.values(node).some(holdsEffect))
   );
 }
 
 function dottedName(node: unknown): string | undefined {
-  if (typeOf(node) === 'Identifier') {
-    return String(fieldOf(node, 'name'));
+  if (muirProteusJsxTypeOf(node) === 'Identifier') {
+    return String(muirMoiraMutatorsFieldOf(node, 'name'));
   }
 
-  if (!memberTypes.includes(typeOf(node)) || fieldOf(node, 'computed')) {
+  if (
+    !muirMoiraMutatorsMemberTypes.includes(muirProteusJsxTypeOf(node)) ||
+    muirMoiraMutatorsFieldOf(node, 'computed')
+  ) {
     return undefined;
   }
 
-  const object = dottedName(fieldOf(node, 'object'));
+  const object = dottedName(muirMoiraMutatorsFieldOf(node, 'object'));
 
   return (
-    object && `${object}.${String(fieldOf(fieldOf(node, 'property'), 'name'))}`
+    object &&
+    `${object}.${String(muirMoiraMutatorsFieldOf(muirMoiraMutatorsFieldOf(node, 'property'), 'name'))}`
   );
 }

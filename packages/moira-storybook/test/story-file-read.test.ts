@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { readNamingStoryFile } from '../src/story-file-read.ts';
+import { muirMoiraStorybookReadNamingStoryFile } from '../src/story-file-read.ts';
 
 const pathIn = (filename: string) => ({
   hub: { file: { opts: { filename } } },
@@ -9,7 +9,11 @@ const pathIn = (filename: string) => ({
 
 test('a read gives its value', () => {
   assert.equal(
-    readNamingStoryFile('@muirjs/example', pathIn('a.stories.ts'), () => 1),
+    muirMoiraStorybookReadNamingStoryFile(
+      '@muirjs/example',
+      pathIn('a.stories.ts'),
+      () => 1,
+    ),
     1,
   );
 });
@@ -19,9 +23,13 @@ test('a read that throws names the story file and keeps the error as its cause',
 
   assert.throws(
     () =>
-      readNamingStoryFile('@muirjs/example', pathIn('deep.stories.ts'), () => {
-        throw deep;
-      }),
+      muirMoiraStorybookReadNamingStoryFile(
+        '@muirjs/example',
+        pathIn('deep.stories.ts'),
+        () => {
+          throw deep;
+        },
+      ),
     (error) =>
       error instanceof Error &&
       error.message ===
@@ -33,7 +41,7 @@ test('a read that throws names the story file and keeps the error as its cause',
 test('a read that throws in a file with no name says so without a path', () => {
   assert.throws(
     () =>
-      readNamingStoryFile('@muirjs/example', {}, () => {
+      muirMoiraStorybookReadNamingStoryFile('@muirjs/example', {}, () => {
         throw new RangeError('deep');
       }),
     { message: '@muirjs/example: could not read a story file: deep' },
@@ -43,9 +51,13 @@ test('a read that throws in a file with no name says so without a path', () => {
 test('a read that throws a value other than an error names it as text', () => {
   assert.throws(
     () =>
-      readNamingStoryFile('@muirjs/example', pathIn('a.stories.ts'), () => {
-        throw 'odd';
-      }),
+      muirMoiraStorybookReadNamingStoryFile(
+        '@muirjs/example',
+        pathIn('a.stories.ts'),
+        () => {
+          throw 'odd';
+        },
+      ),
     {
       message:
         '@muirjs/example: could not read the story file a.stories.ts: odd',

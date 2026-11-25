@@ -5,18 +5,18 @@ import { pathToFileURL } from 'node:url';
 
 import type { InstrumenterContext } from '@stryker-mutator/api/core';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import {
-  install,
-  installed,
-  reporting,
-  watchdog,
-  wrappedNodeTest,
-  type HookDependencies,
-  type TestEvent,
+  muirSirynNodeTestInstall,
+  muirSirynNodeTestInstalled,
+  muirSirynNodeTestReporting,
+  muirSirynNodeTestWatchdog,
+  muirSirynNodeTestWrappedNodeTest,
+  type MuirSirynNodeTestHookDependencies,
+  type MuirSirynNodeTestTestEvent,
 } from '../../src/hook-core.ts';
-import { envNames } from '../../src/record.ts';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 import {
   afterHook,
   bodyOf,
@@ -40,9 +40,11 @@ import { member } from '../reflect.fixtures.ts';
 
 describe('install', () => {
   it('does nothing when the runner did not start the process tree', () => {
-    const { deps, calls } = harness({ [envNames.file]: testFile });
+    const { deps, calls } = harness({
+      [muirSirynNodeTestEnvNames.file]: testFile,
+    });
 
-    assert.equal(install(deps), false);
+    assert.equal(muirSirynNodeTestInstall(deps), false);
     assert.deepEqual(deps.global, { globalThis: undefined });
     assert.deepEqual(calls, []);
   });
@@ -50,42 +52,54 @@ describe('install', () => {
   it('does nothing when a hook is already installed in the process', () => {
     const { deps, calls } = harness(fileEnv());
 
-    assert.equal(install(deps), true);
+    assert.equal(muirSirynNodeTestInstall(deps), true);
 
     const installCalls = calls.length;
 
-    assert.equal(install(deps), false);
+    assert.equal(muirSirynNodeTestInstall(deps), false);
     assert.deepEqual(calls.slice(installCalls), []);
   });
 
   it('marks the process with a symbol that every copy of the hook shares', () => {
-    const { deps } = installedHarness({ [envNames.out]: out });
+    const { deps } = installedHarness({ [muirSirynNodeTestEnvNames.out]: out });
 
-    assert.equal(deps.global[installed], true);
-    assert.equal(installed, Symbol.for('siryn-node-test.hook'));
-    assert.equal(reporting, Symbol.for('siryn-node-test.reporting'));
-    assert.equal(wrappedNodeTest, Symbol.for('siryn-node-test.node-test'));
-    assert.equal(watchdog, Symbol.for('siryn-node-test.watchdog'));
+    assert.equal(deps.global[muirSirynNodeTestInstalled], true);
+    assert.equal(
+      muirSirynNodeTestInstalled,
+      Symbol.for('siryn-node-test.hook'),
+    );
+    assert.equal(
+      muirSirynNodeTestReporting,
+      Symbol.for('siryn-node-test.reporting'),
+    );
+    assert.equal(
+      muirSirynNodeTestWrappedNodeTest,
+      Symbol.for('siryn-node-test.node-test'),
+    );
+    assert.equal(
+      muirSirynNodeTestWatchdog,
+      Symbol.for('siryn-node-test.watchdog'),
+    );
   });
 
   it('keeps an existing Stryker namespace', () => {
     const ns: InstrumenterContext = {
       mutantCoverage: { static: { 1: 1 }, perTest: {} },
     };
-    const { deps } = harness({ [envNames.out]: out });
+    const { deps } = harness({ [muirSirynNodeTestEnvNames.out]: out });
     deps.global.__stryker__ = ns;
-    install(deps);
+    muirSirynNodeTestInstall(deps);
 
     assert.equal(deps.global.__stryker__, ns);
     assert.deepEqual(ns.mutantCoverage, { static: { 1: 1 }, perTest: {} });
   });
 
-  lzTestEach([1, 25])(
+  muirTestEach([1, 25])(
     'sets the hit limit %d and starts counting',
     (hitLimit) => {
       const { deps } = installedHarness({
-        [envNames.out]: out,
-        [envNames.hitLimit]: String(hitLimit),
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.hitLimit]: String(hitLimit),
       });
 
       assert.equal(deps.global.__stryker__?.hitLimit, hitLimit);
@@ -95,8 +109,8 @@ describe('install', () => {
 
   it("watches the process's memory when the memory limit is positive, with a record of its own in the out directory", () => {
     const { deps, calls } = installedHarness({
-      [envNames.out]: out,
-      [envNames.memoryLimit]: '1500',
+      [muirSirynNodeTestEnvNames.out]: out,
+      [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
     });
 
     const options = {
@@ -111,10 +125,12 @@ describe('install', () => {
       `watchMemory ${JSON.stringify(options)}`,
       'onExit',
     ]);
-    assert.equal(deps.global[watchdog], 'the watchdog');
+    assert.equal(deps.global[muirSirynNodeTestWatchdog], 'the watchdog');
   });
 
-  lzTestFor<readonly [string, Record<string, string>, Record<string, string>]>([
+  muirTestFor<
+    readonly [string, Record<string, string>, Record<string, string>]
+  >([
     ['', {}, {}],
     [
       ', except the compile cache when the process has one',
@@ -127,8 +143,8 @@ describe('install', () => {
       const started: unknown[] = [];
       installedHarness(
         {
-          [envNames.out]: out,
-          [envNames.memoryLimit]: '1500',
+          [muirSirynNodeTestEnvNames.out]: out,
+          [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
           NODE_OPTIONS: '--require x.cjs',
           ...env,
         },
@@ -142,7 +158,10 @@ describe('install', () => {
   it('watches the memory with the smallest limit, 1 MB', () => {
     const started: unknown[] = [];
     installedHarness(
-      { [envNames.out]: out, [envNames.memoryLimit]: '1' },
+      {
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.memoryLimit]: '1',
+      },
       { watchMemory: (options) => started.push(options.workerData.limitMB) },
     );
 
@@ -151,32 +170,35 @@ describe('install', () => {
 
   it('watches no memory in a thread that may not start the watchdog', () => {
     const { deps, calls } = installedHarness(
-      { [envNames.out]: out, [envNames.memoryLimit]: '1500' },
+      {
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
+      },
       { canWatchMemory: false },
     );
 
     assert.deepEqual(calls, ['onExit']);
-    assert.equal(deps.global[watchdog], undefined);
+    assert.equal(deps.global[muirSirynNodeTestWatchdog], undefined);
   });
 
-  lzTestEach([undefined, '0', 'none'])(
+  muirTestEach([undefined, '0', 'none'])(
     'watches no memory with the memory limit %s',
     (memoryLimit) => {
       const { calls } = installedHarness({
-        [envNames.out]: out,
-        [envNames.memoryLimit]: memoryLimit,
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.memoryLimit]: memoryLimit,
       });
 
       assert.deepEqual(calls, ['onExit']);
     },
   );
 
-  lzTestEach([undefined, '0', 'none'])(
+  muirTestEach([undefined, '0', 'none'])(
     'counts no hits with the hit limit %s',
     (hitLimit) => {
       const { deps, records, exit } = installedHarness({
-        [envNames.out]: out,
-        [envNames.hitLimit]: hitLimit,
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.hitLimit]: hitLimit,
       });
       exit();
 
@@ -191,7 +213,10 @@ describe('install', () => {
 
   it('attributes the process to the test that started it', () => {
     const { deps } = installedHarness(
-      { [envNames.out]: out, [envNames.current]: `${testFile} > spawns` },
+      {
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.current]: `${testFile} > spawns`,
+      },
       { mainFile: '/other.mjs' },
     );
 
@@ -204,13 +229,16 @@ describe('install', () => {
   it('credits the hits that preloads made before the hook to the test that started the process', () => {
     const spawns = `${testFile} > spawns`;
     const { deps } = harness(
-      { [envNames.out]: out, [envNames.current]: spawns },
+      {
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.current]: spawns,
+      },
       { mainFile: '/other.mjs' },
     );
     deps.global.__stryker__ = {
       mutantCoverage: { static: { 1: 2 }, perTest: {} },
     };
-    install(deps);
+    muirSirynNodeTestInstall(deps);
 
     assert.deepEqual(deps.global.__stryker__.mutantCoverage, {
       static: {},
@@ -221,7 +249,10 @@ describe('install', () => {
   it('adds the hits that preloads made before the hook to those the test already has in the process', () => {
     const spawns = `${testFile} > spawns`;
     const { deps } = harness(
-      { [envNames.out]: out, [envNames.current]: spawns },
+      {
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.current]: spawns,
+      },
       { mainFile: '/other.mjs' },
     );
     deps.global.__stryker__ = {
@@ -230,7 +261,7 @@ describe('install', () => {
         perTest: { [spawns]: { 1: 1 } },
       },
     };
-    install(deps);
+    muirSirynNodeTestInstall(deps);
 
     assert.deepEqual(deps.global.__stryker__.mutantCoverage, {
       static: {},
@@ -238,15 +269,15 @@ describe('install', () => {
     });
   });
 
-  lzTestEach([undefined, ''])(
+  muirTestEach([undefined, ''])(
     'attributes the process to no test when the current test is %j',
     (current) => {
       const { deps } = harness({
-        [envNames.out]: out,
-        [envNames.current]: current,
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.current]: current,
       });
       deps.global.__stryker__ = { currentTestId: 'stale' };
-      install(deps);
+      muirSirynNodeTestInstall(deps);
 
       assert.equal(deps.global.__stryker__.currentTestId, '');
     },
@@ -274,31 +305,35 @@ describe('install', () => {
     assert.deepEqual(seen, [`${testFile} > runs`]);
   });
 
-  lzTestFor<readonly [string, Record<string, string>, string | undefined]>([
+  muirTestFor<readonly [string, Record<string, string>, string | undefined]>([
     [
       'a process the tests spawned',
-      { [envNames.file]: testFile },
+      { [muirSirynNodeTestEnvNames.file]: testFile },
       '/repo/child.mjs',
     ],
-    ['a process without a main file', { [envNames.file]: testFile }, undefined],
+    [
+      'a process without a main file',
+      { [muirSirynNodeTestEnvNames.file]: testFile },
+      undefined,
+    ],
     ['a run without a test file', {}, undefined],
     ['a run without a test file, from a main file', {}, testFile],
   ])('leaves node:test and its reporter alone in %s', ([, env, mainFile]) => {
     const { deps, calls } = harness(
-      { [envNames.out]: out, ...env },
+      { [muirSirynNodeTestEnvNames.out]: out, ...env },
       { mainFile },
     );
 
-    assert.equal(install(deps), true);
+    assert.equal(muirSirynNodeTestInstall(deps), true);
     assert.deepEqual(calls, ['onExit']);
-    assert.equal(deps.global[reporting], undefined);
-    assert.equal(deps.global[wrappedNodeTest], undefined);
+    assert.equal(deps.global[muirSirynNodeTestReporting], undefined);
+    assert.equal(deps.global[muirSirynNodeTestWrappedNodeTest], undefined);
   });
 
   it("records the tests node:test reports in a file named after the process, marked as the test file's", () => {
     const { deps, records, exit } = installedHarness({
       ...fileEnv(),
-      [envNames.dryRun]: 'false',
+      [muirSirynNodeTestEnvNames.dryRun]: 'false',
     });
     report(deps, 'passes', 'pass');
     report(deps, 'fails', 'fail');
@@ -342,7 +377,7 @@ describe('install', () => {
   it('writes the records of two processes the test file starts to different files, though they have the same pid', () => {
     const paths = [0, 1].flatMap(() => {
       const { records, exit } = installedHarness(
-        { [envNames.out]: out },
+        { [muirSirynNodeTestEnvNames.out]: out },
         { mainFile: '/repo/child.mjs' },
       );
       exit();
@@ -356,8 +391,8 @@ describe('install', () => {
   it('gives the memory records of two processes with the same pid different files', () => {
     const paths = [0, 1].map(() => {
       const { calls } = installedHarness({
-        [envNames.out]: out,
-        [envNames.memoryLimit]: '1500',
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
       });
 
       return calls[0];
@@ -369,7 +404,10 @@ describe('install', () => {
   it('installs, but neither listens for the end nor follows the coverage of a process that may not write its record', () => {
     const persisting: string[] = [];
     const { deps, calls } = harness(
-      { [envNames.out]: out, [envNames.dryRun]: 'true' },
+      {
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.dryRun]: 'true',
+      },
       {
         mainFile: '/repo/child.mjs',
         canWriteRecords: false,
@@ -378,7 +416,7 @@ describe('install', () => {
       },
     );
 
-    assert.equal(install(deps), true);
+    assert.equal(muirSirynNodeTestInstall(deps), true);
     assert.deepEqual([...calls, ...persisting], []);
   });
 
@@ -393,7 +431,7 @@ describe('install', () => {
     assert.deepEqual(records, []);
   });
 
-  lzTestFor<readonly [string, boolean, Record<string, number>]>([
+  muirTestFor<readonly [string, boolean, Record<string, number>]>([
     [
       'after the exit listeners of the tests, when it ends by itself',
       true,
@@ -406,8 +444,8 @@ describe('install', () => {
     ],
   ])('writes the record once, %s', ([, natural, exitHits]) => {
     const { deps, records, calls, exit, onExit } = installedHarness({
-      [envNames.out]: out,
-      [envNames.dryRun]: 'true',
+      [muirSirynNodeTestEnvNames.out]: out,
+      [muirSirynNodeTestEnvNames.dryRun]: 'true',
     });
     const coverage = { static: {}, perTest: {} };
     const ns = deps.global.__stryker__;
@@ -450,13 +488,18 @@ describe('install', () => {
     });
   });
 
-  const summary: TestEvent = {
+  const summary: MuirSirynNodeTestTestEvent = {
     type: 'test:summary',
     data: { name: '', nesting: 0 },
   };
 
-  lzTestFor<
-    readonly [string, boolean, readonly TestEvent[], Record<string, boolean>]
+  muirTestFor<
+    readonly [
+      string,
+      boolean,
+      readonly MuirSirynNodeTestTestEvent[],
+      Record<string, boolean>,
+    ]
   >([
     [
       'marks the record unfinished when it ends through process.exit() before',
@@ -495,7 +538,10 @@ describe('install', () => {
     const startPositions = [pathToFileURL(file).href, file, other].map(
       (scriptName) => {
         const { deps, records, exit, wrapped } = installedHarness(
-          { [envNames.out]: out, [envNames.file]: file },
+          {
+            [muirSirynNodeTestEnvNames.out]: out,
+            [muirSirynNodeTestEnvNames.file]: file,
+          },
           {
             mainFile: file,
             callSites: () => [{ scriptName, lineNumber: 3, columnNumber: 5 }],
@@ -516,7 +562,7 @@ describe('install', () => {
     ]);
   });
 
-  lzTestFor<
+  muirTestFor<
     readonly [
       string,
       string,
@@ -566,7 +612,7 @@ describe('install', () => {
   it('activates the mutant the runner names for runtime activation once a test starts', async () => {
     const { deps, fake, wrapped } = installedHarness({
       ...fileEnv(),
-      [envNames.activeMutant]: '5',
+      [muirSirynNodeTestEnvNames.activeMutant]: '5',
     });
 
     assert.equal(deps.global.__stryker__?.activeMutant, undefined);
@@ -577,33 +623,35 @@ describe('install', () => {
     assert.equal(deps.global.__stryker__?.activeMutant, '5');
   });
 
-  lzTestFor<readonly [string, readonly string[], string | undefined, string]>([
-    ['without --test-only', ['--no-deprecation'], '--no-warnings', 'test'],
+  muirTestFor<readonly [string, readonly string[], string | undefined, string]>(
     [
-      'with --test-only in its options',
-      ['--test-only'],
-      undefined,
-      'test.only',
+      ['without --test-only', ['--no-deprecation'], '--no-warnings', 'test'],
+      [
+        'with --test-only in its options',
+        ['--test-only'],
+        undefined,
+        'test.only',
+      ],
+      [
+        'with --test-only in NODE_OPTIONS',
+        [],
+        '--import x  --test-only',
+        'test.only',
+      ],
+      [
+        'with --test-only=true in NODE_OPTIONS',
+        [],
+        '--test-only=true',
+        'test.only',
+      ],
+      [
+        'with --test-only in NODE_OPTIONS and --no-test-only in its options',
+        ['--no-test-only'],
+        '--test-only',
+        'test',
+      ],
     ],
-    [
-      'with --test-only in NODE_OPTIONS',
-      [],
-      '--import x  --test-only',
-      'test.only',
-    ],
-    [
-      'with --test-only=true in NODE_OPTIONS',
-      [],
-      '--test-only=true',
-      'test.only',
-    ],
-    [
-      'with --test-only in NODE_OPTIONS and --no-test-only in its options',
-      ['--no-test-only'],
-      '--test-only',
-      'test',
-    ],
-  ])('registers an only test as one %s', ([, execArgv, nodeOptions, kind]) => {
+  )('registers an only test as one %s', ([, execArgv, nodeOptions, kind]) => {
     const { fake, wrapped } = installedHarness(
       { ...fileEnv(), NODE_OPTIONS: nodeOptions },
       { execArgv },
@@ -621,7 +669,9 @@ describe('install', () => {
   it('runs only the filtered tests', () => {
     const { fake, wrapped } = installedHarness({
       ...fileEnv(),
-      [envNames.filter]: JSON.stringify([`${testFile} > wanted`]),
+      [muirSirynNodeTestEnvNames.filter]: JSON.stringify([
+        `${testFile} > wanted`,
+      ]),
     });
     wrapped().it('wanted', () => {});
     wrapped().it('unwanted', () => {});
@@ -637,13 +687,16 @@ describe('install', () => {
     );
   });
 
-  lzTestEach(['null', '{"0":"id"}', '["id",1]'])(
+  muirTestEach(['null', '{"0":"id"}', '["id",1]'])(
     'fails to install with the filter %s, which is no list of test ids',
     (filter) => {
-      const { deps } = harness({ ...fileEnv(), [envNames.filter]: filter });
+      const { deps } = harness({
+        ...fileEnv(),
+        [muirSirynNodeTestEnvNames.filter]: filter,
+      });
 
-      assert.throws(() => install(deps), {
-        message: `${envNames.filter} is no JSON array of test ids: ${filter}`,
+      assert.throws(() => muirSirynNodeTestInstall(deps), {
+        message: `${muirSirynNodeTestEnvNames.filter} is no JSON array of test ids: ${filter}`,
       });
     },
   );
@@ -653,10 +706,10 @@ describe('install', () => {
     verb: bail === 'true' ? 'skips' : 'runs',
   }));
 
-  lzTestEach(bails)(
+  muirTestEach(bails)(
     '$verb later tests with bail $bail; children never bail',
     async ({ bail }) => {
-      const env = { ...fileEnv(), [envNames.bail]: bail };
+      const env = { ...fileEnv(), [muirSirynNodeTestEnvNames.bail]: bail };
       const { deps, fake, wrapped } = installedHarness(env);
       const ran: string[] = [];
       wrapped().it('later', () => {
@@ -666,7 +719,7 @@ describe('install', () => {
       await bodyOf(fake.registrations, 'later')(testContext());
 
       assert.deepEqual(ran, bail === 'true' ? [] : ['later']);
-      assert.ok(!(envNames.bail in env));
+      assert.ok(!(muirSirynNodeTestEnvNames.bail in env));
     },
   );
 
@@ -675,13 +728,16 @@ describe('install', () => {
 
     installedHarness(env);
 
-    assert.ok(!(envNames.file in env));
+    assert.ok(!(muirSirynNodeTestEnvNames.file in env));
   });
 
   it("writes when the hook ran and when it wrote, and in the test file's record each test's spans", async () => {
     let time = 10;
     const now = () => ++time;
-    const descendant = installedHarness({ [envNames.out]: out }, { now });
+    const descendant = installedHarness(
+      { [muirSirynNodeTestEnvNames.out]: out },
+      { now },
+    );
     const main = installedHarness(fileEnv(), { now });
 
     await ranAndReported(main, 'runs', 'pass');
@@ -728,9 +784,9 @@ describe('install', () => {
     };
     const written = ['true', 'false', undefined].map((dryRun) => {
       const { deps, records, exit } = installedHarness({
-        [envNames.out]: out,
-        [envNames.dryRun]: dryRun,
-        [envNames.hitLimit]: '9',
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.dryRun]: dryRun,
+        [muirSirynNodeTestEnvNames.hitLimit]: '9',
       });
       const ns = deps.global.__stryker__;
 
@@ -758,12 +814,15 @@ describe('install', () => {
     ]);
   });
 
-  lzTestFor<readonly [string, number, number]>([
+  muirTestFor<readonly [string, number, number]>([
     ['one KiB short of half a MB, which rounds down', 123.5 * 1024 - 1, 123],
     ['half a MB, which rounds up', 123.5 * 1024, 124],
   ])('writes the peak memory in whole MB, %s', ([, maxRssKiB, expected]) => {
     const { records, exit } = installedHarness(
-      { [envNames.out]: out, [envNames.dryRun]: 'true' },
+      {
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.dryRun]: 'true',
+      },
       { maxRssKiB: () => maxRssKiB },
     );
     exit();
@@ -775,9 +834,9 @@ describe('install', () => {
 describe('a test file whose parent process is gone', () => {
   const watched = (
     platform: NodeJS.Platform,
-    overrides: Partial<HookDependencies> = {},
+    overrides: Partial<MuirSirynNodeTestHookDependencies> = {},
     {
-      env = { ...fileEnv(), [envNames.runner]: '100' },
+      env = { ...fileEnv(), [muirSirynNodeTestEnvNames.runner]: '100' },
       ppid = 100,
     }: { env?: Record<string, string>; ppid?: number } = {},
   ) => {
@@ -832,22 +891,25 @@ describe('a test file whose parent process is gone', () => {
   });
 
   it("takes the runner's pid out of the environment that the tests and the processes they start see", () => {
-    const env = { ...fileEnv(), [envNames.runner]: '100' };
+    const env = { ...fileEnv(), [muirSirynNodeTestEnvNames.runner]: '100' };
     watched('linux', {}, { env });
 
-    assert.ok(!(envNames.runner in env));
+    assert.ok(!(muirSirynNodeTestEnvNames.runner in env));
   });
 
   it("watches no parent without the runner's pid, as when the test file runs outside the runner", () => {
     assert.deepEqual(watched('linux', {}, { env: fileEnv() }).polls, []);
   });
 
-  lzTestEach(['', '0', 'runner'])(
+  muirTestEach(['', '0', 'runner'])(
     "watches no parent when the runner's pid is %j, which names no process",
     (pid) => {
       assert.deepEqual(
-        watched('linux', {}, { env: { ...fileEnv(), [envNames.runner]: pid } })
-          .polls,
+        watched(
+          'linux',
+          {},
+          { env: { ...fileEnv(), [muirSirynNodeTestEnvNames.runner]: pid } },
+        ).polls,
         [],
       );
     },
@@ -857,7 +919,10 @@ describe('a test file whose parent process is gone', () => {
     const { killed, poll } = watched(
       'linux',
       {},
-      { env: { ...fileEnv(), [envNames.runner]: '1' }, ppid: 1 },
+      {
+        env: { ...fileEnv(), [muirSirynNodeTestEnvNames.runner]: '1' },
+        ppid: 1,
+      },
     );
     poll();
 

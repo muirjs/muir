@@ -1,30 +1,33 @@
-import { bindingOf, fieldOf } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsBindingOf,
+  muirMoiraMutatorsFieldOf,
+} from '@muirjs/moira-mutators';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { listOption } from './list-option.ts';
-import { hideableCallee } from './statement-call.ts';
+import { muirProteusJsxListOption } from './list-option.ts';
+import { muirProteusJsxHideableCallee } from './statement-call.ts';
 
-export const telemetryIgnorerName = 'lz-telemetry';
+export const muirProteusJsxTelemetryIgnorerName = 'muir-proteus-jsx-telemetry';
 
 const calleePattern = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/;
 
-export const lzTelemetrySchema = {
+export const muirProteusJsxTelemetrySchema = {
   type: 'object',
   additionalProperties: false,
-  description: `Options of the ${telemetryIgnorerName} ignorer.`,
+  description: `Options of the ${muirProteusJsxTelemetryIgnorerName} ignorer.`,
   properties: {
     calls: {
       type: 'array',
       items: { type: 'string', pattern: calleePattern.source },
       description:
-        `Callees, such as track or analytics.track, added to the built-in ones. ${telemetryIgnorerName} hides the ` +
+        `Callees, such as track or analytics.track, added to the built-in ones. ${muirProteusJsxTelemetryIgnorerName} hides the ` +
         'mutants of a statement that is just a call to one of them, unless an argument can act on the page.',
     },
   },
 };
 
-const analyticsReason = `${telemetryIgnorerName}: analytics call; DOM tests do not observe what it sends`;
+const analyticsReason = `${muirProteusJsxTelemetryIgnorerName}: analytics call; DOM tests do not observe what it sends`;
 const analyticsCalls: readonly unknown[] = [
   'gtag',
   'window.gtag',
@@ -55,7 +58,7 @@ const analyticsCalls: readonly unknown[] = [
   'amplitude.logEvent',
   'amplitude.identify',
 ];
-const errorReason = `${telemetryIgnorerName}: error-monitoring call; DOM tests do not observe what it reports`;
+const errorReason = `${muirProteusJsxTelemetryIgnorerName}: error-monitoring call; DOM tests do not observe what it reports`;
 const errorCalls: readonly unknown[] = [
   'Sentry.captureException',
   'Sentry.captureMessage',
@@ -72,12 +75,12 @@ const sentryImportedFunctions: readonly unknown[] = [
   'captureMessage',
 ];
 
-const callsReason = `${telemetryIgnorerName}: telemetry call from lzTelemetry.calls; DOM tests do not observe what it sends`;
+const callsReason = `${muirProteusJsxTelemetryIgnorerName}: telemetry call from muirProteusJsxTelemetry.calls; DOM tests do not observe what it sends`;
 
-export function telemetryIgnorer(options: object): Ignorer {
-  const calls = listOption(
+export function muirProteusJsxTelemetryIgnorer(options: object): Ignorer {
+  const calls = muirProteusJsxListOption(
     options,
-    'lzTelemetry',
+    'muirProteusJsxTelemetry',
     'calls',
     [],
     isCallee,
@@ -91,7 +94,9 @@ export function telemetryIgnorer(options: object): Ignorer {
 
   return {
     shouldIgnore(path) {
-      const callee = hideableCallee(fieldOf(path, 'node'));
+      const callee = muirProteusJsxHideableCallee(
+        muirMoiraMutatorsFieldOf(path, 'node'),
+      );
 
       return sentryImportedFunctions.includes(callee) &&
         importsFromSentry(path, callee)
@@ -100,15 +105,21 @@ export function telemetryIgnorer(options: object): Ignorer {
     },
   };
 }
-telemetryIgnorer.inject = tokens(commonTokens.options);
+muirProteusJsxTelemetryIgnorer.inject = tokens(commonTokens.options);
 
 function isCallee(name: unknown): name is string {
   return typeof name === 'string' && calleePattern.test(name);
 }
 
 function importsFromSentry(path: unknown, name: unknown): boolean {
-  const declaration = fieldOf(fieldOf(bindingOf(path, name), 'path'), 'parent');
-  const source = fieldOf(fieldOf(declaration, 'source'), 'value');
+  const declaration = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(muirMoiraMutatorsBindingOf(path, name), 'path'),
+    'parent',
+  );
+  const source = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(declaration, 'source'),
+    'value',
+  );
 
   return typeof source === 'string' && source.startsWith('@sentry/');
 }

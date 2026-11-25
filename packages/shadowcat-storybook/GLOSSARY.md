@@ -82,7 +82,7 @@ _Avoid_: test tags
 ### Interactions and checks
 
 `@muirjs/moira-storybook` reads these once per story file, for the Storybook test mutators on Stryker's tree and for
-the `lz-storybook` reporter on its own parse.
+the `muir-shadowcat-storybook` reporter on its own parse.
 
 **Interaction**:
 A call that acts on the rendered story: a user-event method such as `click` or `type`, or a computed key, on a
@@ -134,7 +134,7 @@ is a read and refuses nothing, and so is a write through a value the origin sear
 or object literal that holds the receiver, a function parameter, `arguments` in a method or `function` play, a local
 that holds the module object (`const t2 = t`, or an awaited `import()`), a local with two values, a local whose value
 nests a choice (`const u = a || (flag ? userEvent : x)`), or `(await userEvent).click = f`. `delete userEvent.click`
-is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the `lz-storybook`
+is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the `muir-shadowcat-storybook`
 reporter gives the `click-before-type` shape only for `userEvent14`.
 _Avoid_: user-event kind, user-event 14 check
 
@@ -239,9 +239,9 @@ returns `undefined` or the original implementation.
 _Avoid_: lost stub, reset stub
 
 **Unchecked stub**:
-A spy stub at whose line an `LzStorybookSpyStub` mutant, which removes a stub, survived; the `lz-storybook` report
+A spy stub at whose line an `MuirProteusStorybookTestSpyStub` mutant, which removes a stub, survived; the `muir-shadowcat-storybook` report
 lists it once as a stub finding, because no test fails without the stub. A surviving outcome mutant (the test
-mutators' term), which `LzStorybookSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
+mutators' term), which `MuirProteusStorybookTestSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
 success from failure, not that none reads the stub. A later stub of a chain whose first stub the mock transformer
 keeps is erased all the same, so its removal survives and the report lists an unchecked stub on the line of its
 `chain-not-rewritten` or `once-not-rewritten` finding; the fix of that finding clears both. The same holds for an
@@ -250,22 +250,22 @@ _Avoid_: unobserved stub, surviving stub
 
 **Outcome-unchecked stub**:
 A spy stub at whose line a surviving outcome mutant (the test mutators' term) shows that no check tells its success
-from its failure, while the `LzStorybookSpyStub` mutant that removes it was killed or timed out, so a play needs the
-stub; the `lz-storybook` report lists the line once as an `outcome-unchecked` stub finding. A stub whose own removal
+from its failure, while the `MuirProteusStorybookTestSpyStub` mutant that removes it was killed or timed out, so a play needs the
+stub; the `muir-shadowcat-storybook` report lists the line once as an `outcome-unchecked` stub finding. A stub whose own removal
 survived is an unchecked stub instead; a line with two stubs can carry one of each.
 _Avoid_: unasserted outcome
 
 **Stub finding**:
-One entry in the `lz-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
+One entry in the `muir-shadowcat-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
 read from the story file also names the stub method as written (`mockResolvedValueOnce`); an `unchecked` or
 `outcome-unchecked` finding comes from surviving mutants and names none.
 _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:
-One entry in the `lz-storybook` report for the surviving mutants of the interaction mutators (`LzStorybookInteraction`,
-`LzStorybookClickFocus`, `LzStorybookInteractionRepeat` and `LzStorybookInteractionTarget`, the Storybook test
+One entry in the `muir-shadowcat-storybook` report for the surviving mutants of the interaction mutators (`MuirProteusStorybookTestInteraction`,
+`MuirProteusStorybookTestClickFocus`, `MuirProteusStorybookTestInteractionRepeat` and `MuirProteusStorybookTestInteractionTarget`, the Storybook test
 mutators' names) that start on one line and whose interaction has an interaction shape. The reporter reads
-`LzStorybookAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
+`MuirProteusStorybookTestAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
 holds the file and line, the shape, the reason, the fix, and a ready `// Stryker disable next-line` comment for the
 line above. The comment names a mutator only when every mutant of it placed on that line survived with that
 shape, since one comment disables them all. The reporter finds the interactions with the `@muirjs/moira-storybook`
@@ -290,32 +290,32 @@ shape:
 _Avoid_: skip reason, interaction pattern
 
 **Static story mutant**:
-A mutant in a story file that Stryker runs against every test, listed in the `lz-storybook` report with its net
+A mutant in a story file that Stryker runs against every test, listed in the `muir-shadowcat-storybook` report with its net
 time.
 _Avoid_: slow mutant
 
 ### Plugins
 
 **Mock transformer**:
-The Vite plugin `lz-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
+The Vite plugin `muir-pixie-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
 form, which survives the mock reset. It rewrites a stub only when it is the first of its chain, not one of the
 `Once` forms, and on a spy call that takes no arguments (`fn()`, not `fn(impl)`, as the rewrite would replace them),
 and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
 run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets or
 resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
-the reset, where the story as written gets none. The `lz-storybook` report gives an erased `Once`
+the reset, where the story as written gets none. The `muir-shadowcat-storybook` report gives an erased `Once`
 stub the verdict `once-not-rewritten`, an erased stub after the first of a chain that is not a `Once` stub the
 verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes arguments the verdict
 `spy-arguments-not-rewritten`.
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:
-The Vite plugin `lz-storybook-mock-reset` that resets every module mock spy before each test, in every run of the
+The Vite plugin `muir-pixie-storybook-mock-reset` that resets every module mock spy before each test, in every run of the
 Vitest configuration, so a story that relies on a module mock leak fails in every run, not only under Stryker.
 _Avoid_: module mock reset plugin, reset plugin
 
 **Sandbox plugin**:
-The Vite plugin `lz-storybook-stryker` that lets Storybook's tests run in Stryker's sandbox, where the project's
+The Vite plugin `muir-shadowcat-storybook-stryker` that lets Storybook's tests run in Stryker's sandbox, where the project's
 installed packages sit outside the folders Vite serves by default. It changes nothing outside a Stryker run.
 _Avoid_: fs-allow plugin
 
@@ -330,13 +330,13 @@ reporter whether the transformer really ran.
 _Avoid_: record file, rewrite log
 
 **CSF ignorer**:
-The `lz-storybook-csf` ignorer, which reports as Ignored the mutants of static CSF values and, in the default play
+The `muir-shadowcat-storybook-csf` ignorer, which reports as Ignored the mutants of static CSF values and, in the default play
 mode, also those of story test code, MSW handlers and the meta object apart from its `args`, which are story data
 (an `args` object written on the meta's first line keeps its own `{}` mutant out, as a story's does).
 _Avoid_: story ignorer, Storybook ignorer
 
 **Stub ignorer**:
-The `lz-storybook` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
+The `muir-shadowcat-storybook` ignorer, which reports as Ignored the mutants of a spy stub that the mock reset erases, may
 erase, or cannot be told to keep. Stryker ignores everything inside an ignored node, and a stub call holds the stubs
 before it in its chain, so when one of those is kept the ignorer reports only the stub's own arguments as Ignored.
 It does the same when the spy call takes arguments (`fn(impl)`), which the story runs after the mock reset.
@@ -345,6 +345,6 @@ under the stub's reason too.
 _Avoid_: reset ignorer
 
 **Play mode**:
-The `lzStorybookCsf.play` option: `ignore` for a Stryker configuration that mutates app code and leaves story
+The `muirShadowcatStorybookCsf.play` option: `ignore` for a Stryker configuration that mutates app code and leaves story
 test code alone, `mutate` for one that mutates story test code.
 _Avoid_: test mode, play option

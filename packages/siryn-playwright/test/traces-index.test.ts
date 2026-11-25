@@ -5,11 +5,14 @@ import { test } from 'node:test';
 
 import type { schema } from '@stryker-mutator/api/core';
 
-import { copySurvivorTraces, mutantFile } from '../src/survivor-traces.ts';
 import {
-  describeSurvivors,
-  indexHtml,
-  readTraceFolders,
+  muirSirynPlaywrightCopySurvivorTraces,
+  muirSirynPlaywrightMutantFile,
+} from '../src/survivor-traces.ts';
+import {
+  muirSirynPlaywrightDescribeSurvivors,
+  muirSirynPlaywrightIndexHtml,
+  muirSirynPlaywrightReadTraceFolders,
 } from '../src/traces-index.ts';
 import { addAttempt, fakeTestCase, tempTree } from './support/doubles.ts';
 
@@ -42,7 +45,7 @@ function report(
 test('a survivor without a trace folder says its result has no trace from this run, and other mutants stay as they are', () => {
   const killed = { id: '2', status: 'Killed', replacement: 'a > b' } as const;
 
-  const described = describeSurvivors(
+  const described = muirSirynPlaywrightDescribeSurvivors(
     report({ id: '1', status: 'Survived', replacement: 'a < b' }, killed),
     new Map(),
   );
@@ -65,7 +68,7 @@ test('a survivor without a trace folder says its result has no trace from this r
 
 test('a survivor with a trace folder lists one show-trace command per attempt, marking retries, and its recheck command', () => {
   const dir = path.join(
-    'D:/p/reports/lz-playwright-traces',
+    'D:/p/reports/muir-siryn-playwright-traces',
     'src-price-tag-tsx-9-7-9-30-EqualityOperator-a-b-1234abcd',
   );
   const folders = new Map([
@@ -97,7 +100,7 @@ test('a survivor with a trace folder lists one show-trace command per attempt, m
     ],
   ]);
 
-  const described = describeSurvivors(
+  const described = muirSirynPlaywrightDescribeSurvivors(
     report({ id: '1', status: 'Survived', replacement: 'a < b' }),
     folders,
   );
@@ -119,9 +122,9 @@ test('a survivor with a trace folder lists one show-trace command per attempt, m
 });
 
 test('trace folders are read back by the key the report uses, from what the runner wrote', (t) => {
-  const project = tempTree(t, 'lz-traces-index-', { 'trace.zip': '' });
+  const project = tempTree(t, 'muir-traces-index-', { 'trace.zip': '' });
   const tracesDir = path.join(project, 'traces');
-  const dir = copySurvivorTraces(
+  const dir = muirSirynPlaywrightCopySurvivorTraces(
     { dir: tracesDir, projectRoot: project },
     {
       fileName: path.join(project, 'src', 'price-tag.tsx'),
@@ -141,7 +144,8 @@ test('trace folders are read back by the key the report uses, from what the runn
   );
   fs.writeFileSync(path.join(tracesDir, 'index.html'), '');
 
-  const { folders, unreadable } = readTraceFolders(tracesDir);
+  const { folders, unreadable } =
+    muirSirynPlaywrightReadTraceFolders(tracesDir);
 
   assert.deepEqual(
     [...folders],
@@ -182,17 +186,18 @@ test('a trace folder without a valid mutant.json is reported, not trusted', (t) 
   };
   const tracesDir = tempTree(
     t,
-    'lz-traces-index-',
+    'muir-traces-index-',
     Object.fromEntries(
       Object.entries(broken).map(([name, json]) => [
-        path.join(name, mutantFile),
+        path.join(name, muirSirynPlaywrightMutantFile),
         json,
       ]),
     ),
   );
   fs.mkdirSync(path.join(tracesDir, 'no-mutant-json'));
 
-  const { folders, unreadable } = readTraceFolders(tracesDir);
+  const { folders, unreadable } =
+    muirSirynPlaywrightReadTraceFolders(tracesDir);
 
   assert.equal(folders.size, 0);
   assert.deepEqual(
@@ -221,7 +226,7 @@ test('a survivor lists a test that recorded no trace', () => {
     ],
   ]);
 
-  const described = describeSurvivors(
+  const described = muirSirynPlaywrightDescribeSurvivors(
     report({ id: '1', status: 'Survived', replacement: 'a < b' }),
     folders,
   );
@@ -239,7 +244,7 @@ test('a survivor lists a test that recorded no trace', () => {
 });
 
 test('the recheck command names no config file when the report has none', () => {
-  const described = describeSurvivors(
+  const described = muirSirynPlaywrightDescribeSurvivors(
     {
       ...report({ id: '1', status: 'Survived', replacement: 'a < b' }),
       config: {},
@@ -256,7 +261,7 @@ test('the recheck command names no config file when the report has none', () => 
 });
 
 test("the index page is Stryker's report app with the traced-run title, and the report cannot close its script tag", () => {
-  const html = indexHtml(
+  const html = muirSirynPlaywrightIndexHtml(
     report({ id: '1', status: 'Survived', replacement: '"</script><b>"' }),
     'customElements.define("mutation-test-report-app", class extends HTMLElement {});',
   );

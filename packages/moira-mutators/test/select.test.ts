@@ -2,21 +2,27 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  selectMutators,
-  type MutatorOptions,
-  type MutatorSets,
+  muirMoiraMutatorsSelectMutators,
+  type MuirMoiraMutatorsMutatorOptions,
+  type MuirMoiraMutatorsMutatorSets,
 } from '../src/select.ts';
 
 const packageName = '@muirjs/test-mutators';
-const installName = 'lzTestMutators';
+const installName = 'muirMoiraMutatorsTestMutators';
 const named = (name: string) => ({ name });
-const sets: MutatorSets<{ readonly name: string }> = {
-  defaults: [named('LzDefaultA'), named('LzDefaultB')],
-  optIn: [named('LzOptInA'), named('LzOptInB')],
-  experimental: [named('LzExperimentalA'), named('LzExperimentalB')],
+const sets: MuirMoiraMutatorsMutatorSets<{ readonly name: string }> = {
+  defaults: [
+    named('MuirMoiraMutatorsDefaultA'),
+    named('MuirMoiraMutatorsDefaultB'),
+  ],
+  optIn: [named('MuirMoiraMutatorsOptInA'), named('MuirMoiraMutatorsOptInB')],
+  experimental: [
+    named('MuirMoiraMutatorsExperimentalA'),
+    named('MuirMoiraMutatorsExperimentalB'),
+  ],
 };
 const select = (options: unknown) =>
-  selectMutators(packageName, installName, sets, options);
+  muirMoiraMutatorsSelectMutators(packageName, installName, sets, options);
 const inheriting = (prototype: object): unknown => Object.create(prototype);
 
 describe('selectMutators', () => {
@@ -32,31 +38,31 @@ describe('selectMutators', () => {
   });
 
   it('adds an opt-in mutator turned on by its name', () => {
-    assert.deepEqual(select({ LzOptInB: true }), [
+    assert.deepEqual(select({ MuirMoiraMutatorsOptInB: true }), [
       ...sets.defaults,
-      named('LzOptInB'),
+      named('MuirMoiraMutatorsOptInB'),
     ]);
   });
 
   it('rejects a value other than true', () => {
-    assert.throws(() => select({ LzOptInA: false }), {
+    assert.throws(() => select({ MuirMoiraMutatorsOptInA: false }), {
       message:
-        "@muirjs/test-mutators: LzOptInA takes only true, not false; Stryker's mutator.excludedMutations turns " +
+        "@muirjs/test-mutators: MuirMoiraMutatorsOptInA takes only true, not false; Stryker's mutator.excludedMutations turns " +
         'mutators off.',
     });
   });
 
   it('rejects an unknown name, listing the opt-in names', () => {
-    assert.throws(() => select({ LzOptInC: true }), {
+    assert.throws(() => select({ MuirMoiraMutatorsOptInC: true }), {
       message:
-        '@muirjs/test-mutators: no opt-in mutator is named LzOptInC; the names are LzOptInA, LzOptInB.',
+        '@muirjs/test-mutators: no opt-in mutator is named MuirMoiraMutatorsOptInC; the names are MuirMoiraMutatorsOptInA, MuirMoiraMutatorsOptInB.',
     });
   });
 
   it("rejects a default mutator's name, as it runs by default", () => {
-    assert.throws(() => select({ LzDefaultA: true }), {
+    assert.throws(() => select({ MuirMoiraMutatorsDefaultA: true }), {
       message:
-        '@muirjs/test-mutators: no opt-in mutator is named LzDefaultA; it runs by default.',
+        '@muirjs/test-mutators: no opt-in mutator is named MuirMoiraMutatorsDefaultA; it runs by default.',
     });
   });
 
@@ -68,48 +74,57 @@ describe('selectMutators', () => {
   });
 
   it('adds an experimental mutator turned on by its name inside experimental', () => {
-    assert.deepEqual(select({ experimental: { LzExperimentalB: true } }), [
-      ...sets.defaults,
-      named('LzExperimentalB'),
-    ]);
+    assert.deepEqual(
+      select({ experimental: { MuirMoiraMutatorsExperimentalB: true } }),
+      [...sets.defaults, named('MuirMoiraMutatorsExperimentalB')],
+    );
   });
 
   it('rejects an experimental name outside experimental', () => {
-    assert.throws(() => select({ LzExperimentalA: true }), {
+    assert.throws(() => select({ MuirMoiraMutatorsExperimentalA: true }), {
       message:
-        '@muirjs/test-mutators: no opt-in mutator is named LzExperimentalA; it is experimental, so it goes inside ' +
+        '@muirjs/test-mutators: no opt-in mutator is named MuirMoiraMutatorsExperimentalA; it is experimental, so it goes inside ' +
         'experimental.',
     });
   });
 
   it('rejects an opt-in name inside experimental', () => {
-    assert.throws(() => select({ experimental: { LzOptInA: true } }), {
-      message:
-        '@muirjs/test-mutators: no experimental mutator is named LzOptInA; it is opt-in, so it goes outside ' +
-        'experimental.',
-    });
+    assert.throws(
+      () => select({ experimental: { MuirMoiraMutatorsOptInA: true } }),
+      {
+        message:
+          '@muirjs/test-mutators: no experimental mutator is named MuirMoiraMutatorsOptInA; it is opt-in, so it goes outside ' +
+          'experimental.',
+      },
+    );
   });
 
   it('rejects an unknown name inside experimental, listing the experimental names', () => {
-    assert.throws(() => select({ experimental: { LzExperimentalC: true } }), {
-      message:
-        '@muirjs/test-mutators: no experimental mutator is named LzExperimentalC; the names are LzExperimentalA, ' +
-        'LzExperimentalB.',
-    });
+    assert.throws(
+      () => select({ experimental: { MuirMoiraMutatorsExperimentalC: true } }),
+      {
+        message:
+          '@muirjs/test-mutators: no experimental mutator is named MuirMoiraMutatorsExperimentalC; the names are MuirMoiraMutatorsExperimentalA, ' +
+          'MuirMoiraMutatorsExperimentalB.',
+      },
+    );
   });
 
   it('rejects a value other than true inside experimental', () => {
-    assert.throws(() => select({ experimental: { LzExperimentalA: 1 } }), {
-      message:
-        "@muirjs/test-mutators: experimental.LzExperimentalA takes only true, not 1; Stryker's " +
-        'mutator.excludedMutations turns mutators off.',
-    });
+    assert.throws(
+      () => select({ experimental: { MuirMoiraMutatorsExperimentalA: 1 } }),
+      {
+        message:
+          "@muirjs/test-mutators: experimental.MuirMoiraMutatorsExperimentalA takes only true, not 1; Stryker's " +
+          'mutator.excludedMutations turns mutators off.',
+      },
+    );
   });
 
   it('rejects experimental when the package has no experimental mutators', () => {
     assert.throws(
       () =>
-        selectMutators(
+        muirMoiraMutatorsSelectMutators(
           packageName,
           installName,
           { ...sets, experimental: [] },
@@ -117,7 +132,7 @@ describe('selectMutators', () => {
         ),
       {
         message:
-          '@muirjs/test-mutators: the package has no experimental mutators yet, so lzTestMutators() takes no ' +
+          '@muirjs/test-mutators: the package has no experimental mutators yet, so muirMoiraMutatorsTestMutators() takes no ' +
           'experimental option.',
       },
     );
@@ -126,7 +141,7 @@ describe('selectMutators', () => {
   it('rejects extended when the package has no opt-in mutators', () => {
     assert.throws(
       () =>
-        selectMutators(
+        muirMoiraMutatorsSelectMutators(
           packageName,
           installName,
           { ...sets, optIn: [] },
@@ -134,7 +149,7 @@ describe('selectMutators', () => {
         ),
       {
         message:
-          '@muirjs/test-mutators: the package has no opt-in mutators yet, so lzTestMutators() takes no ' +
+          '@muirjs/test-mutators: the package has no opt-in mutators yet, so muirMoiraMutatorsTestMutators() takes no ' +
           'extended option.',
       },
     );
@@ -142,15 +157,15 @@ describe('selectMutators', () => {
 
   // The typecheck runs these: each const's type is false or true by the options type, so a wrong type fails to compile.
   it('types extended and experimental for a package with both tiers', () => {
-    const experimentalWithTier: 'experimental' extends keyof MutatorOptions<
-      'LzOptInA',
-      'LzExperimentalA'
+    const experimentalWithTier: 'experimental' extends keyof MuirMoiraMutatorsMutatorOptions<
+      'MuirMoiraMutatorsOptInA',
+      'MuirMoiraMutatorsExperimentalA'
     >
       ? true
       : false = true;
-    const extendedWithTier: 'extended' extends keyof MutatorOptions<
-      'LzOptInA',
-      'LzExperimentalA'
+    const extendedWithTier: 'extended' extends keyof MuirMoiraMutatorsMutatorOptions<
+      'MuirMoiraMutatorsOptInA',
+      'MuirMoiraMutatorsExperimentalA'
     >
       ? true
       : false = true;
@@ -159,19 +174,19 @@ describe('selectMutators', () => {
   });
 
   it('types no key for a tier that has no mutators, as the install rejects it', () => {
-    const experimentalWithoutTier: 'experimental' extends keyof MutatorOptions<
-      'LzOptInA',
+    const experimentalWithoutTier: 'experimental' extends keyof MuirMoiraMutatorsMutatorOptions<
+      'MuirMoiraMutatorsOptInA',
       never
     >
       ? true
       : false = false;
-    const extendedWithoutTier: 'extended' extends keyof MutatorOptions<
+    const extendedWithoutTier: 'extended' extends keyof MuirMoiraMutatorsMutatorOptions<
       never,
-      'LzExperimentalA'
+      'MuirMoiraMutatorsExperimentalA'
     >
       ? true
       : false = false;
-    const onlyUndefinedWithoutTiers: MutatorOptions<
+    const onlyUndefinedWithoutTiers: MuirMoiraMutatorsMutatorOptions<
       never,
       never
     >['experimental'] extends undefined
@@ -192,10 +207,14 @@ describe('selectMutators', () => {
   });
 
   for (const [title, experimental, shown] of [
-    ['an array', ['LzExperimentalA'], "[ 'LzExperimentalA' ]"],
+    [
+      'an array',
+      ['MuirMoiraMutatorsExperimentalA'],
+      "[ 'MuirMoiraMutatorsExperimentalA' ]",
+    ],
     [
       'an object whose names it inherits',
-      inheriting({ LzExperimentalA: true }),
+      inheriting({ MuirMoiraMutatorsExperimentalA: true }),
       '{}',
     ],
   ] as const) {
@@ -209,7 +228,11 @@ describe('selectMutators', () => {
   }
 
   it('selects by the keys the options own, not by keys on Object.prototype', () => {
-    const inherited = ['extended', 'LzOptInA', 'LzExperimentalA'];
+    const inherited = [
+      'extended',
+      'MuirMoiraMutatorsOptInA',
+      'MuirMoiraMutatorsExperimentalA',
+    ];
 
     for (const key of inherited) {
       Object.defineProperty(Object.prototype, key, {
@@ -230,7 +253,7 @@ describe('selectMutators', () => {
   it('neither checks nor reads an own key that is not enumerable', () => {
     const options = Object.defineProperties(
       {},
-      { extended: { value: true }, LzNoSuch: { value: 'yes' } },
+      { extended: { value: true }, MuirMoiraMutatorsNoSuch: { value: 'yes' } },
     );
 
     assert.deepEqual(select(options), sets.defaults);
@@ -250,7 +273,7 @@ describe('selectMutators', () => {
     ['a Date', new Date(0), '1970-01-01T00:00:00.000Z'],
     [
       'an object whose keys it inherits',
-      inheriting({ LzOptInB: true, experimental: true }),
+      inheriting({ MuirMoiraMutatorsOptInB: true, experimental: true }),
       '{}',
     ],
   ] as const) {
@@ -264,15 +287,15 @@ describe('selectMutators', () => {
   it('lists none when an opt-in name is given and the package has no opt-in mutators', () => {
     assert.throws(
       () =>
-        selectMutators(
+        muirMoiraMutatorsSelectMutators(
           packageName,
           installName,
           { ...sets, optIn: [] },
-          { LzOptInA: true },
+          { MuirMoiraMutatorsOptInA: true },
         ),
       {
         message:
-          '@muirjs/test-mutators: no opt-in mutator is named LzOptInA; the names are none.',
+          '@muirjs/test-mutators: no opt-in mutator is named MuirMoiraMutatorsOptInA; the names are none.',
       },
     );
   });
@@ -290,22 +313,28 @@ describe('selectMutators', () => {
 
   it('selects an opt-in name when the package has no experimental mutators', () => {
     assert.deepEqual(
-      selectMutators(
+      muirMoiraMutatorsSelectMutators(
         packageName,
         installName,
         { ...sets, experimental: [] },
-        { LzOptInA: true },
+        { MuirMoiraMutatorsOptInA: true },
       ),
       [...sets.defaults, sets.optIn[0]],
     );
   });
 
   it('rejects an object as the value of an opt-in name', () => {
-    assert.throws(() => select({ LzOptInA: { LzExperimentalA: true } }), {
-      message:
-        "@muirjs/test-mutators: LzOptInA takes only true, not { LzExperimentalA: true }; Stryker's " +
-        'mutator.excludedMutations turns mutators off.',
-    });
+    assert.throws(
+      () =>
+        select({
+          MuirMoiraMutatorsOptInA: { MuirMoiraMutatorsExperimentalA: true },
+        }),
+      {
+        message:
+          "@muirjs/test-mutators: MuirMoiraMutatorsOptInA takes only true, not { MuirMoiraMutatorsExperimentalA: true }; Stryker's " +
+          'mutator.excludedMutations turns mutators off.',
+      },
+    );
   });
 
   it('rejects false as the value of extended', () => {
@@ -327,22 +356,32 @@ describe('selectMutators', () => {
   describe('when the package has no opt-in or experimental mutators', () => {
     const defaultsOnly = { ...sets, optIn: [], experimental: [] };
     const noOptions =
-      '@muirjs/test-mutators: the package has no opt-in or experimental mutators yet, so lzTestMutators() takes ' +
+      '@muirjs/test-mutators: the package has no opt-in or experimental mutators yet, so muirMoiraMutatorsTestMutators() takes ' +
       'no options. Turn a mutator off with mutator.excludedMutations.';
 
     it('rejects an options key', () => {
       assert.throws(
         () =>
-          selectMutators(packageName, installName, defaultsOnly, {
-            extended: true,
-          }),
+          muirMoiraMutatorsSelectMutators(
+            packageName,
+            installName,
+            defaultsOnly,
+            {
+              extended: true,
+            },
+          ),
         { message: noOptions },
       );
     });
 
     it('selects the defaults when there are no options', () => {
       assert.deepEqual(
-        selectMutators(packageName, installName, defaultsOnly, undefined),
+        muirMoiraMutatorsSelectMutators(
+          packageName,
+          installName,
+          defaultsOnly,
+          undefined,
+        ),
         sets.defaults,
       );
     });
@@ -350,19 +389,29 @@ describe('selectMutators', () => {
     it('rejects an options key next to one that holds undefined', () => {
       assert.throws(
         () =>
-          selectMutators(packageName, installName, defaultsOnly, {
-            extended: undefined,
-            LzOptInA: true,
-          }),
+          muirMoiraMutatorsSelectMutators(
+            packageName,
+            installName,
+            defaultsOnly,
+            {
+              extended: undefined,
+              MuirMoiraMutatorsOptInA: true,
+            },
+          ),
         { message: noOptions },
       );
     });
 
     it('treats an options key that holds undefined as absent', () => {
       assert.deepEqual(
-        selectMutators(packageName, installName, defaultsOnly, {
-          extended: undefined,
-        }),
+        muirMoiraMutatorsSelectMutators(
+          packageName,
+          installName,
+          defaultsOnly,
+          {
+            extended: undefined,
+          },
+        ),
         sets.defaults,
       );
     });

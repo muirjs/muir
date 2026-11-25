@@ -2,56 +2,56 @@ import assert from 'node:assert/strict';
 import { type TestContext, test } from 'node:test';
 
 import {
-  armDeadline,
-  assertionTimeoutWarning,
-  configRetries,
-  configTimeouts,
-  defaultExpectTimeoutMs,
-  minTestTimeoutMs,
-  mutantRunBudget,
-  runStartMs,
-  stopHeadroomMs,
-  stopRetryMs,
-  timeoutReason,
+  muirSirynPlaywrightArmDeadline,
+  muirSirynPlaywrightAssertionTimeoutWarning,
+  muirSirynPlaywrightConfigRetries,
+  muirSirynPlaywrightConfigTimeouts,
+  muirSirynPlaywrightDefaultExpectTimeoutMs,
+  muirSirynPlaywrightMinTestTimeoutMs,
+  muirSirynPlaywrightMutantRunBudget,
+  muirSirynPlaywrightRunStartMs,
+  muirSirynPlaywrightStopHeadroomMs,
+  muirSirynPlaywrightStopRetryMs,
+  muirSirynPlaywrightTimeoutReason,
 } from '../src/timeouts.ts';
 
 const uncapped = { testTimeoutCap: Infinity, expectTimeout: 1000 };
 
 test('the config cap is the largest project timeout, and Infinity when a project has none', () => {
   assert.equal(
-    configTimeouts([
+    muirSirynPlaywrightConfigTimeouts([
       { project: { timeout: 30_000 } },
       { project: { timeout: 10_000 } },
     ]).testTimeoutCap,
     30_000,
   );
   assert.equal(
-    configTimeouts([
+    muirSirynPlaywrightConfigTimeouts([
       { project: { timeout: 30_000 } },
       { project: { timeout: 0 } },
     ]).testTimeoutCap,
     Infinity,
   );
-  assert.deepEqual(configTimeouts([]), {
+  assert.deepEqual(muirSirynPlaywrightConfigTimeouts([]), {
     testTimeoutCap: Infinity,
-    expectTimeout: defaultExpectTimeoutMs,
+    expectTimeout: muirSirynPlaywrightDefaultExpectTimeoutMs,
   });
 });
 
 test('the expect timeout is the largest over the projects, with Playwright default where unset', () => {
   assert.equal(
-    configTimeouts([
+    muirSirynPlaywrightConfigTimeouts([
       { expect: { timeout: 1000 }, project: { timeout: 1 } },
       { expect: { timeout: 3000 }, project: { timeout: 1 } },
     ]).expectTimeout,
     3000,
   );
   assert.equal(
-    configTimeouts([
+    muirSirynPlaywrightConfigTimeouts([
       { expect: { timeout: 1000 }, project: { timeout: 1 } },
       { project: { timeout: 1 } },
     ]).expectTimeout,
-    defaultExpectTimeoutMs,
+    muirSirynPlaywrightDefaultExpectTimeoutMs,
   );
 });
 
@@ -62,14 +62,14 @@ test("each project gets its own retries, or the retries option's", () => {
   ];
 
   assert.deepEqual(
-    configRetries(projects, undefined),
+    muirSirynPlaywrightConfigRetries(projects, undefined),
     new Map([
       ['chromium', 2],
       ['firefox', 0],
     ]),
   );
   assert.deepEqual(
-    configRetries(projects, 1),
+    muirSirynPlaywrightConfigRetries(projects, 1),
     new Map([
       ['chromium', 1],
       ['firefox', 1],
@@ -83,14 +83,17 @@ test('projects that share a name must share their retries, unless the retries op
     { project: { name: '', retries: 0 } },
   ];
 
-  assert.throws(() => configRetries(unnamed, undefined), {
+  assert.throws(() => muirSirynPlaywrightConfigRetries(unnamed, undefined), {
     message:
       'The Playwright projects named "" set different retries (2 and 0), and the runner tells projects apart by name. ' +
-      'Give them distinct names, or set lzPlaywright.retries.',
+      'Give them distinct names, or set muirSirynPlaywright.retries.',
   });
-  assert.deepEqual(configRetries(unnamed, 1), new Map([['', 1]]));
   assert.deepEqual(
-    configRetries(
+    muirSirynPlaywrightConfigRetries(unnamed, 1),
+    new Map([['', 1]]),
+  );
+  assert.deepEqual(
+    muirSirynPlaywrightConfigRetries(
       [
         { project: { name: '', retries: 1 } },
         { project: { name: '', retries: 1 } },
@@ -105,84 +108,120 @@ test('the assertion warning fires below the expect timeout plus the run start an
   const config = { testTimeoutCap: Infinity, expectTimeout: 5000 };
 
   assert.equal(
-    assertionTimeoutWarning(config, 10_599, 0),
+    muirSirynPlaywrightAssertionTimeoutWarning(config, 10_599, 0),
     'timeoutMS (10599) is below 1 attempt(s) at the Playwright expect timeout (5000) plus 3000 ms to start a worker for each, and 2600 ms to stop the run; killed mutants may be reported as timeouts. Set timeoutMS to at least 10600.',
   );
-  assert.equal(assertionTimeoutWarning(config, 10_600, 0), undefined);
+  assert.equal(
+    muirSirynPlaywrightAssertionTimeoutWarning(config, 10_600, 0),
+    undefined,
+  );
 });
 
 test('with retries, the warning asks for every attempt at the expect timeout and a worker start for each', () => {
   const config = { testTimeoutCap: Infinity, expectTimeout: 5000 };
 
   assert.equal(
-    assertionTimeoutWarning(config, 26_599, 2),
+    muirSirynPlaywrightAssertionTimeoutWarning(config, 26_599, 2),
     "timeoutMS (26599) is below 3 attempt(s) at the Playwright expect timeout (5000) plus 3000 ms to start a worker for each, and 2600 ms to stop the run; a failed test's retries may not finish, so a flaky test can kill a mutant. Set timeoutMS to at least 26600.",
   );
   assert.equal(
-    assertionTimeoutWarning(config, 10_600, 2),
+    muirSirynPlaywrightAssertionTimeoutWarning(config, 10_600, 2),
     "timeoutMS (10600) is below 3 attempt(s) at the Playwright expect timeout (5000) plus 3000 ms to start a worker for each, and 2600 ms to stop the run; a failed test's retries may not finish, so a flaky test can kill a mutant. Set timeoutMS to at least 26600.",
   );
   assert.equal(
-    assertionTimeoutWarning(config, 10_599, 2),
+    muirSirynPlaywrightAssertionTimeoutWarning(config, 10_599, 2),
     "timeoutMS (10599) is below 3 attempt(s) at the Playwright expect timeout (5000) plus 3000 ms to start a worker for each, and 2600 ms to stop the run; killed mutants may be reported as timeouts, and a failed test's retries may not finish, so a flaky test can kill a mutant. Set timeoutMS to at least 26600.",
   );
-  assert.equal(assertionTimeoutWarning(config, 26_600, 2), undefined);
-  assert.equal(assertionTimeoutWarning(config, 10_600, 0), undefined);
+  assert.equal(
+    muirSirynPlaywrightAssertionTimeoutWarning(config, 26_600, 2),
+    undefined,
+  );
+  assert.equal(
+    muirSirynPlaywrightAssertionTimeoutWarning(config, 10_600, 0),
+    undefined,
+  );
 });
 
 test('the warning fires exactly when a test would get less than the expect timeout with no Stryker overhead', () => {
   const config = { testTimeoutCap: Infinity, expectTimeout: 7000 };
-  const lowest = config.expectTimeout + runStartMs + stopHeadroomMs;
+  const lowest =
+    config.expectTimeout +
+    muirSirynPlaywrightRunStartMs +
+    muirSirynPlaywrightStopHeadroomMs;
 
-  assert.equal(assertionTimeoutWarning(config, lowest, 0), undefined);
   assert.equal(
-    mutantRunBudget(lowest, config).testTimeout,
+    muirSirynPlaywrightAssertionTimeoutWarning(config, lowest, 0),
+    undefined,
+  );
+  assert.equal(
+    muirSirynPlaywrightMutantRunBudget(lowest, config).testTimeout,
     config.expectTimeout,
   );
-  assert.notEqual(assertionTimeoutWarning(config, lowest - 1, 0), undefined);
+  assert.notEqual(
+    muirSirynPlaywrightAssertionTimeoutWarning(config, lowest - 1, 0),
+    undefined,
+  );
   assert.ok(
-    (mutantRunBudget(lowest - 1, config).testTimeout ?? Infinity) <
-      config.expectTimeout,
+    (muirSirynPlaywrightMutantRunBudget(lowest - 1, config).testTimeout ??
+      Infinity) < config.expectTimeout,
   );
 });
 
 test('a mutant run gets the timeout less the headroom as its test timeout, and a deadline', () => {
-  assert.deepEqual(mutantRunBudget(8000, uncapped), {
+  assert.deepEqual(muirSirynPlaywrightMutantRunBudget(8000, uncapped), {
     testTimeout: 2400,
     deadlineMs: 5400,
   });
 });
 
 test('the test timeout keeps its floor and the config cap', () => {
-  assert.equal(mutantRunBudget(6000, uncapped).testTimeout, minTestTimeoutMs);
   assert.equal(
-    mutantRunBudget(60_000, { ...uncapped, testTimeoutCap: 10_000 })
-      .testTimeout,
+    muirSirynPlaywrightMutantRunBudget(6000, uncapped).testTimeout,
+    muirSirynPlaywrightMinTestTimeoutMs,
+  );
+  assert.equal(
+    muirSirynPlaywrightMutantRunBudget(60_000, {
+      ...uncapped,
+      testTimeoutCap: 10_000,
+    }).testTimeout,
     10_000,
   );
 });
 
 test('no deadline when it would leave too little time for a test to finish', () => {
-  const shortest = runStartMs + minTestTimeoutMs;
+  const shortest =
+    muirSirynPlaywrightRunStartMs + muirSirynPlaywrightMinTestTimeoutMs;
 
-  assert.equal(mutantRunBudget(4500, uncapped).deadlineMs, undefined);
   assert.equal(
-    mutantRunBudget(shortest + stopHeadroomMs - 1, uncapped).deadlineMs,
+    muirSirynPlaywrightMutantRunBudget(4500, uncapped).deadlineMs,
     undefined,
   );
   assert.equal(
-    mutantRunBudget(shortest + stopHeadroomMs, uncapped).deadlineMs,
+    muirSirynPlaywrightMutantRunBudget(
+      shortest + muirSirynPlaywrightStopHeadroomMs - 1,
+      uncapped,
+    ).deadlineMs,
+    undefined,
+  );
+  assert.equal(
+    muirSirynPlaywrightMutantRunBudget(
+      shortest + muirSirynPlaywrightStopHeadroomMs,
+      uncapped,
+    ).deadlineMs,
     shortest,
   );
 });
 
 test('the deadline never comes before a test that starts on time hits its own timeout', () => {
   for (let timeout = 4500; timeout <= 60_000; timeout += 250) {
-    const { testTimeout, deadlineMs } = mutantRunBudget(timeout, uncapped);
+    const { testTimeout, deadlineMs } = muirSirynPlaywrightMutantRunBudget(
+      timeout,
+      uncapped,
+    );
 
     if (deadlineMs !== undefined) {
       assert.ok(
-        deadlineMs >= runStartMs + (testTimeout ?? 0),
+        deadlineMs >= muirSirynPlaywrightRunStartMs + (testTimeout ?? 0),
         `timeout ${timeout}: deadline ${deadlineMs}, test timeout ${testTimeout}`,
       );
     }
@@ -199,18 +238,26 @@ const noTimeout = {
 
 test('a kill outranks a per-test timeout, which counts only in a mutant run', () => {
   assert.equal(
-    timeoutReason({ ...noTimeout, killed: true, testTimedOut: true }),
+    muirSirynPlaywrightTimeoutReason({
+      ...noTimeout,
+      killed: true,
+      testTimedOut: true,
+    }),
     undefined,
   );
   assert.equal(
-    timeoutReason({ ...noTimeout, testTimedOut: true }),
+    muirSirynPlaywrightTimeoutReason({ ...noTimeout, testTimedOut: true }),
     'A test hit its timeout',
   );
   assert.equal(
-    timeoutReason({ ...noTimeout, mutantRun: false, testTimedOut: true }),
+    muirSirynPlaywrightTimeoutReason({
+      ...noTimeout,
+      mutantRun: false,
+      testTimedOut: true,
+    }),
     undefined,
   );
-  assert.equal(timeoutReason(noTimeout), undefined);
+  assert.equal(muirSirynPlaywrightTimeoutReason(noTimeout), undefined);
 });
 
 test('a deadline stop is a Timeout in either run kind, unless a test killed the mutant', () => {
@@ -218,15 +265,19 @@ test('a deadline stop is a Timeout in either run kind, unless a test killed the 
     "The run reached the runner's deadline before Stryker's timeout";
 
   assert.equal(
-    timeoutReason({ ...noTimeout, stoppedAtDeadline: true }),
+    muirSirynPlaywrightTimeoutReason({ ...noTimeout, stoppedAtDeadline: true }),
     reason,
   );
   assert.equal(
-    timeoutReason({ ...noTimeout, mutantRun: false, stoppedAtDeadline: true }),
+    muirSirynPlaywrightTimeoutReason({
+      ...noTimeout,
+      mutantRun: false,
+      stoppedAtDeadline: true,
+    }),
     reason,
   );
   assert.equal(
-    timeoutReason({
+    muirSirynPlaywrightTimeoutReason({
       ...noTimeout,
       stoppedAtDeadline: true,
       testTimedOut: true,
@@ -234,7 +285,11 @@ test('a deadline stop is a Timeout in either run kind, unless a test killed the 
     reason,
   );
   assert.equal(
-    timeoutReason({ ...noTimeout, stoppedAtDeadline: true, killed: true }),
+    muirSirynPlaywrightTimeoutReason({
+      ...noTimeout,
+      stoppedAtDeadline: true,
+      killed: true,
+    }),
     undefined,
   );
 });
@@ -243,10 +298,17 @@ test('a mutant run whose covering tests all passed is no Timeout, however the ex
   const passed = { ...noTimeout, coveringTestsPassed: true };
 
   assert.equal(
-    timeoutReason({ ...passed, stoppedAtDeadline: true, testTimedOut: true }),
+    muirSirynPlaywrightTimeoutReason({
+      ...passed,
+      stoppedAtDeadline: true,
+      testTimedOut: true,
+    }),
     undefined,
   );
-  assert.equal(timeoutReason({ ...passed, testTimedOut: true }), undefined);
+  assert.equal(
+    muirSirynPlaywrightTimeoutReason({ ...passed, testTimedOut: true }),
+    undefined,
+  );
 });
 
 // A deadline over a fake clock that the mocked timers move.
@@ -254,7 +316,7 @@ function armed(t: TestContext, at: number | undefined) {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
   let clock = 0;
   const calls: number[] = [];
-  const deadline = armDeadline(
+  const deadline = muirSirynPlaywrightArmDeadline(
     at,
     async () => {
       calls.push(clock);
@@ -288,14 +350,14 @@ test('a deadline repeats stop until it is disarmed, since Playwright ignores it 
   const { deadline, calls, tick } = armed(t, 1000);
 
   tick(1000);
-  tick(stopRetryMs - 1);
+  tick(muirSirynPlaywrightStopRetryMs - 1);
 
   assert.deepEqual(calls, [1000]);
 
   tick(1);
-  tick(stopRetryMs);
+  tick(muirSirynPlaywrightStopRetryMs);
   deadline.disarm();
-  tick(stopRetryMs * 10);
+  tick(muirSirynPlaywrightStopRetryMs * 10);
 
   assert.deepEqual(calls, [1000, 1100, 1200]);
 });

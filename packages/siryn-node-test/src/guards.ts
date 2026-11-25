@@ -1,15 +1,20 @@
-export function isObject(value: unknown): value is Record<string, unknown> {
+export function muirSirynNodeTestIsObject(
+  value: unknown,
+): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export const isBoolean = (value: unknown) => typeof value === 'boolean';
-export const isNumber = (value: unknown) => typeof value === 'number';
-export const isString = (value: unknown) => typeof value === 'string';
-export const isStrings = (value: unknown) =>
-  Array.isArray(value) && value.every(isString);
+export const muirSirynNodeTestIsBoolean = (value: unknown) =>
+  typeof value === 'boolean';
+export const muirSirynNodeTestIsNumber = (value: unknown) =>
+  typeof value === 'number';
+export const muirSirynNodeTestIsString = (value: unknown) =>
+  typeof value === 'string';
+export const muirSirynNodeTestIsStrings = (value: unknown) =>
+  Array.isArray(value) && value.every(muirSirynNodeTestIsString);
 
 /** `value` under `key` when it is there and passes `check`; nothing when it is not there. `fail` names `field`. */
-export function optional<TKey extends string, T>(
+export function muirSirynNodeTestOptional<TKey extends string, T>(
   key: TKey,
   value: unknown,
   check: (value: unknown) => value is T,

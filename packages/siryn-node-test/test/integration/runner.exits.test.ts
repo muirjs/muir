@@ -9,7 +9,7 @@ import {
   MutantRunStatus,
 } from '@stryker-mutator/api/test-runner';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import {
   complete,
   dryRun,
@@ -25,20 +25,20 @@ import {
   shareCompileCache,
   summary,
 } from '../runner.fixtures.ts';
-import { isRunning } from '../../src/dirs.ts';
-import { lzConsumerNodeOptions } from '../../src/node-options.ts';
-import { lzFileError } from '../../src/runner.ts';
+import { muirSirynNodeTestIsRunning } from '../../src/dirs.ts';
+import { muirSirynNodeTestConsumerNodeOptions } from '../../src/node-options.ts';
+import { muirSirynNodeTestFileError } from '../../src/runner.ts';
 
 shareCompileCache();
 
-describe('LzNodeTestTestRunner endings', () => {
+describe('MuirSirynNodeTestTestRunner endings', () => {
   it('ends the processes that the tests of a test file leave running once its run is over', async (t) => {
     let pidFile = '';
     // Before project()'s cleanup, which after hooks run in order: a child left running would hold the directory.
     t.after(() => {
       if (
         existsSync(pidFile) &&
-        isRunning(Number(readFileSync(pidFile, 'utf8')))
+        muirSirynNodeTestIsRunning(Number(readFileSync(pidFile, 'utf8')))
       ) {
         process.kill(Number(readFileSync(pidFile, 'utf8')));
       }
@@ -70,11 +70,11 @@ describe('LzNodeTestTestRunner endings', () => {
     const pid = Number(readFileSync(pidFile, 'utf8'));
     const deadline = Date.now() + 5_000;
 
-    while (isRunning(pid) && Date.now() < deadline) {
+    while (muirSirynNodeTestIsRunning(pid) && Date.now() < deadline) {
       await delay(20);
     }
 
-    assert.equal(isRunning(pid), false);
+    assert.equal(muirSirynNodeTestIsRunning(pid), false);
   });
 
   it('reports no tests for a test file that declares none', async (t) => {
@@ -97,7 +97,7 @@ describe('LzNodeTestTestRunner endings', () => {
   const neverEnds =
     "it('never ends', async () => { await new Promise((resolve) => setTimeout(resolve, 1_000)); });";
 
-  lzTestFor<readonly [string, readonly string[]]>([
+  muirTestFor<readonly [string, readonly string[]]>([
     [
       'while it loads, before it declares a test',
       ['process.exit(0);', "it('never runs', () => {});"],
@@ -189,12 +189,12 @@ describe('LzNodeTestTestRunner endings', () => {
     const exitCode = process.platform === 'win32' ? 1 : null;
     assert.deepEqual(await settle(runner.dryRun(dryRun)), {
       status: DryRunStatus.Error,
-      errorMessage: lzFileError(a, {
+      errorMessage: muirSirynNodeTestFileError(a, {
         records: [],
         exitCode,
         stderr: '',
         fileArgs: [a],
-        nodeOptions: lzConsumerNodeOptions(process.env),
+        nodeOptions: muirSirynNodeTestConsumerNodeOptions(process.env),
       }),
     });
   });
@@ -222,13 +222,13 @@ describe('LzNodeTestTestRunner endings', () => {
       nodeArgs: ['--no-deprecation'],
     });
     const b = join(dir, 'b.test.mjs');
-    const errorMessage = lzFileError(b, {
+    const errorMessage = muirSirynNodeTestFileError(b, {
       records: [],
       exitCode: 3,
       stderr: 'first\nsecond\n',
       fileArgs: ['--no-deprecation', b],
       nodeOptions: [
-        ...lzConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }),
+        ...muirSirynNodeTestConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }),
         '--max-old-space-size=4096',
       ],
     });

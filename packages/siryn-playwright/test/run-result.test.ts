@@ -14,27 +14,27 @@ import {
 } from '@stryker-mutator/api/test-runner';
 
 import {
-  parseSnapshotLine,
-  type Snapshot,
-  type SnapshotLine,
+  muirSirynPlaywrightParseSnapshotLine,
+  type MuirSirynPlaywrightSnapshot,
+  type MuirSirynPlaywrightSnapshotLine,
 } from '../src/protocol.ts';
-import { LzPlaywrightCollectingReporter } from '../src/reporter.ts';
-import type { RunRequest } from '../src/run-request.ts';
+import { MuirSirynPlaywrightCollectingReporter } from '../src/reporter.ts';
+import type { MuirSirynPlaywrightRunRequest } from '../src/run-request.ts';
 import {
-  attemptSummary,
-  coverageGaps,
-  dryRunResult,
-  flakyTestNames,
-  mayHaveLostItsServer,
-  mergeCoverage,
-  missingCoverageError,
-  mutantRunResult,
-  type RunOutput,
-  type RunStatus,
-  arrivalSlackMs,
-  toRunResult,
+  muirSirynPlaywrightAttemptSummary,
+  muirSirynPlaywrightCoverageGaps,
+  muirSirynPlaywrightDryRunResult,
+  muirSirynPlaywrightFlakyTestNames,
+  muirSirynPlaywrightMayHaveLostItsServer,
+  muirSirynPlaywrightMergeCoverage,
+  muirSirynPlaywrightMissingCoverageError,
+  muirSirynPlaywrightMutantRunResult,
+  type MuirSirynPlaywrightRunOutput,
+  type MuirSirynPlaywrightRunStatus,
+  muirSirynPlaywrightArrivalSlackMs,
+  muirSirynPlaywrightToRunResult,
 } from '../src/run-result.ts';
-import { untaggedKey } from '../src/server-protocol.ts';
+import { muirSirynPlaywrightUntaggedKey } from '../src/server-protocol.ts';
 import {
   addAttempt,
   dryRequest,
@@ -49,20 +49,22 @@ import {
 } from './support/doubles.ts';
 
 // A snapshot as the runner reads it from a line the hook wrote.
-function parsed(line: Partial<SnapshotLine>): Snapshot {
-  const snapshot = parseSnapshotLine(JSON.stringify(line));
+function parsed(
+  line: Partial<MuirSirynPlaywrightSnapshotLine>,
+): MuirSirynPlaywrightSnapshot {
+  const snapshot = muirSirynPlaywrightParseSnapshotLine(JSON.stringify(line));
   assert.ok(snapshot);
 
   return snapshot;
 }
 
-function merge(lines: Partial<SnapshotLine>[]) {
-  return mergeCoverage(lines.map(parsed));
+function merge(lines: Partial<MuirSirynPlaywrightSnapshotLine>[]) {
+  return muirSirynPlaywrightMergeCoverage(lines.map(parsed));
 }
 
 // Playwright reports a test again after each attempt, with every attempt so far in its results.
 function attempt(
-  reporter: LzPlaywrightCollectingReporter,
+  reporter: MuirSirynPlaywrightCollectingReporter,
   id: string,
   outcome: Outcome,
   status: TestResult['status'],
@@ -75,25 +77,28 @@ function attempt(
 
 // Playwright hands the config's failOnFlakyTests to the reporter at onBegin.
 function begin(
-  reporter: LzPlaywrightCollectingReporter,
+  reporter: MuirSirynPlaywrightCollectingReporter,
   failOnFlakyTests: boolean,
 ) {
   reporter.onBegin({ failOnFlakyTests }, { allTests: () => [] });
 }
 
 function classify(
-  reporter: LzPlaywrightCollectingReporter,
+  reporter: MuirSirynPlaywrightCollectingReporter,
   {
     status = 'failed',
     hookInstalled = true,
     request = mutantRequest(),
   }: {
-    status?: RunStatus;
+    status?: MuirSirynPlaywrightRunStatus;
     hookInstalled?: boolean;
-    request?: RunRequest;
+    request?: MuirSirynPlaywrightRunRequest;
   } = {},
 ) {
-  return toRunResult(runOutput({ status, reporter, hookInstalled }), request);
+  return muirSirynPlaywrightToRunResult(
+    runOutput({ status, reporter, hookInstalled }),
+    request,
+  );
 }
 
 const passedTest = {
@@ -116,26 +121,29 @@ function killed(result: MutantRunResult) {
 }
 
 // The output of a run whose tests all passed, with the given snapshot lines.
-function passedRun(lines: Partial<SnapshotLine>[]): RunOutput {
-  const reporter = new LzPlaywrightCollectingReporter();
+function passedRun(
+  lines: Partial<MuirSirynPlaywrightSnapshotLine>[],
+): MuirSirynPlaywrightRunOutput {
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
 
   return runOutput({ reporter, snapshots: lines.map(parsed) });
 }
 
 test('a mutant run passes a test that passes only on a retry, as Playwright does', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'failed');
   attempt(reporter, 'a', 'flaky', 'passed');
 
   assert.deepEqual(
-    mutantRunResult(runOutput({ reporter }), mutantRequest()).result,
+    muirSirynPlaywrightMutantRunResult(runOutput({ reporter }), mutantRequest())
+      .result,
     { status: MutantRunStatus.Survived, nrOfTests: 1, duration: 7 },
   );
 });
 
 test('with failOnFlakyTests, a mutant run fails a test that passes only on a retry', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   begin(reporter, true);
   attempt(reporter, 'a', 'unexpected', 'failed');
   attempt(reporter, 'a', 'flaky', 'passed');
@@ -153,7 +161,7 @@ test('with failOnFlakyTests, a mutant run fails a test that passes only on a ret
 });
 
 test('the dry run counts a test that passes on a retry as passing, and as failing with failOnFlakyTests', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'failed');
   attempt(reporter, 'a', 'flaky', 'passed');
   attempt(reporter, 'b', 'expected', 'passed');
@@ -170,18 +178,18 @@ test('the dry run counts a test that passes on a retry as passing, and as failin
 });
 
 test('the names of the tests that passed only on a retry', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'unexpected', 'failed');
   attempt(reporter, 'b', 'flaky', 'passed');
 
-  assert.deepEqual(flakyTestNames(runOutput({ reporter })), [
+  assert.deepEqual(muirSirynPlaywrightFlakyTestNames(runOutput({ reporter })), [
     '[e2e] › app.spec.ts › b',
   ]);
 });
 
 test('a kill outranks a timeout in the same run', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'b', 'unexpected', 'failed');
 
@@ -189,7 +197,7 @@ test('a kill outranks a timeout in the same run', () => {
 });
 
 test('a retried test that fails an assertion kills the mutant even when another attempt timed out', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'a', 'unexpected', 'failed');
 
@@ -197,7 +205,7 @@ test('a retried test that fails an assertion kills the mutant even when another 
 });
 
 test('a timeout alone makes a mutant run a Timeout', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'b', 'expected', 'passed');
 
@@ -205,7 +213,7 @@ test('a timeout alone makes a mutant run a Timeout', () => {
 });
 
 test('a test.fail() test that fails as expected is no kill, so a timeout stays a Timeout', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'b', 'expected', 'failed', 'failed');
 
@@ -213,7 +221,7 @@ test('a test.fail() test that fails as expected is no kill, so a timeout stays a
 });
 
 test('the dry run reports a timed-out test as a failed test', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
 
   const result = classify(reporter, { request: dryRequest() });
@@ -226,7 +234,7 @@ test('the dry run reports a timed-out test as a failed test', () => {
 
 test('a mutant run without test results is an error, filtered or not', () => {
   assert.deepEqual(
-    classify(new LzPlaywrightCollectingReporter(), {
+    classify(new MuirSirynPlaywrightCollectingReporter(), {
       status: 'passed',
       request: mutantRequest({ selection: selected(['gone', 'also gone']) }),
     }),
@@ -237,7 +245,7 @@ test('a mutant run without test results is an error, filtered or not', () => {
     },
   );
   assert.deepEqual(
-    classify(new LzPlaywrightCollectingReporter(), { status: 'passed' }),
+    classify(new MuirSirynPlaywrightCollectingReporter(), { status: 'passed' }),
     {
       status: DryRunStatus.Error,
       errorMessage: 'Playwright ran no tests.',
@@ -246,7 +254,7 @@ test('a mutant run without test results is an error, filtered or not', () => {
 });
 
 test('a test result is named by its title path without the empty titles', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   Object.assign(reporter.testCases.get('a') ?? {}, {
     titlePath: () => ['', '', 'app.spec.ts', 'a'],
@@ -261,7 +269,7 @@ test('a test result is named by its title path without the empty titles', () => 
 });
 
 test('a test with only empty titles is named without an undefined project', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   Object.assign(reporter.testCases.get('a') ?? {}, {
     titlePath: () => ['', ''],
@@ -276,7 +284,7 @@ test('a test with only empty titles is named without an undefined project', () =
 });
 
 test('a test.fail() test that passed kills the mutant, though another test timed out', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'b', 'unexpected', 'passed', 'failed');
 
@@ -284,7 +292,7 @@ test('a test.fail() test that passed kills the mutant, though another test timed
 });
 
 test('a test that timed out and then passed on a retry passes, and makes a mutant run a Timeout with failOnFlakyTests', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'a', 'flaky', 'passed');
   const status = (failOnFlakyTests: boolean) => {
@@ -298,7 +306,7 @@ test('a test that timed out and then passed on a retry passes, and makes a mutan
 });
 
 test('a timed-out test that ran without the hook is a hook error, not a Timeout', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
 
   assert.equal(
@@ -308,12 +316,13 @@ test('a timed-out test that ran without the hook is a hook error, not a Timeout'
 });
 
 test('a failed or retried-then-failed attempt counts as failed, a skipped one does not', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'skipped', 'skipped');
 
   assert.equal(
-    attemptSummary(reporter.testCases.values(), true).anyFailed,
+    muirSirynPlaywrightAttemptSummary(reporter.testCases.values(), true)
+      .anyFailed,
     false,
   );
 
@@ -321,29 +330,34 @@ test('a failed or retried-then-failed attempt counts as failed, a skipped one do
   attempt(reporter, 'c', 'flaky', 'passed');
 
   assert.equal(
-    attemptSummary(reporter.testCases.values(), true).anyFailed,
+    muirSirynPlaywrightAttemptSummary(reporter.testCases.values(), true)
+      .anyFailed,
     true,
   );
   assert.equal(
-    attemptSummary(reporter.testCases.values(), false).anyFailed,
+    muirSirynPlaywrightAttemptSummary(reporter.testCases.values(), false)
+      .anyFailed,
     false,
   );
 });
 
 test('a timed-out or interrupted attempt failed but killed nothing', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'b', 'unexpected', 'interrupted');
 
-  assert.deepEqual(attemptSummary(reporter.testCases.values(), true), {
-    anyFailed: true,
-    killed: false,
-    timedOut: true,
-  });
+  assert.deepEqual(
+    muirSirynPlaywrightAttemptSummary(reporter.testCases.values(), true),
+    {
+      anyFailed: true,
+      killed: false,
+      timedOut: true,
+    },
+  );
 });
 
 test('an unfiltered dry run without tests completes empty, so Stryker applies allowEmpty', () => {
-  const result = classify(new LzPlaywrightCollectingReporter(), {
+  const result = classify(new MuirSirynPlaywrightCollectingReporter(), {
     status: 'passed',
     request: dryRequest(),
   });
@@ -356,7 +370,7 @@ test('an unfiltered dry run without tests completes empty, so Stryker applies al
 });
 
 test('a run that Playwright failed without a test or an error is an error, not an empty run', () => {
-  const result = classify(new LzPlaywrightCollectingReporter(), {
+  const result = classify(new MuirSirynPlaywrightCollectingReporter(), {
     status: 'failed',
     request: dryRequest(),
   });
@@ -369,7 +383,7 @@ test('a run that Playwright failed without a test or an error is an error, not a
 });
 
 test('a dry run with coverage off still fails when no page loaded instrumented code', () => {
-  const { result, gaps } = dryRunResult(
+  const { result, gaps } = muirSirynPlaywrightDryRunResult(
     passedRun([]),
     dryRequest({ coverageAnalysis: 'off' }),
   );
@@ -379,7 +393,7 @@ test('a dry run with coverage off still fails when no page loaded instrumented c
 });
 
 test('a dry run with coverage off reports the tests and no coverage', () => {
-  const { result, gaps } = dryRunResult(
+  const { result, gaps } = muirSirynPlaywrightDryRunResult(
     passedRun([{ mutantCoverage: { static: { '1': 1 }, perTest: {} } }]),
     dryRequest({ coverageAnalysis: 'off' }),
   );
@@ -394,7 +408,7 @@ test('a dry run with coverage off reports the tests and no coverage', () => {
 });
 
 test('a dry run merges the coverage of every snapshot exactly and reports the gaps', () => {
-  const { result, gaps } = dryRunResult(
+  const { result, gaps } = muirSirynPlaywrightDryRunResult(
     passedRun([
       {
         outlivedItsTest: false,
@@ -423,7 +437,7 @@ test('a dry run merges the coverage of every snapshot exactly and reports the ga
 
 test('a server request without a test id counts for every test that ran when it arrived, once each, and as static when none ran', () => {
   const endsSeen = [1100, 1150, 1160];
-  const reporter = new LzPlaywrightCollectingReporter(
+  const reporter = new MuirSirynPlaywrightCollectingReporter(
     new Map(),
     () => endsSeen.shift() ?? Number.NaN,
   );
@@ -446,18 +460,26 @@ test('a server request without a test id counts for every test that ran when it 
     { testId: 'b', start: 1060, end: 1160 },
   ]);
 
-  const merged = mergeCoverage(
+  const merged = muirSirynPlaywrightMergeCoverage(
     [
       parsed({
         mutantCoverage: {
           static: {},
           perTest: {
             a: { '1': 1 },
-            [untaggedKey(1075)]: { '2': 1 },
-            [untaggedKey(1000 - arrivalSlackMs)]: { '3': 1 },
-            [untaggedKey(1160 + arrivalSlackMs)]: { '4': 1 },
-            [untaggedKey(1000 - arrivalSlackMs - 1)]: { '5': 1 },
-            [untaggedKey(1160 + arrivalSlackMs + 1)]: { '6': 1 },
+            [muirSirynPlaywrightUntaggedKey(1075)]: { '2': 1 },
+            [muirSirynPlaywrightUntaggedKey(
+              1000 - muirSirynPlaywrightArrivalSlackMs,
+            )]: { '3': 1 },
+            [muirSirynPlaywrightUntaggedKey(
+              1160 + muirSirynPlaywrightArrivalSlackMs,
+            )]: { '4': 1 },
+            [muirSirynPlaywrightUntaggedKey(
+              1000 - muirSirynPlaywrightArrivalSlackMs - 1,
+            )]: { '5': 1 },
+            [muirSirynPlaywrightUntaggedKey(
+              1160 + muirSirynPlaywrightArrivalSlackMs + 1,
+            )]: { '6': 1 },
           },
         },
       }),
@@ -476,14 +498,14 @@ test('a server request without a test id counts for every test that ran when it 
 
 test('a dry run attributes a server request without a test id by the times its reporter saw, past the duration Playwright reports', () => {
   const endsSeen = [5300, 9300];
-  const reporter = new LzPlaywrightCollectingReporter(
+  const reporter = new MuirSirynPlaywrightCollectingReporter(
     new Map(),
     () => endsSeen.shift() ?? Number.NaN,
   );
   reporter.onTestEnd(withAttempt('a', new Date(5000), 200));
   reporter.onTestEnd(withAttempt('b', new Date(9000), 200));
 
-  const { result } = dryRunResult(
+  const { result } = muirSirynPlaywrightDryRunResult(
     runOutput({
       reporter,
       snapshots: [
@@ -491,8 +513,10 @@ test('a dry run attributes a server request without a test id by the times its r
           mutantCoverage: {
             static: {},
             perTest: {
-              [untaggedKey(5200 + arrivalSlackMs + 1)]: { '7': 1 },
-              [untaggedKey(9100)]: { '8': 2 },
+              [muirSirynPlaywrightUntaggedKey(
+                5200 + muirSirynPlaywrightArrivalSlackMs + 1,
+              )]: { '7': 1 },
+              [muirSirynPlaywrightUntaggedKey(9100)]: { '8': 2 },
             },
           },
         }),
@@ -511,7 +535,10 @@ test('a dry run that fails before the merge reports no gaps', () => {
   const output = passedRun([{ lost: true, outlivedItsTest: false }]);
 
   assert.deepEqual(
-    dryRunResult({ ...output, status: 'interrupted' }, dryRequest()),
+    muirSirynPlaywrightDryRunResult(
+      { ...output, status: 'interrupted' },
+      dryRequest(),
+    ),
     {
       result: {
         status: DryRunStatus.Error,
@@ -524,7 +551,7 @@ test('a dry run that fails before the merge reports no gaps', () => {
 
 test('the coverage gaps count lost frames and shared frames with coverage', () => {
   assert.deepEqual(
-    coverageGaps(
+    muirSirynPlaywrightCoverageGaps(
       [
         { lost: true, outlivedItsTest: true },
         { outlivedItsTest: true },
@@ -540,7 +567,7 @@ test('the hit limit outranks a kill, summed over every snapshot', () => {
   const output = passedRun([{ hitCount: 600 }, { hitCount: 500 }]);
   attempt(output.reporter, 'b', 'unexpected', 'failed');
 
-  const { result, hitCount } = mutantRunResult(
+  const { result, hitCount } = muirSirynPlaywrightMutantRunResult(
     output,
     mutantRequest({ hitLimit: 1000 }),
   );
@@ -557,11 +584,14 @@ test('the hit limit counts on a run that is otherwise an error', () => {
   });
 
   assert.equal(
-    mutantRunResult(output, mutantRequest({ hitLimit: 1000 })).result.status,
+    muirSirynPlaywrightMutantRunResult(
+      output,
+      mutantRequest({ hitLimit: 1000 }),
+    ).result.status,
     MutantRunStatus.Timeout,
   );
   assert.equal(
-    mutantRunResult(output, mutantRequest()).result.status,
+    muirSirynPlaywrightMutantRunResult(output, mutantRequest()).result.status,
     MutantRunStatus.Error,
   );
 });
@@ -570,7 +600,10 @@ test('a mutant run under its hit limit reports the kill', () => {
   const output = passedRun([{ hitCount: 10 }]);
   attempt(output.reporter, 'b', 'unexpected', 'failed');
 
-  const { result } = mutantRunResult(output, mutantRequest({ hitLimit: 1000 }));
+  const { result } = muirSirynPlaywrightMutantRunResult(
+    output,
+    mutantRequest({ hitLimit: 1000 }),
+  );
 
   assert.deepEqual(killed(result).killedBy, ['b']);
 });
@@ -579,8 +612,8 @@ test('a run with a failed attempt may have lost its server', () => {
   const failed = passedRun([]);
   attempt(failed.reporter, 'b', 'unexpected', 'failed');
 
-  assert.equal(mayHaveLostItsServer(failed), true);
-  assert.equal(mayHaveLostItsServer(passedRun([])), false);
+  assert.equal(muirSirynPlaywrightMayHaveLostItsServer(failed), true);
+  assert.equal(muirSirynPlaywrightMayHaveLostItsServer(passedRun([])), false);
 });
 
 test('a run whose test passed only on a retry may have lost its server on the first attempt', () => {
@@ -588,29 +621,38 @@ test('a run whose test passed only on a retry may have lost its server on the fi
   attempt(flaky.reporter, 'b', 'unexpected', 'failed');
   attempt(flaky.reporter, 'b', 'flaky', 'passed');
 
-  assert.equal(mayHaveLostItsServer(flaky), true);
+  assert.equal(muirSirynPlaywrightMayHaveLostItsServer(flaky), true);
 });
 
 test('a run the deadline stopped is never rerun, though its stopped test counts as failed', () => {
   const stopped = passedRun([]);
   attempt(stopped.reporter, 'b', 'skipped', 'interrupted');
 
-  assert.equal(mayHaveLostItsServer(stopped), true);
-  assert.equal(mayHaveLostItsServer({ ...stopped, status: 'deadline' }), false);
+  assert.equal(muirSirynPlaywrightMayHaveLostItsServer(stopped), true);
+  assert.equal(
+    muirSirynPlaywrightMayHaveLostItsServer({ ...stopped, status: 'deadline' }),
+    false,
+  );
 });
 
 test('a deadline stop during config load, before any test, is a Timeout', () => {
   const output = runOutput({ status: 'deadline', hookInstalled: false });
 
   assert.equal(
-    toRunResult(output, mutantRequest({ selection: selected(['a']) })).status,
+    muirSirynPlaywrightToRunResult(
+      output,
+      mutantRequest({ selection: selected(['a']) }),
+    ).status,
     DryRunStatus.Timeout,
   );
-  assert.equal(toRunResult(output, dryRequest()).status, DryRunStatus.Timeout);
+  assert.equal(
+    muirSirynPlaywrightToRunResult(output, dryRequest()).status,
+    DryRunStatus.Timeout,
+  );
 });
 
 test('a deadline stop that interrupted the looping test is a Timeout', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'skipped', 'interrupted');
 
@@ -625,7 +667,7 @@ test('a deadline stop after a test killed the mutant reports the kill', () => {
   attempt(output.reporter, 'b', 'unexpected', 'failed');
   attempt(output.reporter, 'c', 'skipped', 'interrupted');
 
-  const { result } = mutantRunResult(
+  const { result } = muirSirynPlaywrightMutantRunResult(
     { ...output, status: 'deadline' },
     mutantRequest({ selection: selected(['a', 'b', 'c']) }),
   );
@@ -638,15 +680,18 @@ const coveringA = mutantRequest({
 });
 
 function mutantRunOf(
-  reporter: LzPlaywrightCollectingReporter,
-  status: RunStatus,
+  reporter: MuirSirynPlaywrightCollectingReporter,
+  status: MuirSirynPlaywrightRunStatus,
   request = coveringA,
 ): MutantRunResult {
-  return mutantRunResult(runOutput({ status, reporter }), request).result;
+  return muirSirynPlaywrightMutantRunResult(
+    runOutput({ status, reporter }),
+    request,
+  ).result;
 }
 
 test('a deadline stop after every covering test passed leaves a survivor', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'skipped', 'interrupted');
 
@@ -658,7 +703,7 @@ test('a deadline stop after every covering test passed leaves a survivor', () =>
 });
 
 test('an extra test that hit its test timeout after every covering test passed leaves a survivor', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'unexpected', 'timedOut');
 
@@ -670,7 +715,7 @@ test('an extra test that hit its test timeout after every covering test passed l
 });
 
 test('a covering test the deadline interrupted keeps the run a Timeout', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'b', 'expected', 'passed');
   attempt(reporter, 'a', 'skipped', 'interrupted');
 
@@ -681,7 +726,7 @@ test('a covering test the deadline interrupted keeps the run a Timeout', () => {
 });
 
 test('a covering test that timed out keeps the run a Timeout', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'b', 'expected', 'passed');
   attempt(reporter, 'a', 'unexpected', 'timedOut');
 
@@ -689,7 +734,7 @@ test('a covering test that timed out keeps the run a Timeout', () => {
 });
 
 test('a covering test that timed out and passed only on a retry leaves a survivor, and a Timeout with failOnFlakyTests', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'b', 'expected', 'passed');
   attempt(reporter, 'a', 'unexpected', 'timedOut');
   attempt(reporter, 'a', 'flaky', 'passed');
@@ -703,7 +748,7 @@ test('a covering test that timed out and passed only on a retry leaves a survivo
 });
 
 test('a covering test that never ran keeps the run a Timeout', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'skipped', 'interrupted');
 
@@ -720,7 +765,7 @@ test('a covering test that never ran keeps the run a Timeout', () => {
 });
 
 test('an empty covering list counts as no covering test that passed', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'timedOut');
 
   assert.equal(
@@ -734,7 +779,7 @@ test('an empty covering list counts as no covering test that passed', () => {
 });
 
 test('a failed extra test still kills the mutant when every covering test passed', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'unexpected', 'failed');
 
@@ -742,7 +787,7 @@ test('a failed extra test still kills the mutant when every covering test passed
 });
 
 test('without a test filter, a timed-out test keeps the run a Timeout though the others passed', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   attempt(reporter, 'b', 'unexpected', 'timedOut');
 
@@ -753,7 +798,7 @@ test('without a test filter, a timed-out test keeps the run a Timeout though the
 });
 
 test('a run someone else interrupted stays an error', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'skipped', 'interrupted');
 
   assert.equal(
@@ -764,7 +809,7 @@ test('a run someone else interrupted stays an error', () => {
 
 test('the missing-coverage error names lost frames when every frame was lost', () => {
   assert.match(
-    missingCoverageError(
+    muirSirynPlaywrightMissingCoverageError(
       [passedTest],
       [parsed({ lost: true }), parsed({ lost: true })],
     ) ?? '',
@@ -774,7 +819,7 @@ test('the missing-coverage error names lost frames when every frame was lost', (
 
 test('the missing-coverage error says no instrumented code ran instead of blaming the webServer', () => {
   assert.equal(
-    missingCoverageError([passedTest], []),
+    muirSirynPlaywrightMissingCoverageError([passedTest], []),
     'Tests ran, but no instrumented code ran, neither in a page nor in a Playwright worker. The dry run needs at least one test that runs the app code, in a page or by importing it.',
   );
 });
@@ -783,15 +828,21 @@ test('the missing-coverage error blames the webServer when pages answered withou
   const blame =
     'No page loaded instrumented code. Is the webServer serving the Stryker sandbox? A server that was already running (reuseExistingServer) serves the original sources.';
 
-  assert.equal(missingCoverageError([passedTest], [parsed({})]), blame);
   assert.equal(
-    missingCoverageError([passedTest], [parsed({ lost: true }), parsed({})]),
+    muirSirynPlaywrightMissingCoverageError([passedTest], [parsed({})]),
+    blame,
+  );
+  assert.equal(
+    muirSirynPlaywrightMissingCoverageError(
+      [passedTest],
+      [parsed({ lost: true }), parsed({})],
+    ),
     blame,
   );
 });
 
 test('a dry run whose instrumented code loaded but reached no mutant completes with no coverage', () => {
-  const { result } = dryRunResult(
+  const { result } = muirSirynPlaywrightDryRunResult(
     passedRun([{ instrumented: true, outlivedItsTest: false }]),
     dryRequest(),
   );
@@ -803,7 +854,7 @@ test('a dry run whose instrumented code loaded but reached no mutant completes w
 });
 
 test('a run with errors and no failed test is an error, with every error', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'expected', 'passed');
   reporter.onError({ message: 'first' });
   reporter.onError({ value: 'second' });
@@ -816,7 +867,7 @@ test('a run with errors and no failed test is an error, with every error', () =>
 });
 
 test('a failed test outranks the errors of its run', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'unexpected', 'failed');
   attempt(reporter, 'b', 'expected', 'passed');
   reporter.onError({ message: 'worker teardown' });
@@ -825,7 +876,9 @@ test('a failed test outranks the errors of its run', () => {
 });
 
 test('a run whose retries could not be raised is an error, even when a test failed', () => {
-  const reporter = new LzPlaywrightCollectingReporter(new Map([['a', 1]]));
+  const reporter = new MuirSirynPlaywrightCollectingReporter(
+    new Map([['a', 1]]),
+  );
   reporter.onBegin({ failOnFlakyTests: false }, { allTests: () => [] });
   attempt(reporter, 'a', 'unexpected', 'failed');
 
@@ -840,7 +893,7 @@ test('a run whose retries could not be raised is an error, even when a test fail
 
 test('coverage from a Playwright worker alone satisfies the dry run', () => {
   assert.equal(
-    missingCoverageError(
+    muirSirynPlaywrightMissingCoverageError(
       [passedTest],
       [parsed({ mutantCoverage: { static: { '1': 1 }, perTest: {} } })],
     ),
@@ -869,16 +922,22 @@ test('the missing-coverage error needs a test that ran, and none that failed', (
     timeSpentMs: 10,
   };
 
-  assert.equal(missingCoverageError([skipped], []), undefined);
+  assert.equal(
+    muirSirynPlaywrightMissingCoverageError([skipped], []),
+    undefined,
+  );
   assert.match(
-    missingCoverageError([skipped, passed], []) ?? '',
+    muirSirynPlaywrightMissingCoverageError([skipped, passed], []) ?? '',
     /no instrumented code ran/,
   );
-  assert.equal(missingCoverageError([passed, failed], []), undefined);
+  assert.equal(
+    muirSirynPlaywrightMissingCoverageError([passed, failed], []),
+    undefined,
+  );
 });
 
 test('a run of skipped tests needs no hook', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'skipped', 'skipped');
 
   assert.equal(
@@ -888,7 +947,7 @@ test('a run of skipped tests needs no hook', () => {
 });
 
 test('tests that ran without the hook are an error', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   attempt(reporter, 'a', 'skipped', 'skipped');
   attempt(reporter, 'b', 'expected', 'passed');
 
@@ -995,12 +1054,12 @@ test('coverage from a context that outlived its test counts as static', () => {
 });
 
 test('a run whose workers failed to install the hook reports each distinct error once', () => {
-  const output: RunOutput = {
+  const output: MuirSirynPlaywrightRunOutput = {
     ...passedRun([]),
     installErrors: ['Error: a', 'Error: b', 'Error: a'],
   };
 
-  assert.deepEqual(toRunResult(output, dryRequest()), {
+  assert.deepEqual(muirSirynPlaywrightToRunResult(output, dryRequest()), {
     status: DryRunStatus.Error,
     errorMessage:
       'The Stryker worker hook failed to install in a Playwright worker: Error: a\nError: b',

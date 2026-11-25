@@ -1,6 +1,6 @@
 # No Storybook test runner plugin; stories run under Stryker's Vitest runner
 
-`@muirjs/shadowcat-storybook` adds two ignorers (`lz-storybook-csf` and `lz-storybook`) and the `lz-storybook`
+`@muirjs/shadowcat-storybook` adds two ignorers (`muir-shadowcat-storybook-csf` and `muir-shadowcat-storybook`) and the `muir-shadowcat-storybook`
 reporter, and no test runner. Story tests run through Storybook's Vitest addon under Stryker's own
 `@stryker-mutator/vitest-runner`, which already runs browser-mode stories. Lars ruled: "We should not have a
 test-runner plugin that wraps `@stryker-mutator/vitest-runner`, unless we need to create a Storybook- or

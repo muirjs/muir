@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzMutantsByLine, lzPartRanges } from '../../src/oss/parts.ts';
+import { muirMutantsByLine, muirPartRanges } from '../../src/oss/parts.ts';
 
 const source = [
   "'use strict'",
@@ -21,13 +21,13 @@ const source = [
   'module.exports = { a, b, c, d }',
 ].join('\n');
 
-describe('lzPartRanges', () => {
+describe('muirPartRanges', () => {
   it('gives the whole file as one part', () => {
-    assert.deepEqual(lzPartRanges('index.js', source, 1), ['index.js:1-11']);
+    assert.deepEqual(muirPartRanges('index.js', source, 1), ['index.js:1-11']);
   });
 
   it('cuts only where a top-level statement starts, nearest an even share of the lines', () => {
-    assert.deepEqual(lzPartRanges('index.js', source, 2), [
+    assert.deepEqual(muirPartRanges('index.js', source, 2), [
       'index.js:1-6',
       'index.js:7-11',
     ]);
@@ -41,7 +41,7 @@ describe('lzPartRanges', () => {
       [11, 4],
     ]);
 
-    assert.deepEqual(lzPartRanges('index.js', source, 2, mutantsByLine), [
+    assert.deepEqual(muirPartRanges('index.js', source, 2, mutantsByLine), [
       'index.js:1-10',
       'index.js:11-11',
     ]);
@@ -58,13 +58,13 @@ describe('lzPartRanges', () => {
     ]);
 
     assert.deepEqual(
-      lzPartRanges('index.js', oneLineStatements, 2, mutantsByLine),
+      muirPartRanges('index.js', oneLineStatements, 2, mutantsByLine),
       ['index.js:1-1', 'index.js:2-12'],
     );
   });
 
   it('never cuts inside a statement or between two statements that share a line', () => {
-    const ranges = lzPartRanges('index.js', source, 11);
+    const ranges = muirPartRanges('index.js', source, 11);
 
     assert.deepEqual(ranges, [
       'index.js:1-2',
@@ -76,7 +76,7 @@ describe('lzPartRanges', () => {
   });
 
   it('counts lines as Stryker does, where U+2028 also ends a line', () => {
-    const ranges = lzPartRanges(
+    const ranges = muirPartRanges(
       'index.js',
       "const a = ' '\nconst b = 1\nconst c = 2",
       3,
@@ -91,7 +91,7 @@ describe('lzPartRanges', () => {
       (_, index) => `const v${index} = ${index}`,
     ).join('\n');
 
-    assert.deepEqual(lzPartRanges('index.js', oneLineStatements, 3), [
+    assert.deepEqual(muirPartRanges('index.js', oneLineStatements, 3), [
       'index.js:1-4',
       'index.js:5-8',
       'index.js:9-12',
@@ -100,13 +100,13 @@ describe('lzPartRanges', () => {
 
   it('cuts at the earlier of two statements equally near an even share', () => {
     assert.deepEqual(
-      lzPartRanges('index.js', 'const a = 1\nconst b = 2\nconst c = 3', 2),
+      muirPartRanges('index.js', 'const a = 1\nconst b = 2\nconst c = 3', 2),
       ['index.js:1-1', 'index.js:2-3'],
     );
   });
 
   it('never cuts at a statement that starts on the line where a statement spanning lines ends', () => {
-    const ranges = lzPartRanges(
+    const ranges = muirPartRanges(
       'index.js',
       'function a () {\n  return 1\n} const b = 2\nconst c = 3',
       2,
@@ -116,7 +116,7 @@ describe('lzPartRanges', () => {
   });
 
   it('refuses a part count below 1', () => {
-    assert.throws(() => lzPartRanges('index.js', source, 0), {
+    assert.throws(() => muirPartRanges('index.js', source, 0), {
       message: 'parts is a positive integer; got 0.',
     });
   });
@@ -126,7 +126,7 @@ function reportWith(
   t: TestContext,
   mutantLinesByFile: Readonly<Record<string, readonly number[]>>,
 ): string {
-  const dir = mkdtempSync(join(tmpdir(), 'lz-oss-parts-'));
+  const dir = mkdtempSync(join(tmpdir(), 'muir-oss-parts-'));
   const file = join(dir, 'mutation.json');
   const files = Object.fromEntries(
     Object.entries(mutantLinesByFile).map(([name, lines]) => [
@@ -149,7 +149,7 @@ function reportWith(
   return file;
 }
 
-describe('lzMutantsByLine', () => {
+describe('muirMutantsByLine', () => {
   it('counts the mutants on each line of the file the report names exactly', (t) => {
     const report = reportWith(t, {
       'lib/utils/index.js': [9, 9],
@@ -157,7 +157,7 @@ describe('lzMutantsByLine', () => {
     });
 
     assert.deepEqual(
-      lzMutantsByLine(report, 'index.js'),
+      muirMutantsByLine(report, 'index.js'),
       new Map([
         [1, 1],
         [2, 2],
@@ -168,7 +168,7 @@ describe('lzMutantsByLine', () => {
   it('refuses a file the report does not have, and names those it has', (t) => {
     const report = reportWith(t, { 'lib/index.js': [1] });
 
-    assert.throws(() => lzMutantsByLine(report, 'index.js'), {
+    assert.throws(() => muirMutantsByLine(report, 'index.js'), {
       message: `${report} has no file "index.js"; it has lib/index.js.`,
     });
   });
@@ -176,7 +176,7 @@ describe('lzMutantsByLine', () => {
   it('names every file the report has, separated by commas', (t) => {
     const report = reportWith(t, { 'lib/a.js': [1], 'lib/b.js': [1] });
 
-    assert.throws(() => lzMutantsByLine(report, 'index.js'), {
+    assert.throws(() => muirMutantsByLine(report, 'index.js'), {
       message: `${report} has no file "index.js"; it has lib/a.js, lib/b.js.`,
     });
   });
@@ -194,7 +194,7 @@ function partsMain(
     readonly files?: Readonly<Record<string, string>>;
   } = {},
 ) {
-  const dir = mkdtempSync(join(tmpdir(), 'lz-oss-parts-main-'));
+  const dir = mkdtempSync(join(tmpdir(), 'muir-oss-parts-main-'));
   const path = join(dir, 'index.js');
 
   t.after(() => {

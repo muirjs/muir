@@ -4,11 +4,11 @@ import { describe, it } from 'node:test';
 import { parse } from '@babel/parser';
 
 import {
-  chainUpTo,
-  definitionTimeStubs,
-  mockTransformerRewrite,
-  stubMethodOf,
-  writtenMethodOf,
+  muirMoiraStorybookChainUpTo,
+  muirMoiraStorybookDefinitionTimeStubs,
+  muirMoiraStorybookMockTransformerRewrite,
+  muirMoiraStorybookStubMethodOf,
+  muirMoiraStorybookWrittenMethodOf,
 } from '../src/stub-shape.ts';
 import { renameKey } from './support/parse-module.ts';
 
@@ -20,11 +20,13 @@ function parseTs(source: string) {
 }
 
 function stubsOf(source: string) {
-  return definitionTimeStubs(parseTs(source)).map(({ spy, method, once }) => ({
-    spy,
-    method,
-    once,
-  }));
+  return muirMoiraStorybookDefinitionTimeStubs(parseTs(source)).map(
+    ({ spy, method, once }) => ({
+      spy,
+      method,
+      once,
+    }),
+  );
 }
 
 describe('definitionTimeStubs', () => {
@@ -134,7 +136,7 @@ describe('definitionTimeStubs', () => {
     const source =
       "import { fn } from 'storybook/test';\nexport const A = { args: { g: (fn()).mockName('g').mockReturnValue<string>('x', 'y') } };";
 
-    assert.deepEqual(definitionTimeStubs(parseTs(source)), [
+    assert.deepEqual(muirMoiraStorybookDefinitionTimeStubs(parseTs(source)), [
       {
         spy: 'fn',
         method: 'mockReturnValue',
@@ -155,7 +157,7 @@ describe('definitionTimeStubs', () => {
   });
 
   it('tells a stub whose spy call takes arguments, inside parentheses too', () => {
-    const stubs = definitionTimeStubs(
+    const stubs = muirMoiraStorybookDefinitionTimeStubs(
       parseTs(
         "import { fn } from 'storybook/test';\nfn(() => 1).mockReturnValue(2);\n(fn<() => number>(impl)).mockName('a').mockResolvedValue(3);\nfn<() => number>().mockReturnValue(4);",
       ),
@@ -175,8 +177,12 @@ describe('definitionTimeStubs', () => {
     renameKey(babel8, 'typeParameters', 'typeArguments');
 
     assert.deepEqual(
-      definitionTimeStubs(babel8).map(({ calleeEnd }) => calleeEnd),
-      definitionTimeStubs(parseTs(source)).map(({ calleeEnd }) => calleeEnd),
+      muirMoiraStorybookDefinitionTimeStubs(babel8).map(
+        ({ calleeEnd }) => calleeEnd,
+      ),
+      muirMoiraStorybookDefinitionTimeStubs(parseTs(source)).map(
+        ({ calleeEnd }) => calleeEnd,
+      ),
     );
   });
 
@@ -187,10 +193,12 @@ describe('definitionTimeStubs', () => {
     );
 
     assert.deepEqual(
-      definitionTimeStubs(program).map(({ method, once }) => ({
-        method,
-        once,
-      })),
+      muirMoiraStorybookDefinitionTimeStubs(program).map(
+        ({ method, once }) => ({
+          method,
+          once,
+        }),
+      ),
       [{ method: 'mockResolvedValue', once: true }],
     );
   });
@@ -198,9 +206,11 @@ describe('definitionTimeStubs', () => {
   it('writes a stub method call back as the spy method name it was read from', () => {
     assert.deepEqual(
       ['mockResolvedValueOnce', 'mockReturnValue']
-        .map(stubMethodOf)
+        .map(muirMoiraStorybookStubMethodOf)
         .map((call) =>
-          call === undefined ? undefined : writtenMethodOf(call),
+          call === undefined
+            ? undefined
+            : muirMoiraStorybookWrittenMethodOf(call),
         ),
       ['mockResolvedValueOnce', 'mockReturnValue'],
     );
@@ -215,10 +225,10 @@ describe('chainUpTo', () => {
     const second = { spyCall, end: 30 };
     const third = { spyCall, end: 40 };
 
-    assert.deepEqual(chainUpTo(second, [third, otherChain, first, second]), [
-      first,
-      second,
-    ]);
+    assert.deepEqual(
+      muirMoiraStorybookChainUpTo(second, [third, otherChain, first, second]),
+      [first, second],
+    );
   });
 });
 
@@ -231,22 +241,28 @@ describe('mockTransformerRewrite', () => {
   };
 
   it('rewrites the first stub of a chain', () => {
-    assert.equal(mockTransformerRewrite(first), 'rewritten');
+    assert.equal(muirMoiraStorybookMockTransformerRewrite(first), 'rewritten');
   });
 
   it('leaves a stub after the first of its chain alone', () => {
-    assert.equal(mockTransformerRewrite(second), 'chain-not-rewritten');
+    assert.equal(
+      muirMoiraStorybookMockTransformerRewrite(second),
+      'chain-not-rewritten',
+    );
   });
 
   it('leaves a stub after a parenthesised first stub of its chain alone', () => {
-    const stubs = definitionTimeStubs(
+    const stubs = muirMoiraStorybookDefinitionTimeStubs(
       parseTs(
         "import { fn } from 'storybook/test';\n(fn().mockReturnValue(1)).mockReturnValue(2);",
       ),
     );
 
     assert.deepEqual(
-      stubs.map((stub) => [stub.end, mockTransformerRewrite(stub)]),
+      stubs.map((stub) => [
+        stub.end,
+        muirMoiraStorybookMockTransformerRewrite(stub),
+      ]),
       [
         [81, 'chain-not-rewritten'],
         [61, 'rewritten'],
@@ -255,13 +271,13 @@ describe('mockTransformerRewrite', () => {
   });
 
   it('leaves a stub after a Once stub and a mockName call alone', () => {
-    const stubs = definitionTimeStubs(
+    const stubs = muirMoiraStorybookDefinitionTimeStubs(
       parseTs(
         "import { fn } from 'storybook/test';\nfn().mockName('a').mockReturnValueOnce(1).mockReturnValue(2);",
       ),
     );
 
-    assert.deepEqual(stubs.map(mockTransformerRewrite), [
+    assert.deepEqual(stubs.map(muirMoiraStorybookMockTransformerRewrite), [
       'chain-not-rewritten',
       'once-not-rewritten',
     ]);
@@ -269,14 +285,17 @@ describe('mockTransformerRewrite', () => {
 
   it('leaves the first stub of a chain alone when its spy call takes arguments', () => {
     assert.equal(
-      mockTransformerRewrite({ ...first, spyCallHasArguments: true }),
+      muirMoiraStorybookMockTransformerRewrite({
+        ...first,
+        spyCallHasArguments: true,
+      }),
       'spy-arguments-not-rewritten',
     );
   });
 
   it('leaves a Once stub alone, also as the first of its chain', () => {
     assert.equal(
-      mockTransformerRewrite({ ...first, once: true }),
+      muirMoiraStorybookMockTransformerRewrite({ ...first, once: true }),
       'once-not-rewritten',
     );
   });

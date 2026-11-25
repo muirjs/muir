@@ -13,8 +13,8 @@ import { setTimeout } from 'node:timers/promises';
 
 import { DryRunStatus } from '@stryker-mutator/api/test-runner';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import { envNames } from '../../src/record.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 import {
   complete,
   dryRun,
@@ -34,8 +34,8 @@ import {
   strykerOptions,
 } from '../runner.fixtures.ts';
 import {
-  LzNodeTestTestRunner,
-  type LzNodeTestOptions,
+  MuirSirynNodeTestTestRunner,
+  type MuirSirynNodeTestOptions,
 } from '../../src/index.ts';
 
 const compileCache = shareCompileCache();
@@ -48,10 +48,13 @@ function writesOnLoad(file: string, expression: string): string {
   );
 }
 
-describe('LzNodeTestTestRunner', () => {
+describe('MuirSirynNodeTestTestRunner', () => {
   it('can reload the environment', () => {
     assert.deepEqual(
-      new LzNodeTestTestRunner(strykerOptions(), logger()).capabilities(),
+      new MuirSirynNodeTestTestRunner(
+        strykerOptions(),
+        logger(),
+      ).capabilities(),
       {
         reloadEnvironment: true,
       },
@@ -59,7 +62,7 @@ describe('LzNodeTestTestRunner', () => {
   });
 
   it('runs nothing before it is initialized', async () => {
-    const runner = new LzNodeTestTestRunner(strykerOptions(), logger());
+    const runner = new MuirSirynNodeTestTestRunner(strykerOptions(), logger());
 
     assert.deepEqual(await settle(runner.dryRun(dryRun)), {
       status: DryRunStatus.Complete,
@@ -69,7 +72,7 @@ describe('LzNodeTestTestRunner', () => {
   });
 
   it('rejects, instead of throwing, when the dry run fails before it runs a file', async () => {
-    const runner = new LzNodeTestTestRunner(strykerOptions(), logger());
+    const runner = new MuirSirynNodeTestTestRunner(strykerOptions(), logger());
 
     await assert.rejects(
       // @ts-expect-error -- a test file that is no string, which makes the dry run fail before it runs a file
@@ -82,7 +85,7 @@ describe('LzNodeTestTestRunner', () => {
     const debug: string[] = [];
     const warnings: string[] = [];
 
-    await new LzNodeTestTestRunner(
+    await new MuirSirynNodeTestTestRunner(
       strykerOptions(),
       logger({ debug, warnings }),
     ).dispose();
@@ -92,8 +95,11 @@ describe('LzNodeTestTestRunner', () => {
 
   it('fails to initialize without test files', async (t) => {
     project(t, { 'a.test.mjs': passing });
-    const options = { lzNodeTest: { testFiles: ['none/*.test.mjs'] } };
-    const runner = new LzNodeTestTestRunner(strykerOptions(options), logger());
+    const options = { muirSirynNodeTest: { testFiles: ['none/*.test.mjs'] } };
+    const runner = new MuirSirynNodeTestTestRunner(
+      strykerOptions(options),
+      logger(),
+    );
 
     await assert.rejects(runner.init(), {
       message: 'No test files match ["none/*.test.mjs"]',
@@ -101,16 +107,16 @@ describe('LzNodeTestTestRunner', () => {
     await runner.dispose();
   });
 
-  lzTestFor<readonly [string, string, string | undefined]>([
+  muirTestFor<readonly [string, string, string | undefined]>([
     [
       'refuses',
       '21.20.0',
-      'The lz-node-test test runner needs Node.js 22.18 or later, and this is Node.js 21.20.0.',
+      'The muir-siryn-node-test test runner needs Node.js 22.18 or later, and this is Node.js 21.20.0.',
     ],
     [
       'refuses',
       '22.17.1',
-      'The lz-node-test test runner needs Node.js 22.18 or later, and this is Node.js 22.17.1.',
+      'The muir-siryn-node-test test runner needs Node.js 22.18 or later, and this is Node.js 22.17.1.',
     ],
     ['runs on', '22.18.0', undefined],
     ['runs on', '23.0.0', undefined],
@@ -119,8 +125,8 @@ describe('LzNodeTestTestRunner', () => {
     Object.defineProperty(process.versions, 'node', { value: version });
     t.after(() => Object.defineProperty(process.versions, 'node', { value }));
     project(t, { 'a.test.mjs': passing });
-    const runner = new LzNodeTestTestRunner(
-      strykerOptions({ lzNodeTest: { testFiles: ['a.test.mjs'] } }),
+    const runner = new MuirSirynNodeTestTestRunner(
+      strykerOptions({ muirSirynNodeTest: { testFiles: ['a.test.mjs'] } }),
       logger(),
     );
     t.after(() => runner.dispose());
@@ -137,9 +143,9 @@ describe('LzNodeTestTestRunner', () => {
     const warnings: string[] = [];
     const options = {
       allowEmpty: true,
-      lzNodeTest: { testFiles: ['none/*.test.mjs'] },
+      muirSirynNodeTest: { testFiles: ['none/*.test.mjs'] },
     };
-    const runner = new LzNodeTestTestRunner(
+    const runner = new MuirSirynNodeTestTestRunner(
       strykerOptions(options),
       logger({ debugEnabled: false, warnings }),
     );
@@ -200,8 +206,8 @@ describe('LzNodeTestTestRunner', () => {
       process.env['NODE_COMPILE_CACHE'] = compileCache;
     });
     delete process.env['NODE_COMPILE_CACHE'];
-    const runner = new LzNodeTestTestRunner(
-      strykerOptions({ lzNodeTest: { testFiles: ['a.test.mjs'] } }),
+    const runner = new MuirSirynNodeTestTestRunner(
+      strykerOptions({ muirSirynNodeTest: { testFiles: ['a.test.mjs'] } }),
       logger(),
     );
 
@@ -266,7 +272,7 @@ describe('LzNodeTestTestRunner', () => {
 
   it('removes the directories that runners of ended processes left behind when it is initialized', async (t) => {
     project(t, { 'a.test.mjs': passing });
-    const left = join(tmpdir(), `lz-node-test-${noProcess}-left`);
+    const left = join(tmpdir(), `muir-node-test-${noProcess}-left`);
     mkdirSync(join(left, 'out'), { recursive: true });
     t.after(() => {
       rmSync(left, { recursive: true, force: true });
@@ -279,7 +285,10 @@ describe('LzNodeTestTestRunner', () => {
 
   it('removes its output directory after a run', async (t) => {
     const dir = project(t, {
-      'a.test.mjs': writesOnLoad('out-dir.txt', `process.env.${envNames.out}`),
+      'a.test.mjs': writesOnLoad(
+        'out-dir.txt',
+        `process.env.${muirSirynNodeTestEnvNames.out}`,
+      ),
     });
     const runner = await initRunner(['a.test.mjs']);
 
@@ -297,13 +306,13 @@ describe('LzNodeTestTestRunner', () => {
     const outDir = readFileSync(join(dir, 'out-dir.txt'), 'utf8');
     assert.equal(dirname(dirname(outDir)), resolve(tmpdir()));
     assert.ok(
-      basename(dirname(outDir)).startsWith(`lz-node-test-${process.pid}-`),
+      basename(dirname(outDir)).startsWith(`muir-node-test-${process.pid}-`),
       outDir,
     );
     assert.ok(!existsSync(dirname(outDir)));
   });
 
-  lzTestFor([
+  muirTestFor([
     "fork(import.meta.filename, ['child'])",
     "fork(process.argv[1], ['child'])",
     "spawn(process.execPath, [import.meta.filename, 'child'], { stdio: 'ignore', windowsHide: true })",
@@ -343,7 +352,7 @@ describe('LzNodeTestTestRunner', () => {
     },
   );
 
-  lzTestFor<readonly [string, string]>([
+  muirTestFor<readonly [string, string]>([
     ['exits', ''],
     ['exits through process.exit', 'process.exit(1);'],
     ['is killed', "process.kill(process.pid, 'SIGKILL');"],
@@ -497,7 +506,7 @@ describe('LzNodeTestTestRunner', () => {
       'a.test.mjs': fixture(
         "import { writeFileSync } from 'node:fs';",
         "import { join } from 'node:path';",
-        'it(\'passes\', () => { writeFileSync(join(process.env.LZ_STRYKER_NODE_TEST_OUT, `${process.pid}.1.f00d.json`), "{"); });',
+        'it(\'passes\', () => { writeFileSync(join(process.env.MUIR_SIRYN_NODE_TEST_OUT, `${process.pid}.1.f00d.json`), "{"); });',
       ),
     });
     const runner = await initRunner(['a.test.mjs']);
@@ -513,7 +522,7 @@ describe('LzNodeTestTestRunner', () => {
     );
   });
 
-  lzTestFor<readonly [string, string]>([
+  muirTestFor<readonly [string, string]>([
     ['does not parse', '{'],
     ['lists no tests', '{}'],
   ])(
@@ -527,7 +536,7 @@ describe('LzNodeTestTestRunner', () => {
           // The hook's beforeExit listener runs first and moves its exit listener last, so this exit listener comes after
           // it and replaces the record the hook has written, whose name starts with the pid and thread.
           "process.on('beforeExit', () => process.on('exit', () => {",
-          '  const out = process.env.LZ_STRYKER_NODE_TEST_OUT;',
+          '  const out = process.env.MUIR_SIRYN_NODE_TEST_OUT;',
           '  const name = readdirSync(out).find((name) => name.startsWith(`${process.pid}.0.`));',
           `  writeFileSync(join(out, name), ${JSON.stringify(content)});`,
           '}));',
@@ -547,7 +556,7 @@ describe('LzNodeTestTestRunner', () => {
     },
   );
 
-  lzTestFor([{}, { lzNodeTest: {} }])(
+  muirTestFor([{}, { muirSirynNodeTest: {} }])(
     "runs the .spec and .test files that Nx's convention names, outside node_modules, by default, with the options %j",
     async (options, t) => {
       const dir = project(t, {
@@ -557,7 +566,7 @@ describe('LzNodeTestTestRunner', () => {
         'd.test.mjs': failing,
         'e.ts': failing,
       });
-      const runner = await initRunner(undefined, options.lzNodeTest);
+      const runner = await initRunner(undefined, options.muirSirynNodeTest);
       t.after(() => runner.dispose());
 
       const { tests } = complete(
@@ -571,15 +580,15 @@ describe('LzNodeTestTestRunner', () => {
     },
   );
 
-  it('passes lzNodeTest.nodeArgs to the node process of each test file', async (t) => {
+  it('passes muirSirynNodeTest.nodeArgs to the node process of each test file', async (t) => {
     const dir = project(t, {
       'a.test.mjs': writesOnLoad(
         'exec-argv.json',
         'JSON.stringify(process.execArgv)',
       ),
     });
-    const execArgv = async (lzNodeTest: LzNodeTestOptions) => {
-      const runner = await initRunner(undefined, lzNodeTest);
+    const execArgv = async (muirSirynNodeTest: MuirSirynNodeTestOptions) => {
+      const runner = await initRunner(undefined, muirSirynNodeTest);
       await settle(
         runner.runFile(join(dir, 'a.test.mjs'), {
           dryRun: false,
@@ -615,7 +624,7 @@ describe('LzNodeTestTestRunner', () => {
     ]);
   });
 
-  it('runs its own reporter only, whatever reporters NODE_OPTIONS and lzNodeTest.nodeArgs name', async (t) => {
+  it('runs its own reporter only, whatever reporters NODE_OPTIONS and muirSirynNodeTest.nodeArgs name', async (t) => {
     const dir = project(t, { 'a.test.mjs': passing });
     const nodeOptions = process.env['NODE_OPTIONS'];
     t.after(() => {

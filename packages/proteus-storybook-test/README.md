@@ -17,7 +17,7 @@ experimental. The package is private and not on npm yet.
   from Storybook, so the package declares no `storybook` peer dependency.
 - Stryker's Vitest runner, `@stryker-mutator/vitest-runner`, with Storybook's Vitest addon,
   `@storybook/addon-vitest`, running the story tests.
-- `@muirjs/shadowcat-storybook`, for its CSF ignorer and its `lz-storybook` ignorer and reporter. Its README describes
+- `@muirjs/shadowcat-storybook`, for its CSF ignorer and its `muir-shadowcat-storybook` ignorer and reporter. Its README describes
   the Vitest and Storybook setup that both Stryker configurations share.
 - Node.js 22 or later.
 
@@ -28,21 +28,21 @@ configuration whose `mutate` holds only story files, and set the CSF ignorer's p
 keeps the mutants in story test code. Mutate the components and story data in a separate configuration, as the
 `@muirjs/shadowcat-storybook` README shows.
 
-Call `lzStorybookTestMutators` at the top of the Stryker configuration file and await it:
+Call `muirProteusStorybookTestMutators` at the top of the Stryker configuration file and await it:
 
 ```ts
 // stryker.test-code.config.mjs
-import { lzStorybookTestMutators } from '@muirjs/proteus-storybook-test';
+import { muirProteusStorybookTestMutators } from '@muirjs/proteus-storybook-test';
 
-await lzStorybookTestMutators();
+await muirProteusStorybookTestMutators();
 
 export default {
   testRunner: 'vitest',
   mutate: ['src/**/*.stories.tsx'],
   appendPlugins: ['@muirjs/shadowcat-storybook'],
-  ignorers: ['lz-storybook-csf', 'lz-storybook'],
-  lzStorybookCsf: { play: 'mutate' },
-  reporters: ['clear-text', 'html', 'lz-storybook'],
+  ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook'],
+  muirShadowcatStorybookCsf: { play: 'mutate' },
+  reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
 };
 ```
 
@@ -55,7 +55,7 @@ kills nothing.
 The call prints one line:
 
 ```text
-@muirjs/proteus-storybook-test: Stryker's 17 built-in mutators are off for every file in this run; 2 LzStorybook mutators on.
+@muirjs/proteus-storybook-test: Stryker's 17 built-in mutators are off for every file in this run; 2 MuirProteusStorybookTest mutators on.
 ```
 
 The call checks that each mutator it installs makes a mutant of a sample, and that no built-in mutator makes one. It
@@ -68,16 +68,16 @@ The argument turns on mutators beyond the default tier. Each key takes only `tru
 
 ```ts
 // The opt-in mutator.
-await lzStorybookTestMutators({ extended: true });
+await muirProteusStorybookTestMutators({ extended: true });
 
 // The opt-in mutator by its name, and one experimental mutator.
-await lzStorybookTestMutators({
-  LzStorybookInteractionRepeat: true,
-  experimental: { LzStorybookSpyStub: true },
+await muirProteusStorybookTestMutators({
+  MuirProteusStorybookTestInteractionRepeat: true,
+  experimental: { MuirProteusStorybookTestSpyStub: true },
 });
 
 // Every experimental mutator.
-await lzStorybookTestMutators({ experimental: true });
+await muirProteusStorybookTestMutators({ experimental: true });
 ```
 
 - `extended: true` turns on every opt-in mutator.
@@ -85,10 +85,10 @@ await lzStorybookTestMutators({ experimental: true });
 - `experimental: true` turns on every experimental mutator.
 - `experimental: { <experimental name>: true }` turns on one experimental mutator.
 
-With opt-in or experimental mutators on, the line names them. For `{ experimental: { LzStorybookSpyStub: true } }`:
+With opt-in or experimental mutators on, the line names them. For `{ experimental: { MuirProteusStorybookTestSpyStub: true } }`:
 
 ```text
-@muirjs/proteus-storybook-test: Stryker's 17 built-in mutators are off for every file in this run; 3 LzStorybook mutators on. Opt-in or experimental: LzStorybookSpyStub.
+@muirjs/proteus-storybook-test: Stryker's 17 built-in mutators are off for every file in this run; 3 MuirProteusStorybookTest mutators on. Opt-in or experimental: MuirProteusStorybookTestSpyStub.
 ```
 
 The call throws, with a message that starts with the package name, on options that are not a plain object, on an
@@ -107,41 +107,41 @@ of an arrow. They make no mutant of an interaction in a `beforeEach` or `afterEa
 
 ### Default mutators
 
-These run on `await lzStorybookTestMutators()`.
+These run on `await muirProteusStorybookTestMutators()`.
 
-| Mutator                  | What it changes                                                                                                                                                                       | Example                                                                                                   |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `LzStorybookInteraction` | Removes an interaction.                                                                                                                                                               | `await userEvent.click(canvas.getByRole('button'));` is removed.                                          |
-| `LzStorybookClickFocus`  | Replaces a user-event `click` or `dblClick` with a `focus()` of its target, when the target is a query, an awaited query or a name, and not a text field, label or placeholder query. | `await userEvent.click(canvas.getByRole('switch'));` becomes `await canvas.getByRole('switch').focus();`. |
+| Mutator                               | What it changes                                                                                                                                                                       | Example                                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `MuirProteusStorybookTestInteraction` | Removes an interaction.                                                                                                                                                               | `await userEvent.click(canvas.getByRole('button'));` is removed.                                          |
+| `MuirProteusStorybookTestClickFocus`  | Replaces a user-event `click` or `dblClick` with a `focus()` of its target, when the target is a query, an awaited query or a name, and not a text field, label or placeholder query. | `await userEvent.click(canvas.getByRole('switch'));` becomes `await canvas.getByRole('switch').focus();`. |
 
 ### Opt-in mutators
 
 These run with `extended: true`, or with the name set to `true`.
 
-| Mutator                        | What it changes                                                                                                             | Example                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `LzStorybookInteractionRepeat` | Runs a user-event `click`, `dblClick` or `keyboard` call, or a `fireEvent.click`, twice. Leaves `{Home}` and `{End}` alone. | `await userEvent.click(button);` runs twice, so a toggle ends where it started. |
+| Mutator                                     | What it changes                                                                                                             | Example                                                                         |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `MuirProteusStorybookTestInteractionRepeat` | Runs a user-event `click`, `dblClick` or `keyboard` call, or a `fireEvent.click`, twice. Leaves `{Home}` and `{End}` alone. | `await userEvent.click(button);` runs twice, so a toggle ends where it started. |
 
 ### Experimental mutators
 
 These run with `experimental: true`, or each by its name inside `experimental`. They are experimental: each was
 measured on few repositories, and its matching rules or its name can still change.
 
-| Mutator                        | What it changes                                                                                                                                                                                                                      | Example                                                                                                                  |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `LzStorybookInteractionTarget` | Replaces the query an interaction acts on with another one in the same file: the `name` of a `*ByRole` query with a name the file gives the same role, or the text of another query with a value the file passes to the same method. | `canvas.getByRole('button', { name: 'Save' })` becomes `canvas.getByRole('button', { name: 'Cancel' })`.                 |
-| `LzStorybookWaitFor`           | Makes a retrying wait check once: calls a `waitFor` callback once, turns a `findBy` or `findAllBy` query into `getBy` or `getAllBy`, and removes a `waitForElementToBeRemoved` statement.                                            | `await canvas.findByText('Saved')` becomes `await canvas.getByText('Saved')`.                                            |
-| `LzStorybookAssertionBefore`   | Runs the first `expect` check after an interaction before the interaction too, so a check that already passes before the step shows.                                                                                                 | `await userEvent.click(button); await expect(args.onClick).toHaveBeenCalled();` also runs the `expect` before the click. |
-| `LzStorybookSpyStub`           | Removes a spy stub (`mockReturnValue`, `mockResolvedValue`, `mockRejectedValue`, `mockImplementation` or a `Once` form) set at definition time, or as a statement in story test code.                                                | `onSave: fn().mockResolvedValue(note)` becomes `onSave: fn()`.                                                           |
-| `LzStorybookSpyStubOutcome`    | Turns a `mockResolvedValue` stub into `mockRejectedValue(new Error('Stryker'))`, and a `mockRejectedValue` stub into `mockResolvedValue(undefined)`, keeping a `Once` form.                                                          | `fn().mockResolvedValue(note)` becomes `fn().mockRejectedValue(new Error('Stryker'))`.                                   |
-| `LzStorybookStoryGlobals`      | Removes one property of the `globals` of a story, of the meta or of a `.test()` call's options, for each story that runs a play or a `.test()` call.                                                                                 | `globals: { viewport: { value: 'mobile1' } }` becomes `globals: {}`.                                                     |
+| Mutator                                     | What it changes                                                                                                                                                                                                                      | Example                                                                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `MuirProteusStorybookTestInteractionTarget` | Replaces the query an interaction acts on with another one in the same file: the `name` of a `*ByRole` query with a name the file gives the same role, or the text of another query with a value the file passes to the same method. | `canvas.getByRole('button', { name: 'Save' })` becomes `canvas.getByRole('button', { name: 'Cancel' })`.                 |
+| `MuirProteusStorybookTestWaitFor`           | Makes a retrying wait check once: calls a `waitFor` callback once, turns a `findBy` or `findAllBy` query into `getBy` or `getAllBy`, and removes a `waitForElementToBeRemoved` statement.                                            | `await canvas.findByText('Saved')` becomes `await canvas.getByText('Saved')`.                                            |
+| `MuirProteusStorybookTestAssertionBefore`   | Runs the first `expect` check after an interaction before the interaction too, so a check that already passes before the step shows.                                                                                                 | `await userEvent.click(button); await expect(args.onClick).toHaveBeenCalled();` also runs the `expect` before the click. |
+| `MuirProteusStorybookTestSpyStub`           | Removes a spy stub (`mockReturnValue`, `mockResolvedValue`, `mockRejectedValue`, `mockImplementation` or a `Once` form) set at definition time, or as a statement in story test code.                                                | `onSave: fn().mockResolvedValue(note)` becomes `onSave: fn()`.                                                           |
+| `MuirProteusStorybookTestSpyStubOutcome`    | Turns a `mockResolvedValue` stub into `mockRejectedValue(new Error('Stryker'))`, and a `mockRejectedValue` stub into `mockResolvedValue(undefined)`, keeping a `Once` form.                                                          | `fn().mockResolvedValue(note)` becomes `fn().mockRejectedValue(new Error('Stryker'))`.                                   |
+| `MuirProteusStorybookTestStoryGlobals`      | Removes one property of the `globals` of a story, of the meta or of a `.test()` call's options, for each story that runs a play or a `.test()` call.                                                                                 | `globals: { viewport: { value: 'mobile1' } }` becomes `globals: {}`.                                                     |
 
-`LzStorybookStoryGlobals` makes no mutant of a global set to Storybook 10.6.5's own initial value, such as
+`MuirProteusStorybookTestStoryGlobals` makes no mutant of a global set to Storybook 10.6.5's own initial value, such as
 `viewport: 'responsive'` or `outline: false`, when nothing in the file may set that global below it. It does not read
 the project's `initialGlobals`.
 
-`LzStorybookSpyStub` and `LzStorybookSpyStubOutcome` place mutants at definition-time stubs that the mock reset
-erases before the story renders. The `lz-storybook` ignorer of `@muirjs/shadowcat-storybook` reports those mutants as
+`MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` place mutants at definition-time stubs that the mock reset
+erases before the story renders. The `muir-shadowcat-storybook` ignorer of `@muirjs/shadowcat-storybook` reports those mutants as
 Ignored, with the reason, so list it in `ignorers` whenever these mutators are on.
 
 ## Why Stryker's built-in mutators are off
@@ -159,7 +159,7 @@ role name, which Testing Library matches exactly. An analysis of 2,459 play muta
 | `AssignmentOperator`    | Changes local flags and counters, which fails wherever it runs.                                                                                                    |
 | `BlockStatement`        | Empties play, step, `waitFor`, loop and `try` bodies, which hold the checks, so the play passes by construction.                                                   |
 | `BooleanLiteral`        | Flips expected booleans and query flags, which fails wherever it runs.                                                                                             |
-| `CallExpression`        | Removes `expect` and assertion statements, which survive by construction; `LzStorybookInteraction` removes interaction statements.                                 |
+| `CallExpression`        | Removes `expect` and assertion statements, which survive by construction; `MuirProteusStorybookTestInteraction` removes interaction statements.                    |
 | `ConditionalExpression` | Forces guards that a passing play never takes, which survive by construction, or that it always takes, which fail.                                                 |
 | `EqualityOperator`      | Changes guards and predicates at boundaries that the play never reaches, or that fail wherever they run.                                                           |
 | `LogicalOperator`       | Changes fallbacks and predicates, which are equivalent or fail wherever they run.                                                                                  |
@@ -188,20 +188,20 @@ Ignored.
 For one mutant, put a Stryker disable comment with a reason on the line before the statement:
 
 ```ts
-// Stryker disable next-line LzStorybookInteraction: the click only moves focus, which the next type does too
+// Stryker disable next-line MuirProteusStorybookTestInteraction: the click only moves focus, which the next type does too
 await userEvent.click(input);
 ```
 
-A disable comment matches each mutator name exactly, ignoring case only. `LzStorybookSpyStub` and
-`LzStorybookSpyStubOutcome` are two names, so silence both with
-`// Stryker disable next-line LzStorybookSpyStub,LzStorybookSpyStubOutcome: <reason>` or with `all`.
+A disable comment matches each mutator name exactly, ignoring case only. `MuirProteusStorybookTestSpyStub` and
+`MuirProteusStorybookTestSpyStubOutcome` are two names, so silence both with
+`// Stryker disable next-line MuirProteusStorybookTestSpyStub,MuirProteusStorybookTestSpyStubOutcome: <reason>` or with `all`.
 
 For a block, use `// Stryker disable <name>: <reason>` and `// Stryker restore <name>`.
 
 ## Survivors to expect and limits
 
 The mutators place a mutant unless the story file proves that it changes nothing. Where a survivor changes nothing
-that any check could see, disable it with a reason. The `lz-storybook` reporter of `@muirjs/shadowcat-storybook` writes
+that any check could see, disable it with a reason. The `muir-shadowcat-storybook` reporter of `@muirjs/shadowcat-storybook` writes
 a ready disable comment for the common shapes below.
 
 ### The interaction mutators
@@ -214,23 +214,23 @@ a ready disable comment for the common shapes below.
 - The mutators match calls by name and by where the receiver comes from, as far as the file shows it. A `userEvent`
   the file does not prove to be user-event's, such as one destructured from a function's own parameter, still gets
   mutants.
-- On one open-source design system, every `LzStorybookClickFocus` survivor (3 of 23 placed mutants) was a play that
+- On one open-source design system, every `MuirProteusStorybookTestClickFocus` survivor (3 of 23 placed mutants) was a play that
   clicks and then checks nothing that the click does.
-- On the same design system, every `LzStorybookInteractionTarget` mutant (11) was killed, and each kill came from the
+- On the same design system, every `MuirProteusStorybookTestInteractionTarget` mutant (11) was killed, and each kill came from the
   swapped query finding nothing: the name came from another story in the file, which the rendered story lacks (read
   from each story, as the Vitest runner reports no kill reason). Such a kill shows only that the swapped element is
   absent. That is why the mutator is experimental.
 
 ### The spy stub mutators
 
-- A removed stub survives when no check reads what the spy returns. The `lz-storybook` reporter lists its line as an
+- A removed stub survives when no check reads what the spy returns. The `muir-shadowcat-storybook` reporter lists its line as an
   unchecked stub.
 - A surviving outcome mutant shows that no check tells success from failure of that call. Where the removed stub
   was killed or timed out, the reporter lists the line as an outcome-unchecked stub; where it survived, the
-  unchecked stub on that line covers both. Turn on `LzStorybookSpyStub` too: without the removal, an outcome
+  unchecked stub on that line covers both. Turn on `MuirProteusStorybookTestSpyStub` too: without the removal, an outcome
   survivor gets no finding.
 
-### LzStorybookStoryGlobals
+### MuirProteusStorybookTestStoryGlobals
 
 - A global whose value equals what the story gets without it survives, such as a meta global that every story sets
   again, or a value equal to the project's own `initialGlobals`.

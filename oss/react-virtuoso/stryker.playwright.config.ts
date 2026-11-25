@@ -1,20 +1,20 @@
-import { lzJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
-await lzJsxMutators();
+await muirProteusJsxMutators();
 
-const webServerMutate = process.env['LZ_CORPUS_WEBSERVER_MUTATE'] ?? 'true';
+const webServerMutate = process.env['MUIR_CORPUS_WEBSERVER_MUTATE'] ?? 'true';
 
 if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
   throw new Error(
-    `LZ_CORPUS_WEBSERVER_MUTATE must be true or auto, got ${JSON.stringify(webServerMutate)}.`,
+    `MUIR_CORPUS_WEBSERVER_MUTATE must be true or auto, got ${JSON.stringify(webServerMutate)}.`,
   );
 }
 
 export default {
   plugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
-  lzPlaywright: {
+  testRunner: 'muir-siryn-playwright',
+  muirSirynPlaywright: {
     configFile: 'playwright.config.ts',
     webServer: { mutate: webServerMutate === 'auto' ? 'auto' : true },
   },

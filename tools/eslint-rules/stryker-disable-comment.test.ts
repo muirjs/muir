@@ -2,7 +2,7 @@ import parser from '@typescript-eslint/parser';
 import { RuleTester } from 'eslint';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import rule from './stryker-disable-comment.ts';
 
 /** With no global describe or it, as under node:test, RuleTester runs each case inside the calling test. */
@@ -11,14 +11,14 @@ function tester(): RuleTester {
 }
 
 describe('stryker-disable-comment', () => {
-  lzTestEach([
+  muirTestEach([
     [
       'a next-line disable with a reason',
       '// Stryker disable next-line ArrayDeclaration: equivalent\nf([]);',
     ],
     [
       'two mutators',
-      '// Stryker disable next-line LzNodeAssertStatement,CallExpression: never empty\nf();',
+      '// Stryker disable next-line MuirProteusNodeAssertStatement,CallExpression: never empty\nf();',
     ],
     [
       'two mutators with a space',
@@ -76,7 +76,7 @@ describe('stryker-disable-comment', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'a next-line disable of all',
       '// Stryker disable next-line all: equivalent\nf();',
@@ -132,7 +132,7 @@ describe('stryker-disable-comment', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'a pair whose disable gives no reason',
       '// Stryker disable Regex\nf();\n// Stryker restore Regex',
@@ -203,7 +203,7 @@ describe('stryker-disable-comment', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'all',
       '// Stryker disable next-line all: equivalent\nf();',

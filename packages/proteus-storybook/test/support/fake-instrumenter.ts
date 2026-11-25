@@ -1,20 +1,23 @@
 import { types } from '@babel/core';
 import {
-  markOf,
-  selfCheckFile,
-  type ListedMutator,
-  type MutatorSets,
+  muirMoiraMutatorsMarkOf,
+  muirMoiraMutatorsSelfCheckFile,
+  type MuirMoiraMutatorsListedMutator,
+  type MuirMoiraMutatorsMutatorSets,
 } from '@muirjs/moira-mutators';
 
-import { testedVersion, type Instrumenter } from '../../src/install.ts';
-import type { LzStorybookMutator } from '../../src/mutator.ts';
-import { packageName } from '../../src/package-name.ts';
+import {
+  muirProteusStorybookTestedVersion,
+  type MuirProteusStorybookInstrumenter,
+} from '../../src/install.ts';
+import type { MuirProteusStorybookMutator } from '../../src/mutator.ts';
+import { muirProteusStorybookPackageName } from '../../src/package-name.ts';
 
-export const ownMark = markOf(packageName);
+export const ownMark = muirMoiraMutatorsMarkOf(muirProteusStorybookPackageName);
 
 export const builtIns: readonly string[] = ['ObjectLiteral', 'StringLiteral'];
 
-export function mutator(name: string): LzStorybookMutator {
+export function mutator(name: string): MuirProteusStorybookMutator {
   return {
     name,
     sample: `export const ${name.toLowerCase()} = 1;\n`,
@@ -26,7 +29,7 @@ export function sets(
   defaults: readonly string[],
   optIn: readonly string[] = [],
   experimental: readonly string[] = [],
-): MutatorSets<LzStorybookMutator> {
+): MuirMoiraMutatorsMutatorSets<MuirProteusStorybookMutator> {
   return {
     defaults: defaults.map(mutator),
     optIn: optIn.map(mutator),
@@ -37,16 +40,18 @@ export function sets(
 /** A fake instrumenter that holds two built-ins. Each marked mutator not in `silent` makes one mutant in its own self-check file. */
 export function fakeInstrumenter({
   silent = [],
-  version = testedVersion,
+  version = muirProteusStorybookTestedVersion,
 }: {
   readonly silent?: readonly string[];
   readonly version?: string;
 } = {}) {
-  const allMutators: ListedMutator[] = builtIns.map((name) => ({
-    name,
-    mutate: () => undefined,
-  }));
-  const instrumenter: Instrumenter = {
+  const allMutators: MuirMoiraMutatorsListedMutator[] = builtIns.map(
+    (name) => ({
+      name,
+      mutate: () => undefined,
+    }),
+  );
+  const instrumenter: MuirProteusStorybookInstrumenter = {
     dir: '/stryker/instrumenter',
     version,
     types,
@@ -55,7 +60,7 @@ export function fakeInstrumenter({
       return allMutators
         .filter((listed) => ownMark in listed && !silent.includes(listed.name))
         .map((listed) => ({
-          fileName: selfCheckFile(listed.name),
+          fileName: muirMoiraMutatorsSelfCheckFile(listed.name),
           mutatorName: listed.name,
         }));
     },

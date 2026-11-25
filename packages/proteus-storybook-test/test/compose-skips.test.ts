@@ -1,9 +1,12 @@
 import { isDeepStrictEqual } from 'node:util';
 
-import { field, isRecord } from '@muirjs/moira-storybook';
-import { composeSkips } from '@muirjs/test-util-mutator-packages/compose-skips';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+} from '@muirjs/moira-storybook';
+import { muirComposeSkips } from '@muirjs/test-util-mutator-packages/compose-skips';
 
-import { proofsBySite } from '../src/story-globals.ts';
+import { muirProteusStorybookTestProofsBySite } from '../src/story-globals.ts';
 import { assertionBeforeCases } from './assertion-before-cases.ts';
 import { clickFocusCases } from './click-focus-cases.ts';
 import { allInteractionCases, crashCases } from './interaction-cases.ts';
@@ -26,24 +29,26 @@ const viewportDefaults: readonly unknown[] = [
 
 /** What the globals do rather than how they are written: the Vitest addon's `setViewport` (Storybook 10.6.5) reads only the viewport's `value`, and an unset `grid` is no grid. */
 function effect(globals: unknown): unknown {
-  if (!isRecord(globals)) {
+  if (!muirMoiraStorybookIsRecord(globals)) {
     return globals;
   }
 
   const { viewport, backgrounds, ...rest } = globals;
-  const value = isRecord(viewport) ? viewport['value'] : viewport;
+  const value = muirMoiraStorybookIsRecord(viewport)
+    ? viewport['value']
+    : viewport;
 
   return {
     ...rest,
     viewport: viewportDefaults.includes(value) ? undefined : value,
     backgrounds: {
-      value: field(backgrounds, 'value'),
-      grid: Boolean(field(backgrounds, 'grid')),
+      value: muirMoiraStorybookField(backgrounds, 'value'),
+      grid: Boolean(muirMoiraStorybookField(backgrounds, 'grid')),
     },
   };
 }
 
-composeSkips({
+muirComposeSkips({
   cases: [
     ...storyGlobalsCases,
     ...storyGlobalsDefaultCases,
@@ -58,7 +63,7 @@ composeSkips({
     ...targetCases,
     ...waitForCases,
   ],
-  skipsOf: proofsBySite,
+  skipsOf: muirProteusStorybookTestProofsBySite,
   layer: 'globals',
   same: (withProperty, withoutProperty) =>
     isDeepStrictEqual(effect(withProperty), effect(withoutProperty)),

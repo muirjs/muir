@@ -1,6 +1,9 @@
 import type { NodePath, types } from '@babel/core';
 
-import type { BabelTypes, LzMswMutator } from './mutator.ts';
+import type {
+  MuirProteusMswBabelTypes,
+  MuirProteusMswMutator,
+} from './mutator.ts';
 
 /** The static methods of msw's `HttpResponse` that build a response with a body. */
 const factories: readonly string[] = [
@@ -18,11 +21,11 @@ const handlerMethods: readonly (readonly [string, readonly string[]])[] = [
   ['graphql', ['query', 'mutation', 'operation']],
 ];
 
-export function mswResponseMutator(): LzMswMutator & {
-  readonly name: 'LzMswResponse';
+export function muirProteusMswResponseMutator(): MuirProteusMswMutator & {
+  readonly name: 'MuirProteusMswResponse';
 } {
   return {
-    name: 'LzMswResponse',
+    name: 'MuirProteusMswResponse',
     sample:
       "import { http, HttpResponse } from 'msw';\n" +
       "export const handlers = [http.get('/a', () => HttpResponse.json({ a: 1 }))];\n",
@@ -178,7 +181,7 @@ function importedName(
 /** The empty body of the same kind as `body`: `{}`, `[]` or `''`, else `null`; undefined when `body` is empty already. */
 function emptyOf(
   body: types.Node,
-  t: BabelTypes,
+  t: MuirProteusMswBabelTypes,
 ): types.Expression | undefined {
   if (body.type === 'ObjectExpression') {
     return body.properties.length === 0 ? undefined : t.objectExpression([]);

@@ -24,7 +24,7 @@ import {
 
 shareCompileCache();
 
-describe('LzNodeTestTestRunner results', () => {
+describe('MuirSirynNodeTestTestRunner results', () => {
   it('reports where the test file declares a suite that fails by itself', async (t) => {
     const dir = project(t, {
       'a.test.mjs': fixture(

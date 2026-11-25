@@ -5,10 +5,10 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 
-import { fieldOf } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 
-import { lzPlaywrightMutators } from '../src/index.ts';
-import { resolveFromCore } from '../src/install.ts';
+import { muirProteusPlaywrightMutators } from '../src/index.ts';
+import { muirProteusPlaywrightResolveFromCore } from '../src/install.ts';
 
 const source = [
   "import { test } from '@playwright/test';",
@@ -20,11 +20,11 @@ const source = [
 ].join('\n');
 
 test('the Locator mutators swap values inside a line range of the file', async () => {
-  const instrumenter = await resolveFromCore();
+  const instrumenter = await muirProteusPlaywrightResolveFromCore();
 
-  await lzPlaywrightMutators();
+  await muirProteusPlaywrightMutators();
 
-  const Instrumenter = fieldOf(
+  const Instrumenter = muirMoiraMutatorsFieldOf(
     await import(
       pathToFileURL(join(instrumenter.dir, 'dist', 'src', 'index.js')).href
     ),
@@ -33,7 +33,7 @@ test('the Locator mutators swap values inside a line range of the file', async (
 
   const instrument =
     typeof Instrumenter === 'function'
-      ? fieldOf(Instrumenter.prototype, 'instrument')
+      ? muirMoiraMutatorsFieldOf(Instrumenter.prototype, 'instrument')
       : undefined;
 
   if (typeof Instrumenter !== 'function' || typeof instrument !== 'function') {
@@ -57,16 +57,19 @@ test('the Locator mutators swap values inside a line range of the file', async (
       { plugins: null, excludedMutations: [], ignorers: [] },
     ],
   );
-  const mutants = fieldOf(result, 'mutants');
+  const mutants = muirMoiraMutatorsFieldOf(result, 'mutants');
 
   assert.ok(Array.isArray(mutants));
   assert.deepEqual(
     mutants
       .map(
         (mutant: unknown) =>
-          `${String(fieldOf(mutant, 'mutatorName'))} ${String(fieldOf(mutant, 'replacement'))}`,
+          `${String(muirMoiraMutatorsFieldOf(mutant, 'mutatorName'))} ${String(muirMoiraMutatorsFieldOf(mutant, 'replacement'))}`,
       )
       .sort(),
-    ["LzPlaywrightTestIdLocator 'a'", "LzPlaywrightTestIdLocator 'b'"],
+    [
+      "MuirProteusPlaywrightTestIdLocator 'a'",
+      "MuirProteusPlaywrightTestIdLocator 'b'",
+    ],
   );
 });

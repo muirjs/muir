@@ -1,14 +1,14 @@
-// LzPlaywrightMountStory is opt-in: off unless a config turns it on by name or with `extended`. Each case installs
+// MuirProteusPlaywrightMountStory is opt-in: off unless a config turns it on by name or with `extended`. Each case installs
 // the package with its options, through the real instrumenter, and instruments one file that mounts two ids.
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
 import {
-  lzPlaywrightMutators,
-  type LzPlaywrightMutatorOptions,
+  muirProteusPlaywrightMutators,
+  type MuirProteusPlaywrightMutatorOptions,
 } from '../src/index.ts';
-import { resolveFromCore } from '../src/install.ts';
+import { muirProteusPlaywrightResolveFromCore } from '../src/install.ts';
 import { mutantsOf } from './support/mutants.ts';
 
 const content =
@@ -16,28 +16,31 @@ const content =
   "test('case', async ({ mount }) => {\n  await mount('a');\n  await mount('b');\n});\n";
 
 async function mountStoryMutants(
-  options: LzPlaywrightMutatorOptions | undefined,
+  options: MuirProteusPlaywrightMutatorOptions | undefined,
 ): Promise<number> {
-  const instrumenter = await resolveFromCore();
+  const instrumenter = await muirProteusPlaywrightResolveFromCore();
 
-  await lzPlaywrightMutators(options);
+  await muirProteusPlaywrightMutators(options);
   const mutants = await mutantsOf(instrumenter, [
     { name: join(import.meta.dirname, 'out', 'selection.spec.ts'), content },
   ]);
 
   return mutants.filter(
-    ({ mutatorName }) => mutatorName === 'LzPlaywrightMountStory',
+    ({ mutatorName }) => mutatorName === 'MuirProteusPlaywrightMountStory',
   ).length;
 }
 
-test('LzPlaywrightMountStory is off by default', async () => {
+test('MuirProteusPlaywrightMountStory is off by default', async () => {
   assert.equal(await mountStoryMutants(undefined), 0);
 });
 
-test('LzPlaywrightMountStory is on by its name', async () => {
-  assert.equal(await mountStoryMutants({ LzPlaywrightMountStory: true }), 2);
+test('MuirProteusPlaywrightMountStory is on by its name', async () => {
+  assert.equal(
+    await mountStoryMutants({ MuirProteusPlaywrightMountStory: true }),
+    2,
+  );
 });
 
-test('LzPlaywrightMountStory is on with extended', async () => {
+test('MuirProteusPlaywrightMountStory is on with extended', async () => {
   assert.equal(await mountStoryMutants({ extended: true }), 2);
 });

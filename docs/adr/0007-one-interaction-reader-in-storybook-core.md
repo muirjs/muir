@@ -1,6 +1,6 @@
 # One interaction reader in `@muirjs/moira-storybook`
 
-`@muirjs/proteus-storybook-test` and the `lz-storybook` reporter in `@muirjs/shadowcat-storybook` both read
+`@muirjs/proteus-storybook-test` and the `muir-shadowcat-storybook` reporter in `@muirjs/shadowcat-storybook` both read
 the interactions in story test code: which calls are interactions, which receiver is user-event 14's `userEvent`, and
 which checks follow an interaction. Each had a reader of its own, and the two drifted apart. The mutators resolved
 names through Babel's scope on Stryker's tree. The reporter scanned names on its own parse without regard to position,

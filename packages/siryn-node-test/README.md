@@ -4,8 +4,8 @@ A [StrykerJS](https://stryker-mutator.io/) test runner for `node:test`. It runs 
 process with `node:test`, so the tests run as they do under `node --test`. It is ESM only, needs Node.js 22.18 or
 later, and is tested on Node.js 22 and 24.
 
-- Stryker plugin name: `lz-node-test`
-- Stryker options key: `lzNodeTest`
+- Stryker plugin name: `muir-siryn-node-test`
+- Stryker options key: `muirSirynNodeTest`
 
 ## Quick start
 
@@ -28,19 +28,19 @@ Answer the initializer's questions as follows:
 1. For the preset, pick `None/other`.
 2. For the test runner, pick `@muirjs/node`. The initializer names each runner after its package: it removes
    `@stryker-mutator/` and the first `stryker-` from the package name, then keeps the text before the first hyphen.
-   The configuration that it writes still names the runner `lz-node-test` and loads this package through
+   The configuration that it writes still names the runner `muir-siryn-node-test` and loads this package through
    `appendPlugins`.
 3. For the build command, keep the default, `none`, unless your tests need a build.
 
 The other questions ask for the reporters, the package manager, and the configuration file type. Answer them as you
 like. Then read the configuration file that the initializer wrote. When the default pattern does not match your test
-files, add `lzNodeTest.testFiles`, as [Configure Stryker](#configure-stryker) describes.
+files, add `muirSirynNodeTest.testFiles`, as [Configure Stryker](#configure-stryker) describes.
 
 With pnpm, the initializer also lists this package in `plugins`. Keep both `plugins` and `appendPlugins`.
 
 If the initializer warns `Could not fetch additional initialization config`, it writes `testRunner: "@muirjs/node"`
 and no `appendPlugins`, and Stryker then fails with `Cannot find TestRunner plugin`. Set
-`testRunner: 'lz-node-test'` and `appendPlugins: ['@muirjs/siryn-node-test']` by hand, as
+`testRunner: 'muir-siryn-node-test'` and `appendPlugins: ['@muirjs/siryn-node-test']` by hand, as
 [Configure Stryker](#configure-stryker) shows.
 
 ## Install
@@ -61,8 +61,8 @@ Load the plugin and select the runner in your Stryker configuration file, for ex
 export default {
   mutate: ['src/**/*.js'],
   appendPlugins: ['@muirjs/siryn-node-test'],
-  testRunner: 'lz-node-test',
-  lzNodeTest: { testFiles: ['test/**/*.test.js'] },
+  testRunner: 'muir-siryn-node-test',
+  muirSirynNodeTest: { testFiles: ['test/**/*.test.js'] },
 };
 ```
 
@@ -76,7 +76,7 @@ matches files named only `spec` or `test`, such as `test.js` or a Karma `src/tes
 files. Set it as well for other names, such as `.test.mjs` files.
 
 Stryker has a `testFiles` option of its own, `--testFiles` on the command line, apart from
-`lzNodeTest.testFiles`. The runner looks for the files that either option matches. When Stryker's `testFiles`
+`muirSirynNodeTest.testFiles`. The runner looks for the files that either option matches. When Stryker's `testFiles`
 is set, the dry run runs only those files, and Stryker runs only their tests for each mutant.
 
 When no file matches, the runner stops before the dry run with the error `No test files match`, followed by the
@@ -102,7 +102,7 @@ Each of these errors fails the dry run. For such code, add a loader to `nodeArgs
 [tsx](https://tsx.is/):
 
 ```js
-lzNodeTest: { nodeArgs: ['--import', 'tsx'] },
+muirSirynNodeTest: { nodeArgs: ['--import', 'tsx'] },
 ```
 
 The runner starts a new `node` process for each test file of each mutant run, and the loader compiles the file and its
@@ -110,14 +110,14 @@ imports again in each of them. To compile once instead, let Stryker build the co
 
 ```js
 buildCommand: 'tsc -b',
-lzNodeTest: { testFiles: ['dist/**/*.spec.js'] },
+muirSirynNodeTest: { testFiles: ['dist/**/*.spec.js'] },
 ```
 
 Stryker runs `buildCommand` in its sandbox after it places the mutants in the code.
 
 ## Options
 
-All options sit under `lzNodeTest`.
+All options sit under `muirSirynNodeTest`.
 
 | Option                   | Type       | Default                               | Description                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------ | ---------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -127,7 +127,7 @@ All options sit under `lzNodeTest`.
 | `experimentalWorkerCopy` | `boolean`  | `false`                               | Experimental. Each worker copies the sandbox once as it starts and runs its test files in that copy, so tests that write fixed paths inside the project no longer race other workers. See [Give each worker its own copy](#give-each-worker-its-own-copy-experimental).                                                                                |
 
 `nodeArgs` reach the process of each test file. Stryker's own `testRunnerNodeArgs` reach Stryker's worker process,
-which runs the runner but not the tests. To debug a test file, set `lzNodeTest.testFiles` to that file, run
+which runs the runner but not the tests. To debug a test file, set `muirSirynNodeTest.testFiles` to that file, run
 Stryker with `--concurrency 1`, and pass `--inspect-brk` in `nodeArgs`. Each process of that file then waits for a
 debugger, one at a time.
 
@@ -341,7 +341,7 @@ These cases cost time but give the same results:
 
 - A test whose title the code under test builds. When a mutant changes the title of the test that kills it, Stryker
   cannot match that test on the next run, so the mutant runs again every time. Table titles such as
-  `lzTestEach(rows)('says %d is adult: %s', ...)` are stable when the rows hold literal values. A row that calls the
+  `muirTestEach(rows)('says %d is adult: %s', ...)` are stable when the rows hold literal values. A row that calls the
   code under test, such as `[30, isAdult(30)]`, puts that code's result in the title. Such code runs while the test
   file registers its tests, outside every test, so its mutants run every test of that file. The test still runs and
   still kills the mutant, but under a name the stored results lack. Stryker's Vitest runner names tests by their
@@ -376,8 +376,8 @@ mutant. These setups gave wrong statuses in open-source projects:
 
 ### Give each worker its own copy (experimental)
 
-If you cannot change tests that write fixed paths inside the project, set `lzNodeTest.experimentalWorkerCopy` to
-`true`. Each worker then copies the sandbox once as it starts, into `lz-node-test-copy-<pid>-*` beside the sandbox,
+If you cannot change tests that write fixed paths inside the project, set `muirSirynNodeTest.experimentalWorkerCopy` to
+`true`. Each worker then copies the sandbox once as it starts, into `muir-node-test-copy-<pid>-*` beside the sandbox,
 and runs its test files there with the copy as their working directory. Links in the sandbox, such as Stryker's
 `node_modules` link, are linked again, not copied. Test names, coverage and killing tests still name the sandbox's
 files, as they do without the option, also where a test's name holds its working directory as `process.cwd()` spells it. The worker removes its
@@ -421,17 +421,17 @@ When the test files run under Node.js's permission model (`--permission`), give 
 - `--allow-fs-read` for the runner package's `dist` folder, beside the files that the tests read. Each process loads
   the runner's hook from there through `--import`. Without read access, every test file fails as it starts.
   `--allow-fs-read=*` covers it.
-- `--allow-fs-write` for the runner's run directories, `lz-node-test-*` in `os.tmpdir()`. Each process
+- `--allow-fs-write` for the runner's run directories, `muir-node-test-*` in `os.tmpdir()`. Each process
   writes its results there. Without write access, every test file ends with "Missing test results".
 - `--allow-worker`. Each process watches its memory from a worker thread. Without it, no memory limit applies, and
   `maxMemoryMB` has no effect.
 
 ## Temporary files
 
-The runner keeps its run directories in `os.tmpdir()`, named `lz-node-test-*`, and removes them when the run
+The runner keeps its run directories in `os.tmpdir()`, named `muir-node-test-*`, and removes them when the run
 ends. Each test file's process gets its own empty folder there as `TMPDIR`, `TEMP` and `TMP`, so `os.tmpdir()` in a
 test returns that folder, which is removed when the file ends. Which test files the dry run ran, and what it measured
-of each, its memory peak and its start-up, is kept in `lz-node-test-dry-run-<pid>-store` and stays until Stryker's
+of each, its memory peak and its start-up, is kept in `muir-node-test-dry-run-<pid>-store` and stays until Stryker's
 own process exits, as the mutant runs read it.
 When Stryker is killed instead, the next run removes it, as it removes any directory that a crashed run left behind.
 With `maxMemoryMB` set, the runner records no peaks.

@@ -1,20 +1,27 @@
 import type { NodePath, types } from '@babel/core';
 
-import { decodeValue, isJsxChild, type BabelTypes } from './mutator.ts';
-import { packageName } from './package-name.ts';
+import {
+  muirProteusJsxDecodeValue,
+  muirProteusJsxIsJsxChild,
+  type MuirProteusJsxBabelTypes,
+} from './mutator.ts';
+import { muirProteusJsxPackageName } from './package-name.ts';
 
-export interface MutantPlacerLike {
+export interface MuirProteusJsxMutantPlacerLike {
   readonly name: string;
   canPlace(path: NodePath): boolean;
   place(path: NodePath, appliedMutants: Map<unknown, types.Node>): void;
 }
 
-export type PlacerMethods = Pick<MutantPlacerLike, 'canPlace' | 'place'>;
+export type MuirProteusJsxPlacerMethods = Pick<
+  MuirProteusJsxMutantPlacerLike,
+  'canPlace' | 'place'
+>;
 
-export function withJsxPlacement(
-  original: PlacerMethods,
-  t: BabelTypes,
-): PlacerMethods {
+export function muirProteusJsxWithJsxPlacement(
+  original: MuirProteusJsxPlacerMethods,
+  t: MuirProteusJsxBabelTypes,
+): MuirProteusJsxPlacerMethods {
   const canPlace = original.canPlace.bind(original);
   const place = original.place.bind(original);
 
@@ -50,7 +57,7 @@ export function withJsxPlacement(
         return;
       }
 
-      if (isJsxChild(path) && path.isExpression()) {
+      if (muirProteusJsxIsJsxChild(path) && path.isExpression()) {
         const [container] = path.replaceWith(
           t.jsxExpressionContainer(path.node),
         );
@@ -77,18 +84,20 @@ function remap(
 }
 
 function unplaceable(type: string): Error {
-  return new Error(`${packageName}: cannot place a JSX mutant at a ${type}.`);
+  return new Error(
+    `${muirProteusJsxPackageName}: cannot place a JSX mutant at a ${type}.`,
+  );
 }
 
 function valueExpression(
   attribute: types.Node,
-  t: BabelTypes,
+  t: MuirProteusJsxBabelTypes,
 ): types.Expression {
   if (!t.isJSXAttribute(attribute)) {
     throw unplaceable('JSXAttribute');
   }
 
-  const value = decodeValue(attribute.value, t);
+  const value = muirProteusJsxDecodeValue(attribute.value, t);
 
   if (value.kind === 'bare') {
     return t.booleanLiteral(true);
@@ -106,7 +115,10 @@ function valueExpression(
   throw unplaceable('JSXAttribute');
 }
 
-function cleanedText(node: types.Node, t: BabelTypes): types.Expression {
+function cleanedText(
+  node: types.Node,
+  t: MuirProteusJsxBabelTypes,
+): types.Expression {
   if (!t.isJSXText(node)) {
     throw unplaceable('JSXText');
   }

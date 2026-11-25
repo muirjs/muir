@@ -5,11 +5,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  lzCheckRuntimeErrors,
-  lzScoresAnyMutant,
-  lzUnrecordedRuntimeErrors,
+  muirCheckRuntimeErrors,
+  muirScoresAnyMutant,
+  muirUnrecordedRuntimeErrors,
 } from './runtime-errors.ts';
 
 const file = 'packages/a/src/watch.ts';
@@ -55,7 +55,7 @@ const malformedReport =
 const malformedList =
   'runtime-errors.json: each entry needs a file, a mutator, a line, a column and a reason, as the report gives them.';
 
-describe('lzUnrecordedRuntimeErrors', () => {
+describe('muirUnrecordedRuntimeErrors', () => {
   it('returns nothing for a report without RuntimeError mutants', () => {
     const report = reportOf([
       mutant('Killed'),
@@ -64,12 +64,12 @@ describe('lzUnrecordedRuntimeErrors', () => {
       mutant('CompileError'),
     ]);
 
-    assert.deepEqual(lzUnrecordedRuntimeErrors(report, []), []);
+    assert.deepEqual(muirUnrecordedRuntimeErrors(report, []), []);
   });
 
   it('names a RuntimeError mutant that the list does not record by file, location, mutator and reason', () => {
     assert.deepEqual(
-      lzUnrecordedRuntimeErrors(reportOf([mutant('RuntimeError')]), []),
+      muirUnrecordedRuntimeErrors(reportOf([mutant('RuntimeError')]), []),
       [unrecordedLine],
     );
   });
@@ -79,19 +79,21 @@ describe('lzUnrecordedRuntimeErrors', () => {
       { ...mutant('RuntimeError'), statusReason: undefined },
     ]);
 
-    assert.deepEqual(lzUnrecordedRuntimeErrors(report, []), [
+    assert.deepEqual(muirUnrecordedRuntimeErrors(report, []), [
       `${file}:24:28 ArithmeticOperator`,
     ]);
   });
 
   it('accepts a RuntimeError mutant that the list records', () => {
     assert.deepEqual(
-      lzUnrecordedRuntimeErrors(reportOf([mutant('RuntimeError')]), [recorded]),
+      muirUnrecordedRuntimeErrors(reportOf([mutant('RuntimeError')]), [
+        recorded,
+      ]),
       [],
     );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['file', { ...recorded, file: 'packages/a/src/other.ts' }],
     ['mutator', { ...recorded, mutator: 'EqualityOperator' }],
     ['line', { ...recorded, line: 25 }],
@@ -100,7 +102,9 @@ describe('lzUnrecordedRuntimeErrors', () => {
     'still names a RuntimeError mutant when the recorded entry has another %s',
     (_, entry) => {
       assert.deepEqual(
-        lzUnrecordedRuntimeErrors(reportOf([mutant('RuntimeError')]), [entry]),
+        muirUnrecordedRuntimeErrors(reportOf([mutant('RuntimeError')]), [
+          entry,
+        ]),
         [unrecordedLine],
       );
     },
@@ -122,14 +126,14 @@ describe('lzUnrecordedRuntimeErrors', () => {
       },
     };
 
-    assert.deepEqual(lzUnrecordedRuntimeErrors(report, []), [
+    assert.deepEqual(muirUnrecordedRuntimeErrors(report, []), [
       unrecordedLine,
       `${file}:26:7 EqualityOperator: ${reason}`,
       `packages/a/src/b.ts:3:1 BlockStatement: ${reason}`,
     ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['no object', 'report'],
     ['null', null],
     ['no files object', {}],
@@ -169,12 +173,12 @@ describe('lzUnrecordedRuntimeErrors', () => {
       ]),
     ],
   ])('rejects a report with %s', (_, report) => {
-    assert.throws(() => lzUnrecordedRuntimeErrors(report, []), {
+    assert.throws(() => muirUnrecordedRuntimeErrors(report, []), {
       message: malformedReport,
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     ['no array', {}],
     ['an entry that is no object', ['entry']],
     ['an entry without a file', [{ ...recorded, file: undefined }]],
@@ -184,14 +188,14 @@ describe('lzUnrecordedRuntimeErrors', () => {
     ['an entry without a reason', [{ ...recorded, reason: undefined }]],
     ['an entry with an empty reason', [{ ...recorded, reason: '' }]],
   ])('rejects a list with %s', (_, list) => {
-    assert.throws(() => lzUnrecordedRuntimeErrors(reportOf([]), list), {
+    assert.throws(() => muirUnrecordedRuntimeErrors(reportOf([]), list), {
       message: malformedList,
     });
   });
 });
 
 async function tempDir(t: TestContext): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'lz-runtime-errors-'));
+  const dir = await mkdtemp(join(tmpdir(), 'muir-runtime-errors-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
 
   return dir;
@@ -208,21 +212,21 @@ async function writeJson(
   return path;
 }
 
-describe('lzScoresAnyMutant', () => {
-  lzTestEach(['Killed', 'Timeout', 'Survived', 'NoCoverage'])(
+describe('muirScoresAnyMutant', () => {
+  muirTestEach(['Killed', 'Timeout', 'Survived', 'NoCoverage'])(
     'counts a %s mutant toward the score',
     (status) => {
       assert.equal(
-        lzScoresAnyMutant(reportOf([mutant('Ignored'), mutant(status)])),
+        muirScoresAnyMutant(reportOf([mutant('Ignored'), mutant(status)])),
         true,
       );
     },
   );
 
-  lzTestEach(['RuntimeError', 'CompileError', 'Ignored', 'Pending'])(
+  muirTestEach(['RuntimeError', 'CompileError', 'Ignored', 'Pending'])(
     'counts no %s mutant toward the score',
     (status) => {
-      assert.equal(lzScoresAnyMutant(reportOf([mutant(status)])), false);
+      assert.equal(muirScoresAnyMutant(reportOf([mutant(status)])), false);
     },
   );
 
@@ -234,15 +238,18 @@ describe('lzScoresAnyMutant', () => {
       },
     };
 
-    assert.equal(lzScoresAnyMutant(report), true);
+    assert.equal(muirScoresAnyMutant(report), true);
   });
 
   it('scores nothing in a report without files, as Stryker writes for a run that mutated nothing', () => {
-    assert.equal(lzScoresAnyMutant({ schemaVersion: '1.0', files: {} }), false);
+    assert.equal(
+      muirScoresAnyMutant({ schemaVersion: '1.0', files: {} }),
+      false,
+    );
   });
 });
 
-describe('lzCheckRuntimeErrors', () => {
+describe('muirCheckRuntimeErrors', () => {
   it('reads the report and the list from their files', async (t) => {
     const dir = await tempDir(t);
     const reportFile = await writeJson(
@@ -252,14 +259,14 @@ describe('lzCheckRuntimeErrors', () => {
     );
 
     assert.deepEqual(
-      await lzCheckRuntimeErrors(
+      await muirCheckRuntimeErrors(
         reportFile,
         await writeJson(dir, 'none.json', []),
       ),
       [unrecordedLine],
     );
     assert.deepEqual(
-      await lzCheckRuntimeErrors(
+      await muirCheckRuntimeErrors(
         reportFile,
         await writeJson(dir, 'list.json', [recorded]),
       ),

@@ -4,23 +4,31 @@ import { describe, it } from 'node:test';
 import { parse } from '@babel/parser';
 
 import {
-  csfFile,
-  csfShapes,
-  mayImportItself,
-  topLevelBindings,
+  muirMoiraStorybookCsfFile,
+  muirMoiraStorybookCsfShapes,
+  muirMoiraStorybookMayImportItself,
+  muirMoiraStorybookTopLevelBindings,
 } from '../src/csf.ts';
-import { field, list } from '../src/node-field.ts';
-import { sitesOf } from '../src/sites.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from '../src/node-field.ts';
+import { muirMoiraStorybookSitesOf } from '../src/sites.ts';
 import { bodyOf, programOf, programsOf } from './support/parse-module.ts';
 
 function fileOf(...lines: readonly string[]) {
   const body = bodyOf(...lines);
 
-  return csfFile(body, topLevelBindings(body));
+  return muirMoiraStorybookCsfFile(
+    body,
+    muirMoiraStorybookTopLevelBindings(body),
+  );
 }
 
 function testFunctionOf(statement: unknown): unknown {
-  const [, testFunction] = list(field(statement, 'expression', 'arguments'));
+  const [, testFunction] = muirMoiraStorybookList(
+    muirMoiraStorybookField(statement, 'expression', 'arguments'),
+  );
 
   return testFunction;
 }
@@ -186,7 +194,7 @@ describe('mayImportItself', () => {
   it('holds for an import() whose specifier is not a string literal, in either parsed shape', () => {
     assert.deepEqual(
       programsOf('const stories = await import(name);').map(({ body }) =>
-        mayImportItself(body, 'Button.stories.ts'),
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [true, true],
     );
@@ -197,7 +205,9 @@ describe('mayImportItself', () => {
       programsOf(
         "const stories = await import('./Other.stories');",
         "const utility = require('./utility');",
-      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      ).map(({ body }) =>
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
+      ),
       [false, false],
     );
   });
@@ -205,7 +215,8 @@ describe('mayImportItself', () => {
   it('holds for a root-absolute specifier, which Vite resolves from a root the file does not name, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("import * as self from '/src/Button.stories';").map(
-        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+        ({ body }) =>
+          muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [true, true],
     );
@@ -216,7 +227,9 @@ describe('mayImportItself', () => {
       programsOf(
         "import '/src/styles.css';",
         "import logo from '/assets/logo.svg';",
-      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      ).map(({ body }) =>
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
+      ),
       [false, false],
     );
   });
@@ -224,7 +237,8 @@ describe('mayImportItself', () => {
   it('holds for an import through a path alias whose last segment names the file, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("import * as self from '@/components/Button.stories';").map(
-        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+        ({ body }) =>
+          muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [true, true],
     );
@@ -233,7 +247,8 @@ describe('mayImportItself', () => {
   it('holds for an import through a drive path whose last segment names the file, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("import * as self from 'D:/app/src/Button.stories.js';").map(
-        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+        ({ body }) =>
+          muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [true, true],
     );
@@ -243,7 +258,9 @@ describe('mayImportItself', () => {
     assert.deepEqual(
       programsOf(
         String.raw`import * as self from 'C:\\app\\src\\Button.stories';`,
-      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      ).map(({ body }) =>
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
+      ),
       [true, true],
     );
   });
@@ -251,7 +268,7 @@ describe('mayImportItself', () => {
   it('holds for a relative string that names the file with another script extension, such as a vi.mock path, as an import of it does, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("vi.mock('./Button.stories.tsx');").map(({ body }) =>
-        mayImportItself(body, 'Button.stories.ts'),
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [true, true],
     );
@@ -261,7 +278,9 @@ describe('mayImportItself', () => {
     assert.deepEqual(
       programsOf(
         "export default { parameters: { importPath: 'core/src/Button.stories.tsx' } };",
-      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      ).map(({ body }) =>
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
+      ),
       [false, false],
     );
   });
@@ -269,7 +288,8 @@ describe('mayImportItself', () => {
   it('does not hold for a title whose last segment spells the file name, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("export default { title: 'Example/Button.stories' };").map(
-        ({ body }) => mayImportItself(body, 'Button.stories.ts'),
+        ({ body }) =>
+          muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [false, false],
     );
@@ -278,7 +298,7 @@ describe('mayImportItself', () => {
   it('does not hold for a title whose last segment is the component the file is named after, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("export default { title: 'Components/Button' };").map(
-        ({ body }) => mayImportItself(body, 'Button.tsx'),
+        ({ body }) => muirMoiraStorybookMayImportItself(body, 'Button.tsx'),
       ),
       [false, false],
     );
@@ -287,7 +307,7 @@ describe('mayImportItself', () => {
   it('does not hold for a package spelled like the file, which is a package entry, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("import * as other from 'Button.stories';").map(({ body }) =>
-        mayImportItself(body, 'Button.stories.ts'),
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [false, false],
     );
@@ -296,7 +316,8 @@ describe('mayImportItself', () => {
   it('does not hold for a relative import of a file of the same name in another folder, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("import * as other from '../legacy/Button.stories';").map(
-        ({ body }) => mayImportItself(body, 'src/Button.stories.ts'),
+        ({ body }) =>
+          muirMoiraStorybookMayImportItself(body, 'src/Button.stories.ts'),
       ),
       [false, false],
     );
@@ -309,7 +330,9 @@ describe('mayImportItself', () => {
         "export default { title: 'a/b', args: { onClick: fn() } };",
         "export const Primary = { args: { label: 'a' }, play: async () => {} };",
         'export { Primary as Main };',
-      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      ).map(({ body }) =>
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
+      ),
       [false, false],
     );
   });
@@ -321,7 +344,7 @@ describe('mayImportItself', () => {
         "export { Primary } from '@/components/Button.stories';",
       ].map((source) =>
         programsOf(source).map(({ body }) =>
-          mayImportItself(body, 'Button.stories.ts'),
+          muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
         ),
       ),
       [
@@ -339,7 +362,7 @@ describe('mayImportItself', () => {
         'function make() { return new.target.glob(); }',
       ].map((source) =>
         programsOf(source).map(({ body }) =>
-          mayImportItself(body, 'Button.stories.ts'),
+          muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
         ),
       ),
       [
@@ -354,7 +377,9 @@ describe('mayImportItself', () => {
     assert.deepEqual(
       programsOf(
         "const stories = import.meta.glob('./*.stories.ts', { eager: true });",
-      ).map(({ body }) => mayImportItself(body, 'Button.stories.ts')),
+      ).map(({ body }) =>
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
+      ),
       [true, true],
     );
   });
@@ -362,7 +387,7 @@ describe('mayImportItself', () => {
   it('holds for a specifier that names the file in another case, which a case-insensitive file system loads as the file, in either parsed shape', () => {
     assert.deepEqual(
       programsOf("import * as self from './button.stories';").map(({ body }) =>
-        mayImportItself(body, 'Button.stories.ts'),
+        muirMoiraStorybookMayImportItself(body, 'Button.stories.ts'),
       ),
       [true, true],
     );
@@ -372,7 +397,7 @@ describe('mayImportItself', () => {
 describe('csfFile readByOtherObjects', () => {
   it('keeps the same-as-below proof of a story that only its own object names when the file loads', () => {
     assert.deepEqual(
-      sitesOf(
+      muirMoiraStorybookSitesOf(
         bodyOf(
           "export default { title: 'a/b', args: { label: 'a' } };",
           "export var A = { args: { label: 'a', self: A?.args }, play: async () => {} };",
@@ -396,7 +421,7 @@ describe('csfShapes', () => {
       "B.test('t', () => {});",
     );
     const [testOfA, testOfB] = program.body.slice(-2);
-    const shapes = csfShapes(program);
+    const shapes = muirMoiraStorybookCsfShapes(program);
 
     assert.deepEqual(
       [testOfA, testOfB].map((statement) =>
@@ -416,13 +441,15 @@ describe('csfShapes', () => {
     const [testOfA] = program.body.slice(-1);
 
     assert.equal(
-      csfShapes(program).testCode.has(testFunctionOf(testOfA)),
+      muirMoiraStorybookCsfShapes(program).testCode.has(
+        testFunctionOf(testOfA),
+      ),
       true,
     );
   });
 
   it('reads a parenthesized story object when the parser keeps parentheses as nodes', () => {
-    const shapes = csfShapes(
+    const shapes = muirMoiraStorybookCsfShapes(
       parse(
         "export default { title: 'a/b' };\nexport const A = ({ args: {} });",
         {
@@ -433,7 +460,9 @@ describe('csfShapes', () => {
     );
 
     assert.deepEqual(
-      [...shapes.literalContainers].map((node) => field(node, 'type')),
+      [...shapes.literalContainers].map((node) =>
+        muirMoiraStorybookField(node, 'type'),
+      ),
       ['ObjectExpression'],
     );
   });
@@ -448,14 +477,19 @@ describe('csfShapes', () => {
       { sourceType: 'module' },
     ).program;
     const [withOptions, plain] = program.body.slice(-2);
-    const shapes = csfShapes(program);
+    const shapes = muirMoiraStorybookCsfShapes(program);
 
     it('lists only the statement whose call has options', () => {
       assert.deepEqual([...shapes.testStatementsWithOptions], [withOptions]);
     });
 
     it('counts the test function of a call with options as test code, but not its statement', () => {
-      const testFunction = field(withOptions, 'expression', 'arguments', '2');
+      const testFunction = muirMoiraStorybookField(
+        withOptions,
+        'expression',
+        'arguments',
+        '2',
+      );
 
       assert.equal(shapes.testCode.has(testFunction), true);
       assert.equal(shapes.testCode.has(withOptions), false);

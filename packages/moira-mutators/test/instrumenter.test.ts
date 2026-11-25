@@ -1,4 +1,4 @@
-// corePackageJson with injected realpath and resolve; resolveInstrumenter against a fake core and instrumenter
+// muirMoiraMutatorsCorePackageJson with injected realpath and resolve; resolveInstrumenter against a fake core and instrumenter
 // written to a temporary node_modules.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -6,12 +6,15 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { tempRoot, writeTree } from '@muirjs/test-util-mutator-packages';
+import {
+  muirTempRoot,
+  muirWriteTree,
+} from '@muirjs/test-util-mutator-packages';
 
 import {
-  corePackageJson,
-  resolveExpressionPlacer,
-  resolveInstrumenter,
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsResolveExpressionPlacer,
+  muirMoiraMutatorsResolveInstrumenter,
 } from '../src/instrumenter.ts';
 import { exported } from './support/exports.ts';
 
@@ -27,7 +30,7 @@ function assertTypes(
 }
 
 async function resolveFromCore(corePackage: string) {
-  const instrumenter = await resolveInstrumenter(
+  const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
     packageName,
     assertTypes,
     corePackage,
@@ -35,7 +38,10 @@ async function resolveFromCore(corePackage: string) {
 
   return {
     ...instrumenter,
-    expressionPlacer: await resolveExpressionPlacer(packageName, instrumenter),
+    expressionPlacer: await muirMoiraMutatorsResolveExpressionPlacer(
+      packageName,
+      instrumenter,
+    ),
   };
 }
 
@@ -51,7 +57,7 @@ describe('corePackageJson', () => {
 
   function coreFor(argv1: string, real: string | undefined): string {
     const realpaths: string[] = [];
-    const core = corePackageJson(
+    const core = muirMoiraMutatorsCorePackageJson(
       argv1,
       (path) => {
         realpaths.push(path);
@@ -118,9 +124,9 @@ describe('corePackageJson', () => {
   // `undefined` passed in takes the default, process.argv[1], so only a process that runs no script has none.
   it('takes the core this module resolves, without a realpath, under node --eval', () => {
     const script =
-      `import { corePackageJson } from ${JSON.stringify(pathToFileURL(join(import.meta.dirname, '..', 'src', 'instrumenter.ts')).href)};\n` +
+      `import { muirMoiraMutatorsCorePackageJson } from ${JSON.stringify(pathToFileURL(join(import.meta.dirname, '..', 'src', 'instrumenter.ts')).href)};\n` +
       'const realpaths = [];\n' +
-      "const core = corePackageJson(undefined, (path) => { realpaths.push(path); return path; }, () => 'here');\n" +
+      "const core = muirMoiraMutatorsCorePackageJson(undefined, (path) => { realpaths.push(path); return path; }, () => 'here');\n" +
       'console.log(JSON.stringify({ core, realpaths }));\n';
 
     const child = spawnSync(
@@ -160,7 +166,10 @@ describe('resolveFromCore against a fake instrumenter', () => {
     placers: readonly string[],
     replace: Readonly<Record<string, string>> = {},
   ) {
-    const modules = join(tempRoot(t, 'mutator-install-core-'), 'node_modules');
+    const modules = join(
+      muirTempRoot(t, 'mutator-install-core-'),
+      'node_modules',
+    );
     const dir = join(modules, '@stryker-mutator', 'instrumenter');
     const files: Record<string, string> = {
       '@stryker-mutator/core/package.json':
@@ -189,7 +198,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
       ...replace,
     };
 
-    writeTree(modules, files);
+    muirWriteTree(modules, files);
 
     return {
       corePackage: join(modules, '@stryker-mutator', 'core', 'package.json'),
@@ -201,7 +210,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
   it('resolves an instrumenter without an expressionMutantPlacer, as only some packages patch it', async (t) => {
     const { corePackage } = fakeCore(t, ['otherPlacer']);
 
-    const instrumenter = await resolveInstrumenter(
+    const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
       packageName,
       assertTypes,
       corePackage,
@@ -345,7 +354,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
       [indexPath]: instrumenterFile({
         mutants: [
           { ...mutant, id: 1, status: 'Done', location: null },
-          { fileName: 'b.tsx', mutatorName: 'LzJsxTextLiteral' },
+          { fileName: 'b.tsx', mutatorName: 'MuirProteusJsxTextLiteral' },
         ],
       }),
     });
@@ -353,7 +362,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
 
     assert.deepEqual(
       await instrumenter.instrument([{ name: 'a.tsx', content: 'x' }]),
-      [mutant, { fileName: 'b.tsx', mutatorName: 'LzJsxTextLiteral' }],
+      [mutant, { fileName: 'b.tsx', mutatorName: 'MuirProteusJsxTextLiteral' }],
     );
   });
 

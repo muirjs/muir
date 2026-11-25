@@ -54,8 +54,8 @@
     "appendPlugins": [
       "@muirjs/siryn-playwright"
     ],
-    "testRunner": "lz-playwright",
-    "testRunner_comment": "Take a look at https://github.com/muirjs/muir/tree/main/packages/siryn-playwright#readme for information about the lz-playwright plugin.",
+    "testRunner": "muir-siryn-playwright",
+    "testRunner_comment": "Take a look at https://github.com/muirjs/muir/tree/main/packages/siryn-playwright#readme for information about the muir-siryn-playwright plugin.",
     "coverageAnalysis": "perTest",
     "concurrency": 1,
     "timeoutMS": 11000

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { isDeepStrictEqual } from 'node:util';
 
-import { implicitRoles } from '../src/implicit-roles.ts';
+import { muirProteusJsxImplicitRoles } from '../src/implicit-roles.ts';
 import {
   ariaQueryConcepts,
   ariaQueryGives,
@@ -29,7 +29,8 @@ const leftOut = ['td gridcell'];
 describe('implicitRoles', () => {
   it("holds every entry of Playwright's table that needs no context", () => {
     const missing = [...playwrightRoles()].filter(
-      ([tag, entry]) => !isDeepStrictEqual(implicitRoles.get(tag), entry),
+      ([tag, entry]) =>
+        !isDeepStrictEqual(muirProteusJsxImplicitRoles.get(tag), entry),
     );
 
     assert.deepEqual(missing, []);
@@ -52,7 +53,7 @@ describe('implicitRoles', () => {
         .filter(
           ([tag, role]) =>
             role !== 'generic' &&
-            !isDeepStrictEqual(implicitRoles.get(tag), { role }),
+            !isDeepStrictEqual(muirProteusJsxImplicitRoles.get(tag), { role }),
         )
         .map(([tag, role]) => `${tag} ${role}`)
         .sort(),
@@ -65,7 +66,7 @@ describe('implicitRoles', () => {
     const playwright = playwrightRoles();
 
     assert.deepEqual(
-      [...implicitRoles].filter(
+      [...muirProteusJsxImplicitRoles].filter(
         ([tag, entry]) =>
           !ariaQueryGives(concepts, tag, entry) &&
           !isDeepStrictEqual(playwright.get(tag), entry),

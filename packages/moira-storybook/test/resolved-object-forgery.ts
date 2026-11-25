@@ -1,20 +1,25 @@
 import type * as resolvedValues from '../src/resolved-values.ts';
-import type { Layer, ResolvedObject } from '../src/resolved-values.ts';
+import type {
+  MuirMoiraStorybookLayer,
+  MuirMoiraStorybookResolvedObject,
+} from '../src/resolved-values.ts';
 
 type Assignable<TFrom, TTo> = [TFrom] extends [TTo] ? true : false;
 
 interface ResolvedObjectMembers {
   readonly node: object;
   readonly lastWinsProperties: readonly unknown[];
-  layerOf(key: string | number): Layer;
+  layerOf(key: string | number): MuirMoiraStorybookLayer;
 }
 
-export function spreadCopy(resolved: ResolvedObject) {
+export function spreadCopy(resolved: MuirMoiraStorybookResolvedObject) {
   return { ...resolved };
 }
 
-export const literalIsNotLayer: Assignable<ResolvedObjectMembers, Layer> =
-  false;
+export const literalIsNotLayer: Assignable<
+  ResolvedObjectMembers,
+  MuirMoiraStorybookLayer
+> = false;
 
 export const resolvedObjectIsNotConstructible: 'ResolvedObject' extends keyof typeof resolvedValues
   ? true
@@ -22,5 +27,5 @@ export const resolvedObjectIsNotConstructible: 'ResolvedObject' extends keyof ty
 
 export const spreadCopyIsNotResolvedObject: Assignable<
   ReturnType<typeof spreadCopy>,
-  ResolvedObject
+  MuirMoiraStorybookResolvedObject
 > = false;

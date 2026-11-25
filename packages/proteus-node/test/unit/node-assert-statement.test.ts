@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeAssertStatement } from '../../src/node-assert-statement.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeAssertStatement } from '../../src/node-assert-statement.ts';
 import {
   mutantsOf,
   removalsNextToBuiltIns,
   strict,
 } from '../mutants-of.fixtures.ts';
 
-describe('LzNodeAssertStatement', () => {
-  lzTestEach([
+describe('MuirProteusNodeAssertStatement', () => {
+  muirTestEach([
     ['a default import', `${strict}assert.equal(state, 'ready');`],
     [
       'a default import called itself',
@@ -30,10 +30,12 @@ describe('LzNodeAssertStatement', () => {
     ],
     ['an awaited assertion', `${strict}await assert.rejects(promise);`],
   ])('removes the statement of %s', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeAssertStatement, source), [';']);
+    assert.deepEqual(await mutantsOf(muirProteusNodeAssertStatement, source), [
+      ';',
+    ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['console.assert', 'console.assert(ready);'],
     [
       'an assert of another library',
@@ -72,10 +74,13 @@ describe('LzNodeAssertStatement', () => {
       `${strict}new Function('assert', 'assert.ok(ready)');`,
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeAssertStatement, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeAssertStatement, source),
+      [],
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'whose arguments Stryker mutates, and which Stryker alone keeps',
       `${strict}assert.equal(state, 'ready');`,
@@ -90,8 +95,8 @@ describe('LzNodeAssertStatement', () => {
     "gives an assertion %s exactly one removal next to Stryker's mutators, its own",
     async (_title, source, alone) => {
       assert.deepEqual(
-        await removalsNextToBuiltIns(nodeAssertStatement, source),
-        [alone, ['LzNodeAssertStatement']],
+        await removalsNextToBuiltIns(muirProteusNodeAssertStatement, source),
+        [alone, ['MuirProteusNodeAssertStatement']],
       );
     },
   );

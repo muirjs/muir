@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { fieldOf } from '../src/is-record.ts';
-import { swapMutator, type SiteReader } from '../src/same-file-swap.ts';
+import { muirMoiraMutatorsFieldOf } from '../src/is-record.ts';
+import {
+  muirMoiraMutatorsSwapMutator,
+  type MuirMoiraMutatorsSiteReader,
+} from '../src/same-file-swap.ts';
 
 interface Literal {
   readonly type: 'Literal';
@@ -26,10 +29,10 @@ function programOf(literals: readonly Literal[]) {
   };
 }
 
-const readArgument: SiteReader = (call) => {
-  const argument = fieldOf(call, 'argument');
-  const value = fieldOf(argument, 'value');
-  const key = fieldOf(argument, 'key');
+const readArgument: MuirMoiraMutatorsSiteReader = (call) => {
+  const argument = muirMoiraMutatorsFieldOf(call, 'argument');
+  const value = muirMoiraMutatorsFieldOf(argument, 'value');
+  const key = muirMoiraMutatorsFieldOf(argument, 'key');
 
   return typeof value === 'string' && typeof key === 'string'
     ? { key, value, node: argument }
@@ -42,11 +45,11 @@ function replacementsOf(
   literals: readonly Literal[],
   site: Literal,
   options: {
-    readonly read?: SiteReader;
+    readonly read?: MuirMoiraMutatorsSiteReader;
     readonly excludes?: (one: string, other: string) => boolean;
   } = {},
 ): readonly unknown[] {
-  const swap = swapMutator(
+  const swap = muirMoiraMutatorsSwapMutator(
     'Swap',
     '',
     options.read ?? readArgument,
@@ -132,7 +135,7 @@ describe('swapMutator', () => {
     const second = literal(10, 'b');
     const program = programOf([first, second]);
     let reads = 0;
-    const swap = swapMutator('Swap', '', (call) => {
+    const swap = muirMoiraMutatorsSwapMutator('Swap', '', (call) => {
       reads += 1;
 
       return readArgument(call);
@@ -148,7 +151,7 @@ describe('swapMutator', () => {
   });
 
   it('gives nothing for a path outside a file', () => {
-    const swap = swapMutator('Swap', '', readArgument);
+    const swap = muirMoiraMutatorsSwapMutator('Swap', '', readArgument);
 
     assert.deepEqual([...swap.mutate({ node: literal(0, 'a') }, t)], []);
   });

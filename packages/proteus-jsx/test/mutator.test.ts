@@ -6,10 +6,10 @@ import { describe, it } from 'node:test';
 import { traverse, types as t, type NodePath } from '@babel/core';
 
 import {
-  isJsxChild,
-  toNodeMutator,
-  type AttributeSite,
-  type Mutator,
+  muirProteusJsxIsJsxChild,
+  muirProteusJsxToNodeMutator,
+  type MuirProteusJsxAttributeSite,
+  type MuirProteusJsxMutator,
 } from '../src/mutator.ts';
 import { parse } from './support/babel.ts';
 
@@ -22,9 +22,12 @@ function firstElement(file: t.File): t.JSXElement {
   return statement.expression;
 }
 
-function sitesSkipSees(file: t.File, attribute: string): AttributeSite[] {
-  const sites: AttributeSite[] = [];
-  const probe: Mutator = {
+function sitesSkipSees(
+  file: t.File,
+  attribute: string,
+): MuirProteusJsxAttributeSite[] {
+  const sites: MuirProteusJsxAttributeSite[] = [];
+  const probe: MuirProteusJsxMutator = {
     name: 'Probe',
     sample: '',
     rules: [
@@ -40,7 +43,7 @@ function sitesSkipSees(file: t.File, attribute: string): AttributeSite[] {
       },
     ],
   };
-  const mutator = toNodeMutator(probe, t);
+  const mutator = muirProteusJsxToNodeMutator(probe, t);
 
   traverse(file, {
     enter(path) {
@@ -94,7 +97,7 @@ describe('toNodeMutator', () => {
 
   it('finds no site for an attribute whose opening element has no parent path, as in a traversal of the element alone', () => {
     const element = firstElement(parse('<input disabled />;'));
-    const mutator = toNodeMutator(
+    const mutator = muirProteusJsxToNodeMutator(
       {
         name: 'Probe',
         sample: '',
@@ -132,7 +135,7 @@ describe('isJsxChild', () => {
     });
 
     assert.deepEqual(
-      paths.map((path) => isJsxChild(path)),
+      paths.map((path) => muirProteusJsxIsJsxChild(path)),
       [false],
     );
   });

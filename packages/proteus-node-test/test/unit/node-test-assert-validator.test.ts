@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeTestAssertValidator } from '../../src/node-test-assert-validator.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeTestAssertValidator } from '../../src/node-test-assert-validator.ts';
 import { instrumentWith, mutantsOf, strict } from '../mutants-of.fixtures.ts';
 
 const throws = '() => { throw new Error("Stryker"); }';
 const rejects = 'Promise.reject(new Error("Stryker"))';
 
-describe('LzNodeTestAssertValidator', () => {
-  lzTestEach([
+describe('MuirProteusNodeTestAssertValidator', () => {
+  muirTestEach([
     [
       'assert.throws',
       `${strict}assert.throws(() => parse(''), /empty/);`,
@@ -59,13 +59,13 @@ describe('LzNodeTestAssertValidator', () => {
     'replaces what %s checks, and only that',
     async (_title, source, expected) => {
       assert.deepEqual(
-        await mutantsOf(nodeTestAssertValidator, source),
+        await mutantsOf(muirProteusNodeTestAssertValidator, source),
         expected,
       );
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     ['a spread', `${strict}assert.throws(...args);`],
     ['assert.doesNotThrow', `${strict}assert.doesNotThrow(f);`],
     ['assert.doesNotReject', `${strict}await assert.doesNotReject(p);`],
@@ -77,14 +77,17 @@ describe('LzNodeTestAssertValidator', () => {
     ],
     ['an array element in first place', `${strict}[assert.throws, f];`],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeTestAssertValidator, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeTestAssertValidator, source),
+      [],
+    );
   });
 
   const nodeTest = "import { it } from 'node:test';\n";
   const expecting = (matcher: string) =>
     `${nodeTest}it('rejects a bad id', { expectFailure: ${matcher} }, () => parse('x'));`;
 
-  lzTestEach([
+  muirTestEach([
     ['a regular expression', expecting('/bad id/')],
     ['an error class', expecting('TypeError')],
     ['an object', expecting("{ code: 'ERR_BAD_ID' }")],
@@ -113,15 +116,19 @@ describe('LzNodeTestAssertValidator', () => {
   ])(
     'replaces the test function of an expectFailure that matches through %s',
     async (_title, source) => {
-      assert.deepEqual(await mutantsOf(nodeTestAssertValidator, source), [
-        throws,
-      ]);
+      assert.deepEqual(
+        await mutantsOf(muirProteusNodeTestAssertValidator, source),
+        [throws],
+      );
     },
   );
 
   it('places the mutant of an expectFailure on the test function, not on its options', async () => {
     const source = expecting('/bad id/');
-    const mutants = await instrumentWith(nodeTestAssertValidator, source);
+    const mutants = await instrumentWith(
+      muirProteusNodeTestAssertValidator,
+      source,
+    );
 
     assert.deepEqual(
       mutants.map(({ location }) => location.start),
@@ -129,7 +136,7 @@ describe('LzNodeTestAssertValidator', () => {
     );
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'the default import',
       "import test from 'node:test';\ntest('fails', { expectFailure: /x/ }, f);",
@@ -170,13 +177,14 @@ describe('LzNodeTestAssertValidator', () => {
   ])(
     'replaces the test function of an expectFailure test made through %s',
     async (_title, source) => {
-      assert.deepEqual(await mutantsOf(nodeTestAssertValidator, source), [
-        throws,
-      ]);
+      assert.deepEqual(
+        await mutantsOf(muirProteusNodeTestAssertValidator, source),
+        [throws],
+      );
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     ['a label', expecting("'a known bug'")],
     ['a template label', expecting('`bug ${id}`')],
     ['true', expecting('true')],
@@ -260,6 +268,9 @@ describe('LzNodeTestAssertValidator', () => {
       "it('parent', async (t) => {\n  await t['test']('fails', { expectFailure: /x/ }, f);\n});",
     ],
   ])('leaves a test with %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeTestAssertValidator, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeTestAssertValidator, source),
+      [],
+    );
   });
 });

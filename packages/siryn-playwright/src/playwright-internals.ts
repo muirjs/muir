@@ -3,12 +3,15 @@ import { inspect } from 'node:util';
 
 import type { FullResult, Reporter } from '@playwright/test/reporter';
 
-import { fieldOf, isRecord } from './is-record.ts';
-import type { PageSettings } from './protocol.ts';
+import {
+  muirSirynPlaywrightFieldOf,
+  muirSirynPlaywrightIsRecord,
+} from './is-record.ts';
+import type { MuirSirynPlaywrightPageSettings } from './protocol.ts';
 
 type Status = FullResult['status'];
 
-export interface RunTestsParams {
+export interface MuirSirynPlaywrightRunTestsParams {
   readonly locations: readonly string[];
   readonly testIds?: readonly string[] | undefined;
   readonly projects?: readonly string[] | undefined;
@@ -18,7 +21,7 @@ export interface RunTestsParams {
   readonly disableConfigReporters?: boolean;
 }
 
-export interface ConfigProject {
+export interface MuirSirynPlaywrightConfigProject {
   readonly default: boolean;
   readonly expect?: { readonly timeout?: number | undefined } | undefined;
   readonly project: {
@@ -29,7 +32,7 @@ export interface ConfigProject {
   readonly baseURL?: string | undefined;
 }
 
-export interface ConfigWebServer {
+export interface MuirSirynPlaywrightConfigWebServer {
   readonly url?: string | undefined;
   /**
    * The port to check with a TCP connection instead of fetching the url, as Playwright's `checkPortOnly`
@@ -43,11 +46,11 @@ export interface ConfigWebServer {
   readonly setsNodeOptions: boolean;
 }
 
-export interface TestRunner {
+export interface MuirSirynPlaywrightInternalTestRunner {
   initialize(params: Record<string, never>): Promise<void>;
   loadConfig(): Promise<{
-    readonly projects: readonly ConfigProject[];
-    readonly webServers: readonly ConfigWebServer[];
+    readonly projects: readonly MuirSirynPlaywrightConfigProject[];
+    readonly webServers: readonly MuirSirynPlaywrightConfigWebServer[];
   }>;
   // Resolves to undefined when Playwright throws, after printing the error to stderr.
   listTests(
@@ -60,12 +63,12 @@ export interface TestRunner {
   runGlobalTeardown(): Promise<void>;
   runTests(
     reporter: Reporter,
-    params: RunTestsParams,
+    params: MuirSirynPlaywrightRunTestsParams,
   ): Promise<{ readonly status: Status }>;
   stopTests(): Promise<void>;
 }
 
-export interface ConfigHandles {
+export interface MuirSirynPlaywrightConfigHandles {
   /**
    * The live `_options` of the webServer plugin at `index` among the webServer plugins the last loadConfig()
    * created. Global setup starts that webServer from them.
@@ -75,11 +78,13 @@ export interface ConfigHandles {
   cliOverrides(): Record<string, unknown>;
 }
 
-export interface ProjectSelection {
-  projectsRun(names: readonly string[] | undefined): readonly ConfigProject[];
+export interface MuirSirynPlaywrightProjectSelection {
+  projectsRun(
+    names: readonly string[] | undefined,
+  ): readonly MuirSirynPlaywrightConfigProject[];
 }
 
-export const testRunnerMethods = [
+export const muirSirynPlaywrightTestRunnerMethods = [
   'initialize',
   'loadConfig',
   'listTests',
@@ -87,129 +92,161 @@ export const testRunnerMethods = [
   'runGlobalTeardown',
   'runTests',
   'stopTests',
-] as const satisfies readonly (keyof TestRunner)[];
+] as const satisfies readonly (keyof MuirSirynPlaywrightInternalTestRunner)[];
 
-export interface CoreBundleModule {
+export interface MuirSirynPlaywrightCoreBundleModule {
   readonly utils: {
     isURLAvailable(url: URL, ignoreHTTPSErrors: boolean): Promise<boolean>;
   };
 }
 
-export interface CommonModule {
+export interface MuirSirynPlaywrightCommonModule {
   readonly configLoader: {
     resolveConfigLocation(configFile: string | undefined): unknown;
   };
 }
 
-export const minPlaywright: {
+export const muirSirynPlaywrightMinPlaywright: {
   readonly major: number;
   readonly minor: number;
 } = { major: 1, minor: 63 };
 
-export const workerEntry =
+export const muirSirynPlaywrightWorkerEntry =
   /[\\/]playwright[\\/]lib[\\/]worker[\\/]workerProcessEntry\.js$/;
 
 /**
  * Turns off the aria snapshot Playwright takes of a failed test's page for its error prompt. On a page
  * stuck in a loop it waits out its 5 s timeout and pushes the run past Stryker's.
  */
-export const noCopyPromptEnv = 'PLAYWRIGHT_NO_COPY_PROMPT';
+export const muirSirynPlaywrightNoCopyPromptEnv = 'PLAYWRIGHT_NO_COPY_PROMPT';
 
-export interface HookedFrame {
+export interface MuirSirynPlaywrightHookedFrame {
   evaluate(fn: (name: string) => unknown, name: string): Promise<unknown>;
   isDetached(): boolean;
 }
 
-export interface HookedPage {
-  frames(): HookedFrame[];
+export interface MuirSirynPlaywrightHookedPage {
+  frames(): MuirSirynPlaywrightHookedFrame[];
   close(options?: unknown): Promise<void>;
 }
 
-export interface HookedBrowser {
-  contexts(): HookedContext[];
+export interface MuirSirynPlaywrightHookedBrowser {
+  contexts(): MuirSirynPlaywrightHookedContext[];
   close(options?: unknown): Promise<void>;
 }
 
-export interface HookedContext {
-  pages(): HookedPage[];
-  browser(): HookedBrowser | null;
-  on(event: 'page', handler: (page: HookedPage) => void): unknown;
+export interface MuirSirynPlaywrightHookedContext {
+  pages(): MuirSirynPlaywrightHookedPage[];
+  browser(): MuirSirynPlaywrightHookedBrowser | null;
+  on(
+    event: 'page',
+    handler: (page: MuirSirynPlaywrightHookedPage) => void,
+  ): unknown;
   addInitScript(
-    script: ((settings: PageSettings) => void) | { readonly content: string },
-    settings?: PageSettings,
+    script:
+      | ((settings: MuirSirynPlaywrightPageSettings) => void)
+      | { readonly content: string },
+    settings?: MuirSirynPlaywrightPageSettings,
   ): Promise<unknown>;
   route(
     url: (url: URL) => boolean,
-    handler: (route: HookedRoute) => Promise<void>,
+    handler: (route: MuirSirynPlaywrightHookedRoute) => Promise<void>,
   ): Promise<unknown>;
 }
 
-export interface HookedRoute {
+export interface MuirSirynPlaywrightHookedRoute {
   request(): { headers(): Record<string, string> };
   fallback(options?: {
     readonly headers: Readonly<Record<string, string>>;
   }): Promise<void>;
 }
 
-export interface FetchOptions {
+export interface MuirSirynPlaywrightFetchOptions {
   readonly headers?: Readonly<Record<string, string>> | undefined;
   readonly [option: string]: unknown;
 }
 
-export interface HookedRequestContext {
+export interface MuirSirynPlaywrightHookedRequestContext {
   readonly fetch: (
     target: string | { headers(): Record<string, string> },
-    options?: FetchOptions,
+    options?: MuirSirynPlaywrightFetchOptions,
   ) => Promise<unknown>;
 }
 
-export interface Instrumentation {
+export interface MuirSirynPlaywrightInstrumentation {
   addListener(listener: {
-    runAfterCreateBrowserContext?(context: HookedContext): Promise<void>;
-    runBeforeCloseBrowserContext?(context: HookedContext): Promise<void>;
-    runAfterCreateRequestContext?(context: HookedRequestContext): Promise<void>;
+    runAfterCreateBrowserContext?(
+      context: MuirSirynPlaywrightHookedContext,
+    ): Promise<void>;
+    runBeforeCloseBrowserContext?(
+      context: MuirSirynPlaywrightHookedContext,
+    ): Promise<void>;
+    runAfterCreateRequestContext?(
+      context: MuirSirynPlaywrightHookedRequestContext,
+    ): Promise<void>;
   }): void;
 }
 
-export interface Playwright {
+export interface MuirSirynPlaywright {
   readonly version: string;
   createTestRunner(
     configFile: string | undefined,
     overrides: Record<string, unknown>,
-  ): Promise<TestRunner & ConfigHandles & ProjectSelection>;
-  readonly isURLAvailable: CoreBundleModule['utils']['isURLAvailable'];
+  ): Promise<
+    MuirSirynPlaywrightInternalTestRunner &
+      MuirSirynPlaywrightConfigHandles &
+      MuirSirynPlaywrightProjectSelection
+  >;
+  readonly isURLAvailable: MuirSirynPlaywrightCoreBundleModule['utils']['isURLAvailable'];
 }
 
-export function supportsPlaywright(version: string): boolean {
+export function muirSirynPlaywrightSupportsPlaywright(
+  version: string,
+): boolean {
   const [major, minor = NaN] = version.split('.').map(Number);
 
-  return major === minPlaywright.major && minor >= minPlaywright.minor;
+  return (
+    major === muirSirynPlaywrightMinPlaywright.major &&
+    minor >= muirSirynPlaywrightMinPlaywright.minor
+  );
 }
 
-export function probeInternals(
+export function muirSirynPlaywrightProbeInternals(
   version: string,
   modules: {
     runner: unknown;
     common: unknown;
     coreBundle: unknown;
   },
-): Playwright {
+): MuirSirynPlaywright {
   const { runner, common, coreBundle } = modules;
-  const TestRunner = fieldOf(fieldOf(runner, 'testRunner'), 'TestRunner');
-  const projectUtils = fieldOf(runner, 'projectUtils');
-  const filterProjects = fieldOf(projectUtils, 'filterProjects');
-  const buildProjectsClosure = fieldOf(projectUtils, 'buildProjectsClosure');
-  const configLoader = fieldOf(common, 'configLoader');
-  const resolveConfigLocation = fieldOf(configLoader, 'resolveConfigLocation');
-  const isURLAvailable = fieldOf(
-    fieldOf(coreBundle, 'utils'),
+  const TestRunner = muirSirynPlaywrightFieldOf(
+    muirSirynPlaywrightFieldOf(runner, 'testRunner'),
+    'TestRunner',
+  );
+  const projectUtils = muirSirynPlaywrightFieldOf(runner, 'projectUtils');
+  const filterProjects = muirSirynPlaywrightFieldOf(
+    projectUtils,
+    'filterProjects',
+  );
+  const buildProjectsClosure = muirSirynPlaywrightFieldOf(
+    projectUtils,
+    'buildProjectsClosure',
+  );
+  const configLoader = muirSirynPlaywrightFieldOf(common, 'configLoader');
+  const resolveConfigLocation = muirSirynPlaywrightFieldOf(
+    configLoader,
+    'resolveConfigLocation',
+  );
+  const isURLAvailable = muirSirynPlaywrightFieldOf(
+    muirSirynPlaywrightFieldOf(coreBundle, 'utils'),
     'isURLAvailable',
   );
 
   const changed = () =>
-    internalsChanged(
+    muirSirynPlaywrightInternalsChanged(
       version,
-      `playwright/lib/runner TestRunner with ${testRunnerMethods.join(', ')}, and projectUtils filterProjects and buildProjectsClosure; playwright/lib/common configLoader; playwright-core coreBundle isURLAvailable`,
+      `playwright/lib/runner TestRunner with ${muirSirynPlaywrightTestRunnerMethods.join(', ')}, and projectUtils filterProjects and buildProjectsClosure; playwright/lib/common configLoader; playwright-core coreBundle isURLAvailable`,
     );
 
   if (
@@ -222,8 +259,11 @@ export function probeInternals(
     throw changed();
   }
 
-  const methodOf = (source: unknown, name: keyof TestRunner) => {
-    const method = fieldOf(source, name);
+  const methodOf = (
+    source: unknown,
+    name: keyof MuirSirynPlaywrightInternalTestRunner,
+  ) => {
+    const method = muirSirynPlaywrightFieldOf(source, name);
 
     if (typeof method !== 'function') {
       throw changed();
@@ -233,7 +273,10 @@ export function probeInternals(
   };
   const prototype: unknown = TestRunner.prototype;
   const methods = Object.fromEntries(
-    testRunnerMethods.map((name) => [name, methodOf(prototype, name)]),
+    muirSirynPlaywrightTestRunnerMethods.map((name) => [
+      name,
+      methodOf(prototype, name),
+    ]),
   );
 
   return {
@@ -249,7 +292,7 @@ export function probeInternals(
         overrides,
       ]);
       const call = (
-        name: keyof TestRunner,
+        name: keyof MuirSirynPlaywrightInternalTestRunner,
         args: readonly unknown[],
       ): unknown => Reflect.apply(methodOf(methods, name), created, args);
       const status = async (
@@ -258,11 +301,13 @@ export function probeInternals(
       ) => parseStatus(await call(method, args), method, version);
       let loaded: unknown;
       const handlesChanged = () =>
-        internalsChanged(
+        muirSirynPlaywrightInternalsChanged(
           version,
           `TestRunner._configCLIOverrides and loadConfig() resolving to plugins[].factory named ${webServerPluginName} with _options`,
         );
-      const runner: TestRunner & ConfigHandles & ProjectSelection = {
+      const runner: MuirSirynPlaywrightInternalTestRunner &
+        MuirSirynPlaywrightConfigHandles &
+        MuirSirynPlaywrightProjectSelection = {
         async initialize(params) {
           await call('initialize', [params]);
         },
@@ -287,18 +332,21 @@ export function probeInternals(
           await call('stopTests', []);
         },
         webServerOptions(index) {
-          const plugins = fieldOf(loaded, 'plugins');
+          const plugins = muirSirynPlaywrightFieldOf(loaded, 'plugins');
 
           if (!Array.isArray(plugins)) {
             throw handlesChanged();
           }
 
           const options = plugins.flatMap((plugin: unknown) => {
-            const factory = fieldOf(plugin, 'factory');
-            const pluginOptions = fieldOf(factory, '_options');
+            const factory = muirSirynPlaywrightFieldOf(plugin, 'factory');
+            const pluginOptions = muirSirynPlaywrightFieldOf(
+              factory,
+              '_options',
+            );
 
-            return fieldOf(factory, 'name') === webServerPluginName &&
-              isRecord(pluginOptions)
+            return muirSirynPlaywrightFieldOf(factory, 'name') ===
+              webServerPluginName && muirSirynPlaywrightIsRecord(pluginOptions)
               ? [pluginOptions]
               : [];
           })[index];
@@ -310,16 +358,19 @@ export function probeInternals(
           return options;
         },
         cliOverrides() {
-          const overrides = fieldOf(created, '_configCLIOverrides');
+          const overrides = muirSirynPlaywrightFieldOf(
+            created,
+            '_configCLIOverrides',
+          );
 
-          if (!isRecord(overrides)) {
+          if (!muirSirynPlaywrightIsRecord(overrides)) {
             throw handlesChanged();
           }
 
           return overrides;
         },
         projectsRun(names) {
-          const projects = fieldOf(loaded, 'projects');
+          const projects = muirSirynPlaywrightFieldOf(loaded, 'projects');
 
           if (!Array.isArray(projects)) {
             throw new Error(
@@ -376,11 +427,11 @@ function parseStatus(
   method: string,
   version: string,
 ): { status: Status } {
-  const status = fieldOf(value, 'status');
+  const status = muirSirynPlaywrightFieldOf(value, 'status');
   const known = statuses.find((candidate) => candidate === status);
 
   if (known === undefined) {
-    throw internalsChanged(
+    throw muirSirynPlaywrightInternalsChanged(
       version,
       `TestRunner.${method}() resolving to a status of passed, failed, timedout or interrupted`,
     );
@@ -390,7 +441,7 @@ function parseStatus(
 }
 
 const configChanged = (version: string) =>
-  internalsChanged(
+  muirSirynPlaywrightInternalsChanged(
     version,
     'TestRunner.loadConfig() resolving to projects[].default, project.name, project.timeout, project.retries and ' +
       'expect.timeout, and webServers[].url, port and ignoreHTTPSErrors',
@@ -399,9 +450,9 @@ const configChanged = (version: string) =>
 function parseConfig(
   value: unknown,
   version: string,
-): Awaited<ReturnType<TestRunner['loadConfig']>> {
-  const projects = fieldOf(value, 'projects');
-  const webServers = fieldOf(value, 'webServers');
+): Awaited<ReturnType<MuirSirynPlaywrightInternalTestRunner['loadConfig']>> {
+  const projects = muirSirynPlaywrightFieldOf(value, 'projects');
+  const webServers = muirSirynPlaywrightFieldOf(value, 'webServers');
 
   if (!Array.isArray(projects) || !Array.isArray(webServers)) {
     throw configChanged(version);
@@ -411,63 +462,75 @@ function parseConfig(
     projects: projects.map((project: unknown) =>
       parseProject(project, version),
     ),
-    webServers: webServers.map((server: unknown): ConfigWebServer => {
-      const configUrl = fieldOf(server, 'url') || undefined;
-      const url = configUrl instanceof URL ? configUrl.href : configUrl;
-      const configPort = fieldOf(server, 'port');
-      const port = configPort || undefined;
+    webServers: webServers.map(
+      (server: unknown): MuirSirynPlaywrightConfigWebServer => {
+        const configUrl =
+          muirSirynPlaywrightFieldOf(server, 'url') || undefined;
+        const url = configUrl instanceof URL ? configUrl.href : configUrl;
+        const configPort = muirSirynPlaywrightFieldOf(server, 'port');
+        const port = configPort || undefined;
 
-      if (!isRecord(server)) {
-        throw misconfigured('webServer', 'an object', server);
-      }
+        if (!muirSirynPlaywrightIsRecord(server)) {
+          throw misconfigured('webServer', 'an object', server);
+        }
 
-      if (url !== undefined && typeof url !== 'string') {
-        throw misconfigured('webServer.url', 'a string or a URL', url);
-      }
+        if (url !== undefined && typeof url !== 'string') {
+          throw misconfigured('webServer.url', 'a string or a URL', url);
+        }
 
-      if (
-        port !== undefined &&
-        typeof port !== 'number' &&
-        !(typeof port === 'string' && /^\d+$/.test(port))
-      ) {
-        throw misconfigured(
-          'webServer.port',
-          'a number or a string of digits',
-          port,
-        );
-      }
+        if (
+          port !== undefined &&
+          typeof port !== 'number' &&
+          !(typeof port === 'string' && /^\d+$/.test(port))
+        ) {
+          throw misconfigured(
+            'webServer.port',
+            'a number or a string of digits',
+            port,
+          );
+        }
 
-      const checkedPort =
-        url !== undefined && configPort !== undefined
-          ? new URL(url).port
-          : port;
-      const env = server['env'];
+        const checkedPort =
+          url !== undefined && configPort !== undefined
+            ? new URL(url).port
+            : port;
+        const env = server['env'];
 
-      return {
-        url,
-        port: checkedPort === undefined ? undefined : Number(checkedPort),
-        ignoreHTTPSErrors: !!server['ignoreHTTPSErrors'],
-        reuseExistingServer: !!server['reuseExistingServer'],
-        setsNodeOptions: isRecord(env) && env['NODE_OPTIONS'] !== undefined,
-      };
-    }),
+        return {
+          url,
+          port: checkedPort === undefined ? undefined : Number(checkedPort),
+          ignoreHTTPSErrors: !!server['ignoreHTTPSErrors'],
+          reuseExistingServer: !!server['reuseExistingServer'],
+          setsNodeOptions:
+            muirSirynPlaywrightIsRecord(env) &&
+            env['NODE_OPTIONS'] !== undefined,
+        };
+      },
+    ),
   };
 }
 
-function parseProject(project: unknown, version: string): ConfigProject {
-  const settings = fieldOf(project, 'project');
-  const expect = fieldOf(project, 'expect');
-  const expectTimeout = fieldOf(expect, 'timeout') ?? undefined;
-  const retries = fieldOf(settings, 'retries');
-  const baseURL = fieldOf(fieldOf(settings, 'use'), 'baseURL');
+function parseProject(
+  project: unknown,
+  version: string,
+): MuirSirynPlaywrightConfigProject {
+  const settings = muirSirynPlaywrightFieldOf(project, 'project');
+  const expect = muirSirynPlaywrightFieldOf(project, 'expect');
+  const expectTimeout =
+    muirSirynPlaywrightFieldOf(expect, 'timeout') ?? undefined;
+  const retries = muirSirynPlaywrightFieldOf(settings, 'retries');
+  const baseURL = muirSirynPlaywrightFieldOf(
+    muirSirynPlaywrightFieldOf(settings, 'use'),
+    'baseURL',
+  );
 
   if (
-    !isRecord(project) ||
-    !isRecord(settings) ||
+    !muirSirynPlaywrightIsRecord(project) ||
+    !muirSirynPlaywrightIsRecord(settings) ||
     typeof settings['name'] !== 'string' ||
     typeof settings['timeout'] !== 'number' ||
     typeof retries !== 'number' ||
-    (expect !== undefined && !isRecord(expect)) ||
+    (expect !== undefined && !muirSirynPlaywrightIsRecord(expect)) ||
     (expectTimeout !== undefined && typeof expectTimeout !== 'number')
   ) {
     throw configChanged(version);
@@ -494,19 +557,19 @@ const webServerPluginName = 'playwright:webserver';
  * set a number keeps it, unless that number is 0. Each project suite is titled with its project's name
  * (lib/runner/index.js:6614).
  */
-export function raiseRetries(
+export function muirSirynPlaywrightRaiseRetries(
   suite: unknown,
   retriesByProject: ReadonlyMap<string, number>,
 ): void {
-  const projects = fieldOf(suite, 'suites');
+  const projects = muirSirynPlaywrightFieldOf(suite, 'suites');
 
   if (!Array.isArray(projects)) {
     throw retriesChanged();
   }
 
   projects.forEach((project: unknown) => {
-    const title = fieldOf(project, 'title');
-    const allTests = fieldOf(project, 'allTests');
+    const title = muirSirynPlaywrightFieldOf(project, 'title');
+    const allTests = muirSirynPlaywrightFieldOf(project, 'allTests');
     const retries =
       typeof title === 'string' ? retriesByProject.get(title) : undefined;
 
@@ -521,7 +584,10 @@ export function raiseRetries(
     }
 
     tests.forEach((test: unknown) => {
-      if (!isRecord(test) || typeof test['retries'] !== 'number') {
+      if (
+        !muirSirynPlaywrightIsRecord(test) ||
+        typeof test['retries'] !== 'number'
+      ) {
         throw retriesChanged();
       }
 
@@ -533,22 +599,22 @@ export function raiseRetries(
 }
 
 function retriesChanged(): Error {
-  return internalsChanged(
+  return muirSirynPlaywrightInternalsChanged(
     undefined,
     'the root suite onBegin receives, with project suites and TestCase.retries',
   );
 }
 
-export function playwrightVersion(
+export function muirSirynPlaywrightVersion(
   playwrightRequire: (id: string) => unknown,
 ): string {
-  const version = fieldOf(
+  const version = muirSirynPlaywrightFieldOf(
     playwrightRequire('playwright/package.json'),
     'version',
   );
 
   if (typeof version !== 'string') {
-    throw internalsChanged(
+    throw muirSirynPlaywrightInternalsChanged(
       undefined,
       'playwright/package.json with a string version',
     );
@@ -557,7 +623,9 @@ export function playwrightVersion(
   return version;
 }
 
-export function loadPlaywright(configFile: string | undefined): Playwright {
+export function muirSirynPlaywrightLoadPlaywright(
+  configFile: string | undefined,
+): MuirSirynPlaywright {
   const testRequire = createRequire(
     createRequire(configFile ?? `${process.cwd()}/package.json`).resolve(
       '@playwright/test',
@@ -568,30 +636,33 @@ export function loadPlaywright(configFile: string | undefined): Playwright {
   const playwrightRequire = createRequire(
     testRequire.resolve('playwright/package.json'),
   );
-  const version = playwrightVersion(playwrightRequire);
+  const version = muirSirynPlaywrightVersion(playwrightRequire);
 
-  if (!supportsPlaywright(version)) {
+  if (!muirSirynPlaywrightSupportsPlaywright(version)) {
     throw new Error(
-      `The Playwright test runner needs Playwright ${minPlaywright.major}.${minPlaywright.minor} or a later ${minPlaywright.major}.x release, found ${version}.`,
+      `The Playwright test runner needs Playwright ${muirSirynPlaywrightMinPlaywright.major}.${muirSirynPlaywrightMinPlaywright.minor} or a later ${muirSirynPlaywrightMinPlaywright.major}.x release, found ${version}.`,
     );
   }
 
-  return probeInternals(version, {
+  return muirSirynPlaywrightProbeInternals(version, {
     runner: playwrightRequire('playwright/lib/runner'),
     common: playwrightRequire('playwright/lib/common'),
     coreBundle: playwrightRequire('playwright-core/lib/coreBundle'),
   });
 }
 
-export function instrumentationOf(
+export function muirSirynPlaywrightInstrumentationOf(
   core: unknown,
   version: string,
-): Instrumentation {
-  const instrumentation = fieldOf(core, '_instrumentation');
-  const addListener = fieldOf(instrumentation, 'addListener');
+): MuirSirynPlaywrightInstrumentation {
+  const instrumentation = muirSirynPlaywrightFieldOf(core, '_instrumentation');
+  const addListener = muirSirynPlaywrightFieldOf(
+    instrumentation,
+    'addListener',
+  );
 
   if (typeof addListener !== 'function') {
-    throw internalsChanged(
+    throw muirSirynPlaywrightInternalsChanged(
       version,
       'playwright-core _instrumentation.addListener',
     );
@@ -618,10 +689,10 @@ const slotTypes = [
   'fixme',
 ] as const;
 
-export type SlotType = (typeof slotTypes)[number];
+export type MuirSirynPlaywrightSlotType = (typeof slotTypes)[number];
 
-export interface RunningSlot {
-  readonly type: SlotType;
+export interface MuirSirynPlaywrightRunningSlot {
+  readonly type: MuirSirynPlaywrightSlotType;
   /** Whether a fixture of that slot is being set up or torn down. */
   readonly inFixture: boolean;
 }
@@ -631,23 +702,23 @@ export interface RunningSlot {
  * Undefined when there is no TestInfo or its timeout manager runs nothing; throws when a TestInfo has
  * no timeout manager or it runs a type this runner does not know.
  */
-export function runningSlotOf(
+export function muirSirynPlaywrightRunningSlotOf(
   testInfo: unknown,
   version: string,
-): RunningSlot | undefined {
-  if (!isRecord(testInfo)) {
+): MuirSirynPlaywrightRunningSlot | undefined {
+  if (!muirSirynPlaywrightIsRecord(testInfo)) {
     return undefined;
   }
 
   const manager = testInfo['_timeoutManager'];
 
-  if (!isRecord(manager)) {
+  if (!muirSirynPlaywrightIsRecord(manager)) {
     throw timeoutManagerChanged(version);
   }
 
-  const runnable = fieldOf(manager['_running'], 'runnable');
+  const runnable = muirSirynPlaywrightFieldOf(manager['_running'], 'runnable');
 
-  if (!isRecord(runnable)) {
+  if (!muirSirynPlaywrightIsRecord(runnable)) {
     return undefined;
   }
 
@@ -668,13 +739,13 @@ function misconfigured(field: string, expected: string, value: unknown): Error {
 }
 
 function timeoutManagerChanged(version: string): Error {
-  return internalsChanged(
+  return muirSirynPlaywrightInternalsChanged(
     version,
     'TestInfo._timeoutManager, which tells a test from the hooks and fixtures that serve a group',
   );
 }
 
-export function internalsChanged(
+export function muirSirynPlaywrightInternalsChanged(
   version: string | undefined,
   what: string,
 ): Error {
@@ -686,15 +757,18 @@ export function internalsChanged(
   );
 }
 
-function isSlotType(value: unknown): value is SlotType {
+function isSlotType(value: unknown): value is MuirSirynPlaywrightSlotType {
   return slotTypes.some((type) => type === value);
 }
 
-export function isSerialSuite(suite: unknown, version: string): boolean {
-  const mode = fieldOf(suite, '_parallelMode');
+export function muirSirynPlaywrightIsSerialSuite(
+  suite: unknown,
+  version: string,
+): boolean {
+  const mode = muirSirynPlaywrightFieldOf(suite, '_parallelMode');
 
   if (typeof mode !== 'string') {
-    throw internalsChanged(
+    throw muirSirynPlaywrightInternalsChanged(
       version,
       'Suite._parallelMode, which keeps describe.serial groups together',
     );

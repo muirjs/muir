@@ -3,10 +3,10 @@ import { test } from 'node:test';
 import vm from 'node:vm';
 
 import {
-  loadPageHelpers,
-  pageHelpersFrom,
-  pageHelpersScript,
-  StrykerHelpersChanged,
+  muirSirynPlaywrightLoadPageHelpers,
+  muirSirynPlaywrightPageHelpersFrom,
+  muirSirynPlaywrightPageHelpersScript,
+  MuirSirynPlaywrightStrykerHelpersChanged,
 } from '../src/page-helpers.ts';
 
 /** Runs an init script as Playwright does, inside a function, in a fresh global scope. */
@@ -19,8 +19,8 @@ function initScriptRun(script: string): Record<string, unknown> {
 
 test('the init script publishes the functions the header declares on globalThis', () => {
   const page = initScriptRun(
-    pageHelpersScript(
-      'function one() {\n  return 1;\n}\nfunction two() {\n  return 2;\n}\nlzStrykerProbe = one("0");\n',
+    muirSirynPlaywrightPageHelpersScript(
+      'function one() {\n  return 1;\n}\nfunction two() {\n  return 2;\n}\nmuirSirynPlaywrightStrykerProbe = one("0");\n',
     ),
   );
   assert.equal(
@@ -31,28 +31,28 @@ test('the init script publishes the functions the header declares on globalThis'
 
 test('the init script leaves out the probe statement', () => {
   const page = initScriptRun(
-    pageHelpersScript(
-      'function one() {\n  return 1;\n}\nlzStrykerProbe = one("0");\n',
+    muirSirynPlaywrightPageHelpersScript(
+      'function one() {\n  return 1;\n}\nmuirSirynPlaywrightStrykerProbe = one("0");\n',
     ),
   );
 
-  assert.equal('lzStrykerProbe' in page, false);
+  assert.equal('muirSirynPlaywrightStrykerProbe' in page, false);
 });
 
 test('a probe that calls a function the header does not declare refuses to start, naming it', () => {
   assert.throws(
     () =>
-      pageHelpersScript(
-        'function one() {\n  return 1;\n}\nlzStrykerProbe = other("0") ? 0 : (one("0"), 1);\n',
+      muirSirynPlaywrightPageHelpersScript(
+        'function one() {\n  return 1;\n}\nmuirSirynPlaywrightStrykerProbe = other("0") ? 0 : (one("0"), 1);\n',
       ),
     (error) =>
-      error instanceof StrykerHelpersChanged &&
+      error instanceof MuirSirynPlaywrightStrykerHelpersChanged &&
       /calls other, which the header does not declare/.test(error.message),
   );
 });
 
 test("with the installed instrumenter's helpers, a page covers a callback mutant and switches it on", async () => {
-  const script = await loadPageHelpers();
+  const script = await muirSirynPlaywrightLoadPageHelpers();
   const instrumentedCallback =
     '(() => stryMutAct_9fa48("0") ? 1 - 1 : (stryCov_9fa48("0"), 1 + 1))()';
   const covering = initScriptRun(script);
@@ -70,9 +70,12 @@ test("with the installed instrumenter's helpers, a page covers a callback mutant
 
 test('an instrumented probe without its probe statement refuses to start', () => {
   assert.throws(
-    () => pageHelpersScript('function one() {}\nother = one("0");\n'),
+    () =>
+      muirSirynPlaywrightPageHelpersScript(
+        'function one() {}\nother = one("0");\n',
+      ),
     (error) =>
-      error instanceof StrykerHelpersChanged &&
+      error instanceof MuirSirynPlaywrightStrykerHelpersChanged &&
       /no probe statement/.test(error.message),
   );
 });
@@ -96,9 +99,9 @@ test('an instrumented probe without its probe statement refuses to start', () =>
 ].forEach(({ instrumenterModule, refusal }) => {
   test(`an instrumenter module where ${refusal} refuses to start, saying so`, async () => {
     await assert.rejects(
-      pageHelpersFrom(instrumenterModule),
+      muirSirynPlaywrightPageHelpersFrom(instrumenterModule),
       (error) =>
-        error instanceof StrykerHelpersChanged &&
+        error instanceof MuirSirynPlaywrightStrykerHelpersChanged &&
         error.message.includes(`(${refusal})`),
     );
   });
@@ -106,18 +109,24 @@ test('an instrumented probe without its probe statement refuses to start', () =>
 
 test('a probe statement with no header before it refuses to start for the missing helpers', () => {
   assert.throws(
-    () => pageHelpersScript('lzStrykerProbe = 1 + 1;\n'),
+    () =>
+      muirSirynPlaywrightPageHelpersScript(
+        'muirSirynPlaywrightStrykerProbe = 1 + 1;\n',
+      ),
     (error) =>
-      error instanceof StrykerHelpersChanged &&
+      error instanceof MuirSirynPlaywrightStrykerHelpersChanged &&
       /declares no helper function/.test(error.message),
   );
 });
 
 test('a header that declares no function refuses to start', () => {
   assert.throws(
-    () => pageHelpersScript('ns();\nlzStrykerProbe = 1 + 1;\n'),
+    () =>
+      muirSirynPlaywrightPageHelpersScript(
+        'ns();\nmuirSirynPlaywrightStrykerProbe = 1 + 1;\n',
+      ),
     (error) =>
-      error instanceof StrykerHelpersChanged &&
+      error instanceof MuirSirynPlaywrightStrykerHelpersChanged &&
       /declares no helper function/.test(error.message),
   );
 });

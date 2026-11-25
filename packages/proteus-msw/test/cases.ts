@@ -7,7 +7,7 @@ export interface Case {
   readonly expect: readonly (readonly [string, string])[];
 }
 
-const response = 'LzMswResponse';
+const response = 'MuirProteusMswResponse';
 
 export const cases: readonly Case[] = [
   {

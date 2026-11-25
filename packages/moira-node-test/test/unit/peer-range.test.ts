@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  inPeerRange,
-  lzWarnOutsidePeerRange,
-  parseCaretFloor,
+  muirMoiraNodeTestInPeerRange,
+  muirMoiraNodeTestWarnOutsidePeerRange,
+  muirMoiraNodeTestParseCaretFloor,
 } from '../../src/peer-range.ts';
 
-const packageName = 'lz-sample-mutators';
+const packageName = 'muir-sample-mutators';
 
 describe('inPeerRange', () => {
-  lzTestEach([
+  muirTestEach([
     ['10.1.5', '^10.2.0', false],
     ['10.2.0', '^10.2.0', true],
     ['10.1.9', '^10.1.10', false],
@@ -21,7 +21,10 @@ describe('inPeerRange', () => {
     ['10.12.0', '^10.1.1', true],
   ])('takes %s in %s: %s', (version, range, expected) => {
     assert.equal(
-      inPeerRange(version, parseCaretFloor(range, packageName)),
+      muirMoiraNodeTestInPeerRange(
+        version,
+        muirMoiraNodeTestParseCaretFloor(range, packageName),
+      ),
       expected,
     );
   });
@@ -29,32 +32,35 @@ describe('inPeerRange', () => {
 
 describe('parseCaretFloor', () => {
   it('gives the first release of the range', () => {
-    assert.deepEqual(parseCaretFloor('^10.2.3', packageName), {
+    assert.deepEqual(muirMoiraNodeTestParseCaretFloor('^10.2.3', packageName), {
       major: 10,
       minor: 2,
       patch: 3,
     });
   });
 
-  lzTestEach(['~10.1.1', '^10.1', '^10.1.1-beta.0', '10.1.1'])(
+  muirTestEach(['~10.1.1', '^10.1', '^10.1.1-beta.0', '10.1.1'])(
     'refuses the range %s, which is no caret range of a release, naming the calling package',
     (range) => {
-      assert.throws(() => parseCaretFloor(range, packageName), {
-        message: `lz-sample-mutators: ${range} is no caret range of a release.`,
-      });
+      assert.throws(
+        () => muirMoiraNodeTestParseCaretFloor(range, packageName),
+        {
+          message: `muir-sample-mutators: ${range} is no caret range of a release.`,
+        },
+      );
     },
   );
 });
 
-describe('lzWarnOutsidePeerRange', () => {
+describe('muirMoiraNodeTestWarnOutsidePeerRange', () => {
   const range = '^10.1.1';
 
   function warningsFor(...versions: readonly string[]): readonly string[] {
     const warnings: string[] = [];
 
-    lzWarnOutsidePeerRange(
+    muirMoiraNodeTestWarnOutsidePeerRange(
       packageName,
-      parseCaretFloor(range, packageName),
+      muirMoiraNodeTestParseCaretFloor(range, packageName),
       versions,
       (message) => warnings.push(message),
     );
@@ -62,18 +68,18 @@ describe('lzWarnOutsidePeerRange', () => {
     return warnings;
   }
 
-  lzTestEach(['10.1.1', '10.1.2', '10.2.0'])(
+  muirTestEach(['10.1.1', '10.1.2', '10.2.0'])(
     'gives no warning for the instrumenter version %s, in the peer range',
     (version) => {
       assert.deepEqual(warningsFor(version), []);
     },
   );
 
-  lzTestEach(['10.1.0', '11.0.0', '9.1.1', '110.1.1', '10.2.0-beta.0'])(
+  muirTestEach(['10.1.0', '11.0.0', '9.1.1', '110.1.1', '10.2.0-beta.0'])(
     'warns that mutants may be missing with the instrumenter version %s, outside the peer range',
     (version) => {
       assert.deepEqual(warningsFor(version), [
-        `lz-sample-mutators accepts @stryker-mutator/instrumenter 10.1.1 or a later 10.x, not ${version}. ` +
+        `muir-sample-mutators accepts @stryker-mutator/instrumenter 10.1.1 or a later 10.x, not ${version}. ` +
           'Its install check passed, but it sees only this process, so mutants of its mutators may be missing.',
       ]);
     },

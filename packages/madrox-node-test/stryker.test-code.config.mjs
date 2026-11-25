@@ -7,7 +7,7 @@ export default await testCode({
   incrementalFile:
     'reports/stryker-incremental/@muirjs/madrox-node-test.test-code.json',
   ...reportFiles('@muirjs/madrox-node-test.test-code'),
-  lzNodeTest: {
+  muirSirynNodeTest: {
     testFiles: ['packages/madrox-node-test/test/**/*.test.ts'],
     nodeArgs: [source],
   },

@@ -1,6 +1,6 @@
 import { type Case, inPlay, namespaceSteps } from './support/case.ts';
 
-const clickFocus = 'LzStorybookClickFocus';
+const clickFocus = 'MuirProteusStorybookTestClickFocus';
 
 export const clickFocusCases: readonly Case[] = [
   {

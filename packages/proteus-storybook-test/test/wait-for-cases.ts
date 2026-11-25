@@ -1,6 +1,6 @@
 import { type Case, inPlay } from './support/case.ts';
 
-const waitFor = 'LzStorybookWaitFor';
+const waitFor = 'MuirProteusStorybookTestWaitFor';
 
 export const waitForCases: readonly Case[] = [
   {

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import { parse } from 'yaml';
 import {
   configs,
@@ -12,7 +12,7 @@ import {
   type StrykerConfigRow,
   workspaceRoot,
 } from './stryker-configs.fixtures.ts';
-import { lzIsRecord } from './stryker-report.ts';
+import { muirIsRecord } from './stryker-report.ts';
 
 function runKey({
   project,
@@ -69,12 +69,12 @@ function readMatrixInclude(): unknown {
   const workflow: unknown = parse(
     readFileSync(join(workspaceRoot, '.github/workflows/ci.yml'), 'utf8'),
   );
-  const jobs = lzIsRecord(workflow) ? workflow['jobs'] : undefined;
-  const job = lzIsRecord(jobs) ? jobs['mutation'] : undefined;
-  const strategy = lzIsRecord(job) ? job['strategy'] : undefined;
-  const matrix = lzIsRecord(strategy) ? strategy['matrix'] : undefined;
+  const jobs = muirIsRecord(workflow) ? workflow['jobs'] : undefined;
+  const job = muirIsRecord(jobs) ? jobs['mutation'] : undefined;
+  const strategy = muirIsRecord(job) ? job['strategy'] : undefined;
+  const matrix = muirIsRecord(strategy) ? strategy['matrix'] : undefined;
 
-  return lzIsRecord(matrix) ? matrix['include'] : undefined;
+  return muirIsRecord(matrix) ? matrix['include'] : undefined;
 }
 
 function isRawMatrixRow(row: unknown): row is {
@@ -85,7 +85,7 @@ function isRawMatrixRow(row: unknown): row is {
   mutated: string;
 } {
   return (
-    lzIsRecord(row) &&
+    muirIsRecord(row) &&
     typeof row['project'] === 'string' &&
     typeof row['config'] === 'string' &&
     typeof row['mutated'] === 'string' &&
@@ -117,8 +117,8 @@ async function loadConfig(file: string): Promise<Record<string, unknown>> {
   const module: unknown = await import(
     pathToFileURL(join(workspaceRoot, file)).href
   );
-  const config = lzIsRecord(module) ? module['default'] : undefined;
-  assert.ok(lzIsRecord(config), `${file} has no default export object`);
+  const config = muirIsRecord(module) ? module['default'] : undefined;
+  assert.ok(muirIsRecord(config), `${file} has no default export object`);
 
   return config;
 }
@@ -136,7 +136,7 @@ describe('Stryker configs', () => {
     );
   });
 
-  lzTestEach(configs.map(({ file }) => file))(
+  muirTestEach(configs.map(({ file }) => file))(
     '%s fails the run below a mutation score of 100',
     async (file) => {
       const config = await loadConfig(file);
@@ -149,19 +149,18 @@ describe('Stryker configs', () => {
     },
   );
 
-  lzTestEach(configs.map((row): [string, StrykerConfigRow] => [row.file, row]))(
-    '%s mutates only its listed files',
-    async (file, { mutate }) => {
-      const config = await loadConfig(file);
+  muirTestEach(
+    configs.map((row): [string, StrykerConfigRow] => [row.file, row]),
+  )('%s mutates only its listed files', async (file, { mutate }) => {
+    const config = await loadConfig(file);
 
-      assert.deepEqual(
-        { mutate: config['mutate'], ignorePatterns: config['ignorePatterns'] },
-        { mutate, ignorePatterns: ignorePatterns(file) },
-      );
-    },
-  );
+    assert.deepEqual(
+      { mutate: config['mutate'], ignorePatterns: config['ignorePatterns'] },
+      { mutate, ignorePatterns: ignorePatterns(file) },
+    );
+  });
 
-  lzTestEach(
+  muirTestEach(
     configs.map(({ file, project, config }): [string, string] => [
       file,
       `${project}.${config}`,
@@ -202,7 +201,7 @@ describe('CI mutation matrix', () => {
     );
   });
 
-  lzTestEach([...matrixRuns])(
+  muirTestEach([...matrixRuns])(
     '%s has one row without a shard, or one row per distinct shard',
     (key, rows) => {
       const shards = rows.map(({ shard }) => shard);
@@ -216,7 +215,7 @@ describe('CI mutation matrix', () => {
     },
   );
 
-  lzTestEach(matrixCases)(
+  muirTestEach(matrixCases)(
     '%s sets mutate exactly when it sets shard',
     (_title, { shard, mutate }) => {
       assert.equal(
@@ -228,7 +227,7 @@ describe('CI mutation matrix', () => {
   );
 
   // A helper module that a config leaves out of `mutate` goes back into the key: Stryker cannot see a change to it.
-  lzTestEach(matrixCases)(
+  muirTestEach(matrixCases)(
     '%s excludes the files its config mutates from the cache key',
     (_title, row) => {
       const config = configs.find(
@@ -249,7 +248,7 @@ describe('CI mutation matrix', () => {
     },
   );
 
-  lzTestEach(
+  muirTestEach(
     configs
       .filter((config) =>
         matrixRuns

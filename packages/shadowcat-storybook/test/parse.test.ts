@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseProgram } from '../src/parse.ts';
+import { muirShadowcatStorybookParseProgram } from '../src/parse.ts';
 
 describe('parseProgram', () => {
   it('parses a decorated class in a TypeScript story file', () => {
-    const program = parseProgram(
+    const program = muirShadowcatStorybookParseProgram(
       "@Component({ template: '' })\nclass Host {}\n",
       'Host.stories.ts',
     );
@@ -16,7 +16,7 @@ describe('parseProgram', () => {
   ['Label.stories.ts', 'Label.stories.mts', 'Label.stories.cts'].forEach(
     (fileName) => {
       it(`parses an angle-bracket type assertion in ${fileName}`, () => {
-        const program = parseProgram(
+        const program = muirShadowcatStorybookParseProgram(
           'declare const value: unknown;\nexport const label = <string>value;\n',
           fileName,
         );

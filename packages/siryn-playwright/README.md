@@ -30,7 +30,7 @@ import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
 export default {
   appendPlugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
+  testRunner: 'muir-siryn-playwright',
   coverageAnalysis: 'perTest',
   concurrency: 1,
   timeoutMS: 11_000,
@@ -85,7 +85,7 @@ There are two ways to keep the processes from fighting over one port:
   state in memory. Stop any dev server of your own first: a server that was already running serves the
   original sources, not Stryker's instrumented copy.
 
-With `lzPlaywright.webServer.mutate` on and more than one test runner process, the runner moves each
+With `muirSirynPlaywright.webServer.mutate` on and more than one test runner process, the runner moves each
 process's `webServer` to a port of its own instead, so the processes never share one. See
 [More than one Stryker process](#more-than-one-stryker-process).
 
@@ -109,7 +109,7 @@ reached a mutant, except for a mutant reached outside any test, which Stryker ru
 Coverage from the browser pages counts for the test that opened the page. Coverage of code that the
 Playwright worker itself imports counts for the test whose body or `beforeEach` and `afterEach` hooks ran
 it. Code that a `beforeAll` or `afterAll` hook, a fixture, or the import itself ran is reached outside
-any test. With `lzPlaywright.webServer.mutate` on, keep `perTest`: with `off` or `all`, the runner
+any test. With `muirSirynPlaywright.webServer.mutate` on, keep `perTest`: with `off` or `all`, the runner
 restarts the `webServer` around the run of every server-side mutant, as
 [Before you turn it on](#before-you-turn-it-on) says.
 
@@ -129,7 +129,7 @@ Survived from one run to the next.
 
 ## Options
 
-Set these under `lzPlaywright` in the Stryker config. Stryker checks them against the schema the package
+Set these under `muirSirynPlaywright` in the Stryker config. Stryker checks them against the schema the package
 exports as `strykerValidationSchema`.
 
 - `configFile`: the Playwright config file, relative to the folder you run Stryker from, not to an Nx
@@ -146,7 +146,7 @@ exports as `strykerValidationSchema`.
 - `retries`: how many times to retry a failed test, in every project. Without it, each project keeps the
   `retries` that the Playwright config gives it. See Flaky tests.
 - `survivorTraces`: a folder, relative to the folder you run Stryker from, for the Playwright traces of
-  surviving mutants, such as `reports/lz-playwright-traces`. See Traces of surviving mutants.
+  surviving mutants, such as `reports/muir-siryn-playwright-traces`. See Traces of surviving mutants.
 - `traceScreenshots`: add screenshots to the traces that `survivorTraces` records. The default is
   `false`. See Traces of surviving mutants.
 - `webServer`: an object that controls the mutants in the code that the Playwright config's `webServer`
@@ -155,13 +155,13 @@ exports as `strykerValidationSchema`.
 
 ## Server-side code
 
-Without `lzPlaywright.webServer.mutate`, only code that runs in the page or in a Playwright test worker
+Without `muirSirynPlaywright.webServer.mutate`, only code that runs in the page or in a Playwright test worker
 gets the active mutant. Code that the Playwright config's `webServer` runs, such as server rendering,
 loaders, actions and API routes, runs without one, so its mutants stay NoCoverage. To test those
 mutants with e2e tests or API tests against a Node.js `webServer`, set `mutate`:
 
 ```ts
-lzPlaywright: { webServer: { mutate: true } },
+muirSirynPlaywright: { webServer: { mutate: true } },
 ```
 
 - `mutate: false`, the default, leaves the `webServer` without a mutant. When the Playwright config has a
@@ -209,7 +209,7 @@ runner's server hook, followed by any `NODE_OPTIONS` of the environment that run
 Node.js process that the `webServer` command starts loads the hook. Before each run, the runner writes
 the run's mutant to a file that the hook reads at the start of each request.
 
-In the dry run with `coverageAnalysis: 'perTest'`, the runner adds an `x-lz-stryker-test` header with
+In the dry run with `coverageAnalysis: 'perTest'`, the runner adds an `x-muir-stryker-test` header with
 the test's id to the requests that a test sends to the `webServer`. Mutant runs send no such header.
 The header goes on the page requests to the `webServer`'s host and port, and on the requests of a
 Playwright `APIRequestContext`, such as the `request` fixture. The header holds the id of the test that runs
@@ -268,12 +268,12 @@ against the same timeout. Raise `timeoutMS` by about two more starts to cover a 
 random.
 
 Stryker runs the dry run in one test runner process. With `mutate: true` or `'auto'`, that
-process writes the server-side mutants it found to `.lz-playwright-server-mutants` in Stryker's sandbox,
+process writes the server-side mutants it found to `.muir-playwright-server-mutants` in Stryker's sandbox,
 and the other processes read the file when a mutant run needs it. A process that cannot read it logs one
 warning and treats every mutant as server-side. With `isolate: true`, it restarts the `webServer` around
 every mutant run. With `isolate: false`, it restarts the `webServer` around the run of every mutant that
 Stryker runs against every test. With Stryker's `inPlace: true`, the sandbox is the project, so add
-`.lz-playwright-server-mutants` to `.gitignore`.
+`.muir-playwright-server-mutants` to `.gitignore`.
 
 ### More than one Stryker process
 
@@ -412,14 +412,14 @@ With `survivorTraces`, the traces index prints the `--mutate` command for each s
 ## Traces of surviving mutants
 
 A surviving mutant shows that the tests miss a change, not what the page did with it. To see what the
-page did, set `survivorTraces` and add the `lz-playwright-traces` reporter:
+page did, set `survivorTraces` and add the `muir-siryn-playwright-traces` reporter:
 
 ```ts
 export default {
   // ...
-  reporters: ['clear-text', 'html', 'lz-playwright-traces'],
-  ignorePatterns: ['/reports/lz-playwright-traces'],
-  lzPlaywright: { survivorTraces: 'reports/lz-playwright-traces' },
+  reporters: ['clear-text', 'html', 'muir-siryn-playwright-traces'],
+  ignorePatterns: ['/reports/muir-siryn-playwright-traces'],
+  muirSirynPlaywright: { survivorTraces: 'reports/muir-siryn-playwright-traces' },
 } satisfies PartialStrykerOptions;
 ```
 
@@ -606,7 +606,7 @@ otherwise:
 - `screenshot` and `video` are off. `trace` is off, or on with DOM snapshots when `survivorTraces` is
   set, with screenshots only when `traceScreenshots` is `true`.
 - The reporters in the Playwright config do not run.
-- `outputDir` is a folder in a private temp directory, `lz-playwright-<pid>-*` in the OS temp
+- `outputDir` is a folder in a private temp directory, `muir-playwright-<pid>-*` in the OS temp
   directory, which `dispose` removes. A runner that Stryker killed first leaves that directory behind.
   The next runner to start removes it if the process that owned it no longer runs and the directory's
   `owner` file shows it was made on the same host (and, on Linux, in the same PID namespace). Runners

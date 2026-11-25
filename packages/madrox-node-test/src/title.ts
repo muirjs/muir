@@ -1,4 +1,4 @@
-// The titles of lzTestEach and lzTestFor tests, in Vitest's format. A `$` path also takes `[index]` brackets, as in
+// The titles of muirTestEach and muirTestFor tests, in Vitest's format. A `$` path also takes `[index]` brackets, as in
 // `$a[0]`, beyond Vitest's paths of names and `.`.
 import { inspect } from 'node:util';
 
@@ -12,7 +12,7 @@ const placeholderPattern = /(%[sdifjoOc%#$])/;
 const attributePattern = /\$((?:[$\p{ID_Continue}.]|\[\d+\])+)/gu;
 
 /** The name a test of the table starts from: a string as is, a function by its name, anything else as a string. */
-export function formatName(name: unknown): string {
+export function muirFormatName(name: unknown): string {
   if (typeof name === 'function') {
     return name.name || '<anonymous>';
   }
@@ -25,7 +25,7 @@ export function formatName(name: unknown): string {
  * the next value, `%#` and `%$` give the 0-based and 1-based index, `%%` gives `%`, and the text between
  * placeholders reads `$` paths from the case.
  */
-export function formatTitle(
+export function muirFormatTitle(
   template: string,
   items: readonly unknown[],
   index: number,

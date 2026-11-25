@@ -9,7 +9,7 @@ import {
   testReason,
 } from './support/csf-ignorer.ts';
 
-describe('lz-storybook-csf', () => {
+describe('muir-shadowcat-storybook-csf', () => {
   it('keeps the meta title as written', async () => {
     const { outcomes } = setup('mutate');
 

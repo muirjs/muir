@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { type TestContext, test } from 'node:test';
 import { setImmediate, setTimeout } from 'node:timers/promises';
 
-import { serverDirEnv } from '../src/server-protocol.ts';
+import { muirSirynPlaywrightServerDirEnv } from '../src/server-protocol.ts';
 import { dryRunOptions, warnings } from './support/doubles.ts';
 import {
   type Behaviour,
@@ -142,7 +142,7 @@ test("with webServer.mutate: 'auto', init turns server support off with one warn
   await shell.init();
 
   assert.deepEqual(warnings(lines), [
-    "lzPlaywright.webServer.mutate is 'auto', but Stryker starts more than one test runner process, so each process " +
+    "muirSirynPlaywright.webServer.mutate is 'auto', but Stryker starts more than one test runner process, so each process " +
       "needs a webServer port of its own, and the runner cannot move the projects' baseURL along: the baseURL " +
       'http://127.0.0.1:9999 points at no webServer. Point the baseURL of every project that runs at the url or port ' +
       'of the same webServer, or leave it unset, or run Stryker with concurrency 1 and no checker (see More than one Stryker ' +
@@ -179,7 +179,7 @@ test('at concurrency 2, init moves the webServer though a project that never run
   assert.equal(process.env['PORT'], String(movedPort(fake)));
 });
 
-test('at concurrency 2, init moves the webServer though a project that lzPlaywright.projects leaves out has its baseURL elsewhere', async (t) => {
+test('at concurrency 2, init moves the webServer though a project that muirSirynPlaywright.projects leaves out has its baseURL elsewhere', async (t) => {
   stubEnv(t, { PORT: undefined, PLAYWRIGHT_TEST_BASE_URL: undefined });
   const fake = serverFake(t, {
     ...moved,
@@ -202,7 +202,7 @@ test('at concurrency 2, init moves the webServer though a project that lzPlaywri
   assert.equal(process.env['PORT'], String(movedPort(fake)));
 });
 
-test('at concurrency 2, init refuses the move when a project that lzPlaywright.projects selects, in another case, depends on a project with its baseURL elsewhere', async (t) => {
+test('at concurrency 2, init refuses the move when a project that muirSirynPlaywright.projects selects, in another case, depends on a project with its baseURL elsewhere', async (t) => {
   stubEnv(t, { PORT: undefined, PLAYWRIGHT_TEST_BASE_URL: undefined });
   const [chromium] = moved.projects;
   assert.ok(chromium);
@@ -234,7 +234,7 @@ test('at concurrency 2, init refuses the move when a project that lzPlaywright.p
   );
 });
 
-test("at concurrency 2, init refuses a lzPlaywright.projects name that matches no project with Playwright's own error, before it moves the webServer", async (t) => {
+test("at concurrency 2, init refuses a muirSirynPlaywright.projects name that matches no project with Playwright's own error, before it moves the webServer", async (t) => {
   stubEnv(t, { PORT: undefined, PLAYWRIGHT_TEST_BASE_URL: undefined });
   const fake = serverFake(t, { ...moved, urlUp: async () => false });
 
@@ -265,7 +265,7 @@ test('with one process and no checker, init keeps the configured port', async (t
 });
 
 const boundMessage = (mutate: string, port: string | undefined) =>
-  `lzPlaywright.webServer.mutate is ${mutate}, but Stryker starts more than one test runner process, so each process's ` +
+  `muirSirynPlaywright.webServer.mutate is ${mutate}, but Stryker starts more than one test runner process, so each process's ` +
   'webServer moves to a port of its own, and the command of webServer 0 bound port 4820 instead of ' +
   `${port}. Make the command take its port from PORT, from the webServer's env, or from a --port in ` +
   'the command (the runner moves all three), or run Stryker with concurrency 1 and no checker (see More than ' +
@@ -290,7 +290,7 @@ function bindingFake(
   });
   const runner = fake.runner({
     concurrency: 2,
-    lzPlaywright: { webServer: { mutate } },
+    muirSirynPlaywright: { webServer: { mutate } },
   });
 
   return {
@@ -339,9 +339,9 @@ test("with webServer.mutate: 'auto', init turns server support off with one warn
   const { fake, setupPorts, lines, init } = bindingFake(
     t,
     async (): Promise<Status> => {
-      serverDirs.push(process.env[serverDirEnv]);
+      serverDirs.push(process.env[muirSirynPlaywrightServerDirEnv]);
 
-      if (process.env[serverDirEnv] === undefined) {
+      if (process.env[muirSirynPlaywrightServerDirEnv] === undefined) {
         return 'passed';
       }
 
@@ -425,9 +425,9 @@ test("with webServer.mutate: 'auto', init turns server support off with one warn
   const { fake, lines, init } = bindingFake(
     t,
     (reporter) => {
-      serverDirs.push(process.env[serverDirEnv]);
+      serverDirs.push(process.env[muirSirynPlaywrightServerDirEnv]);
 
-      if (process.env[serverDirEnv] === undefined) {
+      if (process.env[muirSirynPlaywrightServerDirEnv] === undefined) {
         return 'passed';
       }
 
@@ -442,7 +442,7 @@ test("with webServer.mutate: 'auto', init turns server support off with one warn
   await init();
 
   assert.deepEqual(warnings(lines), [
-    "lzPlaywright.webServer.mutate is 'auto', but Stryker starts more than one test runner process, so each " +
+    "muirSirynPlaywright.webServer.mutate is 'auto', but Stryker starts more than one test runner process, so each " +
       "process's webServer moves to a port of its own, and global setup failed (Playwright global setup failed:\n" +
       'listen EADDRINUSE) while another server answered on port 4820, the configured port of webServer 0, such as the webServer of a process that turned server ' +
       "support off. Make the command take its port from PORT, from the webServer's env, or from a --port in the " +

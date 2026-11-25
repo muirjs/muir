@@ -5,29 +5,29 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { lzConsoleSchema } from '../src/console-ignorer.ts';
-import { lzJsxMutators } from '../src/index.ts';
-import { lzJsxStylingSchema } from '../src/styling-ignorer.ts';
-import { lzTelemetrySchema } from '../src/telemetry-ignorer.ts';
+import { muirProteusJsxConsoleSchema } from '../src/console-ignorer.ts';
+import { muirProteusJsxMutators } from '../src/index.ts';
+import { muirProteusJsxStylingSchema } from '../src/styling-ignorer.ts';
+import { muirProteusJsxTelemetrySchema } from '../src/telemetry-ignorer.ts';
 import { mutatorNames } from './support/installed.ts';
 
 const entryPath = join(import.meta.dirname, 'fixture', 'entry.ts');
 const ignorers = [
-  'Ignore lz-jsx-styling undefined',
-  'Ignore lz-telemetry undefined',
-  'Ignore lz-console undefined',
+  'Ignore muir-proteus-jsx-styling undefined',
+  'Ignore muir-proteus-jsx-telemetry undefined',
+  'Ignore muir-proteus-jsx-console undefined',
 ];
 const schema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    lzJsxStyling: lzJsxStylingSchema,
-    lzTelemetry: lzTelemetrySchema,
-    lzConsole: lzConsoleSchema,
+    muirProteusJsxStyling: muirProteusJsxStylingSchema,
+    muirProteusJsxTelemetry: muirProteusJsxTelemetrySchema,
+    muirProteusJsxConsole: muirProteusJsxConsoleSchema,
   },
 };
 const noOptions =
-  '@muirjs/proteus-jsx: the package has no opt-in or experimental mutators yet, so lzJsxMutators() takes ' +
+  '@muirjs/proteus-jsx: the package has no opt-in or experimental mutators yet, so muirProteusJsxMutators() takes ' +
   'no options. Turn a mutator off with mutator.excludedMutations.';
 
 function runEntry(mode: string) {
@@ -39,7 +39,7 @@ function runEntry(mode: string) {
 }
 
 async function callWith(options: unknown): Promise<void> {
-  await Reflect.apply(lzJsxMutators, undefined, [options]);
+  await Reflect.apply(muirProteusJsxMutators, undefined, [options]);
 }
 
 describe('index.ts', () => {
@@ -55,7 +55,7 @@ describe('index.ts', () => {
     });
   });
 
-  it('registers every mutator of the table and wraps the placer when lzJsxMutators() is awaited', () => {
+  it('registers every mutator of the table and wraps the placer when muirProteusJsxMutators() is awaited', () => {
     const { status, stdout, stderr } = runEntry('install');
 
     assert.equal(status, 0, stderr);
@@ -67,14 +67,14 @@ describe('index.ts', () => {
     });
   });
 
-  it("rejects lzJsxMutators() with install's error when another mutator already has one of this package's mutator names", () => {
+  it("rejects muirProteusJsxMutators() with install's error when another mutator already has one of this package's mutator names", () => {
     const { status, stdout, stderr } = runEntry('taken');
 
     assert.notEqual(status, 0);
     assert.equal(stdout, '');
     assert.match(
       stderr,
-      /@muirjs\/proteus-jsx: another mutator already has the name LzJsxTextLiteral\./,
+      /@muirjs\/proteus-jsx: another mutator already has the name MuirProteusJsxTextLiteral\./,
     );
   });
 

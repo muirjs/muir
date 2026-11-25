@@ -1,11 +1,16 @@
-import { lzAllMutators, type LzMutatorSets } from '@muirjs/moira-node-test';
-import { jsAssignmentStatement } from './js-assignment-statement.ts';
-import { jsNumericLiteral } from './js-numeric-literal.ts';
+import {
+  muirMoiraNodeTestAllMutators,
+  type MuirMoiraNodeTestMutatorSets,
+} from '@muirjs/moira-node-test';
+import { muirProteusJsAssignmentStatement } from './js-assignment-statement.ts';
+import { muirProteusJsNumericLiteral } from './js-numeric-literal.ts';
 
-export const jsMutatorSets = {
+export const muirProteusJsMutatorSets = {
   defaults: [],
-  optIn: [jsNumericLiteral],
-  experimental: [jsAssignmentStatement],
-} satisfies LzMutatorSets;
+  optIn: [muirProteusJsNumericLiteral],
+  experimental: [muirProteusJsAssignmentStatement],
+} satisfies MuirMoiraNodeTestMutatorSets;
 
-export const jsMutators = lzAllMutators(jsMutatorSets);
+export const muirProteusJsMutators = muirMoiraNodeTestAllMutators(
+  muirProteusJsMutatorSets,
+);

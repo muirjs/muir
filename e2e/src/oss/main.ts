@@ -1,22 +1,22 @@
-import { lzMerge } from './merge.ts';
-import { lzOssUsage, lzParseCommand } from './options.ts';
-import { lzRunDriver } from './run.ts';
+import { muirMerge } from './merge.ts';
+import { muirOssUsage, muirParseCommand } from './options.ts';
+import { muirRunDriver } from './run.ts';
 
-const command = lzParseCommand(process.argv.slice(2));
+const command = muirParseCommand(process.argv.slice(2));
 
 switch (command.kind) {
   case 'help': {
-    process.stdout.write(`${lzOssUsage}\n`);
+    process.stdout.write(`${muirOssUsage}\n`);
     break;
   }
   case 'merge': {
     process.stdout.write(
-      `Wrote ${lzMerge(command.options.merge, command.options.out)}\n`,
+      `Wrote ${muirMerge(command.options.merge, command.options.out)}\n`,
     );
     break;
   }
   case 'run': {
-    await lzRunDriver(command.options);
+    await muirRunDriver(command.options);
     break;
   }
 }

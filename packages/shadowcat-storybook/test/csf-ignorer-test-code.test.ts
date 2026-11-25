@@ -8,7 +8,7 @@ import {
   testReason,
 } from './support/csf-ignorer.ts';
 
-describe('lz-storybook-csf', () => {
+describe('muir-shadowcat-storybook-csf', () => {
   it("ignores a story's play function", async () => {
     const { outcomes } = setup();
 

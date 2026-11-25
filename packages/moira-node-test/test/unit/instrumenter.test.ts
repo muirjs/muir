@@ -13,13 +13,13 @@ import { pathToFileURL } from 'node:url';
 
 import { types } from '@babel/core';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  corePackageJsons,
-  lzResolveFromCore,
-  type LzListedMutator,
+  muirMoiraNodeTestCorePackageJsons,
+  muirMoiraNodeTestResolveFromCore,
+  type MuirMoiraNodeTestListedMutator,
 } from '../../src/instrumenter.ts';
-import type { LzNodeMutatorLike } from '../../src/mutator.ts';
+import type { MuirMoiraNodeTestMutatorLike } from '../../src/mutator.ts';
 
 const sampleLocation = {
   start: { line: 0, column: 0 },
@@ -42,7 +42,7 @@ describe('corePackageJsons', () => {
   );
 
   function coreFor(real: string | undefined) {
-    return corePackageJsons(
+    return muirMoiraNodeTestCorePackageJsons(
       ['/usr/local/bin/node', '/usr/local/bin/stryker'],
       (path) => {
         assert.equal(path, '/usr/local/bin/stryker');
@@ -69,7 +69,7 @@ describe('corePackageJsons', () => {
     ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['another script', join('/repo', 'tools', 'corpus-diff.ts')],
     ['a file next to the bin', join(globalCore, 'bin', 'stryker.js.map')],
     [
@@ -96,7 +96,7 @@ describe('corePackageJsons', () => {
   const lowerCore =
     'd:\\repo\\node_modules\\@stryker-mutator\\core\\package.json';
 
-  lzTestEach([
+  muirTestEach([
     [
       'in lower case, and this module in upper case',
       'd:\\repo\\tools\\stryker.mjs',
@@ -126,7 +126,7 @@ describe('corePackageJsons', () => {
   ])(
     "takes the core this module resolves in the drive-letter case of the script that started the process, and in its own, when the script's real path has a drive letter %s",
     (_title, script, resolvedCore, expected) => {
-      const cores = corePackageJsons(
+      const cores = muirMoiraNodeTestCorePackageJsons(
         ['node', script],
         (path) => path,
         () => resolvedCore,
@@ -137,7 +137,7 @@ describe('corePackageJsons', () => {
   );
 
   it('takes the core this module resolves when the process runs no script, as `node --eval` does', () => {
-    const cores = corePackageJsons(
+    const cores = muirMoiraNodeTestCorePackageJsons(
       ['/usr/local/bin/node'],
       () => join(globalCore, 'bin', 'stryker.js'),
       () => here,
@@ -147,11 +147,11 @@ describe('corePackageJsons', () => {
   });
 });
 
-describe('lzResolveFromCore', () => {
+describe('muirMoiraNodeTestResolveFromCore', () => {
   it("instruments with Stryker's mutators, or with the mutators given", async () => {
-    const instrumenter = await lzResolveFromCore();
+    const instrumenter = await muirMoiraNodeTestResolveFromCore();
     const files = [{ name: 'sample.ts', content: "f('x');" }];
-    const own: LzNodeMutatorLike = {
+    const own: MuirMoiraNodeTestMutatorLike = {
       name: 'Own',
       *mutate(path) {
         if (path.isStringLiteral()) {
@@ -160,7 +160,7 @@ describe('lzResolveFromCore', () => {
       },
     };
 
-    const mutants = async (mutators?: LzNodeMutatorLike[]) =>
+    const mutants = async (mutators?: MuirMoiraNodeTestMutatorLike[]) =>
       (await instrumenter.instrument(files, mutators)).map(
         ({ mutatorName, replacement }) => [mutatorName, replacement],
       );
@@ -197,7 +197,7 @@ describe('lzResolveFromCore', () => {
   const babelFile = join('core', 'lib', 'index.js');
   const indexFile = join('dist', 'src', 'index.js');
 
-  lzTestEach([
+  muirTestEach([
     [
       'allMutators that is no array',
       mutateFile,
@@ -257,7 +257,10 @@ describe('lzResolveFromCore', () => {
     ],
   ])('refuses an instrumenter with %s', async (_title, file, module, key) => {
     const { load, replaced } = loadingWith(file, module);
-    const resolving = lzResolveFromCore(corePackageJsons()[0], load);
+    const resolving = muirMoiraNodeTestResolveFromCore(
+      muirMoiraNodeTestCorePackageJsons()[0],
+      load,
+    );
 
     await assert.rejects(resolving, { message: refusal(replaced.join(), key) });
   });
@@ -268,19 +271,25 @@ describe('lzResolveFromCore', () => {
     );
     const { load } = loadingWith(babelFile, { types: older });
 
-    const instrumenter = await lzResolveFromCore(corePackageJsons()[0], load);
+    const instrumenter = await muirMoiraNodeTestResolveFromCore(
+      muirMoiraNodeTestCorePackageJsons()[0],
+      load,
+    );
 
     assert.equal(instrumenter.types, older);
   });
 
   it("replaces the contents of the instrumenter's own mutator list", async () => {
-    const listed: LzListedMutator[] = [
+    const listed: MuirMoiraNodeTestListedMutator[] = [
       { name: 'First', *mutate() {} },
       { name: 'Second', *mutate() {} },
     ];
-    const own: LzListedMutator = { name: 'Own', *mutate() {} };
+    const own: MuirMoiraNodeTestListedMutator = { name: 'Own', *mutate() {} };
     const { load } = loadingWith(mutateFile, { allMutators: listed });
-    const instrumenter = await lzResolveFromCore(corePackageJsons()[0], load);
+    const instrumenter = await muirMoiraNodeTestResolveFromCore(
+      muirMoiraNodeTestCorePackageJsons()[0],
+      load,
+    );
 
     instrumenter.setMutators([own]);
 
@@ -289,7 +298,7 @@ describe('lzResolveFromCore', () => {
 
   it('constructs the Instrumenter from the entry that core resolves for the package', async (t) => {
     const root = realpathSync.native(
-      mkdtempSync(join(tmpdir(), 'lz-mutators-entry-')),
+      mkdtempSync(join(tmpdir(), 'muir-mutators-entry-')),
     );
 
     t.after(() => {
@@ -330,7 +339,7 @@ describe('lzResolveFromCore', () => {
       });
     };
 
-    await lzResolveFromCore(join(root, 'package.json'), load);
+    await muirMoiraNodeTestResolveFromCore(join(root, 'package.json'), load);
 
     const instrumenter = join(
       root,
@@ -369,7 +378,7 @@ describe('lzResolveFromCore', () => {
       'mutants',
     );
 
-  lzTestEach([
+  muirTestEach([
     [
       'an Instrumenter with no instrument method',
       function Instrumenter() {},
@@ -431,7 +440,10 @@ describe('lzResolveFromCore', () => {
     const { load, replaced } = loadingWith(indexFile, {
       Instrumenter: instrumenterClass,
     });
-    const instrumenter = await lzResolveFromCore(corePackageJsons()[0], load);
+    const instrumenter = await muirMoiraNodeTestResolveFromCore(
+      muirMoiraNodeTestCorePackageJsons()[0],
+      load,
+    );
 
     await assert.rejects(
       instrumenter.instrument([{ name: 'sample.ts', content: "f('x');" }]),
@@ -442,9 +454,9 @@ describe('lzResolveFromCore', () => {
   });
 
   it('instruments a file whose directive names a mutator it does not apply, which Stryker warns about', async () => {
-    const instrumenter = await lzResolveFromCore();
+    const instrumenter = await muirMoiraNodeTestResolveFromCore();
     const content =
-      "// Stryker disable next-line LzNodeTimerDelay: a directive for another catalogue\nf('x');";
+      "// Stryker disable next-line MuirProteusNodeTimerDelay: a directive for another catalogue\nf('x');";
 
     const mutants = await instrumenter.instrument([
       { name: 'sample.ts', content },

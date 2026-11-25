@@ -7,10 +7,10 @@ export interface Case {
   readonly expect: readonly (readonly [string, string])[];
 }
 
-const click = 'LzPlaywrightClickAction';
-const input = 'LzPlaywrightInputAction';
-const focus = 'LzPlaywrightFocusAction';
-const navigation = 'LzPlaywrightNavigationAction';
+const click = 'MuirProteusPlaywrightClickAction';
+const input = 'MuirProteusPlaywrightInputAction';
+const focus = 'MuirProteusPlaywrightFocusAction';
+const navigation = 'MuirProteusPlaywrightNavigationAction';
 
 // The APIRequestContext methods that send a request (playwright-core client/fetch.ts at v1.64.1).
 const requestMethods = [

@@ -14,13 +14,16 @@ import {
 } from '@babel/core';
 
 import {
-  assertionBeforeMutator,
-  interactionMutator,
+  muirProteusStorybookTestAssertionBeforeMutator,
+  muirProteusStorybookTestInteractionMutator,
 } from '../src/interaction-mutators.ts';
-import type { LzStorybookTestMutator } from '../src/mutator.ts';
-import { spyStubMutator, spyStubOutcomeMutator } from '../src/spy-stub.ts';
-import { perFile } from '../src/story-file.ts';
-import { storyGlobalsMutator } from '../src/story-globals.ts';
+import type { MuirProteusStorybookTestMutator } from '../src/mutator.ts';
+import {
+  muirProteusStorybookTestSpyStubMutator,
+  muirProteusStorybookTestSpyStubOutcomeMutator,
+} from '../src/spy-stub.ts';
+import { muirProteusStorybookTestPerFile } from '../src/story-file.ts';
+import { muirProteusStorybookTestStoryGlobalsMutator } from '../src/story-globals.ts';
 
 interface StoryFile {
   /** The path of the node of `type` that starts where `text` first starts in the source. */
@@ -56,7 +59,7 @@ function parse(source: string): StoryFile {
 }
 
 function mutantTypes(
-  mutator: LzStorybookTestMutator,
+  mutator: MuirProteusStorybookTestMutator,
   path: NodePath,
 ): readonly string[] {
   return [...mutator.mutate(path, types)].map(({ type }) => type);
@@ -110,10 +113,10 @@ const factoryStubStatement = [
   '',
 ].join('\n');
 
-test('LzStorybookSpyStub removes a stub statement after a mutant is placed earlier in a line-range run', () => {
+test('MuirProteusStorybookTestSpyStub removes a stub statement after a mutant is placed earlier in a line-range run', () => {
   const file = parse(factoryStubStatement);
   const story = file.at('export const Story', 'ExportNamedDeclaration');
-  const mutator = spyStubMutator();
+  const mutator = muirProteusStorybookTestSpyStubMutator();
 
   mutantTypes(mutator, story);
   placeSwitch(story);
@@ -124,10 +127,10 @@ test('LzStorybookSpyStub removes a stub statement after a mutant is placed earli
   );
 });
 
-test('LzStorybookSpyStubOutcome flips a stub after a mutant is placed earlier in a line-range run', () => {
+test('MuirProteusStorybookTestSpyStubOutcome flips a stub after a mutant is placed earlier in a line-range run', () => {
   const file = parse(factoryStubStatement);
   const story = file.at('export const Story', 'ExportNamedDeclaration');
-  const mutator = spyStubOutcomeMutator();
+  const mutator = muirProteusStorybookTestSpyStubOutcomeMutator();
 
   mutantTypes(mutator, story);
   placeSwitch(story);
@@ -138,7 +141,7 @@ test('LzStorybookSpyStubOutcome flips a stub after a mutant is placed earlier in
   );
 });
 
-test('LzStorybookInteraction removes a raw DOM interaction after a mutant is placed earlier in a line-range run', () => {
+test('MuirProteusStorybookTestInteraction removes a raw DOM interaction after a mutant is placed earlier in a line-range run', () => {
   const file = parse(
     [
       "import preview from '../.storybook/preview';",
@@ -155,7 +158,7 @@ test('LzStorybookInteraction removes a raw DOM interaction after a mutant is pla
     ].join('\n'),
   );
   const story = file.at('export const Story', 'ExportNamedDeclaration');
-  const mutator = interactionMutator();
+  const mutator = muirProteusStorybookTestInteractionMutator();
 
   mutantTypes(mutator, story);
   placeSwitch(story);
@@ -169,7 +172,7 @@ test('LzStorybookInteraction removes a raw DOM interaction after a mutant is pla
   );
 });
 
-test('LzStorybookAssertionBefore copies a check before an interaction after a mutant is placed in an earlier statement', () => {
+test('MuirProteusStorybookTestAssertionBefore copies a check before an interaction after a mutant is placed in an earlier statement', () => {
   const file = parse(
     [
       'export const Story = {',
@@ -183,7 +186,7 @@ test('LzStorybookAssertionBefore copies a check before an interaction after a mu
     ].join('\n'),
   );
   const earlier = file.at('const save', 'VariableDeclaration');
-  const mutator = assertionBeforeMutator();
+  const mutator = muirProteusStorybookTestAssertionBeforeMutator();
 
   mutantTypes(mutator, earlier);
   placeSwitch(earlier);
@@ -197,7 +200,7 @@ test('LzStorybookAssertionBefore copies a check before an interaction after a mu
   );
 });
 
-test('LzStorybookAssertionBefore reads the earlier statements as written when a mutant is placed in the one its check repeats', () => {
+test('MuirProteusStorybookTestAssertionBefore reads the earlier statements as written when a mutant is placed in the one its check repeats', () => {
   const file = parse(
     [
       'export const Story = {',
@@ -211,7 +214,7 @@ test('LzStorybookAssertionBefore reads the earlier statements as written when a 
     ].join('\n'),
   );
   const earlier = file.at('await expect', 'ExpressionStatement');
-  const mutator = assertionBeforeMutator();
+  const mutator = muirProteusStorybookTestAssertionBeforeMutator();
 
   mutantTypes(mutator, earlier);
   placeLiteralSwitch(earlier);
@@ -225,7 +228,7 @@ test('LzStorybookAssertionBefore reads the earlier statements as written when a 
   );
 });
 
-test('LzStorybookStoryGlobals mutates story globals after a mutant is placed earlier in a line-range run', () => {
+test('MuirProteusStorybookTestStoryGlobals mutates story globals after a mutant is placed earlier in a line-range run', () => {
   const file = parse(
     [
       "const meta = { title: 'Probe', parameters: { viewport: { defaultViewport: 'mobile1' } } };",
@@ -236,7 +239,7 @@ test('LzStorybookStoryGlobals mutates story globals after a mutant is placed ear
     ].join('\n'),
   );
   const meta = file.at('const meta', 'VariableDeclaration');
-  const mutator = storyGlobalsMutator();
+  const mutator = muirProteusStorybookTestStoryGlobalsMutator();
 
   mutantTypes(mutator, meta);
   placeSwitch(meta);
@@ -253,7 +256,7 @@ function perFileError(
   options: { readonly filename?: string },
 ): unknown {
   const errors: unknown[] = [];
-  const read = perFile(() => {
+  const read = muirProteusStorybookTestPerFile(() => {
     throw thrown;
   }, undefined);
 

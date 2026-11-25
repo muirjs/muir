@@ -3,13 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { isRecord } from './is-record.ts';
+import { muirSirynPlaywrightIsRecord } from './is-record.ts';
 
 /**
  * Playwright deletes and recreates `outputDir` in global setup, so both directories live in a root it
  * never touches: on a shared /tmp no other user can claim either name in between.
  */
-export interface TempRoot {
+export interface MuirSirynPlaywrightTempRoot {
   readonly dir: string;
   readonly outputDir: string;
   nextRunDir(): string;
@@ -17,13 +17,17 @@ export interface TempRoot {
   remove(): void;
 }
 
-export const rootPrefix = 'lz-playwright-';
-export const ownerFile = 'owner';
+export const muirSirynPlaywrightRootPrefix = 'muir-playwright-';
+export const muirSirynPlaywrightOwnerFile = 'owner';
 
 // mkdtemp appends six letters or digits.
-export function rootPid(name: string): number | undefined {
-  const pid = name.startsWith(rootPrefix)
-    ? Number(/^(\d+)-[A-Za-z0-9]{6}$/.exec(name.slice(rootPrefix.length))?.[1])
+export function muirSirynPlaywrightRootPid(name: string): number | undefined {
+  const pid = name.startsWith(muirSirynPlaywrightRootPrefix)
+    ? Number(
+        /^(\d+)-[A-Za-z0-9]{6}$/.exec(
+          name.slice(muirSirynPlaywrightRootPrefix.length),
+        )?.[1],
+      )
     : undefined;
 
   return Number.isSafeInteger(pid) ? pid : undefined;
@@ -35,7 +39,7 @@ export function rootPid(name: string): number | undefined {
  * alone is not enough: a container started with `--network host` has the host's name. On Linux each
  * PID namespace is a file under /proc with its own inode.
  */
-export function namespaceToken(
+export function muirSirynPlaywrightNamespaceToken(
   inode: (file: string) => number = (file) => fs.statSync(file).ino,
   host: string = os.hostname(),
   platform: NodeJS.Platform = process.platform,
@@ -54,7 +58,7 @@ export function namespaceToken(
 }
 
 /** EPERM means the process exists but belongs to someone else, so it counts as running. */
-export function isRunning(
+export function muirSirynPlaywrightIsRunning(
   pid: number,
   kill: (pid: number, signal: 0) => void = (target, signal) =>
     process.kill(target, signal),
@@ -64,12 +68,12 @@ export function isRunning(
 
     return true;
   } catch (error) {
-    return isRecord(error) && error['code'] === 'EPERM';
+    return muirSirynPlaywrightIsRecord(error) && error['code'] === 'EPERM';
   }
 }
 
 // Windows has no uids and a temp directory per user, so there every real directory counts as owned.
-export function isOwnDir(
+export function muirSirynPlaywrightIsOwnDir(
   dir: string,
   user: { getuid?: () => number } = process,
   stat: (path: string) => {
@@ -93,12 +97,12 @@ export function isOwnDir(
  * Two runners that start at once may both try one root, and a process the dead runner started may
  * still hold it on Windows, so a removal that fails is skipped; the next runner tries again.
  */
-export function removeLeftRoots(
+export function muirSirynPlaywrightRemoveLeftRoots(
   tmp: string,
   {
-    running = isRunning,
-    owned = isOwnDir,
-    remove = removeDir,
+    running = muirSirynPlaywrightIsRunning,
+    owned = muirSirynPlaywrightIsOwnDir,
+    remove = muirSirynPlaywrightRemoveDir,
     ownPid = process.pid,
     token,
   }: {
@@ -110,7 +114,7 @@ export function removeLeftRoots(
   },
 ): string[] {
   return fs.readdirSync(tmp).flatMap((name) => {
-    const pid = rootPid(name);
+    const pid = muirSirynPlaywrightRootPid(name);
     const dir = path.join(tmp, name);
 
     if (pid === undefined || pid === ownPid || running(pid) || !owned(dir)) {
@@ -118,7 +122,12 @@ export function removeLeftRoots(
     }
 
     try {
-      if (fs.readFileSync(path.join(dir, ownerFile), 'utf8') === token) {
+      if (
+        fs.readFileSync(
+          path.join(dir, muirSirynPlaywrightOwnerFile),
+          'utf8',
+        ) === token
+      ) {
         remove(dir);
 
         return [name];
@@ -132,36 +141,38 @@ export function removeLeftRoots(
   });
 }
 
-export function removeDir(dir: string): void {
+export function muirSirynPlaywrightRemoveDir(dir: string): void {
   fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
 }
 
-export function claimTempRoot(
+export function muirSirynPlaywrightClaimTempRoot(
   onRemoved: (removed: readonly string[]) => void,
-): TempRoot {
+): MuirSirynPlaywrightTempRoot {
   const tmp = os.tmpdir();
-  const token = namespaceToken();
-  onRemoved(removeLeftRoots(tmp, { token }));
+  const token = muirSirynPlaywrightNamespaceToken();
+  onRemoved(muirSirynPlaywrightRemoveLeftRoots(tmp, { token }));
 
-  return createTempRoot(tmp, process.pid, token);
+  return muirSirynPlaywrightCreateTempRoot(tmp, process.pid, token);
 }
 
-export function createTempRoot(
+export function muirSirynPlaywrightCreateTempRoot(
   tmp: string,
   pid: number,
   token: string,
   writeFile: (file: string, data: string) => void = fs.writeFileSync,
-): TempRoot {
-  const dir = fs.mkdtempSync(path.join(tmp, `${rootPrefix}${pid}-`));
+): MuirSirynPlaywrightTempRoot {
+  const dir = fs.mkdtempSync(
+    path.join(tmp, `${muirSirynPlaywrightRootPrefix}${pid}-`),
+  );
   const outputDir = path.join(dir, 'output');
   const runsDir = path.join(dir, 'runs');
   let runs = 0;
 
   try {
-    writeFile(path.join(dir, ownerFile), token);
+    writeFile(path.join(dir, muirSirynPlaywrightOwnerFile), token);
     fs.mkdirSync(runsDir);
   } catch (error) {
-    removeDir(dir);
+    muirSirynPlaywrightRemoveDir(dir);
     throw error;
   }
 
@@ -175,11 +186,11 @@ export function createTempRoot(
       return runDir;
     },
     removeRunsAndOutput() {
-      removeDir(runsDir);
-      removeDir(outputDir);
+      muirSirynPlaywrightRemoveDir(runsDir);
+      muirSirynPlaywrightRemoveDir(outputDir);
     },
     remove() {
-      removeDir(dir);
+      muirSirynPlaywrightRemoveDir(dir);
     },
   };
 }

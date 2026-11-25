@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzPlaywrightMutators } from '../src/index.ts';
-import { resolveFromCore } from '../src/install.ts';
+import { muirProteusPlaywrightMutators } from '../src/index.ts';
+import { muirProteusPlaywrightResolveFromCore } from '../src/install.ts';
 import { mutantsOf } from './support/mutants.ts';
 
 function specOf(fixture: string): string {
@@ -13,7 +13,7 @@ function specOf(fixture: string): string {
 async function removedFixtures(): Promise<readonly string[]> {
   const fixtures = ['navigate', 'visit', 'go'];
   const mutants = await mutantsOf(
-    await resolveFromCore(),
+    await muirProteusPlaywrightResolveFromCore(),
     fixtures.map((fixture) => ({
       name: `${fixture}.spec.ts`,
       content: specOf(fixture),
@@ -21,23 +21,30 @@ async function removedFixtures(): Promise<readonly string[]> {
   );
 
   return mutants
-    .filter(({ mutatorName }) => mutatorName === 'LzPlaywrightNavigationAction')
+    .filter(
+      ({ mutatorName }) =>
+        mutatorName === 'MuirProteusPlaywrightNavigationAction',
+    )
     .map(({ fileName }) => fileName.replace('.spec.ts', ''));
 }
 
-describe('lzPlaywrightMutators settings', () => {
+describe('muirProteusPlaywrightMutators settings', () => {
   it('removes the awaited calls of the fixtures in navigationFixtures, in place of navigate', async () => {
-    await lzPlaywrightMutators(undefined, { navigationFixtures: ['visit'] });
+    await muirProteusPlaywrightMutators(undefined, {
+      navigationFixtures: ['visit'],
+    });
 
     assert.deepEqual(await removedFixtures(), ['visit']);
   });
 
   it("replaces the list of an earlier call with the list of the next call, and 'navigate' returns without settings", async () => {
-    await lzPlaywrightMutators(undefined, { navigationFixtures: ['go'] });
+    await muirProteusPlaywrightMutators(undefined, {
+      navigationFixtures: ['go'],
+    });
 
     assert.deepEqual(await removedFixtures(), ['go']);
 
-    await lzPlaywrightMutators();
+    await muirProteusPlaywrightMutators();
 
     assert.deepEqual(await removedFixtures(), ['navigate']);
   });

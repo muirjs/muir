@@ -17,7 +17,7 @@ export default [
     },
   },
   {
-    // The modifier tests run lzTestEach.only on purpose.
+    // The modifier tests run muirTestEach.only on purpose.
     files: ['test/integration/modified.test.ts'],
     rules: { 'no-restricted-properties': 'off' },
   },

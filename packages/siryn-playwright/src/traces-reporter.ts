@@ -9,18 +9,18 @@ import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 import type { Reporter } from '@stryker-mutator/api/report';
 
 import {
-  type LzPlaywrightRunnerOptionsWithStrykerOptions,
-  readRunnerOptions,
-} from './lz-playwright-runner-options-with-stryker-options.ts';
+  type MuirSirynPlaywrightRunnerOptionsWithStrykerOptions,
+  muirSirynPlaywrightReadRunnerOptions,
+} from './muir-siryn-playwright-runner-options-with-stryker-options.ts';
 import {
-  cleanTracesDir,
-  projectRootEnv,
-  tracesDirEnv,
+  muirSirynPlaywrightCleanTracesDir,
+  muirSirynPlaywrightProjectRootEnv,
+  muirSirynPlaywrightTracesDirEnv,
 } from './survivor-traces.ts';
 import {
-  describeSurvivors,
-  indexHtml,
-  readTraceFolders,
+  muirSirynPlaywrightDescribeSurvivors,
+  muirSirynPlaywrightIndexHtml,
+  muirSirynPlaywrightReadTraceFolders,
 } from './traces-index.ts';
 
 /**
@@ -28,22 +28,22 @@ import {
  * is emptied, and its absolute path set in the environment the test runner processes inherit, before
  * any of them copies a trace.
  */
-export class LzPlaywrightTracesReporter implements Reporter {
+export class MuirSirynPlaywrightTracesReporter implements Reporter {
   static inject = tokens(commonTokens.options, commonTokens.logger);
 
   readonly #dir: string | undefined;
   readonly #log: Logger;
 
   constructor(
-    options: LzPlaywrightRunnerOptionsWithStrykerOptions,
+    options: MuirSirynPlaywrightRunnerOptionsWithStrykerOptions,
     log: Logger,
   ) {
     this.#log = log;
-    const { survivorTraces } = readRunnerOptions(options);
+    const { survivorTraces } = muirSirynPlaywrightReadRunnerOptions(options);
 
     if (survivorTraces === undefined) {
       log.warn(
-        'The lz-playwright-traces reporter does nothing without lzPlaywright.survivorTraces.',
+        'The muir-siryn-playwright-traces reporter does nothing without muirSirynPlaywright.survivorTraces.',
       );
 
       return;
@@ -54,16 +54,16 @@ export class LzPlaywrightTracesReporter implements Reporter {
 
     if (!path.isAbsolute(toProject) && toProject.split(path.sep)[0] !== '..') {
       throw new Error(
-        `lzPlaywright.survivorTraces is ${this.#dir}, which holds the project, and the lz-playwright-traces ` +
-          'reporter empties that folder. Choose a folder inside the project, such as reports/lz-playwright-traces.',
+        `muirSirynPlaywright.survivorTraces is ${this.#dir}, which holds the project, and the muir-siryn-playwright-traces ` +
+          'reporter empties that folder. Choose a folder inside the project, such as reports/muir-siryn-playwright-traces.',
       );
     }
 
-    cleanTracesDir(this.#dir);
-    process.env[tracesDirEnv] = this.#dir;
-    process.env[projectRootEnv] = process.cwd();
+    muirSirynPlaywrightCleanTracesDir(this.#dir);
+    process.env[muirSirynPlaywrightTracesDirEnv] = this.#dir;
+    process.env[muirSirynPlaywrightProjectRootEnv] = process.cwd();
     log.warn(
-      'lzPlaywright.survivorTraces is set: every test run records a Playwright trace, which can change ' +
+      'muirSirynPlaywright.survivorTraces is set: every test run records a Playwright trace, which can change ' +
         "timing. Compare statuses with an untraced run's report before trusting them.",
     );
   }
@@ -73,7 +73,9 @@ export class LzPlaywrightTracesReporter implements Reporter {
       return;
     }
 
-    const { folders, unreadable } = readTraceFolders(this.#dir);
+    const { folders, unreadable } = muirSirynPlaywrightReadTraceFolders(
+      this.#dir,
+    );
 
     if (unreadable.length > 0) {
       this.#log.warn(
@@ -84,7 +86,10 @@ export class LzPlaywrightTracesReporter implements Reporter {
     const index = path.join(this.#dir, 'index.html');
     fs.writeFileSync(
       index,
-      indexHtml(describeSurvivors(report, folders), strykerReportAppScript()),
+      muirSirynPlaywrightIndexHtml(
+        muirSirynPlaywrightDescribeSurvivors(report, folders),
+        strykerReportAppScript(),
+      ),
     );
     this.#log.info(
       `Traces of ${folders.size} survivor(s): ${pathToFileURL(index).href}`,

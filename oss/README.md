@@ -18,8 +18,8 @@ npm install -D @stryker-mutator/core@^10.1.1 file:<this repo>/packages/siryn-pla
 The runner needs `@playwright/test` 1.63 or a later 1.x release. If the copy has an older one or none,
 also install `@playwright/test@^1.64.1`. ngx-yeti ran on its own `@playwright/test` 1.63.0.
 
-The e2e configs here set `lzPlaywright.webServer.mutate` to `true`, so their mutants in server code run
-too. To run one with `'auto'` instead, set `LZ_CORPUS_WEBSERVER_MUTATE=auto` in the environment that runs
+The e2e configs here set `muirSirynPlaywright.webServer.mutate` to `true`, so their mutants in server code run
+too. To run one with `'auto'` instead, set `MUIR_CORPUS_WEBSERVER_MUTATE=auto` in the environment that runs
 Stryker. The configs refuse any value other than `true` or `auto`. The component-test configs of
 use-debouncy and punktlandung leave the option unset.
 
@@ -31,7 +31,7 @@ run stopped with `Stop-Process -Force` or `taskkill /F` gets none of these, so i
 as they finish, at most once every 5 seconds. Add it to the run, with the config's own reporters listed again:
 
 ```sh
-npx stryker run <config> --incremental --appendPlugins <this repo>/tools/stryker-checkpoint.ts --reporters <the config's reporters>,lz-checkpoint
+npx stryker run <config> --incremental --appendPlugins <this repo>/tools/stryker-checkpoint.ts --reporters <the config's reporters>,muir-checkpoint
 ```
 
 Run the same command again to resume. Stryker reuses each result whose code and tests did not change.
@@ -62,7 +62,7 @@ it uses is `oss/realworld-api`. Then run `npx stryker run stryker.playwright.con
    copies `.nx/workspace-data` into its sandbox, and while the daemon that the build started is
    running, the sandbox's Nx connects to it, the daemon refuses a different workspace, and the
    `webServer` fails to start.
-3. Run `npx stryker run stryker.playwright.config.ts`. The config sets `lzPlaywright.workers` to 2 and
+3. Run `npx stryker run stryker.playwright.config.ts`. The config sets `muirSirynPlaywright.workers` to 2 and
    `dryRunTimeoutMinutes` to 20, because the 234-test dry run takes longer than Stryker's default
    5 minutes on one worker.
 
@@ -174,7 +174,7 @@ screenshots, against the repo's own e2e tests on its Vite dev server (`pnpm dev`
      and the Vite dev server instead of upstream's build and preview. It leaves out the `text measurement`
      tests, whose expected widths come from another platform's fonts: on Windows 11 arm64 "measures
      text" measured 88.06 px against 87, and the custom `renderMethod` case 168.53 px against at most 167. The other specs then pass: 31 tests, 2 skipped;
-   - adds `.stryker-tmp`, `/reports` and `.lz-playwright-server-mutants` to `.gitignore`. An in-place run
+   - adds `.stryker-tmp`, `/reports` and `.muir-playwright-server-mutants` to `.gitignore`. An in-place run
      writes the server mutants file into the copy's root.
 2. Run `pnpm install` with the `pnpm` on your `PATH`, not the npm line above; it switches to the
    version in `packageManager`. Through `corepack pnpm install`, the nested `pnpm` in the copy's
@@ -186,11 +186,11 @@ screenshots, against the repo's own e2e tests on its Vite dev server (`pnpm dev`
 4. Run `npx stryker run stryker.playwright.config.ts`, then `npx stryker run stryker.canvas.config.ts`.
    Both set `inPlace: true`: the workspace packages resolve through per-package `node_modules` links to
    the copy's own source, so a sandbox would serve unmutated code. Copy
-   `reports/lz-playwright-traces` aside between the runs; each run empties it.
+   `reports/muir-siryn-playwright-traces` aside between the runs; each run empties it.
    The JSX config runs at `concurrency: 2`, so the runner moves each process's dev server to a port of its
    own. `pnpm dev` binds port 5420 from the Vite config and has no port in its command for the runner to
    move. With `webServer.mutate: true`, the runner refuses this at startup and names both ports. With
-   `LZ_CORPUS_WEBSERVER_MUTATE=auto`, every process falls back to running without server support, and
+   `MUIR_CORPUS_WEBSERVER_MUTATE=auto`, every process falls back to running without server support, and
    `reuseExistingServer: true` lets the second process use the first one's server. Each process
    waits out the `webServer` timeout, 300 s here, before it falls back, so a run with two processes
    spends about 10 minutes starting before its first mutant. The canvas config
@@ -230,7 +230,7 @@ edge paths, the code the 12 regression scenarios run when they render, against `
    - adds `packages/browser-tests/playwright.stryker.config.ts`: the regression suite only, no retries, and
      only the regression `webServer`. The examples suite needs the Astro website, whose dev server downloads
      datasets first;
-   - adds `.stryker-tmp`, `/reports` and `.lz-playwright-server-mutants` to `.gitignore`. An in-place run
+   - adds `.stryker-tmp`, `/reports` and `.muir-playwright-server-mutants` to `.gitignore`. An in-place run
      writes the server mutants file into the copy's root.
 2. Run `npm ci`, then
    `npm i -D @stryker-mutator/core@10.1.1 @playwright/test@1.64.1 playwright@1.64.1 file:<runner tarball>`.

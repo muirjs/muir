@@ -1,6 +1,6 @@
 import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
-const interaction = 'LzStorybookInteraction';
+const interaction = 'MuirProteusStorybookTestInteraction';
 
 export const composedPlayCases: readonly Case[] = [
   {

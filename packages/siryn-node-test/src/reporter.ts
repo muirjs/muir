@@ -2,16 +2,20 @@
 // tests have run.
 import { Transform } from 'node:stream';
 
-import { reporting, type GlobalSlots, type TestEvent } from './hook-core.ts';
+import {
+  muirSirynNodeTestReporting,
+  type MuirSirynNodeTestGlobalSlots,
+  type MuirSirynNodeTestTestEvent,
+} from './hook-core.ts';
 
-const global: GlobalSlots = globalThis;
+const global: MuirSirynNodeTestGlobalSlots = globalThis;
 
 export default new Transform({
   writableObjectMode: true,
-  transform(event: TestEvent, _encoding, callback) {
+  transform(event: MuirSirynNodeTestTestEvent, _encoding, callback) {
     // Processes the test file starts inherit the reporter, even one started on the test file itself, but the hook hides
     // the test file from them, so only the test file's own process records.
-    global[reporting]?.(event);
+    global[muirSirynNodeTestReporting]?.(event);
     callback();
   },
 });

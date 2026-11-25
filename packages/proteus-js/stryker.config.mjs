@@ -1,9 +1,9 @@
-import { lzJsMutators } from '@muirjs/proteus-js';
+import { muirProteusJsMutators } from '@muirjs/proteus-js';
 
 import base, { production, reportFiles, source } from '../../stryker.base.mjs';
 
 // The shared production config installs none of this package's mutators; the package's own code gets all of them.
-await lzJsMutators({ extended: true, experimental: true });
+await muirProteusJsMutators({ extended: true, experimental: true });
 
 export default await production({
   ...base,
@@ -15,7 +15,7 @@ export default await production({
   tsconfigFile: 'packages/proteus-js/tsconfig.stryker.json',
   incrementalFile: 'reports/stryker-incremental/@muirjs/proteus-js.src.json',
   ...reportFiles('@muirjs/proteus-js.src'),
-  lzNodeTest: {
+  muirSirynNodeTest: {
     testFiles: ['packages/proteus-js/test/**/*.test.ts'],
     nodeArgs: [source],
   },

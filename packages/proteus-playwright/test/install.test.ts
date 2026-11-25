@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { builtInNames, markOf } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsBuiltInNames,
+  muirMoiraMutatorsMarkOf,
+} from '@muirjs/moira-mutators';
 
-import { assertBabelTypes, install } from '../src/install.ts';
+import {
+  muirProteusPlaywrightAssertBabelTypes,
+  muirProteusPlaywrightInstall,
+} from '../src/install.ts';
 import { defined } from './support/defined.ts';
 import { programOf } from './support/parse.ts';
 import {
@@ -17,12 +23,18 @@ describe('assertBabelTypes', () => {
   const missing = (name: string) => new Error(`no ${name}`);
 
   it('accepts an object with the members the mutators call', () => {
-    assert.doesNotThrow(() => assertBabelTypes(fakeTypes, missing));
+    assert.doesNotThrow(() =>
+      muirProteusPlaywrightAssertBabelTypes(fakeTypes, missing),
+    );
   });
 
   it('names the members an object lacks, through the missing-member error', () => {
     assert.throws(
-      () => assertBabelTypes({ ...fakeTypes, emptyStatement: 1 }, missing),
+      () =>
+        muirProteusPlaywrightAssertBabelTypes(
+          { ...fakeTypes, emptyStatement: 1 },
+          missing,
+        ),
       { message: 'no Babel types with emptyStatement' },
     );
   });
@@ -30,7 +42,7 @@ describe('assertBabelTypes', () => {
   it('lists every member an object lacks, comma-separated', () => {
     assert.throws(
       () =>
-        assertBabelTypes(
+        muirProteusPlaywrightAssertBabelTypes(
           { ...fakeTypes, emptyStatement: 1, identifier: undefined },
           missing,
         ),
@@ -40,9 +52,12 @@ describe('assertBabelTypes', () => {
 
   it('rejects a value that is no object, through the missing-member error', () => {
     for (const value of [undefined, null, 'types']) {
-      assert.throws(() => assertBabelTypes(value, missing), {
-        message: 'no Babel types',
-      });
+      assert.throws(
+        () => muirProteusPlaywrightAssertBabelTypes(value, missing),
+        {
+          message: 'no Babel types',
+        },
+      );
     }
   });
 });
@@ -59,8 +74,8 @@ const emptyProgram = { type: 'Program', body: [] };
 async function installedMutate(warn: (message: string) => void) {
   const { instrumenter } = fakeInstrumenter();
 
-  await install(
-    sets(['LzOne', 'LzTwo']),
+  await muirProteusPlaywrightInstall(
+    sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
     undefined,
     async () => instrumenter,
     warn,
@@ -81,7 +96,7 @@ describe('the warning for a file that is not Playwright test code', () => {
     const warnings: string[] = [];
     const mutate = await installedMutate((message) => warnings.push(message));
 
-    mutate('LzOne', programPath('plain-a.ts'));
+    mutate('MuirProteusPlaywrightOne', programPath('plain-a.ts'));
 
     assert.deepEqual(warnings, [
       "plain-a.ts: @muirjs/proteus-playwright turned Stryker's built-in mutators off for every file in this run, and this file does not look like Playwright test code (no @playwright/ import, no top-level test call). Mutate app code in a separate Stryker config.",
@@ -92,10 +107,10 @@ describe('the warning for a file that is not Playwright test code', () => {
     const warnings: string[] = [];
     const mutate = await installedMutate((message) => warnings.push(message));
 
-    mutate('LzOne', programPath('plain-once.ts'));
-    mutate('LzTwo', programPath('plain-once.ts'));
-    mutate('LzOne', programPath('plain-once.ts'));
-    mutate('LzOne', programPath('plain-other.ts'));
+    mutate('MuirProteusPlaywrightOne', programPath('plain-once.ts'));
+    mutate('MuirProteusPlaywrightTwo', programPath('plain-once.ts'));
+    mutate('MuirProteusPlaywrightOne', programPath('plain-once.ts'));
+    mutate('MuirProteusPlaywrightOne', programPath('plain-other.ts'));
 
     assert.deepEqual(
       warnings.map((message) => message.split(':')[0]),
@@ -115,7 +130,7 @@ describe('the warning for a file that is not Playwright test code', () => {
       const warnings: string[] = [];
       const mutate = await installedMutate((message) => warnings.push(message));
 
-      mutate('LzOne', path);
+      mutate('MuirProteusPlaywrightOne', path);
 
       assert.deepEqual(warnings, []);
     });
@@ -124,15 +139,21 @@ describe('the warning for a file that is not Playwright test code', () => {
   it('returns what the mutator returns', async () => {
     const mutate = await installedMutate(() => undefined);
 
-    assert.deepEqual(mutate('LzOne', programPath('plain-return.ts')), []);
+    assert.deepEqual(
+      mutate('MuirProteusPlaywrightOne', programPath('plain-return.ts')),
+      [],
+    );
   });
 
-  for (const fileName of ['LzOne.self-check.tsx', 'built-ins.self-check.tsx']) {
+  for (const fileName of [
+    'MuirProteusPlaywrightOne.self-check.tsx',
+    'built-ins.self-check.tsx',
+  ]) {
     it(`stays silent for the self-check sample ${fileName}`, async () => {
       const warnings: string[] = [];
       const mutate = await installedMutate((message) => warnings.push(message));
 
-      mutate('LzOne', programPath(fileName));
+      mutate('MuirProteusPlaywrightOne', programPath(fileName));
 
       assert.deepEqual(warnings, []);
     });
@@ -147,7 +168,7 @@ describe('the warning for a file that is not Playwright test code', () => {
       const mutate = await installedMutate((message) => warnings.push(message));
 
       mutate(
-        'LzOne',
+        'MuirProteusPlaywrightOne',
         programPath(`spec-${source.length}.ts`, await programOf(source)),
       );
 
@@ -160,15 +181,18 @@ describe('install', () => {
   it("removes Stryker's 17 built-ins and appends the selected mutators, marked", async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
-    await install(
-      sets(['LzOne', 'LzTwo']),
+    await muirProteusPlaywrightInstall(
+      sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
       undefined,
       async () => instrumenter,
       () => undefined,
       () => undefined,
     );
 
-    assert.deepEqual(names(), ['LzOne', 'LzTwo']);
+    assert.deepEqual(names(), [
+      'MuirProteusPlaywrightOne',
+      'MuirProteusPlaywrightTwo',
+    ]);
     assert.equal(
       instrumenter.allMutators.every((listed) => ownMark in listed),
       true,
@@ -178,12 +202,12 @@ describe('install', () => {
   it("registers each mutator so that its mutate call gets the instrumenter's Babel types", async () => {
     const { instrumenter } = fakeInstrumenter();
     const echo = {
-      name: 'LzEcho',
+      name: 'MuirProteusPlaywrightEcho',
       sample: 'export const echo = 1;\n',
       mutate: (path: unknown, t: unknown) => [path, t],
     };
 
-    await install(
+    await muirProteusPlaywrightInstall(
       { defaults: [echo], optIn: [], experimental: [] },
       undefined,
       async () => instrumenter,
@@ -192,7 +216,7 @@ describe('install', () => {
     );
 
     const listed = instrumenter.allMutators.find(
-      ({ name }) => name === 'LzEcho',
+      ({ name }) => name === 'MuirProteusPlaywrightEcho',
     );
     const result: unknown = Reflect.apply(defined(listed).mutate, undefined, [
       'path',
@@ -203,12 +227,12 @@ describe('install', () => {
 
   it('refuses a name that another mutator holds, ignoring case, and leaves the list as it was', async () => {
     const { instrumenter, names } = fakeInstrumenter({
-      extra: [{ name: 'lzone', mutate: () => undefined }],
+      extra: [{ name: 'muirproteusplaywrightone', mutate: () => undefined }],
     });
 
     await assert.rejects(
-      install(
-        sets(['LzOne', 'LzTwo']),
+      muirProteusPlaywrightInstall(
+        sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
         undefined,
         async () => instrumenter,
         () => undefined,
@@ -216,22 +240,25 @@ describe('install', () => {
       ),
       {
         message:
-          '@muirjs/proteus-playwright: another mutator already has the name LzOne.',
+          '@muirjs/proteus-playwright: another mutator already has the name MuirProteusPlaywrightOne.',
       },
     );
-    assert.deepEqual(names(), [...builtInNames, 'lzone']);
+    assert.deepEqual(names(), [
+      ...muirMoiraMutatorsBuiltInNames,
+      'muirproteusplaywrightone',
+    ]);
   });
 
   it('leaves exactly the second selection when it is called twice, and keeps the mutators of other packages', async () => {
     const sibling = {
-      name: 'LzSibling',
+      name: 'MuirProteusPlaywrightSibling',
       mutate: () => undefined,
-      [markOf('@muirjs/proteus-jsx')]: 1,
+      [muirMoiraMutatorsMarkOf('@muirjs/proteus-jsx')]: 1,
     };
     const { instrumenter, names } = fakeInstrumenter({ extra: [sibling] });
     const list = instrumenter.allMutators;
     const run = (mutatorNames: readonly string[]) =>
-      install(
+      muirProteusPlaywrightInstall(
         sets(mutatorNames),
         undefined,
         async () => instrumenter,
@@ -239,10 +266,14 @@ describe('install', () => {
         () => undefined,
       );
 
-    await run(['LzOne', 'LzTwo']);
-    await run(['LzTwo', 'LzThree']);
+    await run(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']);
+    await run(['MuirProteusPlaywrightTwo', 'MuirProteusPlaywrightThree']);
 
-    assert.deepEqual(names(), ['LzSibling', 'LzTwo', 'LzThree']);
+    assert.deepEqual(names(), [
+      'MuirProteusPlaywrightSibling',
+      'MuirProteusPlaywrightTwo',
+      'MuirProteusPlaywrightThree',
+    ]);
     assert.equal(instrumenter.allMutators, list);
   });
 
@@ -250,8 +281,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const lines: string[] = [];
 
-    await install(
-      sets(['LzOne', 'LzTwo']),
+    await muirProteusPlaywrightInstall(
+      sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
       undefined,
       async () => instrumenter,
       () => undefined,
@@ -260,7 +291,7 @@ describe('install', () => {
 
     assert.deepEqual(lines, [
       "@muirjs/proteus-playwright: Stryker's 17 built-in mutators are off for every file in this run; 2 " +
-        'LzPlaywright mutators on.',
+        'MuirProteusPlaywright mutators on.',
     ]);
   });
 
@@ -268,9 +299,13 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const lines: string[] = [];
 
-    await install(
-      sets(['LzOne'], ['LzTwo', 'LzThree'], ['LzFour']),
-      { LzThree: true, experimental: true },
+    await muirProteusPlaywrightInstall(
+      sets(
+        ['MuirProteusPlaywrightOne'],
+        ['MuirProteusPlaywrightTwo', 'MuirProteusPlaywrightThree'],
+        ['MuirProteusPlaywrightFour'],
+      ),
+      { MuirProteusPlaywrightThree: true, experimental: true },
       async () => instrumenter,
       () => undefined,
       (message) => lines.push(message),
@@ -278,12 +313,12 @@ describe('install', () => {
 
     assert.deepEqual(lines, [
       "@muirjs/proteus-playwright: Stryker's 17 built-in mutators are off for every file in this run; 3 " +
-        'LzPlaywright mutators on. Opt-in or experimental: LzThree, LzFour.',
+        'MuirProteusPlaywright mutators on. Opt-in or experimental: MuirProteusPlaywrightThree, MuirProteusPlaywrightFour.',
     ]);
   });
 
   for (const [title, options] of [
-    ['the self-check', { silent: ['LzOne'] }],
+    ['the self-check', { silent: ['MuirProteusPlaywrightOne'] }],
     ['the check that the built-ins are gone', { leaking: ['Regex'] }],
   ] as const) {
     it(`leaves the list as it was when ${title} throws`, async () => {
@@ -291,8 +326,8 @@ describe('install', () => {
       const list = instrumenter.allMutators;
 
       await assert.rejects(
-        install(
-          sets(['LzOne']),
+        muirProteusPlaywrightInstall(
+          sets(['MuirProteusPlaywrightOne']),
           undefined,
           async () => instrumenter,
           () => undefined,
@@ -300,24 +335,29 @@ describe('install', () => {
         ),
       );
 
-      assert.deepEqual(names(), builtInNames);
+      assert.deepEqual(names(), muirMoiraMutatorsBuiltInNames);
       assert.equal(instrumenter.allMutators, list);
     });
   }
 
   it('prints no start line when a check throws', async () => {
-    const { instrumenter } = fakeInstrumenter({ silent: ['LzOne'] });
+    const { instrumenter } = fakeInstrumenter({
+      silent: ['MuirProteusPlaywrightOne'],
+    });
     const lines: string[] = [];
 
     await assert.rejects(
-      install(
-        sets(['LzOne']),
+      muirProteusPlaywrightInstall(
+        sets(['MuirProteusPlaywrightOne']),
         undefined,
         async () => instrumenter,
         () => undefined,
         (message) => lines.push(message),
       ),
-      { message: /made no mutants of LzOne from their samples/ },
+      {
+        message:
+          /made no mutants of MuirProteusPlaywrightOne from their samples/,
+      },
     );
 
     assert.deepEqual(lines, []);
@@ -327,8 +367,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter({ version: '10.2.0' });
     const warnings: string[] = [];
 
-    await install(
-      sets(['LzOne']),
+    await muirProteusPlaywrightInstall(
+      sets(['MuirProteusPlaywrightOne']),
       undefined,
       async () => instrumenter,
       (message) => warnings.push(message),
@@ -347,8 +387,8 @@ describe('install', () => {
     });
 
     await assert.rejects(
-      install(
-        sets(['LzOne']),
+      muirProteusPlaywrightInstall(
+        sets(['MuirProteusPlaywrightOne']),
         undefined,
         async () => instrumenter,
         () => undefined,
@@ -364,11 +404,17 @@ describe('install', () => {
   });
 
   it('throws, naming every selected mutator whose sample made no mutant', async () => {
-    const { instrumenter } = fakeInstrumenter({ silent: ['LzOne', 'LzThree'] });
+    const { instrumenter } = fakeInstrumenter({
+      silent: ['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightThree'],
+    });
 
     await assert.rejects(
-      install(
-        sets(['LzOne', 'LzTwo', 'LzThree']),
+      muirProteusPlaywrightInstall(
+        sets([
+          'MuirProteusPlaywrightOne',
+          'MuirProteusPlaywrightTwo',
+          'MuirProteusPlaywrightThree',
+        ]),
         undefined,
         async () => instrumenter,
         () => undefined,
@@ -376,8 +422,8 @@ describe('install', () => {
       ),
       {
         message:
-          '@muirjs/proteus-playwright: the instrumenter 10.1.1 in /stryker/instrumenter made no mutants of LzOne, ' +
-          'LzThree from their samples, so it does not run the mutators this module added. A bundled or second copy of the ' +
+          '@muirjs/proteus-playwright: the instrumenter 10.1.1 in /stryker/instrumenter made no mutants of MuirProteusPlaywrightOne, ' +
+          'MuirProteusPlaywrightThree from their samples, so it does not run the mutators this module added. A bundled or second copy of the ' +
           'instrumenter does that.',
       },
     );

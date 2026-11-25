@@ -1,44 +1,53 @@
 import type { MutantCoverage } from '@stryker-mutator/api/core';
 
-import { isNumber, isObject } from './guards.ts';
-import type { ProcessRecord } from './record.ts';
+import {
+  muirSirynNodeTestIsNumber,
+  muirSirynNodeTestIsObject,
+} from './guards.ts';
+import type { MuirSirynNodeTestProcessRecord } from './record.ts';
 
-export type LzEndingSignal = 'SIGTERM' | 'SIGINT' | 'SIGHUP';
+export type MuirSirynNodeTestEndingSignal = 'SIGTERM' | 'SIGINT' | 'SIGHUP';
 
 /** The signals that end a process that does not listen for them; `kill()` sends SIGTERM by default. */
-export const lzEndingSignals: readonly LzEndingSignal[] = [
-  'SIGTERM',
-  'SIGINT',
-  'SIGHUP',
-];
+export const muirSirynNodeTestEndingSignals: readonly MuirSirynNodeTestEndingSignal[] =
+  ['SIGTERM', 'SIGINT', 'SIGHUP'];
 
-export interface LzProcessSignals {
-  readonly on: (signal: LzEndingSignal, listener: () => void) => void;
-  readonly off: (signal: LzEndingSignal, listener: () => void) => void;
-  readonly listenerCount: (signal: LzEndingSignal) => number;
+export interface MuirSirynNodeTestProcessSignals {
+  readonly on: (
+    signal: MuirSirynNodeTestEndingSignal,
+    listener: () => void,
+  ) => void;
+  readonly off: (
+    signal: MuirSirynNodeTestEndingSignal,
+    listener: () => void,
+  ) => void;
+  readonly listenerCount: (signal: MuirSirynNodeTestEndingSignal) => number;
   /**
    * The emitters through which signal-exit counts its listeners, whatever is in their place: version 4's on
    * `globalThis[Symbol.for('signal-exit emitter')]`, version 3's on `process.__signal_exit_emitter__`.
    */
   readonly signalExitEmitters: () => readonly unknown[];
   /** Sends the process `signal` again. */
-  readonly raise: (signal: LzEndingSignal) => void;
+  readonly raise: (signal: MuirSirynNodeTestEndingSignal) => void;
 }
 
 /** What the hook takes from the process to write its record whenever the process ends. */
-export interface LzRecordDependencies {
+export interface MuirSirynNodeTestRecordDependencies {
   readonly onExit: (listener: () => void) => void;
   readonly offExit: (listener: () => void) => void;
   /** Registers a `beforeExit` listener, which a process that ends by itself calls and `process.exit()` skips. */
   readonly onBeforeExit: (listener: () => void) => void;
-  readonly writeRecord: (path: string, record: ProcessRecord) => void;
+  readonly writeRecord: (
+    path: string,
+    record: MuirSirynNodeTestProcessRecord,
+  ) => void;
   /** Calls `callback` every `ms` without keeping the process alive. */
   readonly every: (callback: () => void, ms: number) => void;
   /**
    * The process's signals; undefined on Windows, where every kill is `TerminateProcess`, which runs no listener, and a
    * SIGINT listener would keep Ctrl+C from ending the process.
    */
-  readonly signals: LzProcessSignals | undefined;
+  readonly signals: MuirSirynNodeTestProcessSignals | undefined;
   readonly platform: NodeJS.Platform;
 }
 
@@ -46,7 +55,9 @@ export interface LzRecordDependencies {
 const recordIntervalMs = 250;
 
 /** How many hits `coverage` counts; it only grows, as instrumented code adds mutants and counts up. */
-export function lzHits(coverage: MutantCoverage | undefined): number {
+export function muirSirynNodeTestHits(
+  coverage: MutantCoverage | undefined,
+): number {
   if (coverage === undefined) {
     return 0;
   }
@@ -61,10 +72,10 @@ export function lzHits(coverage: MutantCoverage | undefined): number {
  * when it ends by itself, and, for a process the tests started, on a signal that would end it and in the dry run while
  * it runs. `record` is told whether the process ends by itself.
  */
-export function lzPersistRecord(
-  deps: LzRecordDependencies,
+export function muirSirynNodeTestPersistRecord(
+  deps: MuirSirynNodeTestRecordDependencies,
   path: string,
-  record: (natural: boolean) => ProcessRecord,
+  record: (natural: boolean) => MuirSirynNodeTestProcessRecord,
   { main, dryRun }: { readonly main: boolean; readonly dryRun: boolean },
 ): void {
   let natural = false;
@@ -120,14 +131,17 @@ export function lzPersistRecord(
 
 /** Calls `write` every `recordIntervalMs` once the record counts more hits than at its last call. */
 function writeOnNewHits(
-  { every, platform }: Pick<LzRecordDependencies, 'every' | 'platform'>,
-  record: () => ProcessRecord,
-  write: (record: ProcessRecord) => void,
+  {
+    every,
+    platform,
+  }: Pick<MuirSirynNodeTestRecordDependencies, 'every' | 'platform'>,
+  record: () => MuirSirynNodeTestProcessRecord,
+  write: (record: MuirSirynNodeTestProcessRecord) => void,
 ): void {
   let writtenHits = 0;
   every(() => {
     const current = record();
-    const hits = lzHits(current.mutantCoverage);
+    const hits = muirSirynNodeTestHits(current.mutantCoverage);
 
     if (hits === writtenHits) {
       return;
@@ -145,7 +159,7 @@ function writeOnNewHits(
 
 /**
  * The run that reads a record removes its directory when it is over, so a write there fails with ENOENT. On Windows the
- * removal can surface as EPERM, and a rename that `lzWriteRecord` gave up retrying fails with EPERM or EBUSY.
+ * removal can surface as EPERM, and a rename that `muirSirynNodeTestWriteRecord` gave up retrying fails with EPERM or EBUSY.
  */
 function throwUnlessRunOver(error: unknown, platform: NodeJS.Platform): void {
   const code =
@@ -160,13 +174,14 @@ function throwUnlessRunOver(error: unknown, platform: NodeJS.Platform): void {
 }
 
 /** How many listeners signal-exit has for each signal, which leave how the process ends to any other listener. */
-function signalExitListeners(signals: LzProcessSignals): number {
+function signalExitListeners(signals: MuirSirynNodeTestProcessSignals): number {
   return signals
     .signalExitEmitters()
     .reduce<number>(
       (sum, emitter) =>
         sum +
-        (isObject(emitter) && isNumber(emitter['count'])
+        (muirSirynNodeTestIsObject(emitter) &&
+        muirSirynNodeTestIsNumber(emitter['count'])
           ? emitter['count']
           : 0),
       0,
@@ -182,10 +197,10 @@ const ownListener = 1;
  * would without the hook, as signal-exit does.
  */
 function writeOnEndingSignals(
-  signals: LzProcessSignals,
+  signals: MuirSirynNodeTestProcessSignals,
   write: () => void,
 ): void {
-  const listeners = lzEndingSignals.map((signal) => ({
+  const listeners = muirSirynNodeTestEndingSignals.map((signal) => ({
     signal,
     listener: () => {
       try {

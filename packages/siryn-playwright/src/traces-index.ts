@@ -3,19 +3,23 @@ import path from 'node:path';
 
 import type { schema } from '@stryker-mutator/api/core';
 
-import { isRecord } from './is-record.ts';
-import { type CopiedTrace, mutantFile, reportKey } from './survivor-traces.ts';
+import { muirSirynPlaywrightIsRecord } from './is-record.ts';
+import {
+  type MuirSirynPlaywrightCopiedTrace,
+  muirSirynPlaywrightMutantFile,
+  muirSirynPlaywrightReportKey,
+} from './survivor-traces.ts';
 
-export interface TraceFolder {
+export interface MuirSirynPlaywrightTraceFolder {
   readonly dir: string;
-  readonly traces: readonly CopiedTrace[];
+  readonly traces: readonly MuirSirynPlaywrightCopiedTrace[];
 }
 
-export function describeSurvivors(
+export function muirSirynPlaywrightDescribeSurvivors(
   report: schema.MutationTestResult,
-  folders: ReadonlyMap<string, TraceFolder>,
+  folders: ReadonlyMap<string, MuirSirynPlaywrightTraceFolder>,
 ): schema.MutationTestResult {
-  const configFile = isRecord(report.config)
+  const configFile = muirSirynPlaywrightIsRecord(report.config)
     ? report.config['configFile']
     : undefined;
   const files = Object.fromEntries(
@@ -30,7 +34,7 @@ export function describeSurvivors(
                 description: describe(
                   fileName,
                   mutant,
-                  folders.get(reportKey(fileName, mutant)),
+                  folders.get(muirSirynPlaywrightReportKey(fileName, mutant)),
                   typeof configFile === 'string' ? configFile : undefined,
                 ),
               }
@@ -46,7 +50,7 @@ export function describeSurvivors(
 function describe(
   fileName: string,
   { location: { start, end } }: schema.MutantResult,
-  folder: TraceFolder | undefined,
+  folder: MuirSirynPlaywrightTraceFolder | undefined,
   configFile: string | undefined,
 ): string {
   const traces = folder
@@ -77,11 +81,11 @@ function describe(
   ].join('\n');
 }
 
-export function readTraceFolders(tracesDir: string): {
-  readonly folders: ReadonlyMap<string, TraceFolder>;
+export function muirSirynPlaywrightReadTraceFolders(tracesDir: string): {
+  readonly folders: ReadonlyMap<string, MuirSirynPlaywrightTraceFolder>;
   readonly unreadable: readonly string[];
 } {
-  const folders = new Map<string, TraceFolder>();
+  const folders = new Map<string, MuirSirynPlaywrightTraceFolder>();
   const unreadable: string[] = [];
 
   for (const entry of fs.readdirSync(tracesDir, { withFileTypes: true })) {
@@ -90,10 +94,10 @@ export function readTraceFolders(tracesDir: string): {
     }
 
     const dir = path.join(tracesDir, entry.name);
-    const written = readJson(path.join(dir, mutantFile));
+    const written = readJson(path.join(dir, muirSirynPlaywrightMutantFile));
 
     if (
-      isRecord(written) &&
+      muirSirynPlaywrightIsRecord(written) &&
       typeof written['key'] === 'string' &&
       Array.isArray(written['tests']) &&
       written['tests'].every(isCopiedTrace)
@@ -115,9 +119,11 @@ function readJson(file: string): unknown {
   }
 }
 
-function isCopiedTrace(value: unknown): value is CopiedTrace {
+function isCopiedTrace(
+  value: unknown,
+): value is MuirSirynPlaywrightCopiedTrace {
   return (
-    isRecord(value) &&
+    muirSirynPlaywrightIsRecord(value) &&
     typeof value['test'] === 'string' &&
     typeof value['attempt'] === 'number' &&
     typeof value['status'] === 'string' &&
@@ -125,7 +131,7 @@ function isCopiedTrace(value: unknown): value is CopiedTrace {
   );
 }
 
-export function indexHtml(
+export function muirSirynPlaywrightIndexHtml(
   report: schema.MutationTestResult,
   reportAppScript: string,
 ): string {

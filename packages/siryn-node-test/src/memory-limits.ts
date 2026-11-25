@@ -1,27 +1,30 @@
 import type { Logger } from '@stryker-mutator/api/logging';
 
-import type { LzDryRunStore } from './dry-run-store.ts';
-import type { ProcessRecord } from './record.ts';
+import type { MuirSirynNodeTestDryRunStore } from './dry-run-store.ts';
+import type { MuirSirynNodeTestProcessRecord } from './record.ts';
 
 /**
  * The memory each process of a test file may hold. A test that a mutant fails can need more than it did passing, as
  * Node.js's assertion diff grows with the square of the lines it compares (nodejs/node#62792).
  */
-export interface MemoryLimits {
+export interface MuirSirynNodeTestMemoryLimits {
   forDryRun(): number | undefined;
-  record(file: string, records: readonly ProcessRecord[]): void;
+  record(
+    file: string,
+    records: readonly MuirSirynNodeTestProcessRecord[],
+  ): void;
   forMutantRun(file: string): number;
 }
 
 /**
- * Without lzNodeTest.maxMemoryMB, a mutant run gives a file its dry-run peak times 1.5 plus 1024 MB, as Stryker scales
+ * Without muirSirynNodeTest.maxMemoryMB, a mutant run gives a file its dry-run peak times 1.5 plus 1024 MB, as Stryker scales
  * and pads its timeouts.
  */
-export function memoryLimits(
+export function muirSirynNodeTestMemoryLimits(
   maxMemoryMB: number | undefined,
-  store: LzDryRunStore,
+  store: MuirSirynNodeTestDryRunStore,
   log: Logger,
-): MemoryLimits {
+): MuirSirynNodeTestMemoryLimits {
   if (maxMemoryMB === undefined) {
     return dryRunPeaks(store, log);
   }
@@ -33,7 +36,10 @@ export function memoryLimits(
   };
 }
 
-function dryRunPeaks(store: LzDryRunStore, log: Logger): MemoryLimits {
+function dryRunPeaks(
+  store: MuirSirynNodeTestDryRunStore,
+  log: Logger,
+): MuirSirynNodeTestMemoryLimits {
   const unmeasured = new Set<string>();
 
   return {
@@ -57,7 +63,7 @@ function dryRunPeaks(store: LzDryRunStore, log: Logger): MemoryLimits {
         log.warn(
           `The dry run left no readable memory peak for "${file}", ` +
             `so each process of its mutant runs may hold ${limitMB} MB. ` +
-            'Set lzNodeTest.maxMemoryMB to choose the limit.',
+            'Set muirSirynNodeTest.maxMemoryMB to choose the limit.',
         );
       }
 

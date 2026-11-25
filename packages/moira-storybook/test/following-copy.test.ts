@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { csfShapes } from '../src/csf.ts';
-import { interactionsOf } from '../src/interactions.ts';
-import { isRecord } from '../src/is-record.ts';
-import { field } from '../src/node-field.ts';
-import { descendants, indexTree } from '../src/node-tree.ts';
+import { muirMoiraStorybookCsfShapes } from '../src/csf.ts';
+import { muirMoiraStorybookInteractionsOf } from '../src/interactions.ts';
+import { muirMoiraStorybookIsRecord } from '../src/is-record.ts';
+import { muirMoiraStorybookField } from '../src/node-field.ts';
+import {
+  muirMoiraStorybookDescendants,
+  muirMoiraStorybookIndexTree,
+} from '../src/node-tree.ts';
 import {
   type FollowingCase,
   followingIn,
@@ -996,8 +999,8 @@ describe('interactionsOf following checks copy', () => {
       firstCopyWithout(
         source,
         (node) =>
-          field(node, 'type') === 'Identifier' &&
-          field(node, 'name') === 'status',
+          muirMoiraStorybookField(node, 'type') === 'Identifier' &&
+          muirMoiraStorybookField(node, 'name') === 'status',
         'start',
       ),
       [check, check],
@@ -1015,7 +1018,8 @@ describe('interactionsOf following checks copy', () => {
     assert.deepEqual(
       firstCopyWithout(
         source,
-        (node) => field(node, 'type') === 'ExpressionStatement',
+        (node) =>
+          muirMoiraStorybookField(node, 'type') === 'ExpressionStatement',
         'start',
       ),
       [check, check],
@@ -1031,21 +1035,24 @@ describe('interactionsOf following checks copy', () => {
 
     assert.deepEqual(
       programsOf(source).map((program) => {
-        const check = descendants(program).find(
+        const check = muirMoiraStorybookDescendants(program).find(
           (node) =>
-            field(node, 'type') === 'ExpressionStatement' &&
-            field(node, 'expression', 'type') === 'CallExpression',
+            muirMoiraStorybookField(node, 'type') === 'ExpressionStatement' &&
+            muirMoiraStorybookField(node, 'expression', 'type') ===
+              'CallExpression',
         );
 
-        if (!isRecord(check)) {
+        if (!muirMoiraStorybookIsRecord(check)) {
           throw new Error('The source has no check statement.');
         }
 
         Reflect.deleteProperty(check, 'start');
 
         return (
-          interactionsOf(program, csfShapes(program)).all[0]?.following.copy ===
-          check
+          muirMoiraStorybookInteractionsOf(
+            program,
+            muirMoiraStorybookCsfShapes(program),
+          ).all[0]?.following.copy === check
         );
       }),
       [true, true],
@@ -1058,10 +1065,13 @@ describe('interactionsOf following checks copy', () => {
 
     assert.deepEqual(
       programsOf(source).map((program) => {
-        const reader = interactionsOf(program, csfShapes(program));
+        const reader = muirMoiraStorybookInteractionsOf(
+          program,
+          muirMoiraStorybookCsfShapes(program),
+        );
         const [interaction] = reader.all;
-        const statements = field(
-          indexTree(program).parentOf(interaction?.node),
+        const statements = muirMoiraStorybookField(
+          muirMoiraStorybookIndexTree(program).parentOf(interaction?.node),
           'body',
         );
 
@@ -1088,7 +1098,8 @@ describe('interactionsOf following checks copy', () => {
     assert.deepEqual(
       firstCopyWithout(
         source,
-        (node) => field(node, 'type') === 'ExpressionStatement',
+        (node) =>
+          muirMoiraStorybookField(node, 'type') === 'ExpressionStatement',
         'end',
       ),
       [check, check],
@@ -1103,9 +1114,9 @@ function firstCopyWithout(
   key: 'start' | 'end',
 ): readonly (string | undefined)[] {
   return programsOf(source).map((program) => {
-    const target = descendants(program).find(isTarget);
+    const target = muirMoiraStorybookDescendants(program).find(isTarget);
 
-    if (!isRecord(target)) {
+    if (!muirMoiraStorybookIsRecord(target)) {
       throw new Error('The source has no target node.');
     }
 
@@ -1113,7 +1124,10 @@ function firstCopyWithout(
 
     return textOf(
       source,
-      interactionsOf(program, csfShapes(program)).all[0]?.following.copy,
+      muirMoiraStorybookInteractionsOf(
+        program,
+        muirMoiraStorybookCsfShapes(program),
+      ).all[0]?.following.copy,
     );
   });
 }

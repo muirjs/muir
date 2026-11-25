@@ -1,7 +1,8 @@
 // Compares the mutants of two Stryker mutation.json reports: id, file name, start position, mutator and
 // replacement, and with --status their statuses too. File names drop the folders, so a project that keeps the
 // same files elsewhere (tools/packed-demo) compares with the workspace. Mutator names match with or without
-// the Lz prefix of the JSX mutators, so a report from before the lz- rename compares with one after it.
+// the earlier Lz prefix or the current MuirProteus prefix of the JSX mutators, so a report from before either
+// rename compares with one after it.
 // The report schema makes replacement optional; a missing one compares as empty.
 // Exits 0 when both list the same mutants, 1 when they differ, and 2 on a usage error, a report it cannot
 // read, or a report that lists a mutant twice.
@@ -65,7 +66,10 @@ function mutantKeys(reportPath: string, withStatus: boolean): Set<string> {
         id,
         path.basename(file),
         `${integer(start['line'], 'a start line')}:${integer(start['column'], 'a start column')}`,
-        text(mutant['mutatorName'], 'a mutator name').replace(/^Lz/, ''),
+        text(mutant['mutatorName'], 'a mutator name').replace(
+          /^(?:Lz|MuirProteus)/,
+          '',
+        ),
         mutant['replacement'] === undefined
           ? ''
           : text(mutant['replacement'], 'a replacement'),

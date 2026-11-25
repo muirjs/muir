@@ -1,1 +1,1 @@
-export const packageName = '@muirjs/proteus-playwright';
+export const muirProteusPlaywrightPackageName = '@muirjs/proteus-playwright';

@@ -7,7 +7,7 @@ import type { Mutant } from '@stryker-mutator/api/core';
 import { DryRunStatus } from '@stryker-mutator/api/test-runner';
 import { Instrumenter } from '@stryker-mutator/instrumenter';
 
-import { LzPlaywrightTestRunner } from '../../src/lz-playwright-test-runner.ts';
+import { MuirSirynPlaywrightTestRunner } from '../../src/muir-siryn-playwright-test-runner.ts';
 import { logger } from '../support/doubles.ts';
 import { startSession, transpile } from './support/session.ts';
 
@@ -55,9 +55,9 @@ test('a dry run whose page loads instrumented code but reaches no mutant complet
 });
 
 test('a dry run on pages without instrumented code is still refused, with a frame and a popup that start on about:blank', async () => {
-  const runner = new LzPlaywrightTestRunner(
+  const runner = new MuirSirynPlaywrightTestRunner(
     {
-      lzPlaywright: { configFile: fixture('plain.config.ts') },
+      muirSirynPlaywright: { configFile: fixture('plain.config.ts') },
       timeoutMS: 10_000,
     },
     log,

@@ -30,11 +30,11 @@ import {
   type TestResult,
 } from '@stryker-mutator/api/test-runner';
 
-import { lzDirPrefix } from '../src/dirs.ts';
+import { muirSirynNodeTestDirPrefix } from '../src/dirs.ts';
 import {
-  lzShortenHeldOpen,
-  LzNodeTestTestRunner,
-  type LzNodeTestOptions,
+  muirSirynNodeTestShortenHeldOpen,
+  MuirSirynNodeTestTestRunner,
+  type MuirSirynNodeTestOptions,
 } from '../src/runner.ts';
 
 export const activeMutant = INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE;
@@ -150,7 +150,7 @@ export function logger({
 }
 
 export interface RunnerOptions {
-  readonly lzNodeTest?: LzNodeTestOptions;
+  readonly muirSirynNodeTest?: MuirSirynNodeTestOptions;
   readonly testFiles?: readonly string[];
   readonly concurrency?: number;
   readonly checkers?: readonly string[];
@@ -165,7 +165,9 @@ export function strykerOptions({
   testFiles = [],
   checkers = [],
   ...options
-}: RunnerOptions = {}): ConstructorParameters<typeof LzNodeTestTestRunner>[0] {
+}: RunnerOptions = {}): ConstructorParameters<
+  typeof MuirSirynNodeTestTestRunner
+>[0] {
   return {
     allowEmpty: false,
     timeoutFactor,
@@ -179,26 +181,29 @@ export function strykerOptions({
 
 export async function initRunner(
   testFiles?: string[],
-  lzNodeTest?: LzNodeTestOptions,
+  muirSirynNodeTest?: MuirSirynNodeTestOptions,
   {
     log = logger(),
     heldOpenMs,
     ...options
-  }: Omit<RunnerOptions, 'lzNodeTest'> & {
+  }: Omit<RunnerOptions, 'muirSirynNodeTest'> & {
     readonly log?: Logger;
     readonly heldOpenMs?: number;
   } = {},
-): Promise<LzNodeTestTestRunner> {
-  const lzOptions = (testFiles ?? lzNodeTest) && {
-    lzNodeTest: { ...lzNodeTest, ...(testFiles && { testFiles }) },
+): Promise<MuirSirynNodeTestTestRunner> {
+  const muirSirynNodeTestOptions = (testFiles ?? muirSirynNodeTest) && {
+    muirSirynNodeTest: {
+      ...muirSirynNodeTest,
+      ...(testFiles && { testFiles }),
+    },
   };
-  const runner = new LzNodeTestTestRunner(
-    strykerOptions({ ...options, ...lzOptions }),
+  const runner = new MuirSirynNodeTestTestRunner(
+    strykerOptions({ ...options, ...muirSirynNodeTestOptions }),
     log,
   );
 
   if (heldOpenMs !== undefined) {
-    lzShortenHeldOpen(runner, heldOpenMs);
+    muirSirynNodeTestShortenHeldOpen(runner, heldOpenMs);
   }
 
   await runner.init();
@@ -309,7 +314,9 @@ const stalledExitDelayMs = 10_000;
 
 export function ownCacheDirs(): string[] {
   return readdirSync(tmpdir())
-    .filter((name) => name.startsWith(lzDirPrefix('cache', process.pid)))
+    .filter((name) =>
+      name.startsWith(muirSirynNodeTestDirPrefix('cache', process.pid)),
+    )
     .sort();
 }
 

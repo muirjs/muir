@@ -9,7 +9,7 @@ undocumented internals (the instrumenter's mutator list and expression placer), 
 added mutator makes a mutant of a sample and that each removed built-in makes none. A failed check undoes the patch
 and stops the run.
 
-The install is a function the Stryker config awaits (`await lzJsxMutators()`), not a side effect of listing the
+The install is a function the Stryker config awaits (`await muirProteusJsxMutators()`), not a side effect of listing the
 package in `plugins`. Stryker only warns when a module in `plugins` fails to load, so a broken install there would
 let the run finish and report a score without the mutators.
 

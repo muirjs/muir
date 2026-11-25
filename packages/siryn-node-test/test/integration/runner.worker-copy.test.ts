@@ -14,7 +14,7 @@ import {
   MutantRunStatus,
 } from '@stryker-mutator/api/test-runner';
 
-import { lzDirPrefix } from '../../src/dirs.ts';
+import { muirSirynNodeTestDirPrefix } from '../../src/dirs.ts';
 import {
   activeMutant,
   complete,
@@ -34,7 +34,7 @@ import {
 
 shareCompileCache();
 
-describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
+describe('MuirSirynNodeTestTestRunner experimentalWorkerCopy', () => {
   it("runs the test files in the worker's copy of the sandbox and names their tests by the sandbox's files", async (t) => {
     const dir = project(t, {
       'a.test.mjs': fixture(
@@ -119,7 +119,7 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
       reproduce.includes(`"${join(dir, 'a.test.mjs')}"\` in ${dir}`),
       reproduce,
     );
-    assert.doesNotMatch(reproduce, /lz-node-test-copy-/);
+    assert.doesNotMatch(reproduce, /muir-node-test-copy-/);
   });
 
   it('refuses to copy the sandbox under inPlace, where the sandbox is the project itself', async (t) => {
@@ -139,7 +139,7 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
     const dir = project(t, { 'a.test.mjs': passing });
     const copies = () =>
       readdirSync(dirname(dir)).filter((name) =>
-        name.startsWith(lzDirPrefix('copy', process.pid)),
+        name.startsWith(muirSirynNodeTestDirPrefix('copy', process.pid)),
       );
     const before = copies();
     const runner = await initRunner(['*.test.mjs'], {
@@ -171,7 +171,7 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
     );
     assert.match(
       debug.join('\n'),
-      /Copied the sandbox to .*lz-node-test-copy-\d+-\S+ in \d+ ms/,
+      /Copied the sandbox to .*muir-node-test-copy-\d+-\S+ in \d+ ms/,
     );
     assert.ok(
       copiedMs <= Math.ceil(initMs),
@@ -184,7 +184,7 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
     const file = join(dir, 'a.test.mjs');
     const copies = () =>
       readdirSync(dirname(dir)).filter((name) =>
-        name.startsWith(lzDirPrefix('copy', process.pid)),
+        name.startsWith(muirSirynNodeTestDirPrefix('copy', process.pid)),
       );
     const before = copies();
     const first = await initRunner(['*.test.mjs'], {
@@ -219,7 +219,7 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
     );
     const copies = () =>
       readdirSync(dir).filter((name) =>
-        name.startsWith(lzDirPrefix('copy', process.pid)),
+        name.startsWith(muirSirynNodeTestDirPrefix('copy', process.pid)),
       );
 
     const runner = await initRunner(['*.test.mjs'], {
@@ -242,7 +242,10 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
       },
       { cwd: 'sandbox' },
     );
-    const left = join(dir, `${lzDirPrefix('copy', noProcess)}left`);
+    const left = join(
+      dir,
+      `${muirSirynNodeTestDirPrefix('copy', noProcess)}left`,
+    );
     mkdirSync(left);
     symlinkSync(join(dir, 'kept'), join(left, 'node_modules'), 'junction');
 

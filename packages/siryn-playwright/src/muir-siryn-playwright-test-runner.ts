@@ -17,113 +17,117 @@ import type {
 import { MutantRunStatus } from '@stryker-mutator/api/test-runner';
 
 import {
-  readRunnerOptions,
-  type RunnerOptions,
-  type LzPlaywrightRunnerOptionsWithStrykerOptions,
-} from './lz-playwright-runner-options-with-stryker-options.ts';
-import { loadPageHelpers } from './page-helpers.ts';
+  muirSirynPlaywrightReadRunnerOptions,
+  type MuirSirynPlaywrightRunnerOptions,
+  type MuirSirynPlaywrightRunnerOptionsWithStrykerOptions,
+} from './muir-siryn-playwright-runner-options-with-stryker-options.ts';
+import { muirSirynPlaywrightLoadPageHelpers } from './page-helpers.ts';
 import {
-  type ConfigHandles,
-  type ConfigWebServer,
-  isSerialSuite,
-  loadPlaywright,
-  noCopyPromptEnv,
-  type Playwright,
-  type ProjectSelection,
-  type TestRunner,
+  type MuirSirynPlaywrightConfigHandles,
+  type MuirSirynPlaywrightConfigWebServer,
+  muirSirynPlaywrightIsSerialSuite,
+  muirSirynPlaywrightLoadPlaywright,
+  muirSirynPlaywrightNoCopyPromptEnv,
+  type MuirSirynPlaywright,
+  type MuirSirynPlaywrightProjectSelection,
+  type MuirSirynPlaywrightInternalTestRunner,
 } from './playwright-internals.ts';
-import { globalSetupWatchingConfiguredPorts } from './port-watch.ts';
-import { withEnv } from './process-env.ts';
-import { readSnapshotDir } from './protocol.ts';
+import { muirSirynPlaywrightGlobalSetupWatchingConfiguredPorts } from './port-watch.ts';
+import { muirSirynPlaywrightWithEnv } from './process-env.ts';
+import { muirSirynPlaywrightReadSnapshotDir } from './protocol.ts';
 import {
-  LzPlaywrightCollectingReporter,
-  type ReportedTest,
+  MuirSirynPlaywrightCollectingReporter,
+  type MuirSirynPlaywrightReportedTest,
 } from './reporter.ts';
 import {
-  dryRunRequest,
-  mutantRunRequest,
-  runPlan,
-  type RunRequest,
+  muirSirynPlaywrightDryRunRequest,
+  muirSirynPlaywrightMutantRunRequest,
+  muirSirynPlaywrightRunPlan,
+  type MuirSirynPlaywrightRunRequest,
 } from './run-request.ts';
 import {
-  type CoverageGaps,
-  dryRunResult,
-  flakyTestNames,
-  mayHaveLostItsServer,
-  mutantRunResult,
-  type RunOutput,
+  type MuirSirynPlaywrightCoverageGaps,
+  muirSirynPlaywrightDryRunResult,
+  muirSirynPlaywrightFlakyTestNames,
+  muirSirynPlaywrightMayHaveLostItsServer,
+  muirSirynPlaywrightMutantRunResult,
+  type MuirSirynPlaywrightRunOutput,
 } from './run-result.ts';
 import {
-  listTests,
-  projectsThatRun,
-  type SerialGroups,
-  serialGroups,
+  muirSirynPlaywrightListTests,
+  muirSirynPlaywrightProjectsThatRun,
+  type MuirSirynPlaywrightSerialGroups,
+  muirSirynPlaywrightSerialGroups,
 } from './serial-groups.ts';
 import {
-  type ServerCheck,
-  serverCheck,
-  serverTarget,
+  type MuirSirynPlaywrightServerCheck,
+  muirSirynPlaywrightServerCheck,
+  muirSirynPlaywrightServerTarget,
 } from './server-checks.ts';
 import {
-  moveApart,
-  moveServersApart,
-  startsMoreRunners,
+  muirSirynPlaywrightMoveApart,
+  muirSirynPlaywrightMoveServersApart,
+  muirSirynPlaywrightStartsMoreRunners,
 } from './server-ports.ts';
 import {
-  anyHooked,
-  forgetHooked,
-  hostKey,
-  serverDirEnv,
-  writeServerControl,
+  muirSirynPlaywrightAnyHooked,
+  muirSirynPlaywrightForgetHooked,
+  muirSirynPlaywrightHostKey,
+  muirSirynPlaywrightServerDirEnv,
+  muirSirynPlaywrightWriteServerControl,
 } from './server-protocol.ts';
 import {
-  mutateOption,
-  type ServerMutate,
-  ServerSupportRefused,
+  muirSirynPlaywrightMutateOption,
+  type MuirSirynPlaywrightServerMutate,
+  MuirSirynPlaywrightServerSupportRefused,
 } from './server-refusal.ts';
 import {
-  readServerMutantsFile,
-  restartsToIsolate,
-  type RunKind,
-  runKind,
-  startupMutantFor,
-  type ServerMutants,
-  type ServerMutantsFile,
-  writeServerMutantsFile,
+  muirSirynPlaywrightReadServerMutantsFile,
+  muirSirynPlaywrightRestartsToIsolate,
+  type MuirSirynPlaywrightRunKind,
+  muirSirynPlaywrightRunKind,
+  muirSirynPlaywrightStartupMutantFor,
+  type MuirSirynPlaywrightServerMutants,
+  type MuirSirynPlaywrightServerMutantsFile,
+  muirSirynPlaywrightWriteServerMutantsFile,
 } from './server-isolation.ts';
 import {
-  copySurvivorTraces,
-  readTracesTarget,
-  type TracesTarget,
+  muirSirynPlaywrightCopySurvivorTraces,
+  muirSirynPlaywrightReadTracesTarget,
+  type MuirSirynPlaywrightTracesTarget,
 } from './survivor-traces.ts';
-import { claimTempRoot, removeDir, type TempRoot } from './temp-root.ts';
 import {
-  armDeadline,
-  assertionTimeoutWarning,
-  configRetries,
-  type ConfigTimeouts,
-  configTimeouts,
+  muirSirynPlaywrightClaimTempRoot,
+  muirSirynPlaywrightRemoveDir,
+  type MuirSirynPlaywrightTempRoot,
+} from './temp-root.ts';
+import {
+  muirSirynPlaywrightArmDeadline,
+  muirSirynPlaywrightAssertionTimeoutWarning,
+  muirSirynPlaywrightConfigRetries,
+  type MuirSirynPlaywrightConfigTimeouts,
+  muirSirynPlaywrightConfigTimeouts,
 } from './timeouts.ts';
 
 /** The webServer side of a session, when server support is on. */
 interface ServerSide {
-  readonly mutate: ServerMutate;
+  readonly mutate: MuirSirynPlaywrightServerMutate;
   /** Holds the control file and the hooked marks of the processes global setup starts. */
   readonly dir: string;
   readonly testIdHosts: readonly string[];
 }
 
 interface Session {
-  readonly options: RunnerOptions;
-  readonly playwright: TestRunner;
-  readonly root: TempRoot;
-  readonly servers: readonly ServerCheck[];
+  readonly options: MuirSirynPlaywrightRunnerOptions;
+  readonly playwright: MuirSirynPlaywrightInternalTestRunner;
+  readonly root: MuirSirynPlaywrightTempRoot;
+  readonly servers: readonly MuirSirynPlaywrightServerCheck[];
   readonly server: ServerSide | undefined;
-  readonly serialGroups: SerialGroups;
+  readonly serialGroups: MuirSirynPlaywrightSerialGroups;
   readonly listedTestIds: readonly string[];
-  readonly timeouts: ConfigTimeouts;
+  readonly timeouts: MuirSirynPlaywrightConfigTimeouts;
   readonly retriesByProject: ReadonlyMap<string, number>;
-  readonly traces: TracesTarget | undefined;
+  readonly traces: MuirSirynPlaywrightTracesTarget | undefined;
   readonly pageHelpers: string;
 }
 
@@ -151,7 +155,7 @@ async function startError(
   try {
     await start();
   } catch (error) {
-    if (error instanceof ServerSupportRefused) {
+    if (error instanceof MuirSirynPlaywrightServerSupportRefused) {
       throw error;
     }
 
@@ -175,22 +179,22 @@ const runOverrides = ({
   },
 });
 
-export class LzPlaywrightTestRunner implements StrykerTestRunner {
+export class MuirSirynPlaywrightTestRunner implements StrykerTestRunner {
   static inject = tokens(commonTokens.options, commonTokens.logger);
 
-  readonly #strykerOptions: LzPlaywrightRunnerOptionsWithStrykerOptions;
+  readonly #strykerOptions: MuirSirynPlaywrightRunnerOptionsWithStrykerOptions;
   readonly #log: Logger;
   readonly #baseNodeOptions = process.env['NODE_OPTIONS'];
   readonly #sandbox = process.cwd();
   #session: Session | undefined;
   /** The static mutant the webServer last started with. */
   #serverMutant: string | undefined;
-  #dryRunServerMutants: ServerMutants | undefined;
-  #serverMutantsFile: ServerMutantsFile | undefined;
-  #previousRun: RunKind = 'other';
+  #dryRunServerMutants: MuirSirynPlaywrightServerMutants | undefined;
+  #serverMutantsFile: MuirSirynPlaywrightServerMutantsFile | undefined;
+  #previousRun: MuirSirynPlaywrightRunKind = 'other';
 
   constructor(
-    options: LzPlaywrightRunnerOptionsWithStrykerOptions,
+    options: MuirSirynPlaywrightRunnerOptionsWithStrykerOptions,
     log: Logger,
   ) {
     this.#strykerOptions = options;
@@ -202,24 +206,27 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
   }
 
   async init(): Promise<void> {
-    const options = readRunnerOptions(this.#strykerOptions);
+    const options = muirSirynPlaywrightReadRunnerOptions(this.#strykerOptions);
     const { mutate } = options.webServer;
-    const pageHelpers = await loadPageHelpers();
+    const pageHelpers = await muirSirynPlaywrightLoadPageHelpers();
     await this.#start(options, mutate || undefined, pageHelpers).catch(
       (error: unknown) => {
-        if (mutate !== 'auto' || !(error instanceof ServerSupportRefused)) {
+        if (
+          mutate !== 'auto' ||
+          !(error instanceof MuirSirynPlaywrightServerSupportRefused)
+        ) {
           throw error;
         }
 
         this.#log.warn(
-          `${error.message} Server-side mutants stay NoCoverage in this run; ${mutateOption}: true makes this an error instead.`,
+          `${error.message} Server-side mutants stay NoCoverage in this run; ${muirSirynPlaywrightMutateOption}: true makes this an error instead.`,
         );
 
         return this.#start(options, undefined, pageHelpers);
       },
     );
     const { timeouts, retriesByProject } = this.#ready();
-    const warning = assertionTimeoutWarning(
+    const warning = muirSirynPlaywrightAssertionTimeoutWarning(
       timeouts,
       options.strykerTimeoutMS,
       Math.max(0, ...retriesByProject.values()),
@@ -231,20 +238,27 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
   }
 
   async #start(
-    options: RunnerOptions,
-    mutate: ServerMutate | undefined,
+    options: MuirSirynPlaywrightRunnerOptions,
+    mutate: MuirSirynPlaywrightServerMutate | undefined,
     pageHelpers: string,
   ): Promise<void> {
-    const traces = readTracesTarget(options.survivorTraces, process.env);
-    const pw = loadPlaywright(options.configFile);
-    const root = claimTempRoot((removed) => {
+    const traces = muirSirynPlaywrightReadTracesTarget(
+      options.survivorTraces,
+      process.env,
+    );
+    const pw = muirSirynPlaywrightLoadPlaywright(options.configFile);
+    const root = muirSirynPlaywrightClaimTempRoot((removed) => {
       if (removed.length) {
         this.#log.debug(
           `Removed the temp directories of runners that no longer run: ${removed.join(', ')}`,
         );
       }
     });
-    let playwright: (TestRunner & ConfigHandles & ProjectSelection) | undefined;
+    let playwright:
+      | (MuirSirynPlaywrightInternalTestRunner &
+          MuirSirynPlaywrightConfigHandles &
+          MuirSirynPlaywrightProjectSelection)
+      | undefined;
     let undoMove: (() => void) | undefined;
 
     try {
@@ -257,13 +271,22 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
       });
       playwright = created;
       const config = await playwright.loadConfig();
-      const timeouts = configTimeouts(config.projects);
-      const retriesByProject = configRetries(config.projects, options.retries);
-      const running = projectsThatRun(options.projects, config.projects);
+      const timeouts = muirSirynPlaywrightConfigTimeouts(config.projects);
+      const retriesByProject = muirSirynPlaywrightConfigRetries(
+        config.projects,
+        options.retries,
+      );
+      const running = muirSirynPlaywrightProjectsThatRun(
+        options.projects,
+        config.projects,
+      );
       const apart =
         mutate &&
-        startsMoreRunners(this.#strykerOptions, os.availableParallelism())
-          ? await moveServersApart(
+        muirSirynPlaywrightStartsMoreRunners(
+          this.#strykerOptions,
+          os.availableParallelism(),
+        )
+          ? await muirSirynPlaywrightMoveServersApart(
               {
                 ...config,
                 projects: playwright.projectsRun(options.projects),
@@ -274,7 +297,7 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
           : undefined;
 
       if (apart) {
-        undoMove = moveApart(playwright, apart);
+        undoMove = muirSirynPlaywrightMoveApart(playwright, apart);
         this.#log.debug(
           `Stryker starts more than one test runner process, so this one's webServer moves to a port of its own: ${apart.moves.map(({ from, to }) => `${from} -> ${to}`).join(', ')}.`,
         );
@@ -282,19 +305,20 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
 
       const webServers = apart?.webServers ?? config.webServers;
       const servers = webServers.flatMap(
-        (server) => serverCheck(server, pw.isURLAvailable) ?? [],
+        (server) =>
+          muirSirynPlaywrightServerCheck(server, pw.isURLAvailable) ?? [],
       );
       const server = mutate
         ? await serverSide(mutate, root, webServers, pw.isURLAvailable)
         : undefined;
       const setup = () => this.#globalSetup(created, server, undefined);
       await (mutate && apart
-        ? globalSetupWatchingConfiguredPorts(
+        ? muirSirynPlaywrightGlobalSetupWatchingConfiguredPorts(
             setup,
             {
               moves: apart.moves,
               configuredChecks: config.webServers.map((webServer) =>
-                serverCheck(webServer, pw.isURLAvailable),
+                muirSirynPlaywrightServerCheck(webServer, pw.isURLAvailable),
               ),
             },
             mutate,
@@ -303,15 +327,15 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
       // Every Stryker test runner process needs the groups, and only one of them runs the dry run.
       // Listed after global setup, like Playwright's own CLI, because test files may read what it
       // creates.
-      const listed = await listTests(playwright, running);
+      const listed = await muirSirynPlaywrightListTests(playwright, running);
       this.#session = {
         options,
         playwright,
         root,
         servers,
         server,
-        serialGroups: serialGroups(listed, (suite) =>
-          isSerialSuite(suite, pw.version),
+        serialGroups: muirSirynPlaywrightSerialGroups(listed, (suite) =>
+          muirSirynPlaywrightIsSerialSuite(suite, pw.version),
         ),
         listedTestIds: listed.map((test) => test.id),
         timeouts,
@@ -351,7 +375,7 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
 
   async dryRun(options: DryRunOptions): Promise<DryRunResult> {
     const session = this.#ready();
-    const request = dryRunRequest(options);
+    const request = muirSirynPlaywrightDryRunRequest(options);
     const output = await this.#run(session, request);
     // Stryker gives every mutant run the dry run's time beyond its tests, so the dry run pays for one restart.
     await this.#serveMutant(
@@ -362,11 +386,14 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
     this.#dryRunServerMutants = new Set(output.serverMutants);
 
     if (session.options.webServer.mutate) {
-      writeServerMutantsFile(this.#sandbox, output.serverMutants);
+      muirSirynPlaywrightWriteServerMutantsFile(
+        this.#sandbox,
+        output.serverMutants,
+      );
     }
 
-    const { result, gaps } = dryRunResult(output, request);
-    const flaky = flakyTestNames(output);
+    const { result, gaps } = muirSirynPlaywrightDryRunResult(output, request);
+    const flaky = muirSirynPlaywrightFlakyTestNames(output);
 
     if (flaky.length > 0) {
       this.#log.warn(
@@ -385,7 +412,7 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
     ) {
       this.#session = { ...session, server: undefined };
       this.#log.info(
-        `Server-side mutants stay NoCoverage: with ${mutateOption}: 'auto', the dry run reached no mutant in the code the Playwright webServer runs, so server support stays off.`,
+        `Server-side mutants stay NoCoverage: with ${muirSirynPlaywrightMutateOption}: 'auto', the dry run reached no mutant in the code the Playwright webServer runs, so server support stays off.`,
       );
     }
 
@@ -394,7 +421,7 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
       session.servers.length > 0
     ) {
       this.#log.info(
-        `Server-side mutants stay NoCoverage: the code the Playwright webServer runs is mutated only with ${mutateOption}: true.`,
+        `Server-side mutants stay NoCoverage: the code the Playwright webServer runs is mutated only with ${muirSirynPlaywrightMutateOption}: true.`,
       );
     }
 
@@ -408,8 +435,8 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
       return session;
     }
 
-    const request = mutantRunRequest(options, session);
-    let output: RunOutput;
+    const request = muirSirynPlaywrightMutantRunRequest(options, session);
+    let output: MuirSirynPlaywrightRunOutput;
 
     try {
       output = await this.#run(session, request);
@@ -426,7 +453,10 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
       };
     }
 
-    const { result, hitCount } = mutantRunResult(output, request);
+    const { result, hitCount } = muirSirynPlaywrightMutantRunResult(
+      output,
+      request,
+    );
     this.#log.debug(
       `Mutant ${request.activeMutant}: ${result.status}, hitCount ${hitCount}/${request.hitLimit}`,
     );
@@ -444,12 +474,12 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
   }
 
   #keepSurvivorTraces(
-    target: TracesTarget,
+    target: MuirSirynPlaywrightTracesTarget,
     mutant: Mutant,
-    tests: Iterable<ReportedTest>,
+    tests: Iterable<MuirSirynPlaywrightReportedTest>,
   ): void {
     try {
-      const dir = copySurvivorTraces(target, mutant, tests);
+      const dir = muirSirynPlaywrightCopySurvivorTraces(target, mutant, tests);
       this.#log.debug(`Mutant ${mutant.id}: traces in ${dir}`);
     } catch (error) {
       this.#log.warn(
@@ -476,8 +506,8 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
       return {
         status: MutantRunStatus.Error,
         errorMessage:
-          `${mutateOption} is 'auto' and the dry run reached server-side mutants, but this process turned server ` +
-          `support off at init (see its warning), so it cannot run them. Set ${mutateOption}: true to see the ` +
+          `${muirSirynPlaywrightMutateOption} is 'auto' and the dry run reached server-side mutants, but this process turned server ` +
+          `support off at init (see its warning), so it cannot run them. Set ${muirSirynPlaywrightMutateOption}: true to see the ` +
           'cause as an error.',
       };
     }
@@ -503,28 +533,31 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
     return this.#session;
   }
 
-  async #run(session: Session, request: RunRequest): Promise<RunOutput> {
+  async #run(
+    session: Session,
+    request: MuirSirynPlaywrightRunRequest,
+  ): Promise<MuirSirynPlaywrightRunOutput> {
     const deadlineAt =
       request.budget.deadlineMs === undefined
         ? undefined
         : performance.now() + request.budget.deadlineMs;
     const serverMutants = () => this.#serverMutants(session);
     const kind = session.options.webServer.isolate
-      ? runKind(request, serverMutants)
+      ? muirSirynPlaywrightRunKind(request, serverMutants)
       : 'other';
-    const isolate = restartsToIsolate(
+    const isolate = muirSirynPlaywrightRestartsToIsolate(
       session.options.webServer.isolate,
       this.#previousRun,
       kind,
     );
     this.#previousRun = kind;
-    const mutant = startupMutantFor(request, serverMutants);
+    const mutant = muirSirynPlaywrightStartupMutantFor(request, serverMutants);
     await this.#serveMutant(session, mutant, isolate);
     await this.#restartDeadServers(session);
     let output = await this.#runOnce(session, request, deadlineAt);
 
     if (
-      mayHaveLostItsServer(output) &&
+      muirSirynPlaywrightMayHaveLostItsServer(output) &&
       (await this.#restartDeadServers(session))
     ) {
       output = await this.#runOnce(session, request, deadlineAt);
@@ -535,19 +568,19 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
 
   async #runOnce(
     session: Session,
-    request: RunRequest,
+    request: MuirSirynPlaywrightRunRequest,
     deadlineAt: number | undefined,
-  ): Promise<RunOutput> {
+  ): Promise<MuirSirynPlaywrightRunOutput> {
     const outDir = session.root.nextRunDir();
-    const reporter = new LzPlaywrightCollectingReporter(
+    const reporter = new MuirSirynPlaywrightCollectingReporter(
       session.retriesByProject,
     );
-    const deadline = armDeadline(deadlineAt, () =>
+    const deadline = muirSirynPlaywrightArmDeadline(deadlineAt, () =>
       session.playwright.stopTests(),
     );
 
     try {
-      const { env, params, control } = runPlan(
+      const { env, params, control } = muirSirynPlaywrightRunPlan(
         request,
         outDir,
         session.server?.testIdHosts,
@@ -556,16 +589,16 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
       );
 
       if (session.server) {
-        writeServerControl(session.server.dir, control);
+        muirSirynPlaywrightWriteServerControl(session.server.dir, control);
       }
 
       // Only the workers this run forks see these; the webServer started earlier never does.
-      const { status } = await withEnv(
+      const { status } = await muirSirynPlaywrightWithEnv(
         {
           NODE_OPTIONS:
             `--import "${workerHookUrl}" ${this.#baseNodeOptions ?? ''}`.trim(),
           ...env,
-          [noCopyPromptEnv]: '1',
+          [muirSirynPlaywrightNoCopyPromptEnv]: '1',
         },
         () =>
           session.playwright.runTests(reporter, {
@@ -590,11 +623,11 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
             ? 'deadline'
             : status,
         reporter,
-        ...readSnapshotDir(outDir),
+        ...muirSirynPlaywrightReadSnapshotDir(outDir),
       };
     } finally {
       deadline.disarm();
-      removeDir(outDir);
+      muirSirynPlaywrightRemoveDir(outDir);
     }
   }
 
@@ -619,7 +652,7 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
     return true;
   }
 
-  #serverMutants(session: Session): ServerMutants {
+  #serverMutants(session: Session): MuirSirynPlaywrightServerMutants {
     if (!session.server) {
       return new Set();
     }
@@ -640,8 +673,10 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
     return this.#dryRunServerMutants;
   }
 
-  #readServerMutantsFile(): ServerMutantsFile {
-    this.#serverMutantsFile ??= readServerMutantsFile(this.#sandbox);
+  #readServerMutantsFile(): MuirSirynPlaywrightServerMutantsFile {
+    this.#serverMutantsFile ??= muirSirynPlaywrightReadServerMutantsFile(
+      this.#sandbox,
+    );
 
     return this.#serverMutantsFile;
   }
@@ -695,10 +730,10 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
 
   /** Global teardown runs first, so this also restarts the webServer that global setup started. */
   async #globalSetup(
-    playwright: TestRunner,
+    playwright: MuirSirynPlaywrightInternalTestRunner,
     server: ServerSide | undefined,
     mutant: string | undefined,
-    running: readonly ServerCheck[] = [],
+    running: readonly MuirSirynPlaywrightServerCheck[] = [],
   ) {
     if (!server) {
       await runGlobalSetup(playwright);
@@ -708,12 +743,12 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
 
     await playwright.runGlobalTeardown();
     await waitUntilStopped(running, stoppedWaitMs);
-    forgetHooked(server.dir);
-    await withEnv(
+    muirSirynPlaywrightForgetHooked(server.dir);
+    await muirSirynPlaywrightWithEnv(
       {
         NODE_OPTIONS:
           `--import "${serverHookUrl}" ${this.#baseNodeOptions ?? ''}`.trim(),
-        [serverDirEnv]: server.dir,
+        [muirSirynPlaywrightServerDirEnv]: server.dir,
         [INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE]: mutant,
       },
       () => runGlobalSetup(playwright),
@@ -721,7 +756,7 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
     this.#serverMutant = mutant;
 
     if (!(await hookedWithin(server.dir, hookedWaitMs))) {
-      throw new ServerSupportRefused(
+      throw new MuirSirynPlaywrightServerSupportRefused(
         server.mutate,
         'no process that Playwright global setup started loaded the server hook. ' +
           'A webServer that is not Node.js, a command that sets NODE_OPTIONS itself, or a server that was already ' +
@@ -737,13 +772,13 @@ export class LzPlaywrightTestRunner implements StrykerTestRunner {
  * this runner cannot switch to its mutant.
  */
 async function serverSide(
-  mutate: ServerMutate,
-  root: Pick<TempRoot, 'dir'>,
-  webServers: readonly ConfigWebServer[],
-  isURLAvailable: Playwright['isURLAvailable'],
+  mutate: MuirSirynPlaywrightServerMutate,
+  root: Pick<MuirSirynPlaywrightTempRoot, 'dir'>,
+  webServers: readonly MuirSirynPlaywrightConfigWebServer[],
+  isURLAvailable: MuirSirynPlaywright['isURLAvailable'],
 ): Promise<ServerSide> {
   if (webServers.some((server) => server.setsNodeOptions)) {
-    throw new ServerSupportRefused(
+    throw new MuirSirynPlaywrightServerSupportRefused(
       mutate,
       "a webServer's env sets NODE_OPTIONS, which replaces the one that loads " +
         'the server hook. Set NODE_OPTIONS in the environment that runs Stryker instead.',
@@ -752,12 +787,14 @@ async function serverSide(
 
   const reused = webServers
     .filter((server) => server.reuseExistingServer)
-    .flatMap((server) => serverCheck(server, isURLAvailable) ?? []);
+    .flatMap(
+      (server) => muirSirynPlaywrightServerCheck(server, isURLAvailable) ?? [],
+    );
   const up = await Promise.all(reused.map((server) => server.isUp()));
   const shared = reused.filter((_, index) => up[index]);
 
   if (shared.length > 0) {
-    throw new ServerSupportRefused(
+    throw new MuirSirynPlaywrightServerSupportRefused(
       mutate,
       `the webServer at ${shared.map((server) => server.name).join(', ')} ` +
         'already answers and reuseExistingServer is true. Only the Stryker process that started a server can ' +
@@ -776,8 +813,10 @@ async function serverSide(
   };
 }
 
-function serverHost(server: ConfigWebServer): string | undefined {
-  const target = serverTarget(server);
+function serverHost(
+  server: MuirSirynPlaywrightConfigWebServer,
+): string | undefined {
+  const target = muirSirynPlaywrightServerTarget(server);
 
   if (target === undefined) {
     return undefined;
@@ -785,13 +824,13 @@ function serverHost(server: ConfigWebServer): string | undefined {
 
   return 'port' in target
     ? `localhost:${target.port}`
-    : hostKey(new URL(target.url));
+    : muirSirynPlaywrightHostKey(new URL(target.url));
 }
 
 async function hookedWithin(dir: string, waitMs: number): Promise<boolean> {
   const until = performance.now() + waitMs;
 
-  while (!anyHooked(dir)) {
+  while (!muirSirynPlaywrightAnyHooked(dir)) {
     // Stryker disable next-line EqualityOperator: > differs only when the clock reads until exactly, one poll more or less
     if (performance.now() >= until) {
       return false;
@@ -808,7 +847,7 @@ async function hookedWithin(dir: string, waitMs: number): Promise<boolean> {
  * that global teardown stopped answers for a while.
  */
 async function waitUntilStopped(
-  servers: readonly ServerCheck[],
+  servers: readonly MuirSirynPlaywrightServerCheck[],
   waitMs: number,
 ): Promise<void> {
   const until = performance.now() + waitMs;
@@ -825,8 +864,10 @@ async function waitUntilStopped(
   }
 }
 
-async function runGlobalSetup(playwright: TestRunner) {
-  const reporter = new LzPlaywrightCollectingReporter();
+async function runGlobalSetup(
+  playwright: MuirSirynPlaywrightInternalTestRunner,
+) {
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   const { status } = await playwright.runGlobalSetup([reporter]);
 
   if (status !== 'passed') {
@@ -838,7 +879,7 @@ async function runGlobalSetup(playwright: TestRunner) {
 
 function logCoverageGaps(
   log: Logger,
-  { lostFrames, sharedFrames }: CoverageGaps,
+  { lostFrames, sharedFrames }: MuirSirynPlaywrightCoverageGaps,
 ) {
   if (lostFrames > 0) {
     log.warn(

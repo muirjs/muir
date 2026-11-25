@@ -2,12 +2,12 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { TestContext } from 'node:test';
 
-import { serializeSnapshot } from '../../src/protocol.ts';
+import { muirSirynPlaywrightSerializeSnapshot } from '../../src/protocol.ts';
 import {
-  hookedPrefix,
-  readServerControl,
-  type ServerControl,
-  serverDirEnv,
+  muirSirynPlaywrightHookedPrefix,
+  muirSirynPlaywrightReadServerControl,
+  type MuirSirynPlaywrightServerControl,
+  muirSirynPlaywrightServerDirEnv,
 } from '../../src/server-protocol.ts';
 import { mutantRunOptions, tempTree } from './doubles.ts';
 import {
@@ -26,7 +26,7 @@ export const serverHookUrl = new URL(
 // A url, not a port: the fake answers the url check, and a port check would connect for real.
 export const webServer = { url: 'http://127.0.0.1:4820/' };
 export const autoOff =
-  ' Server-side mutants stay NoCoverage in this run; lzPlaywright.webServer.mutate: true makes this an error instead.';
+  ' Server-side mutants stay NoCoverage in this run; muirSirynPlaywright.webServer.mutate: true makes this an error instead.';
 
 interface Setup {
   readonly nodeOptions: string | undefined;
@@ -54,12 +54,12 @@ export function serverFake(
   stubEnv(t, { NODE_OPTIONS: '--no-warnings' });
   const sandbox = inSandbox(t);
   const setups: Setup[] = [];
-  const controls: (ServerControl | undefined)[] = [];
+  const controls: (MuirSirynPlaywrightServerControl | undefined)[] = [];
   const fake = fakePlaywright(t, {
     ...behaviour,
     webServers: behaviour.webServers ?? [webServer],
     globalSetup: (reporter) => {
-      const serverDir = process.env[serverDirEnv];
+      const serverDir = process.env[muirSirynPlaywrightServerDirEnv];
       setups.push({
         nodeOptions: process.env['NODE_OPTIONS'],
         serverDir,
@@ -70,7 +70,10 @@ export function serverFake(
         (typeof hooked === 'function' ? hooked() : hooked) &&
         serverDir !== undefined
       ) {
-        writeFileSync(path.join(serverDir, `${hookedPrefix}1`), '');
+        writeFileSync(
+          path.join(serverDir, `${muirSirynPlaywrightHookedPrefix}1`),
+          '',
+        );
       }
 
       return behaviour.globalSetup?.(reporter) ?? 'passed';
@@ -78,7 +81,9 @@ export function serverFake(
     runTests: async (run: Run) => {
       const serverDir = setups.at(-1)?.serverDir;
       controls.push(
-        serverDir === undefined ? undefined : readServerControl(serverDir),
+        serverDir === undefined
+          ? undefined
+          : muirSirynPlaywrightReadServerControl(serverDir),
       );
 
       return (behaviour.runTests ?? passAll)(run);
@@ -102,7 +107,7 @@ export function serverFake(
     } = {}) =>
       fake.runner({
         ...strykerOptions,
-        lzPlaywright: {
+        muirSirynPlaywright: {
           ...(projects === undefined ? {} : { projects }),
           webServer: {
             mutate,
@@ -131,7 +136,7 @@ export function passAllWithDryRunServerMutants(...ids: readonly string[]) {
     if (run.settings.perTest) {
       writeFileSync(
         path.join(run.settings.outDir, 'server-9-x.ndjson'),
-        serializeSnapshot({
+        muirSirynPlaywrightSerializeSnapshot({
           mutantCoverage: {
             static: {},
             perTest: { a: Object.fromEntries(ids.map((id) => [id, 1])) },

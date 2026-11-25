@@ -1,13 +1,20 @@
-export function isRecord(value: unknown): value is Record<string, unknown> {
+export function muirSirynPlaywrightIsRecord(
+  value: unknown,
+): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-export function isStringArray(value: unknown): value is string[] {
+export function muirSirynPlaywrightIsStringArray(
+  value: unknown,
+): value is string[] {
   return (
     Array.isArray(value) && value.every((item) => typeof item === 'string')
   );
 }
 
-export function fieldOf(value: unknown, key: string): unknown {
-  return isRecord(value) ? value[key] : undefined;
+export function muirSirynPlaywrightFieldOf(
+  value: unknown,
+  key: string,
+): unknown {
+  return muirSirynPlaywrightIsRecord(value) ? value[key] : undefined;
 }

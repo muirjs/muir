@@ -1,6 +1,6 @@
 import { runCases } from './support/run-cases.ts';
 import { targetCases } from './target-cases.ts';
 
-runCases('LzStorybookInteractionTarget', targetCases, {
-  experimental: { LzStorybookInteractionTarget: true },
+runCases('MuirProteusStorybookTestInteractionTarget', targetCases, {
+  experimental: { MuirProteusStorybookTestInteractionTarget: true },
 });

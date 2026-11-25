@@ -1,7 +1,9 @@
-export function isRecord(value: unknown): value is Record<string, unknown> {
+export function muirMoiraMutatorsIsRecord(
+  value: unknown,
+): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-export function fieldOf(value: unknown, key: string): unknown {
-  return isRecord(value) ? value[key] : undefined;
+export function muirMoiraMutatorsFieldOf(value: unknown, key: string): unknown {
+  return muirMoiraMutatorsIsRecord(value) ? value[key] : undefined;
 }

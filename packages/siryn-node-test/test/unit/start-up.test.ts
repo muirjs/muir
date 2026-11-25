@@ -5,14 +5,24 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import { logger } from '../runner.fixtures.ts';
-import { lzDryRunStore } from '../../src/dry-run-store.ts';
-import { lzOutsideMs, type RecordedTest } from '../../src/record.ts';
-import { lzToTestResults } from '../../src/runner.ts';
-import { lzDeadlineMs, lzStartUpOf, lzStartUps } from '../../src/start-up.ts';
+import { muirSirynNodeTestDryRunStore } from '../../src/dry-run-store.ts';
+import {
+  muirSirynNodeTestOutsideMs,
+  type MuirSirynNodeTestRecordedTest,
+} from '../../src/record.ts';
+import { muirSirynNodeTestToTestResults } from '../../src/runner.ts';
+import {
+  muirSirynNodeTestDeadlineMs,
+  muirSirynNodeTestStartUpOf,
+  muirSirynNodeTestStartUps,
+} from '../../src/start-up.ts';
 
-const passed = (id: string, timeSpentMs: number): RecordedTest => ({
+const passed = (
+  id: string,
+  timeSpentMs: number,
+): MuirSirynNodeTestRecordedTest => ({
   id,
   status: 'passed',
   timeSpentMs,
@@ -24,16 +34,17 @@ function setup(t: TestContext) {
     rmSync(parent, { recursive: true, force: true });
   });
   const dir = join(parent, 'dry-run');
-  const store = lzDryRunStore(dir);
+  const store = muirSirynNodeTestDryRunStore(dir);
   store.start();
   const warnings: string[] = [];
   // Each call is another runner, as in another Stryker worker.
-  const runner = () => lzStartUps(store, 1.5, logger({ warnings }));
+  const runner = () =>
+    muirSirynNodeTestStartUps(store, 1.5, logger({ warnings }));
 
   return { dir, warnings, runner };
 }
 
-describe('lzStartUps', () => {
+describe('muirSirynNodeTestStartUps', () => {
   it("takes off the start-ups of the covering tests after each file's first, as another runner recorded them in the dry run", (t) => {
     const { warnings, runner } = setup(t);
     const dryRun = runner();
@@ -54,7 +65,7 @@ describe('lzStartUps', () => {
     assert.deepEqual(warnings, []);
   });
 
-  lzTestFor<readonly [string, readonly string[] | undefined]>([
+  muirTestFor<readonly [string, readonly string[] | undefined]>([
     ['no test filter', undefined],
     [
       "a test filter of whole files, as Stryker's --testFiles gives a static mutant",
@@ -88,7 +99,7 @@ describe('lzStartUps', () => {
     assert.deepEqual(warnings, []);
   });
 
-  lzTestFor<readonly [string, string | undefined]>([
+  muirTestFor<readonly [string, string | undefined]>([
     ['no record', undefined],
     ['a record that is not JSON', '{"startUpMs":401,'],
     ['a record without the test count', '{"startUpMs":401}'],
@@ -135,7 +146,7 @@ function overwriteRecords(dir: string, file: string, content: string): void {
   writeFileSync(join(dir, name), content);
 }
 
-describe('lzStartUpOf', () => {
+describe('muirSirynNodeTestStartUpOf', () => {
   it("keeps a file's run time outside its outermost tests, in whole milliseconds, and how many tests it has", () => {
     const tests = [
       passed('a > x', 100),
@@ -143,28 +154,38 @@ describe('lzStartUpOf', () => {
       passed('a > z', 50),
     ];
 
-    assert.deepEqual(lzStartUpOf(tests, 560.9), { startUpMs: 410, tests: 3 });
+    assert.deepEqual(muirSirynNodeTestStartUpOf(tests, 560.9), {
+      startUpMs: 410,
+      tests: 3,
+    });
   });
 
   it('keeps no start-up for a file whose outermost tests took longer than its run', () => {
     assert.deepEqual(
-      lzStartUpOf([passed('a > x', 100), passed('a > z', 50)], 120),
+      muirSirynNodeTestStartUpOf(
+        [passed('a > x', 100), passed('a > z', 50)],
+        120,
+      ),
       { startUpMs: 0, tests: 2 },
     );
   });
 });
 
-describe('lzDeadlineMs', () => {
+describe('muirSirynNodeTestDeadlineMs', () => {
   it("keeps Stryker's timeout for a file with one covering test", () => {
     assert.equal(
-      lzDeadlineMs(10_000, 1.5, [{ covering: 1, startUpMs: 400 }]),
+      muirSirynNodeTestDeadlineMs(10_000, 1.5, [
+        { covering: 1, startUpMs: 400 },
+      ]),
       10_000,
     );
   });
 
   it("takes timeoutFactor times the start-up, less a millisecond, off Stryker's timeout for each covering test after a file's first", () => {
     assert.equal(
-      lzDeadlineMs(10_000, 1.5, [{ covering: 3, startUpMs: 401 }]),
+      muirSirynNodeTestDeadlineMs(10_000, 1.5, [
+        { covering: 3, startUpMs: 401 },
+      ]),
       10_000 - 1.5 * 2 * 400,
     );
   });
@@ -176,7 +197,10 @@ describe('lzDeadlineMs', () => {
       { covering: 2, startUpMs: 101 },
     ];
 
-    assert.equal(lzDeadlineMs(10_000, 2, files), 10_000 - 2 * (2 * 400 + 100));
+    assert.equal(
+      muirSirynNodeTestDeadlineMs(10_000, 2, files),
+      10_000 - 2 * (2 * 400 + 100),
+    );
   });
 
   it("gives each file at least its tests' time and its start-up once, or Stryker's own share where that is less", () => {
@@ -197,16 +221,17 @@ describe('lzDeadlineMs', () => {
       const fileMs =
         tests.reduce((sum, test) => sum + test.timeSpentMs, 0) + random() * 900;
       const covering = tests.slice(0, 1 + Math.floor(random() * tests.length));
-      const reported = lzToTestResults(name, tests, fileMs).slice(
-        0,
-        covering.length,
-      );
+      const reported = muirSirynNodeTestToTestResults(
+        name,
+        tests,
+        fileMs,
+      ).slice(0, covering.length);
 
       return {
-        startUp: lzStartUpOf(tests, fileMs),
+        startUp: muirSirynNodeTestStartUpOf(tests, fileMs),
         covering: covering.length,
         coveringMs: covering.reduce((sum, test) => sum + test.timeSpentMs, 0),
-        exactStartUpMs: lzOutsideMs(tests, fileMs),
+        exactStartUpMs: muirSirynNodeTestOutsideMs(tests, fileMs),
         summedMs: reported.reduce((sum, test) => sum + test.timeSpentMs, 0),
       };
     };
@@ -225,7 +250,7 @@ describe('lzDeadlineMs', () => {
             0,
           ) +
         otherMs;
-      const deadline = lzDeadlineMs(
+      const deadline = muirSirynNodeTestDeadlineMs(
         timeout,
         timeoutFactor,
         files.map(({ covering, startUp }) => ({
@@ -245,21 +270,26 @@ describe('lzDeadlineMs', () => {
   });
 
   it('never gives a deadline below 1 ms, as when records left by another run take off more than the timeout', () => {
-    assert.equal(lzDeadlineMs(100, 1.5, [{ covering: 50, startUpMs: 401 }]), 1);
+    assert.equal(
+      muirSirynNodeTestDeadlineMs(100, 1.5, [{ covering: 50, startUpMs: 401 }]),
+      1,
+    );
   });
 
   it("keeps Stryker's timeout for a file without tests, which Stryker's timeout has no time for", () => {
     assert.equal(
-      lzDeadlineMs(10_000, 1.5, [{ covering: 0, startUpMs: 401 }]),
+      muirSirynNodeTestDeadlineMs(10_000, 1.5, [
+        { covering: 0, startUpMs: 401 },
+      ]),
       10_000,
     );
   });
 
-  lzTestFor<readonly [number]>([[0], [1]])(
+  muirTestFor<readonly [number]>([[0], [1]])(
     'takes nothing off for a file whose start-up is %d ms, below the millisecond kept for rounding',
     ([startUpMs]) => {
       assert.equal(
-        lzDeadlineMs(10_000, 1.5, [{ covering: 3, startUpMs }]),
+        muirSirynNodeTestDeadlineMs(10_000, 1.5, [{ covering: 3, startUpMs }]),
         10_000,
       );
     },

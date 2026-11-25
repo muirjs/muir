@@ -3,27 +3,28 @@ import { test } from 'node:test';
 
 import type { FullResult } from '@playwright/test/reporter';
 
-import { isSerialSuite } from '../src/playwright-internals.ts';
+import { muirSirynPlaywrightIsSerialSuite } from '../src/playwright-internals.ts';
 import type {
-  LzPlaywrightCollectingReporter,
-  ReportedTest,
+  MuirSirynPlaywrightCollectingReporter,
+  MuirSirynPlaywrightReportedTest,
 } from '../src/reporter.ts';
 import {
-  listTests,
-  projectsThatRun,
-  serialGroups,
-  withSerialGroups,
+  muirSirynPlaywrightListTests,
+  muirSirynPlaywrightProjectsThatRun,
+  muirSirynPlaywrightSerialGroups,
+  muirSirynPlaywrightWithSerialGroups,
 } from '../src/serial-groups.ts';
 import { fakeTestCase } from './support/doubles.ts';
 
-const isSerial = (suite: unknown) => isSerialSuite(suite, '1.99.0');
+const isSerial = (suite: unknown) =>
+  muirSirynPlaywrightIsSerialSuite(suite, '1.99.0');
 
 test('a mutant run selects every test of a describe.serial group, not one test alone', () => {
   const file = { _parallelMode: 'none', parent: undefined };
   const serial = { _parallelMode: 'serial', parent: file };
   const nestedSerial = { _parallelMode: 'serial', parent: serial };
   const plain = { _parallelMode: 'default', parent: file };
-  const groups = serialGroups(
+  const groups = muirSirynPlaywrightSerialGroups(
     [
       fakeTestCase('create', { parent: serial }),
       fakeTestCase('edit', { parent: nestedSerial }),
@@ -32,17 +33,19 @@ test('a mutant run selects every test of a describe.serial group, not one test a
     isSerial,
   );
 
-  assert.deepEqual(withSerialGroups(['edit'], groups), ['create', 'edit']);
-  assert.deepEqual(withSerialGroups(['alone', 'create'], groups), [
-    'alone',
+  assert.deepEqual(muirSirynPlaywrightWithSerialGroups(['edit'], groups), [
     'create',
     'edit',
   ]);
+  assert.deepEqual(
+    muirSirynPlaywrightWithSerialGroups(['alone', 'create'], groups),
+    ['alone', 'create', 'edit'],
+  );
 });
 
 test('a mutant run selects a test outside describe.serial alone, not with the other such tests', () => {
   const file = { _parallelMode: 'none', parent: undefined };
-  const groups = serialGroups(
+  const groups = muirSirynPlaywrightSerialGroups(
     [
       fakeTestCase('alone', { parent: file }),
       fakeTestCase('other', { parent: file }),
@@ -50,13 +53,15 @@ test('a mutant run selects a test outside describe.serial alone, not with the ot
     isSerial,
   );
 
-  assert.deepEqual(withSerialGroups(['alone'], groups), ['alone']);
+  assert.deepEqual(muirSirynPlaywrightWithSerialGroups(['alone'], groups), [
+    'alone',
+  ]);
 });
 
 test('serial grouping fails loudly when Playwright suites lose _parallelMode', () => {
   assert.throws(
     () =>
-      serialGroups(
+      muirSirynPlaywrightSerialGroups(
         [fakeTestCase('a', { parent: { parent: undefined } })],
         isSerial,
       ),
@@ -71,13 +76,13 @@ function listing({
 }: {
   status?: FullResult['status'];
   errors?: string[];
-  tests?: ReportedTest[];
+  tests?: MuirSirynPlaywrightReportedTest[];
 }) {
   const result = status === undefined ? undefined : { status };
   const calls: string[][] = [];
   const playwright = {
     async listTests(
-      reporter: LzPlaywrightCollectingReporter,
+      reporter: MuirSirynPlaywrightCollectingReporter,
       params: { projects?: string[] },
     ) {
       calls.push(params.projects ?? []);
@@ -98,9 +103,17 @@ test('without a projects option, listing covers the default projects, which are 
     { default: true, project: { name: 'setup' } },
   ];
 
-  assert.deepEqual(projectsThatRun(undefined, projects), ['chromium', 'setup']);
-  assert.deepEqual(projectsThatRun([], projects), ['chromium', 'setup']);
-  assert.deepEqual(projectsThatRun(['smoke'], projects), ['smoke']);
+  assert.deepEqual(muirSirynPlaywrightProjectsThatRun(undefined, projects), [
+    'chromium',
+    'setup',
+  ]);
+  assert.deepEqual(muirSirynPlaywrightProjectsThatRun([], projects), [
+    'chromium',
+    'setup',
+  ]);
+  assert.deepEqual(muirSirynPlaywrightProjectsThatRun(['smoke'], projects), [
+    'smoke',
+  ]);
 });
 
 test('listing passes the projects to Playwright and groups the describe.serial tests it lists', async () => {
@@ -110,12 +123,12 @@ test('listing passes the projects to Playwright and groups the describe.serial t
   );
   const { playwright, calls } = listing({ status: 'passed', tests });
 
-  const listed = await listTests(playwright, ['chromium']);
+  const listed = await muirSirynPlaywrightListTests(playwright, ['chromium']);
 
-  assert.deepEqual(serialGroups(listed, isSerial).get('edit'), [
-    'create',
-    'edit',
-  ]);
+  assert.deepEqual(
+    muirSirynPlaywrightSerialGroups(listed, isSerial).get('edit'),
+    ['create', 'edit'],
+  );
   assert.deepEqual(calls, [['chromium']]);
 });
 
@@ -125,7 +138,7 @@ test('listing fails when a test file does not load, though the status says passe
     errors: ['SyntaxError in a.spec.ts', 'SyntaxError in b.spec.ts'],
   });
 
-  await assert.rejects(listTests(playwright, []), {
+  await assert.rejects(muirSirynPlaywrightListTests(playwright, []), {
     message:
       'Playwright could not load every test file:\nSyntaxError in a.spec.ts\nSyntaxError in b.spec.ts',
   });
@@ -137,7 +150,7 @@ test('listing fails with the status Playwright reports', async () => {
     errors: ['config error', 'second error'],
   });
 
-  await assert.rejects(listTests(playwright, []), {
+  await assert.rejects(muirSirynPlaywrightListTests(playwright, []), {
     message:
       'Playwright could not list the tests (failed):\nconfig error\nsecond error',
   });
@@ -146,7 +159,7 @@ test('listing fails with the status Playwright reports', async () => {
 test('listing fails and points at the trace log when Playwright throws', async () => {
   const { playwright } = listing({});
 
-  await assert.rejects(listTests(playwright, []), {
+  await assert.rejects(muirSirynPlaywrightListTests(playwright, []), {
     message: /--logLevel trace/,
   });
 });

@@ -4,12 +4,12 @@ import { describe } from 'node:test';
 import type { NodePath } from '@babel/core';
 import type { Location } from '@stryker-mutator/api/core';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import type { LzMutator } from '@muirjs/moira-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import type { MuirMoiraNodeTestMutator } from '@muirjs/moira-node-test';
 import { instrumentWith, mutantsOf } from '../mutants-of.fixtures.ts';
-import { nodeMutators } from '../../src/mutators.ts';
+import { muirProteusNodeMutators } from '../../src/mutators.ts';
 
-const mutators = nodeMutators;
+const mutators = muirProteusNodeMutators;
 const allowed: ReadonlySet<string> = new Set(['Error', 'Promise.reject']);
 const keywords: ReadonlySet<string> = new Set([
   'catch',
@@ -67,7 +67,7 @@ function textAt(source: string, { start, end }: Location): string {
 }
 
 async function newCallees(
-  mutator: LzMutator,
+  mutator: MuirMoiraNodeTestMutator,
   source: string,
 ): Promise<string[][]> {
   const mutants = await instrumentWith(mutator, source);
@@ -82,8 +82,8 @@ async function newCallees(
 }
 
 describe('safety', () => {
-  lzTestEach(
-    mutators.map((mutator): readonly [string, LzMutator] => [
+  muirTestEach(
+    mutators.map((mutator): readonly [string, MuirMoiraNodeTestMutator] => [
       mutator.name,
       mutator,
     ]),
@@ -102,11 +102,11 @@ describe('safety', () => {
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     [
       'a mutator that signals a process',
       'f();',
-      (t: Parameters<LzMutator['mutate']>[1]) =>
+      (t: Parameters<MuirMoiraNodeTestMutator['mutate']>[1]) =>
         t.callExpression(
           t.memberExpression(t.identifier('process'), t.identifier('kill')),
           [
@@ -120,13 +120,13 @@ describe('safety', () => {
     [
       'a mutator that only throws an Error',
       'f();',
-      (t: Parameters<LzMutator['mutate']>[1]) =>
+      (t: Parameters<MuirMoiraNodeTestMutator['mutate']>[1]) =>
         t.newExpression(t.identifier('Error'), []),
       (path: NodePath) => path.isCallExpression(),
       [[]],
     ],
   ])('reports %s', async (_title, source, replacement, where, expected) => {
-    const unsafe: LzMutator = {
+    const unsafe: MuirMoiraNodeTestMutator = {
       name: 'Unsafe',
       sample: '',
       *mutate(path, t) {
@@ -139,19 +139,21 @@ describe('safety', () => {
     assert.deepEqual(await newCallees(unsafe, source), expected);
   });
 
-  lzTestEach(
+  muirTestEach(
     mutators.flatMap((mutator) =>
-      targets.map((source): readonly [string, string, LzMutator] => [
-        mutator.name,
-        source,
-        mutator,
-      ]),
+      targets.map(
+        (source): readonly [string, string, MuirMoiraNodeTestMutator] => [
+          mutator.name,
+          source,
+          mutator,
+        ],
+      ),
     ),
   )('%s leaves %j alone', async (_name, source, mutator) => {
     assert.deepEqual(await mutantsOf(mutator, source), []);
   });
 
-  lzTestEach(mutators.map((mutator) => [mutator.name, mutator]))(
+  muirTestEach(mutators.map((mutator) => [mutator.name, mutator]))(
     '%s makes a mutant of its own sample',
     async (_name, mutator) => {
       assert.notDeepEqual(await mutantsOf(mutator, mutator.sample), []);

@@ -3,10 +3,10 @@ import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 // The component-test case: the hook's source, mounted as gallery stories by plain @playwright/test tests.
 export default {
   plugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
-  lzPlaywright: {
+  testRunner: 'muir-siryn-playwright',
+  muirSirynPlaywright: {
     configFile: 'playwright.stryker.config.ts',
-    survivorTraces: 'reports/lz-playwright-traces',
+    survivorTraces: 'reports/muir-siryn-playwright-traces',
   },
   // Stryker 10.1.1 rewrites the sandbox's tsconfig.json through TypeScript's JS API, which TypeScript 7 (this
   // repo's version) no longer has; it skips that step in place.
@@ -15,7 +15,13 @@ export default {
   coverageAnalysis: 'perTest',
   timeoutMS: 10_000,
   concurrency: 2,
-  reporters: ['clear-text', 'progress', 'json', 'html', 'lz-playwright-traces'],
+  reporters: [
+    'clear-text',
+    'progress',
+    'json',
+    'html',
+    'muir-siryn-playwright-traces',
+  ],
   jsonReporter: { fileName: 'reports/mutation/mutation.json' },
   htmlReporter: { fileName: 'reports/mutation/mutation.html' },
   ignorePatterns: ['/reports'],

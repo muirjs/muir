@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeByteLength } from '../../src/node-byte-length.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeByteLength } from '../../src/node-byte-length.ts';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
 
-describe('LzNodeByteLength', () => {
-  lzTestEach([
+describe('MuirProteusNodeByteLength', () => {
+  muirTestEach([
     [
       'the byte length of a string',
       'const size = Buffer.byteLength(text);',
@@ -48,10 +48,13 @@ describe('LzNodeByteLength', () => {
       ['body.length'],
     ],
   ])('turns %s into its length', async (_title, source, expected) => {
-    assert.deepEqual(await mutantsOf(nodeByteLength, source), expected);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeByteLength, source),
+      expected,
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['a byte length without an argument', 'const size = Buffer.byteLength();'],
     ['a spread argument', 'const size = Buffer.byteLength(...args);'],
     [
@@ -103,6 +106,6 @@ describe('LzNodeByteLength', () => {
       "import { Buffer } from 'node:buffer';\nconst size = Buffer.byteLength(text);",
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeByteLength, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusNodeByteLength, source), []);
   });
 });

@@ -1,31 +1,31 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { isRecord } from './is-record.ts';
-import type { StrykerNamespace } from './namespace.ts';
-import { serializeSnapshot } from './protocol.ts';
+import { muirSirynPlaywrightIsRecord } from './is-record.ts';
+import type { MuirSirynPlaywrightStrykerNamespace } from './namespace.ts';
+import { muirSirynPlaywrightSerializeSnapshot } from './protocol.ts';
 import {
-  controlFile,
-  parseServerControl,
-  readServerControlText,
-  type ServerControl,
+  muirSirynPlaywrightControlFile,
+  muirSirynPlaywrightParseServerControl,
+  muirSirynPlaywrightReadServerControlText,
+  type MuirSirynPlaywrightServerControl,
 } from './server-protocol.ts';
 
-export interface RunSwitch {
-  readonly control: () => ServerControl | undefined;
+export interface MuirSirynPlaywrightRunSwitch {
+  readonly control: () => MuirSirynPlaywrightServerControl | undefined;
   readonly isIssued: (testId: string) => boolean;
   readonly startRequest: () => void;
   readonly flush: () => void;
 }
 
-export function runSwitch(
+export function muirSirynPlaywrightRunSwitch(
   dir: string,
-  namespace: StrykerNamespace,
+  namespace: MuirSirynPlaywrightStrykerNamespace,
   fileName: string,
-): RunSwitch {
+): MuirSirynPlaywrightRunSwitch {
   let run:
     | {
-        control: ServerControl;
+        control: MuirSirynPlaywrightServerControl;
         writtenHits: number;
         writtenInstrumented: boolean;
       }
@@ -34,16 +34,16 @@ export function runSwitch(
   let issued: ReadonlySet<string> = new Set();
   let warnedRead = false;
 
-  function currentControl(): ServerControl | undefined {
+  function currentControl(): MuirSirynPlaywrightServerControl | undefined {
     let read: string | undefined;
 
     try {
-      read = readServerControlText(dir);
+      read = muirSirynPlaywrightReadServerControlText(dir);
     } catch (error) {
       if (!warnedRead) {
         warnedRead = true;
         process.emitWarning(
-          `${path.join(dir, controlFile)} cannot be read (${String(error)}), so requests keep the run they had until it can`,
+          `${path.join(dir, muirSirynPlaywrightControlFile)} cannot be read (${String(error)}), so requests keep the run they had until it can`,
         );
       }
 
@@ -55,12 +55,12 @@ export function runSwitch(
     }
 
     text = read;
-    const next = parseServerControl(read);
+    const next = muirSirynPlaywrightParseServerControl(read);
     issued = new Set(next?.issuedTestIds);
 
     if (read !== undefined && next === undefined) {
       process.emitWarning(
-        `${path.join(dir, controlFile)} holds no valid server control, so requests switch no mutant and count for no run until the runner writes a valid one`,
+        `${path.join(dir, muirSirynPlaywrightControlFile)} holds no valid server control, so requests switch no mutant and count for no run until the runner writes a valid one`,
       );
     }
 
@@ -109,7 +109,7 @@ export function runSwitch(
       try {
         fs.appendFileSync(
           path.join(control.outDir, fileName),
-          serializeSnapshot({
+          muirSirynPlaywrightSerializeSnapshot({
             mutantCoverage: coverage,
             hitCount: hits - writtenHits,
             outlivedItsTest: false,
@@ -127,13 +127,13 @@ export function runSwitch(
 }
 
 /** Copies the coverage and empties it in place: instrumented code holds the object it first created. */
-function takeCoverage(namespace: StrykerNamespace): unknown {
+function takeCoverage(namespace: MuirSirynPlaywrightStrykerNamespace): unknown {
   const coverage = namespace.mutantCoverage;
 
   if (
-    !isRecord(coverage) ||
-    !isRecord(coverage['static']) ||
-    !isRecord(coverage['perTest'])
+    !muirSirynPlaywrightIsRecord(coverage) ||
+    !muirSirynPlaywrightIsRecord(coverage['static']) ||
+    !muirSirynPlaywrightIsRecord(coverage['perTest'])
   ) {
     return undefined;
   }

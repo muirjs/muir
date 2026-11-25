@@ -2,7 +2,7 @@
 // Windows sends no signal, so this reporter checkpoints the file during the run. Stryker overwrites it with the
 // full report at the end. Mutants reused from earlier runs (outside --mutate) arrive through onMutantTested as
 // early results, so the checkpoint keeps them.
-// Run: stryker run <config> --incremental --appendPlugins <this file> --reporters <the config's reporters>,lz-checkpoint
+// Run: stryker run <config> --incremental --appendPlugins <this file> --reporters <the config's reporters>,muir-checkpoint
 import {
   mkdirSync,
   readdirSync,
@@ -196,7 +196,11 @@ export class CheckpointReporter implements Reporter {
 }
 
 export const strykerPlugins = [
-  declareClassPlugin(PluginKind.Reporter, 'lz-checkpoint', CheckpointReporter),
+  declareClassPlugin(
+    PluginKind.Reporter,
+    'muir-checkpoint',
+    CheckpointReporter,
+  ),
 ];
 
 export function checkpointReport(

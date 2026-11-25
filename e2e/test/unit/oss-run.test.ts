@@ -19,41 +19,41 @@ import { performance } from 'node:perf_hooks';
 import { describe, it, type TestContext } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 
-import { lzExec } from '../../src/exec.ts';
+import { muirExec } from '../../src/exec.ts';
 import {
-  lzInstall,
-  lzPack,
-  lzReportFile,
-  lzStryker,
-  type LzStrykerRun,
+  muirMoiraNodeTestInstall,
+  muirPack,
+  muirReportFile,
+  muirStryker,
+  type MuirStrykerRun,
 } from '../../src/fixture.ts';
 import {
-  lzCheckpointArgs,
-  lzCheckpointReporterName,
+  muirCheckpointArgs,
+  muirCheckpointReporterName,
 } from '../../src/oss/checkpoint.ts';
 import {
-  lzStrykerConfig,
-  type LzOssOptions,
-  type LzOssProject,
+  muirStrykerConfig,
+  type MuirOssOptions,
+  type MuirOssProject,
 } from '../../src/oss/options.ts';
-import type { LzProcessRow } from '../../src/oss/processes.ts';
+import type { MuirProcessRow } from '../../src/oss/processes.ts';
 import {
-  lzClearResult,
-  lzClearSideFiles,
-  lzRunDriver,
-  lzRunSteps,
-  type LzRunSteps,
+  muirClearResult,
+  muirClearSideFiles,
+  muirRunDriver,
+  muirRunSteps,
+  type MuirRunSteps,
 } from '../../src/oss/run.ts';
 import {
-  lzSnapshot,
-  lzStartSampler,
-  type LzSamples,
+  muirSnapshot,
+  muirStartSampler,
+  type MuirSamples,
 } from '../../src/oss/sampler.ts';
-import { lzReportScore } from '../../src/oss/verdicts.ts';
-import { lzIsRecord } from '../../src/report.ts';
+import { muirReportScore } from '../../src/oss/verdicts.ts';
+import { muirIsRecord } from '../../src/report.ts';
 
 function setup(t: TestContext, names: readonly string[]): string {
-  const out = mkdtempSync(join(tmpdir(), 'lz-oss-run-'));
+  const out = mkdtempSync(join(tmpdir(), 'muir-oss-run-'));
 
   t.after(() => {
     rmSync(out, { recursive: true, force: true });
@@ -65,35 +65,35 @@ function setup(t: TestContext, names: readonly string[]): string {
   return out;
 }
 
-describe('lzClearResult', () => {
+describe('muirClearResult', () => {
   it("removes an earlier run's result.json and keeps the side files", (t) => {
-    const out = setup(t, ['result.json', 'lz.mutation.json']);
+    const out = setup(t, ['result.json', 'muir.mutation.json']);
 
-    lzClearResult(out);
+    muirClearResult(out);
 
-    assert.deepEqual(readdirSync(out), ['lz.mutation.json']);
+    assert.deepEqual(readdirSync(out), ['muir.mutation.json']);
   });
 
   it('accepts a folder with no result.json', (t) => {
     const out = setup(t, []);
 
-    lzClearResult(out);
+    muirClearResult(out);
 
     assert.deepEqual(readdirSync(out), []);
   });
 });
 
-describe('lzClearSideFiles', () => {
+describe('muirClearSideFiles', () => {
   it("removes an earlier run's report and log of the side, and keeps the other side's", (t) => {
     const out = setup(t, [
-      'lz.mutation.json',
-      'lz.log',
+      'muir.mutation.json',
+      'muir.log',
       'command.mutation.json',
       'command.log',
       'result.json',
     ]);
 
-    lzClearSideFiles(out, 'lz');
+    muirClearSideFiles(out, 'muir');
 
     assert.deepEqual(readdirSync(out).sort(), [
       'command.log',
@@ -105,13 +105,13 @@ describe('lzClearSideFiles', () => {
   it('accepts a folder that holds neither file', (t) => {
     const out = setup(t, []);
 
-    lzClearSideFiles(out, 'command');
+    muirClearSideFiles(out, 'command');
 
     assert.deepEqual(readdirSync(out), []);
   });
 });
 
-const project: LzOssProject = {
+const project: MuirOssProject = {
   name: 'demo',
   mutate: ['src/*.js'],
   testFiles: ['test/*.test.js'],
@@ -121,25 +121,29 @@ const project: LzOssProject = {
 /** No process has this id, on Windows or Linux. */
 const deadPid = 2_147_483_644;
 
-interface LzStrykerCall {
+interface MuirStrykerCall {
   readonly dir: string;
   readonly configFile: string;
   readonly concurrency: number;
   readonly options: unknown;
 }
 
-function row(pid: number, workingSetBytes: number, name: string): LzProcessRow {
+function row(
+  pid: number,
+  workingSetBytes: number,
+  name: string,
+): MuirProcessRow {
   return { pid, ppid: process.pid, workingSetBytes, created: 1n, name };
 }
 
 function sampler(
   pid: number,
-  stop: () => Promise<LzSamples>,
-): LzRunSteps['startSampler'] {
+  stop: () => Promise<MuirSamples>,
+): MuirRunSteps['startSampler'] {
   return () => Promise.resolve({ pid, ended: Promise.resolve(), stop });
 }
 
-function notReported(): Promise<LzStrykerRun> {
+function notReported(): Promise<MuirStrykerRun> {
   return Promise.resolve({
     reported: false,
     exitCode: 1,
@@ -154,7 +158,7 @@ function readResult(out: string): Record<string, unknown> {
     readFileSync(join(out, 'result.json'), 'utf8'),
   );
 
-  assert.ok(lzIsRecord(result));
+  assert.ok(muirIsRecord(result));
 
   return result;
 }
@@ -162,11 +166,11 @@ function readResult(out: string): Record<string, unknown> {
 function sideOf(result: Record<string, unknown>): Record<string, unknown> {
   const sides = result['sides'];
 
-  assert.ok(lzIsRecord(sides));
-  assert.deepEqual(Object.keys(sides), ['lz']);
-  const side = sides['lz'];
+  assert.ok(muirIsRecord(sides));
+  assert.deepEqual(Object.keys(sides), ['muir']);
+  const side = sides['muir'];
 
-  assert.ok(lzIsRecord(side));
+  assert.ok(muirIsRecord(side));
 
   return side;
 }
@@ -215,9 +219,9 @@ function pointTmpAt(path: string): void {
  */
 async function setupDriver(
   t: TestContext,
-  overrides: Partial<LzOssOptions> = {},
+  overrides: Partial<MuirOssOptions> = {},
 ) {
-  const base = mkdtempSync(join(tmpdir(), 'lz-oss-run-'));
+  const base = mkdtempSync(join(tmpdir(), 'muir-oss-run-'));
   const osTmp = join(base, 'os-tmp');
   const saved = tmpVariables.map((name) => ({
     name,
@@ -238,12 +242,12 @@ async function setupDriver(
   pointTmpAt(osTmp);
   const source = join(base, 'source');
   const tarballs = join(base, 'tarballs');
-  const { stdout: gitDir } = await lzExec(
+  const { stdout: gitDir } = await muirExec(
     'git',
     ['rev-parse', '--absolute-git-dir'],
     { cwd: import.meta.dirname },
   );
-  const { stdout: head } = await lzExec('git', ['rev-parse', 'HEAD'], {
+  const { stdout: head } = await muirExec('git', ['rev-parse', 'HEAD'], {
     cwd: import.meta.dirname,
   });
 
@@ -267,12 +271,12 @@ async function setupDriver(
   writeFileSync(join(tarballs, 'a.tgz'), 'tarball a');
   writeFileSync(join(tarballs, 'notes.txt'), '');
   const write = t.mock.method(process.stdout, 'write');
-  const options: LzOssOptions = {
+  const options: MuirOssOptions = {
     project,
     source,
     out: join(base, 'out', 'nested'),
     concurrency: 2,
-    sides: ['lz'],
+    sides: ['muir'],
     mutate: ['src/a.js'],
     tarballs,
     prepareOnly: false,
@@ -282,8 +286,8 @@ async function setupDriver(
     ...overrides,
   };
   const installs: unknown[] = [];
-  const strykerCalls: LzStrykerCall[] = [];
-  const fakeSteps: LzRunSteps = {
+  const strykerCalls: MuirStrykerCall[] = [];
+  const fakeSteps: MuirRunSteps = {
     pack: (into) => Promise.reject(new Error(`No pack into ${into}`)),
     install: (dir, installed, before) => {
       installs.push({ dir, tarballs: installed, before });
@@ -334,7 +338,7 @@ async function setupDriver(
   };
 }
 
-describe('lzRunDriver', () => {
+describe('muirRunDriver', () => {
   it('prepares a patched copy of the project, installs into it and writes the header, for manual runs', async (t) => {
     const {
       options,
@@ -348,7 +352,7 @@ describe('lzRunDriver', () => {
     } = await setupDriver(t, {
       prepareOnly: true,
     });
-    const deadRun = join(tmpdir(), `lz-oss-driver-${deadPid}-x`);
+    const deadRun = join(tmpdir(), `muir-oss-driver-${deadPid}-x`);
 
     mkdirSync(deadRun);
     // Its digest sorts before a.tgz's.
@@ -359,7 +363,7 @@ describe('lzRunDriver', () => {
     );
     const exitListeners = process.listenerCount('exit');
 
-    await lzRunDriver(options, fakeSteps);
+    await muirRunDriver(options, fakeSteps);
 
     const result = readResult(out);
     const dir = text(result['preparedIn']);
@@ -396,14 +400,14 @@ describe('lzRunDriver', () => {
     assert.match(readFileSync(join(out, 'result.json'), 'utf8'), /\n}\n$/);
     assert.deepEqual(
       {
-        root: basename(root).startsWith(`lz-oss-prepared-${process.pid}-`),
+        root: basename(root).startsWith(`muir-oss-prepared-${process.pid}-`),
         dir: basename(dir),
         runTmp: existsSync(join(root, 'tmp')),
         patched: readFileSync(join(dir, 'src', 'a.js'), 'utf8'),
         link: readlinkSync(join(dir, 'src', 'link')),
         git: existsSync(join(dir, '.git')),
         sourceModules: existsSync(join(dir, 'node_modules', 'stale.txt')),
-        configs: ['lz', 'command'].map((side) =>
+        configs: ['muir', 'command'].map((side) =>
           readFileSync(join(dir, `stryker.${side}.config.mjs`), 'utf8'),
         ),
         installs,
@@ -419,8 +423,8 @@ describe('lzRunDriver', () => {
         git: false,
         sourceModules: false,
         configs: [
-          lzStrykerConfig('lz', project),
-          lzStrykerConfig('command', project),
+          muirStrykerConfig('muir', project),
+          muirStrykerConfig('command', project),
         ],
         installs: [
           {
@@ -452,7 +456,7 @@ describe('lzRunDriver', () => {
     });
     const packs: string[] = [];
 
-    await lzRunDriver(driver.options, {
+    await muirRunDriver(driver.options, {
       ...driver.steps,
       pack: (into) => {
         packs.push(into);
@@ -479,7 +483,7 @@ describe('lzRunDriver', () => {
     mkdirSync(out, { recursive: true });
     writeFileSync(join(out, 'result.json'), '{}');
 
-    await assert.rejects(lzRunDriver(options, fakeSteps), {
+    await assert.rejects(muirRunDriver(options, fakeSteps), {
       message: `${tarballs} holds no .tgz file.`,
     });
 
@@ -490,7 +494,7 @@ describe('lzRunDriver', () => {
     const { options, steps: fakeSteps } = await setupDriver(t);
 
     await assert.rejects(
-      lzRunDriver(options, {
+      muirRunDriver(options, {
         ...fakeSteps,
         install: () => Promise.reject(new Error('no install')),
       }),
@@ -504,7 +508,7 @@ describe('lzRunDriver', () => {
     rmSync(join(source, '.git'));
 
     await assert.rejects(
-      lzRunDriver(options, fakeSteps),
+      muirRunDriver(options, fakeSteps),
       (error) =>
         error instanceof Error &&
         error.message.startsWith(
@@ -534,12 +538,12 @@ describe('lzRunDriver', () => {
     const newTmp = join(tmpdir(), 'stryker-left-this');
 
     mkdirSync(out, { recursive: true });
-    writeFileSync(join(out, 'lz.log'), 'an earlier run');
+    writeFileSync(join(out, 'muir.log'), 'an earlier run');
     const exitListeners = process.listenerCount('exit');
     let clockMs = 1_000;
 
     t.mock.method(performance, 'now', () => clockMs);
-    await lzRunDriver(options, {
+    await muirRunDriver(options, {
       ...driver.steps,
       stryker: (dir, configFile, concurrency, strykerOptions) => {
         strykerCalls.push({
@@ -548,8 +552,8 @@ describe('lzRunDriver', () => {
           concurrency,
           options: strykerOptions,
         });
-        mkdirSync(join(dir, dirname(lzReportFile)), { recursive: true });
-        writeFileSync(join(dir, lzReportFile), 'report');
+        mkdirSync(join(dir, dirname(muirReportFile)), { recursive: true });
+        writeFileSync(join(dir, muirReportFile), 'report');
         mkdirSync(newTmp);
         clockMs = 1_250;
 
@@ -583,20 +587,20 @@ describe('lzRunDriver', () => {
 
     const side = sideOf(readResult(out));
     const root = dirname(defined(strykerCalls[0]).dir);
-    const checkpoint = join(out, 'lz.checkpoint.json');
+    const checkpoint = join(out, 'muir.checkpoint.json');
 
     assert.deepEqual(side, {
       stryker: {
         exitCode: 0,
         timedOut: false,
         reported: true,
-        ...lzReportScore(new Map()),
+        ...muirReportScore(new Map()),
         leftoverInRunTmp: ['worker-1'],
       },
       errors: [],
       wallMs: 250,
       resumedMutants: 0,
-      strykerConfig: lzStrykerConfig('lz', project),
+      strykerConfig: muirStrykerConfig('muir', project),
       processes: {
         samples: 1,
         peakCount: 1,
@@ -608,10 +612,10 @@ describe('lzRunDriver', () => {
     });
     assert.deepEqual(
       {
-        root: basename(root).startsWith(`lz-oss-driver-${process.pid}-`),
+        root: basename(root).startsWith(`muir-oss-driver-${process.pid}-`),
         strykerCalls,
-        report: readFileSync(join(out, 'lz.mutation.json'), 'utf8'),
-        log: existsSync(join(out, 'lz.log')),
+        report: readFileSync(join(out, 'muir.mutation.json'), 'utf8'),
+        log: existsSync(join(out, 'muir.log')),
         checkpointKey: existsSync(`${checkpoint}.key`),
         exitListeners: process.listenerCount('exit'),
       },
@@ -620,7 +624,7 @@ describe('lzRunDriver', () => {
         strykerCalls: [
           {
             dir: join(root, 'project'),
-            configFile: 'stryker.lz.config.mjs',
+            configFile: 'stryker.muir.config.mjs',
             concurrency: 2,
             options: {
               tmp: join(root, 'tmp'),
@@ -630,10 +634,10 @@ describe('lzRunDriver', () => {
                 'src/a.js',
                 '--timeoutMS',
                 '5000',
-                ...lzCheckpointArgs(checkpoint),
+                ...muirCheckpointArgs(checkpoint),
               ],
-              logFile: join(out, 'lz.log'),
-              reporters: [lzCheckpointReporterName],
+              logFile: join(out, 'muir.log'),
+              reporters: [muirCheckpointReporterName],
             },
           },
         ],
@@ -651,7 +655,7 @@ describe('lzRunDriver', () => {
     const lingering = row(deadPid, 1, 'node');
     let ended = false;
 
-    await lzRunDriver(driver.options, {
+    await muirRunDriver(driver.options, {
       ...driver.steps,
       stryker: () => {
         void setTimeout(1_000).then(() => {
@@ -680,9 +684,9 @@ describe('lzRunDriver', () => {
   it('records no resumed mutants when no checkpoint can start, not even afresh', async (t) => {
     const driver = await setupDriver(t);
     const { options, out } = driver;
-    mkdirSync(join(out, 'lz.checkpoint.json.key'), { recursive: true });
+    mkdirSync(join(out, 'muir.checkpoint.json.key'), { recursive: true });
 
-    await lzRunDriver(options, driver.steps);
+    await muirRunDriver(options, driver.steps);
 
     const side = sideOf(readResult(out));
 
@@ -701,10 +705,10 @@ describe('lzRunDriver', () => {
   it('records each step that throws, goes on with the next and still writes the result', async (t) => {
     const driver = await setupDriver(t);
     const { options, out, source, strykerCalls } = driver;
-    const checkpoint = join(out, 'lz.checkpoint.json');
-    mkdirSync(join(out, 'lz.log'), { recursive: true });
+    const checkpoint = join(out, 'muir.checkpoint.json');
+    mkdirSync(join(out, 'muir.log'), { recursive: true });
 
-    await lzRunDriver(options, {
+    await muirRunDriver(options, {
       ...driver.steps,
       install: async (dir, tarballs, before) => {
         await driver.steps.install(dir, tarballs, before);
@@ -748,12 +752,12 @@ describe('lzRunDriver', () => {
       },
     );
 
-    rmSync(join(out, 'lz.log'), { recursive: true });
+    rmSync(join(out, 'muir.log'), { recursive: true });
     writeFileSync(checkpoint, '{');
     writeFileSync(join(source, '.stryker-tmp'), '');
     const gone = [row(1.5, 1, 'bad'), row(deadPid, 1, 'gone')];
 
-    await lzRunDriver(options, {
+    await muirRunDriver(options, {
       ...driver.steps,
       stryker: () =>
         Promise.resolve({
@@ -802,7 +806,7 @@ describe('lzRunDriver', () => {
         },
         leftoverStrykerTmp: [],
         removed: [
-          `Removed ${checkpoint}, which could not be read; lz starts afresh.\n`,
+          `Removed ${checkpoint}, which could not be read; muir starts afresh.\n`,
         ],
       },
     );
@@ -812,7 +816,7 @@ describe('lzRunDriver', () => {
     mkdirSync(`${checkpoint}.key`);
     strykerCalls.length = 0;
 
-    await lzRunDriver(options, {
+    await muirRunDriver(options, {
       ...driver.steps,
       startSampler: sampler(deadPid, () =>
         Promise.reject(new Error('stop failed')),
@@ -826,7 +830,7 @@ describe('lzRunDriver', () => {
       {
         steps: steps(unresumedSide),
         sampler: messages(unresumedSide)[2],
-        options: lzIsRecord(call?.options)
+        options: muirIsRecord(call?.options)
           ? { args: call.options['args'], reporters: call.options['reporters'] }
           : null,
       },
@@ -846,10 +850,10 @@ describe('lzRunDriver', () => {
   });
 
   it('runs the real pack, install, Stryker and process sampler by default', () => {
-    assert.equal(lzRunSteps.pack, lzPack);
-    assert.equal(lzRunSteps.install, lzInstall);
-    assert.equal(lzRunSteps.stryker, lzStryker);
-    assert.equal(lzRunSteps.startSampler, lzStartSampler);
-    assert.equal(lzRunSteps.snapshot, lzSnapshot);
+    assert.equal(muirRunSteps.pack, muirPack);
+    assert.equal(muirRunSteps.install, muirMoiraNodeTestInstall);
+    assert.equal(muirRunSteps.stryker, muirStryker);
+    assert.equal(muirRunSteps.startSampler, muirStartSampler);
+    assert.equal(muirRunSteps.snapshot, muirSnapshot);
   });
 });

@@ -7,19 +7,21 @@ import path from 'node:path';
 import type { BrowserType } from '@playwright/test';
 import type { TestError } from '@playwright/test/reporter';
 
-import { fieldOf } from '../packages/siryn-playwright/src/is-record.ts';
+import { muirSirynPlaywrightFieldOf } from '../packages/siryn-playwright/src/is-record.ts';
 import {
-  loadPlaywright,
-  type RunTestsParams,
+  muirSirynPlaywrightLoadPlaywright,
+  type MuirSirynPlaywrightRunTestsParams,
 } from '../packages/siryn-playwright/src/playwright-internals.ts';
 
 function isBrowserType(value: unknown): value is BrowserType {
-  return typeof fieldOf(value, 'launchServer') === 'function';
+  return (
+    typeof muirSirynPlaywrightFieldOf(value, 'launchServer') === 'function'
+  );
 }
 
 function chromiumNextTo(configFile: string): BrowserType {
   const playwrightTest: unknown = createRequire(configFile)('@playwright/test');
-  const chromium = fieldOf(playwrightTest, 'chromium');
+  const chromium = muirSirynPlaywrightFieldOf(playwrightTest, 'chromium');
 
   if (!isBrowserType(chromium)) {
     throw new Error(
@@ -43,10 +45,9 @@ const configFile = path.resolve(configArg);
 const browserServer = process.env['BENCH_SHARED_BROWSER']
   ? await chromiumNextTo(configFile).launchServer()
   : undefined;
-const runner = await loadPlaywright(configFile).createTestRunner(
+const runner = await muirSirynPlaywrightLoadPlaywright(
   configFile,
-  {},
-);
+).createTestRunner(configFile, {});
 
 let t0 = performance.now();
 const ms = () => Math.round(performance.now() - t0);
@@ -65,14 +66,15 @@ try {
       onError,
     };
     t0 = performance.now();
-    const params: RunTestsParams & { connectWsEndpoint?: string | undefined } =
-      {
-        locations: [],
-        testIds: testIds.length ? testIds : undefined,
-        workers: 1,
-        connectWsEndpoint: browserServer?.wsEndpoint(),
-        disableConfigReporters: true,
-      };
+    const params: MuirSirynPlaywrightRunTestsParams & {
+      connectWsEndpoint?: string | undefined;
+    } = {
+      locations: [],
+      testIds: testIds.length ? testIds : undefined,
+      workers: 1,
+      connectWsEndpoint: browserServer?.wsEndpoint(),
+      disableConfigReporters: true,
+    };
     const { status } = await runner.runTests(reporter, params);
     console.log(
       `run ${i}: ${status} load ${marks.loaded} ms, first test begins ${marks.firstTest} ms, last test ends ${marks.lastTestEnd} ms, done ${ms()} ms`,

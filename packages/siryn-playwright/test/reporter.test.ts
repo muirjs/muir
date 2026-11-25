@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { LzPlaywrightCollectingReporter } from '../src/reporter.ts';
+import { MuirSirynPlaywrightCollectingReporter } from '../src/reporter.ts';
 import { withAttempt } from './support/doubles.ts';
 
 test('a test window runs from the start Playwright reports to the time the reporter saw the test end', () => {
-  const reporter = new LzPlaywrightCollectingReporter(new Map(), () => 5900);
+  const reporter = new MuirSirynPlaywrightCollectingReporter(
+    new Map(),
+    () => 5900,
+  );
 
   reporter.onTestEnd(withAttempt('a', new Date(5000), 200));
 
@@ -13,7 +16,7 @@ test('a test window runs from the start Playwright reports to the time the repor
 });
 
 test('the reporter keeps the last 4000 characters of stdout and stderr, and prints nothing itself', () => {
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
 
   reporter.onStdOut('a'.repeat(3998));
   reporter.onStdErr(Buffer.from('bcd'));
@@ -25,12 +28,16 @@ test('the reporter keeps the last 4000 characters of stdout and stderr, and prin
 test('the reporter raises retries at onBegin only when a project has some, and reports a suite it cannot read', () => {
   const unreadable = { allTests: () => [] };
 
-  const noRetries = new LzPlaywrightCollectingReporter(new Map([['a', 0]]));
+  const noRetries = new MuirSirynPlaywrightCollectingReporter(
+    new Map([['a', 0]]),
+  );
   noRetries.onBegin({ failOnFlakyTests: false }, unreadable);
 
   assert.equal(noRetries.retriesNotRaised, undefined);
 
-  const reporter = new LzPlaywrightCollectingReporter(new Map([['a', 1]]));
+  const reporter = new MuirSirynPlaywrightCollectingReporter(
+    new Map([['a', 1]]),
+  );
   reporter.onBegin({ failOnFlakyTests: false }, unreadable);
 
   assert.match(reporter.retriesNotRaised ?? '', /TestCase\.retries/);

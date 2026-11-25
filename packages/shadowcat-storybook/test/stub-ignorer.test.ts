@@ -4,8 +4,11 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { stubIgnorer } from '../src/stub-ignorer.ts';
-import { spyStubReason, unrewrittenChainReason } from '../src/stub-verdict.ts';
+import { muirShadowcatStorybookStubIgnorer } from '../src/stub-ignorer.ts';
+import {
+  muirShadowcatStorybookSpyStubReason,
+  muirShadowcatStorybookUnrewrittenChainReason,
+} from '../src/stub-verdict.ts';
 import { instrument } from './support/instrument.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -18,8 +21,12 @@ function resetCase(name: string): string {
 }
 
 async function setup(fixture: string, fileName: string, content: string) {
-  const ignorer = stubIgnorer(
-    { lzStorybook: { configDir: join(fixtures, fixture, '.storybook') } },
+  const ignorer = muirShadowcatStorybookStubIgnorer(
+    {
+      muirShadowcatStorybook: {
+        configDir: join(fixtures, fixture, '.storybook'),
+      },
+    },
     { info: () => undefined, warn: () => undefined },
   );
   const { mutants } = await instrument(
@@ -52,7 +59,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      spyStubReason('erased'),
+      muirShadowcatStorybookSpyStubReason('erased'),
     ]);
   });
 
@@ -68,7 +75,7 @@ describe('stubIgnorer', () => {
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
       undefined,
-      spyStubReason('erased'),
+      muirShadowcatStorybookSpyStubReason('erased'),
     ]);
   });
 
@@ -93,7 +100,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      spyStubReason('order-dependent'),
+      muirShadowcatStorybookSpyStubReason('order-dependent'),
     ]);
   });
 
@@ -105,7 +112,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      spyStubReason('unknown'),
+      muirShadowcatStorybookSpyStubReason('unknown'),
     ]);
   });
 
@@ -130,8 +137,8 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
-      spyStubReason('erased'),
-      spyStubReason('erased'),
+      muirShadowcatStorybookSpyStubReason('erased'),
+      muirShadowcatStorybookSpyStubReason('erased'),
     ]);
   });
 
@@ -177,7 +184,7 @@ describe('stubIgnorer', () => {
       );
 
       assert.deepEqual(reasonsOf("mockReturnValueOnce('stubbed')"), [
-        spyStubReason('once-not-rewritten'),
+        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
       ]);
     });
 
@@ -193,7 +200,7 @@ describe('stubIgnorer', () => {
 
       assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
         undefined,
-        spyStubReason('spy-arguments-not-rewritten'),
+        muirShadowcatStorybookSpyStubReason('spy-arguments-not-rewritten'),
       ]);
     });
 
@@ -224,7 +231,7 @@ describe('stubIgnorer', () => {
 
       assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
         undefined,
-        spyStubReason('chain-not-rewritten'),
+        muirShadowcatStorybookSpyStubReason('chain-not-rewritten'),
       ]);
     });
 
@@ -239,8 +246,8 @@ describe('stubIgnorer', () => {
       );
 
       assert.deepEqual(reasonsOf("mockReturnValueOnce('first')"), [
-        unrewrittenChainReason,
-        unrewrittenChainReason,
+        muirShadowcatStorybookUnrewrittenChainReason,
+        muirShadowcatStorybookUnrewrittenChainReason,
       ]);
     });
 
@@ -256,7 +263,7 @@ describe('stubIgnorer', () => {
 
       assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
         undefined,
-        spyStubReason('once-not-rewritten'),
+        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
       ]);
     });
 
@@ -271,8 +278,8 @@ describe('stubIgnorer', () => {
       );
 
       assert.deepEqual(reasonsOf("mockReturnValueOnce('first')"), [
-        spyStubReason('once-not-rewritten'),
-        spyStubReason('once-not-rewritten'),
+        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
+        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
       ]);
     });
   });
@@ -288,7 +295,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      spyStubReason('erased'),
+      muirShadowcatStorybookSpyStubReason('erased'),
       undefined,
     ]);
   });
@@ -310,9 +317,11 @@ describe('stubIgnorer', () => {
       "export const A = { tags: ['flaky'], parameters: { test: { mockReset: true } } };",
       "export const B = { args: { g: fn().mockReturnValue('stubbed') } };",
     ].join('\n');
-    const ignorer = stubIgnorer(
+    const ignorer = muirShadowcatStorybookStubIgnorer(
       {
-        lzStorybook: { configDir: join(fixtures, 'vitest-tags', '.storybook') },
+        muirShadowcatStorybook: {
+          configDir: join(fixtures, 'vitest-tags', '.storybook'),
+        },
         vitest: {
           configFile: join(fixtures, 'vitest-tags', 'vitest.config.ts'),
         },
@@ -346,7 +355,7 @@ describe('stubIgnorer', () => {
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
       undefined,
-      spyStubReason('erased'),
+      muirShadowcatStorybookSpyStubReason('erased'),
     ]);
   });
 });

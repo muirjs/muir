@@ -1,13 +1,13 @@
-import { fieldOf } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 import type { MutantStatus, Position } from '@stryker-mutator/api/core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
 import {
-  coreInstrument,
-  type Instrumenter,
-  type SourceFile,
+  muirMoiraMutatorsCoreInstrument,
+  type MuirProteusJsxInstrumenter,
+  type MuirMoiraMutatorsSourceFile,
 } from '../../src/install.ts';
-import { packageName } from '../../src/package-name.ts';
+import { muirProteusJsxPackageName } from '../../src/package-name.ts';
 
 export interface InstrumentedMutant {
   readonly id: string;
@@ -23,7 +23,7 @@ export interface InstrumentedMutant {
 }
 
 export interface InstrumentResult {
-  readonly files: readonly SourceFile[];
+  readonly files: readonly MuirMoiraMutatorsSourceFile[];
   readonly mutants: readonly InstrumentedMutant[];
 }
 
@@ -39,15 +39,18 @@ const statuses: readonly MutantStatus[] = [
 ];
 
 export async function instrumentFully(
-  instrumenter: Instrumenter,
-  files: readonly SourceFile[],
+  instrumenter: MuirProteusJsxInstrumenter,
+  files: readonly MuirMoiraMutatorsSourceFile[],
   excludedMutations: readonly string[] = [],
   ignorers: readonly Ignorer[] = [],
 ): Promise<InstrumentResult> {
-  const instrument = await coreInstrument({ packageName, ...instrumenter });
+  const instrument = await muirMoiraMutatorsCoreInstrument({
+    packageName: muirProteusJsxPackageName,
+    ...instrumenter,
+  });
   const result = await instrument(files, excludedMutations, ignorers);
-  const fileList = fieldOf(result, 'files');
-  const mutants = fieldOf(result, 'mutants');
+  const fileList = muirMoiraMutatorsFieldOf(result, 'files');
+  const mutants = muirMoiraMutatorsFieldOf(result, 'mutants');
 
   if (!Array.isArray(fileList) || !Array.isArray(mutants)) {
     throw changed('files or mutants');
@@ -59,9 +62,9 @@ export async function instrumentFully(
       content: stringOf(file, 'content'),
     })),
     mutants: mutants.map((mutant: unknown) => {
-      const location = fieldOf(mutant, 'location');
-      const status = fieldOf(mutant, 'status');
-      const statusReason = fieldOf(mutant, 'statusReason');
+      const location = muirMoiraMutatorsFieldOf(mutant, 'location');
+      const status = muirMoiraMutatorsFieldOf(mutant, 'status');
+      const statusReason = muirMoiraMutatorsFieldOf(mutant, 'statusReason');
 
       return {
         id: stringOf(mutant, 'id'),
@@ -69,8 +72,8 @@ export async function instrumentFully(
         mutatorName: stringOf(mutant, 'mutatorName'),
         replacement: stringOf(mutant, 'replacement'),
         location: {
-          start: positionOf(fieldOf(location, 'start')),
-          end: positionOf(fieldOf(location, 'end')),
+          start: positionOf(muirMoiraMutatorsFieldOf(location, 'start')),
+          end: positionOf(muirMoiraMutatorsFieldOf(location, 'end')),
         },
         status: status === undefined ? undefined : statusOf(status),
         statusReason:
@@ -87,7 +90,7 @@ function changed(what: string): Error {
 }
 
 function stringOf(value: unknown, key: string): string {
-  const found = fieldOf(value, key);
+  const found = muirMoiraMutatorsFieldOf(value, key);
 
   if (typeof found !== 'string') {
     throw changed(key);
@@ -98,7 +101,7 @@ function stringOf(value: unknown, key: string): string {
 
 function positionOf(value: unknown): Position {
   const numberOf = (key: string): number => {
-    const found = fieldOf(value, key);
+    const found = muirMoiraMutatorsFieldOf(value, key);
 
     if (typeof found !== 'number') {
       throw changed(`location ${key}`);

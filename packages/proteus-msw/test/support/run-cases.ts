@@ -1,4 +1,4 @@
-// Each case must give exactly the LzMsw mutants it lists, through the real instrumenter with the real install; the
+// Each case must give exactly the MuirProteusMsw mutants it lists, through the real instrumenter with the real install; the
 // built-ins' mutants are left out. The install and the instrumentation run in a before hook, so that an error there
 // fails every case instead of the file.
 import assert from 'node:assert/strict';
@@ -6,15 +6,15 @@ import { join } from 'node:path';
 import { before, test } from 'node:test';
 
 import {
-  coreInstrument,
-  fieldOf,
-  type SourceFile,
+  muirMoiraMutatorsCoreInstrument,
+  muirMoiraMutatorsFieldOf,
+  type MuirMoiraMutatorsSourceFile,
 } from '@muirjs/moira-mutators';
 
-import { lzMswMutators } from '../../src/index.ts';
-import { resolveFromCore } from '../../src/install.ts';
-import { mutatorSets } from '../../src/mutators.ts';
-import { packageName } from '../../src/package-name.ts';
+import { muirProteusMswMutators } from '../../src/index.ts';
+import { muirProteusMswResolveFromCore } from '../../src/install.ts';
+import { muirProteusMswMutatorSets } from '../../src/mutators.ts';
+import { muirProteusMswPackageName } from '../../src/package-name.ts';
 import type { Case } from '../cases.ts';
 
 interface Mutant {
@@ -24,28 +24,28 @@ interface Mutant {
 }
 
 const ours: ReadonlySet<string> = new Set(
-  Object.values(mutatorSets)
+  Object.values(muirProteusMswMutatorSets)
     .flat()
     .map(({ name }) => name),
 );
 
 async function mutantsOf(
-  files: readonly SourceFile[],
+  files: readonly MuirMoiraMutatorsSourceFile[],
 ): Promise<readonly Mutant[]> {
-  const instrument = await coreInstrument({
-    packageName,
-    ...(await resolveFromCore()),
+  const instrument = await muirMoiraMutatorsCoreInstrument({
+    packageName: muirProteusMswPackageName,
+    ...(await muirProteusMswResolveFromCore()),
   });
-  const mutants = fieldOf(await instrument(files), 'mutants');
+  const mutants = muirMoiraMutatorsFieldOf(await instrument(files), 'mutants');
 
   if (!Array.isArray(mutants)) {
     throw new Error('Instrumenter.instrument() gave no mutants');
   }
 
   return mutants.map((mutant: unknown) => ({
-    fileName: String(fieldOf(mutant, 'fileName')),
-    mutatorName: String(fieldOf(mutant, 'mutatorName')),
-    replacement: String(fieldOf(mutant, 'replacement')),
+    fileName: String(muirMoiraMutatorsFieldOf(mutant, 'fileName')),
+    mutatorName: String(muirMoiraMutatorsFieldOf(mutant, 'mutatorName')),
+    replacement: String(muirMoiraMutatorsFieldOf(mutant, 'replacement')),
   }));
 }
 
@@ -61,7 +61,7 @@ export function runCases(cases: readonly Case[]): void {
   let mutants: readonly Mutant[];
 
   before(async () => {
-    await lzMswMutators();
+    await muirProteusMswMutators();
     mutants = await mutantsOf(
       cases.map((testCase) => ({
         name: fileOf(testCase),

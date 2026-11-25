@@ -5,13 +5,13 @@ function that no check depends on. Story test code is the Storybook context's te
 reads it: the plays and hooks of the meta and the stories, including ones assigned as `Story.play = ...`, and the
 `.test()` bodies of exported stories that Storybook runs. Interaction, Composed play, Raw DOM interaction, User-event
 origin, Check, Failing query, Negative check and Following checks are the Storybook context's terms too, as the
-`@muirjs/moira-storybook` interaction reader reads them for this package and the `lz-storybook` reporter. Install,
+`@muirjs/moira-storybook` interaction reader reads them for this package and the `muir-shadowcat-storybook` reporter. Install,
 tier and built-in mutator terms belong to the Mutator install context.
 
 ## Language
 
-**LzStorybook test mutator**:
-One of this package's mutators, named `LzStorybook` plus what it changes, such as `LzStorybookInteraction`.
+**MuirProteusStorybookTest test mutator**:
+One of this package's mutators, named `MuirProteusStorybookTest` plus what it changes, such as `MuirProteusStorybookTestInteraction`.
 _Avoid_: play mutator, Storybook operator
 
 ### Interactions
@@ -19,14 +19,14 @@ _Avoid_: play mutator, Storybook operator
 **Target query**:
 The Testing Library query that an interaction (the Storybook context's term) acts on as its first argument, awaited
 or not, such as `canvas.getByRole('button', { name: 'Save' })` in
-`userEvent.click(canvas.getByRole('button', { name: 'Save' }))`; `LzStorybookInteractionTarget` swaps its name or text
+`userEvent.click(canvas.getByRole('button', { name: 'Save' }))`; `MuirProteusStorybookTestInteractionTarget` swaps its name or text
 for another one in the same file: the name of a `getBy`, `findBy` or `queryBy` query of the same string-literal role,
 or the text of a query of the same method.
 _Avoid_: target (alone), locator (the Playwright mutators' term)
 
 **Skipped interaction**:
-An interaction (the Storybook context's term) that `LzStorybookInteraction`, `LzStorybookClickFocus`,
-`LzStorybookInteractionRepeat`, `LzStorybookInteractionTarget` and `LzStorybookAssertionBefore` make no mutant of:
+An interaction (the Storybook context's term) that `MuirProteusStorybookTestInteraction`, `MuirProteusStorybookTestClickFocus`,
+`MuirProteusStorybookTestInteractionRepeat`, `MuirProteusStorybookTestInteractionTarget` and `MuirProteusStorybookTestAssertionBefore` make no mutant of:
 one in a `beforeEach` or `afterEach`, given inline or as a function declared in the file or given to a variable by
 an `=` write, also under casts (`setup as Hook`), but not one that a call wraps (`withUser(fn)`). Every other interaction gets its mutants, including one that a later interaction makes redundant,
 such as a click directly before a `type` of the same target.
@@ -34,7 +34,7 @@ _Avoid_: ignored interaction (Ignored is a Stryker mutant status)
 
 **Copied check**:
 The statement that holds the first `expect` check of an interaction's following checks (the Storybook context's
-terms; a failing query is never copied), which `LzStorybookAssertionBefore` also runs before the interaction. It is
+terms; a failing query is never copied), which `MuirProteusStorybookTestAssertionBefore` also runs before the interaction. It is
 looked for only in the interaction's own block, so a check after the end of a step callback that holds the
 interaction is not looked at, and an interaction that is an arrow's expression body has none.
 
@@ -60,23 +60,23 @@ _Avoid_: duplicated assertion, moved check
 **Stub statement**:
 An expression statement in story test code whose call is a spy stub method on any receiver, such as
 `mocked(save).mockResolvedValue(note);` in a play or a `beforeEach`, on a member that is not computed.
-`LzStorybookSpyStub` removes it, as it removes each definition-time stub (the Storybook context's term), leaving the
+`MuirProteusStorybookTestSpyStub` removes it, as it removes each definition-time stub (the Storybook context's term), leaving the
 rest of its chain in place.
 _Avoid_: mock statement, stub call
 
 **Outcome mutant**:
-The `LzStorybookSpyStubOutcome` mutant that turns a stub statement or definition-time stub of `mockResolvedValue`
+The `MuirProteusStorybookTestSpyStubOutcome` mutant that turns a stub statement or definition-time stub of `mockResolvedValue`
 into `mockRejectedValue(new Error('Stryker'))` and one of `mockRejectedValue` into `mockResolvedValue(undefined)`,
 keeping a `Once` form, so a survivor shows that no check tells success from failure of that call. It has a mutator
-name of its own, apart from `LzStorybookSpyStub`, which removes the stub, so a report and `mutator.excludedMutations`
+name of its own, apart from `MuirProteusStorybookTestSpyStub`, which removes the stub, so a report and `mutator.excludedMutations`
 tell the two apart. A `// Stryker disable` comment matches each mutator name exactly, ignoring case only, so it takes
-`LzStorybookSpyStub,LzStorybookSpyStubOutcome` or `all` to silence both.
+`MuirProteusStorybookTestSpyStub,MuirProteusStorybookTestSpyStubOutcome` or `all` to silence both.
 _Avoid_: flip mutant, rejection mutant
 
 ### Globals
 
 **Globals site**:
-A `globals` object literal that `LzStorybookStoryGlobals` removes one property of per mutant: the `globals` a played
+A `globals` object literal that `MuirProteusStorybookTestStoryGlobals` removes one property of per mutant: the `globals` a played
 story's own object ends up with (the Storybook context's term), its own or those of a later spread of an object that
 sets `globals` and that the file resolves, story or not (a later spread or computed key the file cannot resolve does
 not count); the meta's `globals` when the file has a played
@@ -124,6 +124,6 @@ _Avoid_: initial global, preset global
 
 **Retrying wait**:
 A Testing Library call that retries until it passes or times out: `waitFor(() => ...)`,
-`waitForElementToBeRemoved(...)`, or a `findBy` or `findAllBy` query. `LzStorybookWaitFor` makes it check once, or
+`waitForElementToBeRemoved(...)`, or a `findBy` or `findAllBy` query. `MuirProteusStorybookTestWaitFor` makes it check once, or
 removes the removal wait.
 _Avoid_: async wait, polling

@@ -12,48 +12,48 @@ import {
   type PluginObject,
 } from '@babel/core';
 import {
-  field,
-  isRecord,
-  list,
-  propertyKey,
-  type ProofReason,
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookList,
+  muirMoiraStorybookPropertyKey,
+  type MuirMoiraStorybookProofReason,
 } from '@muirjs/moira-storybook';
 import { definePreview, getStoryChildren } from 'storybook/internal/csf';
 import { composeStories } from 'storybook/preview-api';
 
-import { tempRoot, writeTree } from './temp-tree.ts';
+import { muirTempRoot, muirWriteTree } from './temp-tree.ts';
 
 /** A test case of a mutator package: a story file and the name its rows are reported under. */
-export interface Case {
+export interface MuirCase {
   readonly id: string;
   /** A story file. */
   readonly source: string;
 }
 
-export interface Skip {
+export interface MuirSkip {
   readonly property: object;
   readonly reason: string;
 }
 
 /** What the harness uses of a node:test `TestContext`. */
-export interface HarnessContext {
+export interface MuirHarnessContext {
   after(fn: () => void): unknown;
   diagnostic(message: string): void;
-  test(name: string, fn: (t: RowContext) => void): Promise<unknown>;
+  test(name: string, fn: (t: MuirRowContext) => void): Promise<unknown>;
 }
 
 /** What the harness uses of the context of one row's test. */
-export type RowContext = Pick<HarnessContext, 'diagnostic'>;
+export type MuirRowContext = Pick<MuirHarnessContext, 'diagnostic'>;
 
-export interface ComposeSkips {
-  readonly cases: readonly Case[];
+export interface MuirComposeSkips {
+  readonly cases: readonly MuirCase[];
   readonly skipsOf: (
     program: NodePath,
-  ) => ReadonlyMap<unknown, readonly Skip[]>;
+  ) => ReadonlyMap<unknown, readonly MuirSkip[]>;
   readonly layer: 'args' | 'globals';
   readonly same: (withProperty: unknown, withoutProperty: unknown) => boolean;
   readonly unloadable: ReadonlyMap<string, string>;
-  readonly reasonsRowsMustCut: readonly ProofReason[];
+  readonly reasonsRowsMustCut: readonly MuirMoiraStorybookProofReason[];
 }
 
 /**
@@ -98,17 +98,24 @@ interface RowResult {
  * Registers one test that composes each case's stories with and without each property the mutator skips and fails a
  * row where they differ. `register` takes the place of node:test's `test` in this package's own tests.
  */
-export function composeSkips(
-  { cases, skipsOf, layer, same, unloadable, reasonsRowsMustCut }: ComposeSkips,
+export function muirComposeSkips(
+  {
+    cases,
+    skipsOf,
+    layer,
+    same,
+    unloadable,
+    reasonsRowsMustCut,
+  }: MuirComposeSkips,
   register: (
     name: string,
-    fn: (t: HarnessContext) => Promise<void>,
+    fn: (t: MuirHarnessContext) => Promise<void>,
   ) => unknown = test,
 ): void {
   register(
     'removing a property the mutator skips leaves every composed story the same',
     async (t) => {
-      const root = tempRoot(t, 'compose-skips-');
+      const root = muirTempRoot(t, 'compose-skips-');
       redirectImports(t, root);
       const rows = cases.map((testCase) => ({
         testCase,
@@ -136,7 +143,7 @@ export function composeSkips(
 }
 
 /** Sends each import a file under the temporary root makes to the file `writeRow` writes for it, until the test ends. */
-function redirectImports(t: Pick<HarnessContext, 'after'>, root: string) {
+function redirectImports(t: Pick<MuirHarnessContext, 'after'>, root: string) {
   const rootUrl = pathToFileURL(root).href;
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -165,7 +172,7 @@ function redirectImports(t: Pick<HarnessContext, 'after'>, root: string) {
 
 /** Defines the global the stub modules and preludes call for the stub of each row and name, until the test ends. */
 function defineStubs(
-  t: Pick<HarnessContext, 'after'>,
+  t: Pick<MuirHarnessContext, 'after'>,
   keysOfRows: readonly (readonly string[])[],
 ) {
   const stubs = new Map<string, unknown>();
@@ -190,7 +197,7 @@ function defineStubs(
 }
 
 async function reportRows(
-  t: Pick<HarnessContext, 'test'>,
+  t: Pick<MuirHarnessContext, 'test'>,
   results: readonly RowResult[],
 ): Promise<void> {
   await Promise.all(
@@ -208,13 +215,13 @@ async function reportRows(
 
 /** Counts what the run checked, and fails it when the unloadable list names a missing row or a check cut nothing. */
 function reportRun(
-  t: Pick<HarnessContext, 'diagnostic'>,
+  t: Pick<MuirHarnessContext, 'diagnostic'>,
   results: readonly RowResult[],
   {
     cases,
     unloadable,
     reasonsRowsMustCut,
-  }: Pick<ComposeSkips, 'cases' | 'unloadable' | 'reasonsRowsMustCut'>,
+  }: Pick<MuirComposeSkips, 'cases' | 'unloadable' | 'reasonsRowsMustCut'>,
 ): void {
   const cuts = results.flatMap((result) => result.cuts);
   const unloaded = results.filter(({ loaded }) => !loaded);
@@ -266,7 +273,7 @@ interface RowFiles {
 }
 
 async function checkRow(
-  testCase: Case,
+  testCase: MuirCase,
   row: Row,
   files: RowFiles,
   {
@@ -274,7 +281,7 @@ async function checkRow(
     layer,
     same,
     unloadable,
-  }: Omit<ComposeSkips, 'cases' | 'reasonsRowsMustCut'>,
+  }: Omit<MuirComposeSkips, 'cases' | 'reasonsRowsMustCut'>,
 ): Promise<RowResult> {
   const { id } = testCase;
   const skips = [...skipsOf(row.program)];
@@ -323,7 +330,7 @@ async function checkRow(
       [...Map.groupBy(proofs, ({ property }) => property)].map(
         async ([property, propertyProofs]) => {
           const reasons = propertyProofs.map(({ reason }) => reason);
-          const label = `${id}: removing ${String(propertyKey(property))} (${reasons.join(', ')})`;
+          const label = `${id}: removing ${String(muirMoiraStorybookPropertyKey(property))} (${reasons.join(', ')})`;
           const cut = await composeOrError(
             files,
             without(testCase.source, property),
@@ -374,7 +381,7 @@ function analyse(source: string, fileName: string): Row {
         programs.push(path);
       },
       ObjectProperty({ node }) {
-        const key = propertyKey(node);
+        const key = muirMoiraStorybookPropertyKey(node);
 
         if (typeof key === 'string' && !structural.includes(key)) {
           keys.add(key);
@@ -430,7 +437,7 @@ function writeRow(
       ),
   );
 
-  writeTree(dir, {
+  muirWriteTree(dir, {
     'package.json': '{ "type": "module" }\n',
     '.storybook/preview.ts': `import { definePreview } from '${import.meta.resolve('storybook/internal/csf')}';\nexport default definePreview({ render: () => null });\n`,
     ...Object.fromEntries(
@@ -496,7 +503,7 @@ function bareFile(specifier: string): string {
 function composeOrError(
   files: RowFiles,
   source: string,
-  layer: ComposeSkips['layer'],
+  layer: MuirComposeSkips['layer'],
 ): Promise<
   | { readonly composed: ReadonlyMap<string, unknown> }
   | { readonly error: string }
@@ -510,16 +517,16 @@ function composeOrError(
 async function compose(
   files: RowFiles,
   source: string,
-  layer: ComposeSkips['layer'],
+  layer: MuirComposeSkips['layer'],
 ): Promise<ReadonlyMap<string, unknown>> {
   const file = files.next();
-  writeTree(files.dir, { [file]: `${files.prelude}${source}` });
+  muirWriteTree(files.dir, { [file]: `${files.prelude}${source}` });
   const module: unknown = await import(
     pathToFileURL(join(files.dir, file)).href
   );
-  assert.ok(isRecord(module));
+  assert.ok(muirMoiraStorybookIsRecord(module));
   const factories = Object.entries(module).filter(
-    ([, value]) => field(value, '_tag') === 'Story',
+    ([, value]) => muirMoiraStorybookField(value, '_tag') === 'Story',
   );
 
   if (factories.length > 0) {
@@ -537,7 +544,7 @@ async function compose(
     module,
     csf3Project,
   ]);
-  assert.ok(isRecord(stories));
+  assert.ok(muirMoiraStorybookIsRecord(stories));
 
   return new Map(
     Object.entries(stories).map(
@@ -554,7 +561,7 @@ function withChildren(
 
   return [
     [name, story],
-    ...list(children).flatMap((child, index) =>
+    ...muirMoiraStorybookList(children).flatMap((child, index) =>
       withChildren(`${name} .test() ${index + 1}`, child),
     ),
   ];
@@ -569,9 +576,9 @@ function member(value: unknown, key: string): unknown {
 function without(source: string, property: object): string {
   const end = Math.max(
     offset(property, 'end'),
-    ...list(field(property, 'trailingComments')).map((comment) =>
-      offset(comment, 'end'),
-    ),
+    ...muirMoiraStorybookList(
+      muirMoiraStorybookField(property, 'trailingComments'),
+    ).map((comment) => offset(comment, 'end')),
   );
   const comma = /^\s*,/.exec(source.slice(end))?.[0].length ?? 0;
 
@@ -579,7 +586,7 @@ function without(source: string, property: object): string {
 }
 
 function offset(node: unknown, edge: 'start' | 'end'): number {
-  const value = field(node, edge);
+  const value = muirMoiraStorybookField(node, edge);
   assert.ok(typeof value === 'number');
 
   return value;

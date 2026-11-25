@@ -1,6 +1,6 @@
 export {
-  testReadmeTiers,
-  type MutatorTiers,
-  type ReadmeFacts,
+  muirTestReadmeTiers,
+  type MuirMutatorTiers,
+  type MuirReadmeFacts,
 } from './readme-tiers.ts';
-export { tempRoot, writeTree } from './temp-tree.ts';
+export { muirTempRoot, muirWriteTree } from './temp-tree.ts';

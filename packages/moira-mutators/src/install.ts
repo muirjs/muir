@@ -1,15 +1,16 @@
 import type {
-  Instrumenter,
-  ListedMutator,
-  Located,
-  MutatorList,
+  MuirMoiraMutatorsInstrumenter,
+  MuirMoiraMutatorsListedMutator,
+  MuirMoiraMutatorsLocated,
+  MuirMoiraMutatorsMutatorList,
 } from './instrumenter.ts';
 
-export interface NamedMutator {
+export interface MuirMoiraMutatorsNamedMutator {
   readonly name: string;
 }
 
-export interface SampledMutator extends NamedMutator {
+export interface MuirMoiraMutatorsSampledMutator
+  extends MuirMoiraMutatorsNamedMutator {
   /** A source file in which the mutator makes at least one mutant. */
   readonly sample: string;
 }
@@ -20,25 +21,25 @@ const namePattern = /^[A-Za-z]+$/;
  * The mark on every entry a mutator package adds. `Symbol.for`, so a second copy of the package in the process
  * sees the marks of the first.
  */
-export function markOf(packageName: string): symbol {
+export function muirMoiraMutatorsMarkOf(packageName: string): symbol {
   return Symbol.for(packageName);
 }
 
 const selfCheckSuffix = '.self-check.tsx';
 
 /** The name of the sample file the install checks instrument for `name`. */
-export function selfCheckFile(name: string): string {
+export function muirMoiraMutatorsSelfCheckFile(name: string): string {
   return `${name}${selfCheckSuffix}`;
 }
 
-export function isSelfCheckFile(fileName: string): boolean {
+export function muirMoiraMutatorsIsSelfCheckFile(fileName: string): boolean {
   return fileName.endsWith(selfCheckSuffix);
 }
 
-export function checkNames(
+export function muirMoiraMutatorsCheckNames(
   packageName: string,
-  mutators: readonly NamedMutator[],
-  present: readonly ListedMutator[],
+  mutators: readonly MuirMoiraMutatorsNamedMutator[],
+  present: readonly MuirMoiraMutatorsListedMutator[],
 ): void {
   const names = mutators.map(({ name }) => name);
   const invalid = names.filter((name) => !namePattern.test(name));
@@ -54,7 +55,7 @@ export function checkNames(
   // Stryker disable next-line MethodExpression: names hold ASCII letters only, so upper-casing groups the same names
   const keyOf = (name: string): string => name.toLowerCase();
   const keys = names.map(keyOf);
-  const ownMark = markOf(packageName);
+  const ownMark = muirMoiraMutatorsMarkOf(packageName);
   const others = new Set(
     present
       .filter((mutator) => !(ownMark in mutator))
@@ -77,12 +78,12 @@ export function checkNames(
  * Replaces the package's own earlier entries with the mutators, marked as the package's own and appended after the
  * entries of other packages. A mutator whose name another entry holds is skipped.
  */
-export function register(
+export function muirMoiraMutatorsRegister(
   packageName: string,
-  allMutators: MutatorList,
-  mutators: readonly ListedMutator[],
+  allMutators: MuirMoiraMutatorsMutatorList,
+  mutators: readonly MuirMoiraMutatorsListedMutator[],
 ): void {
-  const ownMark = markOf(packageName);
+  const ownMark = muirMoiraMutatorsMarkOf(packageName);
   const kept = allMutators.filter((mutator) => !(ownMark in mutator));
   const registered = new Set(kept.map(({ name }) => name));
 
@@ -100,7 +101,7 @@ export function register(
  * Runs `change`; when it throws, gives each target back the own properties it had before, and rethrows. The restore
  * is shallow (property values come back by reference) and needs extensible targets with configurable properties.
  */
-export async function undoOnThrow(
+export async function muirMoiraMutatorsUndoOnThrow(
   targets: readonly object[],
   change: () => Promise<void>,
 ): Promise<void> {
@@ -122,15 +123,15 @@ export async function undoOnThrow(
   }
 }
 
-export async function selfCheck(
+export async function muirMoiraMutatorsSelfCheck(
   packageName: string,
-  instrumenter: Pick<Located, 'dir' | 'version'> &
-    Pick<Instrumenter<unknown>, 'instrument'>,
-  mutators: readonly SampledMutator[],
+  instrumenter: Pick<MuirMoiraMutatorsLocated, 'dir' | 'version'> &
+    Pick<MuirMoiraMutatorsInstrumenter<unknown>, 'instrument'>,
+  mutators: readonly MuirMoiraMutatorsSampledMutator[],
 ): Promise<void> {
   const mutants = await instrumenter.instrument(
     mutators.map(({ name, sample }) => ({
-      name: selfCheckFile(name),
+      name: muirMoiraMutatorsSelfCheckFile(name),
       content: sample,
     })),
   );
@@ -140,7 +141,8 @@ export async function selfCheck(
       (name) =>
         !mutants.some(
           ({ fileName, mutatorName }) =>
-            fileName === selfCheckFile(name) && mutatorName === name,
+            fileName === muirMoiraMutatorsSelfCheckFile(name) &&
+            mutatorName === name,
         ),
     );
 
@@ -153,10 +155,10 @@ export async function selfCheck(
   }
 }
 
-export function warnUntested(
+export function muirMoiraMutatorsWarnUntested(
   packageName: string,
   testedVersion: string,
-  instrumenter: Pick<Located, 'dir' | 'version'>,
+  instrumenter: Pick<MuirMoiraMutatorsLocated, 'dir' | 'version'>,
   warn: (message: string) => void,
 ): void {
   if (instrumenter.version !== testedVersion) {

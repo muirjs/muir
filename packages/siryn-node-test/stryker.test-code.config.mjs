@@ -7,7 +7,7 @@ export default await testCode({
   incrementalFile:
     'reports/stryker-incremental/@muirjs/siryn-node-test.test-code.json',
   ...reportFiles('@muirjs/siryn-node-test.test-code'),
-  lzNodeTest: {
+  muirSirynNodeTest: {
     testFiles: ['packages/siryn-node-test/test/**/*.test.ts'],
     nodeArgs: [source],
   },

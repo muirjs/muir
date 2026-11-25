@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  lzConsumerNodeOptions,
-  lzNodeOptionArgs,
-  lzReporterArgs,
-  lzTestOnly,
+  muirSirynNodeTestConsumerNodeOptions,
+  muirSirynNodeTestOptionArgs,
+  muirSirynNodeTestReporterArgs,
+  muirSirynNodeTestTestOnly,
 } from '../../src/node-options.ts';
 
-describe('lzNodeOptionArgs', () => {
-  lzTestEach([
+describe('muirSirynNodeTestOptionArgs', () => {
+  muirTestEach([
     ['nothing', undefined, []],
     ['no options', '  ', []],
     ['options at any whitespace', ' --a\t--b  --c ', ['--a', '--b', '--c']],
@@ -25,11 +25,11 @@ describe('lzNodeOptionArgs', () => {
       ['--title="a \\" b"', '--c'],
     ],
   ])('splits %s as node does', (_title, nodeOptions, args) => {
-    assert.deepEqual(lzNodeOptionArgs(nodeOptions), args);
+    assert.deepEqual(muirSirynNodeTestOptionArgs(nodeOptions), args);
   });
 });
 
-describe('lzConsumerNodeOptions', () => {
+describe('muirSirynNodeTestConsumerNodeOptions', () => {
   it('drops the node:test reporters and destinations, also quoted ones', () => {
     const nodeOptions = [
       '--test-reporter=spec',
@@ -41,24 +41,28 @@ describe('lzConsumerNodeOptions', () => {
       '--test-reporter-destinations=x',
     ].join(' ');
 
-    assert.deepEqual(lzConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }), [
-      '--max-old-space-size=100',
-      '--title="a \\" --test-reporter=b"',
-      '--test-reporter-destinations=x',
-    ]);
+    assert.deepEqual(
+      muirSirynNodeTestConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }),
+      [
+        '--max-old-space-size=100',
+        '--title="a \\" --test-reporter=b"',
+        '--test-reporter-destinations=x',
+      ],
+    );
   });
 
   it('drops the node:test reporters spelled with underscores, which node reads as dashes', () => {
     const nodeOptions =
       '--test_reporter=spec --test_reporter dot --test_reporter_destination=stdout --title=a_b';
 
-    assert.deepEqual(lzConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }), [
-      '--title=a_b',
-    ]);
+    assert.deepEqual(
+      muirSirynNodeTestConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }),
+      ['--title=a_b'],
+    );
   });
 });
 
-describe('lzReporterArgs', () => {
+describe('muirSirynNodeTestReporterArgs', () => {
   it('gives the reporters and destinations, with the values of bare ones, and nothing else', () => {
     const args = [
       '--test-reporter=spec',
@@ -68,7 +72,7 @@ describe('lzReporterArgs', () => {
       '--test_reporter_destination=a',
     ];
 
-    assert.deepEqual(lzReporterArgs(args), [
+    assert.deepEqual(muirSirynNodeTestReporterArgs(args), [
       '--test-reporter=spec',
       '--test-reporter',
       'dot',
@@ -77,8 +81,8 @@ describe('lzReporterArgs', () => {
   });
 });
 
-describe('lzTestOnly', () => {
-  lzTestEach([
+describe('muirSirynNodeTestTestOnly', () => {
+  muirTestEach([
     ['neither names it', ['--no-deprecation'], '--no-warnings', false],
     ['the options name it', ['--test-only'], undefined, true],
     ['NODE_OPTIONS names it', [], '--import x  --test-only', true],
@@ -129,7 +133,7 @@ describe('lzTestOnly', () => {
   ])(
     'reads whether node runs with --test-only when %s',
     (_title, execArgv, nodeOptions, testOnly) => {
-      assert.equal(lzTestOnly(execArgv, nodeOptions), testOnly);
+      assert.equal(muirSirynNodeTestTestOnly(execArgv, nodeOptions), testOnly);
     },
   );
 });

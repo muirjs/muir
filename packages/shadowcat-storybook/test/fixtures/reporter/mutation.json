@@ -1,6 +1,6 @@
 {
   "files": {
-    "src/lzsb/Imported.stories.tsx": {
+    "src/muirsb/Imported.stories.tsx": {
       "language": "typescript",
       "mutants": [
         {
@@ -53,9 +53,9 @@
         },
         {
           "id": "4",
-          "mutatorName": "LzStorybookSpyStub",
+          "mutatorName": "MuirProteusStorybookTestSpyStub",
           "replacement": "fn()",
-          "statusReason": "lz-storybook: unknown: the file's parameters.test cannot be read statically, so whether the reset erases this stub is unknown; pass the implementation to fn() (fn(() => value)) or set the stub in beforeEach",
+          "statusReason": "muir-shadowcat-storybook: unknown: the file's parameters.test cannot be read statically, so whether the reset erases this stub is unknown; pass the implementation to fn() (fn(() => value)) or set the stub in beforeEach",
           "status": "Ignored",
           "static": false,
           "location": {
@@ -112,9 +112,9 @@
           }
         }
       ],
-      "source": "import { sharedParameters } from '../reset-cases/shared-parameters';\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Lzsb/Imported',\n  component: Probe,\n  parameters: sharedParameters,\n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const Checked: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\n"
+      "source": "import { sharedParameters } from '../reset-cases/shared-parameters';\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Muirsb/Imported',\n  component: Probe,\n  parameters: sharedParameters,\n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const Checked: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\n"
     },
-    "src/lzsb/OrderDep.stories.tsx": {
+    "src/muirsb/OrderDep.stories.tsx": {
       "language": "typescript",
       "mutants": [
         {
@@ -167,9 +167,9 @@
         },
         {
           "id": "13",
-          "mutatorName": "LzStorybookSpyStub",
+          "mutatorName": "MuirProteusStorybookTestSpyStub",
           "replacement": "fn()",
-          "statusReason": "lz-storybook: order-dependent: a story with the default mock reset in this file erases this stub when it renders first (Storybook UI, Docs page, shuffled runs); pass the implementation to fn() (fn(() => value)) or set the stub in beforeEach, or turn the reset off in meta",
+          "statusReason": "muir-shadowcat-storybook: order-dependent: a story with the default mock reset in this file erases this stub when it renders first (Storybook UI, Docs page, shuffled runs); pass the implementation to fn() (fn(() => value)) or set the stub in beforeEach, or turn the reset off in meta",
           "status": "Ignored",
           "static": false,
           "location": {
@@ -346,7 +346,7 @@
           }
         }
       ],
-      "source": "import type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Lzsb/OrderDep',\n  component: Probe,\n  \n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const First: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  parameters: { test: { restoreMocks: false } },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\nexport const Second: Story = {\n  args: { getValue: fn(() => 'plain') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('plain');\n  },\n};\n"
+      "source": "import type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Muirsb/OrderDep',\n  component: Probe,\n  \n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const First: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  parameters: { test: { restoreMocks: false } },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\nexport const Second: Story = {\n  args: { getValue: fn(() => 'plain') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('plain');\n  },\n};\n"
     },
     "src/SpyStubDefault.stories.tsx": {
       "language": "typescript",
@@ -401,9 +401,9 @@
         },
         {
           "id": "32",
-          "mutatorName": "LzStorybookSpyStub",
+          "mutatorName": "MuirProteusStorybookTestSpyStub",
           "replacement": "fn()",
-          "statusReason": "lz-storybook: erased: this story's mock reset runs before it renders, so the stub never takes effect; pass the implementation to fn() (fn(() => value)) or set the stub in beforeEach",
+          "statusReason": "muir-shadowcat-storybook: erased: this story's mock reset runs before it renders, so the stub never takes effect; pass the implementation to fn() (fn(() => value)) or set the stub in beforeEach",
           "status": "Ignored",
           "static": false,
           "location": {
@@ -647,7 +647,7 @@
         },
         {
           "id": "50",
-          "mutatorName": "LzStorybookSpyStub",
+          "mutatorName": "MuirProteusStorybookTestSpyStub",
           "replacement": "fn()",
           "status": "Survived",
           "static": true,
@@ -661,7 +661,7 @@
         },
         {
           "id": "43",
-          "mutatorName": "LzStorybookSpyStub",
+          "mutatorName": "MuirProteusStorybookTestSpyStub",
           "replacement": "fn()",
           "statusReason": "\n\u001b[34mClick to debug the error directly in Storybook: http://localhost:6006/?path=/story/spystubmetaoff--checked-stub&addonPanel=storybook/interactions/panel\u001b[39m\n\nexpect(element).toHaveTextContent()\n\nExpected element to have text content:\n  stubbed\nReceived:\n  undefined",
           "status": "Killed",
@@ -683,7 +683,7 @@
       "mutants": [
         {
           "id": "51",
-          "mutatorName": "LzStorybookSpyStub",
+          "mutatorName": "MuirProteusStorybookTestSpyStub",
           "replacement": "fn()",
           "statusReason": "expect(received).toHaveReturnedWith(expected)",
           "status": "Killed",
@@ -699,7 +699,7 @@
         },
         {
           "id": "52",
-          "mutatorName": "LzStorybookSpyStubOutcome",
+          "mutatorName": "MuirProteusStorybookTestSpyStubOutcome",
           "replacement": "fn().mockRejectedValue(new Error(\"Stryker\"))",
           "status": "Survived",
           "static": true,
@@ -733,7 +733,7 @@
       ],
       "source": "// SpyStub spike: reset off for the file, so the definition-time stub reaches the component and the play checks it.\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nfunction Probe({ getValue }: { getValue: () => unknown }) {\n  return <output data-testid=\"value\">{String(getValue())}</output>;\n}\n\nconst meta = {\n  component: Probe,\n  parameters: { test: { restoreMocks: false } },\n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\n\nexport const CheckedStub: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\n\nexport const UncheckedStub: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toBeInTheDocument();\n  },\n};\n"
     },
-    "src/lzsb/OrderDep.stories.tsx": {
+    "src/muirsb/OrderDep.stories.tsx": {
       "tests": [
         {
           "id": "2",
@@ -746,7 +746,7 @@
           "location": { "start": { "column": 1, "line": 25 } }
         }
       ],
-      "source": "import type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Lzsb/OrderDep',\n  component: Probe,\n  \n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const First: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  parameters: { test: { restoreMocks: false } },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\nexport const Second: Story = {\n  args: { getValue: fn(() => 'plain') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('plain');\n  },\n};\n"
+      "source": "import type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Muirsb/OrderDep',\n  component: Probe,\n  \n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const First: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  parameters: { test: { restoreMocks: false } },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\nexport const Second: Story = {\n  args: { getValue: fn(() => 'plain') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('plain');\n  },\n};\n"
     },
     "src/SpyStubDefault.stories.tsx": {
       "tests": [
@@ -758,7 +758,7 @@
       ],
       "source": "// SpyStub spike: default reset, so the definition-time stub is erased before render; the play only checks the\n// output exists, like a story that passes on the unstubbed branch.\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nfunction Probe({ getValue }: { getValue: () => unknown }) {\n  return <output data-testid=\"value\">{String(getValue())}</output>;\n}\n\nconst meta = { component: Probe } satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\n\nexport const ErasedStub: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toBeInTheDocument();\n  },\n};\n"
     },
-    "src/lzsb/Imported.stories.tsx": {
+    "src/muirsb/Imported.stories.tsx": {
       "tests": [
         {
           "id": "5",
@@ -766,21 +766,21 @@
           "location": { "start": { "column": 1, "line": 12 } }
         }
       ],
-      "source": "import { sharedParameters } from '../reset-cases/shared-parameters';\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Lzsb/Imported',\n  component: Probe,\n  parameters: sharedParameters,\n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const Checked: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\n"
+      "source": "import { sharedParameters } from '../reset-cases/shared-parameters';\nimport type { Meta, StoryObj } from '@storybook/react-vite';\nimport { expect, fn } from 'storybook/test';\n\nimport { Probe } from '../reset-cases/Probe';\nconst meta = {\n  title: 'Muirsb/Imported',\n  component: Probe,\n  parameters: sharedParameters,\n} satisfies Meta<typeof Probe>;\nexport default meta;\ntype Story = StoryObj<typeof meta>;\nexport const Checked: Story = {\n  args: { getValue: fn().mockReturnValue('stubbed') },\n  play: async ({ canvas }) => {\n    await expect(canvas.getByTestId('value')).toHaveTextContent('stubbed');\n  },\n};\n"
     }
   },
   "projectRoot": "D:\\tmp\\oss-storybook\\sb-latest-probe",
   "config": {
     "testRunner": "vitest",
     "vitest": {
-      "configFile": "vitest.lzsb.config.ts",
+      "configFile": "vitest.muirsb.config.ts",
       "related": false,
       "pool": "threads"
     },
     "coverageAnalysis": "perTest",
-    "mutate": ["src/SpyStub*.stories.tsx", "src/lzsb/*.stories.tsx"],
-    "appendPlugins": ["../protos/lz-storybook-plugins.mjs"],
-    "ignorers": ["lz-storybook"],
+    "mutate": ["src/SpyStub*.stories.tsx", "src/muirsb/*.stories.tsx"],
+    "appendPlugins": ["../protos/muir-storybook-plugins.mjs"],
+    "ignorers": ["muir-shadowcat-storybook"],
     "mutator": {
       "excludedMutations": [
         "ArithmeticOperator",
@@ -803,13 +803,13 @@
       ],
       "plugins": null
     },
-    "lzStorybook": { "previewPath": ".storybook-lzsb/preview.ts" },
+    "muirShadowcatStorybook": { "previewPath": ".storybook-muirsb/preview.ts" },
     "concurrency": 2,
     "inPlace": true,
-    "reporters": ["clear-text", "json", "lz-storybook"],
-    "jsonReporter": { "fileName": "reports/lzsb/mutation.json" },
+    "reporters": ["clear-text", "json", "muir-shadowcat-storybook"],
+    "jsonReporter": { "fileName": "reports/muirsb/mutation.json" },
     "tempDirName": ".stryker-tmp",
-    "configFile": "stryker.lzsb.config.json",
+    "configFile": "stryker.muirsb.config.json",
     "allowConsoleColors": true,
     "checkers": [],
     "checkerNodeArgs": [],

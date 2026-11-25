@@ -3,7 +3,7 @@ import {
   type InteractionHintCase,
 } from './support/interaction-hint-case.ts';
 
-const interaction = 'LzStorybookInteraction';
+const interaction = 'MuirProteusStorybookTestInteraction';
 
 /** Click-before-type cases that turn on the type's user-event origin. */
 export const userEventOriginHintCases: readonly InteractionHintCase[] = [

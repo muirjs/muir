@@ -2,16 +2,20 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { definitionTimeStubs, field, isRecord } from '@muirjs/moira-storybook';
-
-import { parseProgram } from '../src/parse.ts';
 import {
-  classifyStubs,
-  readPreviewTest,
-  type ResetSettings,
-  type StoryFile,
-  type StoryReset,
-  type StubVerdict,
+  muirMoiraStorybookDefinitionTimeStubs,
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+} from '@muirjs/moira-storybook';
+
+import { muirShadowcatStorybookParseProgram } from '../src/parse.ts';
+import {
+  muirShadowcatStorybookClassifyStubs,
+  muirShadowcatStorybookReadPreviewTest,
+  type MuirShadowcatStorybookResetSettings,
+  type MuirShadowcatStorybookStoryFile,
+  type MuirShadowcatStorybookStoryReset,
+  type MuirShadowcatStorybookStubVerdict,
 } from '../src/reset-setting.ts';
 import { storyFile, verdictsOf } from './support/reset-setting.ts';
 import { untaggedPreviewTestTags } from './support/test-tags.ts';
@@ -59,20 +63,24 @@ function fixture(name: string): URL {
   return new URL(`fixtures/reset-cases/${name}`, import.meta.url);
 }
 
-function previewTest(preview: keyof typeof previews): ResetSettings {
-  return readPreviewTest(parseProgram(previews[preview].source, 'preview.ts'));
+function previewTest(
+  preview: keyof typeof previews,
+): MuirShadowcatStorybookResetSettings {
+  return muirShadowcatStorybookReadPreviewTest(
+    muirShadowcatStorybookParseProgram(previews[preview].source, 'preview.ts'),
+  );
 }
 
 function recorded(...keys: readonly string[]): unknown {
-  return field(outcomes, ...keys);
+  return muirMoiraStorybookField(outcomes, ...keys);
 }
 
-function erases(story: StoryReset): boolean {
+function erases(story: MuirShadowcatStorybookStoryReset): boolean {
   return story.branch === 'reset' || story.branch === 'restore';
 }
 
 function predict(
-  stories: readonly StoryReset[],
+  stories: readonly MuirShadowcatStorybookStoryReset[],
   index: number,
   seed: string,
 ): Prediction {
@@ -94,15 +102,15 @@ function predict(
 function storiesOf(
   file: string,
   preview: keyof typeof previews,
-): readonly StoryReset[] {
-  return classifyStubs(
+): readonly MuirShadowcatStorybookStoryReset[] {
+  return muirShadowcatStorybookClassifyStubs(
     fixtureFile(file),
     previewTest(preview),
     untaggedPreviewTestTags,
   ).stories;
 }
 
-function fixtureFile(file: string): StoryFile {
+function fixtureFile(file: string): MuirShadowcatStorybookStoryFile {
   return storyFile(
     readFileSync(fixture(`${file}.stories.tsx.txt`), 'utf8'),
     `${file}.stories.tsx`,
@@ -110,7 +118,7 @@ function fixtureFile(file: string): StoryFile {
 }
 
 function predictions(
-  stories: readonly StoryReset[],
+  stories: readonly MuirShadowcatStorybookStoryReset[],
 ): readonly (readonly [string, string, Prediction])[] {
   return seeds.flatMap((seed) =>
     stories.map(
@@ -124,7 +132,7 @@ describe('classifyStubs stub verdicts', () => {
   const rows: readonly (readonly [
     string,
     keyof typeof previews,
-    readonly StubVerdict[],
+    readonly MuirShadowcatStorybookStubVerdict[],
   ])[] = [
     ['F01AllDefault', 'default', ['erased', 'erased']],
     ['F02MetaOff', 'default', ['kept', 'kept']],
@@ -138,7 +146,7 @@ describe('classifyStubs stub verdicts', () => {
     it(`gives the stubs of ${file} under the ${preview} preview the verdicts ${verdicts.join(', ')}`, () => {
       const story = fixtureFile(file);
 
-      const { stubs } = classifyStubs(
+      const { stubs } = muirShadowcatStorybookClassifyStubs(
         story,
         previewTest(preview),
         untaggedPreviewTestTags,
@@ -146,10 +154,12 @@ describe('classifyStubs stub verdicts', () => {
 
       assert.deepEqual(
         stubs,
-        definitionTimeStubs(story.program).map((stub, index) => ({
-          ...stub,
-          verdict: verdicts[index],
-        })),
+        muirMoiraStorybookDefinitionTimeStubs(story.program).map(
+          (stub, index) => ({
+            ...stub,
+            verdict: verdicts[index],
+          }),
+        ),
       );
     });
   });
@@ -304,12 +314,16 @@ export const B = { args: { g: fn().mockReturnValue(1) } };`,
     assert.deepEqual(verdicts, ['unknown']);
   });
 
-  const unreadablePreview: ResetSettings = {
+  const unreadablePreview: MuirShadowcatStorybookResetSettings = {
     mockReset: 'unreadable',
     clearMocks: 'unreadable',
     restoreMocks: 'unreadable',
   };
-  const previewRows: readonly (readonly [string, string, ResetSettings])[] = [
+  const previewRows: readonly (readonly [
+    string,
+    string,
+    MuirShadowcatStorybookResetSettings,
+  ])[] = [
     [
       'reads a preview whose parameters spread an import as unreadable',
       `import { shared } from './shared';\nexport default { parameters: { ...shared } };\n`,
@@ -354,7 +368,9 @@ export const B = { args: { g: fn().mockReturnValue(1) } };`,
 
   previewRows.forEach(([title, source, expected]) => {
     it(title, () => {
-      const settings = readPreviewTest(parseProgram(source, 'preview.ts'));
+      const settings = muirShadowcatStorybookReadPreviewTest(
+        muirShadowcatStorybookParseProgram(source, 'preview.ts'),
+      );
 
       assert.deepEqual(settings, expected);
     });
@@ -363,8 +379,10 @@ export const B = { args: { g: fn().mockReturnValue(1) } };`,
 
 describe('classifyStubs', () => {
   const recordedPreviews = ['default', 'clear', 'off', 'reset'] as const;
-  const recordedRows = Object.keys(isRecord(outcomes) ? outcomes : {}).flatMap(
-    (file) => recordedPreviews.map((preview) => [file, preview] as const),
+  const recordedRows = Object.keys(
+    muirMoiraStorybookIsRecord(outcomes) ? outcomes : {},
+  ).flatMap((file) =>
+    recordedPreviews.map((preview) => [file, preview] as const),
   );
   const rows: readonly (readonly [string, keyof typeof previews])[] = [
     ...recordedRows,
@@ -409,7 +427,9 @@ describe('classifyStubs', () => {
 
       assert.deepEqual(
         stories.map((story) => story.name),
-        isRecord(definitionOrder) ? Object.keys(definitionOrder) : [],
+        muirMoiraStorybookIsRecord(definitionOrder)
+          ? Object.keys(definitionOrder)
+          : [],
       );
       assert.deepEqual(predicted, expected);
     });

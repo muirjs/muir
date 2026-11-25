@@ -3,7 +3,11 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { describe, it } from 'node:test';
 
-import { endGroup, groupOptions, termGraceMs } from '../../src/process-end.ts';
+import {
+  muirSirynNodeTestEndGroup,
+  muirSirynNodeTestGroupOptions,
+  muirSirynNodeTestTermGraceMs,
+} from '../../src/process-end.ts';
 
 describe('endGroup', () => {
   it(
@@ -19,7 +23,7 @@ describe('endGroup', () => {
         process.execPath,
         ['-e', 'setInterval(() => {}, 1_000);'],
         {
-          ...groupOptions(process.platform),
+          ...muirSirynNodeTestGroupOptions(process.platform),
           stdio: 'ignore',
         },
       );
@@ -32,16 +36,16 @@ describe('endGroup', () => {
       const exited = once(child, 'exit');
 
       const started = performance.now();
-      await endGroup(pid, process.platform, (target, signal) =>
+      await muirSirynNodeTestEndGroup(pid, process.platform, (target, signal) =>
         process.kill(target, signal),
       );
       const waitedMs = performance.now() - started;
       await exited;
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.equal(child.signalCode, 'SIGTERM');
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
-      assert.ok(waitedMs < termGraceMs, `${waitedMs} ms`);
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      assert.ok(waitedMs < muirSirynNodeTestTermGraceMs, `${waitedMs} ms`);
     },
   );
 });

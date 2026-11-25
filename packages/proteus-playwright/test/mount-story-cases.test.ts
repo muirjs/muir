@@ -3,6 +3,6 @@ import { runCases } from './support/run-cases.ts';
 
 runCases(
   mountStoryCases,
-  { LzPlaywrightMountStory: true },
+  { MuirProteusPlaywrightMountStory: true },
   '@playwright/experimental-ct-react',
 );

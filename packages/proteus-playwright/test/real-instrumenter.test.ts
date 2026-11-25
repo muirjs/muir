@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzPlaywrightMutators } from '../src/index.ts';
-import { resolveFromCore } from '../src/install.ts';
+import { muirProteusPlaywrightMutators } from '../src/index.ts';
+import { muirProteusPlaywrightResolveFromCore } from '../src/install.ts';
 
 const sample = `export function total(items: readonly number[], label: string, flag: boolean): string {
   let sum = 0;
@@ -20,14 +20,14 @@ const sample = `export function total(items: readonly number[], label: string, f
 }
 `;
 
-describe('lzPlaywrightMutators', () => {
+describe('muirProteusPlaywrightMutators', () => {
   it("makes the real instrumenter produce no mutant of a plain TypeScript file, as Stryker's 17 built-ins are off", async () => {
-    const instrumenter = await resolveFromCore();
+    const instrumenter = await muirProteusPlaywrightResolveFromCore();
     const before = await instrumenter.instrument([
       { name: 'plain.ts', content: sample },
     ]);
 
-    await lzPlaywrightMutators();
+    await muirProteusPlaywrightMutators();
 
     const after = await instrumenter.instrument([
       { name: 'plain.ts', content: sample },

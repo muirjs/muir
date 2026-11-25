@@ -2,22 +2,22 @@ import { readFileSync } from 'node:fs';
 import { relative, sep } from 'node:path';
 
 import {
-  lzResolveFromCore,
-  lzToNodeMutator,
-  type LzInstrumentedMutant,
-  type LzInstrumenter,
-  type LzMutator,
+  muirMoiraNodeTestResolveFromCore,
+  muirMoiraNodeTestToNodeMutator,
+  type MuirMoiraNodeTestInstrumentedMutant,
+  type MuirMoiraNodeTestInstrumenter,
+  type MuirMoiraNodeTestMutator,
 } from '@muirjs/moira-node-test';
-import { lzPackageName } from './package-name.ts';
+import { muirProteusNodePackageName } from './package-name.ts';
 
 interface MutantDiff {
   readonly added: readonly string[];
   readonly removed: readonly string[];
 }
 
-export function mutantDiff(
-  before: readonly LzInstrumentedMutant[],
-  after: readonly LzInstrumentedMutant[],
+export function muirProteusNodeMutantDiff(
+  before: readonly MuirMoiraNodeTestInstrumentedMutant[],
+  after: readonly MuirMoiraNodeTestInstrumentedMutant[],
 ): MutantDiff {
   const beforeLines = before.map(line);
   const afterLines = after.map(line);
@@ -32,10 +32,10 @@ export function mutantDiff(
  * A removed mutant is one that a Stryker mutator's filter drops once a mutant of one of these mutators shares its
  * scope, as the CallExpression mutator does.
  */
-export async function corpusDiff(
+export async function muirProteusNodeCorpusDiff(
   names: readonly string[],
-  mutatorsFor: (name: string) => readonly LzMutator[],
-  resolve: () => Promise<LzInstrumenter> = lzResolveFromCore,
+  mutatorsFor: (name: string) => readonly MuirMoiraNodeTestMutator[],
+  resolve: () => Promise<MuirMoiraNodeTestInstrumenter> = muirMoiraNodeTestResolveFromCore,
   read: (name: string) => string = (name) => readFileSync(name, 'utf8'),
 ): Promise<string> {
   const instrumenter = await resolve();
@@ -43,7 +43,11 @@ export async function corpusDiff(
 
   for (const name of names) {
     const nodeMutators = mutatorsFor(name).map((mutator) =>
-      lzToNodeMutator(mutator, instrumenter.types, lzPackageName),
+      muirMoiraNodeTestToNodeMutator(
+        mutator,
+        instrumenter.types,
+        muirProteusNodePackageName,
+      ),
     );
     const files = [{ name, content: read(name) }];
     const before = await instrumenter.instrument(
@@ -54,7 +58,7 @@ export async function corpusDiff(
       ...instrumenter.allMutators,
       ...nodeMutators,
     ]);
-    const { added, removed } = mutantDiff(before, after);
+    const { added, removed } = muirProteusNodeMutantDiff(before, after);
     const lines = [
       ...added.map((mutant) => `    + ${mutant}`),
       ...removed.map((mutant) => `    - ${mutant}`),
@@ -74,7 +78,7 @@ function line({
   mutatorName,
   location,
   replacement,
-}: LzInstrumentedMutant): string {
+}: MuirMoiraNodeTestInstrumentedMutant): string {
   const { line: row, column } = location.start;
 
   return `${row + 1}:${column + 1} ${mutatorName} ${replacement.replace(/\s+/g, ' ')}`;

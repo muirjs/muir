@@ -6,19 +6,19 @@ import path from 'node:path';
 import { before, type TestContext, test } from 'node:test';
 
 import type {
-  HookedContext,
-  HookedRequestContext,
+  MuirSirynPlaywrightHookedContext,
+  MuirSirynPlaywrightHookedRequestContext,
 } from '../src/playwright-internals.ts';
 import {
-  frameReadTimeoutMs,
-  hookTestNamespaceEnv,
-  readSnapshotDir,
-  runSettingsEnv,
-  type RunSettings,
+  muirSirynPlaywrightFrameReadTimeoutMs,
+  muirSirynPlaywrightHookTestNamespaceEnv,
+  muirSirynPlaywrightReadSnapshotDir,
+  muirSirynPlaywrightRunSettingsEnv,
+  type MuirSirynPlaywrightRunSettings,
 } from '../src/protocol.ts';
-import { testIdHeader } from '../src/server-protocol.ts';
+import { muirSirynPlaywrightTestIdHeader } from '../src/server-protocol.ts';
 import type * as Hook from '../src/worker-hook.ts';
-import type { StrykerNamespace } from '../src/namespace.ts';
+import type { MuirSirynPlaywrightStrykerNamespace } from '../src/namespace.ts';
 import { codedError, hookTestNamespace, tempTree } from './support/doubles.ts';
 import { fakeInstall, type Runnable } from './support/fake-worker.ts';
 
@@ -40,10 +40,10 @@ function worker(
     write?: (line: string) => void;
   } = {},
 ) {
-  const ns: StrykerNamespace = {};
+  const ns: MuirSirynPlaywrightStrykerNamespace = {};
   const lines: string[] = [];
   const listeners: (() => void)[] = [];
-  hook.recordNodeCoverage(
+  hook.muirSirynPlaywrightRecordNodeCoverage(
     ns,
     settings,
     testId,
@@ -71,7 +71,7 @@ test('a Playwright worker outside a Stryker run loads the hook and installs noth
     ['--import', workerHookUrl, path.join(dir, entry)],
     {
       encoding: 'utf8',
-      env: { ...process.env, [runSettingsEnv]: undefined },
+      env: { ...process.env, [muirSirynPlaywrightRunSettingsEnv]: undefined },
     },
   );
 
@@ -118,8 +118,11 @@ function runWorker(
       encoding: 'utf8',
       env: {
         ...process.env,
-        [runSettingsEnv]: JSON.stringify({ outDir, perTest: false }),
-        [hookTestNamespaceEnv]: hookTestNamespace,
+        [muirSirynPlaywrightRunSettingsEnv]: JSON.stringify({
+          outDir,
+          perTest: false,
+        }),
+        [muirSirynPlaywrightHookTestNamespaceEnv]: hookTestNamespace,
       },
     },
   );
@@ -148,7 +151,7 @@ function playwrightWith(t: TestContext, playwrightTest: string) {
   test(`the hook refuses a playwright/test without test.info() (${playwrightTest})`, (t) => {
     assert.throws(
       () =>
-        hook.install(
+        hook.muirSirynPlaywrightInstall(
           playwrightWith(t, playwrightTest),
           { outDir: 'unused', perTest: false },
           '__apiTest__',
@@ -173,7 +176,7 @@ test('a worker whose hook fails to install leaves the error for the run and exit
   const { child, outDir } = runWorker(t, [workerHookUrl], 'exports.test = {};');
 
   assert.equal(child.status, 1, child.stderr);
-  assert.deepEqual(readSnapshotDir(outDir), {
+  assert.deepEqual(muirSirynPlaywrightReadSnapshotDir(outDir), {
     snapshots: [],
     hookInstalled: false,
     serverMutants: [],
@@ -184,7 +187,7 @@ test('a worker whose hook fails to install leaves the error for the run and exit
 });
 
 test('a worker whose hook fails to install and cannot leave the error still exits with that error', (t) => {
-  const removeOutDir = `import fs from 'node:fs'; fs.rmSync(JSON.parse(process.env.${runSettingsEnv}).outDir, { recursive: true });`;
+  const removeOutDir = `import fs from 'node:fs'; fs.rmSync(JSON.parse(process.env.${muirSirynPlaywrightRunSettingsEnv}).outDir, { recursive: true });`;
   const { child } = runWorker(
     t,
     [`data:text/javascript,${encodeURIComponent(removeOutDir)}`, workerHookUrl],
@@ -354,10 +357,10 @@ test('without a hit limit the worker counts no hits', () => {
 
 function installed(
   t: TestContext,
-  settings: Omit<RunSettings, 'outDir'>,
+  settings: Omit<MuirSirynPlaywrightRunSettings, 'outDir'>,
   options?: Parameters<typeof fakeInstall>[3],
 ) {
-  return fakeInstall(hook.install, t, settings, options);
+  return fakeInstall(hook.muirSirynPlaywrightInstall, t, settings, options);
 }
 
 test('install creates the worker snapshot file at once', (t) => {
@@ -394,7 +397,7 @@ test("install counts the worker's own hits in its namespace and writes them past
 });
 
 test("install keeps a namespace the worker's instrumented code made first", (t) => {
-  const first: StrykerNamespace = {
+  const first: MuirSirynPlaywrightStrykerNamespace = {
     mutantCoverage: { static: {}, perTest: {} },
   };
   const hooked = installed(
@@ -537,7 +540,7 @@ test('every new context gets the init script with the namespace, mutant, test an
 
   assert.deepEqual(scripts, [
     [
-      hook.initPage,
+      hook.muirSirynPlaywrightInitPage,
       { ns: hooked.ns, activeMutant: '42', testId: 't1', hitLimit: 9 },
     ],
   ]);
@@ -551,7 +554,7 @@ test('without per-test coverage the init script names no test, and no mutant out
 
   assert.deepEqual(scripts, [
     [
-      hook.initPage,
+      hook.muirSirynPlaywrightInitPage,
       {
         ns: hooked.ns,
         activeMutant: undefined,
@@ -570,7 +573,7 @@ test("every new context also gets Stryker's page helpers, before the init script
 
   assert.deepEqual(
     scripts.map(([script]) => script),
-    [{ content: 'h();' }, hook.initPage],
+    [{ content: 'h();' }, hook.muirSirynPlaywrightInitPage],
   );
 });
 
@@ -633,7 +636,7 @@ test('a context closes into the snapshot file once', async (t) => {
 test('a context the hook never saw created writes nothing', async (t) => {
   const hooked = installed(t, { perTest: false });
   hooked.namespace().hitCount = 1;
-  const unseen: HookedContext = {
+  const unseen: MuirSirynPlaywrightHookedContext = {
     pages: () => [hooked.page().page],
     browser: () => null,
     on: () => undefined,
@@ -823,7 +826,7 @@ test('a frame that does not answer in time is lost', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
 
   const closing = created.close();
-  t.mock.timers.tick(frameReadTimeoutMs - 1);
+  t.mock.timers.tick(muirSirynPlaywrightFrameReadTimeoutMs - 1);
   await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(hooked.read(), '');
@@ -853,7 +856,7 @@ const webServerHosts = ['localhost:4820'];
 /** A request context whose fetch records what it was called with. */
 function requestContext() {
   const calls: unknown[][] = [];
-  const context: HookedRequestContext = {
+  const context: MuirSirynPlaywrightHookedRequestContext = {
     fetch: async (...args) => {
       calls.push(args);
     },
@@ -898,7 +901,9 @@ test("a test's page requests to a webServer host carry its test id, on top of th
     [true, true, true, false, false],
   );
   assert.deepEqual(await routed(created, { accept: 'text/html' }), [
-    { headers: { accept: 'text/html', [testIdHeader]: 't1' } },
+    {
+      headers: { accept: 'text/html', [muirSirynPlaywrightTestIdHeader]: 't1' },
+    },
   ]);
 });
 
@@ -909,7 +914,7 @@ test('a page request carries the id of the test running when it is sent, though 
   hooked.setTest('t2');
 
   assert.deepEqual(await routed(created), [
-    { headers: { [testIdHeader]: 't2' } },
+    { headers: { [muirSirynPlaywrightTestIdHeader]: 't2' } },
   ]);
 });
 
@@ -952,7 +957,9 @@ test('a context opened in a beforeAll hook, or before any test, tags the page re
     }),
   );
 
-  const tagged = { headers: { accept: 'text/html', [testIdHeader]: 't1' } };
+  const tagged = {
+    headers: { accept: 'text/html', [muirSirynPlaywrightTestIdHeader]: 't1' },
+  };
   assert.deepEqual(sent, [
     [tagged, undefined],
     [tagged, undefined],
@@ -972,12 +979,18 @@ test("a test's request fixture sends its test id with every fetch, keeping the h
   assert.deepEqual(calls.slice(0, 2), [
     [
       '/api/total',
-      { method: 'POST', headers: { a: '1', [testIdHeader]: 't1' } },
+      {
+        method: 'POST',
+        headers: { a: '1', [muirSirynPlaywrightTestIdHeader]: 't1' },
+      },
     ],
-    ['http://elsewhere.test/', { headers: { [testIdHeader]: 't1' } }],
+    [
+      'http://elsewhere.test/',
+      { headers: { [muirSirynPlaywrightTestIdHeader]: 't1' } },
+    ],
   ]);
   assert.deepEqual(calls[2]?.[1], {
-    headers: { b: '2', [testIdHeader]: 't1' },
+    headers: { b: '2', [muirSirynPlaywrightTestIdHeader]: 't1' },
   });
 });
 
@@ -998,7 +1011,9 @@ test('a request context still sends its test id when code running after the hook
   });
   await context.fetch('/api');
 
-  assert.deepEqual(calls, [['/api', { headers: { [testIdHeader]: 't1' } }]]);
+  assert.deepEqual(calls, [
+    ['/api', { headers: { [muirSirynPlaywrightTestIdHeader]: 't1' } }],
+  ]);
 });
 
 test('a request context that outlives its test sends the id of the test running at each fetch', async (t) => {
@@ -1010,7 +1025,9 @@ test('a request context that outlives its test sends the id of the test running 
 
   await context.fetch('/api');
 
-  assert.deepEqual(calls, [['/api', { headers: { [testIdHeader]: 't2' } }]]);
+  assert.deepEqual(calls, [
+    ['/api', { headers: { [muirSirynPlaywrightTestIdHeader]: 't2' } }],
+  ]);
 });
 
 test('a request context opened in a beforeAll hook, or before any test, sends the id of the test running at each fetch', async (t) => {
@@ -1032,8 +1049,8 @@ test('a request context opened in a beforeAll hook, or before any test, sends th
   );
 
   assert.deepEqual(sent, [
-    [['/api', { headers: { [testIdHeader]: 't1' } }]],
-    [['/api', { headers: { [testIdHeader]: 't1' } }]],
+    [['/api', { headers: { [muirSirynPlaywrightTestIdHeader]: 't1' } }]],
+    [['/api', { headers: { [muirSirynPlaywrightTestIdHeader]: 't1' } }]],
   ]);
 });
 
@@ -1050,7 +1067,7 @@ test('a request context sends no test id with a fetch after its test ended, and 
 });
 
 test('a request context sends no test id without per-test coverage, without webServer hosts, or in a beforeAll hook', async (t) => {
-  const settings: Omit<RunSettings, 'outDir'>[] = [
+  const settings: Omit<MuirSirynPlaywrightRunSettings, 'outDir'>[] = [
     { perTest: false, testIdHosts: webServerHosts },
     { perTest: true },
     { perTest: true, testIdHosts: webServerHosts },

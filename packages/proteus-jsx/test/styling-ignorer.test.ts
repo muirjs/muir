@@ -1,9 +1,12 @@
-// The lz-jsx-styling ignorer, through StrykerJS's own instrumenter with only its built-in mutators.
+// The muir-proteus-jsx-styling ignorer, through StrykerJS's own instrumenter with only its built-in mutators.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { strykerValidationSchema } from '../src/index.ts';
-import { lzJsxStylingSchema, stylingIgnorer } from '../src/styling-ignorer.ts';
+import {
+  muirProteusJsxStylingSchema,
+  muirProteusJsxStylingIgnorer,
+} from '../src/styling-ignorer.ts';
 import {
   assertEveryOutcome,
   ignorerOutcomes,
@@ -11,17 +14,18 @@ import {
 import { validateOptions } from './support/validate-options.ts';
 
 const classReason =
-  'lz-jsx-styling: class names only style the element; DOM tests do not observe them';
+  'muir-proteus-jsx-styling: class names only style the element; DOM tests do not observe them';
 const styleReason =
-  'lz-jsx-styling: inline styles only style the element; DOM tests do not observe them';
+  'muir-proteus-jsx-styling: inline styles only style the element; DOM tests do not observe them';
 const builderReason =
-  'lz-jsx-styling: class-name builder call; DOM tests do not observe class names';
+  'muir-proteus-jsx-styling: class-name builder call; DOM tests do not observe class names';
 
-const outcomes = (code: string) => ignorerOutcomes(stylingIgnorer({}), code);
+const outcomes = (code: string) =>
+  ignorerOutcomes(muirProteusJsxStylingIgnorer({}), code);
 const assertEvery = (code: string, outcome: string, options: object = {}) =>
-  assertEveryOutcome(stylingIgnorer(options), code, outcome);
+  assertEveryOutcome(muirProteusJsxStylingIgnorer(options), code, outcome);
 
-describe('lz-jsx-styling', () => {
+describe('muir-proteus-jsx-styling', () => {
   it('ignores every mutant in a className expression, with the class reason', async () => {
     await assertEvery(
       "export const a = <a className={cn('a', on && 'b')} />;",
@@ -123,7 +127,9 @@ describe('lz-jsx-styling', () => {
   );
 
   it('keeps the mutants of a className with a visibility class from visibilityClasses, also as a variant', async () => {
-    const options = { lzJsxStyling: { visibilityClasses: ['closed'] } };
+    const options = {
+      muirProteusJsxStyling: { visibilityClasses: ['closed'] },
+    };
 
     await assertEvery(
       "export const a = <a className={on ? 'p-2' : 'closed'} />;",
@@ -153,7 +159,7 @@ describe('lz-jsx-styling', () => {
     await assertEvery(
       "export const a = <a className={on ? 'p-2' : 'm-2'} />;",
       classReason,
-      { lzJsxStyling: { visibilityClasses: ['was', 'here'] } },
+      { muirProteusJsxStyling: { visibilityClasses: ['was', 'here'] } },
     );
   });
 
@@ -316,9 +322,12 @@ describe('lz-jsx-styling', () => {
   ].forEach((visibilityClasses) => {
     it(`refuses visibilityClasses ${JSON.stringify(visibilityClasses)} when it is created`, () => {
       assert.throws(
-        () => stylingIgnorer({ lzJsxStyling: { visibilityClasses } }),
+        () =>
+          muirProteusJsxStylingIgnorer({
+            muirProteusJsxStyling: { visibilityClasses },
+          }),
         {
-          message: `@muirjs/proteus-jsx: lzJsxStyling.visibilityClasses must be an array of class names, each without whitespace, not ${JSON.stringify(visibilityClasses)}.`,
+          message: `@muirjs/proteus-jsx: muirProteusJsxStyling.visibilityClasses must be an array of class names, each without whitespace, not ${JSON.stringify(visibilityClasses)}.`,
         },
       );
     });
@@ -326,11 +335,11 @@ describe('lz-jsx-styling', () => {
 
   [
     {},
-    { lzJsxStyling: {} },
-    { lzJsxStyling: { visibilityClasses: [] } },
+    { muirProteusJsxStyling: {} },
+    { muirProteusJsxStyling: { visibilityClasses: [] } },
   ].forEach((options) => {
     it(`accepts the options ${JSON.stringify(options)}`, () => {
-      assert.doesNotThrow(() => stylingIgnorer(options));
+      assert.doesNotThrow(() => muirProteusJsxStylingIgnorer(options));
     });
   });
 
@@ -365,28 +374,31 @@ describe('lz-jsx-styling', () => {
   });
 });
 
-describe('the lz-jsx-styling options schema', () => {
-  const unknownOption = /^warn Unknown stryker config option "lzJsxStyling"/;
+describe('the muir-proteus-jsx-styling options schema', () => {
+  const unknownOption =
+    /^warn Unknown stryker config option "muirProteusJsxStyling"/;
 
-  it('describes lzJsxStyling.visibilityClasses as a list of class names', () => {
-    assert.deepEqual(lzJsxStylingSchema, {
+  it('describes muirProteusJsxStyling.visibilityClasses as a list of class names', () => {
+    assert.deepEqual(muirProteusJsxStylingSchema, {
       type: 'object',
       additionalProperties: false,
-      description: 'Options of the lz-jsx-styling ignorer.',
+      description: 'Options of the muir-proteus-jsx-styling ignorer.',
       properties: {
         visibilityClasses: {
           type: 'array',
           items: { type: 'string', pattern: '^\\S+$' },
           description:
-            'Class names that hide an element, added to the built-in ones. lz-jsx-styling keeps the mutants of ' +
+            'Class names that hide an element, added to the built-in ones. muir-proteus-jsx-styling keeps the mutants of ' +
             'a class expression that holds one of them.',
         },
       },
     });
   });
 
-  it('lets core accept lzJsxStyling without the unknown-option warning it gives when the schema is missing', async () => {
-    const options = { lzJsxStyling: { visibilityClasses: ['closed'] } };
+  it('lets core accept muirProteusJsxStyling without the unknown-option warning it gives when the schema is missing', async () => {
+    const options = {
+      muirProteusJsxStyling: { visibilityClasses: ['closed'] },
+    };
     const without = await validateOptions(options, []);
     const withSchema = await validateOptions(options, [
       strykerValidationSchema,
@@ -405,16 +417,17 @@ describe('the lz-jsx-styling options schema', () => {
     { classes: ['closed'] },
     [],
     'closed',
-  ].forEach((lzJsxStyling) => {
-    it(`lets core refuse lzJsxStyling ${JSON.stringify(lzJsxStyling)}`, async () => {
-      const { valid, log } = await validateOptions({ lzJsxStyling }, [
+  ].forEach((muirProteusJsxStyling) => {
+    it(`lets core refuse muirProteusJsxStyling ${JSON.stringify(muirProteusJsxStyling)}`, async () => {
+      const { valid, log } = await validateOptions({ muirProteusJsxStyling }, [
         strykerValidationSchema,
       ]);
 
       assert.equal(valid, false);
       assert.ok(
         log.some(
-          (line) => line.startsWith('error') && line.includes('lzJsxStyling'),
+          (line) =>
+            line.startsWith('error') && line.includes('muirProteusJsxStyling'),
         ),
         log.join('\n'),
       );

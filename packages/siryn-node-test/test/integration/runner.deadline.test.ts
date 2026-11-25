@@ -10,7 +10,7 @@ import {
   MutantRunStatus,
 } from '@stryker-mutator/api/test-runner';
 
-import { isRunning } from '../../src/dirs.ts';
+import { muirSirynNodeTestIsRunning } from '../../src/dirs.ts';
 import {
   complete,
   dryRun,
@@ -32,7 +32,7 @@ shareCompileCache();
 const loadedStartUpSlackMs = 2_000;
 
 /**
- * Three tests in a file that takes 600 ms to load. With LZ_FIXTURE_HANG set, the first test starts a process that
+ * Three tests in a file that takes 600 ms to load. With MUIR_SIRYN_NODE_TEST_FIXTURE_HANG set, the first test starts a process that
  * runs on, writes its pid, and then waits forever. The test writes the pid, as the process could be ended before it
  * had started far enough to write it.
  */
@@ -40,7 +40,7 @@ const slowStart = fixture(
   'await new Promise((resolve) => setTimeout(resolve, 600));',
   "const { spawn } = await import('node:child_process');",
   "const { writeFileSync } = await import('node:fs');",
-  "it('hangs', async () => { if (process.env.LZ_FIXTURE_HANG) {",
+  "it('hangs', async () => { if (process.env.MUIR_SIRYN_NODE_TEST_FIXTURE_HANG) {",
   "  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000);'], { stdio: 'ignore', windowsHide: true });",
   "  writeFileSync('child.pid', String(child.pid));",
   '  await new Promise(() => setInterval(() => {}, 1000));',
@@ -70,11 +70,11 @@ const hangs = fixture(
   "it('hangs', () => new Promise(() => { setInterval(() => {}, 1000); }));",
 );
 
-/** With LZ_FIXTURE_PENDING set, its test waits on nothing that could settle it: `callback` or `promise`. */
+/** With MUIR_SIRYN_NODE_TEST_FIXTURE_PENDING set, its test waits on nothing that could settle it: `callback` or `promise`. */
 const pending = fixture(
   "it('waits', (t, done) => {",
-  "  if (process.env.LZ_FIXTURE_PENDING === 'promise') { new Promise(() => {}).then(done); }",
-  "  else if (process.env.LZ_FIXTURE_PENDING !== 'callback') { done(); }",
+  "  if (process.env.MUIR_SIRYN_NODE_TEST_FIXTURE_PENDING === 'promise') { new Promise(() => {}).then(done); }",
+  "  else if (process.env.MUIR_SIRYN_NODE_TEST_FIXTURE_PENDING !== 'callback') { done(); }",
   '});',
   "it('passes', () => {});",
 );
@@ -95,21 +95,24 @@ const passed = { signal: AbortSignal.abort(), reason: 'Passed the deadline' };
 
 /** Resolves once the process whose pid `path` holds has exited. */
 async function processExit(path: string): Promise<void> {
-  while (!existsSync(path) || isRunning(Number(readFileSync(path, 'utf8')))) {
+  while (
+    !existsSync(path) ||
+    muirSirynNodeTestIsRunning(Number(readFileSync(path, 'utf8')))
+  ) {
     await timers.setTimeout(20);
   }
 }
 
 function hang(t: TestContext): void {
-  process.env['LZ_FIXTURE_HANG'] = '1';
+  process.env['MUIR_SIRYN_NODE_TEST_FIXTURE_HANG'] = '1';
   t.after(stopHanging);
 }
 
 function stopHanging(): void {
-  delete process.env['LZ_FIXTURE_HANG'];
+  delete process.env['MUIR_SIRYN_NODE_TEST_FIXTURE_HANG'];
 }
 
-describe('LzNodeTestTestRunner deadline', () => {
+describe('MuirSirynNodeTestTestRunner deadline', () => {
   it("times out a mutant run once its tests' time and each file's start-up counted once have passed, before Stryker's timeout", async (t) => {
     const dir = project(t, { 'a.test.mjs': slowStart });
     const runner = await initRunner(['a.test.mjs']);
@@ -137,7 +140,9 @@ describe('LzNodeTestTestRunner deadline', () => {
     );
     assert.ok(elapsed < timeout, `${elapsed} ms of Stryker's ${timeout} ms`);
     assert.equal(
-      isRunning(Number(readFileSync(join(dir, 'child.pid'), 'utf8'))),
+      muirSirynNodeTestIsRunning(
+        Number(readFileSync(join(dir, 'child.pid'), 'utf8')),
+      ),
       false,
     );
   });
@@ -326,9 +331,9 @@ describe('LzNodeTestTestRunner deadline', () => {
         timeoutMS: 300,
       });
       const { tests } = complete(await settle(runner.dryRun(dryRun)));
-      process.env['LZ_FIXTURE_PENDING'] = kind;
+      process.env['MUIR_SIRYN_NODE_TEST_FIXTURE_PENDING'] = kind;
       t.after(() => {
-        delete process.env['LZ_FIXTURE_PENDING'];
+        delete process.env['MUIR_SIRYN_NODE_TEST_FIXTURE_PENDING'];
       });
 
       const started = performance.now();

@@ -11,7 +11,7 @@ const testFor = new URL('../src/test-for.ts', import.meta.url).href;
 export const signatures = {
   name: 'TypeError',
   message:
-    'lzTestEach and lzTestFor tables take (name, fn), (name, fn, timeout) or (name, options, fn); ' +
+    'muirTestEach and muirTestFor tables take (name, fn), (name, fn, timeout) or (name, options, fn); ' +
     'pass options as the second argument and a single function.',
 };
 
@@ -34,7 +34,7 @@ declare module 'node:test' {
     interface TestContextAssert {
       /**
        * Runs a test file that calls `cases` and asserts that node:test reports `expected`, in order. The file has
-       * `lzTestEach`, `lzTestFor` and `report` and nothing else of the caller's, so `cases` can use only those and globals.
+       * `muirTestEach`, `muirTestFor` and `report` and nothing else of the caller's, so `cases` can use only those and globals.
        * With `only`, node:test runs only the tests marked only.
        */
       reports(
@@ -64,7 +64,7 @@ async function reported(cases: () => void, only = false): Promise<Reported[]> {
 
   if (captured.length > 0) {
     throw new Error(
-      `t.assert.reports cases can use only lzTestEach, lzTestFor, report and globals, not ${captured.join(', ')}.`,
+      `t.assert.reports cases can use only muirTestEach, muirTestFor, report and globals, not ${captured.join(', ')}.`,
     );
   }
 
@@ -77,8 +77,8 @@ async function reported(cases: () => void, only = false): Promise<Reported[]> {
     writeFileSync(
       file,
       [
-        `import { lzTestEach } from ${JSON.stringify(testEach)};`,
-        `import { lzTestFor } from ${JSON.stringify(testFor)};`,
+        `import { muirTestEach } from ${JSON.stringify(testEach)};`,
+        `import { muirTestFor } from ${JSON.stringify(testFor)};`,
         String(report),
         `(${String(cases)})();`,
       ].join('\n'),
@@ -136,7 +136,7 @@ const libraries = new Map<string, ts.SourceFile | undefined>();
  * checker reports as names it cannot find. The library files are parsed once and shared by every call.
  */
 function capturedNames(source: string): string[] {
-  const text = `declare const lzTestEach: any, lzTestFor: any, report: any;\n(${source})();\n`;
+  const text = `declare const muirTestEach: any, muirTestFor: any, report: any;\n(${source})();\n`;
   const program = ts.createProgram([casesFile], compilerOptions, {
     ...host,
     getSourceFile: (name, version) => {

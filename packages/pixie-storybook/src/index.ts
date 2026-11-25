@@ -1,10 +1,14 @@
-import { mockTransformerPluginName } from '@muirjs/moira-storybook';
+import { muirMoiraStorybookMockTransformerPluginName } from '@muirjs/moira-storybook';
 import type { Plugin } from 'vite';
 
-import { transform } from './transform.ts';
+import { muirPixieStorybookTransform } from './transform.ts';
 
-export { lzStorybookMockResetPlugin } from './mock-reset.ts';
+export { muirPixieStorybookMockResetPlugin } from './mock-reset.ts';
 
-export function lzStorybookMockTransformerPlugin(): Plugin {
-  return { name: mockTransformerPluginName, enforce: 'pre', transform };
+export function muirPixieStorybookMockTransformerPlugin(): Plugin {
+  return {
+    name: muirMoiraStorybookMockTransformerPluginName,
+    enforce: 'pre',
+    transform: muirPixieStorybookTransform,
+  };
 }

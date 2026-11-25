@@ -7,9 +7,9 @@ import { before, describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 import {
-  resolveFromCore,
-  type Instrumenter,
-  type SourceFile,
+  muirProteusJsxResolveFromCore,
+  type MuirProteusJsxInstrumenter,
+  type MuirMoiraMutatorsSourceFile,
 } from '../src/install.ts';
 import { defined } from './support/defined.ts';
 import { exportedFunction } from './support/exports.ts';
@@ -21,7 +21,7 @@ import {
 import { installInto, mutatorNames, ours } from './support/installed.ts';
 
 const root = join(import.meta.dirname, '..', '..', '..');
-const corpus: readonly SourceFile[] = [
+const corpus: readonly MuirMoiraMutatorsSourceFile[] = [
   join(root, 'spikes', 'design-opus', 'sample.tsx'),
   join(root, 'apps', 'demo-app', 'src', 'app', 'app.tsx'),
   join(root, 'apps', 'demo-app', 'src', 'app', 'price-tag.tsx'),
@@ -29,7 +29,7 @@ const corpus: readonly SourceFile[] = [
   join(import.meta.dirname, 'corpus', 'vue-tsx-sample.vue'),
 ].map((name) => ({ name, content: readFileSync(name, 'utf8') }));
 
-let instrumenter: Instrumenter;
+let instrumenter: MuirProteusJsxInstrumenter;
 let parseTsx: (code: string) => unknown;
 let stock: InstrumentResult[];
 let excluded: InstrumentResult[];
@@ -59,7 +59,7 @@ async function instrumentEach(excludedMutations: readonly string[]) {
 }
 
 before(async () => {
-  instrumenter = await resolveFromCore();
+  instrumenter = await muirProteusJsxResolveFromCore();
   const babelParse = exportedFunction(
     await import(
       pathToFileURL(
@@ -79,7 +79,7 @@ before(async () => {
   await installInto(instrumenter);
   excluded = await instrumentEach(mutatorNames);
   oneLeftOn = await instrumentEach(
-    mutatorNames.filter((name) => name !== 'LzJsxTextLiteral'),
+    mutatorNames.filter((name) => name !== 'MuirProteusJsxTextLiteral'),
   );
   on = await instrumentEach([]);
 });
@@ -176,9 +176,9 @@ describe('the JSX placement, with the JSX mutators on', () => {
     ]);
 
     assert.deepEqual(mutants.map(({ mutatorName }) => mutatorName).sort(), [
-      'LzJsxElementRole',
-      'LzJsxTextLiteral',
-      'LzJsxUrlAttribute',
+      'MuirProteusJsxElementRole',
+      'MuirProteusJsxTextLiteral',
+      'MuirProteusJsxUrlAttribute',
     ]);
     assert.doesNotThrow(() => parseTsx(defined(files[0]).content));
   });

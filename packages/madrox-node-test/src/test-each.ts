@@ -1,14 +1,14 @@
-import { modified, type LzTestModified } from './modified.ts';
+import { muirModified, type MuirTestModified } from './modified.ts';
 import {
-  register,
-  type EachCallback,
-  type Flags,
-  type LzTestTableReturn,
-  type Register,
+  muirRegister,
+  type MuirEachCallback,
+  type MuirFlags,
+  type MuirTestTableReturn,
+  type MuirRegister,
 } from './register.ts';
 
-/** The arguments of a `lzTestEach` callback for a readonly tuple row of up to 10 values, as in Vitest and Jest. */
-export type LzTestEachCallbackArgs<T extends ReadonlyArray<unknown>> = {
+/** The arguments of a `muirTestEach` callback for a readonly tuple row of up to 10 values, as in Vitest and Jest. */
+export type MuirTestEachCallbackArgs<T extends ReadonlyArray<unknown>> = {
   readonly 1: [T[0]];
   readonly 2: [T[0], T[1]];
   readonly 3: [T[0], T[1], T[2]];
@@ -92,43 +92,41 @@ export type LzTestEachCallbackArgs<T extends ReadonlyArray<unknown>> = {
                     ? 10
                     : 'fallback'];
 
-/** Registers the tests of a `lzTestEach` table. Without `fn`, each test is a todo test. */
-export type LzTestEachFunctionReturn<T extends readonly unknown[]> =
-  LzTestTableReturn<(...args: T) => void | Promise<void>>;
+/** Registers the tests of a `muirTestEach` table. Without `fn`, each test is a todo test. */
+export type MuirTestEachFunctionReturn<T extends readonly unknown[]> =
+  MuirTestTableReturn<(...args: T) => void | Promise<void>>;
 
-export interface LzTestEachFunction {
+export interface MuirTestEachFunction {
   <T extends unknown[] | [unknown]>(
     cases: ReadonlyArray<T>,
-  ): LzTestEachFunctionReturn<T>;
+  ): MuirTestEachFunctionReturn<T>;
   <T extends ReadonlyArray<unknown>>(
     cases: ReadonlyArray<T>,
-  ): LzTestEachFunctionReturn<LzTestEachCallbackArgs<T>>;
-  <T>(cases: ReadonlyArray<T>): LzTestEachFunctionReturn<T[]>;
+  ): MuirTestEachFunctionReturn<MuirTestEachCallbackArgs<T>>;
+  <T>(cases: ReadonlyArray<T>): MuirTestEachFunctionReturn<T[]>;
   (
     strings: TemplateStringsArray,
     ...values: readonly unknown[]
-  ): LzTestEachFunctionReturn<[Readonly<Record<string, unknown>>]>;
+  ): MuirTestEachFunctionReturn<[Readonly<Record<string, unknown>>]>;
 }
 
 /**
  * Registers one node:test `it` test per case of the table. A case that is an array is spread into `fn`'s arguments
- * when every case is an array; any other case is passed whole. `fn` gets no test context; use `lzTestFor` for that.
+ * when every case is an array; any other case is passed whole. `fn` gets no test context; use `muirTestFor` for that.
  * A template literal table names its columns in its first line and gives `fn` one object per row, whose columns are
  * `unknown`. The name formats the case as in Vitest's `test.each`: `%s %d %i %f %j %o %O %c`, `%#`, `%$`, `%%` and `$`
  * paths.
  */
-export const lzTestEach: LzTestModified<LzTestEachFunction> = modified(
-  eachCases,
-  {},
-);
+export const muirTestEach: MuirTestModified<MuirTestEachFunction> =
+  muirModified(eachCases, {});
 
 function eachCases(
-  flags: Flags,
+  flags: MuirFlags,
   cases: readonly unknown[],
-): Register<EachCallback> {
+): MuirRegister<MuirEachCallback> {
   const spread = cases.every(Array.isArray);
 
-  return register<EachCallback>(flags, cases, (row) => {
+  return muirRegister<MuirEachCallback>(flags, cases, (row) => {
     const items: readonly unknown[] = Array.isArray(row) ? row : [row];
 
     return {

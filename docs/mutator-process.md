@@ -103,7 +103,7 @@ One entry per mutator, in this shape:
 
 - The common mistake it exposes, with its row in the mistakes catalog (section 2b), and why a lint rule does not
   cover it.
-- Name: `Lz<Area><Name>`, letters only (for example `LzPlaywrightFulfill`, `LzStorybookInteraction`).
+- Name: `Muir<Mutant><Technology><Name>`, letters only (for example `MuirProteusPlaywrightFulfill`, `MuirProteusStorybookTestInteraction`).
 - Configuration it serves, and the exact syntax it matches.
 - Before and after code.
 - What a kill means and what a survivor means. A survivor must point at a specific weak test or a specific missing

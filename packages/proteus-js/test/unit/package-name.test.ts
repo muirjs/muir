@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { lzCorePeerRange } from '../../src/package-name.ts';
+import { muirProteusJsCorePeerRange } from '../../src/package-name.ts';
 import pkg from '../../package.json' with { type: 'json' };
 
-describe('lzCorePeerRange', () => {
+describe('muirProteusJsCorePeerRange', () => {
   it('is the peer range of @stryker-mutator/core in package.json', () => {
     assert.equal(
-      lzCorePeerRange,
+      muirProteusJsCorePeerRange,
       pkg.peerDependencies['@stryker-mutator/core'],
     );
   });
@@ -18,7 +18,7 @@ describe('lzCorePeerRange', () => {
       new URL('../../README.md', import.meta.url),
       'utf8',
     ).replaceAll(/\s+/g, ' ');
-    const floor = lzCorePeerRange.slice(1);
+    const floor = muirProteusJsCorePeerRange.slice(1);
     const [major] = floor.split('.');
     assert.ok(major);
 

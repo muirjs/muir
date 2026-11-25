@@ -3,9 +3,9 @@ import { pathToFileURL } from 'node:url';
 
 import type { Logger } from '@stryker-mutator/api/logging';
 
-import { fieldOf } from './is-record.ts';
+import { muirSirynPlaywrightFieldOf } from './is-record.ts';
 
-export class StrykerHelpersChanged extends Error {
+export class MuirSirynPlaywrightStrykerHelpersChanged extends Error {
   constructor(what: string) {
     super(
       `The installed @stryker-mutator/instrumenter changed the helpers it puts in instrumented files (${what}), so the Playwright test runner cannot give pages Stryker's helpers.`,
@@ -13,7 +13,7 @@ export class StrykerHelpersChanged extends Error {
   }
 }
 
-const probeName = 'lzStrykerProbe';
+const probeName = 'muirSirynPlaywrightStrykerProbe';
 
 // Stryker disable next-line BooleanLiteral: every log method ignores its message, so an enabled level changes nothing
 const off = () => false;
@@ -40,7 +40,7 @@ function captured(text: string, pattern: RegExp): string[] {
   );
 }
 
-export async function loadPageHelpers(): Promise<string> {
+export async function muirSirynPlaywrightLoadPageHelpers(): Promise<string> {
   const core = createRequire(
     createRequire(import.meta.url).resolve(
       '@stryker-mutator/core/package.json',
@@ -50,23 +50,28 @@ export async function loadPageHelpers(): Promise<string> {
     pathToFileURL(core.resolve('@stryker-mutator/instrumenter')).href
   );
 
-  return pageHelpersFrom(instrumenterModule);
+  return muirSirynPlaywrightPageHelpersFrom(instrumenterModule);
 }
 
-export async function pageHelpersFrom(
+export async function muirSirynPlaywrightPageHelpersFrom(
   instrumenterModule: unknown,
 ): Promise<string> {
-  const Instrumenter = fieldOf(instrumenterModule, 'Instrumenter');
+  const Instrumenter = muirSirynPlaywrightFieldOf(
+    instrumenterModule,
+    'Instrumenter',
+  );
 
   if (typeof Instrumenter !== 'function') {
-    throw new StrykerHelpersChanged('it exports no Instrumenter class');
+    throw new MuirSirynPlaywrightStrykerHelpersChanged(
+      'it exports no Instrumenter class',
+    );
   }
 
   const instrumenter: unknown = Reflect.construct(Instrumenter, [silentLog]);
-  const instrument = fieldOf(instrumenter, 'instrument');
+  const instrument = muirSirynPlaywrightFieldOf(instrumenter, 'instrument');
 
   if (typeof instrument !== 'function') {
-    throw new StrykerHelpersChanged(
+    throw new MuirSirynPlaywrightStrykerHelpersChanged(
       'its Instrumenter has no instrument method',
     );
   }
@@ -80,26 +85,28 @@ export async function pageHelpersFrom(
       ignorers: [],
     },
   ]);
-  const files = fieldOf(result, 'files');
-  const content = fieldOf(
+  const files = muirSirynPlaywrightFieldOf(result, 'files');
+  const content = muirSirynPlaywrightFieldOf(
     Array.isArray(files) ? files[0] : undefined,
     'content',
   );
 
   if (typeof content !== 'string') {
-    throw new StrykerHelpersChanged(
+    throw new MuirSirynPlaywrightStrykerHelpersChanged(
       'its Instrumenter returned no instrumented file',
     );
   }
 
-  return pageHelpersScript(content);
+  return muirSirynPlaywrightPageHelpersScript(content);
 }
 
-export function pageHelpersScript(instrumented: string): string {
+export function muirSirynPlaywrightPageHelpersScript(
+  instrumented: string,
+): string {
   const probeAt = instrumented.search(new RegExp(`^${probeName}\\b`, 'm'));
 
   if (probeAt < 0) {
-    throw new StrykerHelpersChanged(
+    throw new MuirSirynPlaywrightStrykerHelpersChanged(
       `the instrumented probe has no probe statement: ${instrumented}`,
     );
   }
@@ -108,7 +115,7 @@ export function pageHelpersScript(instrumented: string): string {
   const names = captured(header, /^function ([\w$]+)\(/gm);
 
   if (names.length === 0) {
-    throw new StrykerHelpersChanged(
+    throw new MuirSirynPlaywrightStrykerHelpersChanged(
       `the header declares no helper function: ${instrumented}`,
     );
   }
@@ -118,7 +125,7 @@ export function pageHelpersScript(instrumented: string): string {
   );
 
   if (undeclared !== undefined) {
-    throw new StrykerHelpersChanged(
+    throw new MuirSirynPlaywrightStrykerHelpersChanged(
       `the probe calls ${undeclared}, which the header does not declare`,
     );
   }

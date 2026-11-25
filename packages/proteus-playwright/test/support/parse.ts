@@ -1,15 +1,18 @@
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 
-import { corePackageJson, fieldOf } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsFieldOf,
+} from '@muirjs/moira-mutators';
 
 /** The Program node of `source`, parsed by the Babel of the Stryker instrumenter in use. */
 export async function programOf(source: string): Promise<unknown> {
-  const instrumenterJson = createRequire(corePackageJson()).resolve(
-    '@stryker-mutator/instrumenter/package.json',
-  );
+  const instrumenterJson = createRequire(
+    muirMoiraMutatorsCorePackageJson(),
+  ).resolve('@stryker-mutator/instrumenter/package.json');
   const babelPath = createRequire(instrumenterJson).resolve('@babel/core');
-  const parseSync = fieldOf(
+  const parseSync = muirMoiraMutatorsFieldOf(
     await import(pathToFileURL(babelPath).href),
     'parseSync',
   );
@@ -28,5 +31,5 @@ export async function programOf(source: string): Promise<unknown> {
     },
   ]);
 
-  return fieldOf(file, 'program');
+  return muirMoiraMutatorsFieldOf(file, 'program');
 }

@@ -1,20 +1,20 @@
-export interface Version {
+export interface MuirMoiraNodeTestVersion {
   readonly major: number;
   readonly minor: number;
   readonly patch: number;
 }
 
 /** Warns once for each version below `floor` or in a later major, the versions a caret range leaves out. */
-export function lzWarnOutsidePeerRange(
+export function muirMoiraNodeTestWarnOutsidePeerRange(
   packageName: string,
-  floor: Version,
+  floor: MuirMoiraNodeTestVersion,
   versions: readonly string[],
   warn: (message: string) => void,
 ): void {
   const { major, minor, patch } = floor;
 
   [...new Set(versions)]
-    .filter((version) => !inPeerRange(version, floor))
+    .filter((version) => !muirMoiraNodeTestInPeerRange(version, floor))
     .forEach((version) => {
       warn(
         `${packageName} accepts @stryker-mutator/instrumenter ${major}.${minor}.${patch} or a later ` +
@@ -25,7 +25,10 @@ export function lzWarnOutsidePeerRange(
 }
 
 /** The first release of a caret range such as `^10.1.1`; `packageName`, whose range it is, starts the error. */
-export function parseCaretFloor(range: string, packageName: string): Version {
+export function muirMoiraNodeTestParseCaretFloor(
+  range: string,
+  packageName: string,
+): MuirMoiraNodeTestVersion {
   const floor = range.startsWith('^')
     ? parseVersion(range.slice(1))
     : undefined;
@@ -38,7 +41,7 @@ export function parseCaretFloor(range: string, packageName: string): Version {
 }
 
 /** A release only: a prerelease or build suffix gives `undefined`. */
-function parseVersion(text: string): Version | undefined {
+function parseVersion(text: string): MuirMoiraNodeTestVersion | undefined {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(text);
 
   return match === null
@@ -51,7 +54,10 @@ function parseVersion(text: string): Version | undefined {
 }
 
 /** Whether the caret range from `floor` takes `version`; as with npm's caret ranges, it takes no prerelease. */
-export function inPeerRange(version: string, floor: Version): boolean {
+export function muirMoiraNodeTestInPeerRange(
+  version: string,
+  floor: MuirMoiraNodeTestVersion,
+): boolean {
   const parsed = parseVersion(version);
 
   if (parsed === undefined) {

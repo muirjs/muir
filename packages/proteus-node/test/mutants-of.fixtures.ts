@@ -1,29 +1,35 @@
 import {
-  lzIsOwn,
-  lzResolveFromCore,
-  lzToNodeMutator,
-  type LzInstrumentedMutant,
-  type LzListedMutator,
-  type LzMutator,
+  muirMoiraNodeTestIsOwn,
+  muirMoiraNodeTestResolveFromCore,
+  muirMoiraNodeTestToNodeMutator,
+  type MuirMoiraNodeTestInstrumentedMutant,
+  type MuirMoiraNodeTestListedMutator,
+  type MuirMoiraNodeTestMutator,
 } from '@muirjs/moira-node-test';
-import { lzPackageName } from '../src/package-name.ts';
+import { muirProteusNodePackageName } from '../src/package-name.ts';
 
 export const strict = "import assert from 'node:assert/strict';\n";
 
 export async function instrumentWith(
-  mutator: LzMutator,
+  mutator: MuirMoiraNodeTestMutator,
   source: string,
-): Promise<readonly LzInstrumentedMutant[]> {
-  const instrumenter = await lzResolveFromCore();
+): Promise<readonly MuirMoiraNodeTestInstrumentedMutant[]> {
+  const instrumenter = await muirMoiraNodeTestResolveFromCore();
 
   return instrumenter.instrument(
     [{ name: 'sample.ts', content: source }],
-    [lzToNodeMutator(mutator, instrumenter.types, lzPackageName)],
+    [
+      muirMoiraNodeTestToNodeMutator(
+        mutator,
+        instrumenter.types,
+        muirProteusNodePackageName,
+      ),
+    ],
   );
 }
 
 export async function mutantsOf(
-  mutator: LzMutator,
+  mutator: MuirMoiraNodeTestMutator,
   source: string,
 ): Promise<string[]> {
   const mutants = await instrumentWith(mutator, source);
@@ -33,14 +39,16 @@ export async function mutantsOf(
 
 /** The mutator names of the statement removals in `source`: by Stryker's mutators alone, then with `mutator` too. */
 export async function removalsNextToBuiltIns(
-  mutator: LzMutator,
+  mutator: MuirMoiraNodeTestMutator,
   source: string,
 ): Promise<[string[], string[]]> {
-  const instrumenter = await lzResolveFromCore();
+  const instrumenter = await muirMoiraNodeTestResolveFromCore();
   const builtIns = instrumenter.allMutators.filter(
-    (listed) => !lzIsOwn(listed),
+    (listed) => !muirMoiraNodeTestIsOwn(listed),
   );
-  const removals = async (mutators: readonly LzListedMutator[]) =>
+  const removals = async (
+    mutators: readonly MuirMoiraNodeTestListedMutator[],
+  ) =>
     (
       await instrumenter.instrument(
         [{ name: 'sample.ts', content: source }],
@@ -54,7 +62,11 @@ export async function removalsNextToBuiltIns(
     await removals(builtIns),
     await removals([
       ...builtIns,
-      lzToNodeMutator(mutator, instrumenter.types, lzPackageName),
+      muirMoiraNodeTestToNodeMutator(
+        mutator,
+        instrumenter.types,
+        muirProteusNodePackageName,
+      ),
     ]),
   ];
 }

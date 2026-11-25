@@ -3,16 +3,19 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
-  csfFile,
-  field,
-  list,
-  topLevelBindings,
+  muirMoiraStorybookCsfFile,
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+  muirMoiraStorybookTopLevelBindings,
 } from '@muirjs/moira-storybook';
 import { vitestTransform } from 'storybook/internal/csf-tools';
 
-import { storyIndex } from '../src/story-index.ts';
-import { parseProgram } from '../src/parse.ts';
-import { classifyStubs, type TestTags } from '../src/reset-setting.ts';
+import { muirShadowcatStorybookStoryIndex } from '../src/story-index.ts';
+import { muirShadowcatStorybookParseProgram } from '../src/parse.ts';
+import {
+  muirShadowcatStorybookClassifyStubs,
+  type MuirShadowcatStorybookTestTags,
+} from '../src/reset-setting.ts';
 import { untaggedPreviewTestTags } from './support/test-tags.ts';
 
 const noMain = fileURLToPath(new URL('fixtures/no-main/', import.meta.url));
@@ -21,7 +24,7 @@ const fileName = `${noMain}src/Button.stories.tsx`;
 interface Row {
   readonly name: string;
   readonly code: string;
-  readonly testTags?: Partial<TestTags>;
+  readonly testTags?: Partial<MuirShadowcatStorybookTestTags>;
   readonly todo?: string;
 }
 
@@ -264,9 +267,16 @@ export const B = {};
   },
 ];
 
-function packageStories(code: string, testTags: TestTags): readonly string[] {
-  return classifyStubs(
-    { program: parseProgram(code, fileName), code, fileName },
+function packageStories(
+  code: string,
+  testTags: MuirShadowcatStorybookTestTags,
+): readonly string[] {
+  return muirShadowcatStorybookClassifyStubs(
+    {
+      program: muirShadowcatStorybookParseProgram(code, fileName),
+      code,
+      fileName,
+    },
     {},
     testTags,
   ).stories.map(({ name }) => name);
@@ -275,7 +285,7 @@ function packageStories(code: string, testTags: TestTags): readonly string[] {
 /** Storybook checks skip tags on the run-time tags; here they join exclude and are checked on the static tags. A file Storybook cannot read has no tested stories. */
 async function storybookStories(
   code: string,
-  testTags: TestTags,
+  testTags: MuirShadowcatStorybookTestTags,
 ): Promise<readonly string[]> {
   const text = await transformed(code, testTags);
 
@@ -290,7 +300,7 @@ async function storybookStories(
 
 async function transformed(
   code: string,
-  { previewTags, include, exclude, skip }: TestTags,
+  { previewTags, include, exclude, skip }: MuirShadowcatStorybookTestTags,
 ): Promise<string> {
   return vitestTransform({
     code,
@@ -323,11 +333,16 @@ export const B = meta.story({});
 ];
 
 function packageChildren(code: string): readonly (readonly [string, number])[] {
-  const body = list(field(parseProgram(code, fileName), 'body'));
-  return csfFile(
+  const body = muirMoiraStorybookList(
+    muirMoiraStorybookField(
+      muirShadowcatStorybookParseProgram(code, fileName),
+      'body',
+    ),
+  );
+  return muirMoiraStorybookCsfFile(
     body,
-    topLevelBindings(body),
-    storyIndex(code, fileName),
+    muirMoiraStorybookTopLevelBindings(body),
+    muirShadowcatStorybookStoryIndex(code, fileName),
   ).stories.map(({ name, children }) => [name, children.length] as const);
 }
 

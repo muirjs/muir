@@ -34,78 +34,94 @@ import {
 } from '@stryker-mutator/api/test-runner';
 
 import {
-  lzMergeAsStatic,
-  lzMergeCoverage,
-  lzOutsideTests,
-  lzOverlapCoverage,
+  muirSirynNodeTestMergeAsStatic,
+  muirSirynNodeTestMergeCoverage,
+  muirSirynNodeTestOutsideTests,
+  muirSirynNodeTestOverlapCoverage,
 } from './coverage.ts';
-import { lzDirPrefix, removeDir, removeLeftDirs } from './dirs.ts';
 import {
-  isBoolean,
-  isNumber,
-  isObject,
-  isStrings,
-  optional,
+  muirSirynNodeTestDirPrefix,
+  muirSirynNodeTestRemoveDir,
+  muirSirynNodeTestRemoveLeftDirs,
+} from './dirs.ts';
+import {
+  muirSirynNodeTestIsBoolean,
+  muirSirynNodeTestIsNumber,
+  muirSirynNodeTestIsObject,
+  muirSirynNodeTestIsStrings,
+  muirSirynNodeTestOptional,
 } from './guards.ts';
 import {
-  lzDryRunDir,
-  lzDryRunStore,
-  lzOwnDryRun,
-  type LzDryRunKind,
-  type LzDryRunStore,
+  muirSirynNodeTestDryRunDir,
+  muirSirynNodeTestDryRunStore,
+  muirSirynNodeTestOwnDryRun,
+  type MuirSirynNodeTestDryRunKind,
+  type MuirSirynNodeTestDryRunStore,
 } from './dry-run-store.ts';
-import { memoryLimits, type MemoryLimits } from './memory-limits.ts';
 import {
-  lzConsumerNodeOptions,
-  lzReporterArgs,
-  withoutReporters,
+  muirSirynNodeTestMemoryLimits,
+  type MuirSirynNodeTestMemoryLimits,
+} from './memory-limits.ts';
+import {
+  muirSirynNodeTestConsumerNodeOptions,
+  muirSirynNodeTestReporterArgs,
+  muirSirynNodeTestWithoutReporters,
 } from './node-options.ts';
-import { groupOptions, lzStderrTailBytes, processEnd } from './process-end.ts';
 import {
-  envNames,
-  lzIsRecordName,
-  lzNamesFile,
-  lzOutsideMs,
-  lzParseRecord,
-  testId,
-  within,
-  type ProcessRecord,
-  type RecordedTest,
+  muirSirynNodeTestGroupOptions,
+  muirSirynNodeTestStderrTailBytes,
+  muirSirynNodeTestProcessEnd,
+} from './process-end.ts';
+import {
+  muirSirynNodeTestEnvNames,
+  muirSirynNodeTestIsRecordName,
+  muirSirynNodeTestNamesFile,
+  muirSirynNodeTestOutsideMs,
+  muirSirynNodeTestParseRecord,
+  muirSirynNodeTestTestId,
+  muirSirynNodeTestWithin,
+  type MuirSirynNodeTestProcessRecord,
+  type MuirSirynNodeTestRecordedTest,
 } from './record.ts';
 import schema from './schema/node-test-runner-options.json' with { type: 'json' };
-import { lzStartUpOf, lzStartUps, type LzStartUps } from './start-up.ts';
 import {
-  lzCopySandbox,
-  lzRebase,
-  lzRebaseRecord,
-  lzRemoveCopy,
-  type LzSandboxCopy,
+  muirSirynNodeTestStartUpOf,
+  muirSirynNodeTestStartUps,
+  type MuirSirynNodeTestStartUps,
+} from './start-up.ts';
+import {
+  muirSirynNodeTestCopySandbox,
+  muirSirynNodeTestRebase,
+  muirSirynNodeTestRebaseRecord,
+  muirSirynNodeTestRemoveCopy,
+  type MuirSirynNodeTestSandboxCopy,
 } from './worker-copy.ts';
 
-/** Options under `lzNodeTest` in the Stryker configuration, which `schema/node-test-runner-options.json` describes. */
-export interface LzNodeTestOptions {
+/** Options under `muirSirynNodeTest` in the Stryker configuration, which `schema/node-test-runner-options.json` describes. */
+export interface MuirSirynNodeTestOptions {
   readonly testFiles?: readonly string[];
   readonly nodeArgs?: readonly string[];
   readonly maxMemoryMB?: number;
   readonly experimentalWorkerCopy?: boolean;
 }
 
-const defaults = schema.properties.lzNodeTest.properties;
+const defaults = schema.properties.muirSirynNodeTest.properties;
 
 /** The oldest Node.js the runner supports, as `engines` in package.json says, as major and minor version. */
-export const lzMinNodeVersion: readonly [major: number, minor: number] = [
-  22, 18,
-];
+export const muirSirynNodeTestMinNodeVersion: readonly [
+  major: number,
+  minor: number,
+] = [22, 18];
 
 function supportsNode(version: string): boolean {
-  // Stryker disable next-line LzJsNumericLiteral: equivalent, as a Node.js version always has a major and a minor part
+  // Stryker disable next-line MuirProteusJsNumericLiteral: equivalent, as a Node.js version always has a major and a minor part
   const [major = 0, minor = 0] = version.split('.').map(Number);
-  const [minMajor, minMinor] = lzMinNodeVersion;
+  const [minMajor, minMinor] = muirSirynNodeTestMinNodeVersion;
 
   return major > minMajor || (major === minMajor && minor >= minMinor);
 }
 
-export type LzRunOptions =
+export type MuirSirynNodeTestRunOptions =
   | {
       readonly dryRun: true;
       readonly disableBail: boolean;
@@ -130,18 +146,18 @@ export type LzRunOptions =
     };
 
 /** A mutant run's deadline, which ends a file's process once `signal` aborts, as a timeout for `reason`. */
-interface LzDeadline {
+interface MuirSirynNodeTestDeadline {
   readonly signal: AbortSignal;
   readonly reason: string;
 }
 
-interface LzFileRun {
-  readonly records: readonly ProcessRecord[];
+interface MuirSirynNodeTestFileRun {
+  readonly records: readonly MuirSirynNodeTestProcessRecord[];
   readonly exitCode: number | null;
   readonly stderr: string;
-  /** node's arguments after the runner's reporter: lzNodeTest.nodeArgs and the test file. */
+  /** node's arguments after the runner's reporter: muirSirynNodeTest.nodeArgs and the test file. */
   readonly fileArgs: readonly string[];
-  /** The consumer's NODE_OPTIONS that the test file ran with, as `lzConsumerNodeOptions` gives them. */
+  /** The consumer's NODE_OPTIONS that the test file ran with, as `muirSirynNodeTestConsumerNodeOptions` gives them. */
   readonly nodeOptions: readonly string[];
   readonly unreadable?: string;
   /** The deadline's reason, set when the deadline of a mutant run ended the file's process while it ran. */
@@ -155,7 +171,7 @@ const reporterUrl = pathToFileURL(
   resolve(import.meta.dirname, `reporter${ext}`),
 ).href;
 
-const dryRunOwner = lzOwnDryRun();
+const dryRunOwner = muirSirynNodeTestOwnDryRun();
 
 /**
  * A test's name leaves out the test file, which its id starts with, as Stryker's runners name tests after their suites
@@ -170,14 +186,14 @@ const dryRunOwner = lzOwnDryRun();
  * A test keeps its start position only when `positioned`: Stryker diffs each test's span in the test file's source, so a
  * position in a reprinted, instrumented copy would cut out the wrong span.
  */
-export function lzToTestResults(
+export function muirSirynNodeTestToTestResults(
   testFile: string,
-  recorded: RecordedTest[],
+  recorded: MuirSirynNodeTestRecordedTest[],
   fileMs: number,
   positioned = true,
 ): TestResult[] {
-  const prefix = testId(testFile, '');
-  const outside = lzOutsideMs(recorded, fileMs);
+  const prefix = muirSirynNodeTestTestId(testFile, '');
+  const outside = muirSirynNodeTestOutsideMs(recorded, fileMs);
 
   return recorded.map((test) => {
     const base = {
@@ -213,9 +229,15 @@ function nodeCommand(args: readonly string[]): string {
  * Reports a test file that failed outside its tests as Stryker's tap runner does: command, diagnostics, and the tail of
  * stderr that `processEnd` keeps.
  */
-export function lzFileError(
+export function muirSirynNodeTestFileError(
   testFile: string,
-  { records, exitCode, stderr, fileArgs, nodeOptions }: LzFileRun,
+  {
+    records,
+    exitCode,
+    stderr,
+    fileArgs,
+    nodeOptions,
+  }: MuirSirynNodeTestFileRun,
 ): string {
   const diagnostics = records.flatMap((record) => record.diagnostics ?? []);
   const heldOpen = records.flatMap((record) => record.heldOpen ?? []);
@@ -237,37 +259,55 @@ export function lzFileError(
       : []),
     ...(diagnostics.length > 0 ? ['Diagnostics:', ...diagnostics] : []),
     ...(output
-      ? [`Stderr, at most its last ${lzStderrTailBytes / 1024} KiB:`, output]
+      ? [
+          `Stderr, at most its last ${muirSirynNodeTestStderrTailBytes / 1024} KiB:`,
+          output,
+        ]
       : []),
   ].join('\n');
 }
 
 function notOptions(field?: string): never {
-  const message = 'not valid lzNodeTest options';
+  const message = 'not valid muirSirynNodeTest options';
 
   throw new Error(field === undefined ? message : `${message}: ${field}`);
 }
 
 /** Stryker checks the options against the schema first; this proves the fields the runner reads. */
-function parseOptions(value: unknown): LzNodeTestOptions {
+function parseOptions(value: unknown): MuirSirynNodeTestOptions {
   if (value === undefined) {
     return {};
   }
 
-  if (!isObject(value)) {
+  if (!muirSirynNodeTestIsObject(value)) {
     notOptions();
   }
 
   const { testFiles, nodeArgs, maxMemoryMB, experimentalWorkerCopy } = value;
 
   return {
-    ...optional('testFiles', testFiles, isStrings, notOptions),
-    ...optional('nodeArgs', nodeArgs, isStrings, notOptions),
-    ...optional('maxMemoryMB', maxMemoryMB, isNumber, notOptions),
-    ...optional(
+    ...muirSirynNodeTestOptional(
+      'testFiles',
+      testFiles,
+      muirSirynNodeTestIsStrings,
+      notOptions,
+    ),
+    ...muirSirynNodeTestOptional(
+      'nodeArgs',
+      nodeArgs,
+      muirSirynNodeTestIsStrings,
+      notOptions,
+    ),
+    ...muirSirynNodeTestOptional(
+      'maxMemoryMB',
+      maxMemoryMB,
+      muirSirynNodeTestIsNumber,
+      notOptions,
+    ),
+    ...muirSirynNodeTestOptional(
       'experimentalWorkerCopy',
       experimentalWorkerCopy,
-      isBoolean,
+      muirSirynNodeTestIsBoolean,
       notOptions,
     ),
   };
@@ -281,7 +321,7 @@ type FileOutcome =
       readonly failed: boolean;
     };
 
-export async function lzRunInPool<T, TResult>(
+export async function muirSirynNodeTestRunInPool<T, TResult>(
   items: T[],
   limit: number,
   work: (item: T) => Promise<TResult>,
@@ -324,9 +364,9 @@ export async function lzRunInPool<T, TResult>(
 
 function fileOutcome(
   file: string,
-  fileRun: LzFileRun,
+  fileRun: MuirSirynNodeTestFileRun,
   fileMs: number,
-  run: LzRunOptions,
+  run: MuirSirynNodeTestRunOptions,
 ): FileOutcome {
   const { records, exitCode, unreadable } = fileRun;
 
@@ -343,8 +383,8 @@ function fileOutcome(
   if (memoryLimitReached) {
     const { rssMB, limitMB } = memoryLimitReached;
     const errorMessage =
-      `A process of "${file}" held ${rssMB} MB in the dry run, more than lzNodeTest.maxMemoryMB (${limitMB} MB), so ` +
-      "its mutant runs would time out. Raise lzNodeTest.maxMemoryMB, or leave it out to derive each file's limit from " +
+      `A process of "${file}" held ${rssMB} MB in the dry run, more than muirSirynNodeTest.maxMemoryMB (${limitMB} MB), so ` +
+      "its mutant runs would time out. Raise muirSirynNodeTest.maxMemoryMB, or leave it out to derive each file's limit from " +
       'the dry run.';
 
     return dryRunErrorElseTimeout(
@@ -378,7 +418,7 @@ function fileOutcome(
     }
   }
 
-  const results = lzToTestResults(
+  const results = muirSirynNodeTestToTestResults(
     file,
     records.flatMap((record) => record.tests),
     fileMs,
@@ -388,7 +428,7 @@ function fileOutcome(
 
   // Like Stryker's own runners, a failure that no test explains is an error, not a killed mutant.
   if (exitCode !== 0 && !failed) {
-    return errorEnd(lzFileError(file, fileRun));
+    return errorEnd(muirSirynNodeTestFileError(file, fileRun));
   }
 
   if (!main) {
@@ -407,7 +447,7 @@ function fileOutcome(
     const errorMessage =
       `Test file "${file}" stayed alive after its tests and root after hooks ended, held open by ${heldBy}, so ` +
       'node --test would not end either. Close what its tests open in an after hook, or pass --test-force-exit in ' +
-      'lzNodeTest.nodeArgs, as for node --test (NODE_OPTIONS does not allow it); node:test then loses errors ' +
+      'muirSirynNodeTest.nodeArgs, as for node --test (NODE_OPTIONS does not allow it); node:test then loses errors ' +
       'raised after the tests and root after hooks end.';
 
     return dryRunErrorElseTimeout(
@@ -429,7 +469,7 @@ function fileOutcome(
   return {
     results,
     coverages: records.map((record) =>
-      lzOverlapCoverage(record, main.testSpans),
+      muirSirynNodeTestOverlapCoverage(record, main.testSpans),
     ),
     failed,
   };
@@ -446,7 +486,7 @@ function errorEnd(errorMessage: string): FileOutcome {
 }
 
 function dryRunErrorElseTimeout(
-  run: LzRunOptions,
+  run: MuirSirynNodeTestRunOptions,
   errorMessage: string,
   reason: string,
 ): FileOutcome {
@@ -455,14 +495,14 @@ function dryRunErrorElseTimeout(
     : { end: { status: DryRunStatus.Timeout, reason } };
 }
 
-export type LzStoredStringsKind = Extract<
-  LzDryRunKind,
+export type MuirSirynNodeTestStoredStringsKind = Extract<
+  MuirSirynNodeTestDryRunKind,
   'files' | 'outside-tests'
 >;
 
-export function lzStoredStrings(
+export function muirSirynNodeTestStoredStrings(
   key: string,
-  kind: LzStoredStringsKind,
+  kind: MuirSirynNodeTestStoredStringsKind,
   content: string | undefined,
 ): string[] | undefined {
   if (content === undefined) {
@@ -478,14 +518,14 @@ export function lzStoredStrings(
     throw new Error(message, { cause: error });
   }
 
-  if (!isStrings(strings)) {
+  if (!muirSirynNodeTestIsStrings(strings)) {
     throw new Error(message);
   }
 
   return strings;
 }
 
-export function lzFilesFor(
+export function muirSirynNodeTestFilesFor(
   testFiles: string[],
   testFilter: readonly string[] | undefined,
 ): string[] {
@@ -493,7 +533,9 @@ export function lzFilesFor(
     return testFiles;
   }
 
-  return testFiles.filter((file) => testFilter.some((id) => within(id, file)));
+  return testFiles.filter((file) =>
+    testFilter.some((id) => muirSirynNodeTestWithin(id, file)),
+  );
 }
 
 /**
@@ -502,7 +544,7 @@ export function lzFilesFor(
  * Beside checkers, Stryker splits it between checkers and test runners, at least one each, and hands the checkers'
  * share to test runners once checking is done (`freeCheckers`), so a concurrency of 1 ends with 2 test runners.
  */
-export function lzTestRunnerConcurrency(
+export function muirSirynNodeTestTestRunnerConcurrency(
   concurrency: StrykerOptions['concurrency'],
   checkers: boolean,
   cores: number,
@@ -522,15 +564,15 @@ export function lzTestRunnerConcurrency(
 }
 
 /** What a test file's environment is made from: the runner's own environment, the file, and the run. */
-export interface LzRunEnvInput {
+export interface MuirSirynNodeTestRunEnvInput {
   /** The runner's environment; its NODE_OPTIONS gives way to the hook and `nodeOptions`. */
   readonly base: NodeJS.ProcessEnv;
   readonly file: string;
   readonly outDir: string;
   readonly tmpDir: string;
-  readonly run: LzRunOptions;
+  readonly run: MuirSirynNodeTestRunOptions;
   readonly cacheDir: string | undefined;
-  /** The consumer's NODE_OPTIONS, which follow the runner's hook, as `lzConsumerNodeOptions` gives them. */
+  /** The consumer's NODE_OPTIONS, which follow the runner's hook, as `muirSirynNodeTestConsumerNodeOptions` gives them. */
   readonly nodeOptions: readonly string[];
   readonly memoryLimitMB?: number | undefined;
   readonly heldOpenMs?: number | undefined;
@@ -538,7 +580,7 @@ export interface LzRunEnvInput {
   readonly stallMs?: number | undefined;
 }
 
-export function lzRunEnv({
+export function muirSirynNodeTestRunEnv({
   base,
   file,
   outDir,
@@ -549,13 +591,13 @@ export function lzRunEnv({
   memoryLimitMB,
   heldOpenMs,
   stallMs,
-}: LzRunEnvInput): NodeJS.ProcessEnv & { NODE_OPTIONS: string } {
+}: MuirSirynNodeTestRunEnvInput): NodeJS.ProcessEnv & { NODE_OPTIONS: string } {
   const runState = new Set([
     // Set when Stryker itself runs under `node --test`; node:test in the test file would then ignore `.only` and
     // write its report to stdout for an outer runner instead of using its reporters.
     'NODE_TEST_CONTEXT',
     INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE,
-    ...Object.values(envNames),
+    ...Object.values(muirSirynNodeTestEnvNames),
   ]);
   const env: NodeJS.ProcessEnv & { NODE_OPTIONS: string } = {
     ...Object.fromEntries(
@@ -565,11 +607,11 @@ export function lzRunEnv({
     NODE_OPTIONS: [`--import ${JSON.stringify(hookUrl)}`, ...nodeOptions].join(
       ' ',
     ),
-    [envNames.out]: outDir,
-    [envNames.file]: file,
-    [envNames.dryRun]: String(run.dryRun),
+    [muirSirynNodeTestEnvNames.out]: outDir,
+    [muirSirynNodeTestEnvNames.file]: file,
+    [muirSirynNodeTestEnvNames.dryRun]: String(run.dryRun),
     // The hook ends the file's process group once its parent is no longer this process.
-    [envNames.runner]: String(process.pid),
+    [muirSirynNodeTestEnvNames.runner]: String(process.pid),
     // os.tmpdir() reads TMPDIR first on POSIX and TEMP first on Windows, then TMP.
     TMPDIR: tmpDir,
     TEMP: tmpDir,
@@ -585,51 +627,52 @@ export function lzRunEnv({
   // --testFiles does, yet asks for runtime activation; such a mutant must be active from the start.
   if (run.activeMutant !== undefined) {
     const runtime =
-      run.mutantActivation === 'runtime' && !lzNamesFile(run.testFilter, file);
+      run.mutantActivation === 'runtime' &&
+      !muirSirynNodeTestNamesFile(run.testFilter, file);
     env[
       runtime
-        ? envNames.activeMutant
+        ? muirSirynNodeTestEnvNames.activeMutant
         : INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE
     ] = run.activeMutant;
   }
 
   if (run.hitLimit !== undefined) {
-    env[envNames.hitLimit] = String(run.hitLimit);
+    env[muirSirynNodeTestEnvNames.hitLimit] = String(run.hitLimit);
   }
 
   if (memoryLimitMB !== undefined) {
-    env[envNames.memoryLimit] = String(memoryLimitMB);
+    env[muirSirynNodeTestEnvNames.memoryLimit] = String(memoryLimitMB);
   }
 
   if (heldOpenMs !== undefined) {
-    env[envNames.heldOpen] = String(heldOpenMs);
+    env[muirSirynNodeTestEnvNames.heldOpen] = String(heldOpenMs);
   }
 
   // Linux refuses a variable longer than 128 KiB. The whole filter of a widely covered mutant can pass that, and so,
   // less often, can the ids of one file's many covering tests.
   if (run.testFilter) {
-    env[envNames.filter] = JSON.stringify(
-      run.testFilter.filter((id) => within(id, file)),
+    env[muirSirynNodeTestEnvNames.filter] = JSON.stringify(
+      run.testFilter.filter((id) => muirSirynNodeTestWithin(id, file)),
     );
   }
 
   // The dry run must run every test to collect each one's coverage.
   if (!run.dryRun && !run.disableBail) {
-    env[envNames.bail] = 'true';
+    env[muirSirynNodeTestEnvNames.bail] = 'true';
   }
 
   if (!run.dryRun && stallMs !== undefined) {
-    env[envNames.stall] = String(stallMs);
+    env[muirSirynNodeTestEnvNames.stall] = String(stallMs);
   }
 
   return env;
 }
 
-const shortenedHeldOpen = new WeakMap<LzNodeTestTestRunner, number>();
+const shortenedHeldOpen = new WeakMap<MuirSirynNodeTestTestRunner, number>();
 
 /** Shortens the time a test file of `runner` may stay alive after its tests to `ms`, for the runner's own tests. */
-export function lzShortenHeldOpen(
-  runner: LzNodeTestTestRunner,
+export function muirSirynNodeTestShortenHeldOpen(
+  runner: MuirSirynNodeTestTestRunner,
   ms: number,
 ): void {
   shortenedHeldOpen.set(runner, ms);
@@ -646,10 +689,10 @@ type RunnerStrykerOptions = Pick<
   | 'timeoutFactor'
   | 'timeoutMS'
 > & {
-  readonly lzNodeTest?: unknown;
+  readonly muirSirynNodeTest?: unknown;
 };
 
-export class LzNodeTestTestRunner implements TestRunner {
+export class MuirSirynNodeTestTestRunner implements TestRunner {
   static inject = tokens(commonTokens.options, commonTokens.logger);
 
   #testFiles: string[] = [];
@@ -670,48 +713,54 @@ export class LzNodeTestTestRunner implements TestRunner {
   #initialized?: Promise<void>;
   readonly #workerCopy: boolean;
   /** The sandbox and this runner's copy of it, in which its test files run, under experimentalWorkerCopy. */
-  #copy?: LzSandboxCopy & { readonly sandbox: string };
+  #copy?: MuirSirynNodeTestSandboxCopy & { readonly sandbox: string };
   readonly #patterns: string[];
   readonly #nodeArgs: string[];
   readonly #reporterArgs: string[];
   #mutantsOutsideTests?: ReadonlySet<string>;
   readonly #dryRunConcurrency: number;
-  readonly #dryRunStore: LzDryRunStore;
-  readonly #memoryLimits: MemoryLimits;
-  readonly #startUps: LzStartUps;
+  readonly #dryRunStore: MuirSirynNodeTestDryRunStore;
+  readonly #memoryLimits: MuirSirynNodeTestMemoryLimits;
+  readonly #startUps: MuirSirynNodeTestStartUps;
   readonly #allowEmpty: boolean;
   readonly #stallMs: number;
   readonly #log: Logger;
 
   constructor(options: RunnerStrykerOptions, log: Logger) {
-    const lzNodeTest = parseOptions(options.lzNodeTest);
-    const patterns = lzNodeTest.testFiles ?? defaults.testFiles.default;
+    const muirSirynNodeTest = parseOptions(options.muirSirynNodeTest);
+    const patterns = muirSirynNodeTest.testFiles ?? defaults.testFiles.default;
     // Only the dry run gets Stryker's --testFiles; the mutant runs of other workers must find those files too.
     this.#patterns = [...patterns, ...options.testFiles];
     this.#dryRunKey = JSON.stringify([process.cwd(), ...this.#patterns]);
-    const nodeArgs = lzNodeTest.nodeArgs ?? defaults.nodeArgs.default;
-    this.#nodeArgs = withoutReporters(nodeArgs);
-    this.#reporterArgs = lzReporterArgs(nodeArgs);
-    this.#dryRunConcurrency = lzTestRunnerConcurrency(
+    const nodeArgs = muirSirynNodeTest.nodeArgs ?? defaults.nodeArgs.default;
+    this.#nodeArgs = muirSirynNodeTestWithoutReporters(nodeArgs);
+    this.#reporterArgs = muirSirynNodeTestReporterArgs(nodeArgs);
+    this.#dryRunConcurrency = muirSirynNodeTestTestRunnerConcurrency(
       options.concurrency,
       options.checkers.length > 0,
       availableParallelism(),
     );
-    this.#dryRunStore = lzDryRunStore(lzDryRunDir(dryRunOwner));
-    this.#memoryLimits = memoryLimits(
-      lzNodeTest.maxMemoryMB,
+    this.#dryRunStore = muirSirynNodeTestDryRunStore(
+      muirSirynNodeTestDryRunDir(dryRunOwner),
+    );
+    this.#memoryLimits = muirSirynNodeTestMemoryLimits(
+      muirSirynNodeTest.maxMemoryMB,
       this.#dryRunStore,
       log,
     );
-    this.#startUps = lzStartUps(this.#dryRunStore, options.timeoutFactor, log);
+    this.#startUps = muirSirynNodeTestStartUps(
+      this.#dryRunStore,
+      options.timeoutFactor,
+      log,
+    );
     this.#allowEmpty = options.allowEmpty;
     this.#stallMs = options.timeoutMS;
-    this.#workerCopy = lzNodeTest.experimentalWorkerCopy ?? false;
+    this.#workerCopy = muirSirynNodeTest.experimentalWorkerCopy ?? false;
     this.#log = log;
 
     if (this.#workerCopy && options.inPlace) {
       throw new Error(
-        'lzNodeTest.experimentalWorkerCopy cannot run with inPlace, where each worker would copy the project itself.',
+        'muirSirynNodeTest.experimentalWorkerCopy cannot run with inPlace, where each worker would copy the project itself.',
       );
     }
   }
@@ -731,7 +780,7 @@ export class LzNodeTestTestRunner implements TestRunner {
 
     if (!supportsNode(node)) {
       throw new Error(
-        `The lz-node-test test runner needs Node.js ${lzMinNodeVersion.join('.')} or later, and this is Node.js ${node}.`,
+        `The muir-siryn-node-test test runner needs Node.js ${muirSirynNodeTestMinNodeVersion.join('.')} or later, and this is Node.js ${node}.`,
       );
     }
 
@@ -756,19 +805,22 @@ export class LzNodeTestTestRunner implements TestRunner {
       this.#log.warn(`${message}; running none, as allowEmpty is set.`);
     }
 
-    removeLeftDirs(tmpdir());
+    muirSirynNodeTestRemoveLeftDirs(tmpdir());
 
     if (process.env['NODE_COMPILE_CACHE'] === undefined) {
       this.#cacheDir = mkdtempSync(
-        join(tmpdir(), lzDirPrefix('cache', process.pid)),
+        join(tmpdir(), muirSirynNodeTestDirPrefix('cache', process.pid)),
       );
     }
 
     if (this.#workerCopy) {
       const sandbox = process.cwd();
-      removeLeftDirs(dirname(sandbox));
+      muirSirynNodeTestRemoveLeftDirs(dirname(sandbox));
       const started = performance.now();
-      this.#copy = { sandbox, ...lzCopySandbox(sandbox, process.pid) };
+      this.#copy = {
+        sandbox,
+        ...muirSirynNodeTestCopySandbox(sandbox, process.pid),
+      };
       this.#log.debug(
         `Copied the sandbox to ${this.#copy.dir} in ${Math.round(performance.now() - started)} ms (experimentalWorkerCopy)`,
       );
@@ -781,8 +833,8 @@ export class LzNodeTestTestRunner implements TestRunner {
     await Promise.all([
       this.#cacheDir === undefined
         ? undefined
-        : removeDir(this.#cacheDir, this.#log),
-      this.#copy && lzRemoveCopy(this.#copy, this.#log),
+        : muirSirynNodeTestRemoveDir(this.#cacheDir, this.#log),
+      this.#copy && muirSirynNodeTestRemoveCopy(this.#copy, this.#log),
     ]);
   }
 
@@ -795,13 +847,13 @@ export class LzNodeTestTestRunner implements TestRunner {
       disableBail: options.disableBail,
       coverageAnalysis: options.coverageAnalysis,
       instrumented: new Set(options.files?.map((file) => resolve(file))),
-    } satisfies LzRunOptions;
+    } satisfies MuirSirynNodeTestRunOptions;
     const memoryLimitMB = this.#memoryLimits.forDryRun();
 
     // Only the dry run warns, so a run with several workers warns once.
     if (this.#reporterArgs.length > 0) {
       this.#log.warn(
-        `Left out \`${this.#reporterArgs.join(' ')}\` of lzNodeTest.nodeArgs, because the ` +
+        `Left out \`${this.#reporterArgs.join(' ')}\` of muirSirynNodeTest.nodeArgs, because the ` +
           'runner uses its own node:test reporter.',
       );
     }
@@ -821,11 +873,13 @@ export class LzNodeTestTestRunner implements TestRunner {
       // The same fileMs as every test's time, so the start-up a mutant run's deadline takes off is never more than the
       // time Stryker's timeout counted for it.
       (file, fileRun, fileMs) => {
-        mutantsOutsideTests.push(lzOutsideTests(fileRun.records));
+        mutantsOutsideTests.push(
+          muirSirynNodeTestOutsideTests(fileRun.records),
+        );
         this.#memoryLimits.record(file, fileRun.records);
         this.#startUps.record(
           file,
-          lzStartUpOf(
+          muirSirynNodeTestStartUpOf(
             fileRun.records.flatMap((record) => record.tests),
             fileMs,
           ),
@@ -855,8 +909,8 @@ export class LzNodeTestTestRunner implements TestRunner {
     return result;
   }
 
-  #stored(kind: LzStoredStringsKind): string[] | undefined {
-    return lzStoredStrings(
+  #stored(kind: MuirSirynNodeTestStoredStringsKind): string[] | undefined {
+    return muirSirynNodeTestStoredStrings(
       this.#dryRunKey,
       kind,
       this.#dryRunStore.read(this.#dryRunKey, kind),
@@ -884,7 +938,7 @@ export class LzNodeTestTestRunner implements TestRunner {
     const started = performance.now();
     this.#dryRunFiles ??= this.#stored('files');
     const outsideTests = this.#outsideTests();
-    const files = lzFilesFor(
+    const files = muirSirynNodeTestFilesFor(
       this.#dryRunFiles ?? this.#testFiles,
       options.testFilter,
     );
@@ -907,7 +961,7 @@ export class LzNodeTestTestRunner implements TestRunner {
         : options.mutantActivation,
       hitLimit: options.hitLimit,
       testFilter: options.testFilter,
-    } satisfies LzRunOptions;
+    } satisfies MuirSirynNodeTestRunOptions;
     const result = await this.#run(files, run, 1, (file) =>
       this.runFile(file, run, this.#memoryLimits.forMutantRun(file), deadline),
     );
@@ -923,17 +977,21 @@ export class LzNodeTestTestRunner implements TestRunner {
 
   async #run(
     files: string[],
-    run: LzRunOptions,
+    run: MuirSirynNodeTestRunOptions,
     limit: number,
-    runOne: (file: string) => Promise<LzFileRun>,
-    /** Told of each file's run and its time, `fileMs`, the time that `lzToTestResults` spreads over the file's tests. */
-    afterRun?: (file: string, fileRun: LzFileRun, fileMs: number) => void,
+    runOne: (file: string) => Promise<MuirSirynNodeTestFileRun>,
+    /** Told of each file's run and its time, `fileMs`, the time that `muirSirynNodeTestToTestResults` spreads over the file's tests. */
+    afterRun?: (
+      file: string,
+      fileRun: MuirSirynNodeTestFileRun,
+      fileMs: number,
+    ) => void,
   ): Promise<DryRunResult> {
     const tests: TestResult[] = [];
     const coverages: (MutantCoverage | undefined)[] = [];
     const ends = (outcome: FileOutcome) =>
       'end' in outcome || (!run.disableBail && outcome.failed);
-    const outcomes = await lzRunInPool(
+    const outcomes = await muirSirynNodeTestRunInPool(
       files,
       limit,
       async (file) => {
@@ -972,8 +1030,8 @@ export class LzNodeTestTestRunner implements TestRunner {
       tests,
       ...(run.coverageAnalysis !== 'off' && {
         mutantCoverage: (run.coverageAnalysis === 'all'
-          ? lzMergeAsStatic
-          : lzMergeCoverage)(coverages),
+          ? muirSirynNodeTestMergeAsStatic
+          : muirSirynNodeTestMergeCoverage)(coverages),
       }),
     };
   }
@@ -981,21 +1039,25 @@ export class LzNodeTestTestRunner implements TestRunner {
   /** Ends the file's process, and what processEnd ends with it, once `deadline` aborts, also when it already has. */
   async runFile(
     file: string,
-    run: LzRunOptions,
+    run: MuirSirynNodeTestRunOptions,
     memoryLimitMB?: number,
-    deadline?: LzDeadline,
-  ): Promise<LzFileRun> {
-    const runDir = mkdtempSync(join(tmpdir(), lzDirPrefix('run', process.pid)));
+    deadline?: MuirSirynNodeTestDeadline,
+  ): Promise<MuirSirynNodeTestFileRun> {
+    const runDir = mkdtempSync(
+      join(tmpdir(), muirSirynNodeTestDirPrefix('run', process.pid)),
+    );
     const outDir = join(runDir, 'out');
     const tmpDir = join(runDir, 'tmp');
 
     try {
       mkdirSync(outDir);
       mkdirSync(tmpDir);
-      const nodeOptions = lzConsumerNodeOptions(process.env);
+      const nodeOptions = muirSirynNodeTestConsumerNodeOptions(process.env);
       const copy = this.#copy;
-      const runAs = copy ? lzRebase(file, copy.sandbox, copy.dir) : file;
-      const env = lzRunEnv({
+      const runAs = copy
+        ? muirSirynNodeTestRebase(file, copy.sandbox, copy.dir)
+        : file;
+      const env = muirSirynNodeTestRunEnv({
         base: process.env,
         file: runAs,
         outDir,
@@ -1005,7 +1067,7 @@ export class LzNodeTestTestRunner implements TestRunner {
             ? {
                 ...run,
                 testFilter: run.testFilter?.map((id) =>
-                  lzRebase(id, copy.sandbox, copy.dir),
+                  muirSirynNodeTestRebase(id, copy.sandbox, copy.dir),
                 ),
               }
             : run,
@@ -1029,7 +1091,7 @@ export class LzNodeTestTestRunner implements TestRunner {
         // stdin an open pipe that never ends, as node --test gives each test file: on an ended stdin, a test that hands
         // process.stdin to a subprocess can wait forever.
         stdio: ['pipe', 'ignore', 'pipe'],
-        ...groupOptions(process.platform),
+        ...muirSirynNodeTestGroupOptions(process.platform),
       });
       let killedByDeadline: string | undefined;
       let exited = false;
@@ -1049,7 +1111,7 @@ export class LzNodeTestTestRunner implements TestRunner {
       }
 
       deadline?.signal.addEventListener('abort', end);
-      const { exitCode, stderr } = await processEnd(
+      const { exitCode, stderr } = await muirSirynNodeTestProcessEnd(
         child,
         process.platform,
       ).finally(() => {
@@ -1057,18 +1119,20 @@ export class LzNodeTestTestRunner implements TestRunner {
       });
       let unreadable: string | undefined;
       const records = readdirSync(outDir)
-        .filter(lzIsRecordName)
+        .filter(muirSirynNodeTestIsRecordName)
         .flatMap((name) => {
           try {
-            const record = lzParseRecord(
+            const record = muirSirynNodeTestParseRecord(
               readFileSync(join(outDir, name), 'utf8'),
             );
 
             return [
-              copy ? lzRebaseRecord(record, copy.dir, copy.sandbox) : record,
+              copy
+                ? muirSirynNodeTestRebaseRecord(record, copy.dir, copy.sandbox)
+                : record,
             ];
           } catch (error) {
-            // lzWriteRecord leaves a whole record or none, so this is a file that something else wrote at a record's
+            // muirSirynNodeTestWriteRecord leaves a whole record or none, so this is a file that something else wrote at a record's
             // name, or one that cannot be read.
             unreadable = `${name}: ${error instanceof Error ? error.message : String(error)}`;
 
@@ -1086,7 +1150,7 @@ export class LzNodeTestTestRunner implements TestRunner {
         ...(killedByDeadline !== undefined && { killedByDeadline }),
       };
     } finally {
-      await removeDir(runDir, this.#log);
+      await muirSirynNodeTestRemoveDir(runDir, this.#log);
     }
   }
 }
@@ -1094,8 +1158,8 @@ export class LzNodeTestTestRunner implements TestRunner {
 export const strykerPlugins = [
   declareClassPlugin(
     PluginKind.TestRunner,
-    'lz-node-test',
-    LzNodeTestTestRunner,
+    'muir-siryn-node-test',
+    MuirSirynNodeTestTestRunner,
   ),
 ];
 

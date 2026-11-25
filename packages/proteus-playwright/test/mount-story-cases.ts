@@ -1,6 +1,6 @@
 import type { Case } from './cases.ts';
 
-const mountStory = 'LzPlaywrightMountStory';
+const mountStory = 'MuirProteusPlaywrightMountStory';
 
 function inTest(statements: readonly string[]): string {
   return `test('case', async ({ mount }) => {\n  ${statements.join('\n  ')}\n});`;

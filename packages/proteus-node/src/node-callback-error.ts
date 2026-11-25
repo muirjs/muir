@@ -1,4 +1,7 @@
-import { lzPropertyName, type LzMutator } from '@muirjs/moira-node-test';
+import {
+  muirMoiraNodeTestPropertyName,
+  type MuirMoiraNodeTestMutator,
+} from '@muirjs/moira-node-test';
 
 const callbacks: ReadonlySet<string> = new Set([
   'cb',
@@ -13,29 +16,30 @@ const errors: ReadonlySet<string> = new Set(['err', 'error', 'e', 'er']);
  * it was handed is dropped. The names decide: a callee named `cb`, `callback`, `done` or `next`, or any `destroy`
  * method, called with one argument named `err`, `error`, `e` or `er`.
  */
-export const nodeCallbackError: LzMutator<'LzNodeCallbackError'> = {
-  name: 'LzNodeCallbackError',
-  sample:
-    'export function end(err: Error, cb: (error?: Error) => void) {\n  cb(err);\n}\n',
-  *mutate(path, t) {
-    if (!path.isCallExpression() || path.node.arguments.length !== 1) {
-      return;
-    }
+export const muirProteusNodeCallbackError: MuirMoiraNodeTestMutator<'MuirProteusNodeCallbackError'> =
+  {
+    name: 'MuirProteusNodeCallbackError',
+    sample:
+      'export function end(err: Error, cb: (error?: Error) => void) {\n  cb(err);\n}\n',
+    *mutate(path, t) {
+      if (!path.isCallExpression() || path.node.arguments.length !== 1) {
+        return;
+      }
 
-    const {
-      callee,
-      arguments: [argument],
-    } = path.node;
+      const {
+        callee,
+        arguments: [argument],
+      } = path.node;
 
-    if (argument?.type !== 'Identifier' || !errors.has(argument.name)) {
-      return;
-    }
+      if (argument?.type !== 'Identifier' || !errors.has(argument.name)) {
+        return;
+      }
 
-    if (
-      (callee.type === 'Identifier' && callbacks.has(callee.name)) ||
-      lzPropertyName(callee) === 'destroy'
-    ) {
-      yield t.callExpression(t.cloneNode(callee), []);
-    }
-  },
-};
+      if (
+        (callee.type === 'Identifier' && callbacks.has(callee.name)) ||
+        muirMoiraNodeTestPropertyName(callee) === 'destroy'
+      ) {
+        yield t.callExpression(t.cloneNode(callee), []);
+      }
+    },
+  };

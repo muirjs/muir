@@ -1,16 +1,16 @@
-import { lzJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
-await lzJsxMutators();
+await muirProteusJsxMutators();
 
 // The component-test case: the feature components that the story specs mount through the gallery, with the
 // built-in and the JSX mutators.
 export default {
   plugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
-  lzPlaywright: {
+  testRunner: 'muir-siryn-playwright',
+  muirSirynPlaywright: {
     configFile: 'playwright.stryker.config.ts',
-    survivorTraces: 'reports/lz-playwright-traces',
+    survivorTraces: 'reports/muir-siryn-playwright-traces',
   },
   // The `#/` imports resolve through the workspace's tsconfig paths and bun's links back to this package, so
   // a sandbox would serve unmutated code.
@@ -26,7 +26,13 @@ export default {
   concurrency: 2,
   incremental: true,
   incrementalFile: 'reports/stryker-incremental.json',
-  reporters: ['clear-text', 'progress', 'json', 'html', 'lz-playwright-traces'],
+  reporters: [
+    'clear-text',
+    'progress',
+    'json',
+    'html',
+    'muir-siryn-playwright-traces',
+  ],
   jsonReporter: { fileName: 'reports/mutation/mutation.json' },
   htmlReporter: { fileName: 'reports/mutation/mutation.html' },
   ignorePatterns: ['/reports'],

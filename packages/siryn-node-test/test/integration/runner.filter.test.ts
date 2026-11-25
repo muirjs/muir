@@ -4,8 +4,8 @@ import { describe, it } from 'node:test';
 
 import { MutantRunStatus } from '@stryker-mutator/api/test-runner';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import { envNames } from '../../src/record.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 import {
   activeMutant,
   complete,
@@ -27,7 +27,7 @@ import {
 
 shareCompileCache();
 
-describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
+describe('MuirSirynNodeTestTestRunner filter, bail and mutant activation', () => {
   it('runs neither the tests outside the filter nor their beforeEach and afterEach hooks', async (t) => {
     const dir = project(t, {
       'a.test.mjs': fixture(
@@ -221,7 +221,7 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
       'a.test.mjs': fixture(
         "it('sees the mutant', () => {",
         `  assert.equal(process.env.${activeMutant}, 'fixture-mutant');`,
-        `  assert.equal(process.env.${envNames.dryRun}, 'false');`,
+        `  assert.equal(process.env.${muirSirynNodeTestEnvNames.dryRun}, 'false');`,
         '});',
         "it('is filtered out', () => { throw new Error('ran a filtered test'); });",
       ),
@@ -265,7 +265,7 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     );
   });
 
-  it("runs only the files of Stryker's --testFiles in the dry run and every runner's mutant runs, also outside lzNodeTest.testFiles", async (t) => {
+  it("runs only the files of Stryker's --testFiles in the dry run and every runner's mutant runs, also outside muirSirynNodeTest.testFiles", async (t) => {
     const dir = project(t, {
       'a.test.mjs': passing,
       'b.test.mjs': failing,
@@ -353,7 +353,7 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     assert.deepEqual(result.killedBy, [`${a} > greets`]);
   });
 
-  lzTestFor(['the dry run', 'another worker'])(
+  muirTestFor(['the dry run', 'another worker'])(
     'activates a mutant from the start in the runner of %s when the dry run reached it outside every test, though activation is runtime',
     async (worker, t) => {
       const dir = project(t, {
@@ -440,7 +440,7 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     );
   });
 
-  lzTestFor([
+  muirTestFor([
     {
       hooks: 'the before hooks of suites',
       file: 'a.test.mjs',

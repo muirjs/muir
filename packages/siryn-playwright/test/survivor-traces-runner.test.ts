@@ -6,8 +6,11 @@ import { test, type TestContext } from 'node:test';
 
 import { MutantRunStatus } from '@stryker-mutator/api/test-runner';
 
-import { fieldOf } from '../src/is-record.ts';
-import { projectRootEnv, tracesDirEnv } from '../src/survivor-traces.ts';
+import { muirSirynPlaywrightFieldOf } from '../src/is-record.ts';
+import {
+  muirSirynPlaywrightProjectRootEnv,
+  muirSirynPlaywrightTracesDirEnv,
+} from '../src/survivor-traces.ts';
 import {
   addAttempt,
   fakeTestCase,
@@ -42,11 +45,11 @@ async function tracedRunner(
   const tracesDir = path.join(fake.dir, 'traces');
   fs.mkdirSync(tracesDir);
   stubEnv(t, {
-    [tracesDirEnv]: tracesDir,
-    [projectRootEnv]: process.cwd(),
+    [muirSirynPlaywrightTracesDirEnv]: tracesDir,
+    [muirSirynPlaywrightProjectRootEnv]: process.cwd(),
   });
   const { shell, lines } = fake.runner({
-    lzPlaywright: {
+    muirSirynPlaywright: {
       survivorTraces: 'traces',
       ...(traceScreenshots === undefined ? {} : { traceScreenshots }),
     },
@@ -73,7 +76,7 @@ for (const traceScreenshots of [false, true]) {
     const { fake } = await tracedRunner(t, { traceScreenshots });
 
     const [, , overrides] = fake.calls[0] ?? [];
-    assert.deepEqual(fieldOf(overrides, 'use'), {
+    assert.deepEqual(muirSirynPlaywrightFieldOf(overrides, 'use'), {
       screenshot: 'off',
       trace: { mode: 'on', screenshots: traceScreenshots, snapshots: true },
       video: 'off',
@@ -85,11 +88,17 @@ test('without traceScreenshots, the traces have no screenshots', async (t) => {
   const { fake } = await tracedRunner(t);
 
   const [, , overrides] = fake.calls[0] ?? [];
-  assert.deepEqual(fieldOf(fieldOf(overrides, 'use'), 'trace'), {
-    mode: 'on',
-    screenshots: false,
-    snapshots: true,
-  });
+  assert.deepEqual(
+    muirSirynPlaywrightFieldOf(
+      muirSirynPlaywrightFieldOf(overrides, 'use'),
+      'trace',
+    ),
+    {
+      mode: 'on',
+      screenshots: false,
+      snapshots: true,
+    },
+  );
 });
 
 test("a surviving mutant's traces are copied to its folder", async (t) => {

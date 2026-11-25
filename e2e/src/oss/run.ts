@@ -16,114 +16,114 @@ import { basename, join, relative, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import timers from 'node:timers/promises';
 
-import { lzExec } from '../exec.ts';
+import { muirExec } from '../exec.ts';
 import {
-  lzInstall,
-  lzPack,
-  lzRemoveDeadRunDirs,
-  lzRemoveOnExit,
-  lzReportFile,
-  lzStryker,
-  type LzStrykerRun,
+  muirMoiraNodeTestInstall,
+  muirPack,
+  muirRemoveDeadRunDirs,
+  muirRemoveOnExit,
+  muirReportFile,
+  muirStryker,
+  type MuirStrykerRun,
 } from '../fixture.ts';
 import {
-  lzCheckpointArgs,
-  lzCheckpointKey,
-  lzCheckpointReporterName,
-  lzEndCheckpoint,
-  lzInstalledVersions,
-  lzStartCheckpoint,
+  muirCheckpointArgs,
+  muirCheckpointKey,
+  muirCheckpointReporterName,
+  muirEndCheckpoint,
+  muirInstalledVersions,
+  muirStartCheckpoint,
 } from './checkpoint.ts';
 import {
-  lzOssPreparedPrefix,
-  lzOssRunPrefix,
-  lzSides,
-  lzStrykerArgs,
-  lzStrykerConfig,
-  type LzOssOptions,
-  type LzSide,
+  muirOssPreparedPrefix,
+  muirOssRunPrefix,
+  muirSides,
+  muirStrykerArgs,
+  muirStrykerConfig,
+  type MuirOssOptions,
+  type MuirSide,
 } from './options.ts';
-import { lzApplyPatches, lzFileWriters } from './prepare.ts';
+import { muirApplyPatches, muirFileWriters } from './prepare.ts';
 import {
-  lzDescendants,
-  lzLeftovers,
-  lzNewEntries,
-  lzPeaks,
+  muirDescendants,
+  muirLeftovers,
+  muirNewEntries,
+  muirPeaks,
 } from './processes.ts';
 import type {
-  LzOssHeader,
-  LzOssResult,
-  LzSideResult,
-  LzStrykerResult,
+  MuirOssHeader,
+  MuirOssResult,
+  MuirSideResult,
+  MuirStrykerResult,
 } from './result.ts';
-import { lzSnapshot, lzStartSampler } from './sampler.ts';
+import { muirSnapshot, muirStartSampler } from './sampler.ts';
 import {
-  lzBySide,
-  lzComparison,
-  lzMessageOf,
-  lzReportScore,
-  type LzSideReport,
+  muirBySide,
+  muirComparison,
+  muirMessageOf,
+  muirReportScore,
+  type MuirSideReport,
 } from './verdicts.ts';
 
-type LzSettled<T> =
+type MuirSettled<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false };
 
-interface LzSideRun {
-  readonly side: LzSide;
-  readonly report: LzSideReport;
-  readonly result: LzSideResult;
+interface MuirSideRun {
+  readonly side: MuirSide;
+  readonly report: MuirSideReport;
+  readonly result: MuirSideResult;
 }
 
 /** How long processes that a run left get to end by themselves before they count as left behind. */
-// Stryker disable next-line LzJsNumericLiteral: a tuning value, not a contract a test should pin
+// Stryker disable next-line MuirProteusJsNumericLiteral: a tuning value, not a contract a test should pin
 const settleMs = 2_000;
 
 /** The steps that pack, install, run Stryker and watch processes, which a test replaces. */
-export interface LzRunSteps {
-  readonly pack: typeof lzPack;
-  readonly install: typeof lzInstall;
-  readonly stryker: typeof lzStryker;
-  readonly startSampler: typeof lzStartSampler;
-  readonly snapshot: typeof lzSnapshot;
+export interface MuirRunSteps {
+  readonly pack: typeof muirPack;
+  readonly install: typeof muirMoiraNodeTestInstall;
+  readonly stryker: typeof muirStryker;
+  readonly startSampler: typeof muirStartSampler;
+  readonly snapshot: typeof muirSnapshot;
 }
 
-export const lzRunSteps: LzRunSteps = {
-  pack: lzPack,
-  install: lzInstall,
-  stryker: lzStryker,
-  startSampler: lzStartSampler,
-  snapshot: lzSnapshot,
+export const muirRunSteps: MuirRunSteps = {
+  pack: muirPack,
+  install: muirMoiraNodeTestInstall,
+  stryker: muirStryker,
+  startSampler: muirStartSampler,
+  snapshot: muirSnapshot,
 };
 
 /** What one side's run needs: the options, `out`, `dir` for the project's copy and `runTmp` for Stryker's TMP. */
-interface LzRunContext {
-  readonly options: LzOssOptions;
-  readonly steps: LzRunSteps;
+interface MuirRunContext {
+  readonly options: MuirOssOptions;
+  readonly steps: MuirRunSteps;
   readonly out: string;
   readonly dir: string;
   readonly runTmp: string;
 }
 
-export async function lzRunDriver(
-  options: LzOssOptions,
-  steps = lzRunSteps,
+export async function muirRunDriver(
+  options: MuirOssOptions,
+  steps = muirRunSteps,
 ): Promise<void> {
   const out = resolve(options.out);
 
   mkdirSync(out, { recursive: true });
-  lzClearResult(out);
-  lzRemoveDeadRunDirs(tmpdir(), lzOssRunPrefix);
+  muirClearResult(out);
+  muirRemoveDeadRunDirs(tmpdir(), muirOssRunPrefix);
   const root = realpathSync.native(
     mkdtempSync(
       join(
         tmpdir(),
-        `${options.prepareOnly ? lzOssPreparedPrefix : lzOssRunPrefix}${process.pid}-`,
+        `${options.prepareOnly ? muirOssPreparedPrefix : muirOssRunPrefix}${process.pid}-`,
       ),
     ),
   );
   // Beside the copy, not in it, so that no folder of the project can collide with them.
-  const context: LzRunContext = {
+  const context: MuirRunContext = {
     options,
     steps,
     out,
@@ -133,7 +133,7 @@ export async function lzRunDriver(
   const { dir, runTmp } = context;
 
   if (!options.prepareOnly) {
-    lzRemoveOnExit(root);
+    muirRemoveOnExit(root);
   }
 
   const copied = new Set(['.git', 'node_modules']);
@@ -146,8 +146,8 @@ export async function lzRunDriver(
   });
   const { patches, testFiles } = options.project;
 
-  lzApplyPatches(dir, patches);
-  lzFileWriters(
+  muirApplyPatches(dir, patches);
+  muirFileWriters(
     dir,
     testFiles,
     patches.map(({ file }) => file),
@@ -163,14 +163,14 @@ export async function lzRunDriver(
       : given(options.tarballs);
 
   await steps.install(dir, tarballs, options.npmBefore);
-  lzSides.forEach((side) => {
+  muirSides.forEach((side) => {
     writeFileSync(
       join(dir, configFile(side)),
-      lzStrykerConfig(side, options.project),
+      muirStrykerConfig(side, options.project),
     );
   });
 
-  const header: LzOssHeader = {
+  const header: MuirOssHeader = {
     project: options.project.name,
     source: options.source,
     sourceCommit: await commitOf(options.source),
@@ -181,7 +181,7 @@ export async function lzRunDriver(
     concurrency: options.concurrency,
     timeLimitMinutes: options.timeLimitMinutes,
     mutantTimeoutMs: options.mutantTimeoutMs ?? null,
-    installedVersions: lzInstalledVersions(
+    installedVersions: muirInstalledVersions(
       readFileSync(join(dir, 'node_modules', '.package-lock.json'), 'utf8'),
     ),
     tarballDigests: tarballs
@@ -203,13 +203,13 @@ export async function lzRunDriver(
     return;
   }
 
-  const checkpointKey = (side: LzSide): string =>
-    lzCheckpointKey({
+  const checkpointKey = (side: MuirSide): string =>
+    muirCheckpointKey({
       ...header,
-      strykerConfig: lzStrykerConfig(side, options.project),
+      strykerConfig: muirStrykerConfig(side, options.project),
     });
   // One side after the other, so that the two never share the machine.
-  const runs = await options.sides.reduce<Promise<readonly LzSideRun[]>>(
+  const runs = await options.sides.reduce<Promise<readonly MuirSideRun[]>>(
     async (earlier, side) => [
       ...(await earlier),
       await runSide(side, context, checkpointKey(side)),
@@ -219,18 +219,18 @@ export async function lzRunDriver(
 
   writeResult(out, {
     ...header,
-    sides: lzBySide(runs, ({ result }) => result),
-    ...lzComparison(lzBySide(runs, ({ report }) => report)),
+    sides: muirBySide(runs, ({ result }) => result),
+    ...muirComparison(muirBySide(runs, ({ report }) => report)),
   });
 }
 
 /** A run that dies before it writes result.json must leave none, not the previous run's beside this run's side files. */
-export function lzClearResult(out: string): void {
+export function muirClearResult(out: string): void {
   rmSync(join(out, 'result.json'), { force: true });
 }
 
 /** An earlier run's report or log left in `out` must not pass for this run's. */
-export function lzClearSideFiles(out: string, side: LzSide): void {
+export function muirClearSideFiles(out: string, side: MuirSide): void {
   [`${side}.mutation.json`, `${side}.log`].forEach((name) => {
     rmSync(join(out, name), { force: true });
   });
@@ -241,31 +241,31 @@ export function lzClearSideFiles(out: string, side: LzSide): void {
  * lets the next side run.
  */
 async function runSide(
-  side: LzSide,
-  { options, steps, out, dir, runTmp }: LzRunContext,
+  side: MuirSide,
+  { options, steps, out, dir, runTmp }: MuirRunContext,
   checkpointKey: string,
-): Promise<LzSideRun> {
+): Promise<MuirSideRun> {
   const errors: string[] = [];
   const settled = settledInto(errors);
   const checkpoint = join(out, `${side}.checkpoint.json`);
 
   await settled("Removing an earlier run's report and log", () => {
-    lzClearSideFiles(out, side);
+    muirClearSideFiles(out, side);
   });
   // A checkpoint that cannot be read, such as one Stryker's own final write left cut short, would fail every rerun:
   // it goes, and the run starts a new one.
   const firstStart = await settled('Checkpoint', () =>
-    lzStartCheckpoint(checkpoint, checkpointKey),
+    muirStartCheckpoint(checkpoint, checkpointKey),
   );
   const resumed = firstStart.ok
     ? firstStart
     : await settled('Checkpoint after removing the unreadable one', () => {
-        lzEndCheckpoint(checkpoint);
+        muirEndCheckpoint(checkpoint);
         process.stdout.write(
           `Removed ${checkpoint}, which could not be read; ${side} starts afresh.\n`,
         );
 
-        return lzStartCheckpoint(checkpoint, checkpointKey);
+        return muirStartCheckpoint(checkpoint, checkpointKey);
       });
   const osTmpBefore = await settled('TMP listing before the run', () =>
     readdirSync(tmpdir()),
@@ -278,11 +278,11 @@ async function runSide(
       tmp: runTmp,
       timeoutMs: options.timeLimitMinutes * 60_000,
       args: [
-        ...lzStrykerArgs(options),
-        ...(resumed.ok ? lzCheckpointArgs(checkpoint) : []),
+        ...muirStrykerArgs(options),
+        ...(resumed.ok ? muirCheckpointArgs(checkpoint) : []),
       ],
       logFile: join(out, `${side}.log`),
-      reporters: resumed.ok ? [lzCheckpointReporterName] : [],
+      reporters: resumed.ok ? [muirCheckpointReporterName] : [],
     }),
   );
   const wallMs = Math.round(performance.now() - started);
@@ -291,7 +291,7 @@ async function runSide(
     : undefined;
   const samples = stopped?.ok
     ? stopped.value.samples.map((sample) =>
-        lzDescendants(sample, process.pid, excluded),
+        muirDescendants(sample, process.pid, excluded),
       )
     : [];
 
@@ -299,12 +299,12 @@ async function runSide(
     errors.push(`Sampler: ${stopped.value.error}`);
   }
 
-  // Stryker disable next-line LzNodeTimerDelay: equivalent, as no test can tell a wait one millisecond apart
+  // Stryker disable next-line MuirProteusNodeTimerDelay: equivalent, as no test can tell a wait one millisecond apart
   await timers.setTimeout(settleMs);
   // One fresh snapshot just before the endings, so a pair that ended or whose id was reused meanwhile is skipped.
   // Ended once recorded, so that one side's leftovers cannot load the next side's run.
   const found = await settled('Leftover snapshot', async () =>
-    lzLeftovers(samples.flat(), await steps.snapshot()),
+    muirLeftovers(samples.flat(), await steps.snapshot()),
   );
   const ended = await Promise.all(
     (found.ok ? found.value : []).map(async (leftover) => ({
@@ -314,8 +314,11 @@ async function runSide(
   );
   await settled('Report copy', () => {
     if (run.ok && run.value.reported) {
-      copyFileSync(join(dir, lzReportFile), join(out, `${side}.mutation.json`));
-      lzEndCheckpoint(checkpoint);
+      copyFileSync(
+        join(dir, muirReportFile),
+        join(out, `${side}.mutation.json`),
+      );
+      muirEndCheckpoint(checkpoint);
     }
   });
   const osTmpAfter = await settled('TMP listing after the run', () =>
@@ -334,9 +337,9 @@ async function runSide(
       errors,
       wallMs,
       resumedMutants: resumed.ok ? resumed.value : 0,
-      strykerConfig: lzStrykerConfig(side, options.project),
+      strykerConfig: muirStrykerConfig(side, options.project),
       processes: {
-        ...lzPeaks(samples),
+        ...muirPeaks(samples),
         leftover: ended.map(({ leftover: { pid, name }, ending }) => ({
           pid,
           name,
@@ -345,19 +348,19 @@ async function runSide(
       },
       newInOsTmp:
         osTmpBefore.ok && osTmpAfter.ok
-          ? lzNewEntries(osTmpBefore.value, osTmpAfter.value)
+          ? muirNewEntries(osTmpBefore.value, osTmpAfter.value)
           : [],
       leftoverStrykerTmp: strykerTmpEntries.ok ? strykerTmpEntries.value : [],
     },
   };
 }
 
-function strykerResult(run: LzStrykerRun): LzStrykerResult {
+function strykerResult(run: MuirStrykerRun): MuirStrykerResult {
   return {
     exitCode: run.exitCode,
     timedOut: run.timedOut,
     reported: run.reported,
-    ...lzReportScore(run.reported ? run.report : new Map()),
+    ...muirReportScore(run.reported ? run.report : new Map()),
     leftoverInRunTmp: run.leftover,
   };
 }
@@ -367,11 +370,11 @@ function settledInto(errors: string[]) {
   return async <T>(
     step: string,
     run: () => T | Promise<T>,
-  ): Promise<LzSettled<T>> => {
+  ): Promise<MuirSettled<T>> => {
     try {
       return { ok: true, value: await run() };
     } catch (error) {
-      errors.push(`${step}: ${lzMessageOf(error)}`);
+      errors.push(`${step}: ${muirMessageOf(error)}`);
 
       return { ok: false };
     }
@@ -393,7 +396,7 @@ function end(pid: number): boolean {
   }
 }
 
-function configFile(side: LzSide): string {
+function configFile(side: MuirSide): string {
   return `stryker.${side}.config.mjs`;
 }
 
@@ -414,7 +417,7 @@ function sha256(data: string | Buffer): string {
 }
 
 async function commitOf(cwd: string): Promise<string> {
-  const { exitCode, stdout, stderr } = await lzExec(
+  const { exitCode, stdout, stderr } = await muirExec(
     'git',
     ['rev-parse', 'HEAD'],
     { cwd },
@@ -429,7 +432,7 @@ async function commitOf(cwd: string): Promise<string> {
   return stdout.trim();
 }
 
-function writeResult(out: string, result: LzOssResult): void {
+function writeResult(out: string, result: MuirOssResult): void {
   const file = join(out, 'result.json');
 
   writeFileSync(file, `${JSON.stringify(result, null, 2)}\n`);

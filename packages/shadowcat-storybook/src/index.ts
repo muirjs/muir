@@ -1,14 +1,20 @@
 import { declareFactoryPlugin, PluginKind } from '@stryker-mutator/api/plugin';
 
-import { csfIgnorer, csfIgnorerName } from './csf-ignorer.ts';
-import { playModes } from './options.ts';
-import { storybookReporter } from './reporter.ts';
-import { stubIgnorer } from './stub-ignorer.ts';
-import { storybookPluginName } from './stub-verdict.ts';
+import {
+  muirShadowcatStorybookCsfIgnorer,
+  muirShadowcatStorybookCsfIgnorerName,
+} from './csf-ignorer.ts';
+import { muirShadowcatStorybookPlayModes } from './options.ts';
+import { muirShadowcatStorybookReporter } from './reporter.ts';
+import { muirShadowcatStorybookStubIgnorer } from './stub-ignorer.ts';
+import { muirShadowcatStorybookPluginName } from './stub-verdict.ts';
 
-export { lzStorybookStrykerPlugin } from './stryker-vite-plugin.ts';
-export type { LzStorybookCsfOptions, LzStorybookOptions } from './options.ts';
-export type { LzStorybookReport } from './reporter.ts';
+export { muirShadowcatStorybookStrykerPlugin } from './stryker-vite-plugin.ts';
+export type {
+  MuirShadowcatStorybookCsfOptions,
+  MuirShadowcatStorybookOptions,
+} from './options.ts';
+export type { MuirShadowcatStorybookReport } from './reporter.ts';
 
 /**
  * Stryker reads one schema per plugin module, so it names the options of every plugin here. Core merges its
@@ -17,12 +23,13 @@ export type { LzStorybookReport } from './reporter.ts';
 export const strykerValidationSchema = {
   type: 'object',
   properties: {
-    lzStorybook: {
+    muirShadowcatStorybook: {
       type: 'object',
       default: {},
       additionalProperties: false,
       // Stryker disable next-line StringLiteral: documentation for readers of the exported strykerValidationSchema, which Stryker's messages never print
-      description: 'Options of the lz-storybook and lz-storybook-csf plugins.',
+      description:
+        'Options of the muir-shadowcat-storybook and muir-shadowcat-storybook-csf plugins.',
       properties: {
         configDir: {
           type: 'string',
@@ -33,15 +40,15 @@ export const strykerValidationSchema = {
         },
       },
     },
-    lzStorybookCsf: {
+    muirShadowcatStorybookCsf: {
       type: 'object',
       default: {},
       additionalProperties: false,
       // Stryker disable next-line StringLiteral: documentation for readers of the exported strykerValidationSchema, which Stryker's messages never print
-      description: 'Options of the lz-storybook-csf ignorer.',
+      description: 'Options of the muir-shadowcat-storybook-csf ignorer.',
       properties: {
         play: {
-          enum: playModes,
+          enum: muirShadowcatStorybookPlayModes,
           default: 'ignore',
           description:
             // Stryker disable next-line StringLiteral: documentation for readers of the exported strykerValidationSchema, which Stryker's messages never print
@@ -53,11 +60,19 @@ export const strykerValidationSchema = {
 };
 
 export const strykerPlugins = [
-  declareFactoryPlugin(PluginKind.Ignore, csfIgnorerName, csfIgnorer),
-  declareFactoryPlugin(PluginKind.Ignore, storybookPluginName, stubIgnorer),
+  declareFactoryPlugin(
+    PluginKind.Ignore,
+    muirShadowcatStorybookCsfIgnorerName,
+    muirShadowcatStorybookCsfIgnorer,
+  ),
+  declareFactoryPlugin(
+    PluginKind.Ignore,
+    muirShadowcatStorybookPluginName,
+    muirShadowcatStorybookStubIgnorer,
+  ),
   declareFactoryPlugin(
     PluginKind.Reporter,
-    storybookPluginName,
-    storybookReporter,
+    muirShadowcatStorybookPluginName,
+    muirShadowcatStorybookReporter,
   ),
 ];

@@ -1,6 +1,6 @@
 import { type Case, inPlay, withFnImport } from './support/case.ts';
 
-const spyStub = 'LzStorybookSpyStub';
+const spyStub = 'MuirProteusStorybookTestSpyStub';
 
 export const spyStubCases: readonly Case[] = [
   {
@@ -16,7 +16,7 @@ export const spyStubCases: readonly Case[] = [
   {
     id: 'spy-stub-resolved-no-outcome',
     title:
-      'a resolved stub gets only the removal mutant, as its outcome mutant is LzStorybookSpyStubOutcome',
+      'a resolved stub gets only the removal mutant, as its outcome mutant is MuirProteusStorybookTestSpyStubOutcome',
     source: withFnImport(
       'export const Story = {',
       '  args: { save: fn().mockResolvedValue({ id: 1 }) },',

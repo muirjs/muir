@@ -4,13 +4,13 @@ import { it } from 'node:test';
 
 type Tier = readonly { readonly name: string }[];
 
-export interface MutatorTiers {
+export interface MuirMutatorTiers {
   readonly defaults: Tier;
   readonly optIn: Tier;
   readonly experimental: Tier;
 }
 
-type TierKey = keyof MutatorTiers;
+type TierKey = keyof MuirMutatorTiers;
 
 const tierHeadings: Readonly<Record<TierKey, string>> = {
   defaults: '### Default mutators',
@@ -29,9 +29,9 @@ function perTier<T>(
 }
 
 /** What a package's README says about it beside its tiers: its name, its mutator names' prefix, and Stryker's built-ins. */
-export interface ReadmeFacts {
+export interface MuirReadmeFacts {
   readonly packageName: string;
-  /** The prefix of the package's mutator names, as in `LzMsw`. */
+  /** The prefix of the package's mutator names, as in `MuirMsw`. */
   readonly prefix: string;
   /** Whether installing the package keeps Stryker's built-in mutators on or turns them off. */
   readonly builtIns: 'on' | 'off';
@@ -82,10 +82,10 @@ function saysNone(lines: readonly string[], heading: string): boolean {
  * tier's README table lists that tier's mutators in roster order, and that "None." stands under the heading of each
  * empty tier and only there. `register` takes the place of `it` in this package's own tests.
  */
-export function testReadmeTiers(
+export function muirTestReadmeTiers(
   readmePath: string,
-  tiers: MutatorTiers,
-  { packageName, prefix, builtIns, builtInCount }: ReadmeFacts,
+  tiers: MuirMutatorTiers,
+  { packageName, prefix, builtIns, builtInCount }: MuirReadmeFacts,
   register: (name: string, check: () => void) => unknown = it,
 ): void {
   const lines = readmeLines(readmePath);

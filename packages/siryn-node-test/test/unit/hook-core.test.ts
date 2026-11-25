@@ -3,14 +3,14 @@ import { describe, it } from 'node:test';
 
 import type { Position } from '@stryker-mutator/api/core';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import {
-  recordEvents,
-  redirectNodeTest,
-  writesAllowed,
-  type TestEvent,
+  muirSirynNodeTestRecordEvents,
+  muirSirynNodeTestRedirectNodeTest,
+  muirSirynNodeTestWritesAllowed,
+  type MuirSirynNodeTestTestEvent,
 } from '../../src/hook-core.ts';
-import type { RecordedTest } from '../../src/record.ts';
+import type { MuirSirynNodeTestRecordedTest } from '../../src/record.ts';
 import {
   importRedirected,
   loadContext,
@@ -22,12 +22,17 @@ import {
 } from '../hook-core.fixtures.ts';
 
 function record(
-  events: TestEvent[],
+  events: MuirSirynNodeTestTestEvent[],
   positions = new Map<string, Position>(),
   diagnostics: string[] = [],
-): RecordedTest[] {
-  const tests: RecordedTest[] = [];
-  const recordEvent = recordEvents(testFile, tests, positions, diagnostics);
+): MuirSirynNodeTestRecordedTest[] {
+  const tests: MuirSirynNodeTestRecordedTest[] = [];
+  const recordEvent = muirSirynNodeTestRecordEvents(
+    testFile,
+    tests,
+    positions,
+    diagnostics,
+  );
 
   for (const event of events) {
     recordEvent(event);
@@ -335,7 +340,10 @@ describe('recordEvents', () => {
   });
 
   it('tells same-named suites and tests of one parent apart in the order node:test reports them, as the wrapper does', () => {
-    const suite = (name: string, ...inside: TestEvent[]): TestEvent[] => [
+    const suite = (
+      name: string,
+      ...inside: MuirSirynNodeTestTestEvent[]
+    ): MuirSirynNodeTestTestEvent[] => [
       { type: 'test:start', data: { name, nesting: 0 } },
       ...inside,
       { type: 'test:pass', data: { name, nesting: 0, details: suiteDetails } },
@@ -365,7 +373,7 @@ describe('recordEvents', () => {
       'Error: Test "late" at a.test.mjs:1:1 generated asynchronous activity after the test ended. This activity ' +
       'created the error "Error: boom" and would have caused the test to fail, but instead triggered an ' +
       'uncaughtException event.';
-    const diagnostic = (message: string): TestEvent => ({
+    const diagnostic = (message: string): MuirSirynNodeTestTestEvent => ({
       type: 'test:diagnostic',
       data: { name: '', nesting: 0, message },
     });
@@ -422,7 +430,7 @@ describe('recordEvents', () => {
 
 describe('redirectNodeTest', () => {
   it('resolves node:test to a module of its own for import and for require', () => {
-    const hooks = redirectNodeTest(['it']);
+    const hooks = muirSirynNodeTestRedirectNodeTest(['it']);
     const passOn = (...args: unknown[]) => ({
       url: 'passed-on',
       format: undefined,
@@ -463,7 +471,7 @@ describe('redirectNodeTest', () => {
   });
 
   it('passes on every other module to the next hook', () => {
-    const hooks = redirectNodeTest(['it']);
+    const hooks = muirSirynNodeTestRedirectNodeTest(['it']);
     const passOn = (...args: unknown[]) => ({
       url: 'passed-on',
       format: undefined,
@@ -494,7 +502,7 @@ describe('redirectNodeTest', () => {
     });
 
     const { module, commonjs } = await importRedirected(
-      redirectNodeTest(['it', 'mock']),
+      muirSirynNodeTestRedirectNodeTest(['it', 'mock']),
       wrapped,
     );
 
@@ -507,7 +515,7 @@ describe('redirectNodeTest', () => {
 });
 
 describe('writesAllowed', () => {
-  lzTestFor<readonly [string, boolean | undefined, boolean]>([
+  muirTestFor<readonly [string, boolean | undefined, boolean]>([
     ['outside the permission model', undefined, true],
     ['under the permission model with write access', true, true],
     ['under the permission model without write access', false, false],
@@ -524,7 +532,7 @@ describe('writesAllowed', () => {
             },
           };
 
-    assert.equal(writesAllowed(permission, out), expected);
+    assert.equal(muirSirynNodeTestWritesAllowed(permission, out), expected);
     assert.deepEqual(asked, allowed === undefined ? [] : [['fs.write', out]]);
   });
 });

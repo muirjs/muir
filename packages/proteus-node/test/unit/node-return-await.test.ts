@@ -3,15 +3,15 @@ import { describe, it } from 'node:test';
 
 import { parseSync, traverse, types } from '@babel/core';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeReturnAwait } from '../../src/node-return-await.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeReturnAwait } from '../../src/node-return-await.ts';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
 
 const guarded = (body: string) =>
   `export async function read() {\n  try {\n    ${body}\n  } catch {\n    return 0;\n  }\n}`;
 
-describe('LzNodeReturnAwait', () => {
-  lzTestEach([
+describe('MuirProteusNodeReturnAwait', () => {
+  muirTestEach([
     ['a function', guarded('return await load();')],
     [
       'an arrow function',
@@ -30,7 +30,9 @@ describe('LzNodeReturnAwait', () => {
   ])(
     'returns the promise unawaited from the try block of %s',
     async (_title, source) => {
-      assert.deepEqual(await mutantsOf(nodeReturnAwait, source), ['load()']);
+      assert.deepEqual(await mutantsOf(muirProteusNodeReturnAwait, source), [
+        'load()',
+      ]);
     },
   );
 
@@ -38,10 +40,12 @@ describe('LzNodeReturnAwait', () => {
     const source =
       'export async function read() {\n  try {\n    return 1;\n  } catch {\n    return await load();\n  } finally {\n    done();\n  }\n}';
 
-    assert.deepEqual(await mutantsOf(nodeReturnAwait, source), ['load()']);
+    assert.deepEqual(await mutantsOf(muirProteusNodeReturnAwait, source), [
+      'load()',
+    ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'a return await outside a try',
       'export async function read() {\n  return await load();\n}',
@@ -68,7 +72,7 @@ describe('LzNodeReturnAwait', () => {
       guarded('return (await load()).value;'),
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeReturnAwait, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusNodeReturnAwait, source), []);
   });
 
   it('leaves alone a return await at the top level of a script that allows a return outside a function', () => {
@@ -81,7 +85,7 @@ describe('LzNodeReturnAwait', () => {
     const mutants: unknown[] = [];
     traverse(file, {
       AwaitExpression(path) {
-        mutants.push(...nodeReturnAwait.mutate(path, types));
+        mutants.push(...muirProteusNodeReturnAwait.mutate(path, types));
       },
     });
 

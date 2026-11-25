@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import parser from '@typescript-eslint/parser';
 import { ESLint, Linter } from 'eslint';
 import {
@@ -26,16 +26,16 @@ for (const file of mutatedFiles) {
 }
 
 describe('Stryker disable comments in mutated files that ESLint ignores', () => {
-  lzTestEach(unlinted)('%s passes stryker-disable-comment', (file) => {
+  muirTestEach(unlinted)('%s passes stryker-disable-comment', (file) => {
     const messages = new Linter().verify(
       readFileSync(join(workspaceRoot, file), 'utf8'),
       {
         files: ['**/*.ts'],
         languageOptions: { parser },
         plugins: {
-          lz: { rules: { 'stryker-disable-comment': strykerDisableComment } },
+          muir: { rules: { 'stryker-disable-comment': strykerDisableComment } },
         },
-        rules: { 'lz/stryker-disable-comment': 'error' },
+        rules: { 'muir/stryker-disable-comment': 'error' },
       },
       file,
     );

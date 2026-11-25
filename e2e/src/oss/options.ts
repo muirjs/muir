@@ -1,34 +1,34 @@
 import { parseArgs } from 'node:util';
 
 /** A replacement the driver makes in the project's copy before installing; refused unless `from` occurs exactly once. */
-export interface LzOssPatch {
+export interface MuirOssPatch {
   readonly file: string;
   readonly from: string;
   readonly to: string;
 }
 
-export interface LzOssProject {
+export interface MuirOssProject {
   readonly name: string;
   readonly mutate: readonly string[];
-  /** Both sides run these files: the lz side as its `testFiles`, the command side as `node --test`'s arguments. */
+  /** Both sides run these files: the muir side as its `testFiles`, the command side as `node --test`'s arguments. */
   readonly testFiles: readonly string[];
   /** The project's own `node --test` flags, without its coverage wrapper. */
   readonly nodeTestFlags: readonly string[];
-  readonly patches: readonly LzOssPatch[];
+  readonly patches: readonly MuirOssPatch[];
 }
 
-export type LzSide = 'lz' | 'command';
+export type MuirSide = 'muir' | 'command';
 
-export const lzSides: readonly LzSide[] = ['lz', 'command'];
+export const muirSides: readonly MuirSide[] = ['muir', 'command'];
 
-export interface LzOssOptions {
-  readonly project: LzOssProject;
+export interface MuirOssOptions {
+  readonly project: MuirOssProject;
   /** The OSS clone, which the driver copies and never writes to. */
   readonly source: string;
   readonly out: string;
   readonly concurrency: number;
   /** The sides to run, in order; both unless `--side` names one. */
-  readonly sides: readonly LzSide[];
+  readonly sides: readonly MuirSide[];
   /** Patterns or ranges that replace the project's `mutate` set; empty to mutate the whole set. */
   readonly mutate: readonly string[];
   /** A folder of `.tgz` files to install instead of packing the workspace. */
@@ -42,12 +42,12 @@ export interface LzOssOptions {
   readonly npmBefore: string;
 }
 
-export type LzStrykerOptions =
+export type MuirStrykerOptions =
   | {
       readonly mutate: readonly string[];
       readonly plugins: readonly string[];
-      readonly testRunner: 'lz-node-test';
-      readonly lzNodeTest: { readonly testFiles: readonly string[] };
+      readonly testRunner: 'muir-siryn-node-test';
+      readonly muirSirynNodeTest: { readonly testFiles: readonly string[] };
     }
   | {
       readonly mutate: readonly string[];
@@ -57,11 +57,11 @@ export type LzStrykerOptions =
     };
 
 /** The run folder's prefix, which the next run's dead-run sweep matches. */
-export const lzOssRunPrefix = 'lz-oss-driver-';
+export const muirOssRunPrefix = 'muir-oss-driver-';
 /** A prepared folder stays for manual runs, so its prefix is one the sweep never matches. */
-export const lzOssPreparedPrefix = 'lz-oss-prepared-';
+export const muirOssPreparedPrefix = 'muir-oss-prepared-';
 
-const projects: readonly LzOssProject[] = [
+const projects: readonly MuirOssProject[] = [
   {
     name: 'env-schema',
     mutate: ['index.js'],
@@ -195,15 +195,15 @@ const projects: readonly LzOssProject[] = [
   },
 ];
 
-export interface LzMergeOptions {
+export interface MuirMergeOptions {
   /** The result.json files of earlier runs, each with its sides' `<side>.mutation.json` beside it. */
   readonly merge: readonly string[];
   readonly out: string;
 }
 
-export const lzOssUsage =
+export const muirOssUsage =
   'Usage: node e2e/src/oss/main.ts --project <name> --source <clone> --out <folder> --concurrency <n> ' +
-  '--npm-before <date> [--side <lz|command>] [--mutate <pattern>]... [--tarballs <folder>] [--prepare-only] ' +
+  '--npm-before <date> [--side <muir|command>] [--mutate <pattern>]... [--tarballs <folder>] [--prepare-only] ' +
   '[--time-limit-minutes <n>, default 15] [--mutant-timeout-ms <n>] [--help]\n' +
   '       node e2e/src/oss/main.ts --merge <result.json> [--merge <result.json>]... --out <folder>\n' +
   '  --npm-before\n' +
@@ -231,7 +231,9 @@ export const lzOssUsage =
   '            differ. A result.json given twice is refused, however its path is spelt.';
 const positiveInteger = /^[1-9]\d*$/;
 
-export function lzParseMergeOptions(args: readonly string[]): LzMergeOptions {
+export function muirParseMergeOptions(
+  args: readonly string[],
+): MuirMergeOptions {
   const { values } = parseArgs({
     args: [...args],
     options: {
@@ -243,17 +245,17 @@ export function lzParseMergeOptions(args: readonly string[]): LzMergeOptions {
   });
 
   if (values.out === undefined) {
-    throw new Error(`${lzOssUsage}\n--out is required.`);
+    throw new Error(`${muirOssUsage}\n--out is required.`);
   }
 
   return { merge: values.merge, out: values.out };
 }
 
 /** The arguments `stryker run` gets beside its config file, concurrency and reporters. */
-export function lzStrykerArgs({
+export function muirStrykerArgs({
   mutate,
   mutantTimeoutMs,
-}: Pick<LzOssOptions, 'mutate' | 'mutantTimeoutMs'>): string[] {
+}: Pick<MuirOssOptions, 'mutate' | 'mutantTimeoutMs'>): string[] {
   return [
     ...(mutate.length === 0 ? [] : ['--mutate', mutate.join(',')]),
     ...(mutantTimeoutMs === undefined
@@ -262,13 +264,13 @@ export function lzStrykerArgs({
   ];
 }
 
-export type LzOssCommand =
+export type MuirOssCommand =
   | { readonly kind: 'help' }
-  | { readonly kind: 'merge'; readonly options: LzMergeOptions }
-  | { readonly kind: 'run'; readonly options: LzOssOptions };
+  | { readonly kind: 'merge'; readonly options: MuirMergeOptions }
+  | { readonly kind: 'run'; readonly options: MuirOssOptions };
 
 /** Help wins over everything; `--merge` picks the merge, whose strict parse refuses the options of a run. */
-export function lzParseCommand(args: readonly string[]): LzOssCommand {
+export function muirParseCommand(args: readonly string[]): MuirOssCommand {
   const { tokens } = parseArgs({
     args: [...args],
     strict: false,
@@ -284,11 +286,11 @@ export function lzParseCommand(args: readonly string[]): LzOssCommand {
   }
 
   return names.has('merge')
-    ? { kind: 'merge', options: lzParseMergeOptions(args) }
-    : { kind: 'run', options: lzParseOptions(args) };
+    ? { kind: 'merge', options: muirParseMergeOptions(args) }
+    : { kind: 'run', options: muirParseOptions(args) };
 }
 
-export function lzParseOptions(args: readonly string[]): LzOssOptions {
+export function muirParseOptions(args: readonly string[]): MuirOssOptions {
   const { values } = parseArgs({
     args: [...args],
     options: {
@@ -320,35 +322,35 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
 
   if (project === undefined) {
     throw new Error(
-      `${lzOssUsage}\n--project is one of ${projects.map(({ name }) => name).join(', ')}.`,
+      `${muirOssUsage}\n--project is one of ${projects.map(({ name }) => name).join(', ')}.`,
     );
   }
 
   if (source === undefined || out === undefined) {
-    throw new Error(`${lzOssUsage}\n--source and --out are required.`);
+    throw new Error(`${muirOssUsage}\n--source and --out are required.`);
   }
 
   if (concurrency === undefined || !positiveInteger.test(concurrency)) {
     throw new Error(
-      `${lzOssUsage}\n--concurrency is a positive integer; size it to the machine's current load.`,
+      `${muirOssUsage}\n--concurrency is a positive integer; size it to the machine's current load.`,
     );
   }
 
   if (!positiveInteger.test(timeLimitMinutes)) {
     throw new Error(
-      `${lzOssUsage}\n--time-limit-minutes is a positive integer.`,
+      `${muirOssUsage}\n--time-limit-minutes is a positive integer.`,
     );
   }
 
   if (mutantTimeoutMs !== undefined && !positiveInteger.test(mutantTimeoutMs)) {
     throw new Error(
-      `${lzOssUsage}\n--mutant-timeout-ms is a positive integer.`,
+      `${muirOssUsage}\n--mutant-timeout-ms is a positive integer.`,
     );
   }
 
   if (npmBefore === undefined) {
     throw new Error(
-      `${lzOssUsage}\n--npm-before is required: npm installs the newest versions published before it, so runs that share it install one tree.`,
+      `${muirOssUsage}\n--npm-before is required: npm installs the newest versions published before it, so runs that share it install one tree.`,
     );
   }
 
@@ -365,25 +367,25 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
       .startsWith(npmBefore.slice(0, 'yyyy-mm-dd'.length))
   ) {
     throw new Error(
-      `${lzOssUsage}\n--npm-before is a date such as 2026-11-04 or a UTC time such as 2026-11-04T12:00:00Z.`,
+      `${muirOssUsage}\n--npm-before is a date such as 2026-11-04 or a UTC time such as 2026-11-04T12:00:00Z.`,
     );
   }
 
   if (before > Date.now()) {
     throw new Error(
-      `${lzOssUsage}\n--npm-before must be in the past: a later date installs whatever is newest when the run starts.`,
+      `${muirOssUsage}\n--npm-before must be in the past: a later date installs whatever is newest when the run starts.`,
     );
   }
 
-  const side = lzSides.find((known) => known === values.side);
+  const side = muirSides.find((known) => known === values.side);
 
   if (values.side !== undefined && side === undefined) {
-    throw new Error(`${lzOssUsage}\n--side is lz or command.`);
+    throw new Error(`${muirOssUsage}\n--side is muir or command.`);
   }
 
   if (values.mutate.some((pattern) => pattern.includes(','))) {
     throw new Error(
-      `${lzOssUsage}\n--mutate takes one pattern without a comma; repeat it for more.`,
+      `${muirOssUsage}\n--mutate takes one pattern without a comma; repeat it for more.`,
     );
   }
 
@@ -392,7 +394,7 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
     source,
     out,
     concurrency: Number(concurrency),
-    sides: side === undefined ? lzSides : [side],
+    sides: side === undefined ? muirSides : [side],
     mutate: values.mutate,
     tarballs,
     prepareOnly: values['prepare-only'],
@@ -407,10 +409,10 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
  * The command side's `node --test` with the test files named, not discovered: discovery would also run a file a
  * test writes under `test/`, such as another worker's fixture.
  */
-export function lzNodeTestCommand({
+export function muirNodeTestCommand({
   testFiles,
   nodeTestFlags,
-}: LzOssProject): string {
+}: MuirOssProject): string {
   return [
     'node --test',
     ...nodeTestFlags,
@@ -420,21 +422,21 @@ export function lzNodeTestCommand({
 
 /**
  * Both sides install the default node mutators, so they mutate the same code into the same mutants. The command side runs
- * lzNodeTestCommand's `node --test`, with coverage analysis off as that runner reports no coverage.
+ * muirNodeTestCommand's `node --test`, with coverage analysis off as that runner reports no coverage.
  */
-export function lzStrykerOptions(
-  side: LzSide,
-  project: LzOssProject,
-): LzStrykerOptions {
+export function muirStrykerOptions(
+  side: MuirSide,
+  project: MuirOssProject,
+): MuirStrykerOptions {
   const { mutate, testFiles } = project;
-  const command = lzNodeTestCommand(project);
+  const command = muirNodeTestCommand(project);
 
-  return side === 'lz'
+  return side === 'muir'
     ? {
         mutate,
         plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
-        testRunner: 'lz-node-test',
-        lzNodeTest: { testFiles },
+        testRunner: 'muir-siryn-node-test',
+        muirSirynNodeTest: { testFiles },
       }
     : {
         mutate,
@@ -444,9 +446,12 @@ export function lzStrykerOptions(
       };
 }
 
-export function lzStrykerConfig(side: LzSide, project: LzOssProject): string {
+export function muirStrykerConfig(
+  side: MuirSide,
+  project: MuirOssProject,
+): string {
   return (
-    "import { lzNodeMutators } from '@muirjs/proteus-node';\n\nawait lzNodeMutators();\n\n" +
-    `export default ${JSON.stringify(lzStrykerOptions(side, project), null, 2)};\n`
+    "import { muirProteusNodeMutators } from '@muirjs/proteus-node';\n\nawait muirProteusNodeMutators();\n\n" +
+    `export default ${JSON.stringify(muirStrykerOptions(side, project), null, 2)};\n`
   );
 }

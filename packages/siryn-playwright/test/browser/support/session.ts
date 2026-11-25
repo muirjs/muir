@@ -10,7 +10,7 @@ import {
 } from '@stryker-mutator/api/test-runner';
 import ts from 'typescript';
 
-import { LzPlaywrightTestRunner } from '../../../src/lz-playwright-test-runner.ts';
+import { MuirSirynPlaywrightTestRunner } from '../../../src/muir-siryn-playwright-test-runner.ts';
 
 export interface Session {
   readonly dryRun: CompleteDryRunResult;
@@ -51,8 +51,8 @@ export async function startSession(
   log: Logger,
   afterInit?: () => Promise<void>,
 ): Promise<Session> {
-  const runner = new LzPlaywrightTestRunner(
-    { lzPlaywright: { configFile }, timeoutMS: 10_000 },
+  const runner = new MuirSirynPlaywrightTestRunner(
+    { muirSirynPlaywright: { configFile }, timeoutMS: 10_000 },
     log,
   );
   await runner.init();

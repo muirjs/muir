@@ -1,4 +1,4 @@
-export type LzMutantStatus =
+export type MuirMutantStatus =
   | 'Killed'
   | 'Survived'
   | 'NoCoverage'
@@ -8,7 +8,7 @@ export type LzMutantStatus =
   | 'Ignored'
   | 'Pending';
 
-const statuses: readonly LzMutantStatus[] = [
+const statuses: readonly MuirMutantStatus[] = [
   'Killed',
   'Survived',
   'NoCoverage',
@@ -19,7 +19,7 @@ const statuses: readonly LzMutantStatus[] = [
   'Pending',
 ];
 
-export interface LzMutantDetail {
+export interface MuirMutantDetail {
   /** 1-based, as the report's `location.start` has it. */
   readonly line: number;
   /** 1-based, as the report's `location.start` has it. */
@@ -29,7 +29,7 @@ export interface LzMutantDetail {
   readonly endColumn: number;
   readonly mutator: string;
   readonly replacement: string;
-  readonly status: LzMutantStatus;
+  readonly status: MuirMutantStatus;
   /** Whether only code outside any test, such as module-level code, reaches the mutant. */
   readonly static: boolean;
   readonly statusReason: string;
@@ -38,18 +38,18 @@ export interface LzMutantDetail {
 }
 
 /** Keyed by the report's path: relative, with forward slashes on every platform. */
-export type LzReport = ReadonlyMap<string, readonly LzMutantDetail[]>;
+export type MuirReport = ReadonlyMap<string, readonly MuirMutantDetail[]>;
 
-export function lzParseReport(json: string): LzReport {
+export function muirParseReport(json: string): MuirReport {
   const report: unknown = JSON.parse(json);
 
-  if (!lzIsRecord(report)) {
+  if (!muirIsRecord(report)) {
     notAReport();
   }
 
   const { files } = report;
 
-  if (!lzIsRecord(files)) {
+  if (!muirIsRecord(files)) {
     notAReport('files');
   }
 
@@ -61,46 +61,51 @@ export function lzParseReport(json: string): LzReport {
   );
 }
 
-export function lzMutantLine({
+export function muirMutantLine({
   line,
   column,
   mutator,
   replacement,
   status,
-}: LzMutantDetail): string {
-  return [`${line}:${column}`, mutator, lzOneLine(replacement), status]
+}: MuirMutantDetail): string {
+  return [`${line}:${column}`, mutator, muirOneLine(replacement), status]
     .filter((part) => part !== '')
     .join(' ');
 }
 
 /** As Stryker's incremental mode keys a mutant: file, location, mutator and the raw replacement. */
-export function lzMutantKey(file: string, mutant: LzMutantDetail): string {
+export function muirMutantKey(file: string, mutant: MuirMutantDetail): string {
   return mutantAt(file, mutant, mutant.replacement);
 }
 
 /** The mutant's key on one line, for output; two mutants can share a label. */
-export function lzMutantLabel(file: string, mutant: LzMutantDetail): string {
-  return mutantAt(file, mutant, lzOneLine(mutant.replacement));
+export function muirMutantLabel(
+  file: string,
+  mutant: MuirMutantDetail,
+): string {
+  return mutantAt(file, mutant, muirOneLine(mutant.replacement));
 }
 
 function mutantAt(
   file: string,
-  { line, column, endLine, endColumn, mutator }: LzMutantDetail,
+  { line, column, endLine, endColumn, mutator }: MuirMutantDetail,
   text: string,
 ): string {
   return `${file}:${line}:${column}-${endLine}:${endColumn} ${mutator} ${text}`;
 }
 
-export interface LzKeyedMutant {
+export interface MuirKeyedMutant {
   readonly file: string;
-  readonly mutant: LzMutantDetail;
+  readonly mutant: MuirMutantDetail;
 }
 
 /** Each mutant by its key, refusing two at one key, which a comparison would drop. */
-export function lzMutantsByKey(report: LzReport): Map<string, LzKeyedMutant> {
+export function muirMutantsByKey(
+  report: MuirReport,
+): Map<string, MuirKeyedMutant> {
   const entries = [...report].flatMap(([file, mutants]) =>
-    mutants.map((mutant): [string, LzKeyedMutant] => [
-      lzMutantKey(file, mutant),
+    mutants.map((mutant): [string, MuirKeyedMutant] => [
+      muirMutantKey(file, mutant),
       { file, mutant },
     ]),
   );
@@ -121,16 +126,16 @@ export function lzMutantsByKey(report: LzReport): Map<string, LzKeyedMutant> {
 }
 
 /** A replacement as one line, for output that a reader scans line by line. */
-export function lzOneLine(text: string): string {
+export function muirOneLine(text: string): string {
   return text.replaceAll(/\s+/g, ' ');
 }
 
-export function lzIsRecord(value: unknown): value is Record<string, unknown> {
+export function muirIsRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function parseFile(entry: unknown, path: string): LzMutantDetail[] {
-  if (!lzIsRecord(entry) || !Array.isArray(entry['mutants'])) {
+function parseFile(entry: unknown, path: string): MuirMutantDetail[] {
+  if (!muirIsRecord(entry) || !Array.isArray(entry['mutants'])) {
     notAReport(`${path}.mutants`);
   }
 
@@ -141,8 +146,8 @@ function parseFile(entry: unknown, path: string): LzMutantDetail[] {
     .sort(byPosition);
 }
 
-function parseMutant(mutant: unknown, path: string): LzMutantDetail {
-  if (!lzIsRecord(mutant)) {
+function parseMutant(mutant: unknown, path: string): MuirMutantDetail {
+  if (!muirIsRecord(mutant)) {
     notAReport(path);
   }
 
@@ -156,11 +161,11 @@ function parseMutant(mutant: unknown, path: string): LzMutantDetail {
     killedBy = [],
     coveredBy = [],
   } = mutant;
-  const start = lzIsRecord(location) ? location['start'] : undefined;
-  const end = lzIsRecord(location) ? location['end'] : undefined;
+  const start = muirIsRecord(location) ? location['start'] : undefined;
+  const end = muirIsRecord(location) ? location['end'] : undefined;
 
   if (
-    !lzIsRecord(start) ||
+    !muirIsRecord(start) ||
     typeof start['line'] !== 'number' ||
     typeof start['column'] !== 'number'
   ) {
@@ -168,7 +173,7 @@ function parseMutant(mutant: unknown, path: string): LzMutantDetail {
   }
 
   if (
-    !lzIsRecord(end) ||
+    !muirIsRecord(end) ||
     typeof end['line'] !== 'number' ||
     typeof end['column'] !== 'number'
   ) {
@@ -195,11 +200,11 @@ function parseMutant(mutant: unknown, path: string): LzMutantDetail {
     notAReport(`${path}.statusReason`);
   }
 
-  if (!lzIsStrings(killedBy)) {
+  if (!muirIsStrings(killedBy)) {
     notAReport(`${path}.killedBy`);
   }
 
-  if (!lzIsStrings(coveredBy)) {
+  if (!muirIsStrings(coveredBy)) {
     notAReport(`${path}.coveredBy`);
   }
 
@@ -218,7 +223,7 @@ function parseMutant(mutant: unknown, path: string): LzMutantDetail {
   };
 }
 
-function byPosition(a: LzMutantDetail, b: LzMutantDetail): number {
+function byPosition(a: MuirMutantDetail, b: MuirMutantDetail): number {
   return (
     a.line - b.line ||
     a.column - b.column ||
@@ -233,11 +238,11 @@ function compareText(a: string, b: string): number {
   return Number(a > b) - Number(a < b);
 }
 
-function isStatus(value: unknown): value is LzMutantStatus {
+function isStatus(value: unknown): value is MuirMutantStatus {
   return statuses.some((status) => status === value);
 }
 
-export function lzIsStrings(value: unknown): value is string[] {
+export function muirIsStrings(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.every((item) => typeof item === 'string')
   );

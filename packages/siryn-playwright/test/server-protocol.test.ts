@@ -4,17 +4,17 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import {
-  anyHooked,
-  controlFile,
-  forgetHooked,
-  hookedPrefix,
-  hostKey,
-  parseServerControl,
-  readServerControl,
-  untaggedArrival,
-  untaggedKey,
-  untaggedPrefix,
-  writeServerControl,
+  muirSirynPlaywrightAnyHooked,
+  muirSirynPlaywrightControlFile,
+  muirSirynPlaywrightForgetHooked,
+  muirSirynPlaywrightHookedPrefix,
+  muirSirynPlaywrightHostKey,
+  muirSirynPlaywrightParseServerControl,
+  muirSirynPlaywrightReadServerControl,
+  muirSirynPlaywrightUntaggedArrival,
+  muirSirynPlaywrightUntaggedKey,
+  muirSirynPlaywrightUntaggedPrefix,
+  muirSirynPlaywrightWriteServerControl,
 } from '../src/server-protocol.ts';
 import { tempTree } from './support/doubles.ts';
 
@@ -28,17 +28,20 @@ test('a control file written by the runner reads back whole, and its temp file i
     issuedTestIds: ['a1b2-c3', 'd4e5-f6'],
   };
 
-  writeServerControl(dir, control);
-  writeServerControl(dir, { ...control, outDir: 'runs/4' });
+  muirSirynPlaywrightWriteServerControl(dir, control);
+  muirSirynPlaywrightWriteServerControl(dir, { ...control, outDir: 'runs/4' });
 
-  assert.deepEqual(readServerControl(dir), { ...control, outDir: 'runs/4' });
-  assert.deepEqual(readdirSync(dir), [controlFile]);
+  assert.deepEqual(muirSirynPlaywrightReadServerControl(dir), {
+    ...control,
+    outDir: 'runs/4',
+  });
+  assert.deepEqual(readdirSync(dir), [muirSirynPlaywrightControlFile]);
 });
 
 test('a missing or invalid control file reads as none', (t) => {
   const dir = tempTree(t, 'server-control-');
 
-  assert.equal(readServerControl(dir), undefined);
+  assert.equal(muirSirynPlaywrightReadServerControl(dir), undefined);
 
   [
     '{"outDir":"o"',
@@ -51,54 +54,100 @@ test('a missing or invalid control file reads as none', (t) => {
     '{"outDir":"o","perTest":true,"issuedTestIds":"a"}',
     '{"outDir":"o","perTest":true,"issuedTestIds":["a",1]}',
   ].forEach((raw) => {
-    writeFileSync(path.join(dir, controlFile), raw);
+    writeFileSync(path.join(dir, muirSirynPlaywrightControlFile), raw);
 
-    assert.equal(readServerControl(dir), undefined, raw);
+    assert.equal(muirSirynPlaywrightReadServerControl(dir), undefined, raw);
   });
-  assert.deepEqual(parseServerControl('{"outDir":"o","perTest":true}'), {
-    outDir: 'o',
-    perTest: true,
-    activeMutant: undefined,
-    hitLimit: undefined,
-  });
+  assert.deepEqual(
+    muirSirynPlaywrightParseServerControl('{"outDir":"o","perTest":true}'),
+    {
+      outDir: 'o',
+      perTest: true,
+      activeMutant: undefined,
+      hitLimit: undefined,
+    },
+  );
 });
 
 test('hooked marks are found and forgotten, and nothing else in the folder is touched', (t) => {
-  const dir = tempTree(t, 'server-hooked-', { [controlFile]: '{}' });
+  const dir = tempTree(t, 'server-hooked-', {
+    [muirSirynPlaywrightControlFile]: '{}',
+  });
 
-  assert.equal(anyHooked(dir), false);
+  assert.equal(muirSirynPlaywrightAnyHooked(dir), false);
 
-  writeFileSync(path.join(dir, `${hookedPrefix}12`), '');
+  writeFileSync(path.join(dir, `${muirSirynPlaywrightHookedPrefix}12`), '');
 
-  assert.equal(anyHooked(dir), true);
+  assert.equal(muirSirynPlaywrightAnyHooked(dir), true);
 
-  forgetHooked(dir);
+  muirSirynPlaywrightForgetHooked(dir);
 
-  assert.equal(anyHooked(dir), false);
-  assert.deepEqual(readdirSync(dir), [controlFile]);
+  assert.equal(muirSirynPlaywrightAnyHooked(dir), false);
+  assert.deepEqual(readdirSync(dir), [muirSirynPlaywrightControlFile]);
 });
 
 test('a host key names every loopback host as localhost and fills in the default port', () => {
-  assert.equal(hostKey(new URL('http://localhost:4820/a')), 'localhost:4820');
-  assert.equal(hostKey(new URL('http://127.0.0.1:4820')), 'localhost:4820');
-  assert.equal(hostKey(new URL('http://[::1]:4820')), 'localhost:4820');
-  assert.equal(hostKey(new URL('http://app.test/x')), 'app.test:80');
-  assert.equal(hostKey(new URL('https://app.test/x')), 'app.test:443');
+  assert.equal(
+    muirSirynPlaywrightHostKey(new URL('http://localhost:4820/a')),
+    'localhost:4820',
+  );
+  assert.equal(
+    muirSirynPlaywrightHostKey(new URL('http://127.0.0.1:4820')),
+    'localhost:4820',
+  );
+  assert.equal(
+    muirSirynPlaywrightHostKey(new URL('http://[::1]:4820')),
+    'localhost:4820',
+  );
+  assert.equal(
+    muirSirynPlaywrightHostKey(new URL('http://app.test/x')),
+    'app.test:80',
+  );
+  assert.equal(
+    muirSirynPlaywrightHostKey(new URL('https://app.test/x')),
+    'app.test:443',
+  );
 });
 
 test('a host key names the any-addresses 0.0.0.0 and [::] as localhost, like the loopback hosts', () => {
-  assert.equal(hostKey(new URL('http://0.0.0.0:4820/a')), 'localhost:4820');
-  assert.equal(hostKey(new URL('http://[::]:4820/a')), 'localhost:4820');
+  assert.equal(
+    muirSirynPlaywrightHostKey(new URL('http://0.0.0.0:4820/a')),
+    'localhost:4820',
+  );
+  assert.equal(
+    muirSirynPlaywrightHostKey(new URL('http://[::]:4820/a')),
+    'localhost:4820',
+  );
 });
 
 test('an untagged key carries its arrival time, and no other key reads as untagged', () => {
-  assert.equal(untaggedArrival(untaggedKey(1700000000123)), 1700000000123);
-  assert.equal(untaggedArrival('a1b2-c3'), undefined);
-  assert.equal(untaggedArrival(untaggedKey(1).slice(0, -1)), undefined);
-  assert.equal(untaggedArrival(`${untaggedKey(1)}x`), undefined);
-  assert.equal(untaggedArrival(`${untaggedPrefix}x1`), undefined);
   assert.equal(
-    untaggedArrival('1'.repeat(untaggedPrefix.length + 1)),
+    muirSirynPlaywrightUntaggedArrival(
+      muirSirynPlaywrightUntaggedKey(1700000000123),
+    ),
+    1700000000123,
+  );
+  assert.equal(muirSirynPlaywrightUntaggedArrival('a1b2-c3'), undefined);
+  assert.equal(
+    muirSirynPlaywrightUntaggedArrival(
+      muirSirynPlaywrightUntaggedKey(1).slice(0, -1),
+    ),
+    undefined,
+  );
+  assert.equal(
+    muirSirynPlaywrightUntaggedArrival(`${muirSirynPlaywrightUntaggedKey(1)}x`),
+    undefined,
+  );
+  assert.equal(
+    muirSirynPlaywrightUntaggedArrival(
+      `${muirSirynPlaywrightUntaggedPrefix}x1`,
+    ),
+    undefined,
+  );
+  assert.equal(
+    muirSirynPlaywrightUntaggedArrival(
+      '1'.repeat(muirSirynPlaywrightUntaggedPrefix.length + 1),
+    ),
     undefined,
   );
 });

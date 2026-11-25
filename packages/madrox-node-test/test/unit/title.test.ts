@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { inspect } from 'node:util';
 
-import { formatName, formatTitle } from '../../src/title.ts';
+import { muirFormatName, muirFormatTitle } from '../../src/title.ts';
 
 type Case = [template: string, items: readonly unknown[], expected: string];
 
@@ -17,7 +17,7 @@ const negativeNaN = new DataView(
 ).getFloat64(0, true);
 
 /**
- * Titles come from node:util rather than from lzTestEach, which formats them with formatTitle: a mutant of formatTitle
+ * Titles come from node:util rather than from muirTestEach, which formats them with formatTitle: a mutant of formatTitle
  * would rename the test that kills it, and Stryker's incremental mode then reruns that mutant on every run.
  */
 function title(verb: string, ...[template, items, expected]: Case): string {
@@ -36,7 +36,7 @@ describe('formatName', () => {
 
   for (const [kind, name, expected] of names) {
     it(`names a test after ${kind}`, () => {
-      assert.equal(formatName(name), expected);
+      assert.equal(muirFormatName(name), expected);
     });
   }
 });
@@ -93,12 +93,12 @@ describe('formatTitle', () => {
     it(title('formats', template, items, expected), () => {
       const index = 2;
 
-      assert.equal(formatTitle(template, items, index), expected);
+      assert.equal(muirFormatTitle(template, items, index), expected);
     });
   }
 
   it('throws what JSON.stringify throws for %j, unless the value is circular', () => {
-    assert.throws(() => formatTitle('%j', [10n], 0), {
+    assert.throws(() => muirFormatTitle('%j', [10n], 0), {
       name: 'TypeError',
       message: /BigInt/,
     });
@@ -113,7 +113,7 @@ describe('formatTitle', () => {
     };
 
     assert.throws(
-      () => formatTitle('%j', [value], 0),
+      () => muirFormatTitle('%j', [value], 0),
       (error) => error === thrown,
     );
   });
@@ -144,7 +144,7 @@ describe('formatTitle', () => {
 
   for (const [template, items, expected] of cuts) {
     it(title('cuts short at 40 characters', template, items, expected), () => {
-      assert.equal(formatTitle(template, items, 0), expected);
+      assert.equal(muirFormatTitle(template, items, 0), expected);
     });
   }
 
@@ -178,7 +178,7 @@ describe('formatTitle', () => {
 
   for (const [template, items, expected] of interpolations) {
     it(title('interpolates', template, items, expected), () => {
-      assert.equal(formatTitle(template, items, 0), expected);
+      assert.equal(muirFormatTitle(template, items, 0), expected);
     });
   }
 });

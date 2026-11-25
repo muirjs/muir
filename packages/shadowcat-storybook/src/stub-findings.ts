@@ -1,24 +1,25 @@
 import {
-  field,
-  isRecord,
-  list,
-  writtenMethodOf,
-  type WrittenStubMethod,
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookList,
+  muirMoiraStorybookWrittenMethodOf,
+  type MuirMoiraStorybookWrittenStubMethod,
 } from '@muirjs/moira-storybook';
 
-import { parseProgram } from './parse.ts';
-import type { StorybookProject } from './storybook-project.ts';
+import { muirShadowcatStorybookParseProgram } from './parse.ts';
+import type { MuirShadowcatStorybookProject } from './storybook-project.ts';
 import {
-  describeVerdict,
-  reasonSites,
-  spyStubName,
-  type ReasonSite,
-  type SpyStubReason,
+  muirShadowcatStorybookDescribeVerdict,
+  muirShadowcatStorybookReasonSites,
+  muirShadowcatStorybookSpyStubName,
+  type MuirShadowcatStorybookReasonSite,
+  type MuirShadowcatStorybookSpyStubReason,
 } from './stub-verdict.ts';
 
-export interface SiteFinding extends SpyStubReason {
+export interface MuirShadowcatStorybookSiteFinding
+  extends MuirShadowcatStorybookSpyStubReason {
   readonly line: number;
-  readonly method: WrittenStubMethod;
+  readonly method: MuirMoiraStorybookWrittenStubMethod;
 }
 
 interface DirectiveRule {
@@ -31,42 +32,45 @@ interface DirectiveRule {
 const directive =
   /^\s?Stryker (disable|restore)(?: (next-line))? ([a-zA-Z, ]+)/;
 
-export function siteFindings(
+export function muirShadowcatStorybookSiteFindings(
   code: string,
   fileName: string,
-  project: StorybookProject,
+  project: MuirShadowcatStorybookProject,
   onUnparsable: (fileName: string, error: unknown) => void,
-): readonly SiteFinding[] {
-  let program: ReturnType<typeof parseProgram>;
+): readonly MuirShadowcatStorybookSiteFinding[] {
+  let program: ReturnType<typeof muirShadowcatStorybookParseProgram>;
 
   try {
-    program = parseProgram(code, fileName);
+    program = muirShadowcatStorybookParseProgram(code, fileName);
   } catch (error) {
     onUnparsable(fileName, error);
 
     return [];
   }
 
-  const sites = reasonSites({ program, code, fileName }, project);
+  const sites = muirShadowcatStorybookReasonSites(
+    { program, code, fileName },
+    project,
+  );
   const silenced = silencedSites(program, sites);
 
   return sites
     .filter((site) => !silenced.has(site))
     .map((site) => ({
       line: site.line,
-      method: writtenMethodOf(site),
-      ...describeVerdict(site.verdict),
+      method: muirMoiraStorybookWrittenMethodOf(site),
+      ...muirShadowcatStorybookDescribeVerdict(site.verdict),
     }));
 }
 
 function silencedSites(
   program: unknown,
-  sites: readonly ReasonSite[],
-): ReadonlySet<ReasonSite> {
-  const silenced = new Set<ReasonSite>();
+  sites: readonly MuirShadowcatStorybookReasonSite[],
+): ReadonlySet<MuirShadowcatStorybookReasonSite> {
+  const silenced = new Set<MuirShadowcatStorybookReasonSite>();
   const rules: DirectiveRule[] = [];
   const visit = (node: unknown): void => {
-    if (!isRecord(node)) {
+    if (!muirMoiraStorybookIsRecord(node)) {
       return;
     }
 
@@ -92,8 +96,8 @@ function directiveRules(
   comments: unknown,
   line: number,
 ): readonly DirectiveRule[] {
-  return list(comments).flatMap((comment: unknown) => {
-    const value = field(comment, 'value');
+  return muirMoiraStorybookList(comments).flatMap((comment: unknown) => {
+    const value = muirMoiraStorybookField(comment, 'value');
     const match = typeof value === 'string' ? directive.exec(value) : undefined;
 
     return match
@@ -116,14 +120,14 @@ function isSilenced(rules: readonly DirectiveRule[], line: number): boolean {
     rules.findLast(
       (rule) =>
         (rule.line === undefined || rule.line === line) &&
-        (rule.names.includes(spyStubName.toLowerCase()) ||
+        (rule.names.includes(muirShadowcatStorybookSpyStubName.toLowerCase()) ||
           rule.names.includes('all')),
     )?.disable === true
   );
 }
 
 function startLine(node: unknown): number {
-  const line = field(node, 'loc', 'start', 'line');
+  const line = muirMoiraStorybookField(node, 'loc', 'start', 'line');
 
   return typeof line === 'number' ? line : 0;
 }

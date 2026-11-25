@@ -7,16 +7,19 @@ import { pathToFileURL } from 'node:url';
 import type { schema } from '@stryker-mutator/api/core';
 
 import {
-  copySurvivorTraces,
-  projectRootEnv,
-  tracesDirEnv,
+  muirSirynPlaywrightCopySurvivorTraces,
+  muirSirynPlaywrightProjectRootEnv,
+  muirSirynPlaywrightTracesDirEnv,
 } from '../src/survivor-traces.ts';
-import { LzPlaywrightTracesReporter } from '../src/traces-reporter.ts';
+import { MuirSirynPlaywrightTracesReporter } from '../src/traces-reporter.ts';
 import { logger, strykerOptions, tempTree } from './support/doubles.ts';
 import { stubEnv } from './support/fake-playwright.ts';
 
 function isolateEnv(t: TestContext): void {
-  stubEnv(t, { [tracesDirEnv]: undefined, [projectRootEnv]: undefined });
+  stubEnv(t, {
+    [muirSirynPlaywrightTracesDirEnv]: undefined,
+    [muirSirynPlaywrightProjectRootEnv]: undefined,
+  });
 }
 
 const survivingReport: schema.MutationTestResult = {
@@ -44,8 +47,8 @@ const survivingReport: schema.MutationTestResult = {
 
 function tracedReporter(survivorTraces: string) {
   const { log, lines } = logger();
-  const reporter = new LzPlaywrightTracesReporter(
-    strykerOptions({ lzPlaywright: { survivorTraces } }),
+  const reporter = new MuirSirynPlaywrightTracesReporter(
+    strykerOptions({ muirSirynPlaywright: { survivorTraces } }),
     log,
   );
 
@@ -55,7 +58,7 @@ function tracedReporter(survivorTraces: string) {
 test('with survivorTraces, the reporter empties the folder', (t) => {
   isolateEnv(t);
   const dir = path.join(
-    tempTree(t, 'lz-traces-reporter-', { 'traces/stale.zip': '' }),
+    tempTree(t, 'muir-traces-reporter-', { 'traces/stale.zip': '' }),
     'traces',
   );
 
@@ -66,25 +69,25 @@ test('with survivorTraces, the reporter empties the folder', (t) => {
 
 test('with survivorTraces, the reporter hands the folder and the project root to the test runner processes', (t) => {
   isolateEnv(t);
-  const dir = path.join(tempTree(t, 'lz-traces-reporter-'), 'traces');
+  const dir = path.join(tempTree(t, 'muir-traces-reporter-'), 'traces');
 
   tracedReporter(dir);
 
-  assert.equal(process.env[tracesDirEnv], dir);
-  assert.equal(process.env[projectRootEnv], process.cwd());
+  assert.equal(process.env[muirSirynPlaywrightTracesDirEnv], dir);
+  assert.equal(process.env[muirSirynPlaywrightProjectRootEnv], process.cwd());
 });
 
 test('with survivorTraces, the reporter warns that tracing can change timing', (t) => {
   isolateEnv(t);
 
   const { lines } = tracedReporter(
-    path.join(tempTree(t, 'lz-traces-reporter-'), 'traces'),
+    path.join(tempTree(t, 'muir-traces-reporter-'), 'traces'),
   );
 
   assert.deepEqual(lines, [
     [
       'warn',
-      "lzPlaywright.survivorTraces is set: every test run records a Playwright trace, which can change timing. Compare statuses with an untraced run's report before trusting them.",
+      "muirSirynPlaywright.survivorTraces is set: every test run records a Playwright trace, which can change timing. Compare statuses with an untraced run's report before trusting them.",
     ],
   ]);
 });
@@ -101,31 +104,31 @@ for (const survivorTraces of ['', '.', '..', path.parse(process.cwd()).root]) {
 
     assert.throws(
       () =>
-        new LzPlaywrightTracesReporter(
-          strykerOptions({ lzPlaywright: { survivorTraces } }),
+        new MuirSirynPlaywrightTracesReporter(
+          strykerOptions({ muirSirynPlaywright: { survivorTraces } }),
           log,
         ),
-      /which holds the project, and the lz-playwright-traces reporter empties that folder/,
+      /which holds the project, and the muir-siryn-playwright-traces reporter empties that folder/,
     );
-    assert.equal(process.env[tracesDirEnv], undefined);
+    assert.equal(process.env[muirSirynPlaywrightTracesDirEnv], undefined);
     assert.equal(rmSync.mock.callCount(), 0);
   });
 }
 
 test('the reporter accepts a folder on another drive or under another root', (t) => {
   isolateEnv(t);
-  const dir = path.join(tempTree(t, 'lz-traces-reporter-'), 'traces');
+  const dir = path.join(tempTree(t, 'muir-traces-reporter-'), 'traces');
 
   tracedReporter(dir);
 
-  assert.equal(process.env[tracesDirEnv], dir);
+  assert.equal(process.env[muirSirynPlaywrightTracesDirEnv], dir);
 });
 
 function inTempProject(t: TestContext): string {
   const cwd = process.cwd();
   // Registered before tempTree's removal, which Windows refuses while the folder is the cwd.
   t.after(() => process.chdir(cwd));
-  const tmp = tempTree(t, 'lz-traces-reporter-', {
+  const tmp = tempTree(t, 'muir-traces-reporter-', {
     'project/package.json': '{}',
   });
   process.chdir(path.join(tmp, 'project'));
@@ -144,7 +147,7 @@ for (const [where, survivorTraces, folder] of [
     tracedReporter(survivorTraces);
 
     assert.equal(
-      fs.realpathSync(process.env[tracesDirEnv] ?? ''),
+      fs.realpathSync(process.env[muirSirynPlaywrightTracesDirEnv] ?? ''),
       fs.realpathSync(path.join(tmp, folder)),
     );
   });
@@ -152,9 +155,9 @@ for (const [where, survivorTraces, folder] of [
 
 test("at the end, the reporter writes index.html with Stryker's report app and each survivor's traces", (t) => {
   isolateEnv(t);
-  const dir = path.join(tempTree(t, 'lz-traces-reporter-'), 'traces');
+  const dir = path.join(tempTree(t, 'muir-traces-reporter-'), 'traces');
   const { reporter, lines } = tracedReporter(dir);
-  copySurvivorTraces(
+  muirSirynPlaywrightCopySurvivorTraces(
     { dir, projectRoot: process.cwd() },
     {
       fileName: path.join(process.cwd(), 'src', 'a.ts'),
@@ -179,7 +182,7 @@ test("at the end, the reporter writes index.html with Stryker's report app and e
 
 test('at the end, the reporter names the trace folders it could not read', (t) => {
   isolateEnv(t);
-  const dir = path.join(tempTree(t, 'lz-traces-reporter-'), 'traces');
+  const dir = path.join(tempTree(t, 'muir-traces-reporter-'), 'traces');
   const { reporter, lines } = tracedReporter(dir);
   fs.mkdirSync(path.join(dir, 'broken'));
   fs.mkdirSync(path.join(dir, 'broken-2'));
@@ -207,15 +210,18 @@ test('without survivorTraces, the reporter warns once that it does nothing and s
   isolateEnv(t);
   const { log, lines } = logger();
 
-  const reporter = new LzPlaywrightTracesReporter(strykerOptions({}), log);
+  const reporter = new MuirSirynPlaywrightTracesReporter(
+    strykerOptions({}),
+    log,
+  );
   reporter.onMutationTestReportReady(survivingReport);
 
-  assert.equal(process.env[tracesDirEnv], undefined);
-  assert.equal(process.env[projectRootEnv], undefined);
+  assert.equal(process.env[muirSirynPlaywrightTracesDirEnv], undefined);
+  assert.equal(process.env[muirSirynPlaywrightProjectRootEnv], undefined);
   assert.deepEqual(lines, [
     [
       'warn',
-      'The lz-playwright-traces reporter does nothing without lzPlaywright.survivorTraces.',
+      'The muir-siryn-playwright-traces reporter does nothing without muirSirynPlaywright.survivorTraces.',
     ],
   ]);
 });

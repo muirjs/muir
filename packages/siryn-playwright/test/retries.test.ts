@@ -30,7 +30,7 @@ test("init counts the largest project's retries, or the retries option, in the t
   const fromConfig = fake.runner({ timeoutMS: 26_599 });
   const fromOption = fake.runner({
     timeoutMS: 18_599,
-    lzPlaywright: { retries: 1 },
+    muirSirynPlaywright: { retries: 1 },
   });
   const enough = fake.runner({ timeoutMS: 26_600 });
 
@@ -103,7 +103,7 @@ test('the retries option replaces the retries of every project', async (t) => {
     ],
     root,
   });
-  const { shell } = fake.runner({ lzPlaywright: { retries: 1 } });
+  const { shell } = fake.runner({ muirSirynPlaywright: { retries: 1 } });
   await shell.init();
 
   await shell.mutantRun(mutantRunOptions());

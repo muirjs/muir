@@ -4,7 +4,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 
-import { hookedPrefix, serverDirEnv } from '../src/server-protocol.ts';
+import {
+  muirSirynPlaywrightHookedPrefix,
+  muirSirynPlaywrightServerDirEnv,
+} from '../src/server-protocol.ts';
 import {
   dryRunOptions,
   mutantRunOptions,
@@ -19,7 +22,7 @@ test('init refuses a webServer whose env sets NODE_OPTIONS', async (t) => {
   const { shell } = fake.runner();
 
   await assert.rejects(shell.init(), {
-    message: `lzPlaywright.webServer.mutate is true, but a webServer's env sets NODE_OPTIONS, which replaces the one that loads the server hook. Set NODE_OPTIONS in the environment that runs Stryker instead.`,
+    message: `muirSirynPlaywright.webServer.mutate is true, but a webServer's env sets NODE_OPTIONS, which replaces the one that loads the server hook. Set NODE_OPTIONS in the environment that runs Stryker instead.`,
   });
   assert.deepEqual(fake.setups, []);
 });
@@ -35,7 +38,7 @@ test('init refuses a config where only one of two webServers sets NODE_OPTIONS i
 
   await assert.rejects(fake.runner().shell.init(), {
     message:
-      /^lzPlaywright\.webServer\.mutate is true, but a webServer's env sets NODE_OPTIONS/,
+      /^muirSirynPlaywright\.webServer\.mutate is true, but a webServer's env sets NODE_OPTIONS/,
   });
   assert.deepEqual(fake.setups, []);
 });
@@ -49,7 +52,7 @@ test("with webServer.mutate: 'auto', init turns server support off with one warn
   await shell.init();
 
   assert.deepEqual(warnings(lines), [
-    "lzPlaywright.webServer.mutate is 'auto', but a webServer's env sets NODE_OPTIONS, which replaces the one that " +
+    "muirSirynPlaywright.webServer.mutate is 'auto', but a webServer's env sets NODE_OPTIONS, which replaces the one that " +
       'loads the server hook. Set NODE_OPTIONS in the environment that runs Stryker instead.' +
       autoOff,
   ]);
@@ -69,7 +72,7 @@ test('init refuses a reuseExistingServer server that already answers, and starts
     assert.ok(error instanceof Error);
     assert.equal(
       error.message,
-      'lzPlaywright.webServer.mutate is true, but the webServer at http://localhost:4820/ already answers and ' +
+      'muirSirynPlaywright.webServer.mutate is true, but the webServer at http://localhost:4820/ already answers and ' +
         'reuseExistingServer is true. Only the Stryker process that started a server can switch its mutant: ' +
         'stop the server that answers there, or give the webServer a port that no other server uses.',
     );
@@ -92,7 +95,7 @@ test("with webServer.mutate: 'auto', init turns server support off with one warn
   assert.equal(more.length, 0);
   assert.match(
     warning ?? '',
-    /^lzPlaywright\.webServer\.mutate is 'auto', but the webServer at http:\/\/localhost:4820\/ already answers and reuseExistingServer is true\./,
+    /^muirSirynPlaywright\.webServer\.mutate is 'auto', but the webServer at http:\/\/localhost:4820\/ already answers and reuseExistingServer is true\./,
   );
   assert.ok(warning?.endsWith(autoOff));
   assert.deepEqual(
@@ -112,7 +115,7 @@ test('init names every reuseExistingServer server that already answers', async (
 
   await assert.rejects(fake.runner().shell.init(), {
     message:
-      /^lzPlaywright\.webServer\.mutate is true, but the webServer at http:\/\/localhost:4820\/, http:\/\/localhost:4821\/ already answers/,
+      /^muirSirynPlaywright\.webServer\.mutate is true, but the webServer at http:\/\/localhost:4820\/, http:\/\/localhost:4821\/ already answers/,
   });
 });
 
@@ -135,7 +138,7 @@ test("with webServer.mutate: 'auto', init turns server support off with one warn
   await shell.dryRun(dryRunOptions());
 
   assert.deepEqual(warnings(lines), [
-    "lzPlaywright.webServer.mutate is 'auto', but no process that Playwright global setup started loaded the server hook. " +
+    "muirSirynPlaywright.webServer.mutate is 'auto', but no process that Playwright global setup started loaded the server hook. " +
       'A webServer that is not Node.js, a command that sets NODE_OPTIONS itself, or a server that was already running ' +
       'cannot get the active mutant.' +
       autoOff,
@@ -176,11 +179,14 @@ test('init accepts a webServer that loads the server hook shortly after global s
   const fake = serverFake(t, {
     hooked: false,
     globalSetup: () => {
-      const serverDir = process.env[serverDirEnv];
+      const serverDir = process.env[muirSirynPlaywrightServerDirEnv];
 
       if (serverDir !== undefined) {
         void setTimeout(100).then(() =>
-          writeFileSync(path.join(serverDir, `${hookedPrefix}1`), ''),
+          writeFileSync(
+            path.join(serverDir, `${muirSirynPlaywrightHookedPrefix}1`),
+            '',
+          ),
         );
       }
 
@@ -198,7 +204,7 @@ test('init fails when no process global setup started loaded the server hook', a
 
   await assert.rejects(fake.runner().shell.init(), {
     message:
-      'lzPlaywright.webServer.mutate is true, but no process that Playwright global setup started loaded the server hook. ' +
+      'muirSirynPlaywright.webServer.mutate is true, but no process that Playwright global setup started loaded the server hook. ' +
       'A webServer that is not Node.js, a command that sets NODE_OPTIONS itself, or a server that was already running ' +
       'cannot get the active mutant.',
   });
@@ -215,7 +221,7 @@ test("with webServer.mutate: 'auto', a later webServer restart that loads no ser
     shell.mutantRun(mutantRunOptions({ mutantActivation: 'static' })),
     {
       message:
-        "lzPlaywright.webServer.mutate is 'auto', but no process that Playwright global setup started loaded the server hook. " +
+        "muirSirynPlaywright.webServer.mutate is 'auto', but no process that Playwright global setup started loaded the server hook. " +
         'A webServer that is not Node.js, a command that sets NODE_OPTIONS itself, or a server that was already running ' +
         'cannot get the active mutant.',
     },

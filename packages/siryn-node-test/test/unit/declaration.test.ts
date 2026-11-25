@@ -5,14 +5,14 @@ import type { StrykerOptions } from '@stryker-mutator/api/core';
 import { PluginKind } from '@stryker-mutator/api/plugin';
 import ajvModule from 'ajv';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import * as entry from '../../src/index.ts';
 import {
-  LzNodeTestTestRunner,
+  MuirSirynNodeTestTestRunner,
   strykerPlugins,
   strykerValidationSchema,
 } from '../../src/index.ts';
-import { lzMinNodeVersion } from '../../src/runner.ts';
+import { muirSirynNodeTestMinNodeVersion } from '../../src/runner.ts';
 import pkg from '../../package.json' with { type: 'json' };
 
 /** Stryker validates its options with these settings, and merges the properties of each plugin's schema into its own. */
@@ -30,42 +30,46 @@ function validator() {
 describe('plugin declaration', () => {
   it('exports only the plugin, its schema and the runner class from the package entry', () => {
     assert.deepEqual(Object.keys(entry).sort(), [
-      'LzNodeTestTestRunner',
+      'MuirSirynNodeTestTestRunner',
       'strykerPlugins',
       'strykerValidationSchema',
     ]);
   });
 
-  it('declares the lz-node-test test runner', () => {
+  it('declares the muir-siryn-node-test test runner', () => {
     assert.deepEqual(strykerPlugins, [
       {
         kind: PluginKind.TestRunner,
-        name: 'lz-node-test',
-        injectableClass: LzNodeTestTestRunner,
+        name: 'muir-siryn-node-test',
+        injectableClass: MuirSirynNodeTestTestRunner,
       },
     ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     {},
-    { lzNodeTest: {} },
-    { lzNodeTest: { testFiles: ['a.test.ts', 'b/*.test.ts'] } },
-    { lzNodeTest: { nodeArgs: ['--enable-source-maps', '--stack-size=900'] } },
-    { lzNodeTest: { maxMemoryMB: 1500 } },
+    { muirSirynNodeTest: {} },
+    { muirSirynNodeTest: { testFiles: ['a.test.ts', 'b/*.test.ts'] } },
+    {
+      muirSirynNodeTest: {
+        nodeArgs: ['--enable-source-maps', '--stack-size=900'],
+      },
+    },
+    { muirSirynNodeTest: { maxMemoryMB: 1500 } },
   ])('accepts the options %j', (options) => {
     assert.ok(validator()(options));
   });
 
-  lzTestEach([
-    { lzNodeTest: '*.test.ts' },
-    { lzNodeTest: { testFiles: '*.test.ts' } },
-    { lzNodeTest: { testFiles: [1] } },
-    { lzNodeTest: { testfiles: ['*.test.ts'] } },
-    { lzNodeTest: { nodeArgs: '--enable-source-maps' } },
-    { lzNodeTest: { nodeArgs: [1] } },
-    { lzNodeTest: { maxMemoryMB: '1500' } },
-    { lzNodeTest: { maxMemoryMB: 0 } },
-    { lzNodeTest: { maxMemoryMB: 1.5 } },
+  muirTestEach([
+    { muirSirynNodeTest: '*.test.ts' },
+    { muirSirynNodeTest: { testFiles: '*.test.ts' } },
+    { muirSirynNodeTest: { testFiles: [1] } },
+    { muirSirynNodeTest: { testfiles: ['*.test.ts'] } },
+    { muirSirynNodeTest: { nodeArgs: '--enable-source-maps' } },
+    { muirSirynNodeTest: { nodeArgs: [1] } },
+    { muirSirynNodeTest: { maxMemoryMB: '1500' } },
+    { muirSirynNodeTest: { maxMemoryMB: 0 } },
+    { muirSirynNodeTest: { maxMemoryMB: 1.5 } },
   ])('rejects the options %j', (options) => {
     assert.ok(!validator()(options));
   });
@@ -89,23 +93,26 @@ describe('plugin declaration', () => {
   });
 
   it('supports the Node.js versions that package.json supports', () => {
-    assert.equal(pkg.engines.node, `>=${lzMinNodeVersion.join('.')}`);
+    assert.equal(
+      pkg.engines.node,
+      `>=${muirSirynNodeTestMinNodeVersion.join('.')}`,
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       {},
       {
-        lzNodeTest: {
+        muirSirynNodeTest: {
           testFiles: ['**/?(*.)+(spec|test).[jt]s?(x)'],
           nodeArgs: [],
         },
       },
     ],
     [
-      { lzNodeTest: { maxMemoryMB: 1500 } },
+      { muirSirynNodeTest: { maxMemoryMB: 1500 } },
       {
-        lzNodeTest: {
+        muirSirynNodeTest: {
           testFiles: ['**/?(*.)+(spec|test).[jt]s?(x)'],
           nodeArgs: [],
           maxMemoryMB: 1500,
@@ -114,13 +121,13 @@ describe('plugin declaration', () => {
     ],
     [
       {
-        lzNodeTest: {
+        muirSirynNodeTest: {
           testFiles: ['a.test.ts'],
           nodeArgs: ['--enable-source-maps'],
         },
       },
       {
-        lzNodeTest: {
+        muirSirynNodeTest: {
           testFiles: ['a.test.ts'],
           nodeArgs: ['--enable-source-maps'],
         },

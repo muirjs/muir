@@ -2,10 +2,16 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { tempRoot, writeTree } from '@muirjs/test-util-mutator-packages';
+import {
+  muirTempRoot,
+  muirWriteTree,
+} from '@muirjs/test-util-mutator-packages';
 
-import { install, resolveFromCore } from '../src/install.ts';
-import { mutatorSets } from '../src/mutators.ts';
+import {
+  muirProteusMswInstall,
+  muirProteusMswResolveFromCore,
+} from '../src/install.ts';
+import { muirProteusMswMutatorSets } from '../src/mutators.ts';
 import {
   builtIns,
   fakeInstrumenter,
@@ -16,32 +22,32 @@ import {
 const silent = (): undefined => undefined;
 
 describe('install', () => {
-  it('ships LzMswResponse as a default, so that no option installs it', async () => {
+  it('ships MuirProteusMswResponse as a default, so that no option installs it', async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
-    await install(
-      mutatorSets,
+    await muirProteusMswInstall(
+      muirProteusMswMutatorSets,
       undefined,
       async () => instrumenter,
       silent,
       silent,
     );
 
-    assert.deepEqual(names(), [...builtIns, 'LzMswResponse']);
+    assert.deepEqual(names(), [...builtIns, 'MuirProteusMswResponse']);
   });
 
   it("appends the experimental mutators that experimental turns on after Stryker's built-ins, marked", async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
-    await install(
-      sets([], [], ['LzOne']),
+    await muirProteusMswInstall(
+      sets([], [], ['MuirProteusMswOne']),
       { experimental: true },
       async () => instrumenter,
       silent,
       silent,
     );
 
-    assert.deepEqual(names(), [...builtIns, 'LzOne']);
+    assert.deepEqual(names(), [...builtIns, 'MuirProteusMswOne']);
     assert.deepEqual(
       instrumenter.allMutators.map((listed) => ownMark in listed),
       [false, false, true],
@@ -51,8 +57,8 @@ describe('install', () => {
   it('installs no experimental mutator without options', async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
-    await install(
-      sets([], [], ['LzOne']),
+    await muirProteusMswInstall(
+      sets([], [], ['MuirProteusMswOne']),
       undefined,
       async () => instrumenter,
       silent,
@@ -66,8 +72,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const lines: string[] = [];
 
-    await install(
-      sets([], [], ['LzOne', 'LzTwo']),
+    await muirProteusMswInstall(
+      sets([], [], ['MuirProteusMswOne', 'MuirProteusMswTwo']),
       undefined,
       async () => instrumenter,
       silent,
@@ -75,8 +81,8 @@ describe('install', () => {
     );
 
     assert.deepEqual(lines, [
-      "@muirjs/proteus-msw: 0 LzMsw mutators on, beside Stryker's built-in mutators. Off as " +
-        'experimental: LzOne, LzTwo; lzMswMutators({ experimental: true }) turns them on.',
+      "@muirjs/proteus-msw: 0 MuirProteusMsw mutators on, beside Stryker's built-in mutators. Off as " +
+        'experimental: MuirProteusMswOne, MuirProteusMswTwo; muirProteusMswMutators({ experimental: true }) turns them on.',
     ]);
   });
 
@@ -84,8 +90,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const lines: string[] = [];
 
-    await install(
-      sets([], [], ['LzOne', 'LzTwo']),
+    await muirProteusMswInstall(
+      sets([], [], ['MuirProteusMswOne', 'MuirProteusMswTwo']),
       { experimental: true },
       async () => instrumenter,
       silent,
@@ -93,8 +99,8 @@ describe('install', () => {
     );
 
     assert.deepEqual(lines, [
-      "@muirjs/proteus-msw: 2 LzMsw mutators on, beside Stryker's built-in mutators. " +
-        'Experimental: LzOne, LzTwo.',
+      "@muirjs/proteus-msw: 2 MuirProteusMsw mutators on, beside Stryker's built-in mutators. " +
+        'Experimental: MuirProteusMswOne, MuirProteusMswTwo.',
     ]);
   });
 
@@ -102,8 +108,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const lines: string[] = [];
 
-    await install(
-      sets(['LzOne'], [], ['LzTwo']),
+    await muirProteusMswInstall(
+      sets(['MuirProteusMswOne'], [], ['MuirProteusMswTwo']),
       undefined,
       async () => instrumenter,
       silent,
@@ -111,7 +117,7 @@ describe('install', () => {
     );
 
     assert.deepEqual(lines, [
-      "@muirjs/proteus-msw: 1 LzMsw mutators on, beside Stryker's built-in mutators.",
+      "@muirjs/proteus-msw: 1 MuirProteusMsw mutators on, beside Stryker's built-in mutators.",
     ]);
   });
 
@@ -119,9 +125,9 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
 
     await assert.rejects(
-      install(
-        sets(['LzOne']),
-        { LzOne: true },
+      muirProteusMswInstall(
+        sets(['MuirProteusMswOne']),
+        { MuirProteusMswOne: true },
         async () => instrumenter,
         silent,
         silent,
@@ -129,23 +135,25 @@ describe('install', () => {
       {
         message:
           '@muirjs/proteus-msw: the package has no opt-in or experimental mutators yet, so ' +
-          'lzMswMutators() takes no options. Turn a mutator off with mutator.excludedMutations.',
+          'muirProteusMswMutators() takes no options. Turn a mutator off with mutator.excludedMutations.',
       },
     );
   });
 
   it('throws when a mutator makes no mutant of its sample, and leaves the list as it was', async () => {
-    const { instrumenter, names } = fakeInstrumenter({ silent: ['LzTwo'] });
+    const { instrumenter, names } = fakeInstrumenter({
+      silent: ['MuirProteusMswTwo'],
+    });
 
     await assert.rejects(
-      install(
-        sets([], [], ['LzOne', 'LzTwo']),
+      muirProteusMswInstall(
+        sets([], [], ['MuirProteusMswOne', 'MuirProteusMswTwo']),
         { experimental: true },
         async () => instrumenter,
         silent,
         silent,
       ),
-      { message: /made no mutants of LzTwo from their samples/ },
+      { message: /made no mutants of MuirProteusMswTwo from their samples/ },
     );
     assert.deepEqual(names(), builtIns);
   });
@@ -154,7 +162,7 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
 
     await assert.rejects(
-      install(
+      muirProteusMswInstall(
         sets([], [], ['Objectliteral']),
         { experimental: true },
         async () => instrumenter,
@@ -172,8 +180,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter({ version: '10.2.0' });
     const warnings: string[] = [];
 
-    await install(
-      sets([], [], ['LzOne']),
+    await muirProteusMswInstall(
+      sets([], [], ['MuirProteusMswOne']),
       undefined,
       async () => instrumenter,
       (message) => warnings.push(message),
@@ -190,9 +198,9 @@ describe('install', () => {
 describe('resolveFromCore against a fake instrumenter', () => {
   /** A core whose instrumenter resolves a `@babel/core` that has no Babel types members. */
   function fakeCore(t: TestContext) {
-    const modules = join(tempRoot(t, 'msw-mutators-core-'), 'node_modules');
+    const modules = join(muirTempRoot(t, 'msw-mutators-core-'), 'node_modules');
 
-    writeTree(modules, {
+    muirWriteTree(modules, {
       '@stryker-mutator/core/package.json':
         '{ "name": "@stryker-mutator/core", "version": "9.9.9" }',
       '@stryker-mutator/instrumenter/package.json':
@@ -217,7 +225,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
   it('throws, listing every Babel types member that is missing', async (t) => {
     const { corePackage, dir } = fakeCore(t);
 
-    await assert.rejects(resolveFromCore(corePackage), {
+    await assert.rejects(muirProteusMswResolveFromCore(corePackage), {
       message:
         `@muirjs/proteus-msw: the instrumenter 9.9.8 in ${dir} has no Babel types with arrayExpression, ` +
         'callExpression, cloneNode, identifier, memberExpression, nullLiteral, objectExpression, stringLiteral.',

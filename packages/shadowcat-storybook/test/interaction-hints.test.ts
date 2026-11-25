@@ -5,18 +5,21 @@ import { join } from 'node:path';
 import { before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { csfShapes, interactionsOf } from '@muirjs/moira-storybook';
-import { lzStorybookTestMutators } from '@muirjs/proteus-storybook-test';
+import {
+  muirMoiraStorybookCsfShapes,
+  muirMoiraStorybookInteractionsOf,
+} from '@muirjs/moira-storybook';
+import { muirProteusStorybookTestMutators } from '@muirjs/proteus-storybook-test';
 import type { schema } from '@stryker-mutator/api/core';
 
 import {
-  interactionHints,
-  interactionMutatorNames,
-  type ReportFiles,
-  skippedOnRangeError,
+  muirShadowcatStorybookInteractionHints,
+  muirShadowcatStorybookInteractionMutatorNames,
+  type MuirShadowcatStorybookReportFiles,
+  muirShadowcatStorybookSkippedOnRangeError,
 } from '../src/interaction-hints.ts';
-import { shapesOf } from '../src/interaction-shapes.ts';
-import { parseProgram } from '../src/parse.ts';
+import { muirShadowcatStorybookShapesOf } from '../src/interaction-shapes.ts';
+import { muirShadowcatStorybookParseProgram } from '../src/parse.ts';
 import { interactionHintCases } from './interaction-hint-cases.ts';
 import { instrument } from './support/instrument.ts';
 import {
@@ -33,7 +36,7 @@ async function reportOf(
   source: string,
   listed: readonly Survivor[],
   status: schema.MutantStatus = 'Survived',
-): Promise<ReportFiles> {
+): Promise<MuirShadowcatStorybookReportFiles> {
   const { mutants } = await instrument(
     join(fixtures, 'no-main', file),
     source,
@@ -87,11 +90,11 @@ function failOnWarning(message: string): never {
 
 describe('interactionHints', () => {
   before(async () => {
-    await lzStorybookTestMutators({
-      LzStorybookInteractionRepeat: true,
+    await muirProteusStorybookTestMutators({
+      MuirProteusStorybookTestInteractionRepeat: true,
       experimental: {
-        LzStorybookAssertionBefore: true,
-        LzStorybookInteractionTarget: true,
+        MuirProteusStorybookTestAssertionBefore: true,
+        MuirProteusStorybookTestInteractionTarget: true,
       },
     });
   });
@@ -101,7 +104,7 @@ describe('interactionHints', () => {
       const report = await reportOf(source, survived);
 
       assert.deepEqual(
-        interactionHints(report, failOnWarning).map(
+        muirShadowcatStorybookInteractionHints(report, failOnWarning).map(
           ({ line, shape, mutatorNames }) => [line, shape, mutatorNames],
         ),
         expect,
@@ -113,7 +116,7 @@ describe('interactionHints', () => {
     interactionHintCases.forEach(({ id, source, survived, expect }) => {
       expect.forEach(([line, shape, names]) => {
         it(`${id}: the comment for line ${line} ignores exactly the survivors the case names there, with its reason`, async () => {
-          const hint = interactionHints(
+          const hint = muirShadowcatStorybookInteractionHints(
             await reportOf(source, survived),
             failOnWarning,
           ).find(
@@ -168,11 +171,17 @@ describe('interactionHints', () => {
 
   it('finds at most one shape at each interaction of every case', () => {
     const overlaps = interactionHintCases.flatMap(({ id, source }) => {
-      const program = parseProgram(source, file);
-      const interactions = interactionsOf(program, csfShapes(program));
+      const program = muirShadowcatStorybookParseProgram(source, file);
+      const interactions = muirMoiraStorybookInteractionsOf(
+        program,
+        muirMoiraStorybookCsfShapes(program),
+      );
 
       return interactions.all.flatMap((interaction, index) => {
-        const shapes = shapesOf(interaction, interactions);
+        const shapes = muirShadowcatStorybookShapesOf(
+          interaction,
+          interactions,
+        );
 
         return shapes.length > 1
           ? [`${id} interaction ${index} ${shapes.join(', ')}`]
@@ -195,7 +204,7 @@ describe('interactionHints', () => {
     );
 
     assert.deepEqual(
-      interactionMutatorNames.filter(
+      muirShadowcatStorybookInteractionMutatorNames.filter(
         (name) => !mutants.some(({ mutatorName }) => mutatorName === name),
       ),
       [],
@@ -211,7 +220,10 @@ describe('interactionHints', () => {
       'NoCoverage',
     );
 
-    assert.deepEqual(interactionHints(report, failOnWarning), []);
+    assert.deepEqual(
+      muirShadowcatStorybookInteractionHints(report, failOnWarning),
+      [],
+    );
   });
 
   it('warns once and gives no hint for a file that Babel cannot parse', async () => {
@@ -225,7 +237,7 @@ describe('interactionHints', () => {
 
     assert.ok(parsed !== undefined);
     assert.deepEqual(
-      interactionHints(
+      muirShadowcatStorybookInteractionHints(
         { [file]: { ...parsed, source: 'export const = ;' } },
         (message) => warnings.push(message),
       ),
@@ -234,7 +246,7 @@ describe('interactionHints', () => {
     assert.equal(warnings.length, 1, warnings.join('\n'));
     assert.match(
       warnings[0] ?? '',
-      /^@muirjs\/shadowcat-storybook: Babel could not parse src\/Form\.stories\.tsx, so lz-storybook gave no interaction hints for it: /,
+      /^@muirjs\/shadowcat-storybook: Babel could not parse src\/Form\.stories\.tsx, so muir-shadowcat-storybook gave no interaction hints for it: /,
     );
   });
 
@@ -249,7 +261,7 @@ describe('interactionHints', () => {
 
     assert.ok(placed !== undefined);
     assert.deepEqual(
-      interactionHints(
+      muirShadowcatStorybookInteractionHints(
         {
           'src/Deep.stories.tsx': {
             ...placed,
@@ -267,7 +279,7 @@ describe('interactionHints', () => {
     assert.equal(warnings.length, 1, warnings.join('\n'));
     assert.match(
       warnings[0] ?? '',
-      /^@muirjs\/shadowcat-storybook: lz-storybook could not read the interactions of src\/Deep\.stories\.tsx, so it gave no interaction hints for it: Maximum call stack size exceeded$/,
+      /^@muirjs\/shadowcat-storybook: muir-shadowcat-storybook could not read the interactions of src\/Deep\.stories\.tsx, so it gave no interaction hints for it: Maximum call stack size exceeded$/,
     );
   });
 
@@ -278,7 +290,7 @@ describe('interactionHints', () => {
 
     assert.throws(
       () =>
-        skippedOnRangeError(() => {
+        muirShadowcatStorybookSkippedOnRangeError(() => {
           throw bug;
         }, failOnWarning),
       (error) => error === bug,
@@ -289,13 +301,13 @@ describe('interactionHints', () => {
     assert.ok(negativeOnly !== undefined);
 
     const { [file]: placed } = await reportOf(negativeOnly.source, [
-      ['LzStorybookInteraction', 5],
+      ['MuirProteusStorybookTestInteraction', 5],
     ]);
     const warnings: string[] = [];
 
     assert.ok(placed !== undefined);
     assert.deepEqual(
-      interactionHints(
+      muirShadowcatStorybookInteractionHints(
         {
           [file]: {
             ...placed,
@@ -317,26 +329,27 @@ describe('interactionHints', () => {
       [],
     );
     assert.deepEqual(warnings, [
-      '@muirjs/shadowcat-storybook: src/Form.stories.tsx:1:1 has a surviving interaction mutant outside every interaction, so lz-storybook gave it no interaction hint',
+      '@muirjs/shadowcat-storybook: src/Form.stories.tsx:1:1 has a surviving interaction mutant outside every interaction, so muir-shadowcat-storybook gave it no interaction hint',
     ]);
   });
 
-  it('gives a hint for a survivor whose interaction has no LzStorybookInteraction mutant, as a column range that cuts the interaction leaves out', async () => {
+  it('gives a hint for a survivor whose interaction has no MuirProteusStorybookTestInteraction mutant, as a column range that cuts the interaction leaves out', async () => {
     assert.ok(negativeOnly !== undefined);
 
     const { [file]: placed } = await reportOf(negativeOnly.source, [
-      ['LzStorybookClickFocus', 5],
-      ['LzStorybookInteractionRepeat', 5],
+      ['MuirProteusStorybookTestClickFocus', 5],
+      ['MuirProteusStorybookTestInteractionRepeat', 5],
     ]);
 
     assert.ok(placed !== undefined);
     assert.deepEqual(
-      interactionHints(
+      muirShadowcatStorybookInteractionHints(
         {
           [file]: {
             ...placed,
             mutants: placed.mutants.filter(
-              ({ mutatorName }) => mutatorName !== 'LzStorybookInteraction',
+              ({ mutatorName }) =>
+                mutatorName !== 'MuirProteusStorybookTestInteraction',
             ),
           },
         },
@@ -346,7 +359,10 @@ describe('interactionHints', () => {
         [
           5,
           'negative-only',
-          ['LzStorybookClickFocus', 'LzStorybookInteractionRepeat'],
+          [
+            'MuirProteusStorybookTestClickFocus',
+            'MuirProteusStorybookTestInteractionRepeat',
+          ],
         ],
       ],
     );
@@ -362,7 +378,7 @@ describe('interactionHints', () => {
 
     assert.ok(placed !== undefined);
     assert.deepEqual(
-      interactionHints(
+      muirShadowcatStorybookInteractionHints(
         {
           [file]: {
             ...placed,
@@ -384,7 +400,7 @@ describe('interactionHints', () => {
 
     assert.ok(killed !== undefined);
     assert.deepEqual(
-      interactionHints(
+      muirShadowcatStorybookInteractionHints(
         { [file]: { ...killed, source: 'export const = ;' } },
         failOnWarning,
       ),

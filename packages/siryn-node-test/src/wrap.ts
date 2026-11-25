@@ -3,19 +3,19 @@ import type { HookFn } from 'node:test';
 
 import type { InstrumenterContext, Position } from '@stryker-mutator/api/core';
 
-import { isObject } from './guards.ts';
+import { muirSirynNodeTestIsObject } from './guards.ts';
 import {
-  activeMutantEnv,
-  afterHookId,
-  envNames,
-  uniqueIds,
-  within,
-  type LzTimeWindow,
-  type RecordedTest,
+  muirSirynNodeTestActiveMutantEnv,
+  muirSirynNodeTestAfterHookId,
+  muirSirynNodeTestEnvNames,
+  muirSirynNodeTestUniqueIds,
+  muirSirynNodeTestWithin,
+  type MuirSirynNodeTestTimeWindow,
+  type MuirSirynNodeTestRecordedTest,
 } from './record.ts';
 
 /** A function call on the stack: its file path and its 1-based position. */
-export interface CallSite {
+export interface MuirSirynNodeTestCallSite {
   readonly file: string;
   readonly line: number;
   readonly column: number;
@@ -25,11 +25,14 @@ export interface CallSite {
  * A function node:test calls, or a node:test function the wrapper calls with the arguments it was given, which
  * node:test checks itself. Every function is assignable to it; the wrappers call it through `Reflect.apply`.
  */
-export type Body = (this: unknown, ...args: never[]) => unknown;
+export type MuirSirynNodeTestBody = (
+  this: unknown,
+  ...args: never[]
+) => unknown;
 type Registrar = (this: unknown, name: string, ...rest: unknown[]) => unknown;
 type HookRegistrar = (
   this: unknown,
-  hook?: Body,
+  hook?: MuirSirynNodeTestBody,
   ...rest: unknown[]
 ) => unknown;
 /**
@@ -55,35 +58,42 @@ type NodeTestShape<TFn, THook> = WithShorthands<TFn> & {
   readonly afterEach: THook;
 };
 
-export type NodeTestModule = NodeTestShape<Registrar, HookRegistrar>;
+export type MuirSirynNodeTestModule = NodeTestShape<Registrar, HookRegistrar>;
 
-export type NodeTestTarget = NodeTestShape<Body, Body>;
+export type MuirSirynNodeTestTarget = NodeTestShape<
+  MuirSirynNodeTestBody,
+  MuirSirynNodeTestBody
+>;
 
 /** The functions of node:test's test context that the wrapper calls. */
-interface LzTestContext {
-  readonly test: Body;
-  readonly after: Body;
-  readonly beforeEach: Body;
-  readonly skip: Body;
+interface MuirSirynNodeTestTestContext {
+  readonly test: MuirSirynNodeTestBody;
+  readonly after: MuirSirynNodeTestBody;
+  readonly beforeEach: MuirSirynNodeTestBody;
+  readonly skip: MuirSirynNodeTestBody;
 }
 
 /** The functions the wrapper replaces on node:test's test context for the test body. */
-type LzTestContextOverrides = Pick<
-  LzTestContext,
+type MuirSirynNodeTestTestContextOverrides = Pick<
+  MuirSirynNodeTestTestContext,
   'test' | 'after' | 'beforeEach'
 >;
 
-const lzTestContextKeys: { readonly [TKey in keyof LzTestContext]: TKey } = {
+const muirSirynNodeTestTestContextKeys: {
+  readonly [TKey in keyof MuirSirynNodeTestTestContext]: TKey;
+} = {
   test: 'test',
   after: 'after',
   beforeEach: 'beforeEach',
   skip: 'skip',
 };
 
-function isLzTestContext(context: unknown): context is LzTestContext {
+function isLzTestContext(
+  context: unknown,
+): context is MuirSirynNodeTestTestContext {
   return (
-    isObject(context) &&
-    Object.values(lzTestContextKeys).every(
+    muirSirynNodeTestIsObject(context) &&
+    Object.values(muirSirynNodeTestTestContextKeys).every(
       (key) => typeof context[key] === 'function',
     )
   );
@@ -93,7 +103,7 @@ function isLzTestContext(context: unknown): context is LzTestContext {
  * What `settling` does with a call once `begin` has seen its context: run it as it is, skip it, or run it and call
  * `settle` when it settles, with whether it failed.
  */
-export type LzBegun =
+export type MuirSirynNodeTestBegun =
   | { readonly kind: 'asIs' }
   | { readonly kind: 'skip' }
   | { readonly kind: 'settle'; readonly settle: (failed: boolean) => void };
@@ -103,11 +113,11 @@ export type LzBegun =
  * says; a skipped callback-style `fn` calls back at once. A promise-style `fn` whose settling `begin` follows rejects
  * when it throws synchronously; a callback-style one throws.
  */
-export function settling(
-  fn: Body,
-  begin: (context: unknown) => LzBegun,
+export function muirSirynNodeTestSettling(
+  fn: MuirSirynNodeTestBody,
+  begin: (context: unknown) => MuirSirynNodeTestBegun,
   run: (call: () => unknown) => unknown = (call) => call(),
-): Body {
+): MuirSirynNodeTestBody {
   const call = (self: unknown, args: unknown[]): unknown =>
     run(() => Reflect.apply(fn, self, args));
   const callingBack: HookFn = function (this: unknown, context, done) {
@@ -185,7 +195,7 @@ export function settling(
 interface WrapOptions {
   readonly ns: InstrumenterContext;
   readonly testFile: string;
-  readonly tests: readonly RecordedTest[];
+  readonly tests: readonly MuirSirynNodeTestRecordedTest[];
   readonly filter: Set<string> | undefined;
   readonly bail: boolean;
   /** Whether node runs with --test-only; without it `only` marks nothing, as under `node --test`. */
@@ -193,20 +203,20 @@ interface WrapOptions {
   readonly activeMutant: string | undefined;
   readonly env: Record<string, string | undefined>;
   readonly positions: Map<string, Position>;
-  readonly callSites: () => readonly CallSite[];
-  readonly nodeTest: NodeTestTarget;
+  readonly callSites: () => readonly MuirSirynNodeTestCallSite[];
+  readonly nodeTest: MuirSirynNodeTestTarget;
   /** Called before each suite, test or hook goes to node:test. */
   readonly registering: () => void;
   /** Wraps a function registered as an `after` hook outside any suite, a root `after` hook of the test file. */
-  readonly rootAfter: (hook: Body) => Body;
-  readonly currentTests: LzCurrentTests;
+  readonly rootAfter: (hook: MuirSirynNodeTestBody) => MuirSirynNodeTestBody;
+  readonly currentTests: MuirSirynNodeTestCurrentTests;
 }
 
 /** `hook` calling `first` with its context before it runs. */
-function lzPreceded(
-  hook: Body | undefined,
+function muirSirynNodeTestPreceded(
+  hook: MuirSirynNodeTestBody | undefined,
   first: (context: unknown) => void,
-): Body | undefined {
+): MuirSirynNodeTestBody | undefined {
   // node:test registers a hook without a function, as one that does nothing.
   if (typeof hook !== 'function') {
     return hook;
@@ -228,14 +238,17 @@ function lzPreceded(
  * while Node.js 24, which the runner starts on the test file alone, runs only the `only` tests and subtests of a
  * `t.runOnly(true)` test, and skips one whose `only` is false.
  */
-function lzOnlyRules(testOnly: boolean) {
+function muirSirynNodeTestOnlyRules(testOnly: boolean) {
   const ignoringOnly = <T>(withOnly: T, without: T): T =>
     testOnly ? withOnly : without;
   /** Makes `t.runOnly` do nothing on a context node:test passes to a test body or hook, without --test-only. */
   const turnOffRunOnly = ignoringOnly(
     (_context: unknown) => undefined,
     (context: unknown) => {
-      if (isObject(context) && typeof context['runOnly'] === 'function') {
+      if (
+        muirSirynNodeTestIsObject(context) &&
+        typeof context['runOnly'] === 'function'
+      ) {
         Object.assign(context, { runOnly: () => undefined });
       }
     },
@@ -243,8 +256,9 @@ function lzOnlyRules(testOnly: boolean) {
 
   return {
     /** The register function for `only`: node:test's own, or its plain one without --test-only. */
-    only: (register: WithShorthands<Body>): Body =>
-      ignoringOnly(register.only, register),
+    only: (
+      register: WithShorthands<MuirSirynNodeTestBody>,
+    ): MuirSirynNodeTestBody => ignoringOnly(register.only, register),
     withoutOnly: (options: object | null | undefined): object =>
       ignoringOnly(
         options ?? {},
@@ -253,19 +267,21 @@ function lzOnlyRules(testOnly: boolean) {
         ),
       ),
     turnOffRunOnly,
-    ignoringRunOnly: (hook: Body | undefined) =>
-      ignoringOnly(hook, lzPreceded(hook, turnOffRunOnly)),
+    ignoringRunOnly: (hook: MuirSirynNodeTestBody | undefined) =>
+      ignoringOnly(hook, muirSirynNodeTestPreceded(hook, turnOffRunOnly)),
   };
 }
 
-export type LzCurrentTests = ReturnType<typeof lzCurrentTests>;
+export type MuirSirynNodeTestCurrentTests = ReturnType<
+  typeof muirSirynNodeTestCurrentTests
+>;
 
 /**
  * Tracks which test is current, in the instrumenter's context and the environment, and the spans during which each
  * test is current. `makeCurrent` returns the function that ends it. `spansAt` gives the spans by id, as
  * `ProcessRecord.testSpans` describes them, with the open span ending at `time`.
  */
-export function lzCurrentTests({
+export function muirSirynNodeTestCurrentTests({
   ns,
   env,
   now,
@@ -274,14 +290,14 @@ export function lzCurrentTests({
   readonly env: Record<string, string | undefined>;
   readonly now: () => number;
 }) {
-  const testSpans = new Map<string, readonly LzTimeWindow[]>();
+  const testSpans = new Map<string, readonly MuirSirynNodeTestTimeWindow[]>();
   // The last is current, also when a subtest that its parent does not await outlives the parent's body.
   const active = new Set<string>();
   /** The test whose span is open, and the test of the span opened last. */
   let spanning: string | undefined;
   let latest: string | undefined;
   const closeSpan = (
-    spans: Map<string, readonly LzTimeWindow[]>,
+    spans: Map<string, readonly MuirSirynNodeTestTimeWindow[]>,
     id: string,
     time: number,
   ) => {
@@ -319,10 +335,10 @@ export function lzCurrentTests({
     if (id === undefined) {
       // Stryker's coverage counts treat an empty id as no test; a deleted property would slow every mutant switch.
       ns.currentTestId = '';
-      Reflect.deleteProperty(env, envNames.current);
+      Reflect.deleteProperty(env, muirSirynNodeTestEnvNames.current);
     } else {
       ns.currentTestId = id;
-      env[envNames.current] = id;
+      env[muirSirynNodeTestEnvNames.current] = id;
     }
 
     moveSpan(id);
@@ -339,7 +355,7 @@ export function lzCurrentTests({
 
   const spansAt = (
     time: number,
-  ): Readonly<Record<string, readonly LzTimeWindow[]>> => {
+  ): Readonly<Record<string, readonly MuirSirynNodeTestTimeWindow[]>> => {
     const spans = new Map(testSpans);
 
     if (spanning !== undefined) {
@@ -357,7 +373,9 @@ export function lzCurrentTests({
  * callback. Bailing acts on the results node:test has reported, and node:test reports the first tests of a file only
  * once its reporters start, so a few quick tests can still run after the first failure.
  */
-export function wrapNodeTest(options: WrapOptions): NodeTestModule {
+export function muirSirynNodeTestWrapNodeTest(
+  options: WrapOptions,
+): MuirSirynNodeTestModule {
   const {
     ns,
     testFile,
@@ -374,7 +392,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
     rootAfter,
     currentTests,
   } = options;
-  const idOf = uniqueIds();
+  const idOf = muirSirynNodeTestUniqueIds();
   /**
    * node:test makes the suite or test whose body runs, followed through asynchronous calls, the parent of the suites
    * and tests registered with its module's functions.
@@ -383,7 +401,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
   const parentId = () => running.getStore() ?? testFile;
   const bailed = () => bail && tests.some((test) => test.status === 'failed');
   const { only, withoutOnly, turnOffRunOnly, ignoringRunOnly } =
-    lzOnlyRules(testOnly);
+    muirSirynNodeTestOnlyRules(testOnly);
   const { makeCurrent, isActive } = currentTests;
   /**
    * Whether the filter selects the test, a test it lies inside, or a subtest of it, which the test must run to
@@ -391,22 +409,30 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
    * A test file in the filter selects all its tests.
    */
   const selected = (id: string) =>
-    !filter || [...filter].some((test) => within(test, id) || within(id, test));
+    !filter ||
+    [...filter].some(
+      (test) =>
+        muirSirynNodeTestWithin(test, id) || muirSirynNodeTestWithin(id, test),
+    );
   const activate = () => {
     if (activeMutant !== undefined) {
       ns.activeMutant = activeMutant;
-      env[activeMutantEnv] = activeMutant;
+      env[muirSirynNodeTestActiveMutantEnv] = activeMutant;
     }
   };
   /** Like node:test's own filters, a suite without a selected test runs its body and registers none of its hooks. */
   const wrapHook = (
-    register: Body,
+    register: MuirSirynNodeTestBody,
     prepare: (
-      hook: Body | undefined,
+      hook: MuirSirynNodeTestBody | undefined,
       suite: string | undefined,
-    ) => Body | undefined = (hook) => hook,
+    ) => MuirSirynNodeTestBody | undefined = (hook) => hook,
   ): HookRegistrar =>
-    function (this: unknown, hook?: Body, ...rest: unknown[]): unknown {
+    function (
+      this: unknown,
+      hook?: MuirSirynNodeTestBody,
+      ...rest: unknown[]
+    ): unknown {
       const suite = running.getStore();
 
       if (suite !== undefined && !selected(suite)) {
@@ -435,14 +461,14 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
       : undefined;
   /** Makes the test that `find` names current while the hook runs, unless that test is running already. */
   const attributing = (
-    hook: Body | undefined,
+    hook: MuirSirynNodeTestBody | undefined,
     find: (context: unknown) => string | undefined,
-  ): Body | undefined => {
+  ): MuirSirynNodeTestBody | undefined => {
     if (typeof hook !== 'function') {
       return hook;
     }
 
-    const attribute = (context: unknown): LzBegun => {
+    const attribute = (context: unknown): MuirSirynNodeTestBegun => {
       const id = find(context);
 
       if (id === undefined || isActive(id)) {
@@ -452,9 +478,10 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
       return { kind: 'settle', settle: makeCurrent(id) };
     };
 
-    return settling(hook, attribute);
+    return muirSirynNodeTestSettling(hook, attribute);
   };
-  const activating = (hook: Body | undefined) => lzPreceded(hook, activate);
+  const activating = (hook: MuirSirynNodeTestBody | undefined) =>
+    muirSirynNodeTestPreceded(hook, activate);
 
   /** node:test takes the position from its caller, which is a wrapper, so the wrapper finds it itself. */
   const declare = (id: string) => {
@@ -487,7 +514,9 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
    * is its own.
    */
   const parse = (args: unknown[]) => {
-    const body = args.find((arg): arg is Body => typeof arg === 'function');
+    const body = args.find(
+      (arg): arg is MuirSirynNodeTestBody => typeof arg === 'function',
+    );
     const options = args.find(
       (arg): arg is object | null => typeof arg === 'object',
     );
@@ -504,7 +533,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
    * it run one at a time, as node:test does without `concurrency`, and coverage goes to the one current test.
    */
   const registerWith = (
-    register: Body,
+    register: MuirSirynNodeTestBody,
     self: unknown,
     {
       name,
@@ -513,7 +542,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
     }: {
       name: string;
       options: object | null | undefined;
-      body: Body | undefined;
+      body: MuirSirynNodeTestBody | undefined;
     },
   ): unknown =>
     Reflect.apply(register, self, [
@@ -522,11 +551,11 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
       ...(body ? [body] : []),
     ]);
 
-  const wrapSuite = (register: Body): Registrar =>
+  const wrapSuite = (register: MuirSirynNodeTestBody): Registrar =>
     function (this: unknown, ...args: unknown[]) {
       const parsed = parse(args);
       const id = named(parentId(), parsed.name, false);
-      const wrap = (suiteBody: Body) =>
+      const wrap = (suiteBody: MuirSirynNodeTestBody) =>
         function (this: unknown, ...bodyArgs: unknown[]) {
           return running.run(id, (): unknown =>
             Reflect.apply(suiteBody, this, bodyArgs),
@@ -539,7 +568,10 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
       });
     };
 
-  const wrapTest = (register: Body, parent = parentId): Registrar =>
+  const wrapTest = (
+    register: MuirSirynNodeTestBody,
+    parent = parentId,
+  ): Registrar =>
     function (this: unknown, ...args: unknown[]) {
       const parsed = parse(args);
       const { options, body } = parsed;
@@ -548,7 +580,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
        * The test stays current until its body ends and node:test has run its afterEach hooks, whichever is later, as
        * node:test waits for the test's subtests and plan in between. Its `t.after` hooks run after that.
        */
-      const enter = (context: LzTestContext) => {
+      const enter = (context: MuirSirynNodeTestTestContext) => {
         const endCurrent = makeCurrent(id);
         let open = 2;
         const leave = () => {
@@ -558,15 +590,18 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
         };
         const { after, beforeEach } = context;
         Reflect.apply(after, context, [leave]);
-        const overrides: LzTestContextOverrides = {
+        const overrides: MuirSirynNodeTestTestContextOverrides = {
           // `t.test` registers a subtest of `t`'s test, wherever it is called.
           test: wrapTest(context.test, () => id),
-          after: (hook?: Body, ...rest: unknown[]): unknown =>
+          after: (hook?: MuirSirynNodeTestBody, ...rest: unknown[]): unknown =>
             Reflect.apply(after, context, [
               attributing(hook, () => id),
               ...rest,
             ]),
-          beforeEach: (hook?: Body, ...rest: unknown[]): unknown =>
+          beforeEach: (
+            hook?: MuirSirynNodeTestBody,
+            ...rest: unknown[]
+          ): unknown =>
             Reflect.apply(beforeEach, context, [
               attributing(ignoringRunOnly(hook), testOf),
               ...rest,
@@ -579,7 +614,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
 
         return leave;
       };
-      const begin = (context: unknown): LzBegun => {
+      const begin = (context: unknown): MuirSirynNodeTestBegun => {
         if (!isLzTestContext(context)) {
           throw new TypeError(`node:test ran "${id}" without a test context`);
         }
@@ -592,8 +627,8 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
 
         return { kind: 'settle', settle: enter(context) };
       };
-      const wrap = (body: Body) =>
-        settling(body, begin, (call) => running.run(id, call));
+      const wrap = (body: MuirSirynNodeTestBody) =>
+        muirSirynNodeTestSettling(body, begin, (call) => running.run(id, call));
 
       // A test registered as skipped runs neither its body nor its beforeEach and afterEach hooks.
       const skip = !selected(id) && { skip: true };
@@ -606,7 +641,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
     };
 
   // The bodies of skipped suites and tests never run, so `skip` only notes where they are declared.
-  const declareSkipped = (register: Body): Registrar =>
+  const declareSkipped = (register: MuirSirynNodeTestBody): Registrar =>
     function (this: unknown, ...args: unknown[]): unknown {
       const { name, options } = parse(args);
       registering();
@@ -619,8 +654,8 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
       );
     };
   const withShorthands = (
-    original: WithShorthands<Body>,
-    wrap: (register: Body) => Registrar,
+    original: WithShorthands<MuirSirynNodeTestBody>,
+    wrap: (register: MuirSirynNodeTestBody) => Registrar,
   ): Register =>
     Object.assign(wrap(original), original, {
       skip: declareSkipped(original.skip),
@@ -655,7 +690,7 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
         return attributed;
       }
 
-      declare(afterHookId(testFile));
+      declare(muirSirynNodeTestAfterHookId(testFile));
 
       return typeof attributed === 'function'
         ? rootAfter(attributed)

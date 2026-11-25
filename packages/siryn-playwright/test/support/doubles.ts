@@ -10,19 +10,19 @@ import type {
   MutantRunOptions,
 } from '@stryker-mutator/api/test-runner';
 
-import type { LzPlaywrightRunnerOptionsWithStrykerOptions } from '../../src/lz-playwright-runner-options-with-stryker-options.ts';
+import type { MuirSirynPlaywrightRunnerOptionsWithStrykerOptions } from '../../src/muir-siryn-playwright-runner-options-with-stryker-options.ts';
 import {
-  LzPlaywrightCollectingReporter,
-  type ReportedAttempt,
-  type ReportedTest,
+  MuirSirynPlaywrightCollectingReporter,
+  type MuirSirynPlaywrightReportedAttempt,
+  type MuirSirynPlaywrightReportedTest,
 } from '../../src/reporter.ts';
 import type {
-  DryRunRequest,
-  MutantRunRequest,
-  TestSelection,
+  MuirSirynPlaywrightDryRunRequest,
+  MuirSirynPlaywrightMutantRunRequest,
+  MuirSirynPlaywrightTestSelection,
 } from '../../src/run-request.ts';
-import type { RunOutput } from '../../src/run-result.ts';
-import { dryRunBudget } from '../../src/timeouts.ts';
+import type { MuirSirynPlaywrightRunOutput } from '../../src/run-result.ts';
+import { muirSirynPlaywrightDryRunBudget } from '../../src/timeouts.ts';
 
 export type Outcome = ReturnType<TestCase['outcome']>;
 
@@ -59,7 +59,7 @@ export function fakeTestCase(
     expectedStatus = 'passed',
     parent = { _parallelMode: 'default' },
   }: { expectedStatus?: TestCase['expectedStatus']; parent?: object } = {},
-): ReportedTest {
+): MuirSirynPlaywrightReportedTest {
   return {
     id,
     expectedStatus,
@@ -72,11 +72,11 @@ export function fakeTestCase(
 }
 
 export function addAttempt(
-  testCase: ReportedTest,
+  testCase: MuirSirynPlaywrightReportedTest,
   outcome: Outcome,
   status: TestResult['status'],
-  attachments: ReportedAttempt['attachments'] = [],
-): ReportedTest {
+  attachments: MuirSirynPlaywrightReportedAttempt['attachments'] = [],
+): MuirSirynPlaywrightReportedTest {
   return {
     ...testCase,
     results: [
@@ -99,7 +99,7 @@ export function timedAttempt(
   status: TestResult['status'],
   startTime: Date,
   duration: number,
-): ReportedAttempt {
+): MuirSirynPlaywrightReportedAttempt {
   return { status, startTime, duration, attachments: [] };
 }
 
@@ -107,7 +107,7 @@ export function withAttempt(
   id: string,
   startTime: Date,
   duration: number,
-): ReportedTest {
+): MuirSirynPlaywrightReportedTest {
   return {
     ...fakeTestCase(id),
     results: [timedAttempt('passed', startTime, duration)],
@@ -118,7 +118,7 @@ export function finishedTest(
   id: string,
   status: TestResult['status'],
   outcome: Outcome = status === 'passed' ? 'expected' : 'unexpected',
-): ReportedTest {
+): MuirSirynPlaywrightReportedTest {
   return addAttempt(fakeTestCase(id), outcome, status);
 }
 
@@ -163,26 +163,26 @@ export function warnings(
 }
 
 export function strykerOptions(
-  options: Partial<LzPlaywrightRunnerOptionsWithStrykerOptions>,
-): LzPlaywrightRunnerOptionsWithStrykerOptions {
+  options: Partial<MuirSirynPlaywrightRunnerOptionsWithStrykerOptions>,
+): MuirSirynPlaywrightRunnerOptionsWithStrykerOptions {
   return { timeoutMS: 10_000, ...options };
 }
 
 export function dryRequest(
-  request: Partial<DryRunRequest> = {},
-): DryRunRequest {
+  request: Partial<MuirSirynPlaywrightDryRunRequest> = {},
+): MuirSirynPlaywrightDryRunRequest {
   return {
     kind: 'dry',
     disableBail: true,
     coverageAnalysis: 'perTest',
-    budget: dryRunBudget,
+    budget: muirSirynPlaywrightDryRunBudget,
     ...request,
   };
 }
 
 export function mutantRequest(
-  request: Partial<MutantRunRequest> = {},
-): MutantRunRequest {
+  request: Partial<MuirSirynPlaywrightMutantRunRequest> = {},
+): MuirSirynPlaywrightMutantRunRequest {
   return {
     kind: 'mutant',
     disableBail: true,
@@ -190,20 +190,24 @@ export function mutantRequest(
     mutantActivation: 'runtime',
     selection: undefined,
     hitLimit: undefined,
-    budget: dryRunBudget,
+    budget: muirSirynPlaywrightDryRunBudget,
     ...request,
   };
 }
 
 /** A selection with no serial group to widen it. */
-export function selected(ids: readonly string[]): TestSelection {
+export function selected(
+  ids: readonly string[],
+): MuirSirynPlaywrightTestSelection {
   return { covering: ids, toRun: ids };
 }
 
-export function runOutput(output: Partial<RunOutput> = {}): RunOutput {
+export function runOutput(
+  output: Partial<MuirSirynPlaywrightRunOutput> = {},
+): MuirSirynPlaywrightRunOutput {
   return {
     status: 'passed',
-    reporter: new LzPlaywrightCollectingReporter(),
+    reporter: new MuirSirynPlaywrightCollectingReporter(),
     snapshots: [],
     hookInstalled: true,
     installErrors: [],

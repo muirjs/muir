@@ -1,18 +1,25 @@
 import net from 'node:net';
 
-import type { ConfigWebServer, Playwright } from './playwright-internals.ts';
+import type {
+  MuirSirynPlaywrightConfigWebServer,
+  MuirSirynPlaywright,
+} from './playwright-internals.ts';
 
-export interface ServerCheck {
+export interface MuirSirynPlaywrightServerCheck {
   readonly name: string;
   isUp(): Promise<boolean>;
 }
 
-export type ServerTarget = { readonly port: number } | { readonly url: string };
+export type MuirSirynPlaywrightServerTarget =
+  | { readonly port: number }
+  | { readonly url: string };
 
-export function serverTarget({
+export function muirSirynPlaywrightServerTarget({
   url,
   port,
-}: ConfigWebServer): ServerTarget | undefined {
+}: MuirSirynPlaywrightConfigWebServer):
+  | MuirSirynPlaywrightServerTarget
+  | undefined {
   if (port !== undefined) {
     return { port };
   }
@@ -20,11 +27,11 @@ export function serverTarget({
   return url === undefined ? undefined : { url };
 }
 
-export function serverCheck(
-  server: ConfigWebServer,
-  isURLAvailable: Playwright['isURLAvailable'],
-): ServerCheck | undefined {
-  const target = serverTarget(server);
+export function muirSirynPlaywrightServerCheck(
+  server: MuirSirynPlaywrightConfigWebServer,
+  isURLAvailable: MuirSirynPlaywright['isURLAvailable'],
+): MuirSirynPlaywrightServerCheck | undefined {
+  const target = muirSirynPlaywrightServerTarget(server);
 
   if (target === undefined) {
     return undefined;
@@ -35,7 +42,7 @@ export function serverCheck(
 
     return {
       name: server.url ?? `port ${port}`,
-      isUp: () => acceptsConnections(port),
+      isUp: () => muirSirynPlaywrightAcceptsConnections(port),
     };
   }
 
@@ -50,14 +57,16 @@ export function serverCheck(
 // Playwright's own webServer port check tries both loopback addresses: localhost can resolve to only one of them.
 const loopbackHosts = ['127.0.0.1', '::1'];
 
-export interface ConnectingSocket {
+export interface MuirSirynPlaywrightConnectingSocket {
   once(event: 'connect' | 'error' | 'timeout', listener: () => void): unknown;
   destroy(): unknown;
 }
 
-export function acceptsConnections(
+export function muirSirynPlaywrightAcceptsConnections(
   port: number,
-  connect: (options: net.TcpNetConnectOpts) => ConnectingSocket = net.connect,
+  connect: (
+    options: net.TcpNetConnectOpts,
+  ) => MuirSirynPlaywrightConnectingSocket = net.connect,
 ): Promise<boolean> {
   return new Promise((resolve) => {
     let answered = 0;

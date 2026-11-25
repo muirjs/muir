@@ -2,49 +2,58 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  lzCalleeRoot,
-  lzImportOf,
-  lzPropertyName,
+  muirMoiraNodeTestCalleeRoot,
+  muirMoiraNodeTestImportOf,
+  muirMoiraNodeTestPropertyName,
 } from '@muirjs/moira-node-test';
 
 /** The module names that `node:<name>` and the bare `<name>` of each of `names` resolve to. */
-export function lzBuiltin(...names: readonly string[]): ReadonlySet<string> {
+export function muirProteusNodeBuiltin(
+  ...names: readonly string[]
+): ReadonlySet<string> {
   return new Set(names.flatMap((name) => [name, `node:${name}`]));
 }
 
 /** The module names of node:assert. */
-export const lzNodeAssert = lzBuiltin('assert', 'assert/strict');
+export const muirProteusNodeAssert = muirProteusNodeBuiltin(
+  'assert',
+  'assert/strict',
+);
 
 /** node:test's one module name: it exists only under the `node:` scheme, and the bare `test` is an npm package. */
-export const lzNodeTest: ReadonlySet<string> = new Set(['node:test']);
+export const muirProteusNodeNodeTest: ReadonlySet<string> = new Set([
+  'node:test',
+]);
 
 /**
  * The node:assert method that a call of `callee` runs, `ok` for a call of the module itself, or `undefined` when the
  * call is no node:assert call. The `assert` of a node:test test context, a parameter, counts.
  */
-export function lzAssertMethod(
+export function muirProteusNodeAssertMethod(
   path: NodePath,
   callee: types.Node,
 ): string | undefined {
-  const root = lzCalleeRoot(callee);
+  const root = muirMoiraNodeTestCalleeRoot(callee);
 
   if (root === undefined) {
     return undefined;
   }
 
-  const from = lzImportOf(path, root.name);
+  const from = muirMoiraNodeTestImportOf(path, root.name);
 
   if (from === undefined) {
     return isTestContextAssert(path, callee, root)
-      ? lzPropertyName(callee)
+      ? muirMoiraNodeTestPropertyName(callee)
       : undefined;
   }
 
-  if (!lzNodeAssert.has(from.source)) {
+  if (!muirProteusNodeAssert.has(from.source)) {
     return undefined;
   }
 
-  return callee === root ? (from.imported ?? 'ok') : lzPropertyName(callee);
+  return callee === root
+    ? (from.imported ?? 'ok')
+    : muirMoiraNodeTestPropertyName(callee);
 }
 
 function isTestContextAssert(
@@ -56,7 +65,7 @@ function isTestContextAssert(
     callee.type === 'MemberExpression' &&
     callee.object.type === 'MemberExpression' &&
     callee.object.object === root &&
-    lzPropertyName(callee.object) === 'assert' &&
+    muirMoiraNodeTestPropertyName(callee.object) === 'assert' &&
     path.scope.getBinding(root.name)?.kind === 'param'
   );
 }

@@ -22,44 +22,44 @@ A Stryker config whose `mutate` holds only test code and that installs these mut
 configuration that mutates app code.
 _Avoid_: test config, spec config
 
-**LzPlaywright mutator**:
-One of this package's mutators, named `LzPlaywright` plus what it changes, such as `LzPlaywrightClickAction`.
+**MuirProteusPlaywright mutator**:
+One of this package's mutators, named `MuirProteusPlaywright` plus what it changes, such as `MuirProteusPlaywrightClickAction`.
 _Avoid_: Playwright operator, test mutator
 
 ### Mutator families
 
 **Action mutator**:
-A mutator that removes an awaited user action, navigation or API request: `LzPlaywrightClickAction`,
-`LzPlaywrightInputAction`, `LzPlaywrightFocusAction` or `LzPlaywrightNavigationAction`.
+A mutator that removes an awaited user action, navigation or API request: `MuirProteusPlaywrightClickAction`,
+`MuirProteusPlaywrightInputAction`, `MuirProteusPlaywrightFocusAction` or `MuirProteusPlaywrightNavigationAction`.
 _Avoid_: interaction mutator
 
 **Wait mutator**:
-A mutator that removes an awaited wait: `LzPlaywrightSleepWait`, `LzPlaywrightStateWait` or
-`LzPlaywrightNetworkWait`.
+A mutator that removes an awaited wait: `MuirProteusPlaywrightSleepWait`, `MuirProteusPlaywrightStateWait` or
+`MuirProteusPlaywrightNetworkWait`.
 _Avoid_: timing mutator
 
 **Clock mutator**:
-`LzPlaywrightClock`, the mutator that removes an awaited `clock.runFor` or `clock.fastForward`.
+`MuirProteusPlaywrightClock`, the mutator that removes an awaited `clock.runFor` or `clock.fastForward`.
 _Avoid_: timer mutator
 
 **Mount mutator**:
-`LzPlaywrightMountStory`, the mutator that swaps the story id a `mount(...)` call names for another story id that
+`MuirProteusPlaywrightMountStory`, the mutator that swaps the story id a `mount(...)` call names for another story id that
 the same file mounts.
 _Avoid_: story mutator
 
 **Locator mutator**:
-A mutator that swaps a locator's value for another value in the same file: `LzPlaywrightTestIdLocator`,
-`LzPlaywrightRoleLocator` or `LzPlaywrightTextLocator`.
+A mutator that swaps a locator's value for another value in the same file: `MuirProteusPlaywrightTestIdLocator`,
+`MuirProteusPlaywrightRoleLocator` or `MuirProteusPlaywrightTextLocator`.
 _Avoid_: selector mutator
 
 **Route mock mutator**:
-A mutator that changes what a route handler does with a request: `LzPlaywrightFulfill` changes a mocked response,
-`LzPlaywrightRouteOutcome` turns an abort into a continue and back.
+A mutator that changes what a route handler does with a request: `MuirProteusPlaywrightFulfill` changes a mocked response,
+`MuirProteusPlaywrightRouteOutcome` turns an abort into a continue and back.
 _Avoid_: network mock mutator
 
 **Request mutator**:
-A mutator that changes an API request a test sends: `LzPlaywrightRequestData` changes its payload,
-`LzPlaywrightRequestUrl` empties its URL.
+A mutator that changes an API request a test sends: `MuirProteusPlaywrightRequestData` changes its payload,
+`MuirProteusPlaywrightRequestUrl` empties its URL.
 _Avoid_: API mutator
 
 ### How mutants are made
@@ -77,7 +77,7 @@ _Avoid_: cleanup
 ### Playwright shapes the mutators read
 
 **Navigation fixture**:
-A fixture whose awaited call `LzPlaywrightNavigationAction` removes like a `goto`; the `navigationFixtures` setting
+A fixture whose awaited call `MuirProteusPlaywrightNavigationAction` removes like a `goto`; the `navigationFixtures` setting
 names them, `navigate` by default.
 _Avoid_: navigation helper
 
@@ -88,7 +88,7 @@ _Avoid_: route callback, interceptor
 
 **API request**:
 A `delete`, `fetch`, `get`, `head`, `patch`, `post` or `put` call on a request context: the `request` fixture or
-another parameter named `request`, `<x>.request`, or, for `LzPlaywrightRequestUrl`, a context from
+another parameter named `request`, `<x>.request`, or, for `MuirProteusPlaywrightRequestUrl`, a context from
 `request.newContext()`.
 _Avoid_: HTTP call, fetch
 
@@ -103,6 +103,6 @@ _Avoid_: story name, component id
 
 **Serialized callback**:
 A function passed directly to `evaluate`, `evaluateHandle`, `evaluateAll`, `$eval`, `$$eval`, `addInitScript` or
-`waitForFunction`, which Playwright sends as source text to run in another realm; the `lz-playwright-serialized`
+`waitForFunction`, which Playwright sends as source text to run in another realm; the `muir-proteus-playwright-serialized`
 ignorer reports its mutants as Ignored.
 _Avoid_: browser callback, page function

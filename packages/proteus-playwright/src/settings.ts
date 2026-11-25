@@ -1,14 +1,17 @@
 import { inspect } from 'node:util';
 
-import { fieldOf, isRecord } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsIsRecord,
+} from '@muirjs/moira-mutators';
 
-import { packageName } from './package-name.ts';
+import { muirProteusPlaywrightPackageName } from './package-name.ts';
 
-export interface LzPlaywrightMutatorSettings {
+export interface MuirProteusPlaywrightMutatorSettings {
   readonly navigationFixtures?: readonly string[];
 }
 
-export interface ResolvedSettings {
+export interface MuirProteusPlaywrightResolvedSettings {
   readonly navigationFixtures: readonly string[];
 }
 
@@ -22,24 +25,28 @@ function isIdentifierList(value: unknown): value is readonly string[] {
   );
 }
 
-let current = parseSettings(undefined);
+let current = muirProteusPlaywrightParseSettings(undefined);
 
 /** The settings of the latest install call; every call replaces them. */
-export function useSettings(settings: ResolvedSettings): void {
+export function muirProteusPlaywrightUseSettings(
+  settings: MuirProteusPlaywrightResolvedSettings,
+): void {
   current = settings;
 }
 
-export function navigationFixtures(): readonly string[] {
+export function muirProteusPlaywrightNavigationFixtures(): readonly string[] {
   return current.navigationFixtures;
 }
 
-export function parseSettings(settings: unknown): ResolvedSettings {
+export function muirProteusPlaywrightParseSettings(
+  settings: unknown,
+): MuirProteusPlaywrightResolvedSettings {
   if (
     settings !== undefined &&
-    (!isRecord(settings) || Array.isArray(settings))
+    (!muirMoiraMutatorsIsRecord(settings) || Array.isArray(settings))
   ) {
     throw new Error(
-      `${packageName}: the settings must be an object, not ${inspect(settings)}.`,
+      `${muirProteusPlaywrightPackageName}: the settings must be an object, not ${inspect(settings)}.`,
     );
   }
 
@@ -49,16 +56,16 @@ export function parseSettings(settings: unknown): ResolvedSettings {
 
   if (extraKey !== undefined) {
     throw new Error(
-      `${packageName}: the settings have no key ${extraKey}; the keys are ${fixturesKey}.`,
+      `${muirProteusPlaywrightPackageName}: the settings have no key ${extraKey}; the keys are ${fixturesKey}.`,
     );
   }
 
-  const given = fieldOf(settings, fixturesKey);
+  const given = muirMoiraMutatorsFieldOf(settings, fixturesKey);
   const list = given === undefined ? ['navigate'] : given;
 
   if (!isIdentifierList(list)) {
     throw new Error(
-      `${packageName}: ${fixturesKey} takes an array of identifier names, not ${inspect(list)}.`,
+      `${muirProteusPlaywrightPackageName}: ${fixturesKey} takes an array of identifier names, not ${inspect(list)}.`,
     );
   }
 

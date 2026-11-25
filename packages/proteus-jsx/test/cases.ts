@@ -1,7 +1,7 @@
 // Synthetic JSX shapes from the open-source repos the runner was exercised on, as JSX, with the JSX mutants the
 // design (docs/design/jsx-mutators.md) says each gives. An empty expect is a must-not-generate case. The
 // mined rows and their transcription notes are in spikes/ui-mutator-cases/.
-import type { MutatorName } from '../src/mutators.ts';
+import type { MuirProteusJsxMutatorName } from '../src/mutators.ts';
 
 export interface Case {
   readonly id: string;
@@ -13,7 +13,7 @@ export interface Case {
   // One JSX expression; free identifiers stand for props.
   readonly jsx: string;
   readonly expect: readonly (readonly [
-    mutator: MutatorName,
+    mutator: MuirProteusJsxMutatorName,
     replacement: string,
   ])[];
   // Text the instrumented file must contain, for a rule about placement rather than about the mutants.
@@ -36,11 +36,11 @@ export const cases: readonly Case[] = [
     jsx: '<button className="btn btn-outline-danger" onClick={logout}>Or click here to logout.</button>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span className="btn btn-outline-danger" onClick={logout}>Or click here to logout.</span>',
       ],
-      ['LzJsxEventHandler', 'onClick={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxEventHandler', 'onClick={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -48,14 +48,14 @@ export const cases: readonly Case[] = [
     title: 'a plain-string placeholder is emptied',
     origin: `${realworldOrigin}libs/auth/feature-auth/src/login/login.component.html:18`,
     jsx: '<input type="email" id="email" placeholder="Email" />',
-    expect: [['LzJsxLabelAttribute', 'placeholder=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'placeholder=""']],
   },
   {
     id: 'realworld-3',
     title: 'a form submit handler from props is removed',
     origin: `${realworldOrigin}libs/auth/feature-auth/src/login/login.component.html:12`,
     jsx: '<form onSubmit={onSubmit}></form>',
-    expect: [['LzJsxEventHandler', 'onSubmit={undefined}']],
+    expect: [['MuirProteusJsxEventHandler', 'onSubmit={undefined}']],
   },
   {
     id: 'realworld-4',
@@ -64,11 +64,11 @@ export const cases: readonly Case[] = [
     jsx: '<button className="btn btn-sm btn-outline-danger" onClick={deleteArticle}>Delete Article</button>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span className="btn btn-sm btn-outline-danger" onClick={deleteArticle}>Delete Article</span>',
       ],
-      ['LzJsxEventHandler', 'onClick={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxEventHandler', 'onClick={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -85,8 +85,8 @@ export const cases: readonly Case[] = [
     setup: 'function logout() {\n  store.logout();\n}',
     jsx: '<button onClick={logout}>Logout</button>',
     expect: [
-      ['LzJsxElementRole', '<span onClick={logout}>Logout</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span onClick={logout}>Logout</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -95,8 +95,8 @@ export const cases: readonly Case[] = [
     origin: `${realworldOrigin}apps/conduit/src/app/layout/navbar/navbar.component.html:5`,
     jsx: '<nav>{!isLoggedIn ? <GuestNav /> : <MemberNav />}</nav>',
     expect: [
-      ['LzJsxConditionalElement', '<GuestNav />'],
-      ['LzJsxConditionalElement', '<MemberNav />'],
+      ['MuirProteusJsxConditionalElement', '<GuestNav />'],
+      ['MuirProteusJsxConditionalElement', '<MemberNav />'],
     ],
   },
   {
@@ -104,7 +104,9 @@ export const cases: readonly Case[] = [
     title: 'an identifier guard is removed',
     origin: `${realworldOrigin}libs/articles/feature-article/src/article.component.html:1`,
     jsx: '<main>{article && <ArticlePage article={article} />}</main>',
-    expect: [['LzJsxConditionalElement', '<ArticlePage article={article} />']],
+    expect: [
+      ['MuirProteusJsxConditionalElement', '<ArticlePage article={article} />'],
+    ],
   },
   {
     id: 'realworld-9',
@@ -119,8 +121,11 @@ export const cases: readonly Case[] = [
     origin: `${realworldOrigin}libs/articles/feature-article/src/article-meta/article-meta.component.html:2`,
     jsx: '<a data-testid="article-author" href={\'/profile/\' + username}></a>',
     expect: [
-      ['LzJsxElementRole', '<span data-testid="article-author"></span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
+      [
+        'MuirProteusJsxElementRole',
+        '<span data-testid="article-author"></span>',
+      ],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
     ],
   },
   {
@@ -129,9 +134,12 @@ export const cases: readonly Case[] = [
     origin: `${realworldOrigin}apps/conduit/src/app/layout/navbar/navbar.component.html:11`,
     jsx: '<a className="nav-link" href="/login">Sign in</a>',
     expect: [
-      ['LzJsxElementRole', '<span className="nav-link">Sign in</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
+      [
+        'MuirProteusJsxElementRole',
+        '<span className="nav-link">Sign in</span>',
+      ],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -141,8 +149,11 @@ export const cases: readonly Case[] = [
     origin: `${realworldOrigin}libs/auth/feature-auth/src/login/login.component.html:33,36`,
     jsx: '<button data-testid="sign-in" disabled={form.invalid || form.pending} type="submit">Sign in</button>',
     expect: [
-      ['LzJsxElementRole', '<span data-testid="sign-in">Sign in</span>'],
-      ['LzJsxTextLiteral', ''],
+      [
+        'MuirProteusJsxElementRole',
+        '<span data-testid="sign-in">Sign in</span>',
+      ],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -158,28 +169,28 @@ export const cases: readonly Case[] = [
     title: 'a negated hidden expression is forced off',
     origin: `${realworldOrigin}libs/articles/feature-article/src/article-meta/article-meta.component.html:12`,
     jsx: '<span hidden={!canModify}></span>',
-    expect: [['LzJsxHiddenAttribute', 'hidden={false}']],
+    expect: [['MuirProteusJsxHiddenAttribute', 'hidden={false}']],
   },
   {
     id: 'realworld-16',
     title: 'aria-hidden with a boolean literal is left to BooleanLiteral',
     origin: `${realworldOrigin}libs/ui/components/src/avatar/avatar.component.html:4`,
     jsx: '<span className="avatar fallback" aria-hidden={true}>{initials}</span>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'realworld-17',
     title: 'a member expression child is emptied',
     origin: `${realworldOrigin}libs/articles/feature-article/src/article.component.html:5`,
     jsx: '<h1 data-testid="article-title">{article.title}</h1>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'realworld-18',
     title: 'parentheses around a child are not text',
     origin: `${realworldOrigin}libs/articles/feature-article/src/article-meta/article-meta.component.html:46`,
     jsx: '<span className="counter">({article.favoritesCount})</span>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'realworld-19',
@@ -194,14 +205,14 @@ export const cases: readonly Case[] = [
     origin: `${realworldOrigin}libs/articles/feature-article/src/article.component.html:43`,
     jsx: '<><a href="/login">Sign in</a> or <a href="/register">sign up</a> to add comments on this article.</>',
     expect: [
-      ['LzJsxElementRole', '<span>Sign in</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxElementRole', '<span>sign up</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span>Sign in</span>'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span>sign up</span>'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -209,14 +220,14 @@ export const cases: readonly Case[] = [
     title: 'a bound alt is emptied',
     origin: `${realworldOrigin}libs/ui/components/src/avatar/avatar.component.html:2`,
     jsx: '<img src={src} alt={username} />',
-    expect: [['LzJsxLabelAttribute', 'alt=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'alt=""']],
   },
   {
     id: 'realworld-22',
     title: 'an a without href keeps its tag',
     origin: `${realworldOrigin}libs/ui/components/src/pager/pager.component.html:9`,
     jsx: '<a data-testid="pagination-link" className="page-link">{pageNumber}</a>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'ngx-yeti-1',
@@ -226,11 +237,11 @@ export const cases: readonly Case[] = [
     jsx: '<button type="button" disabled={!live} onClick={() => setLive(false)}>Remove the live buttons</button>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span onClick={() => setLive(false)}>Remove the live buttons</span>',
       ],
-      ['LzJsxDisabledAttribute', 'disabled={false}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxDisabledAttribute', 'disabled={false}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -238,7 +249,9 @@ export const cases: readonly Case[] = [
     title: 'an identifier guard around a form is removed',
     origin: `${yetiOrigin}button-fixture.ts:26`,
     jsx: '<div>{live && <form id="button-form"></form>}</div>',
-    expect: [['LzJsxConditionalElement', '<form id="button-form"></form>']],
+    expect: [
+      ['MuirProteusJsxConditionalElement', '<form id="button-form"></form>'],
+    ],
   },
   {
     id: 'ngx-yeti-3',
@@ -247,9 +260,9 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}fragment-links-fixture.ts:38`,
     jsx: '<div>{page !== null && <a href="../two">Open page two</a>}</div>',
     expect: [
-      ['LzJsxElementRole', '<span>Open page two</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span>Open page two</span>'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -258,8 +271,8 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}button-fixture.ts:68`,
     jsx: '<a id="previous" disabled>Previous</a>',
     expect: [
-      ['LzJsxDisabledAttribute', 'disabled={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxDisabledAttribute', 'disabled={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -268,10 +281,10 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}button-fixture.ts:61`,
     jsx: '<a id="next" disabled={last} href={last ? null : \'/replay\'}>Next</a>',
     expect: [
-      ['LzJsxElementRole', '<span id="next">Next</span>'],
-      ['LzJsxDisabledAttribute', 'disabled={false}'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span id="next">Next</span>'],
+      ['MuirProteusJsxDisabledAttribute', 'disabled={false}'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -280,9 +293,12 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}button-fixture.ts:24`,
     jsx: '<a href="/replay">Leave for a page without buttons</a>',
     expect: [
-      ['LzJsxElementRole', '<span>Leave for a page without buttons</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
+      [
+        'MuirProteusJsxElementRole',
+        '<span>Leave for a page without buttons</span>',
+      ],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -291,9 +307,12 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}button-fixture.ts:92`,
     jsx: '<a id="contact-link" href="#contact">Contact us</a>',
     expect: [
-      ['LzJsxElementRole', '<span id="contact-link">Contact us</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
+      [
+        'MuirProteusJsxElementRole',
+        '<span id="contact-link">Contact us</span>',
+      ],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -301,7 +320,7 @@ export const cases: readonly Case[] = [
     title: 'a group aria-label is emptied',
     origin: `${yetiOrigin}buttons-fixture.ts:50`,
     jsx: '<div aria-label="Text style"></div>',
-    expect: [['LzJsxLabelAttribute', 'aria-label=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'aria-label=""']],
   },
   {
     id: 'ngx-yeti-9',
@@ -309,7 +328,7 @@ export const cases: readonly Case[] = [
       'an svg keeps its img role, as Playwright gives svg that role, and loses its aria-label',
     origin: `${yetiOrigin}icon-fixture.ts:36`,
     jsx: '<svg role="img" aria-label="Warning" viewBox="0 0 24 24"></svg>',
-    expect: [['LzJsxLabelAttribute', 'aria-label=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'aria-label=""']],
   },
   {
     id: 'ngx-yeti-10',
@@ -317,8 +336,8 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}spinner-fixture.ts:23`,
     jsx: '<span id="loading-spinner" role="status" aria-label="Loading"></span>',
     expect: [
-      ['LzJsxElementRole', 'role={undefined}'],
-      ['LzJsxLabelAttribute', 'aria-label=""'],
+      ['MuirProteusJsxElementRole', 'role={undefined}'],
+      ['MuirProteusJsxLabelAttribute', 'aria-label=""'],
     ],
   },
   {
@@ -326,21 +345,21 @@ export const cases: readonly Case[] = [
     title: 'a plain-string alt is emptied',
     origin: `${yetiOrigin}card-fixture.ts:36`,
     jsx: '<img src="trail.svg" width="1600" height="900" alt="A mountain trail at dawn" />',
-    expect: [['LzJsxLabelAttribute', 'alt=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'alt=""']],
   },
   {
     id: 'ngx-yeti-12',
     title: 'an iframe title is emptied',
     origin: `${yetiOrigin}frame-fixture.ts:44`,
     jsx: '<iframe title="Trail notes" srcDoc="<p>Six miles and one summit.</p>"></iframe>',
-    expect: [['LzJsxLabelAttribute', 'title=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'title=""']],
   },
   {
     id: 'ngx-yeti-13',
     title: 'aria-labelledby is emptied',
     origin: `${yetiOrigin}fragment-links-fixture.ts:48`,
     jsx: '<svg aria-labelledby="svg-link-text" height="24" width="160"></svg>',
-    expect: [['LzJsxLabelAttribute', 'aria-labelledby=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'aria-labelledby=""']],
   },
   {
     id: 'ngx-yeti-14',
@@ -357,11 +376,11 @@ export const cases: readonly Case[] = [
     jsx: '<button id="bold" type="button" aria-pressed={bold} onClick={pressBold}>Bold</button>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span id="bold" aria-pressed={bold} onClick={pressBold}>Bold</span>',
       ],
-      ['LzJsxStateAttribute', 'aria-pressed={!bold}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxStateAttribute', 'aria-pressed={!bold}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -371,15 +390,18 @@ export const cases: readonly Case[] = [
     setup: 'const pressBold = () => {\n  setBold((b) => !b);\n};',
     jsx: '<div><button id="bold" type="button" onClick={pressBold}>Bold</button><button id="bold-key" type="button" onClick={pressBold}>Bold</button></div>',
     expect: [
-      ['LzJsxElementRole', '<span id="bold" onClick={pressBold}>Bold</span>'],
-      ['LzJsxEventHandler', 'onClick={undefined}'],
-      ['LzJsxTextLiteral', ''],
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
+        '<span id="bold" onClick={pressBold}>Bold</span>',
+      ],
+      ['MuirProteusJsxEventHandler', 'onClick={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
+      [
+        'MuirProteusJsxElementRole',
         '<span id="bold-key" onClick={pressBold}>Bold</span>',
       ],
-      ['LzJsxEventHandler', 'onClick={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxEventHandler', 'onClick={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -387,7 +409,7 @@ export const cases: readonly Case[] = [
     title: 'an output child is emptied',
     origin: `${yetiOrigin}button-fixture.ts:39`,
     jsx: '<output id="bold-presses">{presses}</output>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'ngx-yeti-18',
@@ -396,11 +418,11 @@ export const cases: readonly Case[] = [
     jsx: '<button id="busy" type="button" aria-busy={waiting} aria-disabled={waiting}>Saving</button>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span id="busy" aria-busy={waiting} aria-disabled={waiting}>Saving</span>',
       ],
-      ['LzJsxDisabledAttribute', 'aria-disabled={false}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxDisabledAttribute', 'aria-disabled={false}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -410,8 +432,8 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}cluster-fixture.ts:24`,
     jsx: '<ul id="tags-cluster" role="list"><li>layout</li><li>intrinsic</li></ul>',
     expect: [
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -420,8 +442,8 @@ export const cases: readonly Case[] = [
     origin: `${yetiOrigin}button-fixture.ts:28`,
     jsx: '<button id="save" type="button">Save</button>',
     expect: [
-      ['LzJsxElementRole', '<span id="save">Save</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span id="save">Save</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -437,9 +459,9 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}libs/top-bar/src/lib/top-bar/template.html:16`,
     jsx: '<a href="/"><h1>My Store</h1></a>',
     expect: [
-      ['LzJsxElementRole', '<span><h1>My Store</h1></span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span><h1>My Store</h1></span>'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -449,12 +471,12 @@ export const cases: readonly Case[] = [
     jsx: '<a href="/cart" className="button fancy-button"><i className="material-icons">shopping_cart</i>Checkout</a>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span className="button fancy-button"><i className="material-icons">shopping_cart</i>Checkout</span>',
       ],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -465,11 +487,11 @@ export const cases: readonly Case[] = [
     jsx: "<a title={product.name + ' details'} href={`/products/${product.id}`}>{product.name}</a>",
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         "<span title={product.name + ' details'}>{product.name}</span>",
       ],
-      ['LzJsxChildExpression', 'null'],
-      ['LzJsxLabelAttribute', 'title=""'],
+      ['MuirProteusJsxChildExpression', 'null'],
+      ['MuirProteusJsxLabelAttribute', 'title=""'],
     ],
   },
   {
@@ -478,9 +500,12 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}apps/analog-app/src/app/pages/(home).page.ts:32`,
     jsx: '<div>{product.description && <p>Description: {product.description}</p>}</div>',
     expect: [
-      ['LzJsxConditionalElement', '<p>Description: {product.description}</p>'],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxChildExpression', 'null'],
+      [
+        'MuirProteusJsxConditionalElement',
+        '<p>Description: {product.description}</p>',
+      ],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxChildExpression', 'null'],
     ],
   },
   {
@@ -491,8 +516,8 @@ export const cases: readonly Case[] = [
       "const share = () => {\n  window.alert('The product has been shared!');\n};",
     jsx: '<button type="button" onClick={share}>Share</button>',
     expect: [
-      ['LzJsxElementRole', '<span onClick={share}>Share</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span onClick={share}>Share</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -502,9 +527,9 @@ export const cases: readonly Case[] = [
     setup: "import { share } from './share';",
     jsx: '<button type="button" onClick={share}>Share</button>',
     expect: [
-      ['LzJsxElementRole', '<span onClick={share}>Share</span>'],
-      ['LzJsxEventHandler', 'onClick={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span onClick={share}>Share</span>'],
+      ['MuirProteusJsxEventHandler', 'onClick={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -523,10 +548,10 @@ export const cases: readonly Case[] = [
     jsx: '<div>{product() && product()!.price > 700 && (<p><button type="button" onClick={() => notify.emit()}>Notify Me</button></p>)}</div>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span onClick={() => notify.emit()}>Notify Me</span>',
       ],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -536,17 +561,17 @@ export const cases: readonly Case[] = [
     jsx: '<div>{signedUpEmail() ? <div id="signup-message">Thanks for signing up, {signedUpEmail()}!</div> : <form method="post"><button type="submit">Submit</button></form>}</div>',
     expect: [
       [
-        'LzJsxConditionalElement',
+        'MuirProteusJsxConditionalElement',
         '<div id="signup-message">Thanks for signing up, {signedUpEmail()}!</div>',
       ],
       [
-        'LzJsxConditionalElement',
+        'MuirProteusJsxConditionalElement',
         '<form method="post"><button type="submit">Submit</button></form>',
       ],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxChildExpression', 'null'],
-      ['LzJsxElementRole', '<span>Submit</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxChildExpression', 'null'],
+      ['MuirProteusJsxElementRole', '<span>Submit</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -555,8 +580,8 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}apps/analog-app/src/app/pages/newsletter.page.ts:40`,
     jsx: '<div>{errors()?.email && <p>{errors()?.email}</p>}</div>',
     expect: [
-      ['LzJsxConditionalElement', '<p>{errors()?.email}</p>'],
-      ['LzJsxChildExpression', 'null'],
+      ['MuirProteusJsxConditionalElement', '<p>{errors()?.email}</p>'],
+      ['MuirProteusJsxChildExpression', 'null'],
     ],
   },
   {
@@ -572,7 +597,7 @@ export const cases: readonly Case[] = [
     title: 'a member-expression submit handler is removed',
     origin: `${analogOrigin}apps/analog-app/src/app/pages/cart.page.ts:25`,
     jsx: '<form onSubmit={props.onSubmit}></form>',
-    expect: [['LzJsxEventHandler', 'onSubmit={undefined}']],
+    expect: [['MuirProteusJsxEventHandler', 'onSubmit={undefined}']],
   },
   {
     id: 'analog-13',
@@ -580,8 +605,8 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}apps/analog-app/src/app/pages/cart.page.ts:27`,
     jsx: '<div><label htmlFor="name"> Name </label><input id="name" type="text" /></div>',
     expect: [
-      ['LzJsxLabelAttribute', 'htmlFor=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxLabelAttribute', 'htmlFor=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -590,8 +615,8 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}apps/analog-app/src/app/pages/newsletter.page.ts:33`,
     jsx: '<div><label htmlFor="email"> Email </label><input type="email" name="email" /></div>',
     expect: [
-      ['LzJsxLabelAttribute', 'htmlFor=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxLabelAttribute', 'htmlFor=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -600,8 +625,8 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}apps/analog-app/src/app/pages/cart.page.ts:36`,
     jsx: '<button className="button" type="submit">Purchase</button>',
     expect: [
-      ['LzJsxElementRole', '<span className="button">Purchase</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span className="button">Purchase</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -609,7 +634,7 @@ export const cases: readonly Case[] = [
     title: 'trailing whitespace text is not text',
     origin: `${analogOrigin}apps/analog-app/src/app/pages/cart.page.ts:19`,
     jsx: '<div className="cart-item"><span>{item.name} </span></div>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'analog-17',
@@ -617,8 +642,8 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}apps/analog-app/src/app/pages/server-functions.page.ts:24`,
     jsx: '<li>{p.name} — {p.price}</li>',
     expect: [
-      ['LzJsxChildExpression', 'null'],
-      ['LzJsxChildExpression', 'null'],
+      ['MuirProteusJsxChildExpression', 'null'],
+      ['MuirProteusJsxChildExpression', 'null'],
     ],
   },
   {
@@ -626,7 +651,7 @@ export const cases: readonly Case[] = [
     title: 'a heading text is emptied',
     origin: `${analogOrigin}apps/analog-app/src/app/pages/products.[productId].page.ts:15`,
     jsx: '<h2>Product Details</h2>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'analog-19',
@@ -635,16 +660,16 @@ export const cases: readonly Case[] = [
     jsx: '<section>{product && (<div><h3>{product.name}</h3><p>{product.description}</p><button type="button" onClick={() => addToCart(product)}>Buy</button></div>)}</section>',
     expect: [
       [
-        'LzJsxConditionalElement',
+        'MuirProteusJsxConditionalElement',
         '<div><h3>{product.name}</h3><p>{product.description}</p><button type="button" onClick={() => addToCart(product)}>Buy</button></div>',
       ],
-      ['LzJsxChildExpression', 'null'],
-      ['LzJsxChildExpression', 'null'],
+      ['MuirProteusJsxChildExpression', 'null'],
+      ['MuirProteusJsxChildExpression', 'null'],
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span onClick={() => addToCart(product)}>Buy</span>',
       ],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -661,11 +686,11 @@ export const cases: readonly Case[] = [
     jsx: '<header>{user ? <div><Button size="small" onClicked={() => logout.emit(event)} label="Log out" /></div> : <div><Button size="small" label="Log in" /></div>}</header>',
     expect: [
       [
-        'LzJsxConditionalElement',
+        'MuirProteusJsxConditionalElement',
         '<div><Button size="small" onClicked={() => logout.emit(event)} label="Log out" /></div>',
       ],
       [
-        'LzJsxConditionalElement',
+        'MuirProteusJsxConditionalElement',
         '<div><Button size="small" label="Log in" /></div>',
       ],
     ],
@@ -676,9 +701,9 @@ export const cases: readonly Case[] = [
     origin: `${analogOrigin}apps/analog-app/src/app/pages/cart.page.ts:15`,
     jsx: '<a href="/shipping">Shipping Prices</a>',
     expect: [
-      ['LzJsxElementRole', '<span>Shipping Prices</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span>Shipping Prices</span>'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -686,7 +711,7 @@ export const cases: readonly Case[] = [
     title: 'a heading text is emptied',
     origin: `${helloWorldOrigin}index.html:8`,
     jsx: '<h1>Stryker + Playwright Hello World</h1>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'hello-2+3',
@@ -694,8 +719,8 @@ export const cases: readonly Case[] = [
     origin: `${helloWorldOrigin}index.html:10`,
     jsx: '<label htmlFor="amount">Betrag</label>',
     expect: [
-      ['LzJsxLabelAttribute', 'htmlFor=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxLabelAttribute', 'htmlFor=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -704,8 +729,8 @@ export const cases: readonly Case[] = [
     origin: `${helloWorldOrigin}index.html:13`,
     jsx: '<button id="btn">Berechnen</button>',
     expect: [
-      ['LzJsxElementRole', '<span id="btn">Berechnen</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span id="btn">Berechnen</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -713,7 +738,7 @@ export const cases: readonly Case[] = [
     title: 'text before an element keeps its separating space',
     origin: `${helloWorldOrigin}index.html:15`,
     jsx: '<p>Ergebnis: <span id="result"></span></p>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'hello-7',
@@ -736,10 +761,10 @@ export const cases: readonly Case[] = [
     jsx: '<button id="btn" onClick={() => { setResult(calculatePrice(value)); }}>Berechnen</button>',
     expect: [
       [
-        'LzJsxElementRole',
+        'MuirProteusJsxElementRole',
         '<span id="btn" onClick={() => { setResult(calculatePrice(value)); }}>Berechnen</span>',
       ],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -747,14 +772,14 @@ export const cases: readonly Case[] = [
     title: 'a Cart heading text is emptied',
     origin: `${demoOrigin}app.tsx:28`,
     jsx: '<h1>Cart</h1>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'demo-2',
     title: 'an About heading text is emptied',
     origin: `${demoOrigin}app.tsx:69`,
     jsx: '<h1>About</h1>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'demo-3',
@@ -762,8 +787,8 @@ export const cases: readonly Case[] = [
     origin: `${demoOrigin}app.tsx:61`,
     jsx: '<Link to="/about">About</Link>',
     expect: [
-      ['LzJsxUrlAttribute', 'to=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxUrlAttribute', 'to=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -772,8 +797,8 @@ export const cases: readonly Case[] = [
     origin: `${demoOrigin}app.tsx:70`,
     jsx: '<Link to="/">Back to cart</Link>',
     expect: [
-      ['LzJsxUrlAttribute', 'to=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxUrlAttribute', 'to=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -781,14 +806,14 @@ export const cases: readonly Case[] = [
     title: 'a wrapping label text is emptied',
     origin: `${demoOrigin}app.tsx:49`,
     jsx: '<label>Discount code<input value={code} /></label>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'demo-6',
     title: 'a term text is emptied',
     origin: `${demoOrigin}app.tsx:54`,
     jsx: '<dt>Subtotal</dt>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'demo-7',
@@ -816,14 +841,14 @@ export const cases: readonly Case[] = [
     title: 'a formatted call child is emptied',
     origin: `${demoOrigin}app.tsx:44`,
     jsx: '<output>{formatPrice(lineTotal(line))}</output>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'demo-11',
     title: 'a test-id element child is emptied',
     origin: `${demoOrigin}app.tsx:55`,
     jsx: '<dd data-testid="subtotal">{formatPrice(subtotal(lines))}</dd>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'demo-12',
@@ -831,8 +856,8 @@ export const cases: readonly Case[] = [
     origin: `${demoOrigin}app.tsx:33`,
     jsx: '<label>{line.name}<input aria-label="x" /></label>',
     expect: [
-      ['LzJsxChildExpression', 'null'],
-      ['LzJsxLabelAttribute', 'aria-label=""'],
+      ['MuirProteusJsxChildExpression', 'null'],
+      ['MuirProteusJsxLabelAttribute', 'aria-label=""'],
     ],
   },
   {
@@ -840,14 +865,14 @@ export const cases: readonly Case[] = [
     title: 'a map child is left to the later ListExpression',
     origin: `${demoOrigin}app.tsx:30`,
     jsx: '<ul>{lines.map((line) => (<li key={line.name}>x</li>))}</ul>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'demo-14',
     title: 'a comparison guard is left to ConditionalExpression',
     origin: `${demoOrigin}price-tag.tsx:22`,
     jsx: '<p>{off > 0 && (<s>x</s>)}</p>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'demo-15',
@@ -869,14 +894,14 @@ export const cases: readonly Case[] = [
     title: 'string-literal space children give nothing',
     origin: `${demoOrigin}price-tag.tsx:24`,
     jsx: "<p>{' '}<s>x</s>{' '}</p>",
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'demo-18',
     title: 'a price child is emptied',
     origin: `${demoOrigin}price-tag.tsx:21`,
     jsx: '<span data-testid="price">{formatPrice(cents)}</span>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'demo-19',
@@ -897,7 +922,7 @@ export const cases: readonly Case[] = [
     title: 'htmlFor on a label that wraps its control is skipped',
     origin: rulesOrigin,
     jsx: '<label htmlFor="q">Query <input id="q" /></label>',
-    expect: [['LzJsxTextLiteral', '']],
+    expect: [['MuirProteusJsxTextLiteral', '']],
   },
   {
     id: 'design-2',
@@ -928,8 +953,8 @@ export const cases: readonly Case[] = [
     origin: rulesOrigin,
     jsx: '<button role="button">Save</button>',
     expect: [
-      ['LzJsxElementRole', '<span role="button">Save</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span role="button">Save</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -938,9 +963,9 @@ export const cases: readonly Case[] = [
     origin: rulesOrigin,
     jsx: '<a href="/x" role="link">X</a>',
     expect: [
-      ['LzJsxElementRole', '<span role="link">X</span>'],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxElementRole', '<span role="link">X</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
     ],
   },
   {
@@ -949,8 +974,8 @@ export const cases: readonly Case[] = [
     origin: rulesOrigin,
     jsx: '<a role="link" tabIndex={0}>X</a>',
     expect: [
-      ['LzJsxElementRole', 'role={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', 'role={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
@@ -959,27 +984,27 @@ export const cases: readonly Case[] = [
       'implicit roles of landmarks, lists and headings are skipped; a context-dependent one is removed',
     origin: rulesOrigin,
     jsx: '<div><nav role="navigation" /><aside role="complementary" /><ol role="list"><li role="listitem" /></ol><h2 role="heading" /><header role="banner" /><section role="region" /></div>',
-    expect: [['LzJsxElementRole', 'role={undefined}']],
+    expect: [['MuirProteusJsxElementRole', 'role={undefined}']],
   },
   {
     id: 'design-8',
     title: 'a string state value is flipped',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div role="tab" aria-selected="true" aria-expanded="false">Tab</div>',
     expect: [
-      ['LzJsxElementRole', 'role={undefined}'],
-      ['LzJsxStateAttribute', 'aria-selected="false"'],
-      ['LzJsxStateAttribute', 'aria-expanded="true"'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', 'role={undefined}'],
+      ['MuirProteusJsxStateAttribute', 'aria-selected="false"'],
+      ['MuirProteusJsxStateAttribute', 'aria-expanded="true"'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
     id: 'design-9',
     title:
       'aria-hidden on an i or img icon is skipped; hidden on an svg is not',
-    origin: `${release}, LzJsxHiddenAttribute`,
+    origin: `${release}, MuirProteusJsxHiddenAttribute`,
     jsx: '<p><i className="icon" aria-hidden="true" /><img src="x.png" aria-hidden={hide} /><svg hidden /></p>',
-    expect: [['LzJsxHiddenAttribute', 'hidden={undefined}']],
+    expect: [['MuirProteusJsxHiddenAttribute', 'hidden={undefined}']],
   },
   {
     id: 'design-10',
@@ -987,7 +1012,7 @@ export const cases: readonly Case[] = [
       'a JSX entity in an emptied attribute is decoded in the instrumented original',
     origin: 'docs/design/playwright-mutators-opus.md:189',
     jsx: '<img alt="Fish &amp; Chips" />',
-    expect: [['LzJsxLabelAttribute', 'alt=""']],
+    expect: [['MuirProteusJsxLabelAttribute', 'alt=""']],
     instrumented: '"Fish & Chips"',
   },
   {
@@ -995,27 +1020,27 @@ export const cases: readonly Case[] = [
     title:
       'a guard and a ternary inside an attribute value: the guard is removed, the ternary is left alone',
     origin:
-      'docs/design/playwright-mutators-opus.md:64 and docs/design/jsx-mutators.md:139, LzJsxConditionalElement',
+      'docs/design/playwright-mutators-opus.md:64 and docs/design/jsx-mutators.md:139, MuirProteusJsxConditionalElement',
     jsx: '<Card icon={busy && <Spinner />} badge={busy ? <Dot /> : null} />',
-    expect: [['LzJsxConditionalElement', '<Spinner />']],
+    expect: [['MuirProteusJsxConditionalElement', '<Spinner />']],
   },
   {
     id: 'design-12',
     title:
       'a function declared in the file but referenced twice keeps its handler mutants',
-    origin: `${release}, LzJsxEventHandler`,
+    origin: `${release}, MuirProteusJsxEventHandler`,
     setup: 'function save() {}\nexport const again = save;',
     jsx: '<form onSubmit={save}></form>',
-    expect: [['LzJsxEventHandler', 'onSubmit={undefined}']],
+    expect: [['MuirProteusJsxEventHandler', 'onSubmit={undefined}']],
   },
   {
     id: 'design-13',
     title:
       'a let handler referenced once keeps its handler mutant, as only a const or a declaration is skipped',
-    origin: `${release}, LzJsxEventHandler`,
+    origin: `${release}, MuirProteusJsxEventHandler`,
     setup: 'let save = () => {};',
     jsx: '<form onSubmit={save}></form>',
-    expect: [['LzJsxEventHandler', 'onSubmit={undefined}']],
+    expect: [['MuirProteusJsxEventHandler', 'onSubmit={undefined}']],
   },
   {
     id: 'design-14',
@@ -1033,7 +1058,10 @@ export const cases: readonly Case[] = [
       'tldraw@12921f6d3:packages/tldraw/src/lib/ui/components/primitives/menus/TldrawUiMenuItem.tsx:233',
     jsx: "<div aria-pressed={isSelected ? 'true' : 'false'} />",
     expect: [
-      ['LzJsxStateAttribute', 'aria-pressed={isSelected ? "false" : "true"}'],
+      [
+        'MuirProteusJsxStateAttribute',
+        'aria-pressed={isSelected ? "false" : "true"}',
+      ],
     ],
   },
   {
@@ -1045,7 +1073,7 @@ export const cases: readonly Case[] = [
     jsx: "<div aria-pressed={isSelected === undefined ? undefined : isSelected ? 'true' : 'false'} />",
     expect: [
       [
-        'LzJsxStateAttribute',
+        'MuirProteusJsxStateAttribute',
         'aria-pressed={isSelected === undefined ? undefined : isSelected ? "false" : "true"}',
       ],
     ],
@@ -1054,77 +1082,87 @@ export const cases: readonly Case[] = [
     id: 'design-15',
     title:
       'a String() or template-literal state gets no negation, which would be a constant false',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div><div aria-expanded={String(open)} /><div aria-checked={`${checked}`} /></div>',
     expect: [],
   },
   {
     id: 'design-16',
     title: 'a boolean or logical state expression is negated',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div aria-expanded={open} aria-selected={tab.active && !tab.locked} />',
     expect: [
-      ['LzJsxStateAttribute', 'aria-expanded={!open}'],
-      ['LzJsxStateAttribute', 'aria-selected={!(tab.active && !tab.locked)}'],
+      ['MuirProteusJsxStateAttribute', 'aria-expanded={!open}'],
+      [
+        'MuirProteusJsxStateAttribute',
+        'aria-selected={!(tab.active && !tab.locked)}',
+      ],
     ],
   },
   {
     id: 'design-17',
     title: 'a boolean-literal ternary state flips each branch',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div aria-pressed={on ? true : false} />',
-    expect: [['LzJsxStateAttribute', 'aria-pressed={on ? false : true}']],
+    expect: [
+      ['MuirProteusJsxStateAttribute', 'aria-pressed={on ? false : true}'],
+    ],
   },
   {
     id: 'design-18',
     title:
       'a .toString() state gets no negation; another method call is negated',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div aria-expanded={open.toString()} aria-checked={state.get()} aria-selected={isOpen()} />',
     expect: [
-      ['LzJsxStateAttribute', 'aria-checked={!state.get()}'],
-      ['LzJsxStateAttribute', 'aria-selected={!isOpen()}'],
+      ['MuirProteusJsxStateAttribute', 'aria-checked={!state.get()}'],
+      ['MuirProteusJsxStateAttribute', 'aria-selected={!isOpen()}'],
     ],
   },
   {
     id: 'design-19',
     title:
       'a ternary state with no negatable branch gets no mutant; one with a single negatable branch flips only that one',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: "<div><div aria-pressed={c ? undefined : String(x)} /><div aria-expanded={c ? 'true' : undefined} /></div>",
     expect: [
-      ['LzJsxStateAttribute', 'aria-expanded={c ? "false" : undefined}'],
+      [
+        'MuirProteusJsxStateAttribute',
+        'aria-expanded={c ? "false" : undefined}',
+      ],
     ],
   },
   {
     id: 'design-43',
     title:
       'a string ternary state inside as, satisfies or ! flips each branch and drops the type wrapper',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx:
       "<div><div aria-pressed={(s ? 'true' : 'false') as 'true' | 'false'} />" +
       "<div aria-expanded={(s ? 'true' : 'false') satisfies string} />" +
       "<div aria-checked={(s ? 'true' : 'false')!} />" +
       "<div aria-selected={((s ? 'true' : 'false') as string)!} /></div>",
     expect: [
-      ['LzJsxStateAttribute', 'aria-pressed={s ? "false" : "true"}'],
-      ['LzJsxStateAttribute', 'aria-expanded={s ? "false" : "true"}'],
-      ['LzJsxStateAttribute', 'aria-checked={s ? "false" : "true"}'],
-      ['LzJsxStateAttribute', 'aria-selected={s ? "false" : "true"}'],
+      ['MuirProteusJsxStateAttribute', 'aria-pressed={s ? "false" : "true"}'],
+      ['MuirProteusJsxStateAttribute', 'aria-expanded={s ? "false" : "true"}'],
+      ['MuirProteusJsxStateAttribute', 'aria-checked={s ? "false" : "true"}'],
+      ['MuirProteusJsxStateAttribute', 'aria-selected={s ? "false" : "true"}'],
     ],
   },
   {
     id: 'design-44',
     title: 'a boolean state inside as is negated with its type wrapper',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div aria-pressed={flag as boolean} />',
-    expect: [['LzJsxStateAttribute', 'aria-pressed={!(flag as boolean)}']],
+    expect: [
+      ['MuirProteusJsxStateAttribute', 'aria-pressed={!(flag as boolean)}'],
+    ],
   },
   {
     id: 'design-45',
     title:
       'an optional .toString() state gets no negation, which would be a constant false',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div><div aria-expanded={s?.toString()} /><div aria-checked={s.toString?.()} /></div>',
     expect: [],
   },
@@ -1132,7 +1170,7 @@ export const cases: readonly Case[] = [
     id: 'design-46',
     title:
       'a literal or undefined state inside as or ! gets no negation, as it gets none unwrapped',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx:
       '<div><div aria-expanded={0 as any} /><div aria-checked={null!} />' +
       '<div aria-pressed={undefined as any} /><div aria-selected={0} /></div>',
@@ -1141,64 +1179,64 @@ export const cases: readonly Case[] = [
   {
     id: 'design-20',
     title: 'a rendered value among the children of a fragment is removed',
-    origin: `${release}, LzJsxChildExpression`,
+    origin: `${release}, MuirProteusJsxChildExpression`,
     jsx: '<>{user.name}</>',
-    expect: [['LzJsxChildExpression', 'null']],
+    expect: [['MuirProteusJsxChildExpression', 'null']],
   },
   {
     id: 'design-21',
     title:
       'a member-named element is never swapped to a span, and its role has no implicit equal',
-    origin: `${release}, LzJsxElementRole`,
+    origin: `${release}, MuirProteusJsxElementRole`,
     jsx: '<div><UI.Button>Go</UI.Button><UI.Dialog role="dialog" /></div>',
     expect: [
-      ['LzJsxElementRole', 'role={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', 'role={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
     id: 'design-22',
     title:
       "an area with an href is swapped to a span, as Playwright's role table gives it the link role",
-    origin: `${release}, LzJsxElementRole`,
+    origin: `${release}, MuirProteusJsxElementRole`,
     jsx: '<area href="/x" />',
     expect: [
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxElementRole', '<span />'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxElementRole', '<span />'],
     ],
   },
   {
     id: 'design-47',
     title:
       'the span swap drops every attribute of an a, area or button that a span cannot take, and keeps the rest',
-    origin: `${release}, LzJsxElementRole`,
+    origin: `${release}, MuirProteusJsxElementRole`,
     jsx:
       '<div><area href="/x" alt="Map" coords="0,0,1,1" shape="rect" target="_blank" download="m" hrefLang="en" media="print" referrerPolicy="no-referrer" id="m" />' +
       '<a href="/a" target="_blank" rel="noopener" type="text/html" ping="/p" id="a">A</a>' +
       '<button type="submit" name="n" value="v" form="f" formAction="/b" formEncType="text/plain" formMethod="post" formNoValidate formTarget="_self" className="b">B</button></div>',
     expect: [
-      ['LzJsxElementRole', '<span id="m" />'],
-      ['LzJsxElementRole', '<span rel="noopener" id="a">A</span>'],
-      ['LzJsxElementRole', '<span className="b">B</span>'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxUrlAttribute', 'href=""'],
-      ['LzJsxLabelAttribute', 'alt=""'],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span id="m" />'],
+      ['MuirProteusJsxElementRole', '<span rel="noopener" id="a">A</span>'],
+      ['MuirProteusJsxElementRole', '<span className="b">B</span>'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxUrlAttribute', 'href=""'],
+      ['MuirProteusJsxLabelAttribute', 'alt=""'],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
     id: 'design-23',
     title:
       'a guard whose test is an ===, < or >= comparison is left to the built-in ConditionalExpression',
-    origin: `${release}, LzJsxConditionalElement`,
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: '<div>{a == b && <p />}{a != b && <p />}{a === b && <p />}{a < b && <p />}{a <= b && <p />}{a >= b && <p />}</div>',
     expect: [],
   },
   {
     id: 'design-24',
     title: 'a filter call among the children is left to ListExpression',
-    origin: `${release}, LzJsxChildExpression`,
+    origin: `${release}, MuirProteusJsxChildExpression`,
     jsx: '<ul>{items.filter(visible)}{groups.flatMap(rows)}</ul>',
     expect: [],
   },
@@ -1206,38 +1244,40 @@ export const cases: readonly Case[] = [
     id: 'design-25',
     title:
       'htmlFor on a label that wraps a select, or an input inside a fragment, is skipped',
-    origin: `${release}, LzJsxLabelAttribute`,
+    origin: `${release}, MuirProteusJsxLabelAttribute`,
     jsx: '<div><label htmlFor="a"><select /></label><label htmlFor="b"><><input /></></label><label htmlFor="c"><textarea /></label></div>',
     expect: [],
   },
   {
     id: 'design-29',
     title: 'htmlFor on a label whose children hold no form control is emptied',
-    origin: `${release}, LzJsxLabelAttribute`,
+    origin: `${release}, MuirProteusJsxLabelAttribute`,
     jsx: '<label htmlFor="d"><span>Name</span></label>',
     expect: [
-      ['LzJsxLabelAttribute', 'htmlFor=""'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxLabelAttribute', 'htmlFor=""'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
     id: 'design-30',
     title:
       'a negated state holds no built-in mutant of its own expression in the instrumented file',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: '<div aria-expanded={isOpen(a && b)} />',
-    expect: [['LzJsxStateAttribute', 'aria-expanded={!isOpen(a && b)}']],
+    expect: [
+      ['MuirProteusJsxStateAttribute', 'aria-expanded={!isOpen(a && b)}'],
+    ],
     instrumented: '? !isOpen(a && b) : (stryCov_9fa48(',
   },
   {
     id: 'design-31',
     title:
       'a flipped ternary state holds no built-in mutant of its test in the instrumented file',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: "<div aria-pressed={isOpen(a && b) ? 'true' : 'false'} />",
     expect: [
       [
-        'LzJsxStateAttribute',
+        'MuirProteusJsxStateAttribute',
         'aria-pressed={isOpen(a && b) ? "false" : "true"}',
       ],
     ],
@@ -1247,10 +1287,13 @@ export const cases: readonly Case[] = [
     id: 'design-32',
     title:
       'a ternary state keeps its unflipped consequent free of built-in mutants in the instrumented file',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: "<div aria-expanded={c ? String(a && b) : 'true'} />",
     expect: [
-      ['LzJsxStateAttribute', 'aria-expanded={c ? String(a && b) : "false"}'],
+      [
+        'MuirProteusJsxStateAttribute',
+        'aria-expanded={c ? String(a && b) : "false"}',
+      ],
     ],
     instrumented: '? c ? String(a && b) : "false" : (stryCov_9fa48(',
   },
@@ -1258,10 +1301,13 @@ export const cases: readonly Case[] = [
     id: 'design-33',
     title:
       'a ternary state keeps its unflipped alternate free of built-in mutants in the instrumented file',
-    origin: `${release}, LzJsxStateAttribute`,
+    origin: `${release}, MuirProteusJsxStateAttribute`,
     jsx: "<div aria-expanded={c ? 'true' : String(a && b)} />",
     expect: [
-      ['LzJsxStateAttribute', 'aria-expanded={c ? "false" : String(a && b)}'],
+      [
+        'MuirProteusJsxStateAttribute',
+        'aria-expanded={c ? "false" : String(a && b)}',
+      ],
     ],
     instrumented: '? c ? "false" : String(a && b) : (stryCov_9fa48(',
   },
@@ -1269,65 +1315,65 @@ export const cases: readonly Case[] = [
     id: 'design-34',
     title:
       'a guard whose test is a ?? expression is removed, as built-in ConditionalExpression leaves ?? alone',
-    origin: `${release}, LzJsxConditionalElement`,
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: '<div>{(a ?? b) && <p />}</div>',
-    expect: [['LzJsxConditionalElement', '<p />']],
+    expect: [['MuirProteusJsxConditionalElement', '<p />']],
   },
   {
     id: 'design-35',
     title:
       'a label other than htmlFor, and htmlFor on an element other than label, are emptied though a control is inside',
-    origin: `${release}, LzJsxLabelAttribute`,
+    origin: `${release}, MuirProteusJsxLabelAttribute`,
     jsx: '<div><div aria-label="Search"><input /></div><output htmlFor="a"><input /></output><label title="Name"><input /></label></div>',
     expect: [
-      ['LzJsxLabelAttribute', 'aria-label=""'],
-      ['LzJsxLabelAttribute', 'htmlFor=""'],
-      ['LzJsxLabelAttribute', 'title=""'],
+      ['MuirProteusJsxLabelAttribute', 'aria-label=""'],
+      ['MuirProteusJsxLabelAttribute', 'htmlFor=""'],
+      ['MuirProteusJsxLabelAttribute', 'title=""'],
     ],
   },
   {
     id: 'design-36',
     title:
       'an attribute with on inside its name, not at its start, is no handler',
-    origin: `${release}, LzJsxEventHandler`,
+    origin: `${release}, MuirProteusJsxEventHandler`,
     jsx: '<Card buttonColor={color} />',
     expect: [],
   },
   {
     id: 'design-37',
     title: 'an || fallback is not a guard',
-    origin: `${release}, LzJsxConditionalElement`,
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: '<div>{fallback || <p />}</div>',
     expect: [],
   },
   {
     id: 'design-38',
     title: 'a ternary with one JSX branch switches to either branch',
-    origin: `${release}, LzJsxConditionalElement`,
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: "<div>{open ? <p /> : 'none'}</div>",
     expect: [
-      ['LzJsxConditionalElement', '<p />'],
-      ['LzJsxConditionalElement', "'none'"],
+      ['MuirProteusJsxConditionalElement', '<p />'],
+      ['MuirProteusJsxConditionalElement', "'none'"],
     ],
   },
   {
     id: 'design-39',
     title:
       'a removed guard holds no built-in mutant of its element in the instrumented file',
-    origin: `${release}, LzJsxConditionalElement`,
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: '<div>{open && <p>{a + b}</p>}</div>',
-    expect: [['LzJsxConditionalElement', '<p>{a + b}</p>']],
+    expect: [['MuirProteusJsxConditionalElement', '<p>{a + b}</p>']],
     instrumented: '? <p>{a + b}</p> : stryMutAct_9fa48(',
   },
   {
     id: 'design-40',
     title:
       'a ternary switched to its consequent holds no built-in mutant of it in the instrumented file',
-    origin: `${release}, LzJsxConditionalElement`,
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: '<div>{open ? <i>{c + d}</i> : <b />}</div>',
     expect: [
-      ['LzJsxConditionalElement', '<i>{c + d}</i>'],
-      ['LzJsxConditionalElement', '<b />'],
+      ['MuirProteusJsxConditionalElement', '<i>{c + d}</i>'],
+      ['MuirProteusJsxConditionalElement', '<b />'],
     ],
     instrumented: '? <i>{c + d}</i> : (stryCov_9fa48(',
   },
@@ -1335,11 +1381,11 @@ export const cases: readonly Case[] = [
     id: 'design-41',
     title:
       'a ternary switched to its alternate holds no built-in mutant of it in the instrumented file',
-    origin: `${release}, LzJsxConditionalElement`,
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: '<div>{open ? <i /> : <b>{e + f}</b>}</div>',
     expect: [
-      ['LzJsxConditionalElement', '<i />'],
-      ['LzJsxConditionalElement', '<b>{e + f}</b>'],
+      ['MuirProteusJsxConditionalElement', '<i />'],
+      ['MuirProteusJsxConditionalElement', '<b>{e + f}</b>'],
     ],
     instrumented: '? <b>{e + f}</b> : stryMutAct_9fa48(',
   },
@@ -1350,17 +1396,17 @@ export const cases: readonly Case[] = [
     origin: release,
     jsx: '<form action="/save"><input readOnly /><div aria-hidden={hide} /><UI.Icon aria-hidden="true" /></form>',
     expect: [
-      ['LzJsxUrlAttribute', 'action=""'],
-      ['LzJsxDisabledAttribute', 'readOnly={undefined}'],
-      ['LzJsxHiddenAttribute', 'aria-hidden={false}'],
-      ['LzJsxHiddenAttribute', 'aria-hidden={undefined}'],
+      ['MuirProteusJsxUrlAttribute', 'action=""'],
+      ['MuirProteusJsxDisabledAttribute', 'readOnly={undefined}'],
+      ['MuirProteusJsxHiddenAttribute', 'aria-hidden={false}'],
+      ['MuirProteusJsxHiddenAttribute', 'aria-hidden={undefined}'],
     ],
   },
   {
     id: 'design-26',
     title:
-      'a guard or a ternary whose branches are not JSX gives no LzJsxConditionalElement mutant',
-    origin: `${release}, LzJsxConditionalElement`,
+      'a guard or a ternary whose branches are not JSX gives no MuirProteusJsxConditionalElement mutant',
+    origin: `${release}, MuirProteusJsxConditionalElement`,
     jsx: "<div>{open && label}{open ? 'a' : 'b'}</div>",
     expect: [],
   },
@@ -1368,10 +1414,10 @@ export const cases: readonly Case[] = [
     id: 'design-27',
     title:
       'a const handler that is not a function keeps its mutant; a const function expression is skipped',
-    origin: `${release}, LzJsxEventHandler`,
+    origin: `${release}, MuirProteusJsxEventHandler`,
     setup: 'const onSave = makeHandler();\nconst onReset = function () {};',
     jsx: '<form onSubmit={onSave} onReset={onReset}></form>',
-    expect: [['LzJsxEventHandler', 'onSubmit={undefined}']],
+    expect: [['MuirProteusJsxEventHandler', 'onSubmit={undefined}']],
   },
   {
     id: 'design-28',
@@ -1393,53 +1439,53 @@ export const cases: readonly Case[] = [
       '<sup role="superscript" /><svg role="img" /><table role="table" /><tbody role="rowgroup" />' +
       '<textarea role="textbox" /><tfoot role="rowgroup" /><thead role="rowgroup" />' +
       '<time role="time" /><tr role="row" /><ul role="list" /></div>',
-    expect: [['LzJsxElementRole', '<span role="button" />']],
+    expect: [['MuirProteusJsxElementRole', '<span role="button" />']],
   },
   {
     id: 'design-48',
     title:
       'aria-hidden="false" is not removed, since Playwright reads only "true"; aria-disabled="false" is, since it overrides a disabled ancestor',
     origin:
-      'docs/design/jsx-mutators.md:133, LzJsxDisabledAttribute and LzJsxHiddenAttribute',
+      'docs/design/jsx-mutators.md:133, MuirProteusJsxDisabledAttribute and MuirProteusJsxHiddenAttribute',
     jsx: '<form><button aria-disabled="false">One</button><p aria-hidden="false">Two</p><p aria-hidden="true">Three</p></form>',
     expect: [
-      ['LzJsxDisabledAttribute', 'aria-disabled={undefined}'],
-      ['LzJsxElementRole', '<span aria-disabled="false">One</span>'],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxTextLiteral', ''],
-      ['LzJsxHiddenAttribute', 'aria-hidden={undefined}'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxDisabledAttribute', 'aria-disabled={undefined}'],
+      ['MuirProteusJsxElementRole', '<span aria-disabled="false">One</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxTextLiteral', ''],
+      ['MuirProteusJsxHiddenAttribute', 'aria-hidden={undefined}'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
     id: 'design-49',
     title: 'a handler already bound to undefined gets no removal mutant',
-    origin: `${release}, LzJsxEventHandler`,
+    origin: `${release}, MuirProteusJsxEventHandler`,
     jsx: '<button onClick={undefined}>Three</button>',
     expect: [
-      ['LzJsxElementRole', '<span onClick={undefined}>Three</span>'],
-      ['LzJsxTextLiteral', ''],
+      ['MuirProteusJsxElementRole', '<span onClick={undefined}>Three</span>'],
+      ['MuirProteusJsxTextLiteral', ''],
     ],
   },
   {
     id: 'design-50',
     title:
       'no forced-off value for a comparison or logical value, and no negation for a comparison: built-in mutants give the same; a ! value is negated, because dropping the ! renders differently when the operand is not a boolean',
-    origin: `${rulesOrigin}, LzJsxDisabledAttribute, LzJsxHiddenAttribute and LzJsxStateAttribute`,
+    origin: `${rulesOrigin}, MuirProteusJsxDisabledAttribute, MuirProteusJsxHiddenAttribute and MuirProteusJsxStateAttribute`,
     jsx:
       '<form><input readOnly={n > 0} /><p aria-disabled={a && b} aria-hidden={a ?? b} />' +
       '<p aria-selected={tab === current} aria-expanded={!open} aria-pressed={!(a && b)} /></form>',
     expect: [
-      ['LzJsxHiddenAttribute', 'aria-hidden={false}'],
-      ['LzJsxStateAttribute', 'aria-expanded={!!open}'],
-      ['LzJsxStateAttribute', 'aria-pressed={!!(a && b)}'],
+      ['MuirProteusJsxHiddenAttribute', 'aria-hidden={false}'],
+      ['MuirProteusJsxStateAttribute', 'aria-expanded={!!open}'],
+      ['MuirProteusJsxStateAttribute', 'aria-pressed={!!(a && b)}'],
     ],
   },
   {
     id: 'design-52',
     title:
       'no negation for a ! value whose operand is boolean by syntax: built-in BooleanLiteral drops the ! and renders the same as !!',
-    origin: `${rulesOrigin}, LzJsxStateAttribute`,
+    origin: `${rulesOrigin}, MuirProteusJsxStateAttribute`,
     jsx:
       '<form><p aria-pressed={!(a === b)} aria-expanded={!!open} aria-checked={!true} aria-selected={!(a === b && !c)} />' +
       '<p aria-pressed={!(a === b && c < d)} aria-expanded={!(false || a !== b)} /></form>',
@@ -1449,18 +1495,21 @@ export const cases: readonly Case[] = [
     id: 'design-53',
     title:
       'a ! value whose operand is not boolean by syntax is negated: a call, a member, a -, a &&/|| with an unknown side, or a ?? even between comparisons; so is a - value, which is no ! value',
-    origin: `${rulesOrigin}, LzJsxStateAttribute`,
+    origin: `${rulesOrigin}, MuirProteusJsxStateAttribute`,
     jsx:
       '<form><p aria-pressed={!isOn()} aria-expanded={!state.open} aria-checked={!(a === b && c)} />' +
       '<p aria-pressed={!(a || b < c)} aria-expanded={-(a === b)} aria-checked={!-a} aria-selected={!(a === b ?? c === d)} /></form>',
     expect: [
-      ['LzJsxStateAttribute', 'aria-expanded={!-(a === b)}'],
-      ['LzJsxStateAttribute', 'aria-checked={!!-a}'],
-      ['LzJsxStateAttribute', 'aria-pressed={!!isOn()}'],
-      ['LzJsxStateAttribute', 'aria-expanded={!!state.open}'],
-      ['LzJsxStateAttribute', 'aria-checked={!!(a === b && c)}'],
-      ['LzJsxStateAttribute', 'aria-pressed={!!(a || b < c)}'],
-      ['LzJsxStateAttribute', 'aria-selected={!!(a === b ?? c === d)}'],
+      ['MuirProteusJsxStateAttribute', 'aria-expanded={!-(a === b)}'],
+      ['MuirProteusJsxStateAttribute', 'aria-checked={!!-a}'],
+      ['MuirProteusJsxStateAttribute', 'aria-pressed={!!isOn()}'],
+      ['MuirProteusJsxStateAttribute', 'aria-expanded={!!state.open}'],
+      ['MuirProteusJsxStateAttribute', 'aria-checked={!!(a === b && c)}'],
+      ['MuirProteusJsxStateAttribute', 'aria-pressed={!!(a || b < c)}'],
+      [
+        'MuirProteusJsxStateAttribute',
+        'aria-selected={!!(a === b ?? c === d)}',
+      ],
     ],
   },
 ];

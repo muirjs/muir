@@ -1,34 +1,42 @@
 import {
-  lzInstall,
-  lzSelectMutators,
-  type LzMutatorOptions,
+  muirMoiraNodeTestInstall,
+  muirMoiraNodeTestSelectMutators,
+  type MuirMoiraNodeTestMutatorOptions,
 } from '@muirjs/moira-node-test';
-import { jsMutatorSets } from './mutators.ts';
-import { lzCorePeerRange, lzPackageName } from './package-name.ts';
+import { muirProteusJsMutatorSets } from './mutators.ts';
+import {
+  muirProteusJsCorePeerRange,
+  muirProteusJsPackageName,
+} from './package-name.ts';
 
 /** The mutators that run only when a config turns them on, by name or all with `extended`. */
-export type LzJsOptInMutator = (typeof jsMutatorSets.optIn)[number]['name'];
+export type MuirProteusJsOptInMutator =
+  (typeof muirProteusJsMutatorSets.optIn)[number]['name'];
 
 /** The mutators measured on too few projects to run by default, turned on inside `experimental`. */
-export type LzJsExperimentalMutator =
-  (typeof jsMutatorSets.experimental)[number]['name'];
+export type MuirProteusJsExperimentalMutator =
+  (typeof muirProteusJsMutatorSets.experimental)[number]['name'];
 
-export type LzJsMutatorOptions = LzMutatorOptions<
-  LzJsOptInMutator,
-  LzJsExperimentalMutator
+export type MuirProteusJsMutatorOptions = MuirMoiraNodeTestMutatorOptions<
+  MuirProteusJsOptInMutator,
+  MuirProteusJsExperimentalMutator
 >;
 
 /**
  * Installs this package's mutators into Stryker: the defaults and those `options` turns on. A Stryker configuration file
  * awaits it, so that an error in the install stops the run; Stryker only warns when a module in `plugins` fails to load.
  */
-export async function lzJsMutators(
-  options?: LzJsMutatorOptions,
+export async function muirProteusJsMutators(
+  options?: MuirProteusJsMutatorOptions,
 ): Promise<void> {
-  await lzInstall({
-    packageName: lzPackageName,
-    corePeerRange: lzCorePeerRange,
+  await muirMoiraNodeTestInstall({
+    packageName: muirProteusJsPackageName,
+    corePeerRange: muirProteusJsCorePeerRange,
     mode: 'add',
-    mutators: lzSelectMutators(lzPackageName, jsMutatorSets, options),
+    mutators: muirMoiraNodeTestSelectMutators(
+      muirProteusJsPackageName,
+      muirProteusJsMutatorSets,
+      options,
+    ),
   });
 }

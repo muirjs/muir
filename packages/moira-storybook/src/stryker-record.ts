@@ -1,12 +1,16 @@
 import { appendFileSync, existsSync } from 'node:fs';
 import { relative, sep } from 'node:path';
 
-export const mockTransformerPluginName = 'lz-storybook-mock-transformer';
+export const muirMoiraStorybookMockTransformerPluginName =
+  'muir-pixie-storybook-mock-transformer';
 
-export const recordVariable = 'LZ_STRYKER_STORYBOOK_RECORD';
+export const muirMoiraStorybookRecordVariable = 'MUIR_MOIRA_STORYBOOK_RECORD';
 
-export function appendRecord(file: string, rewritten: number): void {
-  const recordFile = process.env[recordVariable];
+export function muirMoiraStorybookAppendRecord(
+  file: string,
+  rewritten: number,
+): void {
+  const recordFile = process.env[muirMoiraStorybookRecordVariable];
 
   if (recordFile === undefined) {
     return;
@@ -19,6 +23,6 @@ export function appendRecord(file: string, rewritten: number): void {
   );
 }
 
-export function hasRecords(recordFile: string): boolean {
+export function muirMoiraStorybookHasRecords(recordFile: string): boolean {
   return existsSync(recordFile);
 }

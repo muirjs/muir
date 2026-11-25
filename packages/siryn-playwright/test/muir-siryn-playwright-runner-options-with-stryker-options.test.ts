@@ -6,14 +6,14 @@ import { test } from 'node:test';
 import { Ajv } from 'ajv';
 
 import {
-  optionProperties,
-  readRunnerOptions,
+  muirSirynPlaywrightOptionProperties,
+  muirSirynPlaywrightReadRunnerOptions,
   strykerValidationSchema,
-} from '../src/lz-playwright-runner-options-with-stryker-options.ts';
+} from '../src/muir-siryn-playwright-runner-options-with-stryker-options.ts';
 import {
-  minTestTimeoutMs,
-  runStartMs,
-  stopHeadroomMs,
+  muirSirynPlaywrightMinTestTimeoutMs,
+  muirSirynPlaywrightRunStartMs,
+  muirSirynPlaywrightStopHeadroomMs,
 } from '../src/timeouts.ts';
 import { strykerOptions } from './support/doubles.ts';
 
@@ -35,9 +35,9 @@ const defaults = {
 
 test('the runner options resolve the config file and take the schema default for workers', () => {
   assert.deepEqual(
-    readRunnerOptions(
+    muirSirynPlaywrightReadRunnerOptions(
       strykerOptions({
-        lzPlaywright: { configFile: 'e2e/playwright.config.ts' },
+        muirSirynPlaywright: { configFile: 'e2e/playwright.config.ts' },
       }),
     ),
     { ...defaults, configFile: path.resolve('e2e/playwright.config.ts') },
@@ -45,9 +45,9 @@ test('the runner options resolve the config file and take the schema default for
 });
 
 test('the runner options keep the projects and workers the user set', () => {
-  const options = readRunnerOptions(
+  const options = muirSirynPlaywrightReadRunnerOptions(
     strykerOptions({
-      lzPlaywright: { projects: ['chromium'], workers: 2, retries: 0 },
+      muirSirynPlaywright: { projects: ['chromium'], workers: 2, retries: 0 },
     }),
   );
 
@@ -59,12 +59,15 @@ test('the runner options keep the projects and workers the user set', () => {
 
 test('the runner options refuse --testFiles', () => {
   assert.throws(
-    () => readRunnerOptions(strykerOptions({ testFiles: ['a.spec.ts'] })),
+    () =>
+      muirSirynPlaywrightReadRunnerOptions(
+        strykerOptions({ testFiles: ['a.spec.ts'] }),
+      ),
     { message: /--testFiles/ },
   );
 });
 
-test('the runner options refuse lzPlaywright options that are not an object or have a field of the wrong type, or a workers count that is no integer of at least 1', () => {
+test('the runner options refuse muirSirynPlaywright options that are not an object or have a field of the wrong type, or a workers count that is no integer of at least 1', () => {
   [
     'chromium',
     [],
@@ -80,32 +83,46 @@ test('the runner options refuse lzPlaywright options that are not an object or h
     { retries: -1 },
     { survivorTraces: 1 },
     { traceScreenshots: 'on' },
-  ].forEach((lzPlaywright) => {
-    assert.throws(() => readRunnerOptions(strykerOptions({ lzPlaywright })), {
-      message: `The lzPlaywright options do not match their schema: ${JSON.stringify(lzPlaywright)}`,
-    });
+  ].forEach((muirSirynPlaywright) => {
+    assert.throws(
+      () =>
+        muirSirynPlaywrightReadRunnerOptions(
+          strykerOptions({ muirSirynPlaywright }),
+        ),
+      {
+        message: `The muirSirynPlaywright options do not match their schema: ${JSON.stringify(muirSirynPlaywright)}`,
+      },
+    );
   });
 });
 
-test('without lzPlaywright options or with an empty --testFiles the runner takes its defaults', () => {
-  assert.deepEqual(readRunnerOptions(strykerOptions({})), defaults);
+test('without muirSirynPlaywright options or with an empty --testFiles the runner takes its defaults', () => {
   assert.deepEqual(
-    readRunnerOptions(strykerOptions({ testFiles: [] })),
+    muirSirynPlaywrightReadRunnerOptions(strykerOptions({})),
+    defaults,
+  );
+  assert.deepEqual(
+    muirSirynPlaywrightReadRunnerOptions(strykerOptions({ testFiles: [] })),
     defaults,
   );
 });
 
 test('without a webServer option the runner leaves server mutants alone and isolates server runs', () => {
-  assert.deepEqual(readRunnerOptions(strykerOptions({})).webServer, {
-    mutate: false,
-    isolate: true,
-  });
+  assert.deepEqual(
+    muirSirynPlaywrightReadRunnerOptions(strykerOptions({})).webServer,
+    {
+      mutate: false,
+      isolate: true,
+    },
+  );
 });
 
 test('webServer.isolate: false keeps the default for mutate', () => {
   assert.deepEqual(
-    readRunnerOptions(
-      strykerOptions({ lzPlaywright: { webServer: { isolate: false } } }),
+    muirSirynPlaywrightReadRunnerOptions(
+      strykerOptions({
+        muirSirynPlaywright: { webServer: { isolate: false } },
+      }),
     ).webServer,
     { mutate: false, isolate: false },
   );
@@ -113,8 +130,8 @@ test('webServer.isolate: false keeps the default for mutate', () => {
 
 test('webServer.mutate: true turns server mutants on', () => {
   assert.deepEqual(
-    readRunnerOptions(
-      strykerOptions({ lzPlaywright: { webServer: { mutate: true } } }),
+    muirSirynPlaywrightReadRunnerOptions(
+      strykerOptions({ muirSirynPlaywright: { webServer: { mutate: true } } }),
     ).webServer,
     { mutate: true, isolate: true },
   );
@@ -122,8 +139,10 @@ test('webServer.mutate: true turns server mutants on', () => {
 
 test("webServer.mutate: 'auto' is kept for the runner to decide", () => {
   assert.deepEqual(
-    readRunnerOptions(
-      strykerOptions({ lzPlaywright: { webServer: { mutate: 'auto' } } }),
+    muirSirynPlaywrightReadRunnerOptions(
+      strykerOptions({
+        muirSirynPlaywright: { webServer: { mutate: 'auto' } },
+      }),
     ).webServer,
     { mutate: 'auto', isolate: true },
   );
@@ -132,12 +151,14 @@ test("webServer.mutate: 'auto' is kept for the runner to decide", () => {
 test('webServer.mutate refuses any value but true, false or auto, and names them', () => {
   assert.throws(
     () =>
-      readRunnerOptions(
-        strykerOptions({ lzPlaywright: { webServer: { mutate: 'on' } } }),
+      muirSirynPlaywrightReadRunnerOptions(
+        strykerOptions({
+          muirSirynPlaywright: { webServer: { mutate: 'on' } },
+        }),
       ),
     {
       message:
-        'lzPlaywright.webServer.mutate must be true, false or \'auto\', got "on".',
+        'muirSirynPlaywright.webServer.mutate must be true, false or \'auto\', got "on".',
     },
   );
 });
@@ -145,12 +166,14 @@ test('webServer.mutate refuses any value but true, false or auto, and names them
 test('webServer.isolate refuses anything but true or false', () => {
   assert.throws(
     () =>
-      readRunnerOptions(
-        strykerOptions({ lzPlaywright: { webServer: { isolate: 'no' } } }),
+      muirSirynPlaywrightReadRunnerOptions(
+        strykerOptions({
+          muirSirynPlaywright: { webServer: { isolate: 'no' } },
+        }),
       ),
     {
       message:
-        'lzPlaywright.webServer.isolate must be true or false, got "no".',
+        'muirSirynPlaywright.webServer.isolate must be true or false, got "no".',
     },
   );
 });
@@ -158,9 +181,12 @@ test('webServer.isolate refuses anything but true or false', () => {
 test('webServer refuses anything but an object', () => {
   [true, 'auto', null, []].forEach((webServer) => {
     assert.throws(
-      () => readRunnerOptions(strykerOptions({ lzPlaywright: { webServer } })),
+      () =>
+        muirSirynPlaywrightReadRunnerOptions(
+          strykerOptions({ muirSirynPlaywright: { webServer } }),
+        ),
       {
-        message: `lzPlaywright.webServer must be an object with mutate and isolate, got ${JSON.stringify(webServer)}.`,
+        message: `muirSirynPlaywright.webServer must be an object with mutate and isolate, got ${JSON.stringify(webServer)}.`,
       },
     );
   });
@@ -169,14 +195,14 @@ test('webServer refuses anything but an object', () => {
 test('webServer refuses an option it does not have, and names the ones it has', () => {
   assert.throws(
     () =>
-      readRunnerOptions(
+      muirSirynPlaywrightReadRunnerOptions(
         strykerOptions({
-          lzPlaywright: { webServer: { mutate: true, port: 3000 } },
+          muirSirynPlaywright: { webServer: { mutate: true, port: 3000 } },
         }),
       ),
     {
       message:
-        'lzPlaywright.webServer has no option port; it takes mutate and isolate.',
+        'muirSirynPlaywright.webServer has no option port; it takes mutate and isolate.',
     },
   );
 });
@@ -201,11 +227,11 @@ function validate(options: object) {
 test("Stryker's check of the options fills in the defaults", () => {
   assert.deepEqual(validate({}), {
     valid: true,
-    options: { lzPlaywright: { workers: 1, traceScreenshots: false } },
+    options: { muirSirynPlaywright: { workers: 1, traceScreenshots: false } },
   });
   assert.deepEqual(
     validate({
-      lzPlaywright: {
+      muirSirynPlaywright: {
         configFile: 'a.ts',
         projects: ['chromium'],
         workers: 2,
@@ -226,15 +252,15 @@ test("Stryker's check of the options refuses wrong types, workers below 1 and un
     { retries: -1 },
     { traceScreenshots: 'on' },
     { browser: 'chromium' },
-  ].forEach((lzPlaywright) => {
+  ].forEach((muirSirynPlaywright) => {
     assert.equal(
-      validate({ lzPlaywright }).valid,
+      validate({ muirSirynPlaywright }).valid,
       false,
-      JSON.stringify(lzPlaywright),
+      JSON.stringify(muirSirynPlaywright),
     );
   });
 
-  assert.equal(validate({ lzPlaywright: [] }).valid, false);
+  assert.equal(validate({ muirSirynPlaywright: [] }).valid, false);
 });
 
 test("Stryker's check of the options takes webServer with mutate true, false or auto and a boolean isolate, and nothing else", () => {
@@ -244,7 +270,7 @@ test("Stryker's check of the options takes webServer with mutate true, false or 
     { mutate: 'auto', isolate: false },
   ].forEach((webServer) => {
     assert.equal(
-      validate({ lzPlaywright: { webServer } }).valid,
+      validate({ muirSirynPlaywright: { webServer } }).valid,
       true,
       JSON.stringify(webServer),
     );
@@ -252,7 +278,7 @@ test("Stryker's check of the options takes webServer with mutate true, false or 
   [true, [], { mutate: 'on' }, { isolate: 'no' }, { port: 1 }].forEach(
     (webServer) => {
       assert.equal(
-        validate({ lzPlaywright: { webServer } }).valid,
+        validate({ muirSirynPlaywright: { webServer } }).valid,
         false,
         JSON.stringify(webServer),
       );
@@ -261,9 +287,11 @@ test("Stryker's check of the options takes webServer with mutate true, false or 
 });
 
 test('every option says what it is for', () => {
-  Object.entries(optionProperties).forEach(([name, { description }]) => {
-    assert.match(description, /^[A-Z].{20,}\.$/, name);
-  });
+  Object.entries(muirSirynPlaywrightOptionProperties).forEach(
+    ([name, { description }]) => {
+      assert.match(description, /^[A-Z].{20,}\.$/, name);
+    },
+  );
 
   assert.equal(
     strykerValidationSchema.$schema,
@@ -277,15 +305,18 @@ test('the README lists exactly the options the schema has', () => {
     ([, name]) => name,
   );
 
-  assert.deepEqual(listed, Object.keys(optionProperties));
+  assert.deepEqual(listed, Object.keys(muirSirynPlaywrightOptionProperties));
 });
 
 test('the README states the per-test timeout the runner sets', () => {
   const [, headroom, floor] =
     /less ([\d.]+) s but\s+at\s+least\s+([\d.]+) s/.exec(readme) ?? [];
 
-  assert.equal(Number(headroom) * 1000, runStartMs + stopHeadroomMs);
-  assert.equal(Number(floor) * 1000, minTestTimeoutMs);
+  assert.equal(
+    Number(headroom) * 1000,
+    muirSirynPlaywrightRunStartMs + muirSirynPlaywrightStopHeadroomMs,
+  );
+  assert.equal(Number(floor) * 1000, muirSirynPlaywrightMinTestTimeoutMs);
 });
 
 test('the README states when the runner stops a mutant run, and below which timeout it does not', () => {
@@ -293,9 +324,11 @@ test('the README states when the runner stops a mutant run, and below which time
   const [, noStopBelow] =
     /timeout\s+is\s+under\s+([\d.]+) s/.exec(readme) ?? [];
 
-  assert.equal(Number(headroom) * 1000, stopHeadroomMs);
+  assert.equal(Number(headroom) * 1000, muirSirynPlaywrightStopHeadroomMs);
   assert.equal(
     Number(noStopBelow) * 1000,
-    runStartMs + minTestTimeoutMs + stopHeadroomMs,
+    muirSirynPlaywrightRunStartMs +
+      muirSirynPlaywrightMinTestTimeoutMs +
+      muirSirynPlaywrightStopHeadroomMs,
   );
 });

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { templateRows } from '../../src/modified.ts';
-import { lzTestEach } from '../../src/test-each.ts';
+import { muirTemplateRows } from '../../src/modified.ts';
+import { muirTestEach } from '../../src/test-each.ts';
 
 describe('templateRows', () => {
-  lzTestEach([
+  muirTestEach([
     [
       ['\n  a | b\n  ', ' | ', '\n  ', ' | ', '\n'],
       [1, 2, 3, 4],
@@ -18,6 +18,6 @@ describe('templateRows', () => {
     [['a|b', '|', ''], [1], []],
     [['a\tb ', ''], [1], [{ 'a\tb': 1 }]],
   ])('reads %o with %o', (strings, values, rows) => {
-    assert.deepEqual(templateRows(strings, values), rows);
+    assert.deepEqual(muirTemplateRows(strings, values), rows);
   });
 });

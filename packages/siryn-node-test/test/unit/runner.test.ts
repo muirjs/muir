@@ -11,13 +11,13 @@ import type {
 import type { Logger } from '@stryker-mutator/api/logging';
 import { TestStatus } from '@stryker-mutator/api/test-runner';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import {
-  activeMutantEnv,
-  envNames,
-  type ProcessRecord,
-  type RecordedTest,
+  muirSirynNodeTestActiveMutantEnv,
+  muirSirynNodeTestEnvNames,
+  type MuirSirynNodeTestProcessRecord,
+  type MuirSirynNodeTestRecordedTest,
 } from '../../src/record.ts';
 import { callMember, construct, member } from '../reflect.fixtures.ts';
 import {
@@ -29,21 +29,21 @@ import {
   strykerOptions,
 } from '../runner.fixtures.ts';
 import {
-  LzNodeTestTestRunner,
-  lzFileError,
-  lzFilesFor,
-  lzRunEnv,
-  type LzRunEnvInput,
-  lzRunInPool,
-  type LzRunOptions,
-  lzStoredStrings,
-  lzTestRunnerConcurrency,
-  lzToTestResults,
+  MuirSirynNodeTestTestRunner,
+  muirSirynNodeTestFileError,
+  muirSirynNodeTestFilesFor,
+  muirSirynNodeTestRunEnv,
+  type MuirSirynNodeTestRunEnvInput,
+  muirSirynNodeTestRunInPool,
+  type MuirSirynNodeTestRunOptions,
+  muirSirynNodeTestStoredStrings,
+  muirSirynNodeTestTestRunnerConcurrency,
+  muirSirynNodeTestToTestResults,
 } from '../../src/runner.ts';
 
 const file = join('/repo', 'a.test.mjs');
 
-describe('lzToTestResults', () => {
+describe('muirSirynNodeTestToTestResults', () => {
   const base = (id: string) => ({
     id,
     name: id.slice(`${file} > `.length),
@@ -52,7 +52,7 @@ describe('lzToTestResults', () => {
 
   it('reports each recorded test with its status, failure message, and rounded time plus the time the file spent outside its tests', () => {
     assert.deepEqual(
-      lzToTestResults(
+      muirSirynNodeTestToTestResults(
         file,
         [
           { id: `${file} > passes`, status: 'passed', timeSpentMs: 1.6 },
@@ -96,7 +96,7 @@ describe('lzToTestResults', () => {
 
   it("counts a parent test's time once, as it includes the time of the subtests it runs", () => {
     assert.deepEqual(
-      lzToTestResults(
+      muirSirynNodeTestToTestResults(
         file,
         [
           { id: `${file} > parent > first`, status: 'passed', timeSpentMs: 1 },
@@ -119,7 +119,7 @@ describe('lzToTestResults', () => {
     const startPosition = { line: 4, column: 2 };
 
     assert.deepEqual(
-      lzToTestResults(
+      muirSirynNodeTestToTestResults(
         file,
         [
           {
@@ -143,12 +143,12 @@ describe('lzToTestResults', () => {
   });
 });
 
-describe('lzFileError', () => {
+describe('muirSirynNodeTestFileError', () => {
   const command =
     `To reproduce it without the mutant, run \`node "--test" "--no-deprecation" "${file}"\` in ${process.cwd()}, ` +
     "without the runner's reporter and hook.";
 
-  lzTestFor<
+  muirTestFor<
     readonly [
       string,
       number | null,
@@ -208,7 +208,7 @@ describe('lzFileError', () => {
       };
 
       assert.equal(
-        lzFileError(file, run),
+        muirSirynNodeTestFileError(file, run),
         [
           `Error running file "${file}": node exited with code ${String(exitCode)} outside any test.`,
           command,
@@ -228,7 +228,7 @@ describe('lzFileError', () => {
     };
 
     assert.equal(
-      lzFileError(file, run).split('\n')[1],
+      muirSirynNodeTestFileError(file, run).split('\n')[1],
       `To reproduce it without the mutant, run \`node "--test" "--stack-size=900" "${file}"\` in ${process.cwd()} ` +
         "with NODE_OPTIONS set to `--import tsx --max-old-space-size=100`, without the runner's reporter and hook.",
     );
@@ -244,19 +244,22 @@ describe('lzFileError', () => {
     };
 
     assert.match(
-      lzFileError(file, run),
+      muirSirynNodeTestFileError(file, run),
       / with NODE_OPTIONS set to `--import tsx`, /,
     );
   });
 });
 
-describe('LzNodeTestTestRunner options', () => {
-  const runner = (lzNodeTest: unknown) =>
-    new LzNodeTestTestRunner({ ...strykerOptions(), lzNodeTest }, logger());
-  /** What the runner's constructor throws for `lzNodeTest`, or undefined when it takes them. */
-  const refusal = (lzNodeTest: unknown): unknown => {
+describe('MuirSirynNodeTestTestRunner options', () => {
+  const runner = (muirSirynNodeTest: unknown) =>
+    new MuirSirynNodeTestTestRunner(
+      { ...strykerOptions(), muirSirynNodeTest },
+      logger(),
+    );
+  /** What the runner's constructor throws for `muirSirynNodeTest`, or undefined when it takes them. */
+  const refusal = (muirSirynNodeTest: unknown): unknown => {
     try {
-      runner(lzNodeTest);
+      runner(muirSirynNodeTest);
 
       return undefined;
     } catch (error) {
@@ -265,10 +268,10 @@ describe('LzNodeTestTestRunner options', () => {
   };
 
   it("takes Stryker's two constructor parameters only", () => {
-    assert.equal(LzNodeTestTestRunner.length, 2);
+    assert.equal(MuirSirynNodeTestTestRunner.length, 2);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['no options', undefined],
     ['empty options', {}],
     [
@@ -283,16 +286,16 @@ describe('LzNodeTestTestRunner options', () => {
     assert.equal(refusal(options), undefined);
   });
 
-  lzTestFor([null, [], 'options'])(
+  muirTestFor([null, [], 'options'])(
     'refuses %j, which is no options object',
     (options) => {
       assert.throws(() => runner(options), {
-        message: 'not valid lzNodeTest options',
+        message: 'not valid muirSirynNodeTest options',
       });
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     [{ testFiles: 'a.test.ts' }, 'testFiles'],
     [{ testFiles: [1] }, 'testFiles'],
     [{ nodeArgs: '--enable-source-maps' }, 'nodeArgs'],
@@ -300,27 +303,31 @@ describe('LzNodeTestTestRunner options', () => {
     [{ maxMemoryMB: '512' }, 'maxMemoryMB'],
   ])('refuses %j, naming %s', (options, field) => {
     assert.throws(() => runner(options), {
-      message: `not valid lzNodeTest options: ${field}`,
+      message: `not valid muirSirynNodeTest options: ${field}`,
     });
   });
 });
 
-describe('LzNodeTestTestRunner dry run coverage', () => {
+describe('MuirSirynNodeTestTestRunner dry run coverage', () => {
   /** A runner whose test file reports `record` without running. */
-  class RecordingRunner extends LzNodeTestTestRunner {
-    readonly #record: ProcessRecord;
+  class RecordingRunner extends MuirSirynNodeTestTestRunner {
+    readonly #record: MuirSirynNodeTestProcessRecord;
 
     constructor(
-      record: ProcessRecord,
+      record: MuirSirynNodeTestProcessRecord,
       log: Logger,
-      lzNodeTest: {
+      muirSirynNodeTest: {
         readonly nodeArgs?: readonly string[];
         readonly testFiles?: readonly string[];
       } = {},
     ) {
       super(
         strykerOptions({
-          lzNodeTest: { maxMemoryMB: 512, nodeArgs: [], ...lzNodeTest },
+          muirSirynNodeTest: {
+            maxMemoryMB: 512,
+            nodeArgs: [],
+            ...muirSirynNodeTest,
+          },
         }),
         log,
       );
@@ -342,12 +349,16 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
   const dryRunWarnings = async (
     coverageAnalysis: CoverageAnalysis,
     mutantCoverage: MutantCoverage,
-    status: RecordedTest['status'] = 'passed',
-    others: readonly RecordedTest[] = [],
+    status: MuirSirynNodeTestRecordedTest['status'] = 'passed',
+    others: readonly MuirSirynNodeTestRecordedTest[] = [],
   ) => {
     const warnings: string[] = [];
     const tests = [{ id: test, status, timeSpentMs: 1 }, ...others];
-    const record: ProcessRecord = { main: true, tests, mutantCoverage };
+    const record: MuirSirynNodeTestProcessRecord = {
+      main: true,
+      tests,
+      mutantCoverage,
+    };
 
     await new RecordingRunner(record, logger({ warnings })).dryRun({
       ...dryRun,
@@ -358,7 +369,7 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
     return warnings;
   };
 
-  lzTestFor<CoverageAnalysis>(['perTest', 'all'])(
+  muirTestFor<CoverageAnalysis>(['perTest', 'all'])(
     'warns once, naming the likely causes, when the tests reach no instrumented code with coverage analysis %s',
     async (coverageAnalysis) => {
       const warnings = await dryRunWarnings(coverageAnalysis, {
@@ -375,7 +386,7 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
   );
 
   it('warns when the tests reach no instrumented code and only some of them are skipped', async () => {
-    const passes: RecordedTest = {
+    const passes: MuirSirynNodeTestRecordedTest = {
       id: `${file} > also passes`,
       status: 'passed',
       timeSpentMs: 1,
@@ -394,8 +405,13 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
     );
   });
 
-  lzTestEach<
-    [string, CoverageAnalysis, MutantCoverage, RecordedTest['status']]
+  muirTestEach<
+    [
+      string,
+      CoverageAnalysis,
+      MutantCoverage,
+      MuirSirynNodeTestRecordedTest['status'],
+    ]
   >([
     ['a static hit', 'perTest', { static: { 1: 1 }, perTest: {} }, 'passed'],
     [
@@ -422,7 +438,7 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     [
       'one reporter',
       ['--test-reporter=tap', '--enable-source-maps'],
@@ -437,7 +453,7 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
     'warns once about %s it leaves out of nodeArgs, naming it',
     async (_title, nodeArgs, named) => {
       const warnings: string[] = [];
-      const record: ProcessRecord = {
+      const record: MuirSirynNodeTestProcessRecord = {
         main: true,
         tests: [{ id: test, status: 'passed', timeSpentMs: 1 }],
         mutantCoverage: { static: {}, perTest: { [test]: { 1: 1 } } },
@@ -453,7 +469,7 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
       assert.deepEqual(
         warnings.filter((warning) => warning.startsWith('Left out')),
         [
-          `Left out \`${named}\` of lzNodeTest.nodeArgs, because the runner uses its own node:test reporter.`,
+          `Left out \`${named}\` of muirSirynNodeTest.nodeArgs, because the runner uses its own node:test reporter.`,
         ],
       );
     },
@@ -461,7 +477,7 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
 
   it('warns once when no dry run left a list of the mutants it reached outside every test', async () => {
     const warnings: string[] = [];
-    const record: ProcessRecord = {
+    const record: MuirSirynNodeTestProcessRecord = {
       main: true,
       tests: [{ id: test, status: 'passed', timeSpentMs: 1 }],
     };
@@ -483,7 +499,7 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
 
   it('reads the list of the mutants reached outside every test that an earlier dry run left, without a warning', async () => {
     const warnings: string[] = [];
-    const record: ProcessRecord = {
+    const record: MuirSirynNodeTestProcessRecord = {
       main: true,
       tests: [{ id: test, status: 'passed', timeSpentMs: 1 }],
       mutantCoverage: { static: { 1: 1 }, perTest: {} },
@@ -504,61 +520,74 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
   });
 });
 
-describe('lzStoredStrings', () => {
+describe('muirSirynNodeTestStoredStrings', () => {
   const key = JSON.stringify(['/repo', '*.test.mjs']);
 
   it('returns no strings when the dry run stored none', () => {
-    assert.equal(lzStoredStrings(key, 'files', undefined), undefined);
+    assert.equal(
+      muirSirynNodeTestStoredStrings(key, 'files', undefined),
+      undefined,
+    );
   });
 
   it('returns the strings the dry run stored', () => {
-    assert.deepEqual(lzStoredStrings(key, 'files', JSON.stringify([file])), [
-      file,
-    ]);
+    assert.deepEqual(
+      muirSirynNodeTestStoredStrings(key, 'files', JSON.stringify([file])),
+      [file],
+    );
   });
 
-  lzTestFor(['', '[', '{}', '[1]', 'null'])(
+  muirTestFor(['', '[', '{}', '[1]', 'null'])(
     'throws, naming the store entry, for content %j',
     (content) => {
-      assert.throws(() => lzStoredStrings(key, 'outside-tests', content), {
-        message: `The dry-run store's outside-tests entry ${key} is no JSON array of strings: ${content}`,
-      });
+      assert.throws(
+        () => muirSirynNodeTestStoredStrings(key, 'outside-tests', content),
+        {
+          message: `The dry-run store's outside-tests entry ${key} is no JSON array of strings: ${content}`,
+        },
+      );
     },
   );
 
-  lzTestFor(['', '['])(
+  muirTestFor(['', '['])(
     'keeps the parse error of content %j as the cause',
     (content) => {
       assert.throws(
-        () => lzStoredStrings(key, 'files', content),
+        () => muirSirynNodeTestStoredStrings(key, 'files', content),
         (error) => error instanceof Error && error.cause instanceof SyntaxError,
       );
     },
   );
 });
 
-describe('lzFilesFor', () => {
+describe('muirSirynNodeTestFilesFor', () => {
   const a = join('/repo', 'a.test.mjs');
   const b = join('/repo', 'b.test.mjs');
   const longer = `${a}.old`;
   const files = [a, b, longer];
 
   it('returns every file without a filter', () => {
-    assert.deepEqual(lzFilesFor(files, undefined), files);
+    assert.deepEqual(muirSirynNodeTestFilesFor(files, undefined), files);
   });
 
   it('returns no file for an empty filter', () => {
-    assert.deepEqual(lzFilesFor(files, []), []);
+    assert.deepEqual(muirSirynNodeTestFilesFor(files, []), []);
   });
 
   it('returns the files that contain a filtered test, or that the filter names themselves', () => {
-    assert.deepEqual(lzFilesFor(files, [`${longer} > suite > test`]), [longer]);
-    assert.deepEqual(lzFilesFor(files, [`${a} > test`]), [a]);
-    assert.deepEqual(lzFilesFor(files, [b, `${a} > test`]), [a, b]);
+    assert.deepEqual(
+      muirSirynNodeTestFilesFor(files, [`${longer} > suite > test`]),
+      [longer],
+    );
+    assert.deepEqual(muirSirynNodeTestFilesFor(files, [`${a} > test`]), [a]);
+    assert.deepEqual(muirSirynNodeTestFilesFor(files, [b, `${a} > test`]), [
+      a,
+      b,
+    ]);
   });
 });
 
-describe('lzRunInPool', () => {
+describe('muirSirynNodeTestRunInPool', () => {
   function setup(
     count: number,
     limit: number,
@@ -567,7 +596,7 @@ describe('lzRunInPool', () => {
     const started: number[] = [];
     const settle: ((result: number) => void)[] = [];
     const fail: ((error: Error) => void)[] = [];
-    const pool = lzRunInPool(
+    const pool = muirSirynNodeTestRunInPool(
       Array.from({ length: count }, (_, index) => index),
       limit,
       (item) => {
@@ -670,7 +699,7 @@ describe('lzRunInPool', () => {
 
     assert.deepEqual(await pool, [0, 1]);
     assert.deepEqual(
-      await lzRunInPool(
+      await muirSirynNodeTestRunInPool(
         [],
         4,
         () => Promise.reject(new Error('no work')),
@@ -681,8 +710,8 @@ describe('lzRunInPool', () => {
   });
 });
 
-describe('lzTestRunnerConcurrency', () => {
-  lzTestEach([
+describe('muirSirynNodeTestTestRunnerConcurrency', () => {
+  muirTestEach([
     [undefined, false, 8, 7],
     [undefined, false, 4, 4],
     [undefined, false, 5, 4],
@@ -704,13 +733,13 @@ describe('lzTestRunnerConcurrency', () => {
     'gives concurrency %j, with checkers %j, on %d cores %d test runners, as Stryker does',
     (concurrency, checkers, cores, runners) => {
       assert.equal(
-        lzTestRunnerConcurrency(concurrency, checkers, cores),
+        muirSirynNodeTestTestRunnerConcurrency(concurrency, checkers, cores),
         runners,
       );
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     [[], undefined],
     [[], 3],
     [[], '50%'],
@@ -743,7 +772,7 @@ describe('lzTestRunnerConcurrency', () => {
       callMember(provider, 'dispose');
 
       assert.equal(
-        lzTestRunnerConcurrency(
+        muirSirynNodeTestTestRunnerConcurrency(
           concurrency,
           checkers.length > 0,
           availableParallelism(),
@@ -754,11 +783,11 @@ describe('lzTestRunnerConcurrency', () => {
   );
 });
 
-describe('lzRunEnv', () => {
+describe('muirSirynNodeTestRunEnv', () => {
   const out = join('/tmp', 'out');
   const tmp = join('/tmp', 'tmp');
-  const envOf = (input: Partial<LzRunEnvInput>) =>
-    lzRunEnv({
+  const envOf = (input: Partial<MuirSirynNodeTestRunEnvInput>) =>
+    muirSirynNodeTestRunEnv({
       base: {},
       file,
       outDir: out,
@@ -770,22 +799,22 @@ describe('lzRunEnv', () => {
     });
 
   it("names Stryker's active mutant variable as the hook does", () => {
-    assert.equal(activeMutantEnv, activeMutant);
+    assert.equal(muirSirynNodeTestActiveMutantEnv, activeMutant);
   });
 
   it("loads the hook before the consumer's options and drops the outer run state", () => {
     const base = {
       PATH: 'path',
       NODE_OPTIONS: '--outer',
-      [envNames.out]: 'outer out',
+      [muirSirynNodeTestEnvNames.out]: 'outer out',
       NODE_TEST_CONTEXT: 'child-v8',
       TEMP: 'outer temp',
-      [envNames.current]: 'outer test',
-      [envNames.hitLimit]: '5',
-      [envNames.memoryLimit]: '500',
-      [envNames.filter]: JSON.stringify(['outer']),
-      [envNames.bail]: 'true',
-      [envNames.activeMutant]: '8',
+      [muirSirynNodeTestEnvNames.current]: 'outer test',
+      [muirSirynNodeTestEnvNames.hitLimit]: '5',
+      [muirSirynNodeTestEnvNames.memoryLimit]: '500',
+      [muirSirynNodeTestEnvNames.filter]: JSON.stringify(['outer']),
+      [muirSirynNodeTestEnvNames.bail]: 'true',
+      [muirSirynNodeTestEnvNames.activeMutant]: '8',
       [activeMutant]: '9',
     };
     const before = { ...base };
@@ -795,10 +824,10 @@ describe('lzRunEnv', () => {
       {
         PATH: 'path',
         NODE_OPTIONS: `--import ${JSON.stringify(hookUrl)} --max-old-space-size=100`,
-        [envNames.out]: out,
-        [envNames.file]: file,
-        [envNames.dryRun]: 'false',
-        [envNames.runner]: String(process.pid),
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.file]: file,
+        [muirSirynNodeTestEnvNames.dryRun]: 'false',
+        [muirSirynNodeTestEnvNames.runner]: String(process.pid),
         TMPDIR: tmp,
         TEMP: tmp,
         TMP: tmp,
@@ -809,26 +838,33 @@ describe('lzRunEnv', () => {
 
   it("leaves the test file the hook's own held-open time whatever the parent's environment sets", () => {
     assert.equal(
-      envOf({ base: { [envNames.heldOpen]: '200' } })[envNames.heldOpen],
+      envOf({ base: { [muirSirynNodeTestEnvNames.heldOpen]: '200' } })[
+        muirSirynNodeTestEnvNames.heldOpen
+      ],
       undefined,
     );
   });
 
   it("passes Stryker's timeoutMS on as the stall time of a mutant run only, whatever the parent's environment sets", () => {
-    const base = { [envNames.stall]: '100' };
+    const base = { [muirSirynNodeTestEnvNames.stall]: '100' };
 
-    assert.equal(envOf({ base, stallMs: 300 })[envNames.stall], '300');
+    assert.equal(
+      envOf({ base, stallMs: 300 })[muirSirynNodeTestEnvNames.stall],
+      '300',
+    );
     const dryRunOptions = {
       dryRun: true,
       disableBail: true,
       coverageAnalysis: 'perTest',
-    } satisfies LzRunOptions;
+    } satisfies MuirSirynNodeTestRunOptions;
 
     assert.equal(
-      envOf({ base, stallMs: 300, run: dryRunOptions })[envNames.stall],
+      envOf({ base, stallMs: 300, run: dryRunOptions })[
+        muirSirynNodeTestEnvNames.stall
+      ],
       undefined,
     );
-    assert.equal(envOf({ base })[envNames.stall], undefined);
+    assert.equal(envOf({ base })[muirSirynNodeTestEnvNames.stall], undefined);
   });
 
   it("uses the runner's compile cache directory unless the environment names one", () => {
@@ -857,18 +893,18 @@ describe('lzRunEnv', () => {
       }),
       {
         NODE_OPTIONS: `--import ${JSON.stringify(hookUrl)}`,
-        [envNames.out]: out,
-        [envNames.file]: file,
-        [envNames.dryRun]: 'false',
-        [envNames.runner]: String(process.pid),
+        [muirSirynNodeTestEnvNames.out]: out,
+        [muirSirynNodeTestEnvNames.file]: file,
+        [muirSirynNodeTestEnvNames.dryRun]: 'false',
+        [muirSirynNodeTestEnvNames.runner]: String(process.pid),
         TMPDIR: tmp,
         TEMP: tmp,
         TMP: tmp,
         [activeMutant]: '12',
-        [envNames.hitLimit]: '40',
-        [envNames.memoryLimit]: '1500',
-        [envNames.heldOpen]: '200',
-        [envNames.filter]: JSON.stringify([`${file} > test`]),
+        [muirSirynNodeTestEnvNames.hitLimit]: '40',
+        [muirSirynNodeTestEnvNames.memoryLimit]: '1500',
+        [muirSirynNodeTestEnvNames.heldOpen]: '200',
+        [muirSirynNodeTestEnvNames.filter]: JSON.stringify([`${file} > test`]),
       },
     );
   });
@@ -885,7 +921,7 @@ describe('lzRunEnv', () => {
     });
 
     assert.equal(
-      env[envNames.filter],
+      env[muirSirynNodeTestEnvNames.filter],
       JSON.stringify([`${file} > test`, file]),
     );
   });
@@ -895,13 +931,13 @@ describe('lzRunEnv', () => {
       dryRun: false,
       disableBail: false,
       activeMutant: '12',
-    } satisfies LzRunOptions;
+    } satisfies MuirSirynNodeTestRunOptions;
     const active = (mutantActivation: 'runtime' | 'static') => {
       const env = envOf({ run: { ...run, mutantActivation } });
 
       return {
         atStart: env[activeMutant],
-        onceTestsStart: env[envNames.activeMutant],
+        onceTestsStart: env[muirSirynNodeTestEnvNames.activeMutant],
       };
     };
 
@@ -922,8 +958,8 @@ describe('lzRunEnv', () => {
         { dryRun: false, disableBail: true },
         { dryRun: true, disableBail: false, coverageAnalysis: 'perTest' },
         { dryRun: true, disableBail: true, coverageAnalysis: 'perTest' },
-      ] satisfies LzRunOptions[]
-    ).map((run) => envOf({ run })[envNames.bail]);
+      ] satisfies MuirSirynNodeTestRunOptions[]
+    ).map((run) => envOf({ run })[muirSirynNodeTestEnvNames.bail]);
 
     assert.deepEqual(bails, ['true', undefined, undefined, undefined]);
   });

@@ -1,13 +1,13 @@
-import { lzNodeMutators } from '@muirjs/proteus-node';
+import { muirProteusNodeMutators } from '@muirjs/proteus-node';
 
-await lzNodeMutators();
+await muirProteusNodeMutators();
 
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   mutate: ['src/**/*.ts'],
   plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
-  testRunner: 'lz-node-test',
-  lzNodeTest: { testFiles: ['test/**/*.test.ts'], maxMemoryMB: 300 },
+  testRunner: 'muir-siryn-node-test',
+  muirSirynNodeTest: { testFiles: ['test/**/*.test.ts'], maxMemoryMB: 300 },
   checkers: ['typescript'],
   reporters: ['clear-text', 'progress'],
 };

@@ -1,7 +1,7 @@
-# LzStorybookArgs mutates only the args a play or test function runs for
+# MuirProteusStorybookArgs mutates only the args a play or test function runs for
 
 Under Storybook's Vitest addon a story without a play function or a `.test()` call only renders, so a removed arg
-survives there unless the render crashes, and the survivor says nothing about the story's checks. `LzStorybookArgs`
+survives there unless the render crashes, and the survivor says nothing about the story's checks. `MuirProteusStorybookArgs`
 therefore mutates an `args` object only where a play or test function runs for it, decided from the story file alone,
 and leaves keys that function reads (`args.label` in `getByText(args.label)`) alone, since the expected value would
 move with the input. Lars ruled to keep this static rule for the first release and to defer support for visual tests

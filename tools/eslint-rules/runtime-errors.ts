@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { lzIsRecord, lzParseReport } from './stryker-report.ts';
+import { muirIsRecord, muirParseReport } from './stryker-report.ts';
 
 // Stryker leaves a RuntimeError mutant out of the mutation score, so a break threshold of 100 cannot see one. This
 // check fails a run on each RuntimeError mutant that the list does not record with a reason.
@@ -17,7 +17,7 @@ const malformedList =
 
 function parseRecorded(entry: unknown): Recorded {
   if (
-    !lzIsRecord(entry) ||
+    !muirIsRecord(entry) ||
     typeof entry['file'] !== 'string' ||
     typeof entry['mutator'] !== 'string' ||
     typeof entry['line'] !== 'number' ||
@@ -37,7 +37,7 @@ function parseRecorded(entry: unknown): Recorded {
 }
 
 /** One line per RuntimeError mutant of the JSON report that no entry of the list records. */
-export function lzUnrecordedRuntimeErrors(
+export function muirUnrecordedRuntimeErrors(
   report: unknown,
   recorded: unknown,
 ): readonly string[] {
@@ -47,7 +47,7 @@ export function lzUnrecordedRuntimeErrors(
 
   const list = recorded.map(parseRecorded);
 
-  return lzParseReport(report).flatMap(([file, mutants]) =>
+  return muirParseReport(report).flatMap(([file, mutants]) =>
     mutants
       .filter(
         (mutant) =>
@@ -71,13 +71,13 @@ export function lzUnrecordedRuntimeErrors(
 const scoredStatuses = new Set(['Killed', 'Timeout', 'Survived', 'NoCoverage']);
 
 /** Whether the JSON report holds a mutant that counts toward the mutation score; Stryker passes a run with none. */
-export function lzScoresAnyMutant(report: unknown): boolean {
-  return lzParseReport(report).some(([, mutants]) =>
+export function muirScoresAnyMutant(report: unknown): boolean {
+  return muirParseReport(report).some(([, mutants]) =>
     mutants.some(({ status }) => scoredStatuses.has(status)),
   );
 }
 
-export async function lzCheckRuntimeErrors(
+export async function muirCheckRuntimeErrors(
   reportFile: string,
   recordedFile: string,
 ): Promise<readonly string[]> {
@@ -88,5 +88,5 @@ export async function lzCheckRuntimeErrors(
     ),
   );
 
-  return lzUnrecordedRuntimeErrors(report, recorded);
+  return muirUnrecordedRuntimeErrors(report, recorded);
 }

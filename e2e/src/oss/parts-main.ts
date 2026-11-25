@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { lzMutantsByLine, lzPartRanges } from './parts.ts';
+import { muirMutantsByLine, muirPartRanges } from './parts.ts';
 
 const [path, file, parts, reportFile] = process.argv.slice(2);
 
@@ -11,8 +11,8 @@ if (path === undefined || file === undefined || parts === undefined) {
 }
 
 const counts =
-  reportFile === undefined ? undefined : lzMutantsByLine(reportFile, file);
-const ranges = lzPartRanges(
+  reportFile === undefined ? undefined : muirMutantsByLine(reportFile, file);
+const ranges = muirPartRanges(
   file,
   readFileSync(path, 'utf8'),
   Number(parts),

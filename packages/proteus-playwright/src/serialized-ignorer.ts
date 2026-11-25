@@ -1,7 +1,10 @@
-import { fieldOf, memberNameOf } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsMemberNameOf,
+} from '@muirjs/moira-mutators';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
-import { isFunctionNode } from './ast.ts';
+import { muirProteusPlaywrightIsFunctionNode } from './ast.ts';
 
 const serializingMethods: readonly unknown[] = [
   'evaluate',
@@ -13,19 +16,24 @@ const serializingMethods: readonly unknown[] = [
   'waitForFunction',
 ];
 
-export const serializedIgnorer: Ignorer = {
+export const muirProteusPlaywrightSerializedIgnorer: Ignorer = {
   shouldIgnore(path) {
-    const callee = fieldOf(
-      fieldOf(fieldOf(path, 'parentPath'), 'node'),
+    const callee = muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFieldOf(
+        muirMoiraMutatorsFieldOf(path, 'parentPath'),
+        'node',
+      ),
       'callee',
     );
-    const method = memberNameOf(callee);
+    const method = muirMoiraMutatorsMemberNameOf(callee);
 
     if (
-      isFunctionNode(fieldOf(path, 'node')) &&
+      muirProteusPlaywrightIsFunctionNode(
+        muirMoiraMutatorsFieldOf(path, 'node'),
+      ) &&
       serializingMethods.includes(method)
     ) {
-      return `lz-playwright-serialized: Playwright's ${String(method)} runs this function's source text where Stryker's helpers do not exist`;
+      return `muir-proteus-playwright-serialized: Playwright's ${String(method)} runs this function's source text where Stryker's helpers do not exist`;
     }
 
     return undefined;

@@ -1,20 +1,27 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { csfFile, topLevelBindings } from '../src/csf.ts';
-import { field } from '../src/node-field.ts';
 import {
-  isUnknownPlay,
-  playedStories,
-  unknownOverAPlay,
+  muirMoiraStorybookCsfFile,
+  muirMoiraStorybookTopLevelBindings,
+} from '../src/csf.ts';
+import { muirMoiraStorybookField } from '../src/node-field.ts';
+import {
+  muirMoiraStorybookIsUnknownPlay,
+  muirMoiraStorybookPlayedStories,
+  muirMoiraStorybookUnknownOverAPlay,
 } from '../src/played-stories.ts';
 import { bodyOf } from './support/parse-module.ts';
 
 function played(...lines: readonly string[]) {
   const body = bodyOf(...lines);
-  const bindings = topLevelBindings(body);
+  const bindings = muirMoiraStorybookTopLevelBindings(body);
 
-  return playedStories(body, bindings, csfFile(body, bindings));
+  return muirMoiraStorybookPlayedStories(
+    body,
+    bindings,
+    muirMoiraStorybookCsfFile(body, bindings),
+  );
 }
 
 function namesOf(stories: ReturnType<typeof played>): readonly string[] {
@@ -87,7 +94,7 @@ describe('playedStories', () => {
       'A.play = assigned;',
     );
 
-    assert.equal(field(story?.play, 'async'), true);
+    assert.equal(muirMoiraStorybookField(story?.play, 'async'), true);
   });
 
   it("gives the meta's play to a story without one, and a spread story's play to a story that spreads it", () => {
@@ -99,7 +106,10 @@ describe('playedStories', () => {
     );
 
     assert.deepEqual(
-      stories.map(({ story, play }) => [story.name, field(play, 'async')]),
+      stories.map(({ story, play }) => [
+        story.name,
+        muirMoiraStorybookField(play, 'async'),
+      ]),
       [
         ['A', false],
         ['B', true],
@@ -119,7 +129,7 @@ describe('playedStories', () => {
     assert.deepEqual(
       stories.map(({ story, play }) => [
         story.name,
-        typeof play === 'string' ? play : field(play, 'type'),
+        typeof play === 'string' ? play : muirMoiraStorybookField(play, 'type'),
       ]),
       [
         ['A', 'unknown over a play'],
@@ -146,7 +156,7 @@ describe('playedStories', () => {
         'export const A = { ...Shared };',
         'export const B = { play: async () => {}, ...Shared };',
         'export const C = { play: async () => {} };',
-      ).map(({ play }) => isUnknownPlay(play)),
+      ).map(({ play }) => muirMoiraStorybookIsUnknownPlay(play)),
       [true, true, false],
     );
   });
@@ -159,7 +169,10 @@ describe('playedStories', () => {
       'A.play = async () => {};',
     );
 
-    assert.equal(field(story?.play, 'type'), 'ArrowFunctionExpression');
+    assert.equal(
+      muirMoiraStorybookField(story?.play, 'type'),
+      'ArrowFunctionExpression',
+    );
   });
 
   it('gives an unknown play over a play to a story under a meta whose play a later spread of an imported object may replace', () => {
@@ -169,7 +182,7 @@ describe('playedStories', () => {
       'export const A = {};',
     );
 
-    assert.equal(story?.play, unknownOverAPlay);
+    assert.equal(story?.play, muirMoiraStorybookUnknownOverAPlay);
   });
 
   it("gives an .extend() story its base story's play", () => {
@@ -205,8 +218,8 @@ describe('playedStories', () => {
 
     assert.deepEqual(
       story?.tests.map((test) => [
-        field(test, 'options', 'type'),
-        field(test, 'testFunction', 'async'),
+        muirMoiraStorybookField(test, 'options', 'type'),
+        muirMoiraStorybookField(test, 'testFunction', 'async'),
       ]),
       [
         ['ObjectExpression', true],
@@ -239,7 +252,9 @@ describe('playedStories', () => {
     );
 
     assert.deepEqual(
-      story?.tests.map((test) => field(test, 'options', 'type')),
+      story?.tests.map((test) =>
+        muirMoiraStorybookField(test, 'options', 'type'),
+      ),
       ['Identifier'],
     );
   });

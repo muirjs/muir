@@ -1,32 +1,41 @@
-import { withoutBinding, type Bindings } from './bindings.ts';
-import { storyArgument, unwrap } from './csf-nodes.ts';
-import { field } from './node-field.ts';
-import { unknownValue } from './object-value.ts';
+import {
+  muirMoiraStorybookWithoutBinding,
+  type MuirMoiraStorybookBindings,
+} from './bindings.ts';
+import {
+  muirMoiraStorybookStoryArgument,
+  muirMoiraStorybookUnwrap,
+} from './csf-nodes.ts';
+import { muirMoiraStorybookField } from './node-field.ts';
+import { muirMoiraStorybookUnknownValue } from './object-value.ts';
 
-export interface ExtendLevel {
+export interface MuirMoiraStorybookExtendLevel {
   /** The story's initializer at this level: a `.story()` or `.extend()` call, or a CSF3 story object. */
   readonly init: unknown;
   readonly argument: unknown;
   readonly owner: unknown;
-  readonly bindings: Bindings;
+  readonly bindings: MuirMoiraStorybookBindings;
 }
 
-export function extendLevels(
+export function muirMoiraStorybookExtendLevels(
   init: unknown,
   owner: unknown,
-  unchangedBindings: Bindings,
-): readonly [ExtendLevel, ...(ExtendLevel | typeof unknownValue)[]] {
-  const call = unwrap(init);
+  unchangedBindings: MuirMoiraStorybookBindings,
+): readonly [
+  MuirMoiraStorybookExtendLevel,
+  ...(MuirMoiraStorybookExtendLevel | typeof muirMoiraStorybookUnknownValue)[],
+] {
+  const call = muirMoiraStorybookUnwrap(init);
   const own = {
     init,
-    argument: storyArgument(call),
+    argument: muirMoiraStorybookStoryArgument(call),
     owner,
     bindings: unchangedBindings,
   };
-  const base = field(call, 'callee', 'object', 'name');
+  const base = muirMoiraStorybookField(call, 'callee', 'object', 'name');
 
   if (
-    field(call, 'callee', 'property', 'name') !== 'extend' ||
+    muirMoiraStorybookField(call, 'callee', 'property', 'name') !== 'extend' ||
     typeof base !== 'string'
   ) {
     return [own];
@@ -35,11 +44,11 @@ export function extendLevels(
   return unchangedBindings.has(base)
     ? [
         own,
-        ...extendLevels(
+        ...muirMoiraStorybookExtendLevels(
           unchangedBindings.get(base),
           base,
-          withoutBinding(unchangedBindings, base),
+          muirMoiraStorybookWithoutBinding(unchangedBindings, base),
         ),
       ]
-    : [own, unknownValue];
+    : [own, muirMoiraStorybookUnknownValue];
 }

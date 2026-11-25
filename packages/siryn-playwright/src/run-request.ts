@@ -4,52 +4,65 @@ import type {
   MutantRunOptions,
 } from '@stryker-mutator/api/test-runner';
 
-import type { RunTestsParams } from './playwright-internals.ts';
-import { runSettingsEnv, type RunSettings } from './protocol.ts';
-import { type SerialGroups, withSerialGroups } from './serial-groups.ts';
-import type { ServerControl } from './server-protocol.ts';
+import type { MuirSirynPlaywrightRunTestsParams } from './playwright-internals.ts';
 import {
-  type ConfigTimeouts,
-  dryRunBudget,
-  mutantRunBudget,
-  type RunBudget,
+  muirSirynPlaywrightRunSettingsEnv,
+  type MuirSirynPlaywrightRunSettings,
+} from './protocol.ts';
+import {
+  type MuirSirynPlaywrightSerialGroups,
+  muirSirynPlaywrightWithSerialGroups,
+} from './serial-groups.ts';
+import type { MuirSirynPlaywrightServerControl } from './server-protocol.ts';
+import {
+  type MuirSirynPlaywrightConfigTimeouts,
+  muirSirynPlaywrightDryRunBudget,
+  muirSirynPlaywrightMutantRunBudget,
+  type MuirSirynPlaywrightRunBudget,
 } from './timeouts.ts';
 
-export type RunRequest = DryRunRequest | MutantRunRequest;
+export type MuirSirynPlaywrightRunRequest =
+  | MuirSirynPlaywrightDryRunRequest
+  | MuirSirynPlaywrightMutantRunRequest;
 
-export interface DryRunRequest {
+export interface MuirSirynPlaywrightDryRunRequest {
   readonly kind: 'dry';
   readonly disableBail: boolean;
   readonly coverageAnalysis: DryRunOptions['coverageAnalysis'];
-  readonly budget: RunBudget;
+  readonly budget: MuirSirynPlaywrightRunBudget;
 }
 
-export interface MutantRunRequest {
+export interface MuirSirynPlaywrightMutantRunRequest {
   readonly kind: 'mutant';
   readonly disableBail: boolean;
   readonly activeMutant: string;
   readonly mutantActivation: MutantRunOptions['mutantActivation'];
   /** Undefined runs every test. */
-  readonly selection: TestSelection | undefined;
+  readonly selection: MuirSirynPlaywrightTestSelection | undefined;
   readonly hitLimit: number | undefined;
-  readonly budget: RunBudget;
+  readonly budget: MuirSirynPlaywrightRunBudget;
 }
 
-export interface TestSelection {
+export interface MuirSirynPlaywrightTestSelection {
   /** The test ids in Stryker's test filter. */
   readonly covering: readonly string[];
   /** The Playwright test ids to run: the covering tests and their serial groups. */
   readonly toRun: readonly string[];
 }
 
-export function dryRunRequest({
+export function muirSirynPlaywrightDryRunRequest({
   disableBail,
   coverageAnalysis,
-}: DryRunOptions): DryRunRequest {
-  return { kind: 'dry', disableBail, coverageAnalysis, budget: dryRunBudget };
+}: DryRunOptions): MuirSirynPlaywrightDryRunRequest {
+  return {
+    kind: 'dry',
+    disableBail,
+    coverageAnalysis,
+    budget: muirSirynPlaywrightDryRunBudget,
+  };
 }
 
-export function mutantRunRequest(
+export function muirSirynPlaywrightMutantRunRequest(
   {
     activeMutant,
     mutantActivation,
@@ -59,10 +72,10 @@ export function mutantRunRequest(
     timeout,
   }: MutantRunOptions,
   session: {
-    readonly serialGroups: SerialGroups;
-    readonly timeouts: ConfigTimeouts;
+    readonly serialGroups: MuirSirynPlaywrightSerialGroups;
+    readonly timeouts: MuirSirynPlaywrightConfigTimeouts;
   },
-): MutantRunRequest {
+): MuirSirynPlaywrightMutantRunRequest {
   return {
     kind: 'mutant',
     disableBail,
@@ -70,30 +83,36 @@ export function mutantRunRequest(
     mutantActivation,
     selection: testFilter && {
       covering: testFilter,
-      toRun: withSerialGroups(testFilter, session.serialGroups),
+      toRun: muirSirynPlaywrightWithSerialGroups(
+        testFilter,
+        session.serialGroups,
+      ),
     },
     hitLimit,
-    budget: mutantRunBudget(timeout, session.timeouts),
+    budget: muirSirynPlaywrightMutantRunBudget(timeout, session.timeouts),
   };
 }
 
-export interface RunPlan {
+export interface MuirSirynPlaywrightRunPlan {
   readonly env: Readonly<Record<string, string | undefined>>;
-  readonly params: Pick<RunTestsParams, 'testIds' | 'maxFailures' | 'timeout'>;
-  readonly control: ServerControl;
+  readonly params: Pick<
+    MuirSirynPlaywrightRunTestsParams,
+    'testIds' | 'maxFailures' | 'timeout'
+  >;
+  readonly control: MuirSirynPlaywrightServerControl;
 }
 
-export function runPlan(
-  request: RunRequest,
+export function muirSirynPlaywrightRunPlan(
+  request: MuirSirynPlaywrightRunRequest,
   outDir: string,
   testIdHosts?: readonly string[],
   issuedTestIds?: readonly string[],
   pageHelpers?: string,
-): RunPlan {
+): MuirSirynPlaywrightRunPlan {
   const mutant = request.kind === 'mutant' ? request : undefined;
   const perTest =
     request.kind === 'dry' && request.coverageAnalysis === 'perTest';
-  const settings: RunSettings = {
+  const settings: MuirSirynPlaywrightRunSettings = {
     outDir,
     perTest,
     hitLimit: mutant?.hitLimit,
@@ -103,7 +122,7 @@ export function runPlan(
 
   return {
     env: {
-      [runSettingsEnv]: JSON.stringify(settings),
+      [muirSirynPlaywrightRunSettingsEnv]: JSON.stringify(settings),
       [INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE]: mutant?.activeMutant,
     },
     params: {

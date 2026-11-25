@@ -1,20 +1,20 @@
 import type { NodePath } from '@babel/core';
 import {
-  field,
-  fileNameOf,
-  isUnknownPlay,
-  list,
-  propertyKey,
-  readNamingStoryFile,
-  sitesOf,
-  type Proven,
-  type SiteRun,
+  muirMoiraStorybookField,
+  muirMoiraStorybookFileNameOf,
+  muirMoiraStorybookIsUnknownPlay,
+  muirMoiraStorybookList,
+  muirMoiraStorybookPropertyKey,
+  muirMoiraStorybookReadNamingStoryFile,
+  muirMoiraStorybookSitesOf,
+  type MuirMoiraStorybookProven,
+  type MuirMoiraStorybookSiteRun,
 } from '@muirjs/moira-storybook';
 
-import type { LzStorybookMutator } from './mutator.ts';
-import { packageName } from './package-name.ts';
+import type { MuirProteusStorybookMutator } from './mutator.ts';
+import { muirProteusStorybookPackageName } from './package-name.ts';
 
-type Key = NonNullable<ReturnType<typeof propertyKey>>;
+type Key = NonNullable<ReturnType<typeof muirMoiraStorybookPropertyKey>>;
 
 /** The keys of `args` a play reads, or `'whole'` when it hands the object on, so that it may read any key. */
 type Reads = ReadonlySet<Key> | 'whole';
@@ -22,7 +22,7 @@ type Reads = ReadonlySet<Key> | 'whole';
 interface Kept {
   /** The keys a site rule leaves alone. */
   readonly leftAlone: ReadonlySet<Key>;
-  readonly proofs: readonly Proven[];
+  readonly proofs: readonly MuirMoiraStorybookProven[];
 }
 
 type Sites = ReadonlyMap<unknown, Kept>;
@@ -35,17 +35,17 @@ const sitesByProgram = new WeakMap<object, Sites>();
 /** The keys of the story context that hold the args: Storybook 10.6.5 passes `args` and `initialArgs`. */
 const argsKeys: readonly Key[] = ['args', 'initialArgs'];
 
-export function argsMutator(): LzStorybookMutator & {
-  readonly name: 'LzStorybookArgs';
+export function muirProteusStorybookArgsMutator(): MuirProteusStorybookMutator & {
+  readonly name: 'MuirProteusStorybookArgs';
 } {
   return {
-    name: 'LzStorybookArgs',
+    name: 'MuirProteusStorybookArgs',
     sample:
       "export default { title: 'Sample' };\nexport const Story = {\n  args: { label: 'a', disabled: true },\n  play: async () => {},\n};\n",
     *mutate(path, t) {
       // Stryker places a statement's mutants as it leaves the statement, so the file is read on entering the Program, or, under a line-range `mutate` that skips the Program, on entering the first object in range.
       if (path.isProgram()) {
-        sitesIn(path);
+        muirProteusStorybookSitesIn(path);
       }
 
       if (!path.isObjectExpression()) {
@@ -54,7 +54,9 @@ export function argsMutator(): LzStorybookMutator & {
 
       const program = path.findParent((parent) => parent.isProgram());
       const kept =
-        program === null ? undefined : sitesIn(program).get(path.node);
+        program === null
+          ? undefined
+          : muirProteusStorybookSitesIn(program).get(path.node);
 
       if (kept === undefined) {
         return;
@@ -68,7 +70,7 @@ export function argsMutator(): LzStorybookMutator & {
             .map((property) => t.cloneNode(property)),
         );
       const eligible = properties.filter((property) => {
-        const key = propertyKey(property);
+        const key = muirMoiraStorybookPropertyKey(property);
 
         return (
           property.type === 'ObjectProperty' &&
@@ -99,24 +101,28 @@ export function argsMutator(): LzStorybookMutator & {
   };
 }
 
-export function sitesIn(program: NodePath): Sites {
+export function muirProteusStorybookSitesIn(program: NodePath): Sites {
   const cached = sitesByProgram.get(program.node);
 
   if (cached !== undefined) {
     return cached;
   }
 
-  const sites = readNamingStoryFile(packageName, program, () => {
-    const paths: ReadonlyMap<unknown, NodePath> = new Map(
-      descendants(program).map((path) => [path.node, path] as const),
-    );
+  const sites = muirMoiraStorybookReadNamingStoryFile(
+    muirProteusStorybookPackageName,
+    program,
+    () => {
+      const paths: ReadonlyMap<unknown, NodePath> = new Map(
+        descendants(program).map((path) => [path.node, path] as const),
+      );
 
-    return argsSites(
-      list(field(program.node, 'body')),
-      fileNameOf(program),
-      (fn) => keysRead(paths.get(fn)),
-    );
-  });
+      return argsSites(
+        muirMoiraStorybookList(muirMoiraStorybookField(program.node, 'body')),
+        muirMoiraStorybookFileNameOf(program),
+        (fn) => keysRead(paths.get(fn)),
+      );
+    },
+  );
 
   sitesByProgram.set(program.node, sites);
 
@@ -129,7 +135,7 @@ function argsSites(
   readsOf: (fn: unknown) => Reads,
 ): Sites {
   return new Map(
-    sitesOf(body, 'args', fileName).map(
+    muirMoiraStorybookSitesOf(body, 'args', fileName).map(
       ({ node, runs, proofs }) =>
         [node, { leftAlone: leftAlone(node, runs, readsOf), proofs }] as const,
     ),
@@ -139,7 +145,7 @@ function argsSites(
 /** The keys of `site` a site rule leaves alone (ADR 0001, per key at the meta by ADR 0002): no run surely takes the key from the site, or a play or test function of a run that may take it reads it. */
 function leftAlone(
   site: object,
-  runs: readonly SiteRun[],
+  runs: readonly MuirMoiraStorybookSiteRun[],
   readsOf: (fn: unknown) => Reads,
 ): ReadonlySet<Key> {
   const readers = runs.map((run) => ({
@@ -148,8 +154,8 @@ function leftAlone(
   }));
 
   return new Set(
-    list(field(site, 'properties'))
-      .map(propertyKey)
+    muirMoiraStorybookList(muirMoiraStorybookField(site, 'properties'))
+      .map(muirMoiraStorybookPropertyKey)
       .filter((key) => key !== undefined)
       .filter((key) => {
         const sources = readers.map(({ run, reads }) => ({
@@ -170,12 +176,14 @@ function leftAlone(
 }
 
 function readersOf(
-  run: SiteRun,
+  run: MuirMoiraStorybookSiteRun,
   readsOf: (fn: unknown) => Reads,
 ): readonly Reads[] {
   const { play, tests } = run.story;
   const playReads: readonly Reads[] =
-    play === undefined ? [] : [isUnknownPlay(play) ? 'whole' : readsOf(play)];
+    play === undefined
+      ? []
+      : [muirMoiraStorybookIsUnknownPlay(play) ? 'whole' : readsOf(play)];
 
   return run.owner === 'test'
     ? [...playReads, readsOf(run.test.testFunction)]
@@ -234,8 +242,8 @@ function stepCallbacks(path: NodePath): readonly NodePath[] {
   const { callee } = path.node;
   const name =
     callee.type === 'MemberExpression'
-      ? field(callee, 'property', 'name')
-      : field(callee, 'name');
+      ? muirMoiraStorybookField(callee, 'property', 'name')
+      : muirMoiraStorybookField(callee, 'name');
 
   return name === 'step'
     ? path.get('arguments').filter((argument) => argument.isFunction())
@@ -262,7 +270,7 @@ function boundReads(target: NodePath, read: Read): Reads {
 
   return union(
     target.get('properties').map((property): Reads => {
-      const key = propertyKey(property.node);
+      const key = muirMoiraStorybookPropertyKey(property.node);
 
       if (!property.isObjectProperty() || key === undefined) {
         return 'whole';
@@ -320,15 +328,15 @@ function keyReads(
 
 /** The key of `object.key` or `object['key']`; `undefined` when only running the code gives it. */
 function memberKey(member: unknown): Key | undefined {
-  const property = field(member, 'property');
+  const property = muirMoiraStorybookField(member, 'property');
 
-  if (field(member, 'computed') !== true) {
-    const name = field(property, 'name');
+  if (muirMoiraStorybookField(member, 'computed') !== true) {
+    const name = muirMoiraStorybookField(property, 'name');
 
     return typeof name === 'string' ? name : undefined;
   }
 
-  const value = field(property, 'value');
+  const value = muirMoiraStorybookField(property, 'value');
 
   return typeof value === 'string' || typeof value === 'number'
     ? value

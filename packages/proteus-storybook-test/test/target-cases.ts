@@ -1,6 +1,6 @@
 import { type Case, inPlay } from './support/case.ts';
 
-const target = 'LzStorybookInteractionTarget';
+const target = 'MuirProteusStorybookTestInteractionTarget';
 
 export const targetCases: readonly Case[] = [
   {

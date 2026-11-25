@@ -1,7 +1,10 @@
-import { selfCheckFile } from './install.ts';
-import type { Instrumenter, Located } from './instrumenter.ts';
+import { muirMoiraMutatorsSelfCheckFile } from './install.ts';
+import type {
+  MuirMoiraMutatorsInstrumenter,
+  MuirMoiraMutatorsLocated,
+} from './instrumenter.ts';
 
-export const builtInNames: readonly string[] = [
+export const muirMoiraMutatorsBuiltInNames: readonly string[] = [
   'ArithmeticOperator',
   'ArrayDeclaration',
   'ArrowFunction',
@@ -22,7 +25,7 @@ export const builtInNames: readonly string[] = [
 ];
 
 /** A source file in which each of the 17 built-ins makes at least one mutant. */
-export const builtInSample = `export function sample(a: number, b: number, text: string, notify: () => void, maybe?: { value: string }) {
+export const muirMoiraMutatorsBuiltInSample = `export function sample(a: number, b: number, text: string, notify: () => void, maybe?: { value: string }) {
   let total = a + b;
   total += 1;
   total++;
@@ -42,15 +45,18 @@ export const builtInSample = `export function sample(a: number, b: number, text:
 }
 `;
 
-export async function checkBuiltInsRemoved(
+export async function muirMoiraMutatorsCheckBuiltInsRemoved(
   packageName: string,
-  instrumenter: Pick<Located, 'dir' | 'version'> &
-    Pick<Instrumenter<unknown>, 'instrument'>,
+  instrumenter: Pick<MuirMoiraMutatorsLocated, 'dir' | 'version'> &
+    Pick<MuirMoiraMutatorsInstrumenter<unknown>, 'instrument'>,
 ): Promise<void> {
   const mutants = await instrumenter.instrument([
-    { name: selfCheckFile('built-ins'), content: builtInSample },
+    {
+      name: muirMoiraMutatorsSelfCheckFile('built-ins'),
+      content: muirMoiraMutatorsBuiltInSample,
+    },
   ]);
-  const remaining = builtInNames.filter((name) =>
+  const remaining = muirMoiraMutatorsBuiltInNames.filter((name) =>
     mutants.some(({ mutatorName }) => mutatorName === name),
   );
 
@@ -63,16 +69,19 @@ export async function checkBuiltInsRemoved(
   }
 }
 
-export function removeBuiltIns(
+export function muirMoiraMutatorsRemoveBuiltIns(
   packageName: string,
-  instrumenter: Pick<Located, 'dir' | 'version'> &
-    Pick<Instrumenter<unknown>, 'allMutators'>,
+  instrumenter: Pick<MuirMoiraMutatorsLocated, 'dir' | 'version'> &
+    Pick<MuirMoiraMutatorsInstrumenter<unknown>, 'allMutators'>,
   warn: (message: string) => void,
 ): void {
   const { allMutators } = instrumenter;
   const present = allMutators.map(({ name }) => name);
-  const missing = builtInNames.filter((name) => !present.includes(name));
-  const alreadyRemoved = missing.length === builtInNames.length;
+  const missing = muirMoiraMutatorsBuiltInNames.filter(
+    (name) => !present.includes(name),
+  );
+  const alreadyRemoved =
+    missing.length === muirMoiraMutatorsBuiltInNames.length;
 
   if (alreadyRemoved) {
     return;
@@ -86,7 +95,10 @@ export function removeBuiltIns(
   }
 
   for (const mutator of allMutators) {
-    if (!builtInNames.includes(mutator.name) && !isMuirMarked(mutator)) {
+    if (
+      !muirMoiraMutatorsBuiltInNames.includes(mutator.name) &&
+      !isMuirMarked(mutator)
+    ) {
       warn(
         `${packageName}: the mutator ${mutator.name} is not one of Stryker's 17 built-ins and has no ` +
           '@muirjs mark, so it stays on in this run; this package has not reviewed whether it fits test code.',
@@ -94,7 +106,9 @@ export function removeBuiltIns(
     }
   }
 
-  const kept = allMutators.filter(({ name }) => !builtInNames.includes(name));
+  const kept = allMutators.filter(
+    ({ name }) => !muirMoiraMutatorsBuiltInNames.includes(name),
+  );
 
   allMutators.splice(0, allMutators.length, ...kept);
 }

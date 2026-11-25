@@ -4,17 +4,17 @@ Mutators for the parts of JSX that Playwright tests look at. StrykerJS mutates e
 and leaves JSX text and attribute strings alone, so a suite that finds elements by role, label, and text
 gets few mutants it can kill. This plugin adds ten mutators:
 
-- `LzJsxTextLiteral`: empties JSX text that has a letter or digit.
-- `LzJsxLabelAttribute`: empties `aria-label`, `aria-labelledby`, `alt`, `title`, `placeholder`, and `htmlFor`.
-- `LzJsxEventHandler`: sets an `onX` handler that is not inline to `undefined`.
-- `LzJsxConditionalElement`: forces `x && <A/>` to render, and forces each branch of a JSX ternary.
-- `LzJsxUrlAttribute`: empties `href`, `to`, and `action`.
-- `LzJsxDisabledAttribute`: forces `disabled`, `readOnly`, and `aria-disabled` off.
-- `LzJsxHiddenAttribute`: forces `hidden` and `aria-hidden` off.
-- `LzJsxElementRole`: removes `role`, or swaps a `button`, or an `a` or `area` that has an `href`, for a
+- `MuirProteusJsxTextLiteral`: empties JSX text that has a letter or digit.
+- `MuirProteusJsxLabelAttribute`: empties `aria-label`, `aria-labelledby`, `alt`, `title`, `placeholder`, and `htmlFor`.
+- `MuirProteusJsxEventHandler`: sets an `onX` handler that is not inline to `undefined`.
+- `MuirProteusJsxConditionalElement`: forces `x && <A/>` to render, and forces each branch of a JSX ternary.
+- `MuirProteusJsxUrlAttribute`: empties `href`, `to`, and `action`.
+- `MuirProteusJsxDisabledAttribute`: forces `disabled`, `readOnly`, and `aria-disabled` off.
+- `MuirProteusJsxHiddenAttribute`: forces `hidden` and `aria-hidden` off.
+- `MuirProteusJsxElementRole`: removes `role`, or swaps a `button`, or an `a` or `area` that has an `href`, for a
   `span`. It keeps a `role` that restates the tag's implicit role (see "Implicit roles").
-- `LzJsxChildExpression`: replaces a `{value}` child with `null`.
-- `LzJsxStateAttribute`: flips `aria-expanded`, `aria-pressed`, `aria-checked`, and `aria-selected`.
+- `MuirProteusJsxChildExpression`: replaces a `{value}` child with `null`.
+- `MuirProteusJsxStateAttribute`: flips `aria-expanded`, `aria-pressed`, `aria-checked`, and `aria-selected`.
 
 The [design document](https://github.com/muirjs/muir/blob/main/docs/design/jsx-mutators.md)
 says exactly what each mutator changes and which shapes it skips. Stryker's reports show these names as the mutator of each mutant.
@@ -34,7 +34,7 @@ Playwright test can kill each of them.
 
 ## Implicit roles
 
-`LzJsxElementRole` reads a fixed table of implicit roles: the tags that have a role by tag alone, or by
+`MuirProteusJsxElementRole` reads a fixed table of implicit roles: the tags that have a role by tag alone, or by
 tag and `href` for `a` and `area`. The table decides which tags the span swap changes (`button`, and `a`
 and `area` with an `href`) and which `role` attributes restate a tag's own role and are left in place.
 
@@ -55,16 +55,16 @@ The `generic` role is left out: Playwright gives it to no tag, and a `role="gene
 
 ## Turn the mutators on
 
-Call `lzJsxMutators` at the top of your Stryker configuration file. It adds the mutators to Stryker's own:
+Call `muirProteusJsxMutators` at the top of your Stryker configuration file. It adds the mutators to Stryker's own:
 
 ```ts
-import { lzJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
 
-await lzJsxMutators();
+await muirProteusJsxMutators();
 
 export default {
   appendPlugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
+  testRunner: 'muir-siryn-playwright',
 };
 ```
 
@@ -72,30 +72,30 @@ Call it in the configuration file, not through `plugins`. Stryker only warns whe
 load, while a failed call stops the run. The configuration file must be a JavaScript or TypeScript ES module, such
 as `stryker.config.mjs`, as a JSON configuration cannot import a module.
 
-The package has no opt-in or experimental mutators yet, so `lzJsxMutators` takes no options. It throws when it
+The package has no opt-in or experimental mutators yet, so `muirProteusJsxMutators` takes no options. It throws when it
 gets any. Turn a mutator off with `mutator.excludedMutations`, as below.
 
 The call checks that each mutator makes a mutant of a sample. It stops the run with the names of the
 mutators that do not, and with the instrumenter's folder and version when an internal it patches is
 missing. It also stops the run when another mutator already has one of these mutators' names.
 
-## Hide styling mutants with lz-jsx-styling
+## Hide styling mutants with muir-proteus-jsx-styling
 
 StrykerJS mutates class name and inline style expressions. A DOM test rarely sees those changes, so
-their mutants survive and lower the score. The opt-in `lz-jsx-styling` ignorer reports them as Ignored,
+their mutants survive and lower the score. The opt-in `muir-proteus-jsx-styling` ignorer reports them as Ignored,
 with a reason. Ignored mutants stay in the report and are left out of the score.
 
 It hides every mutant inside:
 
 - A `className`, `class`, or `*ClassName` attribute with a `{...}` value, such as
-  `className={cn('p-2', active && 'bg-accent')}` or a `NavLink` callback. Reason: "lz-jsx-styling: class
+  `className={cn('p-2', active && 'bg-accent')}` or a `NavLink` callback. Reason: "muir-proteus-jsx-styling: class
   names only style the element; DOM tests do not observe them".
 - A call to `cn`, `clsx`, `classnames`, `classNames`, `cx`, `twMerge`, `cva`, or `tv` outside such an
-  attribute. Reason: "lz-jsx-styling: class-name builder call; DOM tests do not observe class names".
+  attribute. Reason: "muir-proteus-jsx-styling: class-name builder call; DOM tests do not observe class names".
 - A variable whose name ends in `ClassName` or `Classes` and whose value is a string, a template or an
   object literal, such as `const sizeClasses = { sm: 'h-4', lg: 'h-8' }`. Reason: the same as for a class attribute.
 - A `style` attribute with an object literal value, such as `style={{ color: on ? 'red' : 'blue' }}`.
-  Reason: "lz-jsx-styling: inline styles only style the element; DOM tests do not observe them".
+  Reason: "muir-proteus-jsx-styling: inline styles only style the element; DOM tests do not observe them".
 
 Static strings, such as `className="p-2"`, have no mutants to hide: StrykerJS skips them.
 
@@ -110,7 +110,7 @@ these classes:
 It matches whole class names, split on whitespace. A class with variants matches by its last part, so
 `md:hidden` and `peer-invalid:hidden` match. `overflow-hidden` and `hiddenish` do not.
 
-Add your project's own hiding classes with `lzJsxStyling.visibilityClasses`. They add to the list above;
+Add your project's own hiding classes with `muirProteusJsxStyling.visibilityClasses`. They add to the list above;
 they do not replace it.
 
 ### Paint-only style keys
@@ -134,19 +134,19 @@ changed which items rendered, and a test caught it.
 
 ### Turn it on
 
-List the plugin in `appendPlugins` or `plugins`, then the ignorer. The `lzJsxMutators` call does not give
+List the plugin in `appendPlugins` or `plugins`, then the ignorer. The `muirProteusJsxMutators` call does not give
 Stryker the ignorer or the option's schema.
 
 ```ts
 appendPlugins: ['@muirjs/siryn-playwright', '@muirjs/proteus-jsx'],
-ignorers: ['lz-jsx-styling'],
-lzJsxStyling: {
+ignorers: ['muir-proteus-jsx-styling'],
+muirProteusJsxStyling: {
   visibilityClasses: ['closed', 'is-collapsed'],
 },
 ```
 
 The ignorer does not need the JSX mutators: it also hides StrykerJS's own class name and style mutants.
-Listing the plugin does not turn the JSX mutators on; only the `lzJsxMutators` call does.
+Listing the plugin does not turn the JSX mutators on; only the `muirProteusJsxMutators` call does.
 
 `appendPlugins` keeps the plugins Stryker loads by default. `plugins` replaces them, so a checker such as
 `@stryker-mutator/typescript-checker` does not load unless the list names it too. Stryker finds its
@@ -159,17 +159,17 @@ schema the plugin exports, and the ignorer throws when it is created with any ot
 
 ### When to leave it out
 
-Leave `lz-jsx-styling` out when your tests assert classes or styles, with `toHaveClass`, `toHaveCSS` or
+Leave `muir-proteus-jsx-styling` out when your tests assert classes or styles, with `toHaveClass`, `toHaveCSS` or
 `toHaveStyle`. Those tests can kill the mutants it hides. A `// Stryker restore` comment does not bring
 them back; only leaving the ignorer out does.
 
 Leave it out, or add the class to `visibilityClasses`, when your own CSS hides an element through a class
 the list above does not name.
 
-## Hide telemetry mutants with lz-telemetry
+## Hide telemetry mutants with muir-proteus-jsx-telemetry
 
 Analytics and error-monitoring calls send data that a DOM test does not see, so the mutants in their
-arguments survive. The opt-in `lz-telemetry` ignorer reports them as Ignored, with a reason.
+arguments survive. The opt-in `muir-proteus-jsx-telemetry` ignorer reports them as Ignored, with a reason.
 
 It hides every mutant of a statement that is just a call to one of these callees:
 
@@ -178,13 +178,13 @@ It hides every mutant of a statement that is just a call to one of these callees
   `analytics.screen`, `posthog.capture`, `posthog.identify`, `posthog.group`, `posthog.alias`,
   `posthog.register`, `posthog.reset`, `mixpanel.track`, `mixpanel.identify`, `mixpanel.register`,
   `mixpanel.people.set`, `plausible`, `window.plausible`, `umami.track`, `amplitude.track`,
-  `amplitude.logEvent`, and `amplitude.identify`. Reason: "lz-telemetry: analytics call; DOM tests do not
+  `amplitude.logEvent`, and `amplitude.identify`. Reason: "muir-proteus-jsx-telemetry: analytics call; DOM tests do not
   observe what it sends".
 - Error monitoring: `Sentry.captureException`, `Sentry.captureMessage`, `Sentry.addBreadcrumb`,
   `Sentry.setUser`, `Sentry.setTag`, `Sentry.setTags`, `Sentry.setContext`, `Sentry.setExtra`, and
   `Sentry.flush`. A bare `captureException` or `captureMessage` counts when the name, where it is called,
   refers to an import under that name from a `@sentry/` package; a parameter or local of the same name does
-  not count. Reason: "lz-telemetry: error-monitoring call; DOM tests do not observe what it reports".
+  not count. Reason: "muir-proteus-jsx-telemetry: error-monitoring call; DOM tests do not observe what it reports".
 
 The ignorer matches a callee by its name only, so an app's own object named `analytics` or `posthog` counts
 too.
@@ -210,14 +210,14 @@ The ignorer keeps the mutants in every other case:
 - The callee is `Sentry.init`. Its options, such as `beforeSend`, decide what the app reports, and a unit
   test can check them.
 
-Add your project's own callees with `lzTelemetry.calls`. They add to the lists above. Reason:
-"lz-telemetry: telemetry call from lzTelemetry.calls; DOM tests do not observe what it sends". When
+Add your project's own callees with `muirProteusJsxTelemetry.calls`. They add to the lists above. Reason:
+"muir-proteus-jsx-telemetry: telemetry call from muirProteusJsxTelemetry.calls; DOM tests do not observe what it sends". When
 `calls` repeats a built-in callee, such as `gtag`, the statement keeps the built-in reason.
 
 ```ts
 appendPlugins: ['@muirjs/siryn-playwright', '@muirjs/proteus-jsx'],
-ignorers: ['lz-telemetry'],
-lzTelemetry: {
+ignorers: ['muir-proteus-jsx-telemetry'],
+muirProteusJsxTelemetry: {
   calls: ['track', 'telemetry.send'],
 },
 ```
@@ -226,23 +226,23 @@ Each entry in `calls` must be an identifier or a dotted chain of identifiers, su
 `analytics.track`. Stryker checks it against the schema the plugin exports, and the ignorer throws when it
 is created with any other value.
 
-Leave `lz-telemetry` out when your tests check what the app sends, for example by intercepting the
+Leave `muir-proteus-jsx-telemetry` out when your tests check what the app sends, for example by intercepting the
 analytics request with `page.route`.
 
-## Hide console mutants with lz-console
+## Hide console mutants with muir-proteus-jsx-console
 
 Console output does not reach the DOM, so the mutants in a `console.log` call's arguments survive. The
-opt-in `lz-console` ignorer hides every mutant of a statement that is just a call to one of the listed
-`console` methods. Reason: "lz-console: console output; DOM tests do not observe it".
+opt-in `muir-proteus-jsx-console` ignorer hides every mutant of a statement that is just a call to one of the listed
+`console` methods. Reason: "muir-proteus-jsx-console: console output; DOM tests do not observe it".
 
 By default it hides `console.log`, `console.debug`, `console.info`, and `console.trace`. It keeps the
-mutants of `console.warn` and `console.error` unless you list them. Set `lzConsole.methods` to choose the
+mutants of `console.warn` and `console.error` unless you list them. Set `muirProteusJsxConsole.methods` to choose the
 methods. Your list replaces the default list:
 
 ```ts
 appendPlugins: ['@muirjs/siryn-playwright', '@muirjs/proteus-jsx'],
-ignorers: ['lz-console'],
-lzConsole: {
+ignorers: ['muir-proteus-jsx-console'],
+muirProteusJsxConsole: {
   methods: ['log', 'debug', 'info', 'trace', 'warn'],
 },
 ```
@@ -252,13 +252,13 @@ lzConsole: {
 `timeEnd`, `timeLog`, `trace`, and `warn`. Stryker checks it against the schema the plugin exports, and the
 ignorer throws when it is created with any other value, such as the typo `lgo`.
 
-As with `lz-telemetry`, the statement can be an optional call, such as `console.log?.(message)`, whose `?.`
+As with `muir-proteus-jsx-telemetry`, the statement can be an optional call, such as `console.log?.(message)`, whose `?.`
 mutant is hidden with the statement, and can sit under `await` or `void`. The ignorer keeps the mutants of a
 console call whose result the code uses, such as `ok || console.log(message)`, of a computed callee, such
 as `console['log'](message)`, and of a call whose argument can act on the page, by the same rule as
-`lz-telemetry`: `console.log(count++)` and `console.log(queue.shift())` keep their mutants.
+`muir-proteus-jsx-telemetry`: `console.log(count++)` and `console.log(queue.shift())` keep their mutants.
 
-Leave `lz-console` out when your tests check console output, for example with Playwright's
+Leave `muir-proteus-jsx-console` out when your tests check console output, for example with Playwright's
 `page.on('console')` or a spy on `console` in a unit test.
 
 ## Use several ignorers
@@ -266,13 +266,13 @@ Leave `lz-console` out when your tests check console output, for example with Pl
 List each ignorer you want, after the plugin in `appendPlugins` or `plugins`:
 
 ```ts
-ignorers: ['lz-jsx-styling', 'lz-telemetry', 'lz-console'],
+ignorers: ['muir-proteus-jsx-styling', 'muir-proteus-jsx-telemetry', 'muir-proteus-jsx-console'],
 ```
 
 ## Turn a mutator off
 
 For the whole project, list the mutator in `mutator.excludedMutations`. The names are case sensitive,
-and Stryker does not check them, so `lzJsxTextLiteral` excludes nothing and logs nothing.
+and Stryker does not check them, so `muirProteusJsxTextLiteral` excludes nothing and logs nothing.
 
 For one mutant, use a Stryker disable comment with a reason. StrykerJS reads such a comment only where
 Babel attaches it to the code that follows, so in JSX only these forms work:
@@ -281,7 +281,7 @@ Babel attaches it to the code that follows, so in JSX only these forms work:
 
   ```tsx
   <input
-    // Stryker disable next-line LzJsxLabelAttribute: the visible label names this field
+    // Stryker disable next-line MuirProteusJsxLabelAttribute: the visible label names this field
     aria-label="Search"
   />
   ```
@@ -291,7 +291,7 @@ Babel attaches it to the code that follows, so in JSX only these forms work:
   ```tsx
   <header>
     {
-      // Stryker disable next-line LzJsxTextLiteral: a decorative heading
+      // Stryker disable next-line MuirProteusJsxTextLiteral: a decorative heading
       <h1>Welcome</h1>
     }
   </header>
@@ -305,20 +305,20 @@ A JSX comment, `{/* Stryker disable ... */}`, is never read, and Stryker logs no
 `next-line` comment before a multi-line element covers only that element's first line.
 
 A comment or exclusion names a mutator, not one of its mutations, so it turns off both branches of an
-`LzJsxConditionalElement` ternary, and both the `role` removal and the span swap of `LzJsxElementRole`.
+`MuirProteusJsxConditionalElement` ternary, and both the `role` removal and the span swap of `MuirProteusJsxElementRole`.
 
 ## Survivors to expect
 
 The mutators skip the mutants that are cheap to detect as changing nothing a test can see. These
 remain:
 
-- An `LzJsxEventHandler` mutant can behave like StrykerJS's own `BlockStatement` mutant, which empties the
+- An `MuirProteusJsxEventHandler` mutant can behave like StrykerJS's own `BlockStatement` mutant, which empties the
   handler's body. They differ only when the handler is shared or a parent handler relies on the event
   bubbling.
-- An `LzJsxConditionalElement` mutant on an empty list renders an empty list element, which Playwright
+- An `MuirProteusJsxConditionalElement` mutant on an empty list renders an empty list element, which Playwright
   reports as hidden. `toBeHidden` does not kill it; `toHaveCount(0)` on the items does.
 
-With `@stryker-mutator/typescript-checker` and `strictNullChecks` on, an `LzJsxEventHandler` mutant on a
+With `@stryker-mutator/typescript-checker` and `strictNullChecks` on, an `MuirProteusJsxEventHandler` mutant on a
 component prop that the component's type requires, such as `onClick: () => void`, fails to compile.
 Stryker reports it as a CompileError and leaves it out of the score, so no test runs against it. The
 mutator cannot see prop types. A disable comment on that attribute turns the mutant into an Ignored one,

@@ -2,19 +2,19 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  lzBySide,
-  lzCompare,
-  lzComparison,
-  lzScore,
+  muirBySide,
+  muirCompare,
+  muirComparison,
+  muirScore,
 } from '../../src/oss/verdicts.ts';
-import type { LzMutantDetail, LzMutantStatus } from '../../src/report.ts';
+import type { MuirMutantDetail, MuirMutantStatus } from '../../src/report.ts';
 
 function mutant(
   line: number,
-  status: LzMutantStatus,
+  status: MuirMutantStatus,
   replacement = 'x',
   endColumn = 9,
-): LzMutantDetail {
+): MuirMutantDetail {
   return {
     line,
     column: 3,
@@ -30,7 +30,7 @@ function mutant(
   };
 }
 
-describe('lzScore', () => {
+describe('muirScore', () => {
   it('counts each status and scores as Stryker does, without CompileError, RuntimeError or Ignored', () => {
     const mutants = (
       [
@@ -41,10 +41,10 @@ describe('lzScore', () => {
         'RuntimeError',
         'Ignored',
         'Killed',
-      ] satisfies LzMutantStatus[]
+      ] satisfies MuirMutantStatus[]
     ).map((status, line) => mutant(line, status));
 
-    assert.deepEqual(lzScore(mutants), {
+    assert.deepEqual(muirScore(mutants), {
       counts: {
         Ignored: 1,
         Killed: 2,
@@ -58,7 +58,7 @@ describe('lzScore', () => {
   });
 
   it('lists the counts by status in sorted order, whatever order the mutants have', () => {
-    const { counts } = lzScore([
+    const { counts } = muirScore([
       mutant(1, 'Survived'),
       mutant(2, 'Killed'),
       mutant(3, 'NoCoverage'),
@@ -68,13 +68,13 @@ describe('lzScore', () => {
   });
 
   it('has no score without a valid mutant', () => {
-    assert.equal(lzScore([mutant(1, 'CompileError')]).score, null);
+    assert.equal(muirScore([mutant(1, 'CompileError')]).score, null);
   });
 });
 
-describe('lzCompare', () => {
+describe('muirCompare', () => {
   it("pairs the sides' verdicts by file, place, mutator and replacement", () => {
-    const lz = new Map([
+    const muir = new Map([
       ['index.js', [mutant(1, 'Killed'), mutant(2, 'Survived', 'a\n  b')]],
     ]);
     const command = new Map([
@@ -88,60 +88,60 @@ describe('lzCompare', () => {
       ],
     ]);
 
-    assert.deepEqual(lzCompare(lz, command), [
+    assert.deepEqual(muirCompare(muir, command), [
       {
         mutant: 'index.js:1:3-1:9 StringLiteral x',
-        lz: 'Killed',
+        muir: 'Killed',
         command: 'Killed',
       },
       {
         mutant: 'index.js:2:3-2:9 StringLiteral a b',
-        lz: 'Survived',
+        muir: 'Survived',
         command: 'Killed',
       },
       {
         mutant: 'index.js:4:3-4:9 StringLiteral x',
-        lz: null,
+        muir: null,
         command: 'Timeout',
       },
     ]);
   });
 
   it('refuses a report with two mutants at one place, mutator and replacement', () => {
-    const lz = new Map([
+    const muir = new Map([
       ['index.js', [mutant(1, 'Killed'), mutant(1, 'Survived')]],
     ]);
 
-    assert.throws(() => lzCompare(lz, new Map()), {
+    assert.throws(() => muirCompare(muir, new Map()), {
       message:
         'Two mutants share the key "index.js:1:3-1:9 StringLiteral x"; the comparison would drop one.',
     });
   });
 
   it('keeps apart two mutants whose replacements differ in whitespace only, as Stryker keys them', () => {
-    const lz = new Map([
+    const muir = new Map([
       ['index.js', [mutant(1, 'Survived', 'a  b'), mutant(1, 'Killed', 'a b')]],
     ]);
     const command = new Map([
       ['index.js', [mutant(1, 'Killed', 'a  b'), mutant(1, 'Killed', 'a b')]],
     ]);
 
-    assert.deepEqual(lzCompare(lz, command), [
+    assert.deepEqual(muirCompare(muir, command), [
       {
         mutant: 'index.js:1:3-1:9 StringLiteral a b',
-        lz: 'Survived',
+        muir: 'Survived',
         command: 'Killed',
       },
       {
         mutant: 'index.js:1:3-1:9 StringLiteral a b',
-        lz: 'Killed',
+        muir: 'Killed',
         command: 'Killed',
       },
     ]);
   });
 
   it('keeps apart two mutants that start at one place and end at two', () => {
-    const lz = new Map([
+    const muir = new Map([
       [
         'index.js',
         [mutant(1, 'Killed', 'true', 20), mutant(1, 'Survived', 'true', 40)],
@@ -155,35 +155,38 @@ describe('lzCompare', () => {
     ]);
 
     assert.deepEqual(
-      lzCompare(lz, command).map(({ lz: status }) => status),
+      muirCompare(muir, command).map(({ muir: status }) => status),
       ['Killed', 'Survived'],
     );
   });
 });
 
-describe('lzBySide', () => {
+describe('muirBySide', () => {
   it('keys each value by its side and leaves out the sides with no item', () => {
     assert.deepEqual(
-      lzBySide([{ side: 'command', exitCode: 1 }], ({ exitCode }) => exitCode),
+      muirBySide(
+        [{ side: 'command', exitCode: 1 }],
+        ({ exitCode }) => exitCode,
+      ),
       { command: 1 },
     );
   });
 });
 
-describe('lzComparison', () => {
+describe('muirComparison', () => {
   it('compares nothing when one side did not run, and says so', () => {
     assert.deepEqual(
-      lzComparison({ command: { reported: true, report: new Map() } }),
+      muirComparison({ command: { reported: true, report: new Map() } }),
       {
         compared: false,
         reason:
-          'Only the command side ran; merge its result.json with a lz run with --merge.',
+          'Only the command side ran; merge its result.json with a muir run with --merge.',
       },
     );
   });
 
   it('says no side ran when there is no report to name', () => {
-    assert.deepEqual(lzComparison({}), {
+    assert.deepEqual(muirComparison({}), {
       compared: false,
       reason: 'No side ran.',
     });
@@ -191,8 +194,8 @@ describe('lzComparison', () => {
 
   it('compares nothing when a side that ran wrote no report', () => {
     assert.deepEqual(
-      lzComparison({
-        lz: { reported: false },
+      muirComparison({
+        muir: { reported: false },
         command: { reported: true, report: new Map() },
       }),
       {
@@ -203,7 +206,7 @@ describe('lzComparison', () => {
   });
 
   it('lists the disagreements when both sides have a report', () => {
-    const lz = new Map([
+    const muir = new Map([
       ['index.js', [mutant(1, 'Killed'), mutant(2, 'Survived')]],
     ]);
     const command = new Map([
@@ -211,8 +214,8 @@ describe('lzComparison', () => {
     ]);
 
     assert.deepEqual(
-      lzComparison({
-        lz: { reported: true, report: lz },
+      muirComparison({
+        muir: { reported: true, report: muir },
         command: { reported: true, report: command },
       }),
       {
@@ -220,11 +223,11 @@ describe('lzComparison', () => {
         disagreements: [
           {
             mutant: 'index.js:2:3-2:9 StringLiteral x',
-            lz: 'Survived',
+            muir: 'Survived',
             command: 'Killed',
           },
         ],
-        verdicts: lzCompare(lz, command),
+        verdicts: muirCompare(muir, command),
       },
     );
   });

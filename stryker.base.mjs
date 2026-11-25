@@ -35,20 +35,20 @@ export const source = '--conditions=@muirjs/source';
 
 /**
  * A package's config for its production code: `config` with the default node mutators added to Stryker's, and the
- * opt-in LzNodeAssertStatement, as these packages assert their invariants with node:assert.
+ * opt-in MuirProteusNodeAssertStatement, as these packages assert their invariants with node:assert.
  * The installs live here and not in the packages' configs, as an import there would make each package depend on the
  * mutator packages, which depend on some of them.
  *
  * @param {import('@stryker-mutator/api/core').PartialStrykerOptions} config
- * @param {import('@muirjs/proteus-js').LzJsMutatorOptions} [jsMutators] the JavaScript mutators to add
+ * @param {import('@muirjs/proteus-js').MuirProteusJsMutatorOptions} [jsMutators] the JavaScript mutators to add
  */
 export async function production(config, jsMutators) {
-  const { lzNodeMutators } = await import('@muirjs/proteus-node');
-  await lzNodeMutators({ LzNodeAssertStatement: true });
+  const { muirProteusNodeMutators } = await import('@muirjs/proteus-node');
+  await muirProteusNodeMutators({ MuirProteusNodeAssertStatement: true });
 
   if (jsMutators !== undefined) {
-    const { lzJsMutators } = await import('@muirjs/proteus-js');
-    await lzJsMutators(jsMutators);
+    const { muirProteusJsMutators } = await import('@muirjs/proteus-js');
+    await muirProteusJsMutators(jsMutators);
   }
 
   return config;
@@ -61,8 +61,10 @@ export async function production(config, jsMutators) {
  * @param {import('@stryker-mutator/api/core').PartialStrykerOptions} config
  */
 export async function testCode(config) {
-  const { lzNodeTestMutators } = await import('@muirjs/proteus-node-test');
-  await lzNodeTestMutators();
+  const { muirProteusNodeTestMutators } = await import(
+    '@muirjs/proteus-node-test'
+  );
+  await muirProteusNodeTestMutators();
 
   return config;
 }
@@ -72,7 +74,7 @@ const ignoredEverywhere = ['/.claude', '/.nx', '/.scratch', '/reports'];
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
-  testRunner: 'lz-node-test',
+  testRunner: 'muir-siryn-node-test',
   testRunnerNodeArgs: [source],
   checkers: ['typescript'],
   checkerNodeArgs: [source],

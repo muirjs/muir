@@ -1,5 +1,7 @@
 /** NODE_OPTIONS split as node splits it: at whitespace outside double quotes, which stay in each argument. */
-export function lzNodeOptionArgs(nodeOptions: string | undefined): string[] {
+export function muirSirynNodeTestOptionArgs(
+  nodeOptions: string | undefined,
+): string[] {
   return nodeOptions?.match(/(?:[^\s"]|"(?:[^"\\]|\\.)*")+/g) ?? [];
 }
 
@@ -38,31 +40,42 @@ function isReporterArg(
  * Leaves out node's options that add a node:test reporter or a reporter destination, with their values, so the
  * runner's reporter is the only one; node refuses more reporters than destinations.
  */
-export function withoutReporters(args: readonly string[]): string[] {
+export function muirSirynNodeTestWithoutReporters(
+  args: readonly string[],
+): string[] {
   return args.filter((arg, index) => !isReporterArg(arg, index, args));
 }
 
 /** The options, with their values, that `withoutReporters` leaves out of `args`. */
-export function lzReporterArgs(args: readonly string[]): string[] {
+export function muirSirynNodeTestReporterArgs(
+  args: readonly string[],
+): string[] {
   return args.filter(isReporterArg);
 }
 
 /** The arguments of NODE_OPTIONS in `base` that a test file runs with, after the runner's hook. */
-export function lzConsumerNodeOptions(base: NodeJS.ProcessEnv): string[] {
-  return withoutReporters(lzNodeOptionArgs(base['NODE_OPTIONS']));
+export function muirSirynNodeTestConsumerNodeOptions(
+  base: NodeJS.ProcessEnv,
+): string[] {
+  return muirSirynNodeTestWithoutReporters(
+    muirSirynNodeTestOptionArgs(base['NODE_OPTIONS']),
+  );
 }
 
 /**
  * Whether node runs with --test-only, from its NODE_OPTIONS and then `execArgv`, which takes precedence. The last of
  * `--test-only`, `--test-only=<value>` and `--no-test-only` wins; node reads any value as on, `false` too.
  */
-export function lzTestOnly(
+export function muirSirynNodeTestTestOnly(
   execArgv: readonly string[],
   nodeOptions: string | undefined,
 ): boolean {
   let testOnly = false;
 
-  for (const arg of [...lzNodeOptionArgs(nodeOptions), ...execArgv]) {
+  for (const arg of [
+    ...muirSirynNodeTestOptionArgs(nodeOptions),
+    ...execArgv,
+  ]) {
     if (optionRest(arg, '--no-test-only') === '') {
       testOnly = false;
     } else if (optionRest(arg, '--test-only') !== undefined) {

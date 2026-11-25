@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import timers from 'node:timers/promises';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import { isRunning } from '../../src/dirs.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import { muirSirynNodeTestIsRunning } from '../../src/dirs.ts';
 import {
   hookedEnv,
   readRecords,
@@ -20,7 +20,7 @@ import {
   reporterArg,
   shareCompileCache,
 } from '../runner.fixtures.ts';
-import { envNames } from '../../src/record.ts';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 
 // Loaded here, outside any test, the hook stays inactive (the runner did not start this process, or its own hook is
 // installed), and Stryker counts the hook's mutants as covered by every test, including those that run it in a child.
@@ -44,7 +44,7 @@ describe('hook, in a process that a signal ends', () => {
       process.execPath,
       ['--import', hookUrl, '-e', `${script} process.send('ready');`],
       {
-        env: hookedEnv({ [envNames.out]: outDir }),
+        env: hookedEnv({ [muirSirynNodeTestEnvNames.out]: outDir }),
         stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
         windowsHide: true,
       },
@@ -74,12 +74,12 @@ describe('hook, in a process that a signal ends', () => {
         ),
       );
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.equal(code, 0);
     },
   );
 
-  lzTestFor<readonly [NodeJS.Signals]>([['SIGTERM'], ['SIGINT'], ['SIGHUP']])(
+  muirTestFor<readonly [NodeJS.Signals]>([['SIGTERM'], ['SIGINT'], ['SIGHUP']])(
     'writes the record of a process that %s ends, which ends by that signal as it would without the hook',
     { skip: noSignals },
     async ([signal], t) => {
@@ -89,9 +89,9 @@ describe('hook, in a process that a signal ends', () => {
         signal,
       );
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.deepEqual([code, signalCode], [null, signal]);
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.equal(records.length, 1);
     },
   );
@@ -110,9 +110,9 @@ describe('hook, in a process that a signal ends', () => {
         'SIGTERM',
       );
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.deepEqual([code, signalCode], [7, null]);
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.equal(records.length, 1);
     },
   );
@@ -132,7 +132,7 @@ describe('hook, in a process that a signal ends', () => {
         join(tempDir(t), 'removed'),
       );
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.deepEqual([code, signalCode], [null, 'SIGTERM']);
     },
   );
@@ -160,7 +160,7 @@ describe('hook, in a test file whose runner is gone', () => {
       // Starts the test file as the runner does, in a group of its own with the runner's pid, and sends its pid.
       const script = [
         "const { spawn } = require('node:child_process');",
-        `const env = { ...process.env, ${JSON.stringify(envNames.runner)}: String(process.pid) };`,
+        `const env = { ...process.env, ${JSON.stringify(muirSirynNodeTestEnvNames.runner)}: String(process.pid) };`,
         "const options = { detached: true, windowsHide: true, stdio: 'ignore', env };",
         `const child = spawn(process.execPath, ${JSON.stringify(['--import', hookUrl, reporterArg, testFile])}, options);`,
         'process.send(child.pid);',
@@ -169,8 +169,8 @@ describe('hook, in a test file whose runner is gone', () => {
       const runner = spawn(process.execPath, ['-e', script], {
         cwd: dir,
         env: hookedEnv({
-          [envNames.out]: tempDir(t),
-          [envNames.file]: testFile,
+          [muirSirynNodeTestEnvNames.out]: tempDir(t),
+          [muirSirynNodeTestEnvNames.file]: testFile,
         }),
         stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
         windowsHide: true,
@@ -179,7 +179,7 @@ describe('hook, in a test file whose runner is gone', () => {
       t.after(() => {
         runner.kill('SIGKILL');
         started
-          .filter((pid) => isRunning(pid))
+          .filter((pid) => muirSirynNodeTestIsRunning(pid))
           .forEach((pid) => {
             process.kill(pid, 'SIGKILL');
           });
@@ -193,7 +193,7 @@ describe('hook, in a test file whose runner is gone', () => {
         await timers.setTimeout(20);
       }
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.ok(
         existsSync(join(dir, 'started')),
         'the test file started its test',
@@ -203,12 +203,15 @@ describe('hook, in a test file whose runner is gone', () => {
       await exited;
       const deadline = performance.now() + 5_000;
 
-      while (isRunning(group) && performance.now() < deadline) {
+      while (
+        muirSirynNodeTestIsRunning(group) &&
+        performance.now() < deadline
+      ) {
         await timers.setTimeout(50);
       }
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
-      assert.equal(isRunning(group), false);
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      assert.equal(muirSirynNodeTestIsRunning(group), false);
     },
   );
 });

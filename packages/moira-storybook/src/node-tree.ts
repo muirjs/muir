@@ -1,8 +1,11 @@
-import { unwrap } from './csf-nodes.ts';
-import { isRecord } from './is-record.ts';
-import { field, list } from './node-field.ts';
+import { muirMoiraStorybookUnwrap } from './csf-nodes.ts';
+import { muirMoiraStorybookIsRecord } from './is-record.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
 
-export interface TreeIndex {
+export interface MuirMoiraStorybookTreeIndex {
   readonly parentOf: (node: unknown) => unknown;
   /** The parent of `node`, its parent, and so on up to the Program. */
   readonly ancestors: (node: unknown) => readonly unknown[];
@@ -23,8 +26,8 @@ const positionKeys: ReadonlySet<string> = new Set([
 
 type Node = Readonly<Record<string, unknown>>;
 
-export function isNode(value: unknown): value is Node {
-  return isRecord(value) && typeof value['type'] === 'string';
+export function muirMoiraStorybookIsNode(value: unknown): value is Node {
+  return muirMoiraStorybookIsRecord(value) && typeof value['type'] === 'string';
 }
 
 const functionTypes: readonly unknown[] = [
@@ -36,26 +39,30 @@ const functionTypes: readonly unknown[] = [
   'ClassPrivateMethod',
 ];
 
-export function isFunction(node: unknown): boolean {
-  return functionTypes.includes(field(node, 'type'));
+export function muirMoiraStorybookIsFunction(node: unknown): boolean {
+  return functionTypes.includes(muirMoiraStorybookField(node, 'type'));
 }
 
 /** The child nodes of `node`, in source order for each key. */
-export function childNodes(node: unknown): readonly Node[] {
-  return isNode(node)
+export function muirMoiraStorybookChildNodes(node: unknown): readonly Node[] {
+  return muirMoiraStorybookIsNode(node)
     ? Object.entries(node)
         .filter(([key]) => !positionKeys.has(key))
-        .flatMap(([, value]) => (Array.isArray(value) ? list(value) : [value]))
-        .filter(isNode)
+        .flatMap(([, value]) =>
+          Array.isArray(value) ? muirMoiraStorybookList(value) : [value],
+        )
+        .filter(muirMoiraStorybookIsNode)
     : [];
 }
 
 /** `node` and every node below it, outer before inner and in source order for each key. */
-export function descendants(node: unknown): readonly unknown[] {
+export function muirMoiraStorybookDescendants(
+  node: unknown,
+): readonly unknown[] {
   const found: unknown[] = [];
   const visit = (each: unknown): void => {
     found.push(each);
-    childNodes(each).forEach(visit);
+    muirMoiraStorybookChildNodes(each).forEach(visit);
   };
 
   visit(node);
@@ -64,22 +71,24 @@ export function descendants(node: unknown): readonly unknown[] {
 }
 
 /** The expression inside `await` and the type wrappers around either. */
-export function awaited(expression: unknown): unknown {
-  const inner = unwrap(expression);
+export function muirMoiraStorybookAwaited(expression: unknown): unknown {
+  const inner = muirMoiraStorybookUnwrap(expression);
 
-  return unwrap(
-    field(inner, 'type') === 'AwaitExpression'
-      ? field(inner, 'argument')
+  return muirMoiraStorybookUnwrap(
+    muirMoiraStorybookField(inner, 'type') === 'AwaitExpression'
+      ? muirMoiraStorybookField(inner, 'argument')
       : inner,
   );
 }
 
 /** The name a member reads: its identifier, or its string-literal key when computed; `undefined` for any other key. */
-export function memberName(member: unknown): string | undefined {
-  const property = field(member, 'property');
-  const type = field(property, 'type');
+export function muirMoiraStorybookMemberName(
+  member: unknown,
+): string | undefined {
+  const property = muirMoiraStorybookField(member, 'property');
+  const type = muirMoiraStorybookField(property, 'type');
 
-  if (field(member, 'computed') === true) {
+  if (muirMoiraStorybookField(member, 'computed') === true) {
     return type === 'StringLiteral' ? stringIn(property, 'value') : undefined;
   }
 
@@ -87,14 +96,17 @@ export function memberName(member: unknown): string | undefined {
 }
 
 function stringIn(node: unknown, key: string): string | undefined {
-  const value = field(node, key);
+  const value = muirMoiraStorybookField(node, key);
 
   return typeof value === 'string' ? value : undefined;
 }
 
 /** Babel's `isNodesEquivalent` over plain nodes: the same type and fields, whatever the positions, comments and `extra`. */
-export function equivalent(first: unknown, second: unknown): boolean {
-  const tokenOf = equivalenceTokens([first, second]);
+export function muirMoiraStorybookEquivalent(
+  first: unknown,
+  second: unknown,
+): boolean {
+  const tokenOf = muirMoiraStorybookEquivalenceTokens([first, second]);
 
   return tokenOf(first) === tokenOf(second);
 }
@@ -106,7 +118,7 @@ export function equivalent(first: unknown, second: unknown): boolean {
  * fields compared with `===`; any other object's from its identity. A node outside `roots` gets a fresh token at each
  * call, which no other value shares.
  */
-export function equivalenceTokens(
+export function muirMoiraStorybookEquivalenceTokens(
   roots: readonly unknown[],
 ): (value: unknown) => string {
   const nodeTokens = new Map<unknown, string>();
@@ -132,11 +144,11 @@ export function equivalenceTokens(
       return intern(`[${value.map(tokenOf).join()}]`);
     }
 
-    if (isNode(value)) {
+    if (muirMoiraStorybookIsNode(value)) {
       return nodeTokens.get(value) ?? fresh();
     }
 
-    if (isRecord(value)) {
+    if (muirMoiraStorybookIsRecord(value)) {
       const fields = Object.keys(value)
         .filter((key) => value[key] !== undefined)
         .sort()
@@ -163,10 +175,10 @@ export function equivalenceTokens(
 
   roots
     .flat()
-    .flatMap(descendants)
+    .flatMap(muirMoiraStorybookDescendants)
     .reverse()
     .forEach((node) => {
-      if (!isNode(node)) {
+      if (!muirMoiraStorybookIsNode(node)) {
         return;
       }
 
@@ -182,18 +194,25 @@ export function equivalenceTokens(
 }
 
 /** `node` and every object below it, positions included; `descendants` gives only child nodes. */
-export function everyRecordIn(node: object): readonly unknown[] {
-  return [node, ...Object.values(node).filter(isRecord).flatMap(everyRecordIn)];
+export function muirMoiraStorybookEveryRecordIn(
+  node: object,
+): readonly unknown[] {
+  return [
+    node,
+    ...Object.values(node)
+      .filter(muirMoiraStorybookIsRecord)
+      .flatMap(muirMoiraStorybookEveryRecordIn),
+  ];
 }
 
 /** The specifier of `import(<specifier>)`, an `ImportExpression` as Babel 8 parses it, or a call with an `Import` callee as Babel 7 does by default. */
-export function importSourceOf(node: unknown): unknown {
-  if (field(node, 'type') === 'ImportExpression') {
-    return field(node, 'source');
+export function muirMoiraStorybookImportSourceOf(node: unknown): unknown {
+  if (muirMoiraStorybookField(node, 'type') === 'ImportExpression') {
+    return muirMoiraStorybookField(node, 'source');
   }
 
-  return field(node, 'callee', 'type') === 'Import'
-    ? list(field(node, 'arguments'))[0]
+  return muirMoiraStorybookField(node, 'callee', 'type') === 'Import'
+    ? muirMoiraStorybookList(muirMoiraStorybookField(node, 'arguments'))[0]
     : undefined;
 }
 
@@ -204,16 +223,16 @@ const moduleDeclarations: ReadonlySet<unknown> = new Set([
 ]);
 
 /** The specifier of the module `node` loads: an `import` or `export ... from` declaration, an `import()` or a `require()`. */
-export function loadedSpecifierOf(node: unknown): unknown {
-  if (moduleDeclarations.has(field(node, 'type'))) {
+export function muirMoiraStorybookLoadedSpecifierOf(node: unknown): unknown {
+  if (moduleDeclarations.has(muirMoiraStorybookField(node, 'type'))) {
     // An `export const` declaration has a null source: it loads nothing.
-    return field(node, 'source') ?? undefined;
+    return muirMoiraStorybookField(node, 'source') ?? undefined;
   }
 
   return (
-    importSourceOf(node) ??
-    (field(node, 'callee', 'name') === 'require'
-      ? list(field(node, 'arguments'))[0]
+    muirMoiraStorybookImportSourceOf(node) ??
+    (muirMoiraStorybookField(node, 'callee', 'name') === 'require'
+      ? muirMoiraStorybookList(muirMoiraStorybookField(node, 'arguments'))[0]
       : undefined)
   );
 }
@@ -228,19 +247,23 @@ const statementLists: ReadonlyMap<unknown, string> = new Map([
 ]);
 
 /** The parent of every node of `program`, and the statement list each statement stands in, copied when it is indexed so that a later change to the tree, such as a placed mutant, reads the file as written. */
-export function indexTree(program: unknown): TreeIndex {
+export function muirMoiraStorybookIndexTree(
+  program: unknown,
+): MuirMoiraStorybookTreeIndex {
   const parents = new WeakMap<object, unknown>();
   const lists = new WeakMap<object, readonly unknown[]>();
   const visit = (node: unknown): void => {
-    const listKey = statementLists.get(field(node, 'type'));
+    const listKey = statementLists.get(muirMoiraStorybookField(node, 'type'));
     // Stryker disable next-line StringLiteral: no Babel node has a field named '' or the mutant's text, so both read no list
-    const statements = list(field(node, listKey ?? ''));
+    const statements = muirMoiraStorybookList(
+      muirMoiraStorybookField(node, listKey ?? ''),
+    );
     const snapshot = [...statements];
 
     statements
-      .filter(isRecord)
+      .filter(muirMoiraStorybookIsRecord)
       .forEach((statement) => lists.set(statement, snapshot));
-    childNodes(node).forEach((child) => {
+    muirMoiraStorybookChildNodes(node).forEach((child) => {
       parents.set(child, node);
       visit(child);
     });
@@ -249,7 +272,7 @@ export function indexTree(program: unknown): TreeIndex {
   visit(program);
 
   const parentOf = (node: unknown): unknown =>
-    isRecord(node) ? parents.get(node) : undefined;
+    muirMoiraStorybookIsRecord(node) ? parents.get(node) : undefined;
 
   return {
     parentOf,
@@ -262,6 +285,7 @@ export function indexTree(program: unknown): TreeIndex {
 
       return found;
     },
-    listOf: (node) => (isRecord(node) ? lists.get(node) : undefined),
+    listOf: (node) =>
+      muirMoiraStorybookIsRecord(node) ? lists.get(node) : undefined,
   };
 }

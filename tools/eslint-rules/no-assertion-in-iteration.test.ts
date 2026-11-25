@@ -2,7 +2,7 @@ import parser from '@typescript-eslint/parser';
 import { RuleTester } from 'eslint';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import rule from './no-assertion-in-iteration.ts';
 
 const strict = "import assert from 'node:assert/strict';\n";
@@ -13,7 +13,7 @@ function tester(): RuleTester {
 }
 
 describe('no-assertion-in-iteration', () => {
-  lzTestEach([
+  muirTestEach([
     ['an assertion outside any loop', `${strict}assert.ok(x);`],
     [
       'a call that is not an assertion in a loop body',
@@ -66,7 +66,7 @@ describe('no-assertion-in-iteration', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'an assertion in a for...of body',
       `${strict}for (const x of xs) { assert.ok(x); }`,
@@ -209,7 +209,7 @@ describe('no-assertion-in-iteration', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'a loop body',
       `${strict}for (const x of xs) { assert.ok(x); }`,

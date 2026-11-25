@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser';
 
 // Stryker 10.1.1 instrumenter, src/parsers/ts-parser.ts
-export function parseProgram(
+export function muirShadowcatStorybookParseProgram(
   code: string,
   fileName: string,
 ): ReturnType<typeof parse>['program'] {

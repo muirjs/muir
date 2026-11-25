@@ -48,5 +48,5 @@ add or change a skip, name its row.
 - The interaction mutators skip only an interaction in a `beforeEach` or `afterEach` (a site rule, decided by
   the interaction reader's `inHook`) and place every other one:
   `packages/proteus-storybook-test/docs/adr/0002-place-every-interaction-outside-a-before-each-or-after-each.md`.
-- A default global (`LzStorybookStoryGlobals`) is an equivalence skip too: its `default-global` `Proven` rests on
+- A default global (`MuirProteusStorybookTestStoryGlobals`) is an equivalence skip too: its `default-global` `Proven` rests on
   Storybook 10.6.5's initial values, which `@muirjs/moira-storybook` holds, as well as on the file.

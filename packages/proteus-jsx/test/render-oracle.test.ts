@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 
 import ts from 'typescript';
 
-import { resolveFromCore } from '../src/install.ts';
+import { muirProteusJsxResolveFromCore } from '../src/install.ts';
 import { defined } from './support/defined.ts';
 import { exportedFunction } from './support/exports.ts';
 import {
@@ -57,7 +57,7 @@ function isolated(code: string): string {
 before(async () => {
   mkdirSync(tmpDir, { recursive: true });
   outDir = mkdtempSync(join(tmpDir, 'render-oracle-'));
-  const instrumenter = await installInto(await resolveFromCore());
+  const instrumenter = await installInto(await muirProteusJsxResolveFromCore());
   result = await instrumentFully(instrumenter, [
     { name: samplePath, content: source },
   ]);

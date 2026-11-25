@@ -16,9 +16,9 @@ maintain.
 
 ## Consequences
 
-- A CommonJS file gets no mutant from an import-bound mutator, and `LzNodeAwaitStatement` there also removes awaits in
+- A CommonJS file gets no mutant from an import-bound mutator, and `MuirProteusNodeAwaitStatement` there also removes awaits in
   node:test teardown callbacks.
-- `LzNodeTestCatchAssert` matches assertions by name, not by import, so it also mutates files that `require`
+- `MuirProteusNodeTestCatchAssert` matches assertions by name, not by import, so it also mutates files that `require`
   `node:assert`.
 
 Evidence: 205c182 (the ES module base configuration and engines), 0765eb3 (why the floor is 22.18), 20ea351

@@ -1,4 +1,4 @@
-# lz-node-test
+# muir-siryn-node-test
 
 An Nx workspace with six ESM-only packages for Node.js 22.18 or later, tested on Node.js 22 and 24:
 
@@ -12,7 +12,7 @@ An Nx workspace with six ESM-only packages for Node.js 22.18 or later, tested on
   test files that use `node:assert` and `node:test`.
 - [`@muirjs/moira-node-test`](packages/moira-node-test/README.md): the install layer that packages of
   StrykerJS mutators share.
-- [`@muirjs/madrox-node-test`](packages/madrox-node-test/README.md): `lzTestEach` and `lzTestFor`, table tests for
+- [`@muirjs/madrox-node-test`](packages/madrox-node-test/README.md): `muirTestEach` and `muirTestFor`, table tests for
   `node:test` that work like Vitest's `test.each` and `test.for`.
 
 The MIT license is in `LICENSE`.

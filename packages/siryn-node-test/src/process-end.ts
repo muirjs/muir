@@ -3,7 +3,7 @@
  * processes its tests leave running. On Windows libuv's job object ends the processes that the test file's process
  * started directly with it; one started through a shell (`shell: true`, a `.cmd` file) or with `detached: true` stays.
  */
-export function groupOptions(platform: NodeJS.Platform): {
+export function muirSirynNodeTestGroupOptions(platform: NodeJS.Platform): {
   detached: boolean;
   windowsHide: true;
 } {
@@ -14,7 +14,7 @@ export function groupOptions(platform: NodeJS.Platform): {
 const pollMs = 10;
 
 /** How long the processes of a test file's group get after SIGTERM before SIGKILL, at most: a whole number of polls. */
-export const termGraceMs = 20 * pollMs;
+export const muirSirynNodeTestTermGraceMs = 20 * pollMs;
 
 /**
  * How long a test file's process may hold stderr open after it exits, for the records of the processes it started
@@ -23,7 +23,7 @@ export const termGraceMs = 20 * pollMs;
 const closeGraceMs = 1_500;
 
 /** How much of a test file's stderr the runner keeps, from its end. */
-export const lzStderrTailBytes = 8 * 1024;
+export const muirSirynNodeTestStderrTailBytes = 8 * 1024;
 
 /** `tail` as text, without the bytes of a character whose start it cut off. */
 function wholeCharacters(tail: Buffer): string {
@@ -57,12 +57,15 @@ function signalGroup(
  * Sends the group SIGTERM and, when any of it is left `termGraceMs` later, SIGKILL, so a process that listens for
  * SIGTERM gets to run its listener. A process that detached itself has a group of its own and stays.
  */
-export async function endGroup(
+export async function muirSirynNodeTestEndGroup(
   pid: number,
   platform: NodeJS.Platform,
   kill: Kill,
 ): Promise<void> {
-  if (!groupOptions(platform).detached || !signalGroup(pid, 'SIGTERM', kill)) {
+  if (
+    !muirSirynNodeTestGroupOptions(platform).detached ||
+    !signalGroup(pid, 'SIGTERM', kill)
+  ) {
     return;
   }
 
@@ -81,7 +84,7 @@ function groupLasts(pid: number, kill: Kill): Promise<boolean> {
       try {
         const lasts = signalGroup(pid, 0, kill);
 
-        if (lasts && polls * pollMs < termGraceMs) {
+        if (lasts && polls * pollMs < muirSirynNodeTestTermGraceMs) {
           return;
         }
 
@@ -96,12 +99,12 @@ function groupLasts(pid: number, kill: Kill): Promise<boolean> {
 }
 
 /**
- * Waits for a process to end and collects the last `lzStderrTailBytes` of its stderr. Processes it started inherit
+ * Waits for a process to end and collects the last `muirSirynNodeTestStderrTailBytes` of its stderr. Processes it started inherit
  * stderr and can keep it open after it exits; the records of those that end soon arrive by the time stderr closes, so
  * this waits for that, but at most `closeGraceMs` after the exit, and then lets go of stderr. Then it ends what is left
  * of the process's group on `platform`, and settles once that is done.
  */
-export function processEnd(
+export function muirSirynNodeTestProcessEnd(
   child: EndingProcess,
   platform: NodeJS.Platform,
   kill: Kill = (pid, signal) => process.kill(pid, signal),
@@ -120,14 +123,16 @@ export function processEnd(
       const grouped =
         child.pid === undefined
           ? Promise.resolve()
-          : endGroup(child.pid, platform, kill);
+          : muirSirynNodeTestEndGroup(child.pid, platform, kill);
       grouped.then(() => {
         done({ exitCode: code, stderr: wholeCharacters(errors) });
       }, fail);
     };
     child.stderr.on('data', (chunk: Buffer) => {
       const all = Buffer.concat([errors, chunk]);
-      errors = all.subarray(Math.max(0, all.length - lzStderrTailBytes));
+      errors = all.subarray(
+        Math.max(0, all.length - muirSirynNodeTestStderrTailBytes),
+      );
     });
     child.on('error', fail);
     child.on('exit', (code) => {

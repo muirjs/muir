@@ -1,9 +1,9 @@
 import type { Case } from './cases.ts';
 
-const testId = 'LzPlaywrightTestIdLocator';
-const role = 'LzPlaywrightRoleLocator';
-const text = 'LzPlaywrightTextLocator';
-const click = 'LzPlaywrightClickAction';
+const testId = 'MuirProteusPlaywrightTestIdLocator';
+const role = 'MuirProteusPlaywrightRoleLocator';
+const text = 'MuirProteusPlaywrightTextLocator';
+const click = 'MuirProteusPlaywrightClickAction';
 
 function inTest(statements: readonly string[]): string {
   return `test('case', async ({ page }) => {\n  ${statements.join('\n  ')}\n});`;

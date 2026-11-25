@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { lzMutationSummary } from './mutation-summary.ts';
+import { muirMutationSummary } from './mutation-summary.ts';
 
 const [reportFile, title] = process.argv.slice(2);
 
@@ -11,4 +11,4 @@ if (reportFile === undefined || title === undefined) {
 }
 
 const report: unknown = JSON.parse(await readFile(reportFile, 'utf8'));
-process.stdout.write(lzMutationSummary(title, report));
+process.stdout.write(muirMutationSummary(title, report));

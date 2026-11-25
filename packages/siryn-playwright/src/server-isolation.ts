@@ -1,17 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type { RunRequest } from './run-request.ts';
-import { writeFileAtomic } from './server-protocol.ts';
+import type { MuirSirynPlaywrightRunRequest } from './run-request.ts';
+import { muirSirynPlaywrightWriteFileAtomic } from './server-protocol.ts';
 
-export type RunKind = 'server' | 'other';
+export type MuirSirynPlaywrightRunKind = 'server' | 'other';
 
-export type ServerMutants = ReadonlySet<string> | 'unknown';
+export type MuirSirynPlaywrightServerMutants = ReadonlySet<string> | 'unknown';
 
-export function runKind(
-  request: RunRequest,
-  dryRunServerMutants: () => ServerMutants,
-): RunKind {
+export function muirSirynPlaywrightRunKind(
+  request: MuirSirynPlaywrightRunRequest,
+  dryRunServerMutants: () => MuirSirynPlaywrightServerMutants,
+): MuirSirynPlaywrightRunKind {
   if (request.kind !== 'mutant') {
     return 'other';
   }
@@ -25,9 +25,9 @@ export function runKind(
  * Stryker asks for static activation of every run without a test filter
  * (@stryker-mutator/core 10.1.1 mutant-test-planner.js:148).
  */
-export function startupMutantFor(
-  request: RunRequest,
-  dryRunServerMutants: () => ServerMutants,
+export function muirSirynPlaywrightStartupMutantFor(
+  request: MuirSirynPlaywrightRunRequest,
+  dryRunServerMutants: () => MuirSirynPlaywrightServerMutants,
 ): string | undefined {
   return request.kind === 'mutant' &&
     request.mutantActivation === 'static' &&
@@ -36,34 +36,47 @@ export function startupMutantFor(
     : undefined;
 }
 
-function serverRan(mutants: ServerMutants, mutant: string): boolean {
+function serverRan(
+  mutants: MuirSirynPlaywrightServerMutants,
+  mutant: string,
+): boolean {
   return mutants === 'unknown' || mutants.has(mutant);
 }
 
-export function restartsToIsolate(
+export function muirSirynPlaywrightRestartsToIsolate(
   isolate: boolean,
-  previous: RunKind,
-  next: RunKind,
+  previous: MuirSirynPlaywrightRunKind,
+  next: MuirSirynPlaywrightRunKind,
 ): boolean {
   return isolate && (previous === 'server' || next === 'server');
 }
 
-export type ServerMutantsFile =
+export type MuirSirynPlaywrightServerMutantsFile =
   | { readonly mutants: ReadonlySet<string> }
   | { readonly cause: string };
 
-export const serverMutantsFile = '.lz-playwright-server-mutants';
+export const muirSirynPlaywrightServerMutantsFile =
+  '.muir-playwright-server-mutants';
 
-export function writeServerMutantsFile(
+export function muirSirynPlaywrightWriteServerMutantsFile(
   dir: string,
   mutants: Iterable<string>,
 ): void {
-  writeFileAtomic(dir, serverMutantsFile, [...mutants].join('\n'));
+  muirSirynPlaywrightWriteFileAtomic(
+    dir,
+    muirSirynPlaywrightServerMutantsFile,
+    [...mutants].join('\n'),
+  );
 }
 
-export function readServerMutantsFile(dir: string): ServerMutantsFile {
+export function muirSirynPlaywrightReadServerMutantsFile(
+  dir: string,
+): MuirSirynPlaywrightServerMutantsFile {
   try {
-    const text = fs.readFileSync(path.join(dir, serverMutantsFile), 'utf8');
+    const text = fs.readFileSync(
+      path.join(dir, muirSirynPlaywrightServerMutantsFile),
+      'utf8',
+    );
 
     return { mutants: new Set(text.split('\n').filter(Boolean)) };
   } catch (error) {

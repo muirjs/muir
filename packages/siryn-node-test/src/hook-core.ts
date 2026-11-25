@@ -5,29 +5,32 @@ import { fileURLToPath } from 'node:url';
 import type { InstrumenterContext, Position } from '@stryker-mutator/api/core';
 
 import {
-  afterHookId,
-  envNames,
-  heldOpenMs,
-  memoryRecordName,
-  recordName,
-  uniqueIds,
-  type ProcessRecord,
-  type RecordedTest,
+  muirSirynNodeTestAfterHookId,
+  muirSirynNodeTestEnvNames,
+  muirSirynNodeTestHeldOpenMs,
+  muirSirynNodeTestMemoryRecordName,
+  muirSirynNodeTestRecordName,
+  muirSirynNodeTestUniqueIds,
+  type MuirSirynNodeTestProcessRecord,
+  type MuirSirynNodeTestRecordedTest,
 } from './record.ts';
-import { lzTestOnly } from './node-options.ts';
-import { groupOptions } from './process-end.ts';
-import { lzPersistRecord, type LzRecordDependencies } from './record-writer.ts';
-import type { WatchdogData } from './watchdog.ts';
+import { muirSirynNodeTestTestOnly } from './node-options.ts';
+import { muirSirynNodeTestGroupOptions } from './process-end.ts';
 import {
-  lzCurrentTests,
-  settling,
-  wrapNodeTest,
-  type Body,
-  type NodeTestModule,
-  type NodeTestTarget,
+  muirSirynNodeTestPersistRecord,
+  type MuirSirynNodeTestRecordDependencies,
+} from './record-writer.ts';
+import type { MuirSirynNodeTestWatchdogData } from './watchdog.ts';
+import {
+  muirSirynNodeTestCurrentTests,
+  muirSirynNodeTestSettling,
+  muirSirynNodeTestWrapNodeTest,
+  type MuirSirynNodeTestBody,
+  type MuirSirynNodeTestModule,
+  type MuirSirynNodeTestTarget,
 } from './wrap.ts';
 
-export interface TestEvent {
+export interface MuirSirynNodeTestTestEvent {
   readonly type: string;
   readonly data: {
     readonly name: string;
@@ -54,33 +57,37 @@ const isResult = (type: string): boolean =>
   type === 'test:pass' || type === 'test:fail';
 
 /** node:test reports a failing `after` hook of the test file as a failure of the file itself, which has no type. */
-const fileLevel = (details: TestEvent['data']['details']): boolean =>
-  details?.type === undefined;
+const fileLevel = (
+  details: MuirSirynNodeTestTestEvent['data']['details'],
+): boolean => details?.type === undefined;
 
 /** The global object's slots, which the hook sets for the modules it loads and for Stryker's instrumented code. */
-export interface GlobalSlots {
+export interface MuirSirynNodeTestGlobalSlots {
   /** The one member every global object has, so that `globalThis` is assignable to this type. */
   readonly globalThis: unknown;
   readonly __stryker__?: InstrumenterContext;
-  readonly [installed]?: true;
-  readonly [reporting]?: (event: TestEvent) => void;
-  readonly [wrappedNodeTest]?: NodeTestModule;
-  readonly [watchdog]?: unknown;
+  readonly [muirSirynNodeTestInstalled]?: true;
+  readonly [muirSirynNodeTestReporting]?: (
+    event: MuirSirynNodeTestTestEvent,
+  ) => void;
+  readonly [muirSirynNodeTestWrappedNodeTest]?: MuirSirynNodeTestModule;
+  readonly [muirSirynNodeTestWatchdog]?: unknown;
 }
 
 /** What the hook takes from the process, and the global object whose slots it sets. */
-export interface HookDependencies extends LzRecordDependencies {
+export interface MuirSirynNodeTestHookDependencies
+  extends MuirSirynNodeTestRecordDependencies {
   readonly env: Record<string, string | undefined>;
   /** `process.execArgv`, node's options outside NODE_OPTIONS. */
   readonly execArgv: readonly string[];
   readonly mainFile: string | undefined;
   readonly pid: number;
-  /** `lzRecordNonce()` once per process or thread. */
+  /** `muirSirynNodeTestRecordNonce()` once per process or thread. */
   readonly nonce: string;
   /** Worker threads load the hook too; 0 is the main thread. */
   readonly threadId: number;
-  readonly nodeTest: () => NodeTestTarget;
-  readonly registerHooks: (hooks: ModuleHooks) => unknown;
+  readonly nodeTest: () => MuirSirynNodeTestTarget;
+  readonly registerHooks: (hooks: MuirSirynNodeTestModuleHooks) => unknown;
   /** Ends the process as `process.exit` does, with `process.exitCode` when no code is given. */
   readonly exit: (code?: number) => void;
   /** `process.getActiveResourcesInfo`. */
@@ -98,7 +105,7 @@ export interface HookDependencies extends LzRecordDependencies {
    * gigabytes in one synchronous call.
    */
   readonly watchMemory: (options: {
-    readonly workerData: WatchdogData;
+    readonly workerData: MuirSirynNodeTestWatchdogData;
     readonly execArgv: readonly string[];
     readonly env: Record<string, string>;
   }) => unknown;
@@ -111,8 +118,10 @@ export interface HookDependencies extends LzRecordDependencies {
     readonly lineNumber: number;
     readonly columnNumber: number;
   }[];
-  readonly global: { -readonly [TKey in keyof GlobalSlots]: GlobalSlots[TKey] };
-  /** The clock of every `LzTimeWindow`. */
+  readonly global: {
+    -readonly [TKey in keyof MuirSirynNodeTestGlobalSlots]: MuirSirynNodeTestGlobalSlots[TKey];
+  };
+  /** The clock of every `MuirSirynNodeTestTimeWindow`. */
   readonly now: () => number;
   /** `process.ppid`, read anew on each call. */
   readonly parentPid: () => number;
@@ -120,7 +129,7 @@ export interface HookDependencies extends LzRecordDependencies {
 }
 
 /** How often a test file's process asks whether its parent, the runner's process, is still there. */
-// Stryker disable next-line LzJsNumericLiteral: a tuning value, not a contract a test should pin
+// Stryker disable next-line MuirProteusJsNumericLiteral: a tuning value, not a contract a test should pin
 const parentPollMs = 1_000;
 
 /**
@@ -129,15 +138,19 @@ const parentPollMs = 1_000;
  */
 const callSiteFrames = 64;
 
-export const installed = Symbol.for('siryn-node-test.hook');
+export const muirSirynNodeTestInstalled = Symbol.for('siryn-node-test.hook');
 
-export const reporting = Symbol.for('siryn-node-test.reporting');
+export const muirSirynNodeTestReporting = Symbol.for(
+  'siryn-node-test.reporting',
+);
 
-export const wrappedNodeTest = Symbol.for('siryn-node-test.node-test');
+export const muirSirynNodeTestWrappedNodeTest = Symbol.for(
+  'siryn-node-test.node-test',
+);
 
-export const watchdog = Symbol.for('siryn-node-test.watchdog');
+export const muirSirynNodeTestWatchdog = Symbol.for('siryn-node-test.watchdog');
 
-export function writesAllowed(
+export function muirSirynNodeTestWritesAllowed(
   permission: { has(scope: string, reference?: string): boolean } | undefined,
   dir: string | undefined,
 ): boolean {
@@ -151,7 +164,9 @@ function parseFilter(json: string): Set<string> {
     !Array.isArray(ids) ||
     !ids.every((id): id is string => typeof id === 'string')
   ) {
-    throw new Error(`${envNames.filter} is no JSON array of test ids: ${json}`);
+    throw new Error(
+      `${muirSirynNodeTestEnvNames.filter} is no JSON array of test ids: ${json}`,
+    );
   }
 
   return new Set(ids);
@@ -164,31 +179,36 @@ function parsePid(value: string | undefined): number | undefined {
   return pid > 0 ? pid : undefined;
 }
 
-export function install(deps: HookDependencies): boolean {
-  const outDir = deps.env[envNames.out];
+export function muirSirynNodeTestInstall(
+  deps: MuirSirynNodeTestHookDependencies,
+): boolean {
+  const outDir = deps.env[muirSirynNodeTestEnvNames.out];
 
-  if (!outDir || deps.global[installed]) {
+  if (!outDir || deps.global[muirSirynNodeTestInstalled]) {
     return false;
   }
 
-  deps.global[installed] = true;
+  deps.global[muirSirynNodeTestInstalled] = true;
   const started = deps.now();
   const ns = (deps.global.__stryker__ ??= {});
-  const hitLimit = Number(deps.env[envNames.hitLimit]);
+  const hitLimit = Number(deps.env[muirSirynNodeTestEnvNames.hitLimit]);
 
   if (hitLimit > 0) {
     ns.hitLimit = hitLimit;
     ns.hitCount = 0;
   }
 
-  const memoryLimit = Number(deps.env[envNames.memoryLimit]);
+  const memoryLimit = Number(deps.env[muirSirynNodeTestEnvNames.memoryLimit]);
 
   if (memoryLimit > 0 && deps.canWatchMemory) {
     const { NODE_COMPILE_CACHE: compileCache } = deps.env;
-    deps.global[watchdog] = deps.watchMemory({
+    deps.global[muirSirynNodeTestWatchdog] = deps.watchMemory({
       workerData: {
         limitMB: memoryLimit,
-        recordPath: join(outDir, memoryRecordName(deps.pid, deps.nonce)),
+        recordPath: join(
+          outDir,
+          muirSirynNodeTestMemoryRecordName(deps.pid, deps.nonce),
+        ),
       },
       // Without the process's options, such as --require ts-node/register, which would load in the thread again, and
       // without its environment, whose NODE_OPTIONS Node.js would read for the thread: its --require preloads would
@@ -201,7 +221,7 @@ export function install(deps: HookDependencies): boolean {
   }
 
   // An empty id is no test, as in wrap.ts, where the reason not to delete the property is.
-  ns.currentTestId = deps.env[envNames.current] ?? '';
+  ns.currentTestId = deps.env[muirSirynNodeTestEnvNames.current] ?? '';
 
   // Preloads that run before the hook, as --require ones do, file their hits as static, though the test that started
   // this process caused them. The instrumented code keeps the coverage object, so its hits move within it.
@@ -215,17 +235,21 @@ export function install(deps: HookDependencies): boolean {
     }
   }
 
-  const bail = deps.env[envNames.bail] === 'true';
-  const dryRun = deps.env[envNames.dryRun] === 'true';
-  const stallMs = Number(deps.env[envNames.stall]);
-  Reflect.deleteProperty(deps.env, envNames.bail);
-  Reflect.deleteProperty(deps.env, envNames.stall);
-  const testFile = deps.env[envNames.file];
-  Reflect.deleteProperty(deps.env, envNames.file);
-  const runnerPid = parsePid(deps.env[envNames.runner]);
-  Reflect.deleteProperty(deps.env, envNames.runner);
-  const tests: RecordedTest[] = [];
-  const currentTests = lzCurrentTests({ ns, env: deps.env, now: deps.now });
+  const bail = deps.env[muirSirynNodeTestEnvNames.bail] === 'true';
+  const dryRun = deps.env[muirSirynNodeTestEnvNames.dryRun] === 'true';
+  const stallMs = Number(deps.env[muirSirynNodeTestEnvNames.stall]);
+  Reflect.deleteProperty(deps.env, muirSirynNodeTestEnvNames.bail);
+  Reflect.deleteProperty(deps.env, muirSirynNodeTestEnvNames.stall);
+  const testFile = deps.env[muirSirynNodeTestEnvNames.file];
+  Reflect.deleteProperty(deps.env, muirSirynNodeTestEnvNames.file);
+  const runnerPid = parsePid(deps.env[muirSirynNodeTestEnvNames.runner]);
+  Reflect.deleteProperty(deps.env, muirSirynNodeTestEnvNames.runner);
+  const tests: MuirSirynNodeTestRecordedTest[] = [];
+  const currentTests = muirSirynNodeTestCurrentTests({
+    ns,
+    env: deps.env,
+    now: deps.now,
+  });
   const diagnostics: string[] = [];
   const main =
     testFile !== undefined && deps.threadId === 0 && deps.mainFile === testFile;
@@ -234,13 +258,14 @@ export function install(deps: HookDependencies): boolean {
   if (main) {
     const positions = new Map<string, Position>();
     const nodeTest = deps.nodeTest();
-    const ends = ending(
+    const ends = muirSirynNodeTestEnding(
       deps,
       tests,
       (hook) => {
         Reflect.apply(nodeTest.after, nodeTest, [hook]);
       },
-      Number(deps.env[envNames.heldOpen]) || heldOpenMs,
+      Number(deps.env[muirSirynNodeTestEnvNames.heldOpen]) ||
+        muirSirynNodeTestHeldOpenMs,
       stallMs,
     );
     end = ends;
@@ -255,21 +280,29 @@ export function install(deps: HookDependencies): boolean {
           line: lineNumber,
           column: columnNumber,
         }));
-    const recordEvent = recordEvents(testFile, tests, positions, diagnostics);
-    deps.global[reporting] = (event) => {
+    const recordEvent = muirSirynNodeTestRecordEvents(
+      testFile,
+      tests,
+      positions,
+      diagnostics,
+    );
+    deps.global[muirSirynNodeTestReporting] = (event) => {
       recordEvent(event);
       ends.reported(event);
     };
-    const filterJson = deps.env[envNames.filter];
+    const filterJson = deps.env[muirSirynNodeTestEnvNames.filter];
     const filter = filterJson ? parseFilter(filterJson) : undefined;
-    const wrapped = wrapNodeTest({
+    const wrapped = muirSirynNodeTestWrapNodeTest({
       ns,
       testFile,
       tests,
       filter,
       bail,
-      testOnly: lzTestOnly(deps.execArgv, deps.env['NODE_OPTIONS']),
-      activeMutant: deps.env[envNames.activeMutant],
+      testOnly: muirSirynNodeTestTestOnly(
+        deps.execArgv,
+        deps.env['NODE_OPTIONS'],
+      ),
+      activeMutant: deps.env[muirSirynNodeTestEnvNames.activeMutant],
       env: deps.env,
       positions,
       // A source map can point at another file, such as `src/` for a test in `dist/`; the test file's own position
@@ -286,12 +319,15 @@ export function install(deps: HookDependencies): boolean {
       rootAfter: ends.track,
       currentTests,
     });
-    deps.global[wrappedNodeTest] = wrapped;
-    deps.registerHooks(redirectNodeTest(Object.keys(wrapped)));
+    deps.global[muirSirynNodeTestWrappedNodeTest] = wrapped;
+    deps.registerHooks(muirSirynNodeTestRedirectNodeTest(Object.keys(wrapped)));
 
     // The group of its own gets no Ctrl+C, and nothing ends it when Stryker ends the runner's process, which leaves a
     // test that never settles running in a removed sandbox.
-    if (groupOptions(deps.platform).detached && runnerPid !== undefined) {
+    if (
+      muirSirynNodeTestGroupOptions(deps.platform).detached &&
+      runnerPid !== undefined
+    ) {
       deps.every(() => {
         if (deps.parentPid() !== runnerPid) {
           deps.kill(-deps.pid, 'SIGKILL');
@@ -304,7 +340,7 @@ export function install(deps: HookDependencies): boolean {
     return true;
   }
 
-  const record = (natural: boolean): ProcessRecord => {
+  const record = (natural: boolean): MuirSirynNodeTestProcessRecord => {
     const outcome = end?.outcome();
     const written = deps.now();
 
@@ -324,9 +360,12 @@ export function install(deps: HookDependencies): boolean {
       ...(main && { testSpans: currentTests.spansAt(written) }),
     };
   };
-  lzPersistRecord(
+  muirSirynNodeTestPersistRecord(
     deps,
-    join(outDir, recordName(deps.pid, deps.threadId, deps.nonce)),
+    join(
+      outDir,
+      muirSirynNodeTestRecordName(deps.pid, deps.threadId, deps.nonce),
+    ),
     record,
     { main, dryRun },
   );
@@ -341,19 +380,21 @@ interface Ending {
    */
   readonly registering: () => void;
   /** Makes the ending wait for a root `after` hook of the test file to settle. */
-  readonly track: (hook: Body) => Body;
+  readonly track: (hook: MuirSirynNodeTestBody) => MuirSirynNodeTestBody;
   /** node:test has reported another event. */
-  readonly reported: (event: TestEvent) => void;
+  readonly reported: (event: MuirSirynNodeTestTestEvent) => void;
   /**
    * Whether node:test has reported its summary. Whether it had reported every top-level suite and test when the hook
    * ended the process, and why the hook ended it.
    */
-  readonly outcome: () => LzEnded & { readonly summarized: boolean };
+  readonly outcome: () => MuirSirynNodeTestEnded & {
+    readonly summarized: boolean;
+  };
 }
 
-interface LzEnded {
+interface MuirSirynNodeTestEnded {
   readonly complete: boolean;
-  readonly why: Pick<ProcessRecord, 'heldOpen' | 'stalledMs'>;
+  readonly why: Pick<MuirSirynNodeTestProcessRecord, 'heldOpen' | 'stalledMs'>;
 }
 
 /**
@@ -372,18 +413,18 @@ interface LzEnded {
  * cancels the test. With a `stallMs`, a file whose event loop empties before node:test's summary ends with exit code 1
  * when no test result follows within `stallMs`.
  */
-export function ending(
+export function muirSirynNodeTestEnding(
   deps: Pick<
-    HookDependencies,
+    MuirSirynNodeTestHookDependencies,
     'exit' | 'activeResources' | 'later' | 'onBeforeExit'
   >,
-  tests: RecordedTest[],
+  tests: MuirSirynNodeTestRecordedTest[],
   rootAfter: (hook: () => void) => void,
   graceMs: number,
   stallMs: number,
 ): Ending {
   let enqueuedTopLevel = 0;
-  // Stryker disable next-line LzJsNumericLiteral: equivalent, as the count is only compared with an earlier read of itself
+  // Stryker disable next-line MuirProteusJsNumericLiteral: equivalent, as the count is only compared with an earlier read of itself
   let results = 0;
   let summarized = false;
   let reportedTopLevel = 0;
@@ -392,7 +433,7 @@ export function ending(
   let pending = 0;
   let threw = false;
   let armed = false;
-  let ended: LzEnded = { complete: false, why: {} };
+  let ended: MuirSirynNodeTestEnded = { complete: false, why: {} };
   const before = deps.activeResources();
   // What the tests opened, not what the process had before they ran, such as the stdio pipes that loading node:test
   // opens.
@@ -412,7 +453,10 @@ export function ending(
   // node:test reports a test a little after it ends, so a failure can arrive after the hooks have settled. It reports a
   // suite after everything inside it, so once each enqueued top-level one is reported, everything is.
   const allReported = () => reportedTopLevel >= enqueuedTopLevel;
-  const end = (code: number | undefined, why: LzEnded['why'] = {}) => {
+  const end = (
+    code: number | undefined,
+    why: MuirSirynNodeTestEnded['why'] = {},
+  ) => {
     ended = { complete: allReported(), why };
     deps.exit(code);
   };
@@ -469,7 +513,10 @@ export function ending(
     track: (hook) => {
       pending++;
 
-      return settling(hook, () => ({ kind: 'settle', settle }));
+      return muirSirynNodeTestSettling(hook, () => ({
+        kind: 'settle',
+        settle,
+      }));
     },
     reported: ({ type, data }) => {
       if (type === 'test:enqueue' && data.nesting === 0) {
@@ -513,14 +560,14 @@ export function ending(
 const lateActivity = 'generated asynchronous activity after the test ended';
 
 /** node:test reports an error raised after its test ended only as a diagnostic, which is kept in `diagnostics`. */
-export function recordEvents(
+export function muirSirynNodeTestRecordEvents(
   testFile: string,
-  tests: RecordedTest[],
+  tests: MuirSirynNodeTestRecordedTest[],
   positions: Map<string, Position>,
   diagnostics: string[],
-): (event: TestEvent) => void {
+): (event: MuirSirynNodeTestTestEvent) => void {
   const ids = new Map<number, string>();
-  const idOf = uniqueIds();
+  const idOf = muirSirynNodeTestUniqueIds();
 
   return ({ type, data }) => {
     if (type === 'test:start') {
@@ -552,7 +599,9 @@ export function recordEvents(
     }
 
     const fileHook = fileLevel(data.details);
-    const id = fileHook ? afterHookId(testFile) : ids.get(data.nesting);
+    const id = fileHook
+      ? muirSirynNodeTestAfterHookId(testFile)
+      : ids.get(data.nesting);
 
     // node:test starts every test it reports; an event outside that order has no test to record.
     if (id === undefined) {
@@ -580,20 +629,22 @@ export function recordEvents(
   };
 }
 
-export interface ModuleHooks {
+export interface MuirSirynNodeTestModuleHooks {
   readonly resolve: ResolveHookSync;
   readonly load: LoadHookSync;
 }
 
-const wrappedUrl = 'lz-node-test:node-test/';
+const wrappedUrl = 'muir-siryn-node-test:node-test/';
 
 /**
  * Module hooks that make `import 'node:test'` and `require('node:test')` give the wrapped module on
  * `globalThis[wrappedNodeTest]`, with these named exports. The default export, and what `require` returns, is
  * node:test's `test` function itself, so the built-in module cannot be wrapped in place.
  */
-export function redirectNodeTest(names: string[]): ModuleHooks {
-  const wrapped = `globalThis[Symbol.for(${JSON.stringify(wrappedNodeTest.description)})]`;
+export function muirSirynNodeTestRedirectNodeTest(
+  names: string[],
+): MuirSirynNodeTestModuleHooks {
+  const wrapped = `globalThis[Symbol.for(${JSON.stringify(muirSirynNodeTestWrappedNodeTest.description)})]`;
   const sources = {
     module: `const wrapped = ${wrapped}; export default wrapped; export const { ${names.join(', ')} } = wrapped;`,
     commonjs: `module.exports = ${wrapped};`,

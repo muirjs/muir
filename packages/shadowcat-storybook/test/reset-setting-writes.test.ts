@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { classifyStubs } from '../src/reset-setting.ts';
+import { muirShadowcatStorybookClassifyStubs } from '../src/reset-setting.ts';
 import { storyFile, verdictsOf } from './support/reset-setting.ts';
 import { testTags, untaggedPreviewTestTags } from './support/test-tags.ts';
 
@@ -274,7 +274,7 @@ base.parameters.test.mockReset = true;`,
   });
 
   it('keeps a story that spreads one local object under as apart from a written story that spreads another under as', () => {
-    const { stories } = classifyStubs(
+    const { stories } = muirShadowcatStorybookClassifyStubs(
       storyFile(
         `export default { parameters: { test: { restoreMocks: false } } };
 const base = { parameters: { test: { restoreMocks: false } } };
@@ -460,7 +460,7 @@ A.args = { g: fn().mockReturnValue(1) };`,
   });
 
   it('keeps a story that spreads one local object under as when another story spreads another under as', () => {
-    const { stories } = classifyStubs(
+    const { stories } = muirShadowcatStorybookClassifyStubs(
       storyFile(
         `export default { parameters: { test: { restoreMocks: false } } };
 const base = { parameters: { test: { restoreMocks: false } } };
@@ -480,7 +480,7 @@ export const A = { ...(other as object) };`,
   });
 
   it('keeps two stories that spread object literals confident when one of them is assigned parameters', () => {
-    const { stories } = classifyStubs(
+    const { stories } = muirShadowcatStorybookClassifyStubs(
       storyFile(
         `export default { parameters: { test: { restoreMocks: false } } };
 export const C = { ...{ parameters: { test: { restoreMocks: false } } } };

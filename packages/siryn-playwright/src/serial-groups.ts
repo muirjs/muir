@@ -1,17 +1,20 @@
-import { isRecord } from './is-record.ts';
-import type { TestRunner } from './playwright-internals.ts';
+import { muirSirynPlaywrightIsRecord } from './is-record.ts';
+import type { MuirSirynPlaywrightInternalTestRunner } from './playwright-internals.ts';
 import {
-  LzPlaywrightCollectingReporter,
-  type ReportedTest,
+  MuirSirynPlaywrightCollectingReporter,
+  type MuirSirynPlaywrightReportedTest,
 } from './reporter.ts';
 
 /** The ids of a describe.serial group's tests, by the id of each test in it. */
-export type SerialGroups = ReadonlyMap<string, readonly string[]>;
+export type MuirSirynPlaywrightSerialGroups = ReadonlyMap<
+  string,
+  readonly string[]
+>;
 
 type IsSerialSuite = (suite: unknown) => boolean;
 
 // Given no names, listTests would also load the default: false projects.
-export function projectsThatRun(
+export function muirSirynPlaywrightProjectsThatRun(
   option: readonly string[] | undefined,
   projects: readonly { default: boolean; project: { name: string } }[],
 ): readonly string[] {
@@ -22,11 +25,11 @@ export function projectsThatRun(
         .map(({ project }) => project.name);
 }
 
-export async function listTests(
-  playwright: Pick<TestRunner, 'listTests'>,
+export async function muirSirynPlaywrightListTests(
+  playwright: Pick<MuirSirynPlaywrightInternalTestRunner, 'listTests'>,
   projects: readonly string[],
-): Promise<readonly ReportedTest[]> {
-  const reporter = new LzPlaywrightCollectingReporter();
+): Promise<readonly MuirSirynPlaywrightReportedTest[]> {
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
   const result = await playwright.listTests(reporter, { projects });
 
   if (!result) {
@@ -51,10 +54,10 @@ export async function listTests(
   return reporter.listedTests;
 }
 
-export function serialGroups(
-  testCases: Iterable<ReportedTest>,
+export function muirSirynPlaywrightSerialGroups(
+  testCases: Iterable<MuirSirynPlaywrightReportedTest>,
   isSerial: IsSerialSuite,
-): SerialGroups {
+): MuirSirynPlaywrightSerialGroups {
   const bySuite = new Map<object, string[]>();
   const byTest = new Map<string, string[]>();
 
@@ -73,14 +76,14 @@ export function serialGroups(
 }
 
 function outermostSerialSuite(
-  test: ReportedTest,
+  test: MuirSirynPlaywrightReportedTest,
   isSerial: IsSerialSuite,
 ): object | undefined {
   let outermost: object | undefined;
 
   for (
     let suite: unknown = test.parent;
-    isRecord(suite);
+    muirSirynPlaywrightIsRecord(suite);
     suite = suite['parent']
   ) {
     if (isSerial(suite)) {
@@ -91,9 +94,9 @@ function outermostSerialSuite(
   return outermost;
 }
 
-export function withSerialGroups(
+export function muirSirynPlaywrightWithSerialGroups(
   testIds: readonly string[],
-  groups: SerialGroups,
+  groups: MuirSirynPlaywrightSerialGroups,
 ): string[] {
   return [...new Set(testIds.flatMap((id) => groups.get(id) ?? [id]))];
 }

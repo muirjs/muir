@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { packageName } from '../src/package-name.ts';
-import { parseSettings } from '../src/settings.ts';
+import { muirProteusPlaywrightPackageName } from '../src/package-name.ts';
+import { muirProteusPlaywrightParseSettings } from '../src/settings.ts';
 
 const notObjects: readonly (readonly [string, unknown, string])[] = [
   ['a string', 'x', "'x'"],
@@ -28,38 +28,53 @@ const badLists: readonly (readonly [string, unknown, string])[] = [
 
 describe('parseSettings', () => {
   it("lists 'navigate' as the navigation fixture when no settings are given", () => {
-    assert.deepEqual(parseSettings(undefined), {
+    assert.deepEqual(muirProteusPlaywrightParseSettings(undefined), {
       navigationFixtures: ['navigate'],
     });
   });
 
   it('refuses a key it does not know, and names the keys it takes', () => {
-    assert.throws(() => parseSettings({ navigationFixture: ['visit'] }), {
-      message: `${packageName}: the settings have no key navigationFixture; the keys are navigationFixtures.`,
-    });
+    assert.throws(
+      () =>
+        muirProteusPlaywrightParseSettings({ navigationFixture: ['visit'] }),
+      {
+        message: `${muirProteusPlaywrightPackageName}: the settings have no key navigationFixture; the keys are navigationFixtures.`,
+      },
+    );
   });
 
   it('keeps the given list in place of the default, empty list included', () => {
-    assert.deepEqual(parseSettings({ navigationFixtures: ['visit', '$go'] }), {
-      navigationFixtures: ['visit', '$go'],
-    });
-    assert.deepEqual(parseSettings({ navigationFixtures: [] }), {
-      navigationFixtures: [],
-    });
+    assert.deepEqual(
+      muirProteusPlaywrightParseSettings({
+        navigationFixtures: ['visit', '$go'],
+      }),
+      {
+        navigationFixtures: ['visit', '$go'],
+      },
+    );
+    assert.deepEqual(
+      muirProteusPlaywrightParseSettings({ navigationFixtures: [] }),
+      {
+        navigationFixtures: [],
+      },
+    );
   });
 
   badLists.forEach(([title, value, shown]) => {
     it(`refuses ${title} as navigationFixtures`, () => {
-      assert.throws(() => parseSettings({ navigationFixtures: value }), {
-        message: `${packageName}: navigationFixtures takes an array of identifier names, not ${shown}.`,
-      });
+      assert.throws(
+        () => muirProteusPlaywrightParseSettings({ navigationFixtures: value }),
+        {
+          message: `${muirProteusPlaywrightPackageName}: navigationFixtures takes an array of identifier names, not ${shown}.`,
+        },
+      );
     });
   });
 
   notObjects.forEach(([title, value, shown]) => {
     it(`refuses ${title} as the settings`, () => {
-      assert.throws(() => parseSettings(value), {
-        message: `${packageName}: the settings must be an object, not ${shown}.`,
+      assert.throws(() => muirProteusPlaywrightParseSettings(value), {
+        message: `${muirProteusPlaywrightPackageName}: the settings must be an object, not ${shown}.`,
       });
     });
   });

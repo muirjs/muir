@@ -5,7 +5,7 @@ index 693c926..7e0f5a8 100644
 @@ -1,3 +1,7 @@
 +.stryker-tmp
 +/reports
-+.lz-playwright-server-mutants
++.muir-playwright-server-mutants
 +
  # Logs
  logs

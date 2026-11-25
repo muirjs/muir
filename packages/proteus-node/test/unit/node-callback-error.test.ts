@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeCallbackError } from '../../src/node-callback-error.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeCallbackError } from '../../src/node-callback-error.ts';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
 
-describe('LzNodeCallbackError', () => {
-  lzTestEach([
+describe('MuirProteusNodeCallbackError', () => {
+  muirTestEach([
     ['cb(err)', 'cb(err);', ['cb()']],
     ['callback(error)', 'callback(error);', ['callback()']],
     ['done(e)', 'done(e);', ['done()']],
@@ -28,10 +28,13 @@ describe('LzNodeCallbackError', () => {
       ['this.destroy()'],
     ],
   ])('drops the error of %s', async (_title, source, expected) => {
-    assert.deepEqual(await mutantsOf(nodeCallbackError, source), expected);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeCallbackError, source),
+      expected,
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['a call without an argument', 'cb();'],
     ['a null argument', 'cb(null);'],
     ['an undefined argument', 'cb(undefined);'],
@@ -45,6 +48,6 @@ describe('LzNodeCallbackError', () => {
     ['a computed destroy', "stream['destroy'](err);"],
     ['another method', 'stream.close(err);'],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeCallbackError, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusNodeCallbackError, source), []);
   });
 });

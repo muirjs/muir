@@ -1,41 +1,46 @@
 import type { NodePath } from '@babel/core';
 import {
-  checkNames,
-  corePackageJson,
-  fieldOf,
-  register,
-  resolveInstrumenter,
-  selectMutators,
-  selfCheck,
-  undoOnThrow,
-  warnUntested,
-  type Instrumenter as CoreInstrumenter,
-  type MutatorSets,
+  muirMoiraMutatorsCheckNames,
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsRegister,
+  muirMoiraMutatorsResolveInstrumenter,
+  muirMoiraMutatorsSelectMutators,
+  muirMoiraMutatorsSelfCheck,
+  muirMoiraMutatorsUndoOnThrow,
+  muirMoiraMutatorsWarnUntested,
+  type MuirMoiraMutatorsInstrumenter as CoreInstrumenter,
+  type MuirMoiraMutatorsMutatorSets,
 } from '@muirjs/moira-mutators';
 
 import {
-  babelTypeMembers,
-  type BabelTypes,
-  type LzMswMutator,
+  muirProteusMswBabelTypeMembers,
+  type MuirProteusMswBabelTypes,
+  type MuirProteusMswMutator,
 } from './mutator.ts';
-import { packageName } from './package-name.ts';
+import { muirProteusMswPackageName } from './package-name.ts';
 
-export type Instrumenter = CoreInstrumenter<BabelTypes>;
+export type MuirProteusMswInstrumenter =
+  CoreInstrumenter<MuirProteusMswBabelTypes>;
 
-export const testedVersion = '10.1.1';
+export const muirProteusMswTestedVersion = '10.1.1';
 
-export function resolveFromCore(
-  corePackage: string = corePackageJson(),
-): Promise<Instrumenter> {
-  return resolveInstrumenter(packageName, assertBabelTypes, corePackage);
+export function muirProteusMswResolveFromCore(
+  corePackage: string = muirMoiraMutatorsCorePackageJson(),
+): Promise<MuirProteusMswInstrumenter> {
+  return muirMoiraMutatorsResolveInstrumenter(
+    muirProteusMswPackageName,
+    assertBabelTypes,
+    corePackage,
+  );
 }
 
 function assertBabelTypes(
   value: unknown,
   missing: (name: string) => Error,
-): asserts value is BabelTypes {
-  const absent = babelTypeMembers.filter(
-    (member) => typeof fieldOf(value, member) !== 'function',
+): asserts value is MuirProteusMswBabelTypes {
+  const absent = muirProteusMswBabelTypeMembers.filter(
+    (member) => typeof muirMoiraMutatorsFieldOf(value, member) !== 'function',
   );
 
   if (absent.length > 0) {
@@ -43,47 +48,65 @@ function assertBabelTypes(
   }
 }
 
-export async function install(
-  sets: MutatorSets<LzMswMutator>,
+export async function muirProteusMswInstall(
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusMswMutator>,
   options: unknown,
-  resolve: () => Promise<Instrumenter>,
+  resolve: () => Promise<MuirProteusMswInstrumenter>,
   warn: (message: string) => void = console.warn,
   info: (message: string) => void = console.info,
 ): Promise<void> {
-  const mutators = selectMutators(packageName, 'lzMswMutators', sets, options);
+  const mutators = muirMoiraMutatorsSelectMutators(
+    muirProteusMswPackageName,
+    'muirProteusMswMutators',
+    sets,
+    options,
+  );
   const instrumenter = await resolve();
 
-  checkNames(packageName, mutators, instrumenter.allMutators);
-  await undoOnThrow([instrumenter.allMutators], async () => {
-    register(
-      packageName,
+  muirMoiraMutatorsCheckNames(
+    muirProteusMswPackageName,
+    mutators,
+    instrumenter.allMutators,
+  );
+  await muirMoiraMutatorsUndoOnThrow([instrumenter.allMutators], async () => {
+    muirMoiraMutatorsRegister(
+      muirProteusMswPackageName,
       instrumenter.allMutators,
       mutators.map(({ name, mutate }) => ({
         name,
         mutate: (path: NodePath) => mutate(path, instrumenter.types),
       })),
     );
-    await selfCheck(packageName, instrumenter, mutators);
+    await muirMoiraMutatorsSelfCheck(
+      muirProteusMswPackageName,
+      instrumenter,
+      mutators,
+    );
   });
 
-  warnUntested(packageName, testedVersion, instrumenter, warn);
+  muirMoiraMutatorsWarnUntested(
+    muirProteusMswPackageName,
+    muirProteusMswTestedVersion,
+    instrumenter,
+    warn,
+  );
   info(startLine(sets, mutators));
 }
 
 function startLine(
-  sets: MutatorSets<LzMswMutator>,
-  mutators: readonly LzMswMutator[],
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusMswMutator>,
+  mutators: readonly MuirProteusMswMutator[],
 ): string {
-  const namesOf = (listed: readonly LzMswMutator[]): string =>
+  const namesOf = (listed: readonly MuirProteusMswMutator[]): string =>
     listed.map(({ name }) => name).join(', ');
   const optional = mutators.filter(
     (mutator) => !sets.defaults.includes(mutator),
   );
 
-  const line = `${packageName}: ${mutators.length} LzMsw mutators on, beside Stryker's built-in mutators.`;
+  const line = `${muirProteusMswPackageName}: ${mutators.length} MuirProteusMsw mutators on, beside Stryker's built-in mutators.`;
 
   if (mutators.length === 0) {
-    return `${line} Off as experimental: ${namesOf(sets.experimental)}; lzMswMutators({ experimental: true }) turns them on.`;
+    return `${line} Off as experimental: ${namesOf(sets.experimental)}; muirProteusMswMutators({ experimental: true }) turns them on.`;
   }
 
   return optional.length > 0

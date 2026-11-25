@@ -1,6 +1,6 @@
 import { type Case, inPlay, namespaceSteps } from './support/case.ts';
 
-const repeat = 'LzStorybookInteractionRepeat';
+const repeat = 'MuirProteusStorybookTestInteractionRepeat';
 
 export const repeatCases: readonly Case[] = [
   {

@@ -6,7 +6,7 @@
   StrykerJS, one fresh process per test file, and reports which tests reach which mutants
 - [Mutators](./packages/moira-node-test/GLOSSARY.md): the install layer and the three mutator packages that add
   mutators to StrykerJS
-- [Table tests](./packages/madrox-node-test/GLOSSARY.md): `lzTestEach` and `lzTestFor`, Vitest-style table tests
+- [Table tests](./packages/madrox-node-test/GLOSSARY.md): `muirTestEach` and `muirTestFor`, Vitest-style table tests
   for node:test
 - [OSS evaluation](./e2e/GLOSSARY.md): compares this runner with Stryker's command runner on pinned open-source
   projects, and runs the packed packages in fixture projects
@@ -47,7 +47,7 @@
   mutators, so both mutate the same code into the same mutants.
 - **OSS evaluation and Workspace -> StrykerJS reports**: the comparison, the checkpoint, the RuntimeError check and the
   baseline all read Stryker's JSON report; the mutant key follows how Stryker's incremental mode identifies a mutant.
-- **Every context -> Table tests**: the packages' own tests use `lzTestEach` and `lzTestFor`; nothing ships with a
+- **Every context -> Table tests**: the packages' own tests use `muirTestEach` and `muirTestFor`; nothing ships with a
   dependency on them.
 - **Mutators <-> Mutator install**: two install layers for the same job, one for the node:test mutator packages and
   one for the Playwright, JSX, Storybook and msw mutator packages. Neither imports the other; each marks its own
@@ -58,7 +58,7 @@
   built-in removal. Their Locator and MountStory mutators make each same-file swap through the swap engine and,
   for role, text and test id locators, the site readers that Mutator install holds.
 - **Storybook test mutators -> Mutator install**: installed the same way, with opt-in and experimental tiers and
-  built-in removal; `LzStorybookInteractionTarget` makes its same-file swaps through the same swap engine and site
+  built-in removal; `MuirProteusStorybookTestInteractionTarget` makes its same-file swaps through the same swap engine and site
   readers.
 - **Storybook mutators -> Mutator install**: installed the same way, with an opt-in tier, keeping Stryker's
   built-in mutators.
@@ -69,7 +69,7 @@
   `parameters.msw` where its play mode is `ignore`, so the msw mutators reach them in the configuration that sets
   `mutate`.
 - **Storybook mutators -> Storybook**: they read story files with `@muirjs/moira-storybook`, which gives
-  `LzStorybookArgs` its args sites with a Proven for each property whose removal the file proves changes nothing,
+  `MuirProteusStorybookArgs` its args sites with a Proven for each property whose removal the file proves changes nothing,
   and, for each played story's run of the meta's args, whether the story takes a key from the meta, gets it
   elsewhere (above the meta, or from another meta it is made from), or the file cannot tell, from the story file and
   the path Stryker's instrumenter gives it, and mutate story data, so they belong in the Stryker configuration for
@@ -77,18 +77,18 @@
 - **Storybook test mutators -> Storybook**: they read story test code with `@muirjs/moira-storybook`
   and mutate it, taking each interaction, its user-event origin and its following checks from the
   `@muirjs/moira-storybook` interaction reader, and the CSF ignorer reports those mutants as Ignored unless its play
-  mode is `mutate`, so they belong in the Stryker configuration that sets that mode. `LzStorybookStoryGlobals` and
-  the Storybook mutators' `LzStorybookArgs` take the played stories and each story's layers from the same
-  `@muirjs/moira-storybook` rule, and `LzStorybookStoryGlobals` takes its globals sites, given the same path, with a
+  mode is `mutate`, so they belong in the Stryker configuration that sets that mode. `MuirProteusStorybookTestStoryGlobals` and
+  the Storybook mutators' `MuirProteusStorybookArgs` take the played stories and each story's layers from the same
+  `@muirjs/moira-storybook` rule, and `MuirProteusStorybookTestStoryGlobals` takes its globals sites, given the same path, with a
   Proven for each default global, whose table of Storybook's initial globals `@muirjs/moira-storybook` holds.
-  `LzStorybookSpyStub` and `LzStorybookSpyStubOutcome` read definition-time stubs from
+  `MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` read definition-time stubs from
   the same `@muirjs/moira-storybook` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
-  the `lz-storybook` reporter makes unchecked stubs of surviving `LzStorybookSpyStub` mutants, and outcome-unchecked
-  stubs of surviving `LzStorybookSpyStubOutcome` mutants whose own stub's removal was killed or timed out;
-  the `lz-storybook` reporter reads the interaction statements with `interactionsOf` on its own parse of each story
+  the `muir-shadowcat-storybook` reporter makes unchecked stubs of surviving `MuirProteusStorybookTestSpyStub` mutants, and outcome-unchecked
+  stubs of surviving `MuirProteusStorybookTestSpyStubOutcome` mutants whose own stub's removal was killed or timed out;
+  the `muir-shadowcat-storybook` reporter reads the interaction statements with `interactionsOf` on its own parse of each story
   file, and gives interaction hints for surviving mutants of the five interaction mutators;
   `@muirjs/shadowcat-storybook`'s tests (a devDependency only) check that each mutant carries its name, that
-  `LzStorybookSpyStub` is an experimental mutator name of this package, and that each of the five interaction mutator
+  `MuirProteusStorybookTestSpyStub` is an experimental mutator name of this package, and that each of the five interaction mutator
   names makes mutants.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
   the name check keeps their mutator names distinct.
@@ -99,7 +99,7 @@
   make such callbacks work in pages, but not in workers, service workers or Electron.
 - **Storybook**: shares no plugin with the other contexts, and no code apart from `@muirjs/moira-storybook`, which
   the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
-  Playwright runner. Inside it, the mock transformer writes the transformer record that the `lz-storybook` reporter
+  Playwright runner. Inside it, the mock transformer writes the transformer record that the `muir-shadowcat-storybook` reporter
   reads, and both take the stub shape and the rule for which stubs the transformer rewrites from
   `@muirjs/moira-storybook`, so the two agree on every stub. The reporter reads interactions with the same
   `@muirjs/moira-storybook` interaction reader as the Storybook test mutators, on its own parse of each story file in
@@ -112,4 +112,4 @@
 - **Part** (OSS evaluation) is a range of one file's mutants run as its own driver run; **shard** (Workspace) is one
   CI job's slice of a project's mutated files.
 - **Source clone** (OSS evaluation) is a project checkout; **source condition** (Workspace) is the export condition.
-- `lzNodeTest` names the runner's Stryker options; in the mutators' bindings it names node:test's module names.
+- `muirSirynNodeTest` names the runner's Stryker options; in the mutators' bindings it names node:test's module names.

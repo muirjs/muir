@@ -1,22 +1,22 @@
-import { lzJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
-await lzJsxMutators();
+await muirProteusJsxMutators();
 
-const webServerMutate = process.env['LZ_CORPUS_WEBSERVER_MUTATE'] ?? 'true';
+const webServerMutate = process.env['MUIR_CORPUS_WEBSERVER_MUTATE'] ?? 'true';
 
 if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
   throw new Error(
-    `LZ_CORPUS_WEBSERVER_MUTATE must be true or auto, got ${JSON.stringify(webServerMutate)}.`,
+    `MUIR_CORPUS_WEBSERVER_MUTATE must be true or auto, got ${JSON.stringify(webServerMutate)}.`,
   );
 }
 
 export default {
   plugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
-  lzPlaywright: {
+  testRunner: 'muir-siryn-playwright',
+  muirSirynPlaywright: {
     configFile: 'apps/examples/e2e/playwright.stryker.config.ts',
-    survivorTraces: 'reports/lz-playwright-traces',
+    survivorTraces: 'reports/muir-siryn-playwright-traces',
     traceScreenshots: true,
     webServer: { mutate: webServerMutate === 'auto' ? 'auto' : true },
   },
@@ -60,7 +60,13 @@ export default {
   concurrency: 2,
   incremental: true,
   incrementalFile: 'reports/stryker-incremental.json',
-  reporters: ['clear-text', 'progress', 'json', 'html', 'lz-playwright-traces'],
+  reporters: [
+    'clear-text',
+    'progress',
+    'json',
+    'html',
+    'muir-siryn-playwright-traces',
+  ],
   jsonReporter: { fileName: 'reports/mutation/mutation.json' },
   htmlReporter: { fileName: 'reports/mutation/mutation.html' },
   ignorePatterns: ['/reports'],

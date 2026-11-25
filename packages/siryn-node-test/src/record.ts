@@ -3,22 +3,31 @@ import { renameSync, writeFileSync } from 'node:fs';
 
 import type { MutantCoverage, Position } from '@stryker-mutator/api/core';
 
-import { isNumber, isObject, isString, isStrings, optional } from './guards.ts';
+import {
+  muirSirynNodeTestIsNumber,
+  muirSirynNodeTestIsObject,
+  muirSirynNodeTestIsString,
+  muirSirynNodeTestIsStrings,
+  muirSirynNodeTestOptional,
+} from './guards.ts';
 
-export function testId(parent: string, name: string): string {
+export function muirSirynNodeTestTestId(parent: string, name: string): string {
   return `${parent} > ${/(^| )>( |$)/.test(name) ? name.replace(/[\\>]/g, '\\$&') : name}`;
 }
 
-export function afterHookId(testFile: string): string {
-  return testId(testFile, '"after" hook');
+export function muirSirynNodeTestAfterHookId(testFile: string): string {
+  return muirSirynNodeTestTestId(testFile, '"after" hook');
 }
 
 /** node:test reports in declaration order, so the wrapper and the reporter number alike. */
-export function uniqueIds(): (parent: string, name: string) => string {
+export function muirSirynNodeTestUniqueIds(): (
+  parent: string,
+  name: string,
+) => string {
   const used = new Set<string>();
 
   return (parent, name) => {
-    const base = testId(parent, name);
+    const base = muirSirynNodeTestTestId(parent, name);
 
     let id = base;
 
@@ -32,7 +41,7 @@ export function uniqueIds(): (parent: string, name: string) => string {
   };
 }
 
-export function within(id: string, scope: string): boolean {
+export function muirSirynNodeTestWithin(id: string, scope: string): boolean {
   return id === scope || id.startsWith(`${scope} > `);
 }
 
@@ -40,14 +49,14 @@ export function within(id: string, scope: string): boolean {
  * Whether `testFilter` names the test file itself. Stryker does that only for a mutant that runs every test of the
  * file, as a static mutant under --testFiles does.
  */
-export function lzNamesFile(
+export function muirSirynNodeTestNamesFile(
   testFilter: readonly string[] | undefined,
   file: string,
 ): boolean {
   return testFilter?.includes(file) === true;
 }
 
-export type RecordedTest = {
+export type MuirSirynNodeTestRecordedTest = {
   readonly id: string;
   readonly timeSpentMs: number;
   readonly startPosition?: Position;
@@ -61,13 +70,15 @@ export type RecordedTest = {
 );
 
 /** The time a file's run, `fileMs`, spent outside its outermost tests, whose time includes their subtests'. */
-export function lzOutsideMs(
-  tests: readonly RecordedTest[],
+export function muirSirynNodeTestOutsideMs(
+  tests: readonly MuirSirynNodeTestRecordedTest[],
   fileMs: number,
 ): number {
   const outermost = tests.filter(
     (test) =>
-      !tests.some((other) => other !== test && within(test.id, other.id)),
+      !tests.some(
+        (other) => other !== test && muirSirynNodeTestWithin(test.id, other.id),
+      ),
   );
 
   return fileMs - outermost.reduce((sum, test) => sum + test.timeSpentMs, 0);
@@ -78,7 +89,7 @@ export function lzOutsideMs(
  * every process and thread of the machine reads the same clock, which the wall clock and `performance.timeOrigin` do
  * not to the millisecond.
  */
-export interface LzTimeWindow {
+export interface MuirSirynNodeTestTimeWindow {
   readonly start: number;
   readonly end: number;
 }
@@ -88,9 +99,9 @@ interface MemoryLimitReached {
   readonly limitMB: number;
 }
 
-export interface ProcessRecord {
+export interface MuirSirynNodeTestProcessRecord {
   readonly main?: true;
-  readonly tests: readonly RecordedTest[];
+  readonly tests: readonly MuirSirynNodeTestRecordedTest[];
   // undefined: the record goes through JSON.stringify, which leaves such a field out.
   readonly hitCount?: number | undefined;
   readonly mutantCoverage?: MutantCoverage | undefined;
@@ -111,29 +122,31 @@ export interface ProcessRecord {
    */
   readonly stalledMs?: number;
   /** From when the hook ran in the process or thread to when it wrote this record. */
-  readonly lifetime?: LzTimeWindow;
+  readonly lifetime?: MuirSirynNodeTestTimeWindow;
   /**
    * The test file's own record: by test id, the spans during which the test is current, so a process or thread started
    * then reads it as its current test. A span ends when another test becomes current; a pause in which no test is
    * current between two spans of one test joins them.
    */
-  readonly testSpans?: Readonly<Record<string, readonly LzTimeWindow[]>>;
+  readonly testSpans?: Readonly<
+    Record<string, readonly MuirSirynNodeTestTimeWindow[]>
+  >;
 }
 
-export const envNames = Object.freeze({
-  out: 'LZ_STRYKER_NODE_TEST_OUT',
-  file: 'LZ_STRYKER_NODE_TEST_FILE',
-  dryRun: 'LZ_STRYKER_NODE_TEST_DRY_RUN',
-  hitLimit: 'LZ_STRYKER_NODE_TEST_HIT_LIMIT',
-  memoryLimit: 'LZ_STRYKER_NODE_TEST_MEMORY_LIMIT_MB',
-  current: 'LZ_STRYKER_NODE_TEST_CURRENT',
-  filter: 'LZ_STRYKER_NODE_TEST_FILTER',
-  bail: 'LZ_STRYKER_NODE_TEST_BAIL',
-  activeMutant: 'LZ_STRYKER_NODE_TEST_ACTIVE_MUTANT',
-  heldOpen: 'LZ_STRYKER_NODE_TEST_HELD_OPEN_MS',
-  stall: 'LZ_STRYKER_NODE_TEST_STALL_MS',
-  dryRunOwner: 'LZ_STRYKER_NODE_TEST_DRY_RUN_OWNER',
-  runner: 'LZ_STRYKER_NODE_TEST_RUNNER_PID',
+export const muirSirynNodeTestEnvNames = Object.freeze({
+  out: 'MUIR_SIRYN_NODE_TEST_OUT',
+  file: 'MUIR_SIRYN_NODE_TEST_FILE',
+  dryRun: 'MUIR_SIRYN_NODE_TEST_DRY_RUN',
+  hitLimit: 'MUIR_SIRYN_NODE_TEST_HIT_LIMIT',
+  memoryLimit: 'MUIR_SIRYN_NODE_TEST_MEMORY_LIMIT_MB',
+  current: 'MUIR_SIRYN_NODE_TEST_CURRENT',
+  filter: 'MUIR_SIRYN_NODE_TEST_FILTER',
+  bail: 'MUIR_SIRYN_NODE_TEST_BAIL',
+  activeMutant: 'MUIR_SIRYN_NODE_TEST_ACTIVE_MUTANT',
+  heldOpen: 'MUIR_SIRYN_NODE_TEST_HELD_OPEN_MS',
+  stall: 'MUIR_SIRYN_NODE_TEST_STALL_MS',
+  dryRunOwner: 'MUIR_SIRYN_NODE_TEST_DRY_RUN_OWNER',
+  runner: 'MUIR_SIRYN_NODE_TEST_RUNNER_PID',
 });
 
 /**
@@ -141,17 +154,17 @@ export const envNames = Object.freeze({
  * at once for a failed test. The runner's own tests shorten it through envNames.heldOpen, which the runner never
  * passes on from its environment; it is not an option.
  */
-export const heldOpenMs = 30_000;
+export const muirSirynNodeTestHeldOpenMs = 30_000;
 
 /** Stryker's variable for the active mutant, which instrumented code reads when it loads. */
-export const activeMutantEnv = '__STRYKER_ACTIVE_MUTANT__';
+export const muirSirynNodeTestActiveMutantEnv = '__STRYKER_ACTIVE_MUTANT__';
 
 /** Tells apart the records of processes that had the same pid, as a pid can come back within one file run. */
-export function lzRecordNonce(): string {
+export function muirSirynNodeTestRecordNonce(): string {
   return randomUUID();
 }
 
-export function recordName(
+export function muirSirynNodeTestRecordName(
   pid: number,
   threadId: number,
   nonce: string,
@@ -160,17 +173,20 @@ export function recordName(
 }
 
 /** The record the memory watchdog writes when it ends its process. */
-export function memoryRecordName(pid: number, nonce: string): string {
+export function muirSirynNodeTestMemoryRecordName(
+  pid: number,
+  nonce: string,
+): string {
   return `${pid}.${nonce}.memory.json`;
 }
 
 /** Where a record is written before it is renamed to `path`, so that a reader finds every record whole. */
-export function lzTempRecordPath(path: string): string {
+export function muirSirynNodeTestTempRecordPath(path: string): string {
   return `${path}.tmp`;
 }
 
-/** What `lzWriteRecord` takes from the process. */
-export interface LzRecordFiles {
+/** What `muirSirynNodeTestWriteRecord` takes from the process. */
+export interface MuirSirynNodeTestRecordFiles {
   readonly write: (path: string, data: string) => void;
   readonly rename: (from: string, to: string) => void;
   /** Blocks the thread for `ms`: a record is written in exit listeners, which run no timer. */
@@ -178,7 +194,7 @@ export interface LzRecordFiles {
   readonly platform: NodeJS.Platform;
 }
 
-export const lzNodeRecordFiles: LzRecordFiles = {
+export const muirSirynNodeTestRecordFiles: MuirSirynNodeTestRecordFiles = {
   write: writeFileSync,
   rename: renameSync,
   pause: (ms) => {
@@ -188,7 +204,7 @@ export const lzNodeRecordFiles: LzRecordFiles = {
 };
 
 /**
- * How often, and how far apart, `lzWriteRecord` renames on Windows, where a rename over a file that another process has
+ * How often, and how far apart, `muirSirynNodeTestWriteRecord` renames on Windows, where a rename over a file that another process has
  * open, as the runner reading the record or a virus scanner the new temporary file, fails with EPERM or EBUSY: at most
  * 40 ms in all.
  */
@@ -204,15 +220,15 @@ function isBusy(error: unknown): boolean {
 }
 
 /**
- * Writes `record` to `lzTempRecordPath(path)` and renames that over `path`, so that a reader finds the record whole, and
+ * Writes `record` to `muirSirynNodeTestTempRecordPath(path)` and renames that over `path`, so that a reader finds the record whole, and
  * a kill during the write leaves the one before.
  */
-export function lzWriteRecord(
+export function muirSirynNodeTestWriteRecord(
   path: string,
-  record: ProcessRecord,
-  files: LzRecordFiles = lzNodeRecordFiles,
+  record: MuirSirynNodeTestProcessRecord,
+  files: MuirSirynNodeTestRecordFiles = muirSirynNodeTestRecordFiles,
 ): void {
-  const temp = lzTempRecordPath(path);
+  const temp = muirSirynNodeTestTempRecordPath(path);
   files.write(temp, JSON.stringify(record));
 
   for (let attempt = 1; ; attempt++) {
@@ -235,7 +251,7 @@ export function lzWriteRecord(
 }
 
 /** What the name of a record says about the process or thread that wrote it. */
-export interface LzRecordName {
+export interface MuirSirynNodeTestRecordName {
   readonly pid: number;
   /** The id of the thread that wrote the record, or `memory` for the record the memory watchdog writes. */
   readonly thread: number | 'memory';
@@ -247,7 +263,9 @@ const threadRecordPattern =
 const memoryRecordPattern = /^(?<pid>\d+)\.(?<nonce>[\da-f-]+)\.memory\.json$/;
 
 /** The parts of a record's name, as `recordName` and `memoryRecordName` put them together; undefined for another name. */
-export function lzParseRecordName(name: string): LzRecordName | undefined {
+export function muirSirynNodeTestParseRecordName(
+  name: string,
+): MuirSirynNodeTestRecordName | undefined {
   const { pid, thread, nonce } = threadRecordPattern.exec(name)?.groups ?? {};
 
   if (nonce !== undefined) {
@@ -263,8 +281,8 @@ export function lzParseRecordName(name: string): LzRecordName | undefined {
 }
 
 /** Whether `name` is the name of a record, which a record's temporary file is not. */
-export function lzIsRecordName(name: string): boolean {
-  return lzParseRecordName(name) !== undefined;
+export function muirSirynNodeTestIsRecordName(name: string): boolean {
+  return muirSirynNodeTestParseRecordName(name) !== undefined;
 }
 
 function notARecord(field?: string): never {
@@ -275,32 +293,44 @@ function notARecord(field?: string): never {
 
 const isTrue = (value: unknown) => value === true;
 const isCounts = (value: unknown) =>
-  isObject(value) && Object.values(value).every(isNumber);
+  muirSirynNodeTestIsObject(value) &&
+  Object.values(value).every(muirSirynNodeTestIsNumber);
 const isPosition = (value: unknown): value is Position =>
-  isObject(value) && isNumber(value['line']) && isNumber(value['column']);
+  muirSirynNodeTestIsObject(value) &&
+  muirSirynNodeTestIsNumber(value['line']) &&
+  muirSirynNodeTestIsNumber(value['column']);
 const isMemoryLimit = (value: unknown): value is MemoryLimitReached =>
-  isObject(value) && isNumber(value['rssMB']) && isNumber(value['limitMB']);
-const isWindow = (value: unknown): value is LzTimeWindow =>
-  isObject(value) && isNumber(value['start']) && isNumber(value['end']);
-const isSpans = (value: unknown): value is Record<string, LzTimeWindow[]> =>
-  isObject(value) &&
+  muirSirynNodeTestIsObject(value) &&
+  muirSirynNodeTestIsNumber(value['rssMB']) &&
+  muirSirynNodeTestIsNumber(value['limitMB']);
+const isWindow = (value: unknown): value is MuirSirynNodeTestTimeWindow =>
+  muirSirynNodeTestIsObject(value) &&
+  muirSirynNodeTestIsNumber(value['start']) &&
+  muirSirynNodeTestIsNumber(value['end']);
+const isSpans = (
+  value: unknown,
+): value is Record<string, MuirSirynNodeTestTimeWindow[]> =>
+  muirSirynNodeTestIsObject(value) &&
   Object.values(value).every(
     (spans) => Array.isArray(spans) && spans.every(isWindow),
   );
 const isCoverage = (value: unknown): value is MutantCoverage =>
-  isObject(value) &&
+  muirSirynNodeTestIsObject(value) &&
   isCounts(value['static']) &&
-  isObject(value['perTest']) &&
+  muirSirynNodeTestIsObject(value['perTest']) &&
   Object.values(value['perTest']).every(isCounts);
 
-function parseTest(value: unknown, path: string): RecordedTest {
-  if (!isObject(value)) {
+function parseTest(
+  value: unknown,
+  path: string,
+): MuirSirynNodeTestRecordedTest {
+  if (!muirSirynNodeTestIsObject(value)) {
     notARecord(path);
   }
 
   const { id, status, failureMessage, timeSpentMs, startPosition } = value;
 
-  if (!isString(id)) {
+  if (!muirSirynNodeTestIsString(id)) {
     notARecord(`${path}.id`);
   }
 
@@ -308,14 +338,14 @@ function parseTest(value: unknown, path: string): RecordedTest {
     notARecord(`${path}.status`);
   }
 
-  if (!isNumber(timeSpentMs)) {
+  if (!muirSirynNodeTestIsNumber(timeSpentMs)) {
     notARecord(`${path}.timeSpentMs`);
   }
 
   const base = {
     id,
     timeSpentMs,
-    ...optional(
+    ...muirSirynNodeTestOptional(
       'startPosition',
       startPosition,
       isPosition,
@@ -328,10 +358,10 @@ function parseTest(value: unknown, path: string): RecordedTest {
     return {
       ...base,
       status,
-      ...optional(
+      ...muirSirynNodeTestOptional(
         'failureMessage',
         failureMessage,
-        isString,
+        muirSirynNodeTestIsString,
         notARecord,
         `${path}.failureMessage`,
       ),
@@ -345,10 +375,12 @@ function parseTest(value: unknown, path: string): RecordedTest {
   return { ...base, status };
 }
 
-export function lzParseRecord(json: string): ProcessRecord {
+export function muirSirynNodeTestParseRecord(
+  json: string,
+): MuirSirynNodeTestProcessRecord {
   const record: unknown = JSON.parse(json);
 
-  if (!isObject(record)) {
+  if (!muirSirynNodeTestIsObject(record)) {
     notARecord();
   }
 
@@ -373,21 +405,51 @@ export function lzParseRecord(json: string): ProcessRecord {
 
   return {
     tests: tests.map((test, index) => parseTest(test, `tests[${index}]`)),
-    ...optional('main', main, isTrue, notARecord),
-    ...optional('hitCount', hitCount, isNumber, notARecord),
-    ...optional('mutantCoverage', mutantCoverage, isCoverage, notARecord),
-    ...optional('peakMemoryMB', peakMemoryMB, isNumber, notARecord),
-    ...optional(
+    ...muirSirynNodeTestOptional('main', main, isTrue, notARecord),
+    ...muirSirynNodeTestOptional(
+      'hitCount',
+      hitCount,
+      muirSirynNodeTestIsNumber,
+      notARecord,
+    ),
+    ...muirSirynNodeTestOptional(
+      'mutantCoverage',
+      mutantCoverage,
+      isCoverage,
+      notARecord,
+    ),
+    ...muirSirynNodeTestOptional(
+      'peakMemoryMB',
+      peakMemoryMB,
+      muirSirynNodeTestIsNumber,
+      notARecord,
+    ),
+    ...muirSirynNodeTestOptional(
       'memoryLimitReached',
       memoryLimitReached,
       isMemoryLimit,
       notARecord,
     ),
-    ...optional('diagnostics', diagnostics, isStrings, notARecord),
-    ...optional('unfinished', unfinished, isTrue, notARecord),
-    ...optional('heldOpen', heldOpen, isStrings, notARecord),
-    ...optional('stalledMs', stalledMs, isNumber, notARecord),
-    ...optional('lifetime', lifetime, isWindow, notARecord),
-    ...optional('testSpans', testSpans, isSpans, notARecord),
+    ...muirSirynNodeTestOptional(
+      'diagnostics',
+      diagnostics,
+      muirSirynNodeTestIsStrings,
+      notARecord,
+    ),
+    ...muirSirynNodeTestOptional('unfinished', unfinished, isTrue, notARecord),
+    ...muirSirynNodeTestOptional(
+      'heldOpen',
+      heldOpen,
+      muirSirynNodeTestIsStrings,
+      notARecord,
+    ),
+    ...muirSirynNodeTestOptional(
+      'stalledMs',
+      stalledMs,
+      muirSirynNodeTestIsNumber,
+      notARecord,
+    ),
+    ...muirSirynNodeTestOptional('lifetime', lifetime, isWindow, notARecord),
+    ...muirSirynNodeTestOptional('testSpans', testSpans, isSpans, notARecord),
   };
 }

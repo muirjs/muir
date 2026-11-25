@@ -1,5 +1,5 @@
-import { fieldOf } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 
-export function typeOf(node: unknown): unknown {
-  return fieldOf(node, 'type');
+export function muirProteusJsxTypeOf(node: unknown): unknown {
+  return muirMoiraMutatorsFieldOf(node, 'type');
 }

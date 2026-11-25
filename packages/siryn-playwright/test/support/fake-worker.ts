@@ -6,28 +6,33 @@ import type { TestContext } from 'node:test';
 
 import { INSTRUMENTER_CONSTANTS } from '@stryker-mutator/api/core';
 
-import { isRecord } from '../../src/is-record.ts';
+import { muirSirynPlaywrightIsRecord } from '../../src/is-record.ts';
 import {
-  type HookedBrowser,
-  type HookedContext,
-  type HookedFrame,
-  type HookedPage,
-  type Instrumentation,
-  type SlotType,
+  type MuirSirynPlaywrightHookedBrowser,
+  type MuirSirynPlaywrightHookedContext,
+  type MuirSirynPlaywrightHookedFrame,
+  type MuirSirynPlaywrightHookedPage,
+  type MuirSirynPlaywrightInstrumentation,
+  type MuirSirynPlaywrightSlotType,
 } from '../../src/playwright-internals.ts';
-import { setEnv } from '../../src/process-env.ts';
-import type { PageSettings, RunSettings } from '../../src/protocol.ts';
-import type { StrykerNamespace } from '../../src/namespace.ts';
-import type { install } from '../../src/worker-hook.ts';
+import { muirSirynPlaywrightSetEnv } from '../../src/process-env.ts';
+import type {
+  MuirSirynPlaywrightPageSettings,
+  MuirSirynPlaywrightRunSettings,
+} from '../../src/protocol.ts';
+import type { MuirSirynPlaywrightStrykerNamespace } from '../../src/namespace.ts';
+import type { muirSirynPlaywrightInstall } from '../../src/worker-hook.ts';
 import { tempTree } from './doubles.ts';
 
 const activeMutantEnv = INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE;
 
-type Listener = Parameters<Instrumentation['addListener']>[0];
+type Listener = Parameters<
+  MuirSirynPlaywrightInstrumentation['addListener']
+>[0];
 
 /** The shape of Playwright's TestInfo._timeoutManager._running.runnable. */
 export interface Runnable {
-  readonly type: SlotType;
+  readonly type: MuirSirynPlaywrightSlotType;
   readonly fixture?: { readonly title: string };
 }
 
@@ -45,7 +50,7 @@ function frame({
   name,
   evaluate,
   detached = false,
-}: FakeFrame = {}): HookedFrame {
+}: FakeFrame = {}): MuirSirynPlaywrightHookedFrame {
   return {
     evaluate: (fn, asked) =>
       evaluate ? evaluate(fn, asked) : Promise.resolve(fn(name ?? asked)),
@@ -53,9 +58,9 @@ function frame({
   };
 }
 
-function page(frames: HookedFrame[] = [frame()]) {
+function page(frames: MuirSirynPlaywrightHookedFrame[] = [frame()]) {
   const closed: unknown[] = [];
-  const created: HookedPage = {
+  const created: MuirSirynPlaywrightHookedPage = {
     frames: () => frames,
     close: async (options) => {
       closed.push(options);
@@ -66,9 +71,9 @@ function page(frames: HookedFrame[] = [frame()]) {
 }
 
 function browser() {
-  const contexts: HookedContext[] = [];
+  const contexts: MuirSirynPlaywrightHookedContext[] = [];
   const closed: unknown[] = [];
-  const created: HookedBrowser = {
+  const created: MuirSirynPlaywrightHookedBrowser = {
     contexts: () => contexts,
     close: async (options) => {
       closed.push(options);
@@ -83,9 +88,9 @@ function browser() {
  * namespace stands in for the worker's and for every fake page's, since the fake frames read it here.
  */
 export function fakeInstall(
-  installHook: typeof install,
+  installHook: typeof muirSirynPlaywrightInstall,
   t: TestContext,
-  settings: Omit<RunSettings, 'outDir'>,
+  settings: Omit<MuirSirynPlaywrightRunSettings, 'outDir'>,
   {
     activeMutant,
     prepare,
@@ -134,12 +139,12 @@ export function fakeInstall(
   };
 
   const previousMutant = process.env[activeMutantEnv];
-  setEnv({ [activeMutantEnv]: activeMutant });
+  muirSirynPlaywrightSetEnv({ [activeMutantEnv]: activeMutant });
 
   try {
     installHook((id) => modules[id], { outDir, ...settings }, ns);
   } finally {
-    setEnv({ [activeMutantEnv]: previousMutant });
+    muirSirynPlaywrightSetEnv({ [activeMutantEnv]: previousMutant });
   }
 
   const added = process
@@ -162,12 +167,13 @@ export function fakeInstall(
 
   /** A context as Playwright creates it, which the hook sees through the instrumentation. */
   async function context(owner: ReturnType<typeof browser> | null = null) {
-    const pages: HookedPage[] = [];
-    const onPage: ((page: HookedPage) => void)[] = [];
-    const scripts: [unknown, PageSettings | undefined][] = [];
+    const pages: MuirSirynPlaywrightHookedPage[] = [];
+    const onPage: ((page: MuirSirynPlaywrightHookedPage) => void)[] = [];
+    const scripts: [unknown, MuirSirynPlaywrightPageSettings | undefined][] =
+      [];
     const events: string[] = [];
-    const routes: Parameters<HookedContext['route']>[] = [];
-    const created: HookedContext = {
+    const routes: Parameters<MuirSirynPlaywrightHookedContext['route']>[] = [];
+    const created: MuirSirynPlaywrightHookedContext = {
       pages: () => pages,
       browser: () => owner?.browser ?? null,
       on: (event, handler) => {
@@ -189,7 +195,7 @@ export function fakeInstall(
       scripts,
       events,
       routes,
-      open: (opened: HookedPage) => {
+      open: (opened: MuirSirynPlaywrightHookedPage) => {
         pages.push(opened);
         onPage.forEach((handler) => handler(opened));
       },
@@ -199,7 +205,7 @@ export function fakeInstall(
 
   return {
     ns,
-    namespace: (): StrykerNamespace => {
+    namespace: (): MuirSirynPlaywrightStrykerNamespace => {
       const found = scope[ns];
       assert.ok(typeof found === 'object' && found !== null, 'a namespace');
 
@@ -228,7 +234,7 @@ function parsedLines(content: string) {
     .filter(Boolean)
     .map((line) => {
       const parsed: unknown = JSON.parse(line);
-      assert.ok(isRecord(parsed));
+      assert.ok(muirSirynPlaywrightIsRecord(parsed));
 
       return parsed;
     });

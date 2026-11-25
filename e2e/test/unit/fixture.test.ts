@@ -15,23 +15,23 @@ import { basename, delimiter, dirname, join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import {
-  lzConcurrency,
-  lzConsumerEnv,
-  lzInstall,
-  lzLeftover,
-  lzMutant,
-  lzMutants,
-  lzNpmCli,
-  lzPack,
-  lzPackedFile,
-  lzPinned,
-  lzRemoveDeadRunDirs,
-  lzStryker,
-  lzStrykerCommand,
-  lzStrykerTimeoutMs,
-  type LzStrykerRun,
+  muirConcurrency,
+  muirConsumerEnv,
+  muirMoiraNodeTestInstall,
+  muirLeftover,
+  muirMutant,
+  muirMutants,
+  muirNpmCli,
+  muirPack,
+  muirPackedFile,
+  muirPinned,
+  muirRemoveDeadRunDirs,
+  muirStryker,
+  muirStrykerCommand,
+  muirStrykerTimeoutMs,
+  type MuirStrykerRun,
 } from '../../src/fixture.ts';
-import { lzIsRecord, type LzMutantDetail } from '../../src/report.ts';
+import { muirIsRecord, type MuirMutantDetail } from '../../src/report.ts';
 
 const fixtureUrl = new URL('../../src/fixture.ts', import.meta.url).href;
 const workspaceDir = join(import.meta.dirname, '..', '..', '..');
@@ -62,8 +62,8 @@ const fakeNpm = `
 const { appendFileSync, copyFileSync, mkdirSync } = require('node:fs');
 const { basename, join } = require('node:path');
 const args = process.argv.slice(2);
-if (process.env.LZ_FAKE_NPM_LOG !== undefined) {
-  appendFileSync(process.env.LZ_FAKE_NPM_LOG, JSON.stringify(args) + '\\n');
+if (process.env.MUIR_FAKE_NPM_LOG !== undefined) {
+  appendFileSync(process.env.MUIR_FAKE_NPM_LOG, JSON.stringify(args) + '\\n');
 }
 if (args.includes('fail')) {
   process.stdout.write('out\\n');
@@ -105,7 +105,7 @@ function setEnv(t: TestContext, name: string, value: string): void {
 
 /** A folder holding the fake npm and Stryker, with `npm_execpath` pointing at it. */
 function fakeNpmDir(t: TestContext): string {
-  const dir = tempDir(t, 'lz-fake-npm-');
+  const dir = tempDir(t, 'muir-fake-npm-');
 
   writeFileSync(join(dir, 'npm-cli.js'), fakeNpm);
   writeFileSync(join(dir, 'stryker.js'), fakeStryker);
@@ -119,7 +119,7 @@ function useFakeNpm(t: TestContext): () => unknown[] {
   const logFile = join(dir, 'log.jsonl');
 
   setEnv(t, 'npm_execpath', join(dir, 'npx-cli.js'));
-  setEnv(t, 'LZ_FAKE_NPM_LOG', logFile);
+  setEnv(t, 'MUIR_FAKE_NPM_LOG', logFile);
 
   return () =>
     existsSync(logFile)
@@ -131,14 +131,14 @@ function useFakeNpm(t: TestContext): () => unknown[] {
 }
 
 function workspacePins(): string[] {
-  return lzPinned(
+  return muirPinned(
     JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8')),
   );
 }
 
-describe('lzConsumerEnv', () => {
+describe('muirConsumerEnv', () => {
   it("drops the test runner's variables, puts this Node.js first on the PATH as Windows spells it, and sets the temporary folder", () => {
-    const env = lzConsumerEnv('t', {
+    const env = muirConsumerEnv('t', {
       KEEP: 'z',
       Path: 'a',
       NODE_OPTIONS: 'x',
@@ -155,7 +155,7 @@ describe('lzConsumerEnv', () => {
   });
 
   it('starts a PATH when there is none', () => {
-    assert.deepEqual(lzConsumerEnv('t', {}), {
+    assert.deepEqual(muirConsumerEnv('t', {}), {
       PATH: `${dirname(process.execPath)}${delimiter}`,
       TMPDIR: 't',
       TEMP: 't',
@@ -164,33 +164,34 @@ describe('lzConsumerEnv', () => {
   });
 });
 
-describe('lzConcurrency', () => {
+describe('muirConcurrency', () => {
   it('reads a positive integer', () => {
-    assert.equal(lzConcurrency({ LZ_E2E_CONCURRENCY: '2' }), 2);
+    assert.equal(muirConcurrency({ MUIR_E2E_CONCURRENCY: '2' }), 2);
   });
 
   it('reads a positive integer of more than one digit', () => {
-    assert.equal(lzConcurrency({ LZ_E2E_CONCURRENCY: '10' }), 10);
+    assert.equal(muirConcurrency({ MUIR_E2E_CONCURRENCY: '10' }), 10);
   });
 
   it('refuses an unset value and names the variable', () => {
-    assert.throws(() => lzConcurrency({}), {
-      message: /^Set LZ_E2E_CONCURRENCY to a positive integer.*It is unset\.$/,
+    assert.throws(() => muirConcurrency({}), {
+      message:
+        /^Set MUIR_E2E_CONCURRENCY to a positive integer.*It is unset\.$/,
     });
   });
 
   ['0', '01', '2x'].forEach((value) => {
     it(`refuses "${value}"`, () => {
-      assert.throws(() => lzConcurrency({ LZ_E2E_CONCURRENCY: value }), {
+      assert.throws(() => muirConcurrency({ MUIR_E2E_CONCURRENCY: value }), {
         message: new RegExp(`It is "${value}"\\.$`),
       });
     });
   });
 });
 
-describe('lzStrykerCommand', () => {
+describe('muirStrykerCommand', () => {
   it("runs the consumer's installed Stryker, reports in clear text and JSON, with the extra arguments last", () => {
-    assert.deepEqual(lzStrykerCommand('s.mjs', 3, ['--mutate', 'a.js'], []), [
+    assert.deepEqual(muirStrykerCommand('s.mjs', 3, ['--mutate', 'a.js'], []), [
       join(strykerBinDir, 'stryker.js'),
       'run',
       's.mjs',
@@ -205,20 +206,20 @@ describe('lzStrykerCommand', () => {
 
   it('adds further reporters to the one --reporters, as a second one would replace the first', () => {
     assert.equal(
-      lzStrykerCommand(
+      muirStrykerCommand(
         's.mjs',
         3,
         [],
-        ['progress-append-only', 'lz-checkpoint'],
+        ['progress-append-only', 'muir-checkpoint'],
       )[6],
-      'clear-text,json,progress-append-only,lz-checkpoint',
+      'clear-text,json,progress-append-only,muir-checkpoint',
     );
   });
 });
 
 /** A consumer folder with the fake Stryker installed and an empty `tmp`. */
 function consumerDir(t: TestContext): string {
-  const dir = tempDir(t, 'lz-stryker-');
+  const dir = tempDir(t, 'muir-stryker-');
 
   mkdirSync(join(dir, strykerBinDir), { recursive: true });
   writeFileSync(join(dir, strykerBinDir, 'stryker.js'), fakeStryker);
@@ -227,13 +228,13 @@ function consumerDir(t: TestContext): string {
   return dir;
 }
 
-describe('lzStryker', () => {
+describe('muirStryker', () => {
   it('runs Stryker in the folder with its own temporary folder, and lists only the new entries of it, sorted', async (t) => {
     const dir = consumerDir(t);
 
     writeFileSync(join(dir, 'tmp', 'old'), '');
 
-    const run = await lzStryker(dir, 's.mjs', 2);
+    const run = await muirStryker(dir, 's.mjs', 2);
     const output: unknown = JSON.parse(run.output);
 
     assert.deepEqual(
@@ -276,7 +277,7 @@ describe('lzStryker', () => {
   });
 
   it('reads the report the run writes', async (t) => {
-    const run = await lzStryker(consumerDir(t), 's.mjs', 2, {
+    const run = await muirStryker(consumerDir(t), 's.mjs', 2, {
       args: ['--report'],
     });
 
@@ -287,7 +288,10 @@ describe('lzStryker', () => {
     const dir = consumerDir(t);
     const logFile = join(dir, 'run.log');
 
-    const run = await lzStryker(dir, 's.mjs', 2, { logFile, reporters: ['r'] });
+    const run = await muirStryker(dir, 's.mjs', 2, {
+      logFile,
+      reporters: ['r'],
+    });
 
     assert.equal(readFileSync(logFile, 'utf8'), run.output);
     assert.match(
@@ -297,7 +301,7 @@ describe('lzStryker', () => {
   });
 });
 
-function mutant(line: number, replacement: string): LzMutantDetail {
+function mutant(line: number, replacement: string): MuirMutantDetail {
   return {
     line,
     column: 1,
@@ -314,8 +318,8 @@ function mutant(line: number, replacement: string): LzMutantDetail {
 }
 
 function reported(
-  files: Readonly<Record<string, readonly LzMutantDetail[]>>,
-): LzStrykerRun {
+  files: Readonly<Record<string, readonly MuirMutantDetail[]>>,
+): MuirStrykerRun {
   return {
     exitCode: 0,
     output: '',
@@ -326,7 +330,7 @@ function reported(
   };
 }
 
-function unreported(timedOut: boolean): LzStrykerRun {
+function unreported(timedOut: boolean): MuirStrykerRun {
   return {
     exitCode: 1,
     output: 'Error during import',
@@ -336,11 +340,11 @@ function unreported(timedOut: boolean): LzStrykerRun {
   };
 }
 
-describe('lzMutants', () => {
+describe('muirMutants', () => {
   it('lists the mutants of a file of the report', () => {
     const run = reported({ 'src/a.ts': [mutant(1, '""')] });
 
-    assert.deepEqual(lzMutants(run, 'src/a.ts'), [
+    assert.deepEqual(muirMutants(run, 'src/a.ts'), [
       '1:1 StringLiteral "" Killed',
     ]);
   });
@@ -348,13 +352,13 @@ describe('lzMutants', () => {
   it('refuses a file the report does not have, and names the files it has', () => {
     const run = reported({ 'src/a.ts': [], 'src/b.ts': [] });
 
-    assert.throws(() => lzMutants(run, 'src/c.ts'), {
+    assert.throws(() => muirMutants(run, 'src/c.ts'), {
       message: 'The report has no file "src/c.ts"; it has src/a.ts, src/b.ts.',
     });
   });
 
   it("refuses a run with no report, and shows Stryker's exit code and output", () => {
-    assert.throws(() => lzMutants(unreported(false), 'src/a.ts'), {
+    assert.throws(() => muirMutants(unreported(false), 'src/a.ts'), {
       message: 'Stryker wrote no report (exit code 1):\nError during import',
     });
   });
@@ -366,36 +370,36 @@ describe('lzMutants', () => {
       output: 'dispose failed',
     };
 
-    assert.throws(() => lzMutants(run, 'src/a.ts'), {
+    assert.throws(() => muirMutants(run, 'src/a.ts'), {
       message:
         'Stryker wrote a report, then failed (exit code 1):\ndispose failed',
     });
   });
 
   it('refuses a run with no report, and says when it timed out after its 15 minutes', () => {
-    assert.equal(lzStrykerTimeoutMs, 15 * 60_000);
-    assert.throws(() => lzMutants(unreported(true), 'src/a.ts'), {
+    assert.equal(muirStrykerTimeoutMs, 15 * 60_000);
+    assert.throws(() => muirMutants(unreported(true), 'src/a.ts'), {
       message:
         'Stryker wrote no report (exit code 1, ended after 15 minutes):\nError during import',
     });
   });
 });
 
-describe('lzLeftover', () => {
+describe('muirLeftover', () => {
   it("replaces the pid in each leftover's name", () => {
     const run = {
       ...unreported(false),
-      leftover: ['lz-node-test-e2e-1234-abc', 'x-56-y-7-'],
+      leftover: ['muir-node-test-e2e-1234-abc', 'x-56-y-7-'],
     };
 
-    assert.deepEqual(lzLeftover(run), [
-      'lz-node-test-e2e-<pid>-abc',
+    assert.deepEqual(muirLeftover(run), [
+      'muir-node-test-e2e-<pid>-abc',
       'x-<pid>-y-7-',
     ]);
   });
 });
 
-describe('lzMutant', () => {
+describe('muirMutant', () => {
   const run = reported({
     'src/a.ts': [mutant(1, '""'), mutant(2, '""'), mutant(2, '""')],
     'src/b.ts': [mutant(1, '"x"')],
@@ -403,14 +407,14 @@ describe('lzMutant', () => {
 
   it('finds the one mutant at a place with a replacement', () => {
     assert.deepEqual(
-      lzMutant(run, { at: 'src/b.ts:1:1', replacement: '"x"' }),
+      muirMutant(run, { at: 'src/b.ts:1:1', replacement: '"x"' }),
       mutant(1, '"x"'),
     );
   });
 
   it('refuses a place with no mutant of the replacement', () => {
     assert.throws(
-      () => lzMutant(run, { at: 'src/b.ts:1:1', replacement: '""' }),
+      () => muirMutant(run, { at: 'src/b.ts:1:1', replacement: '""' }),
       {
         message:
           'Expected one mutant at src/b.ts:1:1 with replacement """", found 0.',
@@ -420,7 +424,7 @@ describe('lzMutant', () => {
 
   it('refuses a place with more than one mutant of the replacement', () => {
     assert.throws(
-      () => lzMutant(run, { at: 'src/a.ts:2:1', replacement: '""' }),
+      () => muirMutant(run, { at: 'src/a.ts:2:1', replacement: '""' }),
       {
         message:
           'Expected one mutant at src/a.ts:2:1 with replacement """", found 2.',
@@ -431,7 +435,10 @@ describe('lzMutant', () => {
   it('refuses a run with no report', () => {
     assert.throws(
       () =>
-        lzMutant(unreported(false), { at: 'src/a.ts:1:1', replacement: '""' }),
+        muirMutant(unreported(false), {
+          at: 'src/a.ts:1:1',
+          replacement: '""',
+        }),
       {
         message: 'Stryker wrote no report (exit code 1):\nError during import',
       },
@@ -439,26 +446,26 @@ describe('lzMutant', () => {
   });
 });
 
-describe('lzPackedFile', () => {
+describe('muirPackedFile', () => {
   it('reads the file name from the array npm 11 prints', () => {
-    assert.equal(lzPackedFile('[{"filename":"a-1.0.0.tgz"}]'), 'a-1.0.0.tgz');
+    assert.equal(muirPackedFile('[{"filename":"a-1.0.0.tgz"}]'), 'a-1.0.0.tgz');
   });
 
   it('reads the file name from the object npm 12 prints', () => {
     assert.equal(
-      lzPackedFile('{"@x/a":{"filename":"x-a-1.0.0.tgz"}}'),
+      muirPackedFile('{"@x/a":{"filename":"x-a-1.0.0.tgz"}}'),
       'x-a-1.0.0.tgz',
     );
   });
 
   it("refuses output with no file name, and shows npm's output", () => {
-    assert.throws(() => lzPackedFile('[{}]'), {
+    assert.throws(() => muirPackedFile('[{}]'), {
       message: 'npm pack --json printed no filename:\n[{}]',
     });
   });
 });
 
-describe('lzPinned', () => {
+describe('muirPinned', () => {
   it('pins Stryker, its TypeScript checker, TypeScript and the Node.js types at the versions the manifest names', () => {
     const devDependencies = {
       '@stryker-mutator/core': '1',
@@ -467,7 +474,7 @@ describe('lzPinned', () => {
       '@types/node': '4',
     };
 
-    assert.deepEqual(lzPinned({ devDependencies }), [
+    assert.deepEqual(muirPinned({ devDependencies }), [
       '@stryker-mutator/core@1',
       '@stryker-mutator/typescript-checker@2',
       'typescript@3',
@@ -477,7 +484,7 @@ describe('lzPinned', () => {
 
   it('refuses a manifest that pins one of them nowhere, and names it', () => {
     assert.throws(
-      () => lzPinned({ devDependencies: { '@stryker-mutator/core': '1' } }),
+      () => muirPinned({ devDependencies: { '@stryker-mutator/core': '1' } }),
       {
         message:
           'The workspace package.json pins no @stryker-mutator/typescript-checker in devDependencies.',
@@ -486,7 +493,7 @@ describe('lzPinned', () => {
   });
 });
 
-describe('lzNpmCli', () => {
+describe('muirNpmCli', () => {
   function withFile(dir: string, ...path: string[]): string {
     const file = join(dir, ...path);
 
@@ -497,24 +504,24 @@ describe('lzNpmCli', () => {
   }
 
   it('takes the npm that started this process', (t) => {
-    const dir = tempDir(t, 'lz-npm-cli-');
+    const dir = tempDir(t, 'muir-npm-cli-');
     const file = withFile(dir, 'npm-cli.js');
 
     assert.equal(
-      lzNpmCli({ npm_execpath: join(dir, 'npx-cli.js') }, join(dir, 'node')),
+      muirNpmCli({ npm_execpath: join(dir, 'npx-cli.js') }, join(dir, 'node')),
       file,
     );
   });
 
   it('takes the npm beside Node.js in the Windows layout', (t) => {
-    const dir = tempDir(t, 'lz-npm-cli-');
+    const dir = tempDir(t, 'muir-npm-cli-');
     const file = withFile(dir, 'node_modules', 'npm', 'bin', 'npm-cli.js');
 
-    assert.equal(lzNpmCli({}, join(dir, 'node.exe')), file);
+    assert.equal(muirNpmCli({}, join(dir, 'node.exe')), file);
   });
 
   it('takes the npm beside Node.js in the POSIX layout', (t) => {
-    const dir = tempDir(t, 'lz-npm-cli-');
+    const dir = tempDir(t, 'muir-npm-cli-');
     const file = withFile(
       dir,
       'lib',
@@ -524,11 +531,11 @@ describe('lzNpmCli', () => {
       'npm-cli.js',
     );
 
-    assert.equal(lzNpmCli({}, join(dir, 'bin', 'node')), file);
+    assert.equal(muirNpmCli({}, join(dir, 'bin', 'node')), file);
   });
 
   it('refuses when there is no npm, and names where it looked', (t) => {
-    const dir = tempDir(t, 'lz-npm-cli-');
+    const dir = tempDir(t, 'muir-npm-cli-');
     const windows = join(dir, 'node_modules', 'npm', 'bin', 'npm-cli.js');
     const posix = join(
       dir,
@@ -540,19 +547,19 @@ describe('lzNpmCli', () => {
       'npm-cli.js',
     );
 
-    assert.throws(() => lzNpmCli({}, join(dir, 'node')), {
+    assert.throws(() => muirNpmCli({}, join(dir, 'node')), {
       message: `Found no npm-cli.js; looked at ${windows}, ${posix}.`,
     });
   });
 });
 
-describe('lzPack', () => {
+describe('muirPack', () => {
   it('packs each workspace package into the folder it creates, and returns the tarballs', async (t) => {
     const npmRuns = useFakeNpm(t);
-    const into = join(tempDir(t, 'lz-pack-'), 'tarballs');
+    const into = join(tempDir(t, 'muir-pack-'), 'tarballs');
     const names = readdirSync(packagesDir);
 
-    const tarballs = await lzPack(into);
+    const tarballs = await muirPack(into);
 
     assert.deepEqual(
       tarballs,
@@ -572,12 +579,12 @@ describe('lzPack', () => {
   });
 });
 
-describe('lzInstall', () => {
+describe('muirMoiraNodeTestInstall', () => {
   it('installs the tarballs and the pinned packages exactly, as of a date', async (t) => {
     const npmRuns = useFakeNpm(t);
-    const dir = tempDir(t, 'lz-install-');
+    const dir = tempDir(t, 'muir-install-');
 
-    await lzInstall(dir, ['a.tgz'], '2026-01-01');
+    await muirMoiraNodeTestInstall(dir, ['a.tgz'], '2026-01-01');
 
     assert.deepEqual(npmRuns(), [
       [
@@ -598,9 +605,9 @@ describe('lzInstall', () => {
 
   it('installs as of now without a date', async (t) => {
     const npmRuns = useFakeNpm(t);
-    const dir = tempDir(t, 'lz-install-');
+    const dir = tempDir(t, 'muir-install-');
 
-    await lzInstall(dir, ['a.tgz']);
+    await muirMoiraNodeTestInstall(dir, ['a.tgz']);
 
     assert.deepEqual(npmRuns(), [
       [
@@ -619,7 +626,7 @@ describe('lzInstall', () => {
 
   it("refuses a failed npm run, and shows npm's command, exit code and output", async (t) => {
     useFakeNpm(t);
-    const dir = tempDir(t, 'lz-install-');
+    const dir = tempDir(t, 'muir-install-');
     const command = [
       'install',
       '--save-dev',
@@ -631,19 +638,19 @@ describe('lzInstall', () => {
       'fail',
     ];
 
-    await assert.rejects(lzInstall(dir, ['fail']), {
+    await assert.rejects(muirMoiraNodeTestInstall(dir, ['fail']), {
       message: `npm ${[...command, ...workspacePins()].join(' ')} ended with exit code 3:\nout\nerr\n`,
     });
   });
 });
 
-describe('lzFixture', () => {
+describe('muirFixture', () => {
   it("copies the fixture into a run folder of this pid, installs into it, runs Stryker there, and removes dead runs' folders and its own at exit", (t) => {
-    const tmp = tempDir(t, 'lz-fixture-');
+    const tmp = tempDir(t, 'muir-fixture-');
     const deadPid = spawnSync(process.execPath, ['-e', ''], {
       windowsHide: true,
     }).pid;
-    const deadDir = join(tmp, `lz-node-test-e2e-${deadPid}-a`);
+    const deadDir = join(tmp, `muir-node-test-e2e-${deadPid}-a`);
 
     mkdirSync(deadDir);
 
@@ -653,8 +660,8 @@ describe('lzFixture', () => {
       [
         '--input-type=module',
         '-e',
-        `const { lzFixture } = await import(${JSON.stringify(fixtureUrl)});
-        const fixture = await lzFixture('../src');
+        `const { muirFixture } = await import(${JSON.stringify(fixtureUrl)});
+        const fixture = await muirFixture('../src');
         process.stdout.write((await fixture.stryker()).output);`,
       ],
       {
@@ -663,7 +670,7 @@ describe('lzFixture', () => {
         env: {
           ...process.env,
           npm_execpath: join(fakeNpmDir(t), 'npx-cli.js'),
-          LZ_E2E_CONCURRENCY: '2',
+          MUIR_E2E_CONCURRENCY: '2',
           TMPDIR: tmp,
           TEMP: tmp,
           TMP: tmp,
@@ -672,7 +679,7 @@ describe('lzFixture', () => {
     );
     const saw: unknown = JSON.parse(child.stdout);
 
-    assert.ok(lzIsRecord(saw), child.stdout + child.stderr);
+    assert.ok(muirIsRecord(saw), child.stdout + child.stderr);
     assert.equal(typeof saw['cwd'], 'string');
     const cwd = String(saw['cwd']);
 
@@ -690,12 +697,15 @@ describe('lzFixture', () => {
       files: [...readdirSync(srcDir), 'node_modules', 'tarballs', 'tmp'].sort(),
     });
     assert.equal(dirname(cwd), tmp);
-    assert.match(basename(cwd), new RegExp(`^lz-node-test-e2e-${child.pid}-`));
+    assert.match(
+      basename(cwd),
+      new RegExp(`^muir-node-test-e2e-${child.pid}-`),
+    );
     assert.deepEqual(readdirSync(tmp), []);
   });
 });
 
-describe('lzRemoveOnExit', () => {
+describe('muirRemoveOnExit', () => {
   // A process that ends by itself, rather than through process.exit(), runs the exit listener before the mutation test
   // runner records what the process covered.
   function exitAfterRemoveOnExit(
@@ -707,8 +717,8 @@ describe('lzRemoveOnExit', () => {
       [
         '--input-type=module',
         '-e',
-        `const { lzRemoveOnExit } = await import(${JSON.stringify(fixtureUrl)});
-        lzRemoveOnExit(${JSON.stringify(dir)});
+        `const { muirRemoveOnExit } = await import(${JSON.stringify(fixtureUrl)});
+        muirRemoveOnExit(${JSON.stringify(dir)});
         ${ending === 'by itself' ? '' : ending}`,
       ],
       { encoding: 'utf8', windowsHide: true },
@@ -718,7 +728,7 @@ describe('lzRemoveOnExit', () => {
   }
 
   it('removes the folder and its content when the process exits', (t) => {
-    const dir = tempDir(t, 'lz-remove-on-exit-');
+    const dir = tempDir(t, 'muir-remove-on-exit-');
 
     writeFileSync(join(dir, 'a'), '');
 
@@ -733,7 +743,7 @@ describe('lzRemoveOnExit', () => {
 
   it('says nothing when the folder is already gone', (t) => {
     assert.equal(
-      exitAfterRemoveOnExit(join(tempDir(t, 'lz-remove-on-exit-'), 'gone')),
+      exitAfterRemoveOnExit(join(tempDir(t, 'muir-remove-on-exit-'), 'gone')),
       '',
     );
   });
@@ -746,9 +756,9 @@ describe('lzRemoveOnExit', () => {
   });
 });
 
-describe('lzRemoveDeadRunDirs', () => {
+describe('muirRemoveDeadRunDirs', () => {
   it("removes the prefix's folders of a dead pid, and keeps a live pid's and another prefix's", (t) => {
-    const dir = mkdtempSync(join(tmpdir(), 'lz-remove-dead-'));
+    const dir = mkdtempSync(join(tmpdir(), 'muir-remove-dead-'));
     const deadPid = spawnSync(process.execPath, ['-e', ''], {
       windowsHide: true,
     }).pid;
@@ -761,7 +771,7 @@ describe('lzRemoveDeadRunDirs', () => {
     });
     mkdirSync(join(dir, `p-${process.pid}-a`));
 
-    lzRemoveDeadRunDirs(dir, 'p-');
+    muirRemoveDeadRunDirs(dir, 'p-');
 
     assert.deepEqual(readdirSync(dir).sort(), [
       `p-${process.pid}-a`,
@@ -770,12 +780,12 @@ describe('lzRemoveDeadRunDirs', () => {
   });
 
   it('keeps the folder of a pid it cannot ask about', (t) => {
-    const dir = tempDir(t, 'lz-remove-dead-');
+    const dir = tempDir(t, 'muir-remove-dead-');
     const name = 'p-99999999999999999999-a';
 
     mkdirSync(join(dir, name));
 
-    lzRemoveDeadRunDirs(dir, 'p-');
+    muirRemoveDeadRunDirs(dir, 'p-');
 
     assert.deepEqual(readdirSync(dir), [name]);
   });

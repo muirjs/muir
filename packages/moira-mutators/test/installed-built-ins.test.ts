@@ -2,8 +2,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { builtInNames } from '../src/built-ins.ts';
-import { corePackageJson, resolveInstrumenter } from '../src/instrumenter.ts';
+import { muirMoiraMutatorsBuiltInNames } from '../src/built-ins.ts';
+import {
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsResolveInstrumenter,
+} from '../src/instrumenter.ts';
 
 function acceptTypes(value: unknown): asserts value is unknown {
   void value;
@@ -11,15 +14,15 @@ function acceptTypes(value: unknown): asserts value is unknown {
 
 describe('builtInNames', () => {
   it('equals the built-in mutator names of the installed Stryker, so a Stryker upgrade that adds, renames or drops one fails here', async () => {
-    const instrumenter = await resolveInstrumenter(
+    const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
       '@muirjs/moira-mutators',
       acceptTypes,
-      corePackageJson(),
+      muirMoiraMutatorsCorePackageJson(),
     );
 
     assert.deepEqual(
       instrumenter.allMutators.map(({ name }) => name).sort(),
-      [...builtInNames].sort(),
+      [...muirMoiraMutatorsBuiltInNames].sort(),
     );
   });
 });

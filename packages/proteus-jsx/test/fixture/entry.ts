@@ -1,21 +1,24 @@
-import { resolveFromCore } from '../../src/install.ts';
+import { muirProteusJsxResolveFromCore } from '../../src/install.ts';
 import { exportedFunction } from '../support/exports.ts';
 
 const mode = process.argv[2];
-const instrumenter = await resolveFromCore();
+const instrumenter = await muirProteusJsxResolveFromCore();
 
 if (mode === 'taken') {
-  instrumenter.allMutators.push({ name: 'LzJsxTextLiteral', mutate: () => [] });
+  instrumenter.allMutators.push({
+    name: 'MuirProteusJsxTextLiteral',
+    mutate: () => [],
+  });
 }
 
 const entry = await import('../../src/index.ts');
 
 if (mode === 'install' || mode === 'taken') {
-  await entry.lzJsxMutators();
+  await entry.muirProteusJsxMutators();
 }
 
 if (mode === 'undefined-option') {
-  await Reflect.apply(entry.lzJsxMutators, undefined, [
+  await Reflect.apply(entry.muirProteusJsxMutators, undefined, [
     { extended: undefined },
   ]);
 }

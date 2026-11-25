@@ -318,7 +318,7 @@ const nodeTestConfigs = [
           selector:
             'CallExpression[callee.name=/^set(Timeout|Interval)$/][arguments.length<2]',
           message:
-            'Pass the delay explicitly, so LzNodeTimerDelay can mutate it.',
+            'Pass the delay explicitly, so MuirProteusNodeTimerDelay can mutate it.',
         },
         ...noTypeAssertions,
         ...noPrivateModifier,
@@ -370,7 +370,7 @@ const nodeTestConfigs = [
       '@nx/workspace-no-assertion-in-iteration': 'error',
       'no-restricted-properties': [
         'error',
-        ...['lzTestEach', 'lzTestFor'].map((object) => ({
+        ...['muirTestEach', 'muirTestFor'].map((object) => ({
           object,
           property: 'only',
           message:

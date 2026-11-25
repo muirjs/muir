@@ -1,6 +1,9 @@
 import type { NodePath, types } from '@babel/core';
 
-import { lzPropertyName, type LzMutator } from '@muirjs/moira-node-test';
+import {
+  muirMoiraNodeTestPropertyName,
+  type MuirMoiraNodeTestMutator,
+} from '@muirjs/moira-node-test';
 
 const bufferResults: ReadonlySet<string | undefined> = new Set([
   'from',
@@ -16,29 +19,30 @@ const utf8: ReadonlySet<string> = new Set(['utf8', 'utf-8']);
  * `'utf8'` encoding counts too. A Buffer's length is its byte length, so the result of a Buffer factory such as
  * `Buffer.from` is left out.
  */
-export const nodeByteLength: LzMutator<'LzNodeByteLength'> = {
-  name: 'LzNodeByteLength',
-  sample: 'export const size = Buffer.byteLength(text);\n',
-  *mutate(path, t) {
-    if (!path.isCallExpression() || bufferMethod(path) !== 'byteLength') {
-      return;
-    }
+export const muirProteusNodeByteLength: MuirMoiraNodeTestMutator<'MuirProteusNodeByteLength'> =
+  {
+    name: 'MuirProteusNodeByteLength',
+    sample: 'export const size = Buffer.byteLength(text);\n',
+    *mutate(path, t) {
+      if (!path.isCallExpression() || bufferMethod(path) !== 'byteLength') {
+        return;
+      }
 
-    const [text, encoding] = path.get('arguments');
+      const [text, encoding] = path.get('arguments');
 
-    if (
-      text === undefined ||
-      !text.isExpression() ||
-      (text.isCallExpression() && bufferResults.has(bufferMethod(text))) ||
-      (encoding !== undefined &&
-        !(encoding.isStringLiteral() && utf8.has(encoding.node.value)))
-    ) {
-      return;
-    }
+      if (
+        text === undefined ||
+        !text.isExpression() ||
+        (text.isCallExpression() && bufferResults.has(bufferMethod(text))) ||
+        (encoding !== undefined &&
+          !(encoding.isStringLiteral() && utf8.has(encoding.node.value)))
+      ) {
+        return;
+      }
 
-    yield t.memberExpression(t.cloneNode(text.node), t.identifier('length'));
-  },
-};
+      yield t.memberExpression(t.cloneNode(text.node), t.identifier('length'));
+    },
+  };
 
 /** The method of the global `Buffer` that `call` calls, if any. */
 function bufferMethod(
@@ -55,5 +59,5 @@ function bufferMethod(
     return undefined;
   }
 
-  return lzPropertyName(callee);
+  return muirMoiraNodeTestPropertyName(callee);
 }

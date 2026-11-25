@@ -1,9 +1,9 @@
-import { fieldOf } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { listOption } from './list-option.ts';
-import { hideableCallee } from './statement-call.ts';
+import { muirProteusJsxListOption } from './list-option.ts';
+import { muirProteusJsxHideableCallee } from './statement-call.ts';
 
 const consoleMethods: readonly unknown[] = [
   'assert',
@@ -28,27 +28,27 @@ const consoleMethods: readonly unknown[] = [
 ];
 const defaultMethods: readonly string[] = ['log', 'debug', 'info', 'trace'];
 
-export const consoleIgnorerName = 'lz-console';
+export const muirProteusJsxConsoleIgnorerName = 'muir-proteus-jsx-console';
 
-export const lzConsoleSchema = {
+export const muirProteusJsxConsoleSchema = {
   type: 'object',
   additionalProperties: false,
-  description: `Options of the ${consoleIgnorerName} ignorer.`,
+  description: `Options of the ${muirProteusJsxConsoleIgnorerName} ignorer.`,
   properties: {
     methods: {
       type: 'array',
       items: { enum: consoleMethods },
       description:
-        `The console methods whose call statements ${consoleIgnorerName} hides, unless an argument can act on the ` +
+        `The console methods whose call statements ${muirProteusJsxConsoleIgnorerName} hides, unless an argument can act on the ` +
         'page. Replaces the default list: log, debug, info and trace.',
     },
   },
 };
 
-export function consoleIgnorer(options: object): Ignorer {
-  const callees: readonly unknown[] = listOption(
+export function muirProteusJsxConsoleIgnorer(options: object): Ignorer {
+  const callees: readonly unknown[] = muirProteusJsxListOption(
     options,
-    'lzConsole',
+    'muirProteusJsxConsole',
     'methods',
     defaultMethods,
     isMethod,
@@ -57,15 +57,19 @@ export function consoleIgnorer(options: object): Ignorer {
 
   return {
     shouldIgnore(path) {
-      if (callees.includes(hideableCallee(fieldOf(path, 'node')))) {
-        return `${consoleIgnorerName}: console output; DOM tests do not observe it`;
+      if (
+        callees.includes(
+          muirProteusJsxHideableCallee(muirMoiraMutatorsFieldOf(path, 'node')),
+        )
+      ) {
+        return `${muirProteusJsxConsoleIgnorerName}: console output; DOM tests do not observe it`;
       }
 
       return undefined;
     },
   };
 }
-consoleIgnorer.inject = tokens(commonTokens.options);
+muirProteusJsxConsoleIgnorer.inject = tokens(commonTokens.options);
 
 function isMethod(name: unknown): name is string {
   return consoleMethods.includes(name);

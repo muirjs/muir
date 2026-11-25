@@ -1,6 +1,6 @@
-# `LzJsxElementRole` reads a fixed union of implicit-role tables
+# `MuirProteusJsxElementRole` reads a fixed union of implicit-role tables
 
-`LzJsxElementRole` keeps a `role` attribute that restates a tag's implicit role, and reads those roles from a
+`MuirProteusJsxElementRole` keeps a `role` attribute that restates a tag's implicit role, and reads those roles from a
 table in the package, not from the consumer's installed Playwright. The table is the union of Playwright 1.64.1's
 roles and Testing Library 10.4.0's (aria-query 5.3.0): a tag is in it when any engine gives it that role by tag
 alone. The mutators do not depend on one test runner, so the table serves every engine; a `role` that one engine

@@ -3,7 +3,7 @@ import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 import base from './stryker.base.ts';
 
 // The src/index.ts of an @muirjs/siryn-node-test checkout; that runner is not on npm.
-const { LZ_NODE_TEST_RUNNER: nodeTestRunner } = process.env;
+const { MUIR_SIRYN_NODE_TEST_RUNNER: nodeTestRunner } = process.env;
 
 /**
  * The config that mutates the src of `packages/<name>` with that package's node:test files, run from the workspace root.
@@ -31,9 +31,9 @@ export function packageConfig(
           coverageAnalysis: 'off',
         }
       : {
-          testRunner: 'lz-node-test',
+          testRunner: 'muir-siryn-node-test',
           appendPlugins: [nodeTestRunner],
-          lzNodeTest: {
+          muirSirynNodeTest: {
             testFiles,
             nodeArgs: ['--conditions=@muirjs/source'],
           },

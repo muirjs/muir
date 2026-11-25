@@ -14,11 +14,11 @@ import type { TestContext } from 'node:test';
 
 import { hookUrl, reporterArg } from './runner.fixtures.ts';
 import {
-  envNames,
-  lzParseRecord,
-  lzParseRecordName,
-  type LzRecordName,
-  type ProcessRecord,
+  muirSirynNodeTestEnvNames,
+  muirSirynNodeTestParseRecord,
+  muirSirynNodeTestParseRecordName,
+  type MuirSirynNodeTestRecordName,
+  type MuirSirynNodeTestProcessRecord,
 } from '../src/record.ts';
 
 export function tempDir(t: TestContext): string {
@@ -35,7 +35,7 @@ export function hookedEnv(env: Record<string, string>): NodeJS.ProcessEnv {
   const dropped: string[] = [
     'NODE_OPTIONS',
     'NODE_TEST_CONTEXT',
-    ...Object.values(envNames),
+    ...Object.values(muirSirynNodeTestEnvNames),
   ];
   const base = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !dropped.includes(key)),
@@ -67,23 +67,25 @@ export async function runWithHook(
   return { code: child.exitCode, pid: child.pid };
 }
 
-export function readRecords(outDir: string): Record<string, ProcessRecord> {
+export function readRecords(
+  outDir: string,
+): Record<string, MuirSirynNodeTestProcessRecord> {
   return Object.fromEntries(
     readdirSync(outDir).map((name) => [
       name,
-      lzParseRecord(readFileSync(join(outDir, name), 'utf8')),
+      muirSirynNodeTestParseRecord(readFileSync(join(outDir, name), 'utf8')),
     ]),
   );
 }
 
 /** The record that the process `pid` wrote from `thread`, by its name. */
 export function recordOf(
-  records: Record<string, ProcessRecord>,
+  records: Record<string, MuirSirynNodeTestProcessRecord>,
   pid: number,
-  thread: LzRecordName['thread'],
-): ProcessRecord | undefined {
+  thread: MuirSirynNodeTestRecordName['thread'],
+): MuirSirynNodeTestProcessRecord | undefined {
   return Object.entries(records).find(([name]) => {
-    const parsed = lzParseRecordName(name);
+    const parsed = muirSirynNodeTestParseRecordName(name);
 
     return parsed?.pid === pid && parsed.thread === thread;
   })?.[1];
@@ -109,8 +111,8 @@ export async function runTestFile(
   writeFileSync(testFile, source);
 
   const { code, pid } = await runWithHook([...args, testFile], {
-    [envNames.out]: outDir,
-    [envNames.file]: testFile,
+    [muirSirynNodeTestEnvNames.out]: outDir,
+    [muirSirynNodeTestEnvNames.file]: testFile,
     ...env,
   });
   const records = readRecords(outDir);

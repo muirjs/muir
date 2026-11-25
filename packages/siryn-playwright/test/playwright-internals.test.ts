@@ -3,17 +3,17 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import {
-  instrumentationOf,
-  isSerialSuite,
-  playwrightVersion,
-  probeInternals,
-  raiseRetries,
-  runningSlotOf,
-  supportsPlaywright,
-  testRunnerMethods,
-  workerEntry,
+  muirSirynPlaywrightInstrumentationOf,
+  muirSirynPlaywrightIsSerialSuite,
+  muirSirynPlaywrightVersion,
+  muirSirynPlaywrightProbeInternals,
+  muirSirynPlaywrightRaiseRetries,
+  muirSirynPlaywrightRunningSlotOf,
+  muirSirynPlaywrightSupportsPlaywright,
+  muirSirynPlaywrightTestRunnerMethods,
+  muirSirynPlaywrightWorkerEntry,
 } from '../src/playwright-internals.ts';
-import { moveWebServers } from '../src/server-ports.ts';
+import { muirSirynPlaywrightMoveWebServers } from '../src/server-ports.ts';
 
 const src = new URL('../src/', import.meta.url);
 const noServer = {
@@ -25,7 +25,7 @@ const noServer = {
 };
 
 function fakeModules(
-  methods: readonly string[] = testRunnerMethods,
+  methods: readonly string[] = muirSirynPlaywrightTestRunnerMethods,
   answers: Readonly<Record<string, unknown>> = {},
   keepsOverrides = true,
 ) {
@@ -61,12 +61,12 @@ function fakeModules(
 }
 
 test('the runner supports Playwright 1.63 and later 1.x releases', () => {
-  assert.equal(supportsPlaywright('1.62.9'), false);
-  assert.equal(supportsPlaywright('1.63.0'), true);
-  assert.equal(supportsPlaywright('1.99.0'), true);
-  assert.equal(supportsPlaywright('2.0.0'), false);
-  assert.equal(supportsPlaywright('0.70.0'), false);
-  assert.equal(supportsPlaywright('1'), false);
+  assert.equal(muirSirynPlaywrightSupportsPlaywright('1.62.9'), false);
+  assert.equal(muirSirynPlaywrightSupportsPlaywright('1.63.0'), true);
+  assert.equal(muirSirynPlaywrightSupportsPlaywright('1.99.0'), true);
+  assert.equal(muirSirynPlaywrightSupportsPlaywright('2.0.0'), false);
+  assert.equal(muirSirynPlaywrightSupportsPlaywright('0.70.0'), false);
+  assert.equal(muirSirynPlaywrightSupportsPlaywright('1'), false);
 });
 
 test("Playwright's version is read from its package.json, and one that is no string fails loudly", () => {
@@ -79,11 +79,11 @@ test("Playwright's version is read from its package.json, and one that is no str
     };
 
   assert.equal(
-    playwrightVersion(requireManifest({ version: '1.64.1' })),
+    muirSirynPlaywrightVersion(requireManifest({ version: '1.64.1' })),
     '1.64.1',
   );
   [{ version: 1 }, {}, null].forEach((manifest) => {
-    assert.throws(() => playwrightVersion(requireManifest(manifest)), {
+    assert.throws(() => muirSirynPlaywrightVersion(requireManifest(manifest)), {
       message:
         'Playwright changed the internals this runner calls (playwright/package.json with a string version).',
     });
@@ -92,19 +92,19 @@ test("Playwright's version is read from its package.json, and one that is no str
 
 test("the worker entry is Playwright's workerProcessEntry.js, by either path separator", () => {
   assert.equal(
-    workerEntry.test(
+    muirSirynPlaywrightWorkerEntry.test(
       '/app/node_modules/playwright/lib/worker/workerProcessEntry.js',
     ),
     true,
   );
   assert.equal(
-    workerEntry.test(
+    muirSirynPlaywrightWorkerEntry.test(
       'C:\\app\\node_modules\\playwright\\lib\\worker\\workerProcessEntry.js',
     ),
     true,
   );
   assert.equal(
-    workerEntry.test(
+    muirSirynPlaywrightWorkerEntry.test(
       '/app/node_modules/playwright/lib/worker/workerProcessEntry.js.map',
     ),
     false,
@@ -112,7 +112,7 @@ test("the worker entry is Playwright's workerProcessEntry.js, by either path sep
 });
 
 test('the probe accepts the internals the runner calls', () => {
-  const playwright = probeInternals('1.63.0', fakeModules());
+  const playwright = muirSirynPlaywrightProbeInternals('1.63.0', fakeModules());
 
   assert.equal(playwright.version, '1.63.0');
   assert.equal(typeof playwright.createTestRunner, 'function');
@@ -120,7 +120,9 @@ test('the probe accepts the internals the runner calls', () => {
 
 test('the probe names every internal when one is missing', () => {
   const missingMethod = fakeModules(
-    testRunnerMethods.filter((method) => method !== 'stopTests'),
+    muirSirynPlaywrightTestRunnerMethods.filter(
+      (method) => method !== 'stopTests',
+    ),
   );
   const missingLoader = { ...fakeModules(), common: {} };
   const missingUtil = {
@@ -148,7 +150,7 @@ test('the probe names every internal when one is missing', () => {
     missingProjectUtil('filterProjects'),
     missingProjectUtil('buildProjectsClosure'),
   ].forEach((modules) => {
-    assert.throws(() => probeInternals('1.99.0', modules), {
+    assert.throws(() => muirSirynPlaywrightProbeInternals('1.99.0', modules), {
       message:
         /^Playwright 1\.99\.0 changed the internals this runner calls \(playwright\/lib\/runner TestRunner with initialize, .*stopTests, and projectUtils filterProjects and buildProjectsClosure; playwright\/lib\/common configLoader; playwright-core coreBundle isURLAvailable\)\.$/,
     });
@@ -165,7 +167,7 @@ test('the probe names every internal when a module or a step on the path to an i
     { ...fakeModules(), coreBundle: {} },
     { ...fakeModules(), runner: { testRunner: { TestRunner: arrowRunner } } },
   ].forEach((modules) => {
-    assert.throws(() => probeInternals('1.99.0', modules), {
+    assert.throws(() => muirSirynPlaywrightProbeInternals('1.99.0', modules), {
       message:
         /^Playwright 1\.99\.0 changed the internals this runner calls \(playwright\/lib\/runner TestRunner with initialize, /,
     });
@@ -189,11 +191,17 @@ test("the probe's URL check passes the URL and the HTTPS flag on, and counts onl
   const url = new URL('http://localhost:3000');
 
   assert.equal(
-    await probeInternals('1.63.0', answering(true)).isURLAvailable(url, true),
+    await muirSirynPlaywrightProbeInternals(
+      '1.63.0',
+      answering(true),
+    ).isURLAvailable(url, true),
     true,
   );
   assert.equal(
-    await probeInternals('1.63.0', answering('yes')).isURLAvailable(url, false),
+    await muirSirynPlaywrightProbeInternals(
+      '1.63.0',
+      answering('yes'),
+    ).isURLAvailable(url, false),
     false,
   );
   assert.deepEqual(calls, [
@@ -203,9 +211,9 @@ test("the probe's URL check passes the URL and the HTTPS flag on, and counts onl
 });
 
 function testRunnerAnswering(answers: Readonly<Record<string, unknown>>) {
-  return probeInternals(
+  return muirSirynPlaywrightProbeInternals(
     '1.99.0',
-    fakeModules(testRunnerMethods, answers),
+    fakeModules(muirSirynPlaywrightTestRunnerMethods, answers),
   ).createTestRunner(undefined, {});
 }
 
@@ -425,11 +433,11 @@ function testRunnerSelecting(
   projectUtils: Readonly<Record<string, (...args: unknown[]) => unknown>>,
   projects: readonly unknown[],
 ) {
-  const modules = fakeModules(testRunnerMethods, {
+  const modules = fakeModules(muirSirynPlaywrightTestRunnerMethods, {
     loadConfig: { projects, webServers: [] },
   });
 
-  return probeInternals('1.99.0', {
+  return muirSirynPlaywrightProbeInternals('1.99.0', {
     ...modules,
     runner: { ...modules.runner, projectUtils },
   }).createTestRunner(undefined, {});
@@ -697,7 +705,7 @@ test('the test runner moves the webServer plugins the last load returned, by the
   });
   await runner.loadConfig();
 
-  moveWebServers(
+  muirSirynPlaywrightMoveWebServers(
     runner,
     [
       { index: 0, from: 3000, to: 50_010 },
@@ -737,7 +745,12 @@ test('a move with no webServer plugin at its index means Playwright changed', as
   await runner.loadConfig();
 
   assert.throws(
-    () => moveWebServers(runner, [{ index: 1, from: 1, to: 2 }], undefined),
+    () =>
+      muirSirynPlaywrightMoveWebServers(
+        runner,
+        [{ index: 1, from: 1, to: 2 }],
+        undefined,
+      ),
     { message: webServerPluginsChanged },
   );
 });
@@ -751,7 +764,12 @@ test('a move before the first load, or after a load without plugins, means Playw
 
   [unloaded, withoutPlugins].forEach((runner) => {
     assert.throws(
-      () => moveWebServers(runner, [{ index: 0, from: 1, to: 2 }], undefined),
+      () =>
+        muirSirynPlaywrightMoveWebServers(
+          runner,
+          [{ index: 0, from: 1, to: 2 }],
+          undefined,
+        ),
       { message: webServerPluginsChanged },
     );
   });
@@ -759,15 +777,15 @@ test('a move before the first load, or after a load without plugins, means Playw
 
 test("the test runner moves every project to the baseURL through the CLI overrides Playwright merges over each project's use", async () => {
   const overrides = { workers: 1, use: { trace: 'off' } };
-  const runner = await probeInternals(
+  const runner = await muirSirynPlaywrightProbeInternals(
     '1.99.0',
-    fakeModules(testRunnerMethods, {
+    fakeModules(muirSirynPlaywrightTestRunnerMethods, {
       loadConfig: { projects: [], webServers: [], plugins: [] },
     }),
   ).createTestRunner(undefined, overrides);
   await runner.loadConfig();
 
-  moveWebServers(runner, [], 'http://localhost:50030/');
+  muirSirynPlaywrightMoveWebServers(runner, [], 'http://localhost:50030/');
 
   assert.deepEqual(overrides, {
     workers: 1,
@@ -777,33 +795,37 @@ test("the test runner moves every project to the baseURL through the CLI overrid
 
 test('a move without a baseURL leaves the CLI overrides as they were', async () => {
   const overrides = { workers: 1, use: { trace: 'off' } };
-  const runner = await probeInternals(
+  const runner = await muirSirynPlaywrightProbeInternals(
     '1.99.0',
-    fakeModules(testRunnerMethods, {
+    fakeModules(muirSirynPlaywrightTestRunnerMethods, {
       loadConfig: { projects: [], webServers: [], plugins: [] },
     }),
   ).createTestRunner(undefined, overrides);
   await runner.loadConfig();
 
-  moveWebServers(runner, [], undefined);
+  muirSirynPlaywrightMoveWebServers(runner, [], undefined);
 
   assert.deepEqual(overrides, { workers: 1, use: { trace: 'off' } });
 });
 
 test('a TestRunner that keeps no CLI overrides means Playwright changed', async () => {
-  const runner = await probeInternals(
+  const runner = await muirSirynPlaywrightProbeInternals(
     '1.99.0',
     fakeModules(
-      testRunnerMethods,
+      muirSirynPlaywrightTestRunnerMethods,
       { loadConfig: { projects: [], webServers: [], plugins: [] } },
       false,
     ),
   ).createTestRunner(undefined, {});
   await runner.loadConfig();
 
-  assert.throws(() => moveWebServers(runner, [], 'http://localhost:50031/'), {
-    message: webServerPluginsChanged,
-  });
+  assert.throws(
+    () =>
+      muirSirynPlaywrightMoveWebServers(runner, [], 'http://localhost:50031/'),
+    {
+      message: webServerPluginsChanged,
+    },
+  );
 });
 
 test('the test runner calls each method on the instance Playwright constructed, with the arguments it was given', async () => {
@@ -817,7 +839,7 @@ test('the test runner calls each method on the instance Playwright constructed, 
     }
   }
 
-  testRunnerMethods.forEach((method) => {
+  muirSirynPlaywrightTestRunnerMethods.forEach((method) => {
     Object.assign(TestRunner.prototype, {
       async [method](this: unknown, ...args: unknown[]) {
         seen.push([method, this, ...args]);
@@ -831,7 +853,7 @@ test('the test runner calls each method on the instance Playwright constructed, 
 
   const reporter = {};
   const modules = fakeModules();
-  const runner = await probeInternals('1.99.0', {
+  const runner = await muirSirynPlaywrightProbeInternals('1.99.0', {
     ...modules,
     common: { configLoader: { resolveConfigLocation: () => 'location' } },
     runner: { ...modules.runner, testRunner: { TestRunner } },
@@ -861,10 +883,10 @@ test('the test runner calls each method on the instance Playwright constructed, 
 
 test('the test runner calls the methods the probe read, not ones put on the prototype later', async () => {
   const modules = fakeModules();
-  const playwright = probeInternals('1.99.0', modules);
+  const playwright = muirSirynPlaywrightProbeInternals('1.99.0', modules);
   const { TestRunner } = modules.runner.testRunner;
   const later: string[] = [];
-  testRunnerMethods.forEach((method) => {
+  muirSirynPlaywrightTestRunnerMethods.forEach((method) => {
     Object.assign(TestRunner.prototype, {
       [method]: async () => {
         later.push(method);
@@ -890,13 +912,13 @@ test('the instrumentation is the one playwright-core exports, and its absence fa
   };
   const listener = {};
 
-  instrumentationOf(core, '1.99.0').addListener(listener);
+  muirSirynPlaywrightInstrumentationOf(core, '1.99.0').addListener(listener);
 
   assert.equal(listeners.length, 1);
   assert.equal(listeners[0], listener);
 
   [undefined, {}, { _instrumentation: {} }].forEach((core) => {
-    assert.throws(() => instrumentationOf(core, '1.99.0'), {
+    assert.throws(() => muirSirynPlaywrightInstrumentationOf(core, '1.99.0'), {
       message:
         /^Playwright 1\.99\.0 changed the internals this runner calls \(playwright-core _instrumentation\.addListener\)\.$/,
     });
@@ -917,7 +939,7 @@ test("the retries of each test that has none are raised to its project's", () =>
   const configured = { retries: 3 };
   const other = { retries: 0 };
 
-  raiseRetries(
+  muirSirynPlaywrightRaiseRetries(
     rootSuite({ chromium: [plain, configured], firefox: [other] }),
     new Map([
       ['chromium', 2],
@@ -939,17 +961,26 @@ test('a root suite without project suites titled by a config project, or without
     rootSuite({ a: [{}] }),
     { suites: [{ title: 'a', allTests: () => 'tests' }] },
   ].forEach((suite) => {
-    assert.throws(() => raiseRetries(suite, new Map([['a', 1]])), {
-      message: /TestCase\.retries/,
-    });
+    assert.throws(
+      () => muirSirynPlaywrightRaiseRetries(suite, new Map([['a', 1]])),
+      {
+        message: /TestCase\.retries/,
+      },
+    );
   });
 });
 
 test('the describe mode is read from the suite, and its absence fails loudly', () => {
-  assert.equal(isSerialSuite({ _parallelMode: 'serial' }, '1.99.0'), true);
-  assert.equal(isSerialSuite({ _parallelMode: 'none' }, '1.99.0'), false);
+  assert.equal(
+    muirSirynPlaywrightIsSerialSuite({ _parallelMode: 'serial' }, '1.99.0'),
+    true,
+  );
+  assert.equal(
+    muirSirynPlaywrightIsSerialSuite({ _parallelMode: 'none' }, '1.99.0'),
+    false,
+  );
   [{}, undefined].forEach((suite) => {
-    assert.throws(() => isSerialSuite(suite, '1.99.0'), {
+    assert.throws(() => muirSirynPlaywrightIsSerialSuite(suite, '1.99.0'), {
       message:
         'Playwright 1.99.0 changed the internals this runner calls (Suite._parallelMode, which keeps describe.serial groups together).',
     });
@@ -961,12 +992,15 @@ test("the running slot is read from the TestInfo's timeout manager", () => {
     _timeoutManager: { _running: { runnable } },
   });
 
-  assert.deepEqual(runningSlotOf(info({ type: 'beforeAll' }), '1.64.1'), {
-    type: 'beforeAll',
-    inFixture: false,
-  });
   assert.deepEqual(
-    runningSlotOf(
+    muirSirynPlaywrightRunningSlotOf(info({ type: 'beforeAll' }), '1.64.1'),
+    {
+      type: 'beforeAll',
+      inFixture: false,
+    },
+  );
+  assert.deepEqual(
+    muirSirynPlaywrightRunningSlotOf(
       info({ type: 'test', fixture: { title: 'server' } }),
       '1.64.1',
     ),
@@ -988,7 +1022,7 @@ test("every runnable type of Playwright's timeout manager is a slot", () => {
     'fixme',
   ].forEach((type) => {
     assert.deepEqual(
-      runningSlotOf(
+      muirSirynPlaywrightRunningSlotOf(
         { _timeoutManager: { _running: { runnable: { type } } } },
         '1.64.1',
       ),
@@ -1007,7 +1041,7 @@ test('no TestInfo, or a timeout manager that runs nothing, has no running slot',
     { _timeoutManager: { _running: { runnable: null } } },
   ].forEach((testInfo) => {
     assert.equal(
-      runningSlotOf(testInfo, '1.64.1'),
+      muirSirynPlaywrightRunningSlotOf(testInfo, '1.64.1'),
       undefined,
       JSON.stringify(testInfo),
     );
@@ -1024,7 +1058,7 @@ test('a TestInfo without an object timeout manager, or running an unknown slot t
     { _timeoutManager: { _running: { runnable: { type: 'beforeSome' } } } },
   ].forEach((testInfo) => {
     assert.throws(
-      () => runningSlotOf(testInfo, '1.99.0'),
+      () => muirSirynPlaywrightRunningSlotOf(testInfo, '1.99.0'),
       {
         message:
           /^Playwright 1\.99\.0 changed the internals this runner calls \(TestInfo\._timeoutManager, /,

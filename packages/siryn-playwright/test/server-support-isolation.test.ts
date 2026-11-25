@@ -9,10 +9,10 @@ import {
 } from '@stryker-mutator/api/test-runner';
 
 import {
-  readServerMutantsFile,
-  writeServerMutantsFile,
+  muirSirynPlaywrightReadServerMutantsFile,
+  muirSirynPlaywrightWriteServerMutantsFile,
 } from '../src/server-isolation.ts';
-import { mutantRunBudget } from '../src/timeouts.ts';
+import { muirSirynPlaywrightMutantRunBudget } from '../src/timeouts.ts';
 import {
   dryRunOptions,
   mutantRunOptions,
@@ -37,14 +37,14 @@ test('the dry run leaves the mutants the server ran in the sandbox, for the proc
 
   await shell.dryRun(dryRunOptions());
 
-  assert.deepEqual(readServerMutantsFile(fake.sandbox), {
+  assert.deepEqual(muirSirynPlaywrightReadServerMutantsFile(fake.sandbox), {
     mutants: new Set(['2']),
   });
 });
 
 test('a process that did not run the dry run isolates by the server mutants the dry run left in the sandbox', async (t) => {
   const fake = serverFake(t);
-  writeServerMutantsFile(fake.sandbox, ['2']);
+  muirSirynPlaywrightWriteServerMutantsFile(fake.sandbox, ['2']);
   const { shell } = fake.runner();
   await shell.init();
 
@@ -68,7 +68,7 @@ test('without the dry run server mutants in the sandbox, every mutant run isolat
     lines
       .filter(([level]) => level === 'warn')
       .map(([, message]) => [
-        /\.lz-playwright-server-mutants/.test(message),
+        /\.muir-playwright-server-mutants/.test(message),
         message.endsWith(
           'so it restarts the webServer around every mutant run.',
         ),
@@ -126,7 +126,7 @@ test('the process that ran the dry run isolates by what it kept, even when the s
   const { shell, lines } = fake.runner();
   await shell.init();
   await shell.dryRun(dryRunOptions());
-  rmSync(path.join(fake.sandbox, '.lz-playwright-server-mutants'));
+  rmSync(path.join(fake.sandbox, '.muir-playwright-server-mutants'));
 
   await shell.mutantRun(runtimeRun('1'));
   const setupsBeforeServerRun = fake.setups.length;
@@ -148,7 +148,7 @@ test('isolate false also leaves the mutants the server ran in the sandbox, for t
 
   await shell.dryRun(dryRunOptions());
 
-  assert.deepEqual(readServerMutantsFile(fake.sandbox), {
+  assert.deepEqual(muirSirynPlaywrightReadServerMutantsFile(fake.sandbox), {
     mutants: new Set(['2']),
   });
 });
@@ -209,7 +209,7 @@ test("the dry run's restart leaves the tests' times and coverage as Playwright a
 test("the runner's deadline counts from the start of the mutant run, so a slow webServer restart leaves the tests less time", async (t) => {
   const timeout = 8_000;
   const restartMs = 600;
-  const { deadlineMs } = mutantRunBudget(timeout, {
+  const { deadlineMs } = muirSirynPlaywrightMutantRunBudget(timeout, {
     testTimeoutCap: Infinity,
     expectTimeout: 5_000,
   });
@@ -281,7 +281,7 @@ test("webServer.mutate: 'auto' whose dry run reached no server mutant turns serv
     [
       [
         'info',
-        "Server-side mutants stay NoCoverage: with lzPlaywright.webServer.mutate: 'auto', the dry run reached no mutant " +
+        "Server-side mutants stay NoCoverage: with muirSirynPlaywright.webServer.mutate: 'auto', the dry run reached no mutant " +
           'in the code the Playwright webServer runs, so server support stays off.',
       ],
     ],
@@ -295,7 +295,7 @@ test("with webServer.mutate: 'auto', the dry run process whose init turned serve
 
   await shell.dryRun(dryRunOptions());
 
-  assert.deepEqual(readServerMutantsFile(fake.sandbox), {
+  assert.deepEqual(muirSirynPlaywrightReadServerMutantsFile(fake.sandbox), {
     mutants: new Set(),
   });
 });
@@ -307,14 +307,14 @@ test("with webServer.mutate: 'auto' and isolate false, the dry run process leave
 
   await shell.dryRun(dryRunOptions());
 
-  assert.deepEqual(readServerMutantsFile(fake.sandbox), {
+  assert.deepEqual(muirSirynPlaywrightReadServerMutantsFile(fake.sandbox), {
     mutants: new Set(['2']),
   });
 });
 
 test("with webServer.mutate: 'auto', a process whose init turned server support off reports each mutant as an error, without a run, when the dry run turned it on", async (t) => {
   const fake = serverFake(t, { hooked: false });
-  writeServerMutantsFile(fake.sandbox, ['2']);
+  muirSirynPlaywrightWriteServerMutantsFile(fake.sandbox, ['2']);
   const { shell } = fake.runner({ mutate: 'auto' });
   await shell.init();
 
@@ -323,8 +323,8 @@ test("with webServer.mutate: 'auto', a process whose init turned server support 
   assert.deepEqual(result, {
     status: MutantRunStatus.Error,
     errorMessage:
-      "lzPlaywright.webServer.mutate is 'auto' and the dry run reached server-side mutants, but this process turned " +
-      'server support off at init (see its warning), so it cannot run them. Set lzPlaywright.webServer.mutate: true ' +
+      "muirSirynPlaywright.webServer.mutate is 'auto' and the dry run reached server-side mutants, but this process turned " +
+      'server support off at init (see its warning), so it cannot run them. Set muirSirynPlaywright.webServer.mutate: true ' +
       'to see the cause as an error.',
   });
   assert.equal(fake.runs.length, 0);
@@ -332,7 +332,7 @@ test("with webServer.mutate: 'auto', a process whose init turned server support 
 
 test("with webServer.mutate: 'auto', a process whose init turned server support off runs mutants when the dry run reached no server mutant", async (t) => {
   const fake = serverFake(t, { hooked: false });
-  writeServerMutantsFile(fake.sandbox, []);
+  muirSirynPlaywrightWriteServerMutantsFile(fake.sandbox, []);
   const { shell } = fake.runner({ mutate: 'auto' });
   await shell.init();
 
@@ -346,7 +346,7 @@ test("with webServer.mutate: 'auto', the dry run process follows what its own dr
   const { shell } = fake.runner({ mutate: 'auto' });
   await shell.init();
   await shell.dryRun(dryRunOptions());
-  writeServerMutantsFile(fake.sandbox, []);
+  muirSirynPlaywrightWriteServerMutantsFile(fake.sandbox, []);
 
   await shell.mutantRun(runtimeRun('2'));
 
@@ -355,7 +355,7 @@ test("with webServer.mutate: 'auto', the dry run process follows what its own dr
 
 test("with webServer.mutate: 'auto', a process that did not run the dry run follows its on decision and isolates by its server mutants", async (t) => {
   const fake = serverFake(t);
-  writeServerMutantsFile(fake.sandbox, ['2']);
+  muirSirynPlaywrightWriteServerMutantsFile(fake.sandbox, ['2']);
   const { shell } = fake.runner({ mutate: 'auto' });
   await shell.init();
 
@@ -377,7 +377,7 @@ test("with webServer.mutate: 'auto', a process that finds no decision in the san
   assert.equal(fake.setups.length, 3);
   assert.deepEqual(
     warnings(lines).map((message) =>
-      message.includes('.lz-playwright-server-mutants'),
+      message.includes('.muir-playwright-server-mutants'),
     ),
     [true],
   );
@@ -385,7 +385,7 @@ test("with webServer.mutate: 'auto', a process that finds no decision in the san
 
 test("with webServer.mutate: 'auto', a process that did not run the dry run follows its off decision, even with isolate false", async (t) => {
   const fake = serverFake(t);
-  writeServerMutantsFile(fake.sandbox, []);
+  muirSirynPlaywrightWriteServerMutantsFile(fake.sandbox, []);
   const { shell } = fake.runner({ mutate: 'auto', isolate: false });
   await shell.init();
 
@@ -396,7 +396,7 @@ test("with webServer.mutate: 'auto', a process that did not run the dry run foll
 
 test("with webServer.mutate: 'auto', a process that follows the dry run's off decision tells the webServer no active mutant", async (t) => {
   const fake = serverFake(t);
-  writeServerMutantsFile(fake.sandbox, []);
+  muirSirynPlaywrightWriteServerMutantsFile(fake.sandbox, []);
   const { shell } = fake.runner({ mutate: 'auto' });
   await shell.init();
 
@@ -481,7 +481,7 @@ test('webServer.mutate: false never restarts the webServer to isolate a run', as
     runTests: passAllWithDryRunServerMutants('2'),
   });
   const { shell } = fake.runner({
-    lzPlaywright: { webServer: { mutate: false } },
+    muirSirynPlaywright: { webServer: { mutate: false } },
   });
   await shell.init();
   await shell.dryRun(dryRunOptions());
@@ -499,7 +499,7 @@ test('webServer.mutate: false reads no server mutants, so it warns about none', 
   inSandbox(t);
   const fake = fakePlaywright(t, { webServers: [webServer] });
   const { shell, lines } = fake.runner({
-    lzPlaywright: { webServer: { mutate: false } },
+    muirSirynPlaywright: { webServer: { mutate: false } },
   });
   await shell.init();
 
@@ -518,7 +518,7 @@ test('webServer.mutate: false leaves no server mutants in the sandbox', async (t
     runTests: passAllWithDryRunServerMutants('2'),
   });
   const { shell } = fake.runner({
-    lzPlaywright: { webServer: { mutate: false } },
+    muirSirynPlaywright: { webServer: { mutate: false } },
   });
   await shell.init();
 

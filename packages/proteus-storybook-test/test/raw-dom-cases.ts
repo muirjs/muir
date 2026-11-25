@@ -1,6 +1,6 @@
 import { type Case, inPlay } from './support/case.ts';
 
-const interaction = 'LzStorybookInteraction';
+const interaction = 'MuirProteusStorybookTestInteraction';
 
 const rawDomCalls: readonly string[] = [
   'blur()',

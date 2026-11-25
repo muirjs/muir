@@ -24,13 +24,13 @@ import type {
 } from '@stryker-mutator/api/report';
 import type { TestResult } from '@stryker-mutator/api/test-runner';
 
-import { lzIsRecord, lzParseReport } from '../report.ts';
-import { lzDecidingFields, type LzDecidingFields } from './result.ts';
+import { muirIsRecord, muirParseReport } from '../report.ts';
+import { muirDecidingFields, type MuirDecidingFields } from './result.ts';
 
 /** The name the driver adds to Stryker's `--reporters`. */
-export const lzCheckpointReporterName = 'lz-checkpoint';
+export const muirCheckpointReporterName = 'muir-checkpoint';
 
-export interface LzCheckpointDeps {
+export interface MuirCheckpointDeps {
   /** The folder Stryker runs in, which report file names are relative to. */
   readonly cwd: string;
   readonly now: () => number;
@@ -38,7 +38,7 @@ export interface LzCheckpointDeps {
   readonly readSource: (file: string) => string | undefined;
 }
 
-const defaultDeps: LzCheckpointDeps = {
+const defaultDeps: MuirCheckpointDeps = {
   cwd: process.cwd(),
   now: () => Date.now(),
   readSource: (file) => {
@@ -54,10 +54,10 @@ const defaultDeps: LzCheckpointDeps = {
  * Keeps the mutants tested so far in Stryker's `incrementalFile`, so that a run ended before its report reuses them
  * when the next run reads that file with `--incremental`. Stryker overwrites the file with its full report at the end.
  */
-export class LzCheckpointReporter implements Reporter {
+export class MuirCheckpointReporter implements Reporter {
   static inject = tokens(commonTokens.options);
   readonly #file: string;
-  readonly #deps: LzCheckpointDeps;
+  readonly #deps: MuirCheckpointDeps;
   readonly #intervalMs: number;
   readonly #mutants: Readonly<MutantResult>[] = [];
   #tests: readonly TestResult[] = [];
@@ -65,8 +65,8 @@ export class LzCheckpointReporter implements Reporter {
 
   constructor(
     { incrementalFile }: Pick<StrykerOptions, 'incrementalFile'>,
-    deps: LzCheckpointDeps = defaultDeps,
-    // Stryker disable next-line LzJsNumericLiteral: a tuning value, not a contract a test should pin
+    deps: MuirCheckpointDeps = defaultDeps,
+    // Stryker disable next-line MuirProteusJsNumericLiteral: a tuning value, not a contract a test should pin
     intervalMs = 5_000,
   ) {
     this.#file = incrementalFile;
@@ -97,7 +97,7 @@ export class LzCheckpointReporter implements Reporter {
     writeFileSync(
       temporary,
       JSON.stringify(
-        lzCheckpointReport(this.#mutants, this.#tests, cwd, readSource),
+        muirCheckpointReport(this.#mutants, this.#tests, cwd, readSource),
       ),
     );
     renameSync(temporary, this.#file);
@@ -107,13 +107,13 @@ export class LzCheckpointReporter implements Reporter {
 export const strykerPlugins = [
   declareClassPlugin(
     PluginKind.Reporter,
-    lzCheckpointReporterName,
-    LzCheckpointReporter,
+    muirCheckpointReporterName,
+    MuirCheckpointReporter,
   ),
 ];
 
 /** A mutation report of `mutants` and the dry run's `tests`, in the form Stryker reads with `--incremental`. */
-export function lzCheckpointReport(
+export function muirCheckpointReport(
   mutants: readonly Readonly<MutantResult>[],
   tests: readonly TestResult[],
   cwd: string,
@@ -161,25 +161,25 @@ export function lzCheckpointReport(
 }
 
 /** What decides a side's mutant results beyond the code Stryker diffs itself, so a run that differs starts afresh. */
-export interface LzCheckpointKeyInputs extends LzDecidingFields {
+export interface MuirCheckpointKeyInputs extends MuirDecidingFields {
   readonly mutate: readonly string[];
   readonly strykerConfig: string;
 }
 
 /** Of the named fields only, so a header passed whole adds none of its others, such as its start time. */
-export function lzCheckpointKey(inputs: LzCheckpointKeyInputs): string {
+export function muirCheckpointKey(inputs: MuirCheckpointKeyInputs): string {
   return JSON.stringify([
-    ...lzDecidingFields.map((field) => inputs[field]),
+    ...muirDecidingFields.map((field) => inputs[field]),
     inputs.mutate,
     inputs.strykerConfig,
   ]);
 }
 
-export function lzInstalledVersions(hiddenLockfile: string): string[] {
+export function muirInstalledVersions(hiddenLockfile: string): string[] {
   const lockfile: unknown = JSON.parse(hiddenLockfile);
-  const packages = lzIsRecord(lockfile) ? lockfile['packages'] : undefined;
+  const packages = muirIsRecord(lockfile) ? lockfile['packages'] : undefined;
 
-  if (!lzIsRecord(packages)) {
+  if (!muirIsRecord(packages)) {
     throw new Error(
       'npm\'s node_modules/.package-lock.json lists no "packages".',
     );
@@ -188,13 +188,13 @@ export function lzInstalledVersions(hiddenLockfile: string): string[] {
   return Object.entries(packages)
     .map(
       ([path, entry]) =>
-        `${path}@${lzIsRecord(entry) && typeof entry['version'] === 'string' ? entry['version'] : ''}`,
+        `${path}@${muirIsRecord(entry) && typeof entry['version'] === 'string' ? entry['version'] : ''}`,
     )
     .sort();
 }
 
 /** The arguments that have Stryker resume from `file`, keep it up to date through this module, and overwrite it at the end. */
-export function lzCheckpointArgs(file: string): string[] {
+export function muirCheckpointArgs(file: string): string[] {
   return [
     '--incremental',
     '--incrementalFile',
@@ -208,7 +208,7 @@ export function lzCheckpointArgs(file: string): string[] {
  * Keeps the checkpoint at `file` only when it was written under `key`, and returns how many mutants it holds. Stryker
  * still retests those whose code or tests changed.
  */
-export function lzStartCheckpoint(file: string, key: string): number {
+export function muirStartCheckpoint(file: string, key: string): number {
   const keyFile = `${file}.key`;
 
   if (!existsSync(keyFile) || readFileSync(keyFile, 'utf8') !== key) {
@@ -222,19 +222,19 @@ export function lzStartCheckpoint(file: string, key: string): number {
     writeFileSync(keyFile, key);
   }
 
-  return existsSync(file) ? lzCheckpointMutants(file) : 0;
+  return existsSync(file) ? muirCheckpointMutants(file) : 0;
 }
 
 /** After a run that wrote its report, which the side's `mutation.json` now holds, or one that could not resume. */
-export function lzEndCheckpoint(file: string): void {
+export function muirEndCheckpoint(file: string): void {
   [file, `${file}.key`, `${file}.tmp`].forEach((path) => {
     rmSync(path, { force: true });
   });
 }
 
 /** How many mutants the checkpoint at `file` holds. */
-export function lzCheckpointMutants(file: string): number {
-  return [...lzParseReport(readFileSync(file, 'utf8')).values()].reduce(
+export function muirCheckpointMutants(file: string): number {
+  return [...muirParseReport(readFileSync(file, 'utf8')).values()].reduce(
     (count, mutants) => count + mutants.length,
     0,
   );

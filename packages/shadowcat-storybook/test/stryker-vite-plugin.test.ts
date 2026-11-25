@@ -14,8 +14,8 @@ import { type TestContext, describe, it } from 'node:test';
 import { normalizePath, resolveConfig } from 'vite';
 
 import {
-  lzStorybookStrykerPlugin,
-  sandboxConfig,
+  muirShadowcatStorybookStrykerPlugin,
+  muirShadowcatStorybookSandboxConfig,
 } from '../src/stryker-vite-plugin.ts';
 
 const workerVariable = 'STRYKER_MUTATOR_WORKER';
@@ -45,7 +45,7 @@ function linkedWorkspace(t: TestContext): {
   workspace: string;
   installed: string;
 } {
-  const folder = realpathSync(mkdtempSync(join(tmpdir(), 'lz-sandbox-')));
+  const folder = realpathSync(mkdtempSync(join(tmpdir(), 'muir-sandbox-')));
   t.after(() => rmSync(folder, { recursive: true, force: true }));
   const workspace = join(folder, 'sandbox');
   const installed = join(folder, 'project', 'node_modules');
@@ -58,18 +58,24 @@ function linkedWorkspace(t: TestContext): {
 }
 
 function allowList(
-  config: Awaited<ReturnType<typeof sandboxConfig>>,
+  config: Awaited<ReturnType<typeof muirShadowcatStorybookSandboxConfig>>,
 ): string[] {
   return config?.server?.fs?.allow ?? [];
 }
 
-describe('lzStorybookStrykerPlugin', () => {
-  it('is named lz-storybook-stryker', () => {
-    assert.equal(lzStorybookStrykerPlugin().name, 'lz-storybook-stryker');
+describe('muirShadowcatStorybookStrykerPlugin', () => {
+  it('is named muir-shadowcat-storybook-stryker', () => {
+    assert.equal(
+      muirShadowcatStorybookStrykerPlugin().name,
+      'muir-shadowcat-storybook-stryker',
+    );
   });
 
   it('sets the sandbox config as Vite resolves its config', () => {
-    assert.equal(lzStorybookStrykerPlugin().config, sandboxConfig);
+    assert.equal(
+      muirShadowcatStorybookStrykerPlugin().config,
+      muirShadowcatStorybookSandboxConfig,
+    );
   });
 
   it("adds its folders to the user's own allow list in a Stryker worker", async (t) => {
@@ -81,7 +87,7 @@ describe('lzStorybookStrykerPlugin', () => {
         root: workspace,
         configFile: false,
         logLevel: 'silent',
-        plugins: [lzStorybookStrykerPlugin()],
+        plugins: [muirShadowcatStorybookStrykerPlugin()],
         server: { fs: { allow: ['src'] } },
       },
       'serve',
@@ -98,14 +104,19 @@ describe('sandboxConfig', () => {
   it('changes nothing outside a Stryker worker', async (t) => {
     setWorker(t, undefined);
 
-    assert.equal(await sandboxConfig({ root: process.cwd() }), undefined);
+    assert.equal(
+      await muirShadowcatStorybookSandboxConfig({ root: process.cwd() }),
+      undefined,
+    );
   });
 
   it("allows the real folder of the workspace's linked node_modules in a Stryker worker", async (t) => {
     setWorker(t, '1');
     const { workspace, installed } = linkedWorkspace(t);
 
-    const allow = allowList(await sandboxConfig({ root: workspace }));
+    const allow = allowList(
+      await muirShadowcatStorybookSandboxConfig({ root: workspace }),
+    );
 
     assert.ok(allow.includes(installed), `${installed} in ${allow.join(', ')}`);
   });
@@ -114,7 +125,9 @@ describe('sandboxConfig', () => {
     setWorker(t, '1');
     const { workspace } = linkedWorkspace(t);
 
-    const allow = allowList(await sandboxConfig({ root: workspace }));
+    const allow = allowList(
+      await muirShadowcatStorybookSandboxConfig({ root: workspace }),
+    );
 
     assert.ok(allow.includes(workspace), `${workspace} in ${allow.join(', ')}`);
   });
@@ -126,7 +139,9 @@ describe('sandboxConfig', () => {
     mkdirSync(join(packageRoot, 'node_modules'), { recursive: true });
     writeFileSync(join(packageRoot, 'package.json'), '{}');
 
-    const allow = allowList(await sandboxConfig({ root: packageRoot }));
+    const allow = allowList(
+      await muirShadowcatStorybookSandboxConfig({ root: packageRoot }),
+    );
 
     assert.ok(allow.includes(workspace), `${workspace} in ${allow.join(', ')}`);
   });
@@ -136,7 +151,9 @@ describe('sandboxConfig', () => {
     const { workspace, installed } = linkedWorkspace(t);
     mkdirSync(join(workspace, '..', 'node_modules'));
 
-    const allow = allowList(await sandboxConfig({ root: workspace }));
+    const allow = allowList(
+      await muirShadowcatStorybookSandboxConfig({ root: workspace }),
+    );
 
     assert.deepEqual(allow, [workspace, installed]);
   });
@@ -149,7 +166,7 @@ describe('sandboxConfig', () => {
     const { workspace, installed } = linkedWorkspace(t);
     process.chdir(workspace);
 
-    const allow = allowList(await sandboxConfig({}));
+    const allow = allowList(await muirShadowcatStorybookSandboxConfig({}));
 
     assert.deepEqual(allow, [workspace, installed]);
   });
@@ -164,7 +181,9 @@ describe('sandboxConfig', () => {
     writeFileSync(join(workspace, 'packages', 'app', 'package.json'), '{}');
     process.chdir(workspace);
 
-    const allow = allowList(await sandboxConfig({ root: 'packages/app' }));
+    const allow = allowList(
+      await muirShadowcatStorybookSandboxConfig({ root: 'packages/app' }),
+    );
 
     assert.deepEqual(allow, [workspace, installed]);
   });
@@ -175,7 +194,9 @@ describe('sandboxConfig', () => {
     const link = join(dirname(workspace), 'link');
     symlinkSync(workspace, link, 'junction');
 
-    const allow = allowList(await sandboxConfig({ root: link }));
+    const allow = allowList(
+      await muirShadowcatStorybookSandboxConfig({ root: link }),
+    );
 
     assert.deepEqual(allow, [workspace, installed]);
   });
@@ -187,7 +208,10 @@ describe('sandboxConfig', () => {
     symlinkSync(workspace, link, 'junction');
 
     const allow = allowList(
-      await sandboxConfig({ root: link, resolve: { preserveSymlinks: true } }),
+      await muirShadowcatStorybookSandboxConfig({
+        root: link,
+        resolve: { preserveSymlinks: true },
+      }),
     );
 
     assert.deepEqual(allow, [link, installed]);
@@ -200,7 +224,9 @@ describe('sandboxConfig', () => {
     mkdirSync(packageRoot, { recursive: true });
     writeFileSync(join(packageRoot, 'package.json'), '{}');
 
-    const allow = allowList(await sandboxConfig({ root: packageRoot }));
+    const allow = allowList(
+      await muirShadowcatStorybookSandboxConfig({ root: packageRoot }),
+    );
 
     assert.ok(allow.includes(installed), `${installed} in ${allow.join(', ')}`);
   });

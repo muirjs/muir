@@ -16,7 +16,7 @@
     "directory": "packages/proteus-js"
   },
   "bugs": {
-    "url": "https://github.com/LayZeeDK/lz-node-test/issues"
+    "url": "https://github.com/muirjs/muir/issues"
   },
   "type": "module",
   "main": "./dist/index.js",

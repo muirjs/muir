@@ -1,25 +1,32 @@
 import type { NodePath, types } from '@babel/core';
 import {
-  definitionTimeStubs,
-  field,
-  stubMethodOf,
-  type StubMethod,
-  type StubMethodCall,
-  type DefinitionTimeStub,
-  writtenMethodOf,
+  muirMoiraStorybookDefinitionTimeStubs,
+  muirMoiraStorybookField,
+  muirMoiraStorybookStubMethodOf,
+  type MuirMoiraStorybookStubMethod,
+  type MuirMoiraStorybookStubMethodCall,
+  type MuirMoiraStorybookDefinitionTimeStub,
+  muirMoiraStorybookWrittenMethodOf,
 } from '@muirjs/moira-storybook';
 
-import type { BabelTypes, LzStorybookTestMutator } from './mutator.ts';
-import { isInStoryTestCode, perFile, readStoryFileAt } from './story-file.ts';
+import type {
+  MuirProteusStorybookTestBabelTypes,
+  MuirProteusStorybookTestMutator,
+} from './mutator.ts';
+import {
+  muirProteusStorybookTestIsInStoryTestCode,
+  muirProteusStorybookTestPerFile,
+  muirProteusStorybookTestReadStoryFileAt,
+} from './story-file.ts';
 
-export function spyStubMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookSpyStub';
+export function muirProteusStorybookTestSpyStubMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestSpyStub';
 } {
   return {
-    name: 'LzStorybookSpyStub',
+    name: 'MuirProteusStorybookTestSpyStub',
     sample: `import { fn } from 'storybook/test';\nexport const Story = {\n  args: { onSave: fn().mockReturnValue(1) },\n};\n`,
     *mutate(path, t) {
-      readStoryFileAt(path, definitionTimeStubsIn);
+      muirProteusStorybookTestReadStoryFileAt(path, definitionTimeStubsIn);
 
       if (isStubStatement(path)) {
         yield t.emptyStatement();
@@ -37,14 +44,14 @@ export function spyStubMutator(): LzStorybookTestMutator & {
   };
 }
 
-export function spyStubOutcomeMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookSpyStubOutcome';
+export function muirProteusStorybookTestSpyStubOutcomeMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestSpyStubOutcome';
 } {
   return {
-    name: 'LzStorybookSpyStubOutcome',
+    name: 'MuirProteusStorybookTestSpyStubOutcome',
     sample: `import { fn } from 'storybook/test';\nexport const Story = {\n  args: { onSave: fn().mockResolvedValue(1) },\n};\n`,
     *mutate(path, t) {
-      readStoryFileAt(path, definitionTimeStubsIn);
+      muirProteusStorybookTestReadStoryFileAt(path, definitionTimeStubsIn);
 
       const call = stubCallAt(path);
       const flipped = call === undefined ? undefined : outcomeMutant(call, t);
@@ -60,8 +67,8 @@ export function spyStubOutcomeMutator(): LzStorybookTestMutator & {
 interface StubCall {
   readonly node: types.CallExpression | types.OptionalCallExpression;
   readonly callee: types.MemberExpression | types.OptionalMemberExpression;
-  readonly definitionTimeStub: DefinitionTimeStub | undefined;
-  readonly stub: StubMethodCall;
+  readonly definitionTimeStub: MuirMoiraStorybookDefinitionTimeStub | undefined;
+  readonly stub: MuirMoiraStorybookStubMethodCall;
 }
 
 function stubCallAt(path: NodePath): StubCall | undefined {
@@ -94,7 +101,7 @@ function stubCallAt(path: NodePath): StubCall | undefined {
 /** The stub call with a resolved stub made a rejected one or back; `undefined` for a stub that settles no promise. */
 function outcomeMutant(
   { node, callee, stub }: StubCall,
-  t: BabelTypes,
+  t: MuirProteusStorybookTestBabelTypes,
 ): types.Node | undefined {
   const outcome = outcomeOf(stub.method, t);
 
@@ -106,7 +113,10 @@ function outcomeMutant(
   const flipped = t.cloneNode(node);
 
   flippedCallee.property = t.identifier(
-    writtenMethodOf({ method: outcome.method, once: stub.once }),
+    muirMoiraStorybookWrittenMethodOf({
+      method: outcome.method,
+      once: stub.once,
+    }),
   );
   flipped.callee = flippedCallee;
   flipped.arguments = [outcome.argument];
@@ -121,16 +131,20 @@ function isStubStatement(path: NodePath): boolean {
   return (
     node.type === 'ExpressionStatement' &&
     stubOf(node.expression) !== undefined &&
-    isInStoryTestCode(path)
+    muirProteusStorybookTestIsInStoryTestCode(path)
   );
 }
 
-function stubOf(node: types.Node): StubMethodCall | undefined {
+function stubOf(
+  node: types.Node,
+): MuirMoiraStorybookStubMethodCall | undefined {
   const member = memberCall(node);
 
   return member === undefined || member.callee.computed
     ? undefined
-    : stubMethodOf(field(member.callee.property, 'name'));
+    : muirMoiraStorybookStubMethodOf(
+        muirMoiraStorybookField(member.callee.property, 'name'),
+      );
 }
 
 /** A call, optional or not, on a member such as `x.y()` or `x?.y()`, with that member. */
@@ -157,10 +171,13 @@ function memberCall(node: types.Node):
 
 /** The stub that flips a resolved stub to a rejected one and back. */
 function outcomeOf(
-  method: StubMethod,
-  t: BabelTypes,
+  method: MuirMoiraStorybookStubMethod,
+  t: MuirProteusStorybookTestBabelTypes,
 ):
-  | { readonly method: StubMethod; readonly argument: types.Expression }
+  | {
+      readonly method: MuirMoiraStorybookStubMethod;
+      readonly argument: types.Expression;
+    }
   | undefined {
   switch (method) {
     case 'mockResolvedValue': {
@@ -184,7 +201,8 @@ function outcomeOf(
   }
 }
 
-const definitionTimeStubsIn = perFile(
-  (program): readonly DefinitionTimeStub[] => definitionTimeStubs(program.node),
+const definitionTimeStubsIn = muirProteusStorybookTestPerFile(
+  (program): readonly MuirMoiraStorybookDefinitionTimeStub[] =>
+    muirMoiraStorybookDefinitionTimeStubs(program.node),
   [],
 );

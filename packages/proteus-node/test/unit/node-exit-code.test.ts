@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeExitCode } from '../../src/node-exit-code.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeExitCode } from '../../src/node-exit-code.ts';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
 
-describe('LzNodeExitCode', () => {
-  lzTestEach([
+describe('MuirProteusNodeExitCode', () => {
+  muirTestEach([
     ['a failure into a success', 'process.exitCode = 1;', ['0']],
     ['another failure code into a success', 'process.exitCode = 2;', ['0']],
     ['a success into a failure', 'process.exitCode = 0;', ['1']],
@@ -26,10 +26,13 @@ describe('LzNodeExitCode', () => {
       ['0'],
     ],
   ])('turns %s', async (_title, source, expected) => {
-    assert.deepEqual(await mutantsOf(nodeExitCode, source), expected);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeExitCode, source),
+      expected,
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['an exit code that is not a literal', 'process.exitCode = code;'],
     ['a string exit code', "process.exitCode = '1';"],
     ['a compound assignment', 'process.exitCode += 1;'],
@@ -46,6 +49,6 @@ describe('LzNodeExitCode', () => {
       "import process from './process.ts';\nprocess.exitCode = 1;",
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeExitCode, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusNodeExitCode, source), []);
   });
 });

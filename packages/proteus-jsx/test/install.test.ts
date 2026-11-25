@@ -5,29 +5,32 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import { types } from '@babel/core';
-import { tempRoot, writeTree } from '@muirjs/test-util-mutator-packages';
+import {
+  muirTempRoot,
+  muirWriteTree,
+} from '@muirjs/test-util-mutator-packages';
 
 import {
-  install,
-  resolveFromCore,
-  testedVersion,
-  type Instrumenter,
-  type MutantOrigin,
-  type SourceFile,
+  muirProteusJsxInstall,
+  muirProteusJsxResolveFromCore,
+  muirProteusJsxTestedVersion,
+  type MuirProteusJsxInstrumenter,
+  type MuirMoiraMutatorsMutantOrigin,
+  type MuirMoiraMutatorsSourceFile,
 } from '../src/install.ts';
 import {
-  babelTypeMembers,
-  type NodeMutatorLike,
-  type Mutator,
+  muirProteusJsxBabelTypeMembers,
+  type MuirProteusJsxNodeMutatorLike,
+  type MuirProteusJsxMutator,
 } from '../src/mutator.ts';
-import type { MutantPlacerLike } from '../src/placer.ts';
+import type { MuirProteusJsxMutantPlacerLike } from '../src/placer.ts';
 import { exportedFunction } from './support/exports.ts';
 import { instrumentFully } from './support/instrument-result.ts';
 
 const ownMark = Symbol.for('@muirjs/proteus-jsx');
 const strykerMutators = ['StringLiteral', 'BooleanLiteral'] as const;
 
-function mutator(name: string): Mutator {
+function mutator(name: string): MuirProteusJsxMutator {
   return {
     name,
     sample: `export const ${name.toLowerCase()} = 1;\n`,
@@ -38,23 +41,25 @@ function mutator(name: string): Mutator {
 /** A fake instrumenter: each marked mutator not in `silent` makes one mutant in its own self-check file. */
 function setup({
   silent = [],
-  version = testedVersion,
+  version = muirProteusJsxTestedVersion,
 }: {
   readonly silent?: readonly string[];
   readonly version?: string;
 } = {}) {
-  const allMutators: NodeMutatorLike[] = strykerMutators.map((name) => ({
-    name,
-    mutate: () => [],
-  }));
-  const expressionPlacer: MutantPlacerLike = {
+  const allMutators: MuirProteusJsxNodeMutatorLike[] = strykerMutators.map(
+    (name) => ({
+      name,
+      mutate: () => [],
+    }),
+  );
+  const expressionPlacer: MuirProteusJsxMutantPlacerLike = {
     name: 'expressionMutantPlacer',
     canPlace: () => false,
     place: () => undefined,
   };
-  const instrumented: SourceFile[][] = [];
+  const instrumented: MuirMoiraMutatorsSourceFile[][] = [];
   const warnings: string[] = [];
-  const instrumenter: Instrumenter = {
+  const instrumenter: MuirProteusJsxInstrumenter = {
     dir: '/stryker/instrumenter',
     version,
     types,
@@ -73,8 +78,11 @@ function setup({
         }));
     },
   };
-  const run = (mutators: Mutator[], target: Instrumenter = instrumenter) =>
-    install(
+  const run = (
+    mutators: MuirProteusJsxMutator[],
+    target: MuirProteusJsxInstrumenter = instrumenter,
+  ) =>
+    muirProteusJsxInstall(
       mutators,
       async () => target,
       (message) => warnings.push(message),
@@ -136,7 +144,10 @@ describe('install', () => {
     const { run, names, instrumenter, expressionPlacer, warnings } = setup();
     // A query makes Node evaluate the file again as a separate module, as a second installed copy would be.
     const specifier = '../src/install.ts?copy';
-    const copyInstall = exportedFunction(await import(specifier), 'install');
+    const copyInstall = exportedFunction(
+      await import(specifier),
+      'muirProteusJsxInstall',
+    );
 
     await run([mutator('Alpha')]);
     const { canPlace } = expressionPlacer;
@@ -235,7 +246,7 @@ describe('install', () => {
       run([mutator('Alpha'), mutator('Beta'), mutator('Gamma')]),
       {
         message:
-          `@muirjs/proteus-jsx: the instrumenter ${testedVersion} in /stryker/instrumenter made no mutants of Alpha, Gamma from ` +
+          `@muirjs/proteus-jsx: the instrumenter ${muirProteusJsxTestedVersion} in /stryker/instrumenter made no mutants of Alpha, Gamma from ` +
           'their samples, so it does not run the mutators this module added. A bundled or second copy of the ' +
           'instrumenter does that.',
       },
@@ -252,11 +263,11 @@ describe('install', () => {
         'a mutant in the sample file of a mutator only when that mutator made it',
         { mutatorName: 'StringLiteral' },
       ],
-    ] satisfies [string, Partial<MutantOrigin>][]
+    ] satisfies [string, Partial<MuirMoiraMutatorsMutantOrigin>][]
   ).forEach(([title, fields]) => {
     it(`counts ${title}`, async () => {
       const { run, instrumenter } = setup();
-      const changed: Instrumenter = {
+      const changed: MuirProteusJsxInstrumenter = {
         ...instrumenter,
         async instrument(files) {
           const mutants = await instrumenter.instrument(files);
@@ -302,7 +313,7 @@ describe('install', () => {
 
       assert.deepEqual(names(), [...strykerMutators, 'Alpha']);
       assert.deepEqual(warnings, [
-        `@muirjs/proteus-jsx was tested with @stryker-mutator/instrumenter ${testedVersion}, not ${version} in ` +
+        `@muirjs/proteus-jsx was tested with @stryker-mutator/instrumenter ${muirProteusJsxTestedVersion}, not ${version} in ` +
           '/stryker/instrumenter; its self-check passed.',
       ]);
     });
@@ -321,9 +332,9 @@ describe('install', () => {
 
 describe('resolveFromCore', () => {
   it("returns the installed instrumenter, with Stryker's mutators, the expression placer and Babel 8 types", async () => {
-    const instrumenter = await resolveFromCore();
+    const instrumenter = await muirProteusJsxResolveFromCore();
 
-    assert.equal(instrumenter.version, testedVersion);
+    assert.equal(instrumenter.version, muirProteusJsxTestedVersion);
     assert.ok(
       instrumenter.allMutators.some(({ name }) => name === 'StringLiteral'),
     );
@@ -342,7 +353,7 @@ describe('resolveFromCore', () => {
   });
 
   it('runs with excludedMutations, reporting those mutants as Ignored', async () => {
-    const instrumenter = await resolveFromCore();
+    const instrumenter = await muirProteusJsxResolveFromCore();
     const files = [{ name: 'sample.ts', content: "export const a = 'x';\n" }];
 
     const statuses = async (excluded?: string[]) =>
@@ -376,7 +387,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
     placers: readonly string[],
     replace: Readonly<Record<string, string>> = {},
   ) {
-    const modules = join(tempRoot(t, 'jsx-mutators-core-'), 'node_modules');
+    const modules = join(muirTempRoot(t, 'jsx-mutators-core-'), 'node_modules');
     const dir = join(modules, '@stryker-mutator', 'instrumenter');
     const files: Record<string, string> = {
       '@stryker-mutator/core/package.json':
@@ -405,7 +416,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
       ...replace,
     };
 
-    writeTree(modules, files);
+    muirWriteTree(modules, files);
 
     return {
       corePackage: join(modules, '@stryker-mutator', 'core', 'package.json'),
@@ -417,11 +428,11 @@ describe('resolveFromCore against a fake instrumenter', () => {
   (
     [
       [
-        `Babel types with ${[...babelTypeMembers, 'react.buildChildren'].join(', ')}`,
+        `Babel types with ${[...muirProteusJsxBabelTypeMembers, 'react.buildChildren'].join(', ')}`,
         babelPath,
         'export const other = {};',
       ],
-      ...babelTypeMembers.map(
+      ...muirProteusJsxBabelTypeMembers.map(
         (member) =>
           [
             `Babel types with ${member}`,
@@ -444,7 +455,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
         [file]: content,
       });
 
-      await assert.rejects(resolveFromCore(corePackage), {
+      await assert.rejects(muirProteusJsxResolveFromCore(corePackage), {
         message: `@muirjs/proteus-jsx: the instrumenter 9.9.8 in ${dir} has no ${missing}.`,
       });
     });

@@ -1,21 +1,27 @@
 import type { types } from '@babel/core';
-import { field, type Interaction } from '@muirjs/moira-storybook';
 import {
-  firstArgumentSite,
-  roleSite,
-  swapMutator,
-  type Site,
+  muirMoiraStorybookField,
+  type MuirMoiraStorybookInteraction,
+} from '@muirjs/moira-storybook';
+import {
+  muirMoiraMutatorsFirstArgumentSite,
+  muirMoiraMutatorsRoleSite,
+  muirMoiraMutatorsSwapMutator,
+  type MuirMoiraMutatorsSite,
 } from '@muirjs/moira-mutators';
 
 import {
-  elementQueryPrefixes,
-  isQueryCall,
-  queryKinds,
-  queryMethods,
+  muirProteusStorybookTestElementQueryPrefixes,
+  muirProteusStorybookTestIsQueryCall,
+  muirProteusStorybookTestQueryKinds,
+  muirProteusStorybookTestQueryMethods,
 } from './queries.ts';
-import type { LzStorybookTestMutator } from './mutator.ts';
-import { packageName } from './package-name.ts';
-import { placedInteractionAimedAt, placedInteractionAt } from './story-file.ts';
+import type { MuirProteusStorybookTestMutator } from './mutator.ts';
+import { muirProteusStorybookTestPackageName } from './package-name.ts';
+import {
+  muirProteusStorybookTestPlacedInteractionAimedAt,
+  muirProteusStorybookTestPlacedInteractionAt,
+} from './story-file.ts';
 
 function sampleOf(statement: string): string {
   return `export const Story = {\n  play: async ({ canvas, userEvent }) => {\n    ${statement}\n  },\n};\n`;
@@ -44,14 +50,16 @@ function focusTarget(
 
   const query = target.type === 'AwaitExpression' ? target.argument : target;
 
-  return isQueryCall(query) && !isTextFieldQuery(query) ? target : undefined;
+  return muirProteusStorybookTestIsQueryCall(query) && !isTextFieldQuery(query)
+    ? target
+    : undefined;
 }
 
 // Queries that find form fields, which a click is meant to focus.
-const fieldQueries = queryMethods(elementQueryPrefixes, [
-  'LabelText',
-  'PlaceholderText',
-]);
+const fieldQueries = muirProteusStorybookTestQueryMethods(
+  muirProteusStorybookTestElementQueryPrefixes,
+  ['LabelText', 'PlaceholderText'],
+);
 
 /** A query for a text field: by a text field role, by label or by placeholder. */
 function isTextFieldQuery(query: types.Node): boolean {
@@ -80,7 +88,10 @@ function methodOf(call: types.Node): string | undefined {
 // Clicking an element of these roles is meant to focus it.
 const textFieldRoles: readonly string[] = ['textbox', 'searchbox', 'combobox'];
 
-const roleQueries = queryMethods(elementQueryPrefixes, ['Role']);
+const roleQueries = muirProteusStorybookTestQueryMethods(
+  muirProteusStorybookTestElementQueryPrefixes,
+  ['Role'],
+);
 
 /** The role a `*ByRole` query names in a string literal. */
 function queryRole(query: types.Node): string | undefined {
@@ -93,14 +104,14 @@ function queryRole(query: types.Node): string | undefined {
   return role?.type === 'StringLiteral' ? role.value : undefined;
 }
 
-export function clickFocusMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookClickFocus';
+export function muirProteusStorybookTestClickFocusMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestClickFocus';
 } {
   return {
-    name: 'LzStorybookClickFocus',
+    name: 'MuirProteusStorybookTestClickFocus',
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
-      const interaction = placedInteractionAt(path);
+      const interaction = muirProteusStorybookTestPlacedInteractionAt(path);
 
       if (
         interaction?.kind !== 'userEvent' ||
@@ -142,7 +153,7 @@ const repeatedMethods: ReadonlySet<unknown> = new Set([
 ]);
 
 /** A fireEvent click, or a user-event click, dblClick or key press other than one that a second press repeats with no change. */
-function isRepeated(interaction: Interaction): boolean {
+function isRepeated(interaction: MuirMoiraStorybookInteraction): boolean {
   if (interaction.kind === 'fireEvent') {
     return interaction.method === 'click';
   }
@@ -154,21 +165,21 @@ function isRepeated(interaction: Interaction): boolean {
     repeatedMethods.has(interaction.method) &&
     !(
       interaction.method === 'keyboard' &&
-      idempotentKeys.has(field(key, 'value'))
+      idempotentKeys.has(muirMoiraStorybookField(key, 'value'))
     )
   );
 }
 
 const idempotentKeys: ReadonlySet<unknown> = new Set(['{Home}', '{End}']);
 
-export function interactionRepeatMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookInteractionRepeat';
+export function muirProteusStorybookTestInteractionRepeatMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestInteractionRepeat';
 } {
   return {
-    name: 'LzStorybookInteractionRepeat',
+    name: 'MuirProteusStorybookTestInteractionRepeat',
     sample: sampleOf('await userEvent.click(button);'),
     *mutate(path, t) {
-      const interaction = placedInteractionAt(path);
+      const interaction = muirProteusStorybookTestPlacedInteractionAt(path);
 
       if (interaction === undefined || !isRepeated(interaction)) {
         return;
@@ -186,7 +197,7 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
       if (!path.isExpression()) {
         throw new Error(
           // Stryker disable next-line StringLiteral: no input reaches this throw, as an interaction is an expression statement or an arrow's expression body, and an arrow's expression body is an expression
-          `${packageName}: LzStorybookInteractionRepeat read an interaction at a ${path.node.type}, which is neither an expression statement nor an expression`,
+          `${muirProteusStorybookTestPackageName}: MuirProteusStorybookTestInteractionRepeat read an interaction at a ${path.node.type}, which is neither an expression statement nor an expression`,
         );
       }
 
@@ -211,24 +222,24 @@ export function interactionRepeatMutator(): LzStorybookTestMutator & {
   };
 }
 
-const roleQuerySite = roleSite(roleQueries);
-const argumentQuerySite = firstArgumentSite(
-  queryMethods(
-    elementQueryPrefixes,
-    queryKinds.filter((kind) => kind !== 'Role'),
+const roleQuerySite = muirMoiraMutatorsRoleSite(roleQueries);
+const argumentQuerySite = muirMoiraMutatorsFirstArgumentSite(
+  muirProteusStorybookTestQueryMethods(
+    muirProteusStorybookTestElementQueryPrefixes,
+    muirProteusStorybookTestQueryKinds.filter((kind) => kind !== 'Role'),
   ),
 );
 
 /** The `name` of a `*ByRole(role, { name })` query, keyed by its role, or the first argument of another query. */
-function querySite(call: unknown): Site | undefined {
+function querySite(call: unknown): MuirMoiraMutatorsSite | undefined {
   return roleQuerySite(call) ?? argumentQuerySite(call);
 }
 
-export function interactionTargetMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookInteractionTarget';
+export function muirProteusStorybookTestInteractionTargetMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestInteractionTarget';
 } {
-  const swap = swapMutator(
-    'LzStorybookInteractionTarget',
+  const swap = muirMoiraMutatorsSwapMutator(
+    'MuirProteusStorybookTestInteractionTarget',
     sampleOf(
       "await userEvent.click(canvas.getByRole('button', { name: 'a' }));\n    await userEvent.click(canvas.getByRole('button', { name: 'b' }));",
     ),
@@ -239,7 +250,9 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
     name: swap.name,
     sample: swap.sample,
     *mutate(path, t) {
-      if (placedInteractionAimedAt(path) === undefined) {
+      if (
+        muirProteusStorybookTestPlacedInteractionAimedAt(path) === undefined
+      ) {
         return;
       }
 
@@ -250,17 +263,17 @@ export function interactionTargetMutator(): LzStorybookTestMutator & {
   };
 }
 
-export function assertionBeforeMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookAssertionBefore';
+export function muirProteusStorybookTestAssertionBeforeMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestAssertionBefore';
 } {
   return {
-    name: 'LzStorybookAssertionBefore',
+    name: 'MuirProteusStorybookTestAssertionBefore',
     sample: sampleOf(
       'await userEvent.click(button);\n    await expect(args.onClick).toHaveBeenCalled();',
     ),
     *mutate(path, t) {
       const statements = [
-        placedInteractionAt(path)?.following.copy,
+        muirProteusStorybookTestPlacedInteractionAt(path)?.following.copy,
         path.node,
       ].filter((node) => t.isNode(node) && t.isStatement(node));
 
@@ -273,14 +286,14 @@ export function assertionBeforeMutator(): LzStorybookTestMutator & {
   };
 }
 
-export function interactionMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookInteraction';
+export function muirProteusStorybookTestInteractionMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestInteraction';
 } {
   return {
-    name: 'LzStorybookInteraction',
+    name: 'MuirProteusStorybookTestInteraction',
     sample: sampleOf("await userEvent.click(canvas.getByRole('button'));"),
     *mutate(path, t) {
-      if (placedInteractionAt(path) !== undefined) {
+      if (muirProteusStorybookTestPlacedInteractionAt(path) !== undefined) {
         yield path.isExpressionStatement()
           ? t.emptyStatement()
           : t.identifier('undefined');

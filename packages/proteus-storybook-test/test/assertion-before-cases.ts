@@ -1,6 +1,6 @@
 import { type Case, inPlay, inPlayWith } from './support/case.ts';
 
-const assertionBefore = 'LzStorybookAssertionBefore';
+const assertionBefore = 'MuirProteusStorybookTestAssertionBefore';
 
 // The expect methods that start a check, each with a check statement.
 const expectMethodChecks: readonly (readonly [string, string])[] = [

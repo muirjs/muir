@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeAwaitStatement } from '../../src/node-await-statement.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeAwaitStatement } from '../../src/node-await-statement.ts';
 import {
   mutantsOf,
   removalsNextToBuiltIns,
   strict,
 } from '../mutants-of.fixtures.ts';
 
-describe('LzNodeAwaitStatement', () => {
-  lzTestEach([
+describe('MuirProteusNodeAwaitStatement', () => {
+  muirTestEach([
     ['an awaited call', 'await flush();'],
     ['an awaited method call', 'await server.close();'],
     [
@@ -39,10 +39,12 @@ describe('LzNodeAwaitStatement', () => {
       "import { before } from 'node:test';\nbefore(async () => {\n  await server.listen();\n});",
     ],
   ])('removes the statement of %s', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeAwaitStatement, source), [';']);
+    assert.deepEqual(await mutantsOf(muirProteusNodeAwaitStatement, source), [
+      ';',
+    ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['a call that is not awaited', 'flush();'],
     ['an awaited value that is no call', 'await pending;'],
     [
@@ -60,7 +62,7 @@ describe('LzNodeAwaitStatement', () => {
     ],
     ['a for await loop', 'for await (const chunk of stream) {\n}'],
     [
-      'an awaited node:assert statement, which LzNodeAssertStatement removes',
+      'an awaited node:assert statement, which MuirProteusNodeAssertStatement removes',
       `${strict}await assert.rejects(load());`,
     ],
     [
@@ -92,11 +94,19 @@ describe('LzNodeAwaitStatement', () => {
       "import { after } from 'node:test';\nafter(() => Promise.all(servers.map(async (server) => {\n  await server.close();\n})));",
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeAwaitStatement, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeAwaitStatement, source),
+      [],
+    );
   });
 
-  lzTestEach([
-    ['an awaited call', 'await flush(1);', [], ['LzNodeAwaitStatement']],
+  muirTestEach([
+    [
+      'an awaited call',
+      'await flush(1);',
+      [],
+      ['MuirProteusNodeAwaitStatement'],
+    ],
     [
       'a call that is not awaited',
       'flush(1);',
@@ -114,7 +124,7 @@ describe('LzNodeAwaitStatement', () => {
     "gives %s exactly the removals next to Stryker's mutators",
     async (_title, source, alone, together) => {
       assert.deepEqual(
-        await removalsNextToBuiltIns(nodeAwaitStatement, source),
+        await removalsNextToBuiltIns(muirProteusNodeAwaitStatement, source),
         [alone, together],
       );
     },

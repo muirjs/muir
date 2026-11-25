@@ -2,8 +2,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { builtInNames, builtInSample } from '../src/built-ins.ts';
-import { corePackageJson, resolveInstrumenter } from '../src/instrumenter.ts';
+import {
+  muirMoiraMutatorsBuiltInNames,
+  muirMoiraMutatorsBuiltInSample,
+} from '../src/built-ins.ts';
+import {
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsResolveInstrumenter,
+} from '../src/instrumenter.ts';
 
 function acceptTypes(value: unknown): asserts value is unknown {
   void value;
@@ -11,18 +17,21 @@ function acceptTypes(value: unknown): asserts value is unknown {
 
 describe('builtInSample', () => {
   it('makes a mutant of each of the 17 built-ins before any is removed, so the check that none remains can fail', async () => {
-    const instrumenter = await resolveInstrumenter(
+    const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
       '@muirjs/moira-mutators',
       acceptTypes,
-      corePackageJson(),
+      muirMoiraMutatorsCorePackageJson(),
     );
 
     const mutants = await instrumenter.instrument([
-      { name: 'built-ins.self-check.tsx', content: builtInSample },
+      {
+        name: 'built-ins.self-check.tsx',
+        content: muirMoiraMutatorsBuiltInSample,
+      },
     ]);
 
     assert.deepEqual(
-      builtInNames.filter(
+      muirMoiraMutatorsBuiltInNames.filter(
         (name) => !mutants.some(({ mutatorName }) => mutatorName === name),
       ),
       [],

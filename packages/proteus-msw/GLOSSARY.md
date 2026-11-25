@@ -6,8 +6,8 @@ not tied to Storybook. Install, tier and built-in mutator terms belong to the Mu
 
 ## Language
 
-**LzMsw mutator**:
-One of this package's mutators, named `LzMsw` plus what it changes, such as `LzMswResponse`.
+**MuirProteusMsw mutator**:
+One of this package's mutators, named `MuirProteusMsw` plus what it changes, such as `MuirProteusMswResponse`.
 _Avoid_: msw operator, MswResponse mutator
 
 ### Responses

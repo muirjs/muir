@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, it } from 'node:test';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 
 import { double } from '../src/double.js';
 import { half } from '../src/half.js';
@@ -24,7 +24,7 @@ it.only('reads what a before hook computed', () => {
   assert.equal(tripled, 9);
 });
 
-lzTestFor.only([{ n: 2, negated: -2 }])(
+muirTestFor.only([{ n: 2, negated: -2 }])(
   'negates $n to $negated',
   ({ n, negated }, t) => {
     t.assert.equal(negate(n), negated);

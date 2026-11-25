@@ -1,54 +1,54 @@
 import {
-  lzMutantLabel,
-  lzMutantsByKey,
-  type LzMutantDetail,
-  type LzMutantStatus,
-  type LzReport,
+  muirMutantLabel,
+  muirMutantsByKey,
+  type MuirMutantDetail,
+  type MuirMutantStatus,
+  type MuirReport,
 } from '../report.ts';
-import { lzSides, type LzSide } from './options.ts';
+import { muirSides, type MuirSide } from './options.ts';
 
-export interface LzScore {
+export interface MuirScore {
   readonly counts: Readonly<Record<string, number>>;
   /** Stryker's mutation score: Killed and Timeout over those plus Survived and NoCoverage; null with none of them. */
   readonly score: number | null;
 }
 
-export interface LzVerdict {
+export interface MuirVerdict {
   /** `file:line:column-endLine:endColumn mutator replacement`, as both reports locate the mutant. */
   readonly mutant: string;
-  readonly lz: LzMutantStatus | null;
-  readonly command: LzMutantStatus | null;
+  readonly muir: MuirMutantStatus | null;
+  readonly command: MuirMutantStatus | null;
 }
 
-export type LzComparison =
+export type MuirComparison =
   | { readonly compared: false; readonly reason: string }
   | {
       readonly compared: true;
-      readonly disagreements: readonly LzVerdict[];
-      readonly verdicts: readonly LzVerdict[];
+      readonly disagreements: readonly MuirVerdict[];
+      readonly verdicts: readonly MuirVerdict[];
     };
 
 /** A side left out did not run. */
-export type LzBySide<T> = { readonly [TSide in LzSide]?: T };
+export type MuirBySide<T> = { readonly [TSide in MuirSide]?: T };
 
 /** What a side that ran left to compare; no report when Stryker threw or wrote none. */
-export type LzSideReport =
-  | { readonly reported: true; readonly report: LzReport }
+export type MuirSideReport =
+  | { readonly reported: true; readonly report: MuirReport }
   | { readonly reported: false };
 
 /** Keys each item's value by its side, in the items' order. */
-export function lzBySide<TItem extends { readonly side: LzSide }, T>(
+export function muirBySide<TItem extends { readonly side: MuirSide }, T>(
   items: readonly TItem[],
   of: (item: TItem) => T,
-): LzBySide<T> {
-  return items.reduce<LzBySide<T>>(
+): MuirBySide<T> {
+  return items.reduce<MuirBySide<T>>(
     (bySide, item) => ({ ...bySide, [item.side]: of(item) }),
     {},
   );
 }
 
-export function lzScore(mutants: readonly LzMutantDetail[]): LzScore {
-  const count = (status: LzMutantStatus): number =>
+export function muirScore(mutants: readonly MuirMutantDetail[]): MuirScore {
+  const count = (status: MuirMutantStatus): number =>
     mutants.filter((mutant) => mutant.status === status).length;
   const detected = count('Killed') + count('Timeout');
   const valid = detected + count('Survived') + count('NoCoverage');
@@ -63,41 +63,46 @@ export function lzScore(mutants: readonly LzMutantDetail[]): LzScore {
   };
 }
 
-export interface LzMutantsScore extends LzScore {
+export interface MuirMutantsScore extends MuirScore {
   readonly mutants: number;
 }
 
-export function lzReportScore(report: LzReport): LzMutantsScore {
+export function muirReportScore(report: MuirReport): MuirMutantsScore {
   const mutants = [...report.values()].flat();
 
-  return { ...lzScore(mutants), mutants: mutants.length };
+  return { ...muirScore(mutants), mutants: mutants.length };
 }
 
-export function lzMessageOf(error: unknown): string {
+export function muirMessageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function lzCompare(lz: LzReport, command: LzReport): LzVerdict[] {
-  const lzStatuses = lzMutantsByKey(lz);
-  const commandStatuses = lzMutantsByKey(command);
+export function muirCompare(
+  muir: MuirReport,
+  command: MuirReport,
+): MuirVerdict[] {
+  const muirStatuses = muirMutantsByKey(muir);
+  const commandStatuses = muirMutantsByKey(command);
   const labels = new Map(
-    [...lzStatuses, ...commandStatuses].map(([key, { file, mutant }]) => [
+    [...muirStatuses, ...commandStatuses].map(([key, { file, mutant }]) => [
       key,
-      lzMutantLabel(file, mutant),
+      muirMutantLabel(file, mutant),
     ]),
   );
 
   return [...labels].map(([key, label]) => ({
     mutant: label,
-    lz: lzStatuses.get(key)?.mutant.status ?? null,
+    muir: muirStatuses.get(key)?.mutant.status ?? null,
     command: commandStatuses.get(key)?.mutant.status ?? null,
   }));
 }
 
 /** Without a report on both sides there is nothing to compare, which an empty disagreement list would hide. */
-export function lzComparison(bySide: LzBySide<LzSideReport>): LzComparison {
-  const ran = lzSides.filter((side) => bySide[side] !== undefined);
-  const missing = lzSides.filter((side) => bySide[side] === undefined);
+export function muirComparison(
+  bySide: MuirBySide<MuirSideReport>,
+): MuirComparison {
+  const ran = muirSides.filter((side) => bySide[side] !== undefined);
+  const missing = muirSides.filter((side) => bySide[side] === undefined);
 
   if (ran.length === 0) {
     return { compared: false, reason: 'No side ran.' };
@@ -115,28 +120,28 @@ export function lzComparison(bySide: LzBySide<LzSideReport>): LzComparison {
     };
   }
 
-  const { lz, command } = bySide;
+  const { muir, command } = bySide;
 
   if (
-    lz === undefined ||
+    muir === undefined ||
     command === undefined ||
-    !lz.reported ||
+    !muir.reported ||
     !command.reported
   ) {
     return { compared: false, reason: 'A side wrote no report.' };
   }
 
   try {
-    const verdicts = lzCompare(lz.report, command.report);
+    const verdicts = muirCompare(muir.report, command.report);
 
     return {
       compared: true,
       disagreements: verdicts.filter(
-        (verdict) => verdict.lz !== verdict.command,
+        (verdict) => verdict.muir !== verdict.command,
       ),
       verdicts,
     };
   } catch (error) {
-    return { compared: false, reason: lzMessageOf(error) };
+    return { compared: false, reason: muirMessageOf(error) };
   }
 }

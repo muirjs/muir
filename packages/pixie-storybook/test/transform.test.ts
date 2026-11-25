@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 
 import { fn as storybookFn } from 'storybook/test';
 
-import { transform } from '../src/transform.ts';
+import { muirPixieStorybookTransform } from '../src/transform.ts';
 
 const storyFile = 'D:/project/src/Button.stories.tsx';
 const stubbedStory = [
@@ -17,17 +17,17 @@ const stubbedStory = [
 ].join('\n');
 
 function recordWhile(run: () => void): string {
-  const folder = mkdtempSync(join(tmpdir(), 'lz-record-'));
+  const folder = mkdtempSync(join(tmpdir(), 'muir-record-'));
   const recordFile = join(folder, 'records.jsonl');
   writeFileSync(recordFile, '');
-  process.env['LZ_STRYKER_STORYBOOK_RECORD'] = recordFile;
+  process.env['MUIR_MOIRA_STORYBOOK_RECORD'] = recordFile;
 
   try {
     run();
 
     return readFileSync(recordFile, 'utf8');
   } finally {
-    delete process.env['LZ_STRYKER_STORYBOOK_RECORD'];
+    delete process.env['MUIR_MOIRA_STORYBOOK_RECORD'];
     rmSync(folder, { recursive: true });
   }
 }
@@ -37,7 +37,9 @@ describe('transform records', () => {
     const file = join(process.cwd(), 'src', 'Button.stories.tsx');
 
     assert.equal(
-      recordWhile(() => transform(stubbedStory, `${file}?v=1`)),
+      recordWhile(() =>
+        muirPixieStorybookTransform(stubbedStory, `${file}?v=1`),
+      ),
       '{"file":"src/Button.stories.tsx","rewritten":1}\n',
     );
   });
@@ -51,7 +53,7 @@ describe('transform records', () => {
     ].join('\n');
 
     assert.equal(
-      recordWhile(() => transform(code, file)),
+      recordWhile(() => muirPixieStorybookTransform(code, file)),
       '{"file":"src/Button.stories.tsx","rewritten":1}\n',
     );
   });
@@ -61,7 +63,7 @@ describe('transform records', () => {
 
     assert.equal(
       recordWhile(() =>
-        transform(
+        muirPixieStorybookTransform(
           stubbedStory.replace('mockReturnValue', 'mockReturnValueOnce'),
           file,
         ),
@@ -74,7 +76,7 @@ describe('transform records', () => {
 describe('transform', () => {
   it('leaves a module without a storybook/test import alone', () => {
     assert.equal(
-      transform("export const label = 'none';\n", storyFile),
+      muirPixieStorybookTransform("export const label = 'none';\n", storyFile),
       undefined,
     );
   });
@@ -87,7 +89,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Checked = { args: { load: fn(((value) => () => value)('stubbed')) } };",
@@ -104,7 +106,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const meta = { args: { save: fn(((value) => async () => value)(42)) } };',
@@ -121,7 +123,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "const failing = fn(((value) => async () => { throw value; })(new Error('offline')));",
@@ -138,7 +140,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Story = { args: { onLoad: fn(() => 'stubbed') } };",
@@ -155,7 +157,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Checked = { args: { load: fn(((value) => () => value)('stubbed')) } };",
@@ -172,7 +174,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Optional = { args: { load: fn(((value) => () => value)(1)) } };',
@@ -188,7 +190,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a definition-time mockResolvedValueOnce alone', () => {
@@ -198,7 +200,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a definition-time mockRejectedValueOnce alone', () => {
@@ -208,7 +210,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a definition-time mockImplementationOnce alone', () => {
@@ -218,7 +220,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a stub chained after a *Once stub alone, so the *Once stub still runs first', () => {
@@ -228,7 +230,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('rewrites only the first stub of a chain', () => {
@@ -239,7 +241,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Chain = { args: { load: fn(((value) => () => value)(1)).mockReturnValue(2) } };',
@@ -256,7 +258,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Named = { args: { load: fn(((value) => () => value)(1)).mockName('load') } };",
@@ -273,7 +275,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Named = { args: { load: fn(() => 1).mockName('load') } };",
@@ -290,7 +292,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const load = fn(((value) => () => value)(1));',
@@ -307,7 +309,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const load = fn(((value) => () => value)((1, 2)));',
@@ -324,7 +326,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const load = fn(((value) => () => value)(1)).mockName(await Promise.resolve('load'));",
@@ -341,7 +343,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn as value } from 'storybook/test';",
         'export const load = value(((value) => () => value)(1));',
@@ -358,7 +360,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Named = { args: { load: (fn(((value) => () => value)(1))).mockName('load') } };",
@@ -375,7 +377,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Twice = { args: { load: (fn(((value) => () => value)(1))).mockReturnValue(2) } };',
@@ -392,7 +394,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Nested = { args: { getClient: fn(((value) => () => value)({ fetch: fn(((value) => async () => value)('data')) })) } };",
@@ -409,7 +411,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Inner = { args: { load: fn(fn(((value) => () => value)(2))).mockReturnValue(1) } };',
@@ -425,7 +427,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('rewrites a stub in the spy call of a stub it leaves alone', () => {
@@ -436,7 +438,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Inner = { args: { load: fn(fn(((value) => () => value)(2))).mockReturnValueOnce(1) } };',
@@ -453,7 +455,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Wrapped = { args: { load: (fn(((value) => () => value)(1))) } };',
@@ -470,7 +472,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Typed = { args: { load: fn(() => 1) } };',
@@ -487,7 +489,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Cast = { args: { load: (fn(((value) => () => value)(1)) as any), save: fn(((value) => () => value)(2))! } };',
@@ -504,7 +506,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Named = { args: { load: fn(((value) => () => value)(1)).mockName(fn(((value) => () => value)('n'))()) } };",
@@ -521,7 +523,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Chain = { args: { load: fn(((value) => () => value)(1)).mockReturnValueOnce(2).mockReturnValue(3) } };',
@@ -544,7 +546,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Chain = {',
@@ -568,7 +570,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('rewrites fn imported under another name with that name', () => {
@@ -579,7 +581,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn as spy } from 'storybook/test';",
         "export const Checked = { args: { load: spy(((value) => () => value)('stubbed')) } };",
@@ -596,7 +598,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { 'fn' as spy } from 'storybook/test';",
         "export const Checked = { args: { load: spy(((value) => () => value)('stubbed')) } };",
@@ -613,7 +615,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a stub on vi.fn alone', () => {
@@ -624,7 +626,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a stub on a storybook/test import other than fn alone', () => {
@@ -634,7 +636,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a computed member call alone when its key is named like a stub method', () => {
@@ -645,7 +647,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('leaves a stub on an object that new fn() creates alone', () => {
@@ -655,7 +657,7 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, storyFile), undefined);
+    assert.equal(muirPixieStorybookTransform(code, storyFile), undefined);
   });
 
   it('rewrites a stub with no argument, so the reset keeps it as it keeps one with an argument', () => {
@@ -666,7 +668,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Empty = { args: { load: fn(((value) => async () => value)()) } };',
@@ -683,7 +685,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Empty = { args: { load: fn(((value) => () => value)()).mockName('load') } };",
@@ -702,7 +704,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         'export const Both = {',
@@ -718,7 +720,7 @@ describe('transform', () => {
       '\n',
     );
 
-    assert.throws(() => transform(code, storyFile), {
+    assert.throws(() => muirPixieStorybookTransform(code, storyFile), {
       message:
         /^@muirjs\/pixie-storybook: cannot parse D:\/project\/src\/Button\.stories\.tsx: /,
     });
@@ -730,7 +732,7 @@ describe('transform', () => {
     );
 
     assert.throws(
-      () => transform(code, storyFile),
+      () => muirPixieStorybookTransform(code, storyFile),
       (error: unknown) =>
         error instanceof Error &&
         error.cause instanceof SyntaxError &&
@@ -747,7 +749,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, 'D:/project/src/spies.ts')?.code,
+      muirPixieStorybookTransform(code, 'D:/project/src/spies.ts')?.code,
       [
         "import { fn } from 'storybook/test';",
         "const label = <string>'stubbed';",
@@ -765,7 +767,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, 'D:/project/src/spies.ts?v=1')?.code,
+      muirPixieStorybookTransform(code, 'D:/project/src/spies.ts?v=1')?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const load = fn(((value) => () => value)(<string>'stubbed'));",
@@ -782,7 +784,10 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, 'D:/project/src/Stubs.mdx'), undefined);
+    assert.equal(
+      muirPixieStorybookTransform(code, 'D:/project/src/Stubs.mdx'),
+      undefined,
+    );
   });
 
   it('leaves a file that is not a script alone in a folder whose name ends like a script', () => {
@@ -794,7 +799,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, 'D:/project/src/chart.js/Stubs.mdx'),
+      muirPixieStorybookTransform(code, 'D:/project/src/chart.js/Stubs.mdx'),
       undefined,
     );
   });
@@ -807,7 +812,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, 'D:/project/src/spies.mts')?.code,
+      muirPixieStorybookTransform(code, 'D:/project/src/spies.mts')?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const load = fn(((value) => () => value)(<string>'stubbed'));",
@@ -824,7 +829,7 @@ describe('transform', () => {
     ].join('\n');
 
     assert.equal(
-      transform(code, storyFile)?.code,
+      muirPixieStorybookTransform(code, storyFile)?.code,
       [
         "import { fn } from 'storybook/test';",
         "export const Checked = { args: { load: fn(((value) => () => value)('stubbed')) }, render: () => <button /> };",
@@ -840,14 +845,17 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.equal(transform(code, 'D:/project/src/label.js'), undefined);
+    assert.equal(
+      muirPixieStorybookTransform(code, 'D:/project/src/label.js'),
+      undefined,
+    );
   });
 
   it('maps a column inside an unchanged part of a rewritten line back to the same column', () => {
     const line =
       "export const Checked = { args: { load: fn().mockReturnValue('stubbed') } };";
     const code = ["import { fn } from 'storybook/test';", line, ''].join('\n');
-    const map = transform(code, storyFile)?.map;
+    const map = muirPixieStorybookTransform(code, storyFile)?.map;
 
     assert.ok(map);
 
@@ -874,9 +882,10 @@ describe('transform', () => {
       '',
     ].join('\n');
 
-    assert.deepEqual(transform(code, `${storyFile}?v=1`)?.map.sources, [
-      storyFile,
-    ]);
+    assert.deepEqual(
+      muirPixieStorybookTransform(code, `${storyFile}?v=1`)?.map.sources,
+      [storyFile],
+    );
   });
 });
 
@@ -895,7 +904,7 @@ function rewrittenSpies(
     ...declarations,
     '',
   ].join('\n');
-  const rewritten = transform(code, storyFile)?.code;
+  const rewritten = muirPixieStorybookTransform(code, storyFile)?.code;
 
   if (rewritten === undefined) {
     throw new Error('The module was not rewritten.');
@@ -951,7 +960,7 @@ describe('the rewritten module', () => {
   });
 
   it("keeps the stubbed value and the name of Storybook's own spy through a mock reset", () => {
-    const rewritten = transform(
+    const rewritten = muirPixieStorybookTransform(
       [
         "import { fn } from 'storybook/test';",
         "export const load = fn().mockName('load').mockClear().mockReturnValue(42);",

@@ -6,10 +6,10 @@ import { join } from 'node:path';
 import { before, test } from 'node:test';
 
 import {
-  lzPlaywrightMutators,
-  type LzPlaywrightMutatorOptions,
+  muirProteusPlaywrightMutators,
+  type MuirProteusPlaywrightMutatorOptions,
 } from '../../src/index.ts';
-import { resolveFromCore } from '../../src/install.ts';
+import { muirProteusPlaywrightResolveFromCore } from '../../src/install.ts';
 import type { Case } from '../cases.ts';
 import { mutantsOf, type Mutant } from './mutants.ts';
 
@@ -19,7 +19,7 @@ function fileOf(testCase: Case): string {
 
 export function runCases(
   cases: readonly Case[],
-  options?: LzPlaywrightMutatorOptions,
+  options?: MuirProteusPlaywrightMutatorOptions,
   testModule = '@playwright/test',
 ): void {
   const source = (testCase: Case): string =>
@@ -28,9 +28,9 @@ export function runCases(
   let mutants: readonly Mutant[];
 
   before(async () => {
-    const instrumenter = await resolveFromCore();
+    const instrumenter = await muirProteusPlaywrightResolveFromCore();
 
-    await lzPlaywrightMutators(options);
+    await muirProteusPlaywrightMutators(options);
     mutants = await mutantsOf(
       instrumenter,
       cases.map((testCase) => ({

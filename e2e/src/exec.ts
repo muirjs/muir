@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import { closeSync, openSync, writeSync } from 'node:fs';
 import type { Readable } from 'node:stream';
 
-export interface LzExecResult {
+export interface MuirExecResult {
   /** 1 when a signal ended the process. */
   readonly exitCode: number;
   readonly signal: NodeJS.Signals | null;
@@ -13,7 +13,7 @@ export interface LzExecResult {
   readonly timedOut: boolean;
 }
 
-export interface LzExecOptions {
+export interface MuirExecOptions {
   readonly cwd: string;
   readonly env?: NodeJS.ProcessEnv;
   readonly timeoutMs?: number;
@@ -22,11 +22,11 @@ export interface LzExecOptions {
 }
 
 /** A timeout ends the process alone, not the processes it started. */
-export async function lzExec(
+export async function muirExec(
   file: string,
   args: readonly string[],
-  { cwd, env = process.env, timeoutMs, logFile }: LzExecOptions,
-): Promise<LzExecResult> {
+  { cwd, env = process.env, timeoutMs, logFile }: MuirExecOptions,
+): Promise<MuirExecResult> {
   // Stryker disable next-line BooleanLiteral: equivalent for tests, as windowsHide only hides a console window that no test can see
   const child = spawn(file, args, {
     cwd,
@@ -44,7 +44,7 @@ export async function lzExec(
             timedOut = true;
             child.kill('SIGTERM');
           },
-          // Stryker disable next-line LzNodeTimerDelay: equivalent, as no test can tell a timeout one millisecond apart
+          // Stryker disable next-line MuirProteusNodeTimerDelay: equivalent, as no test can tell a timeout one millisecond apart
           timeoutMs,
         );
   // 'close' also waits for the processes the child started that still hold its stdout or stderr.

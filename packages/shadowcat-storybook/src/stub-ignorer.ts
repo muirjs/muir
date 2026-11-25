@@ -1,30 +1,45 @@
-import { field, fileNameOf } from '@muirjs/moira-storybook';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookFileNameOf,
+} from '@muirjs/moira-storybook';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
 import {
-  isStoryFile,
-  strykerStorybookProject,
-  type ProjectLog,
+  muirShadowcatStorybookIsStoryFile,
+  muirShadowcatStorybookStrykerStorybookProject,
+  type MuirShadowcatStorybookProjectLog,
 } from './storybook-project.ts';
-import { stubIgnores, type StubIgnore } from './stub-verdict.ts';
+import {
+  muirShadowcatStorybookStubIgnores,
+  type MuirShadowcatStorybookStubIgnore,
+} from './stub-verdict.ts';
 
-export function stubIgnorer(options: object, log: ProjectLog): Ignorer {
-  let ignores: readonly StubIgnore[] = [];
+export function muirShadowcatStorybookStubIgnorer(
+  options: object,
+  log: MuirShadowcatStorybookProjectLog,
+): Ignorer {
+  let ignores: readonly MuirShadowcatStorybookStubIgnore[] = [];
 
   return {
     shouldIgnore(path) {
-      const node = field(path, 'node');
+      const node = muirMoiraStorybookField(path, 'node');
 
-      if (field(node, 'type') === 'Program') {
-        const fileName = fileNameOf(path);
-        const code = field(path, 'hub', 'file', 'code');
-        const project = strykerStorybookProject(options, log);
+      if (muirMoiraStorybookField(node, 'type') === 'Program') {
+        const fileName = muirMoiraStorybookFileNameOf(path);
+        const code = muirMoiraStorybookField(path, 'hub', 'file', 'code');
+        const project = muirShadowcatStorybookStrykerStorybookProject(
+          options,
+          log,
+        );
         ignores =
           fileName !== undefined &&
           typeof code === 'string' &&
-          isStoryFile(project, fileName)
-            ? stubIgnores({ program: node, code, fileName }, project)
+          muirShadowcatStorybookIsStoryFile(project, fileName)
+            ? muirShadowcatStorybookStubIgnores(
+                { program: node, code, fileName },
+                project,
+              )
             : [];
       }
 
@@ -32,7 +47,10 @@ export function stubIgnorer(options: object, log: ProjectLog): Ignorer {
       const ignore = ignores.find(({ start, end, covers }) => {
         const call = covers === 'call' ? node : argumentCall;
 
-        return field(call, 'start') === start && field(call, 'end') === end;
+        return (
+          muirMoiraStorybookField(call, 'start') === start &&
+          muirMoiraStorybookField(call, 'end') === end
+        );
       });
 
       return ignore?.reason;
@@ -41,9 +59,12 @@ export function stubIgnorer(options: object, log: ProjectLog): Ignorer {
 }
 
 function callOfArgument(path: unknown): unknown {
-  return field(path, 'listKey') === 'arguments'
-    ? field(path, 'parent')
+  return muirMoiraStorybookField(path, 'listKey') === 'arguments'
+    ? muirMoiraStorybookField(path, 'parent')
     : undefined;
 }
 
-stubIgnorer.inject = tokens(commonTokens.options, commonTokens.logger);
+muirShadowcatStorybookStubIgnorer.inject = tokens(
+  commonTokens.options,
+  commonTokens.logger,
+);

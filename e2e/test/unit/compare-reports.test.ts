@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzCompareReports } from '../../src/compare-reports.ts';
-import { lzParseReport, type LzReport } from '../../src/report.ts';
+import { muirCompareReports } from '../../src/compare-reports.ts';
+import { muirParseReport, type MuirReport } from '../../src/report.ts';
 
 function mutant(
   status: string,
@@ -37,8 +37,10 @@ function reportJson(
   });
 }
 
-function report(files: Readonly<Record<string, readonly unknown[]>>): LzReport {
-  return lzParseReport(reportJson(files));
+function report(
+  files: Readonly<Record<string, readonly unknown[]>>,
+): MuirReport {
+  return muirParseReport(reportJson(files));
 }
 
 function compareFiles(
@@ -46,7 +48,7 @@ function compareFiles(
   firstJson: string,
   secondJson: string,
 ): { status: number | null; stdout: string } {
-  const dir = mkdtempSync(join(tmpdir(), 'lz-compare-reports-'));
+  const dir = mkdtempSync(join(tmpdir(), 'muir-compare-reports-'));
   t.after(() => {
     rmSync(dir, { recursive: true, force: true });
   });
@@ -65,7 +67,7 @@ function compareFiles(
   return { status, stdout };
 }
 
-describe('lzCompareReports', () => {
+describe('muirCompareReports', () => {
   it('finds no difference between two reports with the same mutants and statuses', () => {
     const first = report({
       'src/grow.ts': [mutant('Killed'), mutant('Survived', 3)],
@@ -74,7 +76,7 @@ describe('lzCompareReports', () => {
       'src/grow.ts': [mutant('Killed'), mutant('Survived', 3)],
     });
 
-    assert.deepEqual(lzCompareReports(first, second), []);
+    assert.deepEqual(muirCompareReports(first, second), []);
   });
 
   it('names a mutant whose status differs by file, location, mutator and replacement', () => {
@@ -85,7 +87,7 @@ describe('lzCompareReports', () => {
       'src/grow.ts': [mutant('Killed'), mutant('Killed', 3)],
     });
 
-    assert.deepEqual(lzCompareReports(first, second), [
+    assert.deepEqual(muirCompareReports(first, second), [
       'src/grow.ts@3:10-3:15 StringLiteral: "Stryker was here!": Survived -> Killed',
     ]);
   });
@@ -99,7 +101,7 @@ describe('lzCompareReports', () => {
       'src/shrink.ts': [mutant('NoCoverage')],
     });
 
-    assert.deepEqual(lzCompareReports(first, second), [
+    assert.deepEqual(muirCompareReports(first, second), [
       'src/grow.ts@3:10-3:15 StringLiteral: "Stryker was here!": Survived -> absent',
       'src/shrink.ts@2:10-2:15 StringLiteral: "Stryker was here!": absent -> NoCoverage',
     ]);
@@ -113,7 +115,7 @@ describe('lzCompareReports', () => {
       'src/grow.ts': [mutant('Killed', 2, '""'), mutant('Killed', 2, '"x"')],
     });
 
-    assert.deepEqual(lzCompareReports(first, second), [
+    assert.deepEqual(muirCompareReports(first, second), [
       'src/grow.ts@2:10-2:15 StringLiteral: "x": Survived -> Killed',
     ]);
   });
@@ -129,7 +131,7 @@ describe('lzCompareReports', () => {
       'src/grow.ts': [mutant('Killed', 2, 'a  b'), mutant('Killed', 2, 'a b')],
     });
 
-    assert.deepEqual(lzCompareReports(first, second), [
+    assert.deepEqual(muirCompareReports(first, second), [
       'src/grow.ts@2:10-2:15 StringLiteral: a b: Survived -> Killed',
     ]);
   });
@@ -139,7 +141,7 @@ describe('lzCompareReports', () => {
       'src/grow.ts': [mutant('Killed'), mutant('Survived')],
     });
 
-    assert.throws(() => lzCompareReports(first, report({})), {
+    assert.throws(() => muirCompareReports(first, report({})), {
       message:
         'Two mutants share the key "src/grow.ts:2:10-2:15 StringLiteral "Stryker was here!""; the comparison would drop one.',
     });
@@ -153,7 +155,7 @@ describe('lzCompareReports', () => {
       'src/grow.ts': [mutant('Killed', 2, 'items\n  .map(grow)')],
     });
 
-    assert.deepEqual(lzCompareReports(first, second), [
+    assert.deepEqual(muirCompareReports(first, second), [
       'src/grow.ts@2:10-2:15 StringLiteral: items .map(grow): Survived -> Killed',
     ]);
   });

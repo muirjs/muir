@@ -2,24 +2,24 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type {
-  Instrumenter,
-  ListedMutator,
-  MutantOrigin,
-  SourceFile,
+  MuirMoiraMutatorsInstrumenter,
+  MuirMoiraMutatorsListedMutator,
+  MuirMoiraMutatorsMutantOrigin,
+  MuirMoiraMutatorsSourceFile,
 } from '../src/instrumenter.ts';
 import {
-  checkNames,
-  isSelfCheckFile,
-  markOf,
-  register,
-  selfCheck,
-  selfCheckFile,
-  undoOnThrow,
-  warnUntested,
+  muirMoiraMutatorsCheckNames,
+  muirMoiraMutatorsIsSelfCheckFile,
+  muirMoiraMutatorsMarkOf,
+  muirMoiraMutatorsRegister,
+  muirMoiraMutatorsSelfCheck,
+  muirMoiraMutatorsSelfCheckFile,
+  muirMoiraMutatorsUndoOnThrow,
+  muirMoiraMutatorsWarnUntested,
 } from '../src/install.ts';
 
 const packageName = '@muirjs/test-mutators';
-const listed = (name: string): ListedMutator => ({
+const listed = (name: string): MuirMoiraMutatorsListedMutator => ({
   name,
   mutate: () => undefined,
 });
@@ -27,21 +27,29 @@ const named = (...names: string[]) => names.map((name) => ({ name }));
 
 describe('markOf', () => {
   it('is the symbol registered under the package name', () => {
-    assert.equal(markOf(packageName), Symbol.for(packageName));
+    assert.equal(muirMoiraMutatorsMarkOf(packageName), Symbol.for(packageName));
   });
 });
 
 describe('checkNames', () => {
   it('accepts names of letters that no other mutator has', () => {
     assert.doesNotThrow(() =>
-      checkNames(packageName, named('LzOne', 'LzTwo'), [listed('Regex')]),
+      muirMoiraMutatorsCheckNames(
+        packageName,
+        named('MuirMoiraMutatorsOne', 'MuirMoiraMutatorsTwo'),
+        [listed('Regex')],
+      ),
     );
   });
 
   it('lists each name with another character than a letter, in order', () => {
     assert.throws(
       () =>
-        checkNames(packageName, named('Text1', 'Good', 'Text-Literal', ''), []),
+        muirMoiraMutatorsCheckNames(
+          packageName,
+          named('Text1', 'Good', 'Text-Literal', ''),
+          [],
+        ),
       {
         message:
           "@muirjs/test-mutators: a mutator name has letters only, as Stryker's directives match no other " +
@@ -52,7 +60,12 @@ describe('checkNames', () => {
 
   it('rejects a name that another mutator has, ignoring case', () => {
     assert.throws(
-      () => checkNames(packageName, named('LzOne', 'regex'), [listed('Regex')]),
+      () =>
+        muirMoiraMutatorsCheckNames(
+          packageName,
+          named('MuirMoiraMutatorsOne', 'regex'),
+          [listed('Regex')],
+        ),
       {
         message:
           '@muirjs/test-mutators: another mutator already has the name regex.',
@@ -63,10 +76,11 @@ describe('checkNames', () => {
   it('lists every taken name, in order', () => {
     assert.throws(
       () =>
-        checkNames(packageName, named('Regex', 'Free', 'ObjectLiteral'), [
-          listed('ObjectLiteral'),
-          listed('Regex'),
-        ]),
+        muirMoiraMutatorsCheckNames(
+          packageName,
+          named('Regex', 'Free', 'ObjectLiteral'),
+          [listed('ObjectLiteral'), listed('Regex')],
+        ),
       {
         message:
           '@muirjs/test-mutators: another mutator already has the name Regex, ObjectLiteral.',
@@ -75,24 +89,41 @@ describe('checkNames', () => {
   });
 
   it('rejects the second of two names that differ only in case', () => {
-    assert.throws(() => checkNames(packageName, named('LzOne', 'lzone'), []), {
-      message:
-        '@muirjs/test-mutators: another mutator already has the name lzone.',
-    });
+    assert.throws(
+      () =>
+        muirMoiraMutatorsCheckNames(
+          packageName,
+          named('MuirMoiraMutatorsOne', 'muirmoiramutatorsone'),
+          [],
+        ),
+      {
+        message:
+          '@muirjs/test-mutators: another mutator already has the name muirmoiramutatorsone.',
+      },
+    );
   });
 
   it('accepts a name that an entry of the package itself holds', () => {
-    const own = { ...listed('LzOne'), [markOf(packageName)]: 1 };
+    const own = {
+      ...listed('MuirMoiraMutatorsOne'),
+      [muirMoiraMutatorsMarkOf(packageName)]: 1,
+    };
     const foreign = {
-      ...listed('LzTwo'),
-      [markOf('@muirjs/other-mutators')]: 1,
+      ...listed('MuirMoiraMutatorsTwo'),
+      [muirMoiraMutatorsMarkOf('@muirjs/other-mutators')]: 1,
     };
 
     assert.doesNotThrow(() =>
-      checkNames(packageName, named('LzOne'), [own, foreign]),
+      muirMoiraMutatorsCheckNames(packageName, named('MuirMoiraMutatorsOne'), [
+        own,
+        foreign,
+      ]),
     );
     assert.throws(() =>
-      checkNames(packageName, named('LzTwo'), [own, foreign]),
+      muirMoiraMutatorsCheckNames(packageName, named('MuirMoiraMutatorsTwo'), [
+        own,
+        foreign,
+      ]),
     );
   });
 });
@@ -100,19 +131,19 @@ describe('checkNames', () => {
 describe('register', () => {
   it('appends the missing mutators, marked as the package own, and keeps the rest', () => {
     const existing = listed('Regex');
-    const allMutators: ListedMutator[] = [existing];
-    const first = listed('LzOne');
-    const second = listed('LzTwo');
+    const allMutators: MuirMoiraMutatorsListedMutator[] = [existing];
+    const first = listed('MuirMoiraMutatorsOne');
+    const second = listed('MuirMoiraMutatorsTwo');
 
-    register(packageName, allMutators, [first, second]);
+    muirMoiraMutatorsRegister(packageName, allMutators, [first, second]);
 
-    const mark = markOf(packageName);
+    const mark = muirMoiraMutatorsMarkOf(packageName);
 
     assert.equal(allMutators.length, 3);
     assert.equal(allMutators[0], existing);
     assert.deepEqual(
       allMutators.slice(1).map(({ name }) => name),
-      ['LzOne', 'LzTwo'],
+      ['MuirMoiraMutatorsOne', 'MuirMoiraMutatorsTwo'],
     );
     assert.equal(allMutators[1]?.mutate, first.mutate);
     assert.equal(Reflect.get(allMutators[1] ?? {}, mark), mark);
@@ -121,14 +152,17 @@ describe('register', () => {
   });
 
   it('skips a mutator whose name the list holds already', () => {
-    const existing = listed('LzOne');
-    const allMutators: ListedMutator[] = [existing];
+    const existing = listed('MuirMoiraMutatorsOne');
+    const allMutators: MuirMoiraMutatorsListedMutator[] = [existing];
 
-    register(packageName, allMutators, [listed('LzOne'), listed('LzTwo')]);
+    muirMoiraMutatorsRegister(packageName, allMutators, [
+      listed('MuirMoiraMutatorsOne'),
+      listed('MuirMoiraMutatorsTwo'),
+    ]);
 
     assert.deepEqual(
       allMutators.map(({ name }) => name),
-      ['LzOne', 'LzTwo'],
+      ['MuirMoiraMutatorsOne', 'MuirMoiraMutatorsTwo'],
     );
     assert.equal(allMutators[0], existing);
   });
@@ -138,20 +172,31 @@ describe('register converges', () => {
   it('replaces the entries of an earlier call with the new selection, in place, and keeps the siblings', () => {
     const builtIn = listed('Regex');
     const foreign = {
-      ...listed('LzForeign'),
-      [markOf('@muirjs/other-mutators')]: 1,
+      ...listed('MuirMoiraMutatorsForeign'),
+      [muirMoiraMutatorsMarkOf('@muirjs/other-mutators')]: 1,
     };
-    const allMutators: ListedMutator[] = [builtIn];
+    const allMutators: MuirMoiraMutatorsListedMutator[] = [builtIn];
     const list = allMutators;
 
-    register(packageName, allMutators, [listed('LzOne'), listed('LzTwo')]);
+    muirMoiraMutatorsRegister(packageName, allMutators, [
+      listed('MuirMoiraMutatorsOne'),
+      listed('MuirMoiraMutatorsTwo'),
+    ]);
     allMutators.splice(1, 0, foreign);
-    register(packageName, allMutators, [listed('LzTwo'), listed('LzThree')]);
+    muirMoiraMutatorsRegister(packageName, allMutators, [
+      listed('MuirMoiraMutatorsTwo'),
+      listed('MuirMoiraMutatorsThree'),
+    ]);
 
     assert.equal(allMutators, list);
     assert.deepEqual(
       allMutators.map(({ name }) => name),
-      ['Regex', 'LzForeign', 'LzTwo', 'LzThree'],
+      [
+        'Regex',
+        'MuirMoiraMutatorsForeign',
+        'MuirMoiraMutatorsTwo',
+        'MuirMoiraMutatorsThree',
+      ],
     );
     assert.equal(allMutators[0], builtIn);
     assert.equal(allMutators[1], foreign);
@@ -160,9 +205,14 @@ describe('register converges', () => {
 
 describe('selfCheck', () => {
   const fakeInstrumenter = (
-    mutantsOf: (files: readonly SourceFile[]) => readonly MutantOrigin[],
-    seen: SourceFile[] = [],
-  ): Pick<Instrumenter<unknown>, 'dir' | 'instrument' | 'version'> => ({
+    mutantsOf: (
+      files: readonly MuirMoiraMutatorsSourceFile[],
+    ) => readonly MuirMoiraMutatorsMutantOrigin[],
+    seen: MuirMoiraMutatorsSourceFile[] = [],
+  ): Pick<
+    MuirMoiraMutatorsInstrumenter<unknown>,
+    'dir' | 'instrument' | 'version'
+  > => ({
     dir: '/fake/instrumenter',
     version: '1.2.3',
     instrument: async (files) => {
@@ -172,12 +222,12 @@ describe('selfCheck', () => {
     },
   });
   const samples = [
-    { name: 'LzOne', sample: 'one();' },
-    { name: 'LzTwo', sample: 'two();' },
+    { name: 'MuirMoiraMutatorsOne', sample: 'one();' },
+    { name: 'MuirMoiraMutatorsTwo', sample: 'two();' },
   ];
 
   it('passes when every mutator makes a mutant in its own sample file', async () => {
-    const seen: SourceFile[] = [];
+    const seen: MuirMoiraMutatorsSourceFile[] = [];
     const instrumenter = fakeInstrumenter(
       (files) =>
         files.map(({ name }) => ({
@@ -187,62 +237,85 @@ describe('selfCheck', () => {
       seen,
     );
 
-    await selfCheck(packageName, instrumenter, samples);
+    await muirMoiraMutatorsSelfCheck(packageName, instrumenter, samples);
 
     assert.deepEqual(seen, [
-      { name: 'LzOne.self-check.tsx', content: 'one();' },
-      { name: 'LzTwo.self-check.tsx', content: 'two();' },
+      { name: 'MuirMoiraMutatorsOne.self-check.tsx', content: 'one();' },
+      { name: 'MuirMoiraMutatorsTwo.self-check.tsx', content: 'two();' },
     ]);
   });
 
   it('throws, listing the mutators that made no mutant', async () => {
     const instrumenter = fakeInstrumenter(() => [
-      { fileName: 'LzOne.self-check.tsx', mutatorName: 'LzOne' },
-      { fileName: 'LzTwo.self-check.tsx', mutatorName: 'Regex' },
-      { fileName: 'Other.self-check.tsx', mutatorName: 'LzTwo' },
+      {
+        fileName: 'MuirMoiraMutatorsOne.self-check.tsx',
+        mutatorName: 'MuirMoiraMutatorsOne',
+      },
+      { fileName: 'MuirMoiraMutatorsTwo.self-check.tsx', mutatorName: 'Regex' },
+      { fileName: 'Other.self-check.tsx', mutatorName: 'MuirMoiraMutatorsTwo' },
     ]);
 
-    await assert.rejects(selfCheck(packageName, instrumenter, samples), {
-      message:
-        '@muirjs/test-mutators: the instrumenter 1.2.3 in /fake/instrumenter made no mutants of LzTwo from their ' +
-        'samples, so it does not run the mutators this module added. A bundled or second copy of the instrumenter ' +
-        'does that.',
-    });
+    await assert.rejects(
+      muirMoiraMutatorsSelfCheck(packageName, instrumenter, samples),
+      {
+        message:
+          '@muirjs/test-mutators: the instrumenter 1.2.3 in /fake/instrumenter made no mutants of MuirMoiraMutatorsTwo from their ' +
+          'samples, so it does not run the mutators this module added. A bundled or second copy of the instrumenter ' +
+          'does that.',
+      },
+    );
   });
 
   it('lists every silent mutator, in order', async () => {
     const instrumenter = fakeInstrumenter(() => []);
 
-    await assert.rejects(selfCheck(packageName, instrumenter, samples), {
-      message: /made no mutants of LzOne, LzTwo from/,
-    });
+    await assert.rejects(
+      muirMoiraMutatorsSelfCheck(packageName, instrumenter, samples),
+      {
+        message:
+          /made no mutants of MuirMoiraMutatorsOne, MuirMoiraMutatorsTwo from/,
+      },
+    );
   });
 });
 
 describe('isSelfCheckFile', () => {
   it('tells the sample files of the self-check from other files', () => {
-    assert.equal(isSelfCheckFile(selfCheckFile('LzOne')), true);
-    assert.equal(isSelfCheckFile('src/LzOne.self-check.tsx'), true);
-    assert.equal(isSelfCheckFile('src/LzOne.tsx'), false);
+    assert.equal(
+      muirMoiraMutatorsIsSelfCheckFile(
+        muirMoiraMutatorsSelfCheckFile('MuirMoiraMutatorsOne'),
+      ),
+      true,
+    );
+    assert.equal(
+      muirMoiraMutatorsIsSelfCheckFile(
+        'src/MuirMoiraMutatorsOne.self-check.tsx',
+      ),
+      true,
+    );
+    assert.equal(
+      muirMoiraMutatorsIsSelfCheckFile('src/MuirMoiraMutatorsOne.tsx'),
+      false,
+    );
   });
 });
 
 describe('undoOnThrow', () => {
-  const mark = markOf(packageName);
+  const mark = muirMoiraMutatorsMarkOf(packageName);
   const failure = new Error('check failed');
 
   it('keeps the changes when the change resolves', async () => {
     const list = [listed('Regex')];
     const placer: { [key: symbol]: unknown } = {};
 
-    await undoOnThrow([list, placer], async () => {
-      list.push(listed('LzOne'));
+    await muirMoiraMutatorsUndoOnThrow([list, placer], async () => {
+      list.push(listed('MuirMoiraMutatorsOne'));
       placer[mark] = mark;
     });
 
     assert.deepEqual(
       list.map(({ name }) => name),
-      ['Regex', 'LzOne'],
+      ['Regex', 'MuirMoiraMutatorsOne'],
     );
     assert.equal(placer[mark], mark);
   });
@@ -260,9 +333,9 @@ describe('undoOnThrow', () => {
     } = { name: 'placer', canPlace };
 
     await assert.rejects(
-      undoOnThrow([list, longer, placer], async () => {
-        list.splice(0, list.length, listed('LzOne'));
-        longer.push(literal, listed('LzTwo'));
+      muirMoiraMutatorsUndoOnThrow([list, longer, placer], async () => {
+        list.splice(0, list.length, listed('MuirMoiraMutatorsOne'));
+        longer.push(literal, listed('MuirMoiraMutatorsTwo'));
         placer.canPlace = () => true;
         placer[mark] = mark;
         throw failure;
@@ -283,8 +356,11 @@ describe('warnUntested', () => {
   it('warns when the instrumenter is not the tested version', () => {
     const warnings: string[] = [];
 
-    warnUntested(packageName, '1.0.0', instrumenter, (message) =>
-      warnings.push(message),
+    muirMoiraMutatorsWarnUntested(
+      packageName,
+      '1.0.0',
+      instrumenter,
+      (message) => warnings.push(message),
     );
 
     assert.deepEqual(warnings, [
@@ -296,8 +372,11 @@ describe('warnUntested', () => {
   it('says nothing when the instrumenter is the tested version', () => {
     const warnings: string[] = [];
 
-    warnUntested(packageName, '1.2.3', instrumenter, (message) =>
-      warnings.push(message),
+    muirMoiraMutatorsWarnUntested(
+      packageName,
+      '1.2.3',
+      instrumenter,
+      (message) => warnings.push(message),
     );
 
     assert.deepEqual(warnings, []);

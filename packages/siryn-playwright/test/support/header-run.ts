@@ -4,15 +4,15 @@ import path from 'node:path';
 import type { TestContext } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { withEnv } from '../../src/process-env.ts';
-import { loadPlaywright } from '../../src/playwright-internals.ts';
+import { muirSirynPlaywrightWithEnv } from '../../src/process-env.ts';
+import { muirSirynPlaywrightLoadPlaywright } from '../../src/playwright-internals.ts';
 import {
-  hookTestNamespaceEnv,
-  type RunSettings,
-  runSettingsEnv,
+  muirSirynPlaywrightHookTestNamespaceEnv,
+  type MuirSirynPlaywrightRunSettings,
+  muirSirynPlaywrightRunSettingsEnv,
 } from '../../src/protocol.ts';
-import { LzPlaywrightCollectingReporter } from '../../src/reporter.ts';
-import { testIdHeader } from '../../src/server-protocol.ts';
+import { MuirSirynPlaywrightCollectingReporter } from '../../src/reporter.ts';
+import { muirSirynPlaywrightTestIdHeader } from '../../src/server-protocol.ts';
 import { hookTestNamespace, tempTree } from './doubles.ts';
 
 const packageJson = fileURLToPath(
@@ -25,7 +25,7 @@ export const playwrightTest = import.meta.resolve('@playwright/test');
 async function recordingServer(t: TestContext) {
   const requests: [string, string | undefined][] = [];
   const server = createServer((request, response) => {
-    const header = request.headers[testIdHeader];
+    const header = request.headers[muirSirynPlaywrightTestIdHeader];
     requests.push([
       request.url ?? '',
       typeof header === 'string' ? header : undefined,
@@ -45,30 +45,29 @@ export async function headersOfRun(
   spec: (baseUrl: string) => readonly string[],
 ): Promise<[string, string | undefined][]> {
   const { requests, port } = await recordingServer(t);
-  const dir = tempTree(t, 'lz-header-run-', {
+  const dir = tempTree(t, 'muir-header-run-', {
     'playwright.config.mjs': "export default { testDir: './tests' };\n",
     'tests/requests.spec.mjs': [...spec(`http://127.0.0.1:${port}`), ''].join(
       '\n',
     ),
   });
-  const playwright = await loadPlaywright(packageJson).createTestRunner(
-    path.join(dir, 'playwright.config.mjs'),
-    {},
-  );
+  const playwright = await muirSirynPlaywrightLoadPlaywright(
+    packageJson,
+  ).createTestRunner(path.join(dir, 'playwright.config.mjs'), {});
   await playwright.loadConfig();
-  const reporter = new LzPlaywrightCollectingReporter();
-  const settings: RunSettings = {
-    outDir: tempTree(t, 'lz-header-run-out-'),
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
+  const settings: MuirSirynPlaywrightRunSettings = {
+    outDir: tempTree(t, 'muir-header-run-out-'),
     perTest: true,
     testIdHosts: [`localhost:${port}`],
   };
 
-  const { status } = await withEnv(
+  const { status } = await muirSirynPlaywrightWithEnv(
     {
       NODE_OPTIONS:
         `--import "${workerHookUrl}" ${process.env['NODE_OPTIONS'] ?? ''}`.trim(),
-      [runSettingsEnv]: JSON.stringify(settings),
-      [hookTestNamespaceEnv]: hookTestNamespace,
+      [muirSirynPlaywrightRunSettingsEnv]: JSON.stringify(settings),
+      [muirSirynPlaywrightHookTestNamespaceEnv]: hookTestNamespace,
     },
     () =>
       playwright.runTests(reporter, {

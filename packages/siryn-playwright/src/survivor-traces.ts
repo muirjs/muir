@@ -4,31 +4,33 @@ import path from 'node:path';
 
 import type { Mutant, schema } from '@stryker-mutator/api/core';
 
-import type { ReportedTest } from './reporter.ts';
-import { testName } from './run-result.ts';
+import type { MuirSirynPlaywrightReportedTest } from './reporter.ts';
+import { muirSirynPlaywrightTestName } from './run-result.ts';
 
-export const tracesDirEnv = 'LZ_STRYKER_PLAYWRIGHT_TRACES_DIR';
-export const projectRootEnv = 'LZ_STRYKER_PLAYWRIGHT_PROJECT_ROOT';
+export const muirSirynPlaywrightTracesDirEnv =
+  'MUIR_SIRYN_PLAYWRIGHT_TRACES_DIR';
+export const muirSirynPlaywrightProjectRootEnv =
+  'MUIR_SIRYN_PLAYWRIGHT_PROJECT_ROOT';
 
-export interface TracesTarget {
+export interface MuirSirynPlaywrightTracesTarget {
   readonly dir: string;
   readonly projectRoot: string;
 }
 
-export function readTracesTarget(
+export function muirSirynPlaywrightReadTracesTarget(
   survivorTraces: string | undefined,
   env: Readonly<Record<string, string | undefined>>,
-): TracesTarget | undefined {
+): MuirSirynPlaywrightTracesTarget | undefined {
   if (survivorTraces === undefined) {
     return undefined;
   }
 
-  const dir = env[tracesDirEnv];
-  const projectRoot = env[projectRootEnv];
+  const dir = env[muirSirynPlaywrightTracesDirEnv];
+  const projectRoot = env[muirSirynPlaywrightProjectRootEnv];
 
   if (!dir || !projectRoot) {
     throw new Error(
-      'lzPlaywright.survivorTraces is set, but the lz-playwright-traces reporter is not in reporters. ' +
+      'muirSirynPlaywright.survivorTraces is set, but the muir-siryn-playwright-traces reporter is not in reporters. ' +
         'Add it: it empties the traces folder at the start of each run.',
     );
   }
@@ -36,7 +38,10 @@ export function readTracesTarget(
   return { dir, projectRoot };
 }
 
-export function reportFileName(fileName: string, projectRoot: string): string {
+export function muirSirynPlaywrightReportFileName(
+  fileName: string,
+  projectRoot: string,
+): string {
   return path.relative(projectRoot, fileName).replaceAll('\\', '/');
 }
 
@@ -45,14 +50,14 @@ type ReportedMutant = Pick<
   'mutatorName' | 'replacement' | 'location'
 >;
 
-export function reportKey(
+export function muirSirynPlaywrightReportKey(
   fileName: string,
   { mutatorName, replacement, location: { start, end } }: ReportedMutant,
 ): string {
   return `${fileName}@${start.line}:${start.column}-${end.line}:${end.column}\n${mutatorName}: ${replacement}`;
 }
 
-export function mutantKey(
+export function muirSirynPlaywrightMutantKey(
   fileName: string,
   {
     mutatorName,
@@ -60,7 +65,7 @@ export function mutantKey(
     location: { start, end },
   }: Pick<Mutant, 'mutatorName' | 'replacement' | 'location'>,
 ): string {
-  return reportKey(fileName, {
+  return muirSirynPlaywrightReportKey(fileName, {
     mutatorName,
     replacement,
     location: {
@@ -72,7 +77,7 @@ export function mutantKey(
 
 const unsafe = /[^-0-9A-Za-z\P{ASCII}]+/gu;
 
-export function folderName(key: string): string {
+export function muirSirynPlaywrightFolderName(key: string): string {
   const hash = createHash('sha1').update(key).digest('hex').slice(0, 8);
 
   return `${trimMiddle(key.replace(unsafe, '-'), 91)}-${hash}`;
@@ -88,29 +93,32 @@ function trimMiddle(text: string, length: number): string {
   return `${text.slice(0, head)}-${text.slice(text.length - (length - 1 - head))}`;
 }
 
-export interface CopiedTrace {
+export interface MuirSirynPlaywrightCopiedTrace {
   readonly test: string;
   readonly attempt: number;
   readonly status: string;
   readonly trace: string | undefined;
 }
 
-export const mutantFile = 'mutant.json';
+export const muirSirynPlaywrightMutantFile = 'mutant.json';
 
-export interface MutantTraces {
+export interface MuirSirynPlaywrightMutantTraces {
   readonly key: string;
-  readonly tests: readonly CopiedTrace[];
+  readonly tests: readonly MuirSirynPlaywrightCopiedTrace[];
 }
 
-export function copySurvivorTraces(
-  { dir: tracesDir, projectRoot }: TracesTarget,
+export function muirSirynPlaywrightCopySurvivorTraces(
+  { dir: tracesDir, projectRoot }: MuirSirynPlaywrightTracesTarget,
   mutant: Pick<Mutant, 'fileName' | 'mutatorName' | 'replacement' | 'location'>,
-  tests: Iterable<ReportedTest>,
+  tests: Iterable<MuirSirynPlaywrightReportedTest>,
 ): string {
-  const key = mutantKey(reportFileName(mutant.fileName, projectRoot), mutant);
-  const dir = path.join(tracesDir, folderName(key));
+  const key = muirSirynPlaywrightMutantKey(
+    muirSirynPlaywrightReportFileName(mutant.fileName, projectRoot),
+    mutant,
+  );
+  const dir = path.join(tracesDir, muirSirynPlaywrightFolderName(key));
   fs.mkdirSync(dir, { recursive: true });
-  const copied: CopiedTrace[] = [];
+  const copied: MuirSirynPlaywrightCopiedTrace[] = [];
 
   for (const test of tests) {
     for (const [index, attempt] of test.results.entries()) {
@@ -124,7 +132,7 @@ export function copySurvivorTraces(
       }
 
       copied.push({
-        test: testName(test),
+        test: muirSirynPlaywrightTestName(test),
         attempt: index,
         status: attempt.status,
         trace: source ? copy : undefined,
@@ -132,16 +140,16 @@ export function copySurvivorTraces(
     }
   }
 
-  const written: MutantTraces = { key, tests: copied };
+  const written: MuirSirynPlaywrightMutantTraces = { key, tests: copied };
   fs.writeFileSync(
-    path.join(dir, mutantFile),
+    path.join(dir, muirSirynPlaywrightMutantFile),
     JSON.stringify(written, null, 2),
   );
 
   return dir;
 }
 
-export function cleanTracesDir(dir: string): void {
+export function muirSirynPlaywrightCleanTracesDir(dir: string): void {
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
 }

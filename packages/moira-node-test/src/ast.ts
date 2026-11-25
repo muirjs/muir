@@ -1,15 +1,15 @@
 import type { NodePath, types } from '@babel/core';
 
-export interface LzImportOf {
+export interface MuirMoiraNodeTestImportOf {
   readonly source: string;
   readonly imported: string | undefined;
 }
 
 /** Only ES module `import` declarations count: the mutators do not read CommonJS `require`. */
-export function lzImportOf(
+export function muirMoiraNodeTestImportOf(
   path: NodePath,
   name: string,
-): LzImportOf | undefined {
+): MuirMoiraNodeTestImportOf | undefined {
   const bound = path.scope.getBinding(name)?.path;
 
   if (bound?.parent.type !== 'ImportDeclaration') {
@@ -33,7 +33,9 @@ function exportedName(
   return imported.type === 'Identifier' ? imported.name : imported.value;
 }
 
-export function lzPropertyName(member: types.Node): string | undefined {
+export function muirMoiraNodeTestPropertyName(
+  member: types.Node,
+): string | undefined {
   return member.type === 'MemberExpression' &&
     !member.computed &&
     member.property.type === 'Identifier'
@@ -41,15 +43,19 @@ export function lzPropertyName(member: types.Node): string | undefined {
     : undefined;
 }
 
-export function lzAwaited(expression: types.Expression): types.Expression {
+export function muirMoiraNodeTestAwaited(
+  expression: types.Expression,
+): types.Expression {
   return expression.type === 'AwaitExpression'
     ? expression.argument
     : expression;
 }
 
-export function lzCalleeRoot(callee: types.Node): types.Identifier | undefined {
+export function muirMoiraNodeTestCalleeRoot(
+  callee: types.Node,
+): types.Identifier | undefined {
   if (callee.type === 'MemberExpression') {
-    return lzCalleeRoot(callee.object);
+    return muirMoiraNodeTestCalleeRoot(callee.object);
   }
 
   return callee.type === 'Identifier' ? callee : undefined;

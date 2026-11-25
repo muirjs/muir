@@ -1,4 +1,4 @@
-// Each case must give exactly the LzStorybook mutants it lists, through the real instrumenter with the real install;
+// Each case must give exactly the MuirProteusStorybook mutants it lists, through the real instrumenter with the real install;
 // the built-ins' mutants are left out. The install and the instrumentation run in a before hook, so that an error
 // there fails every case instead of the file.
 import assert from 'node:assert/strict';
@@ -6,15 +6,15 @@ import { join } from 'node:path';
 import { before, test } from 'node:test';
 
 import {
-  coreInstrument,
-  fieldOf,
-  type SourceFile,
+  muirMoiraMutatorsCoreInstrument,
+  muirMoiraMutatorsFieldOf,
+  type MuirMoiraMutatorsSourceFile,
 } from '@muirjs/moira-mutators';
 
-import { lzStorybookMutators } from '../../src/index.ts';
-import { resolveFromCore } from '../../src/install.ts';
-import { mutatorSets } from '../../src/mutators.ts';
-import { packageName } from '../../src/package-name.ts';
+import { muirProteusStorybookMutators } from '../../src/index.ts';
+import { muirProteusStorybookResolveFromCore } from '../../src/install.ts';
+import { muirProteusStorybookMutatorSets } from '../../src/mutators.ts';
+import { muirProteusStorybookPackageName } from '../../src/package-name.ts';
 import type { Case } from './case.ts';
 
 interface Mutant {
@@ -24,19 +24,19 @@ interface Mutant {
 }
 
 const ours: ReadonlySet<string> = new Set(
-  Object.values(mutatorSets)
+  Object.values(muirProteusStorybookMutatorSets)
     .flat()
     .map(({ name }) => name),
 );
 
 async function mutantsOf(
-  files: readonly SourceFile[],
+  files: readonly MuirMoiraMutatorsSourceFile[],
 ): Promise<readonly Mutant[]> {
-  const instrument = await coreInstrument({
-    packageName,
-    ...(await resolveFromCore()),
+  const instrument = await muirMoiraMutatorsCoreInstrument({
+    packageName: muirProteusStorybookPackageName,
+    ...(await muirProteusStorybookResolveFromCore()),
   });
-  const mutants = fieldOf(await instrument(files), 'mutants');
+  const mutants = muirMoiraMutatorsFieldOf(await instrument(files), 'mutants');
 
   if (!Array.isArray(mutants)) {
     throw new Error('Instrumenter.instrument() gave no mutants');
@@ -50,7 +50,7 @@ async function mutantsOf(
 }
 
 function stringField(mutant: unknown, key: string): string {
-  const value = fieldOf(mutant, key);
+  const value = muirMoiraMutatorsFieldOf(mutant, key);
 
   if (typeof value !== 'string') {
     throw new TypeError(
@@ -73,7 +73,7 @@ export function runCases(cases: readonly Case[]): void {
   let mutants: readonly Mutant[];
 
   before(async () => {
-    await lzStorybookMutators({ LzStorybookArgs: true });
+    await muirProteusStorybookMutators({ MuirProteusStorybookArgs: true });
     mutants = await mutantsOf(
       cases.map((testCase) => ({
         name: fileOf(testCase),

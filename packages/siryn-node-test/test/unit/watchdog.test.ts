@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import { checkMemory, watch, workersAllowed } from '../../src/watchdog.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import {
+  muirSirynNodeTestCheckMemory,
+  muirSirynNodeTestWatch,
+  muirSirynNodeTestWorkersAllowed,
+} from '../../src/watchdog.ts';
 
 const data = { limitMB: 200, recordPath: '/out/4321.memory.json' };
 const mb = 1048576;
@@ -10,7 +14,7 @@ const mb = 1048576;
 function check(rssBytes: number) {
   const writes: unknown[][] = [];
   const kills: unknown[][] = [];
-  checkMemory(
+  muirSirynNodeTestCheckMemory(
     data,
     rssBytes,
     (path, record) => writes.push([path, record]),
@@ -21,7 +25,7 @@ function check(rssBytes: number) {
 }
 
 describe('workersAllowed', () => {
-  lzTestFor<readonly [string, boolean | undefined, boolean]>([
+  muirTestFor<readonly [string, boolean | undefined, boolean]>([
     ['outside the permission model', undefined, true],
     ['under the permission model with workers', true, true],
     ['under the permission model without workers', false, false],
@@ -38,7 +42,7 @@ describe('workersAllowed', () => {
             },
           };
 
-    assert.equal(workersAllowed(permission), expected);
+    assert.equal(muirSirynNodeTestWorkersAllowed(permission), expected);
     assert.deepEqual(asked, allowed === undefined ? [] : ['worker']);
   });
 });
@@ -60,7 +64,7 @@ describe('checkMemory', () => {
     const kills: unknown[][] = [];
 
     assert.throws(() => {
-      checkMemory(
+      muirSirynNodeTestCheckMemory(
         data,
         200.6 * mb,
         () => {
@@ -75,7 +79,7 @@ describe('checkMemory', () => {
   it('ends the process through process.kill by default', (t) => {
     const kill = t.mock.method(process, 'kill', () => true);
 
-    checkMemory(data, 200.6 * mb, () => {});
+    muirSirynNodeTestCheckMemory(data, 200.6 * mb, () => {});
 
     assert.deepEqual(
       kill.mock.calls.map((call) => call.arguments),
@@ -83,7 +87,7 @@ describe('checkMemory', () => {
     );
   });
 
-  lzTestFor<readonly [string, number]>([
+  muirTestFor<readonly [string, number]>([
     ['at the limit', 200 * mb],
     ['just below the limit after rounding', 200.4 * mb],
     [
@@ -110,7 +114,7 @@ describe('watch', () => {
     const kill = t.mock.method(process, 'kill', () => true);
     const looks: number[] = [];
     let rss = 0;
-    watch(data, () => {
+    muirSirynNodeTestWatch(data, () => {
       looks.push(rss);
 
       return ++rss;
@@ -129,7 +133,7 @@ describe('watch', () => {
     t.mock.timers.enable({ apis: ['setInterval'] });
     const kill = t.mock.method(process, 'kill', () => true);
     const rss = t.mock.method(process.memoryUsage, 'rss', () => 1);
-    watch(data);
+    muirSirynNodeTestWatch(data);
 
     t.mock.timers.tick(50);
 

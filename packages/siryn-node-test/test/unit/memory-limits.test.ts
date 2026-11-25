@@ -4,10 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import { logger } from '../runner.fixtures.ts';
-import { lzDryRunStore } from '../../src/dry-run-store.ts';
-import { memoryLimits } from '../../src/memory-limits.ts';
+import { muirSirynNodeTestDryRunStore } from '../../src/dry-run-store.ts';
+import { muirSirynNodeTestMemoryLimits } from '../../src/memory-limits.ts';
 
 function setup(t: TestContext, maxMemoryMB?: number) {
   const parent = mkdtempSync(join(tmpdir(), 'memory-limits-'));
@@ -16,14 +16,15 @@ function setup(t: TestContext, maxMemoryMB?: number) {
   });
   const dir = join(parent, 'dry-run');
   const warnings: string[] = [];
-  const store = lzDryRunStore(dir);
-  const limits = () => memoryLimits(maxMemoryMB, store, logger({ warnings }));
+  const store = muirSirynNodeTestDryRunStore(dir);
+  const limits = () =>
+    muirSirynNodeTestMemoryLimits(maxMemoryMB, store, logger({ warnings }));
 
   return { dir, store, warnings, limits };
 }
 
 describe('memoryLimits', () => {
-  it('runs the dry run and every mutant run under lzNodeTest.maxMemoryMB, and keeps no peaks', (t) => {
+  it('runs the dry run and every mutant run under muirSirynNodeTest.maxMemoryMB, and keeps no peaks', (t) => {
     const { dir, store, warnings, limits } = setup(t, 1500);
     const dryRun = limits();
 
@@ -39,7 +40,7 @@ describe('memoryLimits', () => {
     assert.deepEqual(warnings, []);
   });
 
-  lzTestFor<readonly [readonly (number | undefined)[], number]>([
+  muirTestFor<readonly [readonly (number | undefined)[], number]>([
     [[370], 1579],
     [[101], 1176],
     [[50, 370, 100], 1579],
@@ -69,7 +70,7 @@ describe('memoryLimits', () => {
     },
   );
 
-  lzTestFor<readonly [string]>([[''], ['not a number'], ['12x'], ['x12']])(
+  muirTestFor<readonly [string]>([[''], ['not a number'], ['12x'], ['x12']])(
     'gives a file whose stored peak reads %j 1024 MB, warning about it as about a missing peak',
     ([stored], t) => {
       const { dir, store, warnings, limits } = setup(t);
@@ -100,7 +101,7 @@ describe('memoryLimits', () => {
     );
     assert.deepEqual(warnings, [
       'The dry run left no readable memory peak for "a.test.ts", ' +
-        'so each process of its mutant runs may hold 1024 MB. Set lzNodeTest.maxMemoryMB to choose the limit.',
+        'so each process of its mutant runs may hold 1024 MB. Set muirSirynNodeTest.maxMemoryMB to choose the limit.',
     ]);
   });
 });

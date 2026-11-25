@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
 
-import { install } from '../src/install.ts';
-import { mutatorSets } from '../src/mutators.ts';
+import { muirProteusPlaywrightInstall } from '../src/install.ts';
+import { muirProteusPlaywrightMutatorSets } from '../src/mutators.ts';
 import { fakeInstrumenter } from './support/fake-instrumenter.ts';
 
 async function startLineWith(options: unknown): Promise<string> {
   const { instrumenter } = fakeInstrumenter();
   const lines: string[] = [];
 
-  await install(
-    mutatorSets,
+  await muirProteusPlaywrightInstall(
+    muirProteusPlaywrightMutatorSets,
     options,
     async () => instrumenter,
     () => undefined,
@@ -31,14 +31,17 @@ it('turns every opt-in mutator on with extended', async () => {
 
   assert.match(
     line,
-    / Opt-in or experimental: LzPlaywrightSleepWait, LzPlaywrightStateWait, LzPlaywrightNetworkWait, LzPlaywrightClock, LzPlaywrightMountStory\.$/,
+    / Opt-in or experimental: MuirProteusPlaywrightSleepWait, MuirProteusPlaywrightStateWait, MuirProteusPlaywrightNetworkWait, MuirProteusPlaywrightClock, MuirProteusPlaywrightMountStory\.$/,
   );
 });
 
 it('turns one opt-in mutator on by its name', async () => {
-  const line = await startLineWith({ LzPlaywrightSleepWait: true });
+  const line = await startLineWith({ MuirProteusPlaywrightSleepWait: true });
 
-  assert.match(line, / Opt-in or experimental: LzPlaywrightSleepWait\.$/);
+  assert.match(
+    line,
+    / Opt-in or experimental: MuirProteusPlaywrightSleepWait\.$/,
+  );
 });
 
 it('turns every experimental mutator on with experimental', async () => {
@@ -46,11 +49,14 @@ it('turns every experimental mutator on with experimental', async () => {
 
   assert.match(
     line,
-    / Opt-in or experimental: LzPlaywrightRequestData, LzPlaywrightRequestUrl\.$/,
+    / Opt-in or experimental: MuirProteusPlaywrightRequestData, MuirProteusPlaywrightRequestUrl\.$/,
   );
 });
 
-for (const name of ['LzPlaywrightRequestData', 'LzPlaywrightRequestUrl']) {
+for (const name of [
+  'MuirProteusPlaywrightRequestData',
+  'MuirProteusPlaywrightRequestUrl',
+]) {
   it(`turns ${name} on alone by its name inside experimental`, async () => {
     const line = await startLineWith({ experimental: { [name]: true } });
 
@@ -58,23 +64,27 @@ for (const name of ['LzPlaywrightRequestData', 'LzPlaywrightRequestUrl']) {
   });
 }
 
-it('names lzPlaywrightMutators when options reach a roster with no opt-in or experimental mutators', async () => {
+it('names muirProteusPlaywrightMutators when options reach a roster with no opt-in or experimental mutators', async () => {
   const { instrumenter } = fakeInstrumenter();
 
   await assert.rejects(
-    install(
-      { defaults: mutatorSets.defaults, optIn: [], experimental: [] },
+    muirProteusPlaywrightInstall(
+      {
+        defaults: muirProteusPlaywrightMutatorSets.defaults,
+        optIn: [],
+        experimental: [],
+      },
       { extended: true },
       async () => instrumenter,
       () => undefined,
       () => undefined,
     ),
-    { message: /, so lzPlaywrightMutators\(\) takes no options\./ },
+    { message: /, so muirProteusPlaywrightMutators\(\) takes no options\./ },
   );
 });
 
 it('leaves every experimental mutator off with extended', async () => {
   const line = await startLineWith({ extended: true });
 
-  assert.doesNotMatch(line, /LzPlaywrightRequest/);
+  assert.doesNotMatch(line, /MuirProteusPlaywrightRequest/);
 });

@@ -12,39 +12,42 @@ import {
   toMutantRunResult,
 } from '@stryker-mutator/api/test-runner';
 
-import { nullPrototypeRecord, type Snapshot } from './protocol.ts';
 import {
-  type LzPlaywrightCollectingReporter,
-  errorText,
-  type ReportedTest,
-  type TestWindow,
+  muirSirynPlaywrightNullPrototypeRecord,
+  type MuirSirynPlaywrightSnapshot,
+} from './protocol.ts';
+import {
+  type MuirSirynPlaywrightCollectingReporter,
+  muirSirynPlaywrightErrorText,
+  type MuirSirynPlaywrightReportedTest,
+  type MuirSirynPlaywrightTestWindow,
 } from './reporter.ts';
 import type {
-  DryRunRequest,
-  MutantRunRequest,
-  RunRequest,
+  MuirSirynPlaywrightDryRunRequest,
+  MuirSirynPlaywrightMutantRunRequest,
+  MuirSirynPlaywrightRunRequest,
 } from './run-request.ts';
-import { untaggedArrival } from './server-protocol.ts';
-import { timeoutReason } from './timeouts.ts';
+import { muirSirynPlaywrightUntaggedArrival } from './server-protocol.ts';
+import { muirSirynPlaywrightTimeoutReason } from './timeouts.ts';
 
-export type RunResult =
+export type MuirSirynPlaywrightRunResult =
   | (Omit<CompleteDryRunResult, 'mutantCoverage'> & {
-      readonly snapshots: readonly Snapshot[];
+      readonly snapshots: readonly MuirSirynPlaywrightSnapshot[];
     })
   | Exclude<DryRunResult, { readonly status: DryRunStatus.Complete }>;
 
-export type RunStatus = FullResult['status'] | 'deadline';
+export type MuirSirynPlaywrightRunStatus = FullResult['status'] | 'deadline';
 
-export interface RunOutput {
-  readonly status: RunStatus;
-  readonly reporter: LzPlaywrightCollectingReporter;
-  readonly snapshots: readonly Snapshot[];
+export interface MuirSirynPlaywrightRunOutput {
+  readonly status: MuirSirynPlaywrightRunStatus;
+  readonly reporter: MuirSirynPlaywrightCollectingReporter;
+  readonly snapshots: readonly MuirSirynPlaywrightSnapshot[];
   readonly hookInstalled: boolean;
   readonly installErrors: readonly string[];
   readonly serverMutants: readonly string[];
 }
 
-export interface CoverageGaps {
+export interface MuirSirynPlaywrightCoverageGaps {
   readonly lostFrames: number;
   readonly sharedFrames: number;
 }
@@ -56,7 +59,7 @@ const statusByOutcome: Record<ReturnType<TestCase['outcome']>, TestStatus> = {
   skipped: TestStatus.Skipped,
 };
 
-export interface AttemptSummary {
+export interface MuirSirynPlaywrightAttemptSummary {
   /** An attempt ended other than expected, skipped aside: timed out and interrupted count. */
   readonly anyFailed: boolean;
   /**
@@ -67,10 +70,10 @@ export interface AttemptSummary {
   readonly timedOut: boolean;
 }
 
-export function attemptSummary(
-  testCases: Iterable<ReportedTest>,
+export function muirSirynPlaywrightAttemptSummary(
+  testCases: Iterable<MuirSirynPlaywrightReportedTest>,
   failOnFlakyTests: boolean,
-): AttemptSummary {
+): MuirSirynPlaywrightAttemptSummary {
   const attempts = [...testCases]
     // Playwright 1.64.1 passes a run whose tests pass on a retry, unless failOnFlakyTests is set.
     .filter((test) => failOnFlakyTests || test.outcome() !== 'flaky')
@@ -93,26 +96,37 @@ export function attemptSummary(
   };
 }
 
-export function mayHaveLostItsServer(output: RunOutput): boolean {
+export function muirSirynPlaywrightMayHaveLostItsServer(
+  output: MuirSirynPlaywrightRunOutput,
+): boolean {
   return (
     output.status !== 'deadline' &&
-    attemptSummary(output.reporter.testCases.values(), true).anyFailed
+    muirSirynPlaywrightAttemptSummary(output.reporter.testCases.values(), true)
+      .anyFailed
   );
 }
 
-export function flakyTestNames(output: RunOutput): string[] {
+export function muirSirynPlaywrightFlakyTestNames(
+  output: MuirSirynPlaywrightRunOutput,
+): string[] {
   return [...output.reporter.testCases.values()]
     .filter((test) => test.outcome() === 'flaky')
-    .map(testName);
+    .map(muirSirynPlaywrightTestName);
 }
 
-export function toRunResult(output: RunOutput, request: RunRequest): RunResult {
+export function muirSirynPlaywrightToRunResult(
+  output: MuirSirynPlaywrightRunOutput,
+  request: MuirSirynPlaywrightRunRequest,
+): MuirSirynPlaywrightRunResult {
   const { status, reporter, snapshots, hookInstalled, installErrors } = output;
   const { failOnFlakyTests } = reporter;
   const isMutantRun = request.kind === 'mutant';
   const testCases = [...reporter.testCases.values()];
   const tests = testCases.map((test) => toTestResult(test, failOnFlakyTests));
-  const { killed, timedOut } = attemptSummary(testCases, failOnFlakyTests);
+  const { killed, timedOut } = muirSirynPlaywrightAttemptSummary(
+    testCases,
+    failOnFlakyTests,
+  );
   const coveringTestsPassed =
     isMutantRun &&
     allPassed(
@@ -120,7 +134,7 @@ export function toRunResult(output: RunOutput, request: RunRequest): RunResult {
       reporter.testCases,
       failOnFlakyTests,
     );
-  const reason = timeoutReason({
+  const reason = muirSirynPlaywrightTimeoutReason({
     mutantRun: isMutantRun,
     killed,
     testTimedOut: timedOut,
@@ -187,7 +201,7 @@ function survivorTests(tests: readonly TestResult[]): TestResult[] {
 
 function allPassed(
   ids: readonly string[] | undefined,
-  testCases: ReadonlyMap<string, ReportedTest>,
+  testCases: ReadonlyMap<string, MuirSirynPlaywrightReportedTest>,
   failOnFlakyTests: boolean,
 ): boolean {
   return (
@@ -204,9 +218,9 @@ function allPassed(
   );
 }
 
-export function missingCoverageError(
+export function muirSirynPlaywrightMissingCoverageError(
   tests: readonly TestResult[],
-  snapshots: readonly Snapshot[],
+  snapshots: readonly MuirSirynPlaywrightSnapshot[],
 ): string | undefined {
   if (
     !anyRan(tests) ||
@@ -220,7 +234,7 @@ export function missingCoverageError(
     return 'Tests ran, but no instrumented code ran, neither in a page nor in a Playwright worker. The dry run needs at least one test that runs the app code, in a page or by importing it.';
   }
 
-  const { lostFrames } = coverageGaps(snapshots);
+  const { lostFrames } = muirSirynPlaywrightCoverageGaps(snapshots);
 
   if (lostFrames === snapshots.length) {
     return `No page reported coverage: all ${lostFrames} frame(s) did not answer before their context closed.`;
@@ -229,20 +243,20 @@ export function missingCoverageError(
   return 'No page loaded instrumented code. Is the webServer serving the Stryker sandbox? A server that was already running (reuseExistingServer) serves the original sources.';
 }
 
-export const arrivalSlackMs = 50;
+export const muirSirynPlaywrightArrivalSlackMs = 50;
 
 /**
  * A server request that came without a test id counts for every test that ran when it arrived, and as
  * static when none did. The output maps have no prototype, so a test id such as __proto__ from a page
  * stays an own key.
  */
-export function mergeCoverage(
-  snapshots: readonly Snapshot[],
-  windows: readonly TestWindow[] = [],
+export function muirSirynPlaywrightMergeCoverage(
+  snapshots: readonly MuirSirynPlaywrightSnapshot[],
+  windows: readonly MuirSirynPlaywrightTestWindow[] = [],
 ): MutantCoverage {
   const merged: MutantCoverage = {
-    static: nullPrototypeRecord(),
-    perTest: nullPrototypeRecord(),
+    static: muirSirynPlaywrightNullPrototypeRecord(),
+    perTest: muirSirynPlaywrightNullPrototypeRecord(),
   };
   const add = (
     target: Record<string, number>,
@@ -253,7 +267,7 @@ export function mergeCoverage(
     });
   };
   const testsFor = (testId: string, outlivedItsTest: boolean): string[] => {
-    const arrivedAt = untaggedArrival(testId);
+    const arrivedAt = muirSirynPlaywrightUntaggedArrival(testId);
 
     if (arrivedAt === undefined) {
       return outlivedItsTest ? [] : [testId];
@@ -264,8 +278,8 @@ export function mergeCoverage(
         windows
           .filter(
             ({ start, end }) =>
-              start - arrivalSlackMs <= arrivedAt &&
-              arrivedAt <= end + arrivalSlackMs,
+              start - muirSirynPlaywrightArrivalSlackMs <= arrivedAt &&
+              arrivedAt <= end + muirSirynPlaywrightArrivalSlackMs,
           )
           .map((window) => window.testId),
       ),
@@ -286,7 +300,10 @@ export function mergeCoverage(
       }
 
       tests.forEach((id) => {
-        add((merged.perTest[id] ??= nullPrototypeRecord()), hits);
+        add(
+          (merged.perTest[id] ??= muirSirynPlaywrightNullPrototypeRecord()),
+          hits,
+        );
       });
     });
   });
@@ -294,7 +311,9 @@ export function mergeCoverage(
   return merged;
 }
 
-export function coverageGaps(snapshots: readonly Snapshot[]): CoverageGaps {
+export function muirSirynPlaywrightCoverageGaps(
+  snapshots: readonly MuirSirynPlaywrightSnapshot[],
+): MuirSirynPlaywrightCoverageGaps {
   return {
     lostFrames: snapshots.filter((snapshot) => snapshot.lost).length,
     sharedFrames: snapshots.filter(
@@ -303,22 +322,27 @@ export function coverageGaps(snapshots: readonly Snapshot[]): CoverageGaps {
   };
 }
 
-function sumHitCounts(snapshots: readonly Snapshot[]): number {
+function sumHitCounts(
+  snapshots: readonly MuirSirynPlaywrightSnapshot[],
+): number {
   return snapshots.reduce((sum, { hitCount }) => sum + hitCount, 0);
 }
 
-export function dryRunResult(
-  output: RunOutput,
-  request: DryRunRequest,
-): { result: DryRunResult; gaps: CoverageGaps | undefined } {
-  const run = toRunResult(output, request);
+export function muirSirynPlaywrightDryRunResult(
+  output: MuirSirynPlaywrightRunOutput,
+  request: MuirSirynPlaywrightDryRunRequest,
+): { result: DryRunResult; gaps: MuirSirynPlaywrightCoverageGaps | undefined } {
+  const run = muirSirynPlaywrightToRunResult(output, request);
 
   if (run.status !== DryRunStatus.Complete) {
     return { result: run, gaps: undefined };
   }
 
   const { status, tests, snapshots } = run;
-  const errorMessage = missingCoverageError(tests, snapshots);
+  const errorMessage = muirSirynPlaywrightMissingCoverageError(
+    tests,
+    snapshots,
+  );
 
   if (errorMessage) {
     return { result: errorRun(errorMessage), gaps: undefined };
@@ -332,28 +356,33 @@ export function dryRunResult(
     result: {
       status,
       tests,
-      mutantCoverage: mergeCoverage(snapshots, output.reporter.windows),
+      mutantCoverage: muirSirynPlaywrightMergeCoverage(
+        snapshots,
+        output.reporter.windows,
+      ),
     },
-    gaps: coverageGaps(snapshots),
+    gaps: muirSirynPlaywrightCoverageGaps(snapshots),
   };
 }
 
-export function mutantRunResult(
-  output: RunOutput,
-  request: MutantRunRequest,
+export function muirSirynPlaywrightMutantRunResult(
+  output: MuirSirynPlaywrightRunOutput,
+  request: MuirSirynPlaywrightMutantRunRequest,
 ): { result: MutantRunResult; hitCount: number } {
   const hitCount = sumHitCounts(output.snapshots);
 
   return {
     result: toMutantRunResult(
       determineHitLimitReached(hitCount, request.hitLimit) ??
-        toRunResult(output, request),
+        muirSirynPlaywrightToRunResult(output, request),
     ),
     hitCount,
   };
 }
 
-function emptyRunResult(request: RunRequest): RunResult {
+function emptyRunResult(
+  request: MuirSirynPlaywrightRunRequest,
+): MuirSirynPlaywrightRunResult {
   // Stryker fails an empty dry run itself unless allowEmpty is set.
   if (request.kind === 'dry') {
     return { status: DryRunStatus.Complete, tests: [], snapshots: [] };
@@ -389,7 +418,9 @@ function testStatus(
     : statusByOutcome[outcome];
 }
 
-export function testName(test: ReportedTest): string {
+export function muirSirynPlaywrightTestName(
+  test: MuirSirynPlaywrightReportedTest,
+): string {
   // The root suite's title is the empty first one.
   const [project = '', ...rest] = test.titlePath().filter(Boolean);
 
@@ -397,14 +428,14 @@ export function testName(test: ReportedTest): string {
 }
 
 function toTestResult(
-  test: ReportedTest,
+  test: MuirSirynPlaywrightReportedTest,
   failOnFlakyTests: boolean,
 ): TestResult {
   const last = test.results.at(-1);
   const status = testStatus(test.outcome(), failOnFlakyTests);
   const base = {
     id: test.id,
-    name: testName(test),
+    name: muirSirynPlaywrightTestName(test),
     timeSpentMs: last?.duration ?? 0,
     fileName: test.location.file,
     startPosition: {
@@ -420,7 +451,7 @@ function toTestResult(
   return {
     ...base,
     status,
-    failureMessage: errorText(
+    failureMessage: muirSirynPlaywrightErrorText(
       test.results.findLast((result) => result.error)?.error,
     ),
   };

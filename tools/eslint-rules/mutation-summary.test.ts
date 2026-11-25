@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { lzMutationSummary } from './mutation-summary.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirMutationSummary } from './mutation-summary.ts';
 
 function mutant(status: string): object {
   return {
@@ -33,7 +33,7 @@ function summaryOf(title: string, row: string): string {
   return [`### Mutation score: ${title}`, '', ...header, row, ''].join('\n');
 }
 
-describe('lzMutationSummary', () => {
+describe('muirMutationSummary', () => {
   it('counts the mutants of every file per status, in the order Killed, Survived, Timeout, NoCoverage, RuntimeError, CompileError, Ignored', () => {
     const report = {
       files: {
@@ -70,12 +70,12 @@ describe('lzMutationSummary', () => {
     };
 
     assert.equal(
-      lzMutationSummary('p:mutate-src', report),
+      muirMutationSummary('p:mutate-src', report),
       summaryOf('p:mutate-src', '| 50.00 | 3 | 1 | 2 | 4 | 2 | 3 | 2 |'),
     );
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'every mutant is killed',
       ['Killed', 'Killed'],
@@ -114,12 +114,12 @@ describe('lzMutationSummary', () => {
     ['the report has no mutants', [], '| n/a | 0 | 0 | 0 | 0 | 0 | 0 | 0 |'],
   ])('writes the score Stryker reports when %s', (_, statuses, row) => {
     assert.equal(
-      lzMutationSummary('t', reportOf(...statuses)),
+      muirMutationSummary('t', reportOf(...statuses)),
       summaryOf('t', row),
     );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['no object', 'report'],
     ['no files object', {}],
     ['an array for files', { files: [] }],
@@ -138,7 +138,7 @@ describe('lzMutationSummary', () => {
       { files: { 'src/a.ts': { mutants: [{ status: 1 }] } } },
     ],
   ])('rejects a report with %s', (_, report) => {
-    assert.throws(() => lzMutationSummary('t', report), {
+    assert.throws(() => muirMutationSummary('t', report), {
       message:
         "The mutation report does not match Stryker's JSON report schema.",
     });
@@ -165,7 +165,7 @@ function runSummary(args: readonly string[]): {
 }
 
 async function writeReport(t: TestContext, report: unknown): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'lz-mutation-summary-'));
+  const dir = await mkdtemp(join(tmpdir(), 'muir-mutation-summary-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const path = join(dir, 'report.json');
   await writeFile(path, JSON.stringify(report));
@@ -187,7 +187,7 @@ describe('mutation-summary.cli.ts', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     ['no arguments', []],
     ['no title', ['report.json']],
   ])('exits 1 with its usage when given %s', (_, args) => {

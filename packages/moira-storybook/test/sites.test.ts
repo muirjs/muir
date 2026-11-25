@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { sitesOf } from '../src/sites.ts';
+import { muirMoiraStorybookSitesOf } from '../src/sites.ts';
 import { bodyOf } from './support/parse-module.ts';
 
 describe('sitesOf', () => {
   it('gives no site for args that are not an object literal, such as the result of a call', () => {
     assert.deepEqual(
-      sitesOf(
+      muirMoiraStorybookSitesOf(
         bodyOf(
           "import { makeArgs } from './make-args';",
           "export default { title: 'a/b' };",
@@ -22,7 +22,7 @@ describe('sitesOf', () => {
 
   it('proves a property in a file that does not import itself', () => {
     assert.deepEqual(
-      sitesOf(
+      muirMoiraStorybookSitesOf(
         bodyOf(
           "import * as other from './Other.stories';",
           "export default { title: 'a/b', args: { label: 'a' } };",
@@ -37,7 +37,7 @@ describe('sitesOf', () => {
 
   it('proves nothing in a file that imports itself, as a write through the import changes what a story runs with', () => {
     assert.deepEqual(
-      sitesOf(
+      muirMoiraStorybookSitesOf(
         bodyOf(
           "import * as self from './Button.stories';",
           "export default { title: 'a/b', args: { label: 'a' } };",
@@ -52,7 +52,7 @@ describe('sitesOf', () => {
 
   it('keeps every site but proves nothing when the file name is not known', () => {
     assert.deepEqual(
-      sitesOf(
+      muirMoiraStorybookSitesOf(
         bodyOf(
           "export default { title: 'a/b', args: { label: 'a' } };",
           "export const A = { args: { label: 'a' }, play: async () => {} };",
@@ -66,7 +66,7 @@ describe('sitesOf', () => {
 
   it('gives the globals of a meta a run for a played story made from another meta', () => {
     assert.deepEqual(
-      sitesOf(
+      muirMoiraStorybookSitesOf(
         bodyOf(
           "import preview from '../.storybook/preview';",
           "import { Base } from './Other.stories';",
@@ -84,7 +84,7 @@ describe('sitesOf', () => {
 describe('SiteRun keyFrom', () => {
   it("says a story's own run and its .test() runs take every key from their site", () => {
     assert.deepEqual(
-      sitesOf(
+      muirMoiraStorybookSitesOf(
         bodyOf(
           "import preview from '../.storybook/preview';",
           'const meta = preview.meta({});',
@@ -109,9 +109,12 @@ describe('MetaRun keyFrom', () => {
     key: string,
     ...lines: readonly string[]
   ): readonly unknown[] {
-    return sitesOf(bodyOf(...lines), 'args', 'Button.stories.ts').flatMap(
-      ({ runs }) =>
-        runs.flatMap((run) => (run.owner === 'meta' ? [run.keyFrom(key)] : [])),
+    return muirMoiraStorybookSitesOf(
+      bodyOf(...lines),
+      'args',
+      'Button.stories.ts',
+    ).flatMap(({ runs }) =>
+      runs.flatMap((run) => (run.owner === 'meta' ? [run.keyFrom(key)] : [])),
     );
   }
 

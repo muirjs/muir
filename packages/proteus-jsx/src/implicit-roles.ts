@@ -1,11 +1,14 @@
-export interface ImplicitRole {
+export interface MuirProteusJsxImplicitRole {
   readonly role: string;
   readonly requiredAttribute?: string;
 }
 
-export type RoleTable = ReadonlyMap<string, ImplicitRole>;
+export type MuirProteusJsxRoleTable = ReadonlyMap<
+  string,
+  MuirProteusJsxImplicitRole
+>;
 
-export const implicitRoles: RoleTable = new Map([
+export const muirProteusJsxImplicitRoles: MuirProteusJsxRoleTable = new Map([
   ['a', { role: 'link', requiredAttribute: 'href' }],
   ['address', { role: 'group' }],
   ['area', { role: 'link', requiredAttribute: 'href' }],

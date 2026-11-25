@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { isRecord } from '@muirjs/moira-storybook';
+import { muirMoiraStorybookIsRecord } from '@muirjs/moira-storybook';
 import { loadCsf, vitestTransform } from 'storybook/internal/csf-tools';
 
-import { csfIgnorer } from '../src/csf-ignorer.ts';
+import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
 import { instrument } from './support/instrument.ts';
 
 const root = fileURLToPath(new URL('fixtures/csf-oracle/', import.meta.url));
@@ -24,15 +24,21 @@ const fixtures = [
 function parseFixtures(
   value: unknown,
 ): readonly { readonly name: string; readonly code: string }[] {
-  const list = isRecord(value) ? value['fixtures'] : undefined;
+  const list = muirMoiraStorybookIsRecord(value)
+    ? value['fixtures']
+    : undefined;
 
   if (!Array.isArray(list)) {
     throw new Error('fixtures.json has no fixtures list');
   }
 
   return list.map((fixture: unknown) => {
-    const name = isRecord(fixture) ? fixture['name'] : undefined;
-    const code = isRecord(fixture) ? fixture['code'] : undefined;
+    const name = muirMoiraStorybookIsRecord(fixture)
+      ? fixture['name']
+      : undefined;
+    const code = muirMoiraStorybookIsRecord(fixture)
+      ? fixture['code']
+      : undefined;
 
     if (typeof name !== 'string' || typeof code !== 'string') {
       throw new Error('fixtures.json holds a fixture without name or code');
@@ -77,9 +83,12 @@ async function storyTests(code: string): Promise<unknown> {
   }
 }
 
-describe('lz-storybook-csf oracle: Storybook reads an instrumented story file as it reads the original', () => {
-  const ignorer = csfIgnorer(
-    { lzStorybook: { configDir }, lzStorybookCsf: { play: 'ignore' } },
+describe('muir-shadowcat-storybook-csf oracle: Storybook reads an instrumented story file as it reads the original', () => {
+  const ignorer = muirShadowcatStorybookCsfIgnorer(
+    {
+      muirShadowcatStorybook: { configDir },
+      muirShadowcatStorybookCsf: { play: 'ignore' },
+    },
     { info: () => undefined, warn: () => undefined },
   );
 

@@ -1,46 +1,46 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
-import { lzExec } from '../exec.ts';
+import { muirExec } from '../exec.ts';
 import {
-  lzParseProcSamples,
-  lzParseSamples,
-  type LzProcessRow,
+  muirParseProcSamples,
+  muirParseSamples,
+  type MuirProcessRow,
 } from './processes.ts';
 
-export interface LzSamples {
+export interface MuirSamples {
   /** Every complete sample, each a list of every process on the machine. */
-  readonly samples: readonly (readonly LzProcessRow[])[];
+  readonly samples: readonly (readonly MuirProcessRow[])[];
   /** Why sampling stopped short or wrote an error; the samples taken before it still count. */
   readonly error: string | null;
 }
 
-export interface LzSampler {
+export interface MuirSampler {
   readonly pid: number;
   /** Settles once the sampling process has closed, by itself or after `stop`. */
   readonly ended: Promise<unknown>;
-  stop(): Promise<LzSamples>;
+  stop(): Promise<MuirSamples>;
 }
 
-export interface LzProcessReader {
+export interface MuirProcessReader {
   readonly command: string;
   readonly args: readonly string[];
   readonly sample: string;
   readonly loop: string;
-  readonly parse: typeof lzParseSamples;
+  readonly parse: typeof muirParseSamples;
 }
 
 const win32Sample =
   // Stryker disable next-line StringLiteral: Windows only, as the Linux run never starts PowerShell; the Windows run kills it
   "Get-CimInstance -ClassName Win32_Process -Property ProcessId,ParentProcessId,WorkingSetSize,CreationDate,Name | ForEach-Object { '{0} {1} {2} {3} {4}' -f $_.ProcessId, $_.ParentProcessId, $_.WorkingSetSize, $(if ($_.CreationDate) { $_.CreationDate.ToFileTimeUtc() } else { 0 }), $_.Name }; '--'";
 
-const windowsReader: LzProcessReader = {
+const windowsReader: MuirProcessReader = {
   command: 'pwsh',
   args: ['-NoProfile', '-NonInteractive', '-Command'],
   sample: win32Sample,
   // Stryker disable next-line StringLiteral: Windows only, as the Linux run never starts PowerShell; the Windows run kills it
   loop: `$ErrorActionPreference = 'Stop'; while ($true) { $start = Get-Date; ${win32Sample}; $wait = 1000 - ((Get-Date) - $start).TotalMilliseconds; if ($wait -gt 0) { Start-Sleep -Milliseconds $wait } }`,
-  parse: lzParseSamples,
+  parse: muirParseSamples,
 };
 
 // Each stat line, a tab and the command line with its NULs, newlines and tabs turned into spaces. A process that
@@ -49,18 +49,18 @@ const procSample =
   'for d in /proc/[0-9]*; do { read -r s < "$d/stat" && c=$(tr \'\\0\\n\\t\' \'   \' < "$d/cmdline") && ' +
   'printf \'%s\\t%s\\n\' "$s" "$c"; } 2>/dev/null; done; echo --';
 
-const linuxReader: LzProcessReader = {
+const linuxReader: MuirProcessReader = {
   command: 'sh',
   args: ['-c'],
   sample: `getconf PAGESIZE; ${procSample}`,
   loop: `getconf PAGESIZE; while :; do ${procSample}; sleep 1; done`,
-  parse: lzParseProcSamples,
+  parse: muirParseProcSamples,
 };
 
 /** Samples every process once a second, in one shell process, until `stop`. */
-export async function lzStartSampler(
-  { command, args, loop, parse } = lzProcessReader(),
-): Promise<LzSampler> {
+export async function muirStartSampler(
+  { command, args, loop, parse } = muirProcessReader(),
+): Promise<MuirSampler> {
   // Stryker disable next-line BooleanLiteral: equivalent to a test, as a console window shown or hidden changes no output it can read
   const child = spawn(command, [...args, loop], {
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -106,10 +106,10 @@ export async function lzStartSampler(
 }
 
 /** One sample of every process on the machine. */
-export async function lzSnapshot(
-  { command, args, sample: script, parse } = lzProcessReader(),
-): Promise<LzProcessRow[]> {
-  const { exitCode, stdout, stderr } = await lzExec(
+export async function muirSnapshot(
+  { command, args, sample: script, parse } = muirProcessReader(),
+): Promise<MuirProcessRow[]> {
+  const { exitCode, stdout, stderr } = await muirExec(
     command,
     [...args, script],
     { cwd: process.cwd() },
@@ -126,9 +126,9 @@ export async function lzSnapshot(
 }
 
 /** The reader for `platform`, this one by default. */
-export function lzProcessReader(
+export function muirProcessReader(
   platform: NodeJS.Platform = process.platform,
-): LzProcessReader {
+): MuirProcessReader {
   if (platform === 'win32') {
     return windowsReader;
   }

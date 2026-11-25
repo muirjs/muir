@@ -1,25 +1,25 @@
 import { parse } from '@babel/parser';
 import {
-  appendRecord,
-  definitionTimeStubs,
-  field,
-  list,
-  mockTransformerRewrite,
-  type StubMethod,
-  type DefinitionTimeStub,
+  muirMoiraStorybookAppendRecord,
+  muirMoiraStorybookDefinitionTimeStubs,
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+  muirMoiraStorybookMockTransformerRewrite,
+  type MuirMoiraStorybookStubMethod,
+  type MuirMoiraStorybookDefinitionTimeStub,
 } from '@muirjs/moira-storybook';
 import MagicString, { type SourceMap } from 'magic-string';
 
-import { packageName } from './package-name.ts';
+import { muirPixieStorybookPackageName } from './package-name.ts';
 
-export interface TransformResult {
+export interface MuirPixieStorybookTransformResult {
   readonly code: string;
   readonly map: SourceMap;
 }
 
 /** The text around a stub's arguments that makes them the implementation `fn()` takes. The arrow called at once evaluates the arguments once, when the spy is made, so an `await` in them stays outside any function. */
 const implementationWrappers: Readonly<
-  Record<StubMethod, readonly [open: string, close: string]>
+  Record<MuirMoiraStorybookStubMethod, readonly [open: string, close: string]>
 > = {
   mockReturnValue: ['((value) => () => value)(', ')'],
   mockResolvedValue: ['((value) => async () => value)(', ')'],
@@ -27,10 +27,10 @@ const implementationWrappers: Readonly<
   mockImplementation: ['', ''],
 };
 
-export function transform(
+export function muirPixieStorybookTransform(
   code: string,
   id: string,
-): TransformResult | undefined {
+): MuirPixieStorybookTransformResult | undefined {
   const [file = id] = id.split('?');
 
   if (!/\.[cm]?[jt]sx?$/.test(file) || !code.includes('storybook/test')) {
@@ -38,8 +38,8 @@ export function transform(
   }
 
   const { program, tokens } = parseModule(code, file);
-  const rewritten = definitionTimeStubs(program).filter(
-    (stub) => mockTransformerRewrite(stub) === 'rewritten',
+  const rewritten = muirMoiraStorybookDefinitionTimeStubs(program).filter(
+    (stub) => muirMoiraStorybookMockTransformerRewrite(stub) === 'rewritten',
   );
 
   if (rewritten.length === 0) {
@@ -50,7 +50,7 @@ export function transform(
   rewritten.forEach((stub) => {
     rewriteStub(output, stub, tokens, file);
   });
-  appendRecord(file, rewritten.length);
+  muirMoiraStorybookAppendRecord(file, rewritten.length);
 
   return {
     code: output.toString(),
@@ -61,7 +61,14 @@ export function transform(
 /** Replaces the spy call with `<spy>(<open><arguments><close>)`, its method's wrapper around the stub's arguments (`fn(((value) => () => value)(1))` for `fn().mockReturnValue(1)`), and removes the stub call from the chain. Each `)` that closed parentheses around the stub's callee is written back after the rewritten spy call, where it closes them again. */
 function rewriteStub(
   output: MagicString,
-  { spy, method, end, spyCall, methodStart, calleeEnd }: DefinitionTimeStub,
+  {
+    spy,
+    method,
+    end,
+    spyCall,
+    methodStart,
+    calleeEnd,
+  }: MuirMoiraStorybookDefinitionTimeStub,
   tokens: readonly unknown[],
   file: string,
 ): void {
@@ -89,7 +96,7 @@ function parenthesesClosedIn(
 ): number {
   const labels = tokens
     .filter((token) => {
-      const tokenStart = field(token, 'start');
+      const tokenStart = muirMoiraStorybookField(token, 'start');
 
       return (
         typeof tokenStart === 'number' &&
@@ -113,7 +120,7 @@ function memberAccessStart(
 ): number {
   return positionIn(
     tokens.findLast((token) => {
-      const end = field(token, 'end');
+      const end = muirMoiraStorybookField(token, 'end');
 
       return (
         // Stryker disable next-line ConditionalExpression: every Babel token has a number end, so this check only narrows the type, and without it the type check fails
@@ -136,7 +143,7 @@ function argumentListStart(
 ): number {
   return positionIn(
     tokens.find((token) => {
-      const start = field(token, 'start');
+      const start = muirMoiraStorybookField(token, 'start');
 
       return (
         // Stryker disable next-line ConditionalExpression: every Babel token has a number start, so this check only narrows the type, and without it the type check fails
@@ -152,7 +159,7 @@ function argumentListStart(
 }
 
 function labelOf(token: unknown): string {
-  const label = field(token, 'type', 'label');
+  const label = muirMoiraStorybookField(token, 'type', 'label');
 
   // Stryker disable next-line StringLiteral: only a comment token has no label, and no text it could get here is a . ?. ( or ) the callers look for
   return typeof label === 'string' ? label : '';
@@ -163,11 +170,11 @@ function positionIn(
   edge: 'start' | 'end',
   missing: string,
 ): number {
-  const position = field(token, edge);
+  const position = muirMoiraStorybookField(token, edge);
 
   if (typeof position !== 'number') {
     // Stryker disable next-line StringLiteral: no input reaches this throw; see the two token lookups that call it
-    throw new Error(`${packageName}: ${missing}`);
+    throw new Error(`${muirPixieStorybookPackageName}: ${missing}`);
   }
 
   return position;
@@ -184,10 +191,13 @@ function parseModule(
       tokens: true,
     });
 
-    return { program: parsed.program, tokens: list(parsed.tokens) };
+    return {
+      program: parsed.program,
+      tokens: muirMoiraStorybookList(parsed.tokens),
+    };
   } catch (error: unknown) {
     throw new Error(
-      `${packageName}: cannot parse ${file}: ${error instanceof Error ? error.message : String(error)}`,
+      `${muirPixieStorybookPackageName}: cannot parse ${file}: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
     );
   }

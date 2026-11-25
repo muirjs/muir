@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
-import { nodeEventName } from '../../src/node-event-name.ts';
+import { muirProteusNodeEventName } from '../../src/node-event-name.ts';
 
-describe('LzNodeEventName', () => {
-  lzTestEach([
+describe('MuirProteusNodeEventName', () => {
+  muirTestEach([
     ["the process's exit", "process.on('exit', f);", ['"beforeExit"']],
     ["the process's beforeExit", "process.once('beforeExit', f);", ['"exit"']],
     [
@@ -68,10 +68,13 @@ describe('LzNodeEventName', () => {
       ['"end"', '"close"'],
     ],
   ])('swaps the event name of %s', async (_title, source, expected) => {
-    assert.deepEqual(await mutantsOf(nodeEventName, source), expected);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeEventName, source),
+      expected,
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['an event outside the tables', "child.on('data', f);"],
     ["a stream's event on the process", "process.on('close', f);"],
     ['the process inside a member', "globalThis.process.on('beforeExit', f);"],
@@ -130,6 +133,6 @@ describe('LzNodeEventName', () => {
       "function once(emitter: any, event: string, fn: unknown) {\n  emitter.on(event, fn);\n}\nonce(child, 'exit', f);",
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeEventName, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusNodeEventName, source), []);
   });
 });

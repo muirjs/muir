@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { consoleIgnorer, lzConsoleSchema } from '../src/console-ignorer.ts';
+import {
+  muirProteusJsxConsoleIgnorer,
+  muirProteusJsxConsoleSchema,
+} from '../src/console-ignorer.ts';
 import { strykerValidationSchema } from '../src/index.ts';
 import { assertEveryOutcome } from './support/ignorer-outcomes.ts';
 import { validateOptions } from './support/validate-options.ts';
 
-const consoleReason = 'lz-console: console output; DOM tests do not observe it';
+const consoleReason =
+  'muir-proteus-jsx-console: console output; DOM tests do not observe it';
 const consoleMethods = [
   'assert',
   'clear',
@@ -30,9 +34,9 @@ const consoleMethods = [
 ];
 
 const assertEvery = (code: string, outcome: string, options: object = {}) =>
-  assertEveryOutcome(consoleIgnorer(options), code, outcome);
+  assertEveryOutcome(muirProteusJsxConsoleIgnorer(options), code, outcome);
 
-describe('lz-console', () => {
+describe('muir-proteus-jsx-console', () => {
   ['log', 'debug', 'info', 'trace'].forEach((method) => {
     it(`ignores every mutant of a console.${method} statement by default, with the console reason`, async () => {
       await assertEvery(
@@ -78,18 +82,18 @@ describe('lz-console', () => {
   });
 
   ['warn', 'error'].forEach((method) => {
-    it(`ignores a console.${method} statement when lzConsole.methods lists it`, async () => {
+    it(`ignores a console.${method} statement when muirProteusJsxConsole.methods lists it`, async () => {
       await assertEvery(
         `console.${method}('saved', on ? 'a' : 'b');`,
         consoleReason,
-        { lzConsole: { methods: ['warn', 'error'] } },
+        { muirProteusJsxConsole: { methods: ['warn', 'error'] } },
       );
     });
   });
 
-  it('keeps a console.log statement when lzConsole.methods replaces the default list without it', async () => {
+  it('keeps a console.log statement when muirProteusJsxConsole.methods replaces the default list without it', async () => {
     await assertEvery("console.log('saved', on ? 'a' : 'b');", 'placed', {
-      lzConsole: { methods: ['warn'] },
+      muirProteusJsxConsole: { methods: ['warn'] },
     });
   });
 
@@ -105,20 +109,24 @@ describe('lz-console', () => {
     ['log', null],
   ].forEach((methods) => {
     it(`refuses methods ${JSON.stringify(methods)} when it is created`, () => {
-      assert.throws(() => consoleIgnorer({ lzConsole: { methods } }), {
-        message: `@muirjs/proteus-jsx: lzConsole.methods must be an array of console method names, such as log or warn, not ${JSON.stringify(methods)}.`,
-      });
+      assert.throws(
+        () =>
+          muirProteusJsxConsoleIgnorer({ muirProteusJsxConsole: { methods } }),
+        {
+          message: `@muirjs/proteus-jsx: muirProteusJsxConsole.methods must be an array of console method names, such as log or warn, not ${JSON.stringify(methods)}.`,
+        },
+      );
     });
   });
 
   [
     {},
-    { lzConsole: {} },
-    { lzConsole: { methods: [] } },
-    { lzConsole: { methods: consoleMethods } },
+    { muirProteusJsxConsole: {} },
+    { muirProteusJsxConsole: { methods: [] } },
+    { muirProteusJsxConsole: { methods: consoleMethods } },
   ].forEach((options) => {
     it(`accepts the options ${JSON.stringify(options)}`, () => {
-      assert.doesNotThrow(() => consoleIgnorer(options));
+      assert.doesNotThrow(() => muirProteusJsxConsoleIgnorer(options));
     });
   });
 
@@ -175,7 +183,12 @@ describe('lz-console', () => {
     ] as const
   ).forEach(([effect, code]) => {
     it(`keeps the mutants of a console.log statement in a .jsx file whose argument holds ${effect}`, async () => {
-      await assertEveryOutcome(consoleIgnorer({}), code, 'placed', 'a.jsx');
+      await assertEveryOutcome(
+        muirProteusJsxConsoleIgnorer({}),
+        code,
+        'placed',
+        'a.jsx',
+      );
     });
   });
 
@@ -188,29 +201,30 @@ describe('lz-console', () => {
   );
 });
 
-describe('the lz-console options schema', () => {
-  it('describes lzConsole.methods as a list of console method names', () => {
-    assert.deepEqual(lzConsoleSchema, {
+describe('the muir-proteus-jsx-console options schema', () => {
+  it('describes muirProteusJsxConsole.methods as a list of console method names', () => {
+    assert.deepEqual(muirProteusJsxConsoleSchema, {
       type: 'object',
       additionalProperties: false,
-      description: 'Options of the lz-console ignorer.',
+      description: 'Options of the muir-proteus-jsx-console ignorer.',
       properties: {
         methods: {
           type: 'array',
           items: { enum: consoleMethods },
           description:
-            'The console methods whose call statements lz-console hides, unless an argument can act on the ' +
+            'The console methods whose call statements muir-proteus-jsx-console hides, unless an argument can act on the ' +
             'page. Replaces the default list: log, debug, info and trace.',
         },
       },
     });
   });
 
-  it('lets core accept lzConsole without an unknown-option warning', async () => {
+  it('lets core accept muirProteusJsxConsole without an unknown-option warning', async () => {
     assert.deepEqual(
-      await validateOptions({ lzConsole: { methods: ['log', 'warn'] } }, [
-        strykerValidationSchema,
-      ]),
+      await validateOptions(
+        { muirProteusJsxConsole: { methods: ['log', 'warn'] } },
+        [strykerValidationSchema],
+      ),
       { valid: true, log: [] },
     );
   });
@@ -221,16 +235,17 @@ describe('the lz-console options schema', () => {
     { methods: [1] },
     { calls: ['log'] },
     [],
-  ].forEach((lzConsole) => {
-    it(`lets core refuse lzConsole ${JSON.stringify(lzConsole)}`, async () => {
-      const { valid, log } = await validateOptions({ lzConsole }, [
+  ].forEach((muirProteusJsxConsole) => {
+    it(`lets core refuse muirProteusJsxConsole ${JSON.stringify(muirProteusJsxConsole)}`, async () => {
+      const { valid, log } = await validateOptions({ muirProteusJsxConsole }, [
         strykerValidationSchema,
       ]);
 
       assert.equal(valid, false);
       assert.ok(
         log.some(
-          (line) => line.startsWith('error') && line.includes('lzConsole'),
+          (line) =>
+            line.startsWith('error') && line.includes('muirProteusJsxConsole'),
         ),
         log.join('\n'),
       );

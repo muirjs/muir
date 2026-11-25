@@ -1,28 +1,30 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzResolveFromCore } from '@muirjs/moira-node-test';
-import { lzNodeTestMutators } from '../../src/index.ts';
+import { muirMoiraNodeTestResolveFromCore } from '@muirjs/moira-node-test';
+import { muirProteusNodeTestMutators } from '../../src/index.ts';
 
-describe('lzNodeTestMutators', () => {
+describe('muirProteusNodeTestMutators', () => {
   it("puts the defaults and the mutators its options turn on in place of Stryker's", async () => {
-    await lzNodeTestMutators({ experimental: { LzNodeTestCatchAssert: true } });
+    await muirProteusNodeTestMutators({
+      experimental: { MuirProteusNodeTestCatchAssert: true },
+    });
 
-    const names = (await lzResolveFromCore()).allMutators.map(
+    const names = (await muirMoiraNodeTestResolveFromCore()).allMutators.map(
       ({ name }) => name,
     );
 
     assert.deepEqual(names, [
-      'LzNodeTestAssertCall',
-      'LzNodeTestAssertValidator',
-      'LzNodeTestCatchAssert',
+      'MuirProteusNodeTestAssertCall',
+      'MuirProteusNodeTestAssertValidator',
+      'MuirProteusNodeTestCatchAssert',
     ]);
   });
 
   it('names this package in the error for a mutator its options cannot turn on there', async () => {
     await assert.rejects(
-      // @ts-expect-error -- LzNodeTestCatchAssert is experimental, so it goes inside `experimental`
-      lzNodeTestMutators({ LzNodeTestCatchAssert: true }),
+      // @ts-expect-error -- MuirProteusNodeTestCatchAssert is experimental, so it goes inside `experimental`
+      muirProteusNodeTestMutators({ MuirProteusNodeTestCatchAssert: true }),
       /^Error: proteus-node-test: /,
     );
   });

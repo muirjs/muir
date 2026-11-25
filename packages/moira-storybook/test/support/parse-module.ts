@@ -1,12 +1,12 @@
 import { parse } from '@babel/parser';
 
-import { isRecord } from '../../src/is-record.ts';
-import { everyRecordIn } from '../../src/node-tree.ts';
+import { muirMoiraStorybookIsRecord } from '../../src/is-record.ts';
+import { muirMoiraStorybookEveryRecordIn } from '../../src/node-tree.ts';
 
 /** Moves the value under each `from` key in `program` to `to`, as Babel 8 renames a key Babel 7 parses. */
 export function renameKey(program: object, from: string, to: string): void {
-  everyRecordIn(program)
-    .filter(isRecord)
+  muirMoiraStorybookEveryRecordIn(program)
+    .filter(muirMoiraStorybookIsRecord)
     .filter((record) => from in record)
     .forEach((record) => {
       record[to] = record[from];

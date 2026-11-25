@@ -1,6 +1,9 @@
-import { csfShapes } from '../../src/csf.ts';
-import { type Interaction, interactionsOf } from '../../src/interactions.ts';
-import { field } from '../../src/node-field.ts';
+import { muirMoiraStorybookCsfShapes } from '../../src/csf.ts';
+import {
+  type MuirMoiraStorybookInteraction,
+  muirMoiraStorybookInteractionsOf,
+} from '../../src/interactions.ts';
+import { muirMoiraStorybookField } from '../../src/node-field.ts';
 import { programsOf } from './parse-module.ts';
 import { inPlayWith } from './story-source.ts';
 
@@ -25,8 +28,8 @@ export function inPlay(...statements: readonly string[]): string {
 }
 
 export function textOf(source: string, node: unknown): string | undefined {
-  const start = field(node, 'start');
-  const end = field(node, 'end');
+  const start = muirMoiraStorybookField(node, 'start');
+  const end = muirMoiraStorybookField(node, 'end');
 
   return typeof start === 'number' && typeof end === 'number'
     ? source.slice(start, end)
@@ -35,7 +38,7 @@ export function textOf(source: string, node: unknown): string | undefined {
 
 function describeFollowing(
   source: string,
-  { following: { checks, end, copy } }: Interaction,
+  { following: { checks, end, copy } }: MuirMoiraStorybookInteraction,
 ): FollowingDescription {
   const flags =
     end.by === 'interaction'
@@ -61,8 +64,9 @@ export function followingIn(
   source: string,
 ): readonly (readonly FollowingDescription[])[] {
   return programsOf(source).map((program) =>
-    interactionsOf(program, csfShapes(program)).all.map((interaction) =>
-      describeFollowing(source, interaction),
-    ),
+    muirMoiraStorybookInteractionsOf(
+      program,
+      muirMoiraStorybookCsfShapes(program),
+    ).all.map((interaction) => describeFollowing(source, interaction)),
   );
 }

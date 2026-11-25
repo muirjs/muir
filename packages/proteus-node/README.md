@@ -27,14 +27,14 @@ has no Stryker logger, so Stryker's `logLevel` and log file do not include them.
 
 ## Mutate production code
 
-Call `lzNodeMutators` at the top of your Stryker configuration file. It adds the default mutators to Stryker's
+Call `muirProteusNodeMutators` at the top of your Stryker configuration file. It adds the default mutators to Stryker's
 own, and in a call statement they mutate, their mutants replace Stryker's removal of the statement (see
 [Turn a mutator off](#turn-a-mutator-off)):
 
 ```js
-import { lzNodeMutators } from '@muirjs/proteus-node';
+import { muirProteusNodeMutators } from '@muirjs/proteus-node';
 
-await lzNodeMutators();
+await muirProteusNodeMutators();
 
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
@@ -60,16 +60,16 @@ options turn them on:
 Call it once. This call turns on one opt-in and one experimental mutator:
 
 ```js
-await lzNodeMutators({
-  LzNodeAssertStatement: true,
-  experimental: { LzNodeByteLength: true },
+await muirProteusNodeMutators({
+  MuirProteusNodeAssertStatement: true,
+  experimental: { MuirProteusNodeByteLength: true },
 });
 ```
 
 This call turns on every opt-in and every experimental mutator:
 
 ```js
-await lzNodeMutators({ extended: true, experimental: true });
+await muirProteusNodeMutators({ extended: true, experimental: true });
 ```
 
 Each option takes only `true`; an option left `undefined` counts as absent. Turn a mutator off with Stryker's
@@ -82,30 +82,30 @@ defaults; its option then throws, saying where it went.
 
 A mutator that checks which module a function comes from, such as `node:timers`, `node:events`, `node:assert` or
 `node:test`, follows an ES module `import`. It does not follow a CommonJS `require`, so a CommonJS file gets no
-mutant from it, and `LzNodeAwaitStatement` there also removes awaits in node:test teardown callbacks.
+mutant from it, and `MuirProteusNodeAwaitStatement` there also removes awaits in node:test teardown callbacks.
 
 ### Default mutators
 
-| Mutator                | What it changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LzNodeTimerDelay`     | Moves the delay of `setTimeout` and `setInterval`, from the globals, `node:timers` or `node:timers/promises`, by 1 ms each way. Node.js runs a delay below 1 after 1 ms, so a literal `0` or negative number gets no move and a literal `1` only `1 + 1`. A delay in a variable gets both moves, so a variable that holds 0 or 1 gives equivalent mutants: disable them with a reason. A string or template literal delay gets no move, as `+ 1` would append a digit.                                                                                                                                                                                                                                                                                                                |
-| `LzNodeEventName`      | Swaps a lifecycle event that a listener waits for with one that fires at another time, such as a child process's `exit` and `close`, or a stream's `finish`, `end` and `close`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `LzNodeAwaitStatement` | Removes a statement that only awaits a call, such as `await flush();`. Stryker removes a call statement but not an awaited one, so a lint rule that adds `await` to a floating promise would hide the call from mutation testing. As Stryker does for a call statement, it leaves a statement with another mutant inside it, such as `await flush('x');`. It also leaves statements inside a `node:test` `after` or `afterEach` callback, including a test context's `t.after`, where removing a teardown such as `await app.close()` is seen by no assertion and often hangs the test. It leaves an awaited `node:assert` call, such as `await assert.rejects(p);`, to the opt-in `LzNodeAssertStatement`, so with the defaults alone that statement gets no mutant that removes it. |
-| `LzNodeReturnAwait`    | Turns `return await x` into `return x` inside a `try` block, where the `catch` and `finally` then no longer wait for `x`, and inside a `catch` block that a `finally` block follows. A survivor is a rejection or a cleanup whose timing no test sees. When `x` is never a promise, `return x` behaves the same, and the mutant is equivalent.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `LzNodeExitCode`       | Flips the number that `process.exitCode = N` sets, from the global `process` or `node:process`: 0 becomes 1 and any other number 0. A survivor is an exit status that no test checks.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Mutator                         | What it changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MuirProteusNodeTimerDelay`     | Moves the delay of `setTimeout` and `setInterval`, from the globals, `node:timers` or `node:timers/promises`, by 1 ms each way. Node.js runs a delay below 1 after 1 ms, so a literal `0` or negative number gets no move and a literal `1` only `1 + 1`. A delay in a variable gets both moves, so a variable that holds 0 or 1 gives equivalent mutants: disable them with a reason. A string or template literal delay gets no move, as `+ 1` would append a digit.                                                                                                                                                                                                                                                                                                                         |
+| `MuirProteusNodeEventName`      | Swaps a lifecycle event that a listener waits for with one that fires at another time, such as a child process's `exit` and `close`, or a stream's `finish`, `end` and `close`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `MuirProteusNodeAwaitStatement` | Removes a statement that only awaits a call, such as `await flush();`. Stryker removes a call statement but not an awaited one, so a lint rule that adds `await` to a floating promise would hide the call from mutation testing. As Stryker does for a call statement, it leaves a statement with another mutant inside it, such as `await flush('x');`. It also leaves statements inside a `node:test` `after` or `afterEach` callback, including a test context's `t.after`, where removing a teardown such as `await app.close()` is seen by no assertion and often hangs the test. It leaves an awaited `node:assert` call, such as `await assert.rejects(p);`, to the opt-in `MuirProteusNodeAssertStatement`, so with the defaults alone that statement gets no mutant that removes it. |
+| `MuirProteusNodeReturnAwait`    | Turns `return await x` into `return x` inside a `try` block, where the `catch` and `finally` then no longer wait for `x`, and inside a `catch` block that a `finally` block follows. A survivor is a rejection or a cleanup whose timing no test sees. When `x` is never a promise, `return x` behaves the same, and the mutant is equivalent.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `MuirProteusNodeExitCode`       | Flips the number that `process.exitCode = N` sets, from the global `process` or `node:process`: 0 becomes 1 and any other number 0. A survivor is an exit status that no test checks.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 An example mutant of each, in the form of Stryker's
 [Supported mutators](https://stryker-mutator.io/docs/mutation-testing-elements/supported-mutators/) page:
 
-| Mutator                | Original                                           | Mutated                                      |
-| ---------------------- | -------------------------------------------------- | -------------------------------------------- |
-| `LzNodeTimerDelay`     | `setTimeout(retry, 100)`                           | `setTimeout(retry, 100 + 1)`                 |
-| `LzNodeEventName`      | `child.on('exit', done)`                           | `child.on("close", done)`                    |
-| `LzNodeAwaitStatement` | `await flush();`                                   | `;`                                          |
-| `LzNodeReturnAwait`    | `try { return await load(); } catch { return 0; }` | `try { return load(); } catch { return 0; }` |
-| `LzNodeExitCode`       | `process.exitCode = 0`                             | `process.exitCode = 1`                       |
+| Mutator                         | Original                                           | Mutated                                      |
+| ------------------------------- | -------------------------------------------------- | -------------------------------------------- |
+| `MuirProteusNodeTimerDelay`     | `setTimeout(retry, 100)`                           | `setTimeout(retry, 100 + 1)`                 |
+| `MuirProteusNodeEventName`      | `child.on('exit', done)`                           | `child.on("close", done)`                    |
+| `MuirProteusNodeAwaitStatement` | `await flush();`                                   | `;`                                          |
+| `MuirProteusNodeReturnAwait`    | `try { return await load(); } catch { return 0; }` | `try { return load(); } catch { return 0; }` |
+| `MuirProteusNodeExitCode`       | `process.exitCode = 0`                             | `process.exitCode = 1`                       |
 
-`LzNodeExitCode` suits code that a test runs in a child process and whose exit code the test reads, such as a CLI.
+`MuirProteusNodeExitCode` suits code that a test runs in a child process and whose exit code the test reads, such as a CLI.
 Code that sets `process.exitCode` in the test's own process sets the exit code of the test run instead. With
 `@muirjs/siryn-node-test`, the mutant that turns 0 into 1 then makes the test file exit with code 1 while
 no test fails. Stryker reports that mutant as a `RuntimeError`, not as `Survived`. A mutant of an assignment that an
@@ -114,53 +114,53 @@ uncaught exception follows is an equivalent mutant, because Node.js then exits w
 
 ### Opt-in mutators
 
-| Mutator                 | What it changes                                                                                                                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `LzNodeAssertStatement` | Removes a `node:assert` statement. A survivor is an invariant that no test breaks. Production code rarely asserts with `node:assert`, so it makes few mutants.                                                                                                                                   |
-| `LzNodeListenerOnce`    | Swaps `on` and `once` when a listener is added with a string event name, on any object. A survivor is a listener whose second call, or missing second call, no test sees. It leaves events that fire once, such as `exit` and `close`, and `once('error')`; many survivors are still equivalent. |
+| Mutator                          | What it changes                                                                                                                                                                                                                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `MuirProteusNodeAssertStatement` | Removes a `node:assert` statement. A survivor is an invariant that no test breaks. Production code rarely asserts with `node:assert`, so it makes few mutants.                                                                                                                                   |
+| `MuirProteusNodeListenerOnce`    | Swaps `on` and `once` when a listener is added with a string event name, on any object. A survivor is a listener whose second call, or missing second call, no test sees. It leaves events that fire once, such as `exit` and `close`, and `once('error')`; many survivors are still equivalent. |
 
-| Mutator                 | Original                       | Mutated                       |
-| ----------------------- | ------------------------------ | ----------------------------- |
-| `LzNodeAssertStatement` | `assert.ok(items.length > 0);` | `;`                           |
-| `LzNodeListenerOnce`    | `socket.on('data', onData)`    | `socket.once('data', onData)` |
+| Mutator                          | Original                       | Mutated                       |
+| -------------------------------- | ------------------------------ | ----------------------------- |
+| `MuirProteusNodeAssertStatement` | `assert.ok(items.length > 0);` | `;`                           |
+| `MuirProteusNodeListenerOnce`    | `socket.on('data', onData)`    | `socket.once('data', onData)` |
 
 ### Experimental mutators
 
-| Mutator               | What it changes                                                                                                                                                                                                                                                                                                                                                                                                        |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LzNodeByteLength`    | Turns `Buffer.byteLength(text)`, with no encoding or `'utf8'`, into `text.length`, on the global `Buffer`. A survivor is a byte count that no test checks with multi-byte characters. It leaves the length of a `Buffer.from`, `Buffer.alloc` or `Buffer.concat` result. For a `Buffer` held in a variable, `Buffer.byteLength(b)` into `b.length` is an equivalent mutant that type-checks: disable it with a reason. |
-| `LzNodeCallbackError` | Drops the error from `cb(err)`, `callback(err)`, `done(err)`, `next(err)` and `stream.destroy(err)`, for an argument named `err`, `error`, `e` or `er`. A survivor is an error that no test sees reach the caller. It goes by names only.                                                                                                                                                                              |
+| Mutator                        | What it changes                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MuirProteusNodeByteLength`    | Turns `Buffer.byteLength(text)`, with no encoding or `'utf8'`, into `text.length`, on the global `Buffer`. A survivor is a byte count that no test checks with multi-byte characters. It leaves the length of a `Buffer.from`, `Buffer.alloc` or `Buffer.concat` result. For a `Buffer` held in a variable, `Buffer.byteLength(b)` into `b.length` is an equivalent mutant that type-checks: disable it with a reason. |
+| `MuirProteusNodeCallbackError` | Drops the error from `cb(err)`, `callback(err)`, `done(err)`, `next(err)` and `stream.destroy(err)`, for an argument named `err`, `error`, `e` or `er`. A survivor is an error that no test sees reach the caller. It goes by names only.                                                                                                                                                                              |
 
-| Mutator               | Original                  | Mutated       |
-| --------------------- | ------------------------- | ------------- |
-| `LzNodeByteLength`    | `Buffer.byteLength(body)` | `body.length` |
-| `LzNodeCallbackError` | `callback(err)`           | `callback()`  |
+| Mutator                        | Original                  | Mutated       |
+| ------------------------------ | ------------------------- | ------------- |
+| `MuirProteusNodeByteLength`    | `Buffer.byteLength(body)` | `body.length` |
+| `MuirProteusNodeCallbackError` | `callback(err)`           | `callback()`  |
 
 ## Turn a mutator off
 
 The mutators' names work in Stryker's disable comments like Stryker's own mutators:
 
 ```js
-// Stryker disable next-line LzNodeTimerDelay: the delay only spaces out retries
+// Stryker disable next-line MuirProteusNodeTimerDelay: the delay only spaces out retries
 setTimeout(retry, 100);
 ```
 
 Stryker's `CallExpression` mutator removes a call statement only when no other mutant shares it. So a call statement
-such as `setTimeout(retry, 100);`, or `cb(err);` with `LzNodeCallbackError` turned on, gets the `LzNodeTimerDelay`
-or `LzNodeCallbackError` mutants instead of Stryker's removal. A disable comment that names only the Lz mutator, as
+such as `setTimeout(retry, 100);`, or `cb(err);` with `MuirProteusNodeCallbackError` turned on, gets the `MuirProteusNodeTimerDelay`
+or `MuirProteusNodeCallbackError` mutants instead of Stryker's removal. A disable comment that names only the Muir mutator, as
 above, ignores its mutants and brings the `CallExpression` removal back as a new mutant. Name `CallExpression` too
 when no test can kill that removal either.
 
-A disable comment for `LzNodeAssertStatement` names `CallExpression` too. Stryker's `CallExpression` mutator removes a call
-statement that no other mutant shares, so with the `LzNodeAssertStatement` mutant ignored, its removal of the statement
+A disable comment for `MuirProteusNodeAssertStatement` names `CallExpression` too. Stryker's `CallExpression` mutator removes a call
+statement that no other mutant shares, so with the `MuirProteusNodeAssertStatement` mutant ignored, its removal of the statement
 comes back:
 
 ```js
-// Stryker disable next-line LzNodeAssertStatement,CallExpression: callers never pass an empty list
+// Stryker disable next-line MuirProteusNodeAssertStatement,CallExpression: callers never pass an empty list
 assert.ok(items.length > 0);
 ```
 
 ## Build node:assert mutators
 
-`@muirjs/proteus-node/bindings` exports `lzBuiltin`, `lzNodeAssert` and `lzAssertMethod`, which find calls
+`@muirjs/proteus-node/bindings` exports `muirProteusNodeBuiltin`, `muirProteusNodeAssert` and `muirProteusNodeAssertMethod`, which find calls
 of `node:assert`, for packages that build mutators of them. Importing it installs no mutators.

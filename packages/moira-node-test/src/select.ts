@@ -1,13 +1,13 @@
 import { inspect } from 'node:util';
 
-import { isObject } from './guards.ts';
-import type { LzMutator } from './mutator.ts';
+import { muirMoiraNodeTestIsObject } from './guards.ts';
+import type { MuirMoiraNodeTestMutator } from './mutator.ts';
 
 /** The mutators a package installs: those that run unless a config leaves them out, and those a user turns on. */
-export interface LzMutatorSets {
-  readonly defaults: readonly LzMutator[];
-  readonly optIn: readonly LzMutator[];
-  readonly experimental: readonly LzMutator[];
+export interface MuirMoiraNodeTestMutatorSets {
+  readonly defaults: readonly MuirMoiraNodeTestMutator[];
+  readonly optIn: readonly MuirMoiraNodeTestMutator[];
+  readonly experimental: readonly MuirMoiraNodeTestMutator[];
 }
 
 /**
@@ -15,7 +15,7 @@ export interface LzMutatorSets {
  * experimental mutator with `experimental`, or one by its name inside it. Only `true` turns one on; Stryker's
  * `mutator.excludedMutations` turns mutators off.
  */
-export type LzMutatorOptions<
+export type MuirMoiraNodeTestMutatorOptions<
   TOptIn extends string,
   TExperimental extends string,
 > = {
@@ -25,23 +25,32 @@ export type LzMutatorOptions<
   readonly experimental?: true | { readonly [TName in TExperimental]?: true };
 };
 
-type LzTier = keyof LzMutatorSets;
+type MuirMoiraNodeTestTier = keyof MuirMoiraNodeTestMutatorSets;
 
-const tiers: readonly LzTier[] = ['defaults', 'optIn', 'experimental'];
-type LzSelectableTier = Exclude<LzTier, 'defaults'>;
+const tiers: readonly MuirMoiraNodeTestTier[] = [
+  'defaults',
+  'optIn',
+  'experimental',
+];
+type MuirMoiraNodeTestSelectableTier = Exclude<
+  MuirMoiraNodeTestTier,
+  'defaults'
+>;
 
-const tierNames: Record<LzSelectableTier, string> = {
+const tierNames: Record<MuirMoiraNodeTestSelectableTier, string> = {
   optIn: 'opt-in',
   experimental: 'experimental',
 };
-const whereTiersGo: Record<LzTier, string> = {
+const whereTiersGo: Record<MuirMoiraNodeTestTier, string> = {
   defaults: 'it runs by default',
   optIn: 'it is opt-in, so it goes outside experimental',
   experimental: 'it is experimental, so it goes inside experimental',
 };
 
 /** Every mutator of `sets`, defaults first. */
-export function lzAllMutators(sets: LzMutatorSets): readonly LzMutator[] {
+export function muirMoiraNodeTestAllMutators(
+  sets: MuirMoiraNodeTestMutatorSets,
+): readonly MuirMoiraNodeTestMutator[] {
   return tiers.flatMap((tier) => sets[tier]);
 }
 
@@ -49,20 +58,23 @@ export function lzAllMutators(sets: LzMutatorSets): readonly LzMutator[] {
  * The defaults and the mutators that `options` turns on, in the order of `sets`. Throws, starting with
  * `packageName`, on options it does not take, as a config file in JavaScript has no type check.
  */
-export function lzSelectMutators(
+export function muirMoiraNodeTestSelectMutators(
   packageName: string,
-  sets: LzMutatorSets,
+  sets: MuirMoiraNodeTestMutatorSets,
   options: unknown,
-): readonly LzMutator[] {
+): readonly MuirMoiraNodeTestMutator[] {
   const tierOf = new Map(
     tiers.flatMap((tier) =>
-      sets[tier].map(({ name }): [string, LzTier] => [name, tier]),
+      sets[tier].map(({ name }): [string, MuirMoiraNodeTestTier] => [
+        name,
+        tier,
+      ]),
     ),
   );
   const named = (
-    tier: LzSelectableTier,
+    tier: MuirMoiraNodeTestSelectableTier,
     name: string,
-  ): readonly LzMutator[] => {
+  ): readonly MuirMoiraNodeTestMutator[] => {
     const found = tierOf.get(name);
 
     if (found === tier) {
@@ -99,13 +111,13 @@ export function lzSelectMutators(
     },
   );
 
-  return lzAllMutators(sets).filter(
+  return muirMoiraNodeTestAllMutators(sets).filter(
     (mutator) => sets.defaults.includes(mutator) || selected.includes(mutator),
   );
 }
 
 function isRecord(value: unknown): value is object {
-  return isObject(value) && !Array.isArray(value);
+  return muirMoiraNodeTestIsObject(value) && !Array.isArray(value);
 }
 
 function entriesOf(

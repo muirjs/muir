@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 
-import { fieldOf } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
-import { resolveFromCore } from '../../src/install.ts';
+import { muirProteusPlaywrightResolveFromCore } from '../../src/install.ts';
 import { instrumentedMutants } from './mutants.ts';
 
-const instrumenter = resolveFromCore();
+const instrumenter = muirProteusPlaywrightResolveFromCore();
 
 /** Each mutant of `code` as its ignore reason, or `placed` when no ignorer hid it. */
 export async function ignorerOutcomes(
@@ -20,9 +20,9 @@ export async function ignorerOutcomes(
   );
 
   return mutants.map((mutant) => {
-    const reason = fieldOf(mutant, 'statusReason');
+    const reason = muirMoiraMutatorsFieldOf(mutant, 'statusReason');
 
-    if (fieldOf(mutant, 'status') !== 'Ignored') {
+    if (muirMoiraMutatorsFieldOf(mutant, 'status') !== 'Ignored') {
       return 'placed';
     }
 

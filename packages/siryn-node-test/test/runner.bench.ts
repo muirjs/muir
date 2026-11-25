@@ -265,9 +265,11 @@ async function round(
 async function loadRunner(path: string, dir: string): Promise<BenchRunner> {
   const module: unknown = await import(pathToFileURL(resolve(path)).href);
   const options = {
-    lzNodeTest: { testFiles: [join(dir, '*.test.mjs').replaceAll('\\', '/')] },
+    muirSirynNodeTest: {
+      testFiles: [join(dir, '*.test.mjs').replaceAll('\\', '/')],
+    },
   };
-  const runner = construct(member(module, 'LzNodeTestTestRunner'), [
+  const runner = construct(member(module, 'MuirSirynNodeTestTestRunner'), [
     strykerOptions(options),
     logger({ debugEnabled: false }),
   ]);

@@ -9,7 +9,7 @@ and text, has mutants it can kill, and so that mutants such a test cannot see st
 
 **JSX mutator**:
 One of this package's mutators: a mutator whose mutants change what JSX renders (text, attributes, elements,
-child expressions), named `LzJsx` plus the kind of syntax it changes and a markup category.
+child expressions), named `MuirProteusJsx` plus the kind of syntax it changes and a markup category.
 _Avoid_: JSX operator, custom mutator (too broad)
 
 **Mutation**:
@@ -19,7 +19,7 @@ _Avoid_: mutant type, sub-mutator
 
 **Markup category**:
 The word in a JSX mutator's name that says what part of the markup it changes: `Literal` (static text),
-`Attribute`, `Element`, `Expression` or `Handler`. It is the last word, except in `LzJsxElementRole`, where it
+`Attribute`, `Element`, `Expression` or `Handler`. It is the last word, except in `MuirProteusJsxElementRole`, where it
 comes first.
 
 ### Where mutants land
@@ -66,16 +66,16 @@ _Avoid_: tag swap, element replacement
 ### Ignorers
 
 **Styling ignorer**:
-The opt-in `lz-jsx-styling` ignorer, for mutants in class names and inline styles, which a DOM test does not
+The opt-in `muir-proteus-jsx-styling` ignorer, for mutants in class names and inline styles, which a DOM test does not
 observe.
 _Avoid_: class ignorer, CSS ignorer
 
 **Telemetry ignorer**:
-The opt-in `lz-telemetry` ignorer, for mutants in analytics and error-monitoring calls.
+The opt-in `muir-proteus-jsx-telemetry` ignorer, for mutants in analytics and error-monitoring calls.
 _Avoid_: analytics ignorer, tracking ignorer
 
 **Console ignorer**:
-The opt-in `lz-console` ignorer, for mutants in calls to the chosen `console` methods.
+The opt-in `muir-proteus-jsx-console` ignorer, for mutants in calls to the chosen `console` methods.
 _Avoid_: logging ignorer
 
 **Class-name builder**:
@@ -94,7 +94,7 @@ _Avoid_: cosmetic style, visual-only property
 
 **Telemetry callee**:
 The dotted name of a function, such as `analytics.track` or `Sentry.captureException`, whose call statements the
-telemetry ignorer ignores; a project adds its own through `lzTelemetry.calls`.
+telemetry ignorer ignores; a project adds its own through `muirProteusJsxTelemetry.calls`.
 _Avoid_: tracker, telemetry call (for the name)
 
 **Call statement**:

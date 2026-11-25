@@ -5,20 +5,20 @@ import { join } from 'node:path';
 import { compileFunction } from 'node:vm';
 
 import {
-  install,
-  reporting,
-  wrappedNodeTest,
-  type HookDependencies,
-  type ModuleHooks,
-  type TestEvent,
+  muirSirynNodeTestInstall,
+  muirSirynNodeTestReporting,
+  muirSirynNodeTestWrappedNodeTest,
+  type MuirSirynNodeTestHookDependencies,
+  type MuirSirynNodeTestModuleHooks,
+  type MuirSirynNodeTestTestEvent,
 } from '../src/hook-core.ts';
 import {
-  envNames,
-  lzParseRecord,
-  lzRecordNonce,
-  type ProcessRecord,
+  muirSirynNodeTestEnvNames,
+  muirSirynNodeTestParseRecord,
+  muirSirynNodeTestRecordNonce,
+  type MuirSirynNodeTestProcessRecord,
 } from '../src/record.ts';
-import type { NodeTestModule } from '../src/wrap.ts';
+import type { MuirSirynNodeTestModule } from '../src/wrap.ts';
 
 export type Fn = (this: unknown, ...args: unknown[]) => unknown;
 
@@ -86,7 +86,7 @@ export function fakeNodeTest(expectFailure = true) {
       mock: `${kind}.mock`,
     });
   const test = withShorthands('test');
-  const module: NodeTestModule = Object.assign(test, {
+  const module: MuirSirynNodeTestModule = Object.assign(test, {
     describe: withShorthands('describe', false),
     suite: withShorthands('suite', false),
     it: test,
@@ -182,7 +182,9 @@ export function bodyOf(
   };
 }
 
-export type TestDetails = NonNullable<TestEvent['data']['details']>;
+export type TestDetails = NonNullable<
+  MuirSirynNodeTestTestEvent['data']['details']
+>;
 
 export const out = join('/tmp', 'out');
 
@@ -192,7 +194,7 @@ export function reported(
   outcome: 'pass' | 'fail',
   details: TestDetails,
   flags: { skip?: unknown; todo?: unknown } = {},
-): TestEvent[] {
+): MuirSirynNodeTestTestEvent[] {
   return [
     { type: 'test:start', data: { name, nesting } },
     { type: `test:${outcome}`, data: { name, nesting, ...flags, details } },
@@ -208,15 +210,15 @@ export function loadContext(conditions: string[]): LoadHookContext {
 }
 
 export interface Harness {
-  readonly deps: HookDependencies;
+  readonly deps: MuirSirynNodeTestHookDependencies;
   readonly fake: ReturnType<typeof fakeNodeTest>;
   readonly records: readonly {
     readonly path: string;
-    readonly record: ProcessRecord;
+    readonly record: MuirSirynNodeTestProcessRecord;
   }[];
   readonly calls: readonly string[];
-  readonly hooks: readonly ModuleHooks[];
-  readonly wrapped: () => NodeTestModule;
+  readonly hooks: readonly MuirSirynNodeTestModuleHooks[];
+  readonly wrapped: () => MuirSirynNodeTestModule;
   /** Adds an exit listener as the test file would, after the hook's. */
   readonly onExit: (listener: () => void) => void;
   /** Runs the `beforeExit` listeners, as Node.js does once the event loop is empty. */
@@ -236,12 +238,12 @@ export interface Harness {
 
 export function harness(
   env: Record<string, string | undefined>,
-  overrides: Partial<HookDependencies> = {},
+  overrides: Partial<MuirSirynNodeTestHookDependencies> = {},
 ): Harness {
   const fake = fakeNodeTest();
   const records: Harness['records'][number][] = [];
   const calls: string[] = [];
-  const hooks: ModuleHooks[] = [];
+  const hooks: MuirSirynNodeTestModuleHooks[] = [];
   const listeners: (() => void)[] = [];
   const beforeExitListeners: (() => void)[] = [];
   const exits: Harness['exits'][number][] = [];
@@ -252,12 +254,12 @@ export function harness(
       listener();
     }
   };
-  const deps: HookDependencies = {
+  const deps: MuirSirynNodeTestHookDependencies = {
     env,
     execArgv: [],
     mainFile: testFile,
     pid: 4321,
-    nonce: lzRecordNonce(),
+    nonce: muirSirynNodeTestRecordNonce(),
     threadId: 0,
     global: { globalThis: undefined },
     nodeTest: () => {
@@ -267,7 +269,7 @@ export function harness(
     },
     registerHooks: (registered) => {
       calls.push(
-        deps.global[wrappedNodeTest]
+        deps.global[muirSirynNodeTestWrappedNodeTest]
           ? 'registerHooks'
           : 'registerHooks before publishing',
       );
@@ -285,7 +287,10 @@ export function harness(
       beforeExitListeners.push(listener);
     },
     writeRecord: (path, record) => {
-      records.push({ path, record: lzParseRecord(JSON.stringify(record)) });
+      records.push({
+        path,
+        record: muirSirynNodeTestParseRecord(JSON.stringify(record)),
+      });
     },
     every: () => {},
     exit: (code) => {
@@ -326,7 +331,7 @@ export function harness(
       resources = now;
     },
     wrapped: () => {
-      const wrapped = deps.global[wrappedNodeTest];
+      const wrapped = deps.global[muirSirynNodeTestWrappedNodeTest];
       assert.ok(wrapped, 'the hook published no wrapped node:test');
 
       return wrapped;
@@ -354,24 +359,27 @@ export const spans = (...ran: string[]) =>
 
 /** The environment of the process that runs the test file, new each time as the hook changes it. */
 export const fileEnv = () => ({
-  [envNames.out]: out,
-  [envNames.file]: testFile,
+  [muirSirynNodeTestEnvNames.out]: out,
+  [muirSirynNodeTestEnvNames.file]: testFile,
 });
 
 export function installedHarness(
   env: Record<string, string | undefined>,
-  overrides: Partial<HookDependencies> = {},
+  overrides: Partial<MuirSirynNodeTestHookDependencies> = {},
 ): Harness {
   const h = harness(env, overrides);
-  install(h.deps);
+  muirSirynNodeTestInstall(h.deps);
 
   return h;
 }
 
 /** Imports and requires node:test through `hooks`, with `wrapped`, which may be any fake, as the wrapped module. */
-export async function importRedirected(hooks: ModuleHooks, wrapped: unknown) {
+export async function importRedirected(
+  hooks: MuirSirynNodeTestModuleHooks,
+  wrapped: unknown,
+) {
   const slots: Record<symbol, unknown> = globalThis;
-  const previous = slots[wrappedNodeTest];
+  const previous = slots[muirSirynNodeTestWrappedNodeTest];
   const passOn = () => assert.fail('passed node:test on');
   const sourceFor = (conditions: string[]) => {
     const { url } = hooks.resolve(
@@ -389,7 +397,7 @@ export async function importRedirected(hooks: ModuleHooks, wrapped: unknown) {
   };
 
   try {
-    slots[wrappedNodeTest] = wrapped;
+    slots[muirSirynNodeTestWrappedNodeTest] = wrapped;
     // A comment of its own keeps the import from coming from the module cache.
     const source = `${sourceFor(['node', 'import'])}\n// ${randomUUID()}`;
     const module: unknown = await import(
@@ -409,7 +417,7 @@ export async function importRedirected(hooks: ModuleHooks, wrapped: unknown) {
 
     return { module, commonjs: commonjs.exports };
   } finally {
-    slots[wrappedNodeTest] = previous;
+    slots[muirSirynNodeTestWrappedNodeTest] = previous;
   }
 }
 
@@ -440,10 +448,10 @@ export async function ranAndReported(
 }
 
 export function send(
-  deps: HookDependencies,
-  ...events: readonly TestEvent[]
+  deps: MuirSirynNodeTestHookDependencies,
+  ...events: readonly MuirSirynNodeTestTestEvent[]
 ): void {
-  const recordEvent = deps.global[reporting];
+  const recordEvent = deps.global[muirSirynNodeTestReporting];
   assert.ok(recordEvent, 'the hook installed no reporting function');
 
   for (const event of events) {
@@ -452,7 +460,7 @@ export function send(
 }
 
 export function report(
-  deps: HookDependencies,
+  deps: MuirSirynNodeTestHookDependencies,
   name: string,
   outcome: 'pass' | 'fail',
 ): void {

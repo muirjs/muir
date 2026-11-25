@@ -1,40 +1,50 @@
 import {
-  resolveEachCore,
-  type LzInstrumenter,
-  type LzListedMutator,
+  muirMoiraNodeTestResolveEachCore,
+  type MuirMoiraNodeTestInstrumenter,
+  type MuirMoiraNodeTestListedMutator,
 } from './instrumenter.ts';
 import {
-  lzIsOwn,
-  lzToNodeMutator,
-  ownerOf,
-  type LzMutator,
+  muirMoiraNodeTestIsOwn,
+  muirMoiraNodeTestToNodeMutator,
+  muirMoiraNodeTestOwnerOf,
+  type MuirMoiraNodeTestMutator,
 } from './mutator.ts';
-import { lzWarnOutsidePeerRange, parseCaretFloor } from './peer-range.ts';
+import {
+  muirMoiraNodeTestWarnOutsidePeerRange,
+  muirMoiraNodeTestParseCaretFloor,
+} from './peer-range.ts';
 
 /** Stryker's `// Stryker disable` directives match mutator names with letters only. */
 const namePattern = /^[A-Za-z]+$/;
 
-export type LzInstallMode = 'add' | 'replace';
+export type MuirMoiraNodeTestInstallMode = 'add' | 'replace';
 
-export interface LzInstallOptions {
+export interface MuirMoiraNodeTestInstallOptions {
   /** The installing package, which starts each error and warning. */
   readonly packageName: string;
   /** The installing package's peer range of `@stryker-mutator/core`, a caret range such as `^10.1.1`. */
   readonly corePeerRange: string;
-  readonly mode: LzInstallMode;
-  readonly mutators: readonly LzMutator[];
+  readonly mode: MuirMoiraNodeTestInstallMode;
+  readonly mutators: readonly MuirMoiraNodeTestMutator[];
 }
 
 /**
  * Puts `mutators` into the mutator list of each copy of Stryker's instrumenter, and throws unless each makes a mutant
  * of its sample: a bundled instrumenter does not read the list and would drop the mutators without a word.
  */
-export async function lzInstall(
-  { packageName, corePeerRange, mode, mutators }: LzInstallOptions,
-  resolve: () => Promise<readonly LzInstrumenter[]> = resolveEachCore,
+export async function muirMoiraNodeTestInstall(
+  {
+    packageName,
+    corePeerRange,
+    mode,
+    mutators,
+  }: MuirMoiraNodeTestInstallOptions,
+  resolve: () => Promise<
+    readonly MuirMoiraNodeTestInstrumenter[]
+  > = muirMoiraNodeTestResolveEachCore,
   warn: (message: string) => void = console.warn,
 ): Promise<void> {
-  const floor = parseCaretFloor(corePeerRange, packageName);
+  const floor = muirMoiraNodeTestParseCaretFloor(corePeerRange, packageName);
   const instrumenters = await resolve();
 
   instrumenters.forEach(({ allMutators }) => {
@@ -48,7 +58,7 @@ export async function lzInstall(
       selfCheck(packageName, instrumenter, mutators),
     ),
   );
-  lzWarnOutsidePeerRange(
+  muirMoiraNodeTestWarnOutsidePeerRange(
     packageName,
     floor,
     instrumenters.map(({ version }) => version),
@@ -59,19 +69,21 @@ export async function lzInstall(
 /** Replace mode keeps the mutators of the other packages that install through this one. */
 function putInto(
   packageName: string,
-  instrumenter: LzInstrumenter,
-  mode: LzInstallMode,
-  mutators: readonly LzMutator[],
+  instrumenter: MuirMoiraNodeTestInstrumenter,
+  mode: MuirMoiraNodeTestInstallMode,
+  mutators: readonly MuirMoiraNodeTestMutator[],
 ): void {
   const { allMutators } = instrumenter;
   const nodeMutators = mutators.map((mutator) =>
-    lzToNodeMutator(mutator, instrumenter.types, packageName),
+    muirMoiraNodeTestToNodeMutator(mutator, instrumenter.types, packageName),
   );
 
   if (mode === 'replace') {
     instrumenter.setMutators([
       ...allMutators.filter(
-        (mutator) => lzIsOwn(mutator) && ownerOf(mutator) !== packageName,
+        (mutator) =>
+          muirMoiraNodeTestIsOwn(mutator) &&
+          muirMoiraNodeTestOwnerOf(mutator) !== packageName,
       ),
       ...nodeMutators,
     ]);
@@ -87,8 +99,8 @@ function putInto(
 
 function checkNames(
   packageName: string,
-  mutators: readonly LzMutator[],
-  present: readonly LzListedMutator[],
+  mutators: readonly MuirMoiraNodeTestMutator[],
+  present: readonly MuirMoiraNodeTestListedMutator[],
 ): void {
   const names = mutators.map(({ name }) => name);
   const invalid = names.filter((name) => !namePattern.test(name));
@@ -110,7 +122,7 @@ function checkNames(
       present.some(
         (mutator) =>
           mutator.name.toLowerCase() === key &&
-          ownerOf(mutator) !== packageName,
+          muirMoiraNodeTestOwnerOf(mutator) !== packageName,
       )
     );
   });
@@ -124,8 +136,8 @@ function checkNames(
 
 async function selfCheck(
   packageName: string,
-  instrumenter: LzInstrumenter,
-  mutators: readonly LzMutator[],
+  instrumenter: MuirMoiraNodeTestInstrumenter,
+  mutators: readonly MuirMoiraNodeTestMutator[],
 ): Promise<void> {
   const mutants = await instrumenter.instrument(
     mutators.map(({ name, sample }) => ({

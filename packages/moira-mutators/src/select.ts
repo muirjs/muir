@@ -1,10 +1,12 @@
 import { inspect } from 'node:util';
 
-import type { NamedMutator } from './install.ts';
-import { isRecord } from './is-record.ts';
+import type { MuirMoiraMutatorsNamedMutator } from './install.ts';
+import { muirMoiraMutatorsIsRecord } from './is-record.ts';
 
 /** The mutators a package installs: those that run unless a config leaves them out, and those a user turns on. */
-export interface MutatorSets<TMutator extends NamedMutator> {
+export interface MuirMoiraMutatorsMutatorSets<
+  TMutator extends MuirMoiraMutatorsNamedMutator,
+> {
   readonly defaults: readonly TMutator[];
   readonly optIn: readonly TMutator[];
   readonly experimental: readonly TMutator[];
@@ -16,7 +18,7 @@ export interface MutatorSets<TMutator extends NamedMutator> {
  * `mutator.excludedMutations` turns mutators off. A tier without mutators has no key, as `selectMutators` rejects it,
  * and a package with neither tier takes only keys that hold `undefined`.
  */
-export type MutatorOptions<
+export type MuirMoiraMutatorsMutatorOptions<
   TOptIn extends string,
   TExperimental extends string,
 > = [TOptIn | TExperimental] extends [never]
@@ -32,7 +34,7 @@ export type MutatorOptions<
               | { readonly [TName in TExperimental]?: true };
           });
 
-type Tier = keyof MutatorSets<NamedMutator>;
+type Tier = keyof MuirMoiraMutatorsMutatorSets<MuirMoiraMutatorsNamedMutator>;
 
 const tiers: readonly Tier[] = ['defaults', 'optIn', 'experimental'];
 const whereTiersGo: Record<Tier, string> = {
@@ -53,10 +55,12 @@ const tierLabels: Record<SelectableTier, string> = {
  * on options it does not take, as a config file in JavaScript has no type check. `installName` is the install
  * function the user called.
  */
-export function selectMutators<TMutator extends NamedMutator>(
+export function muirMoiraMutatorsSelectMutators<
+  TMutator extends MuirMoiraMutatorsNamedMutator,
+>(
   packageName: string,
   installName: string,
-  sets: MutatorSets<TMutator>,
+  sets: MuirMoiraMutatorsMutatorSets<TMutator>,
   options: unknown,
 ): readonly TMutator[] {
   if (
@@ -158,7 +162,7 @@ export function selectMutators<TMutator extends NamedMutator>(
 
 /** An object literal or an object without a prototype, so that every key it has is its own. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (!isRecord(value)) {
+  if (!muirMoiraMutatorsIsRecord(value)) {
     return false;
   }
 
@@ -169,7 +173,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /** The entries of `value` that hold something: a key holding undefined counts as absent. */
 function definedEntries(value: unknown): [string, unknown][] {
-  return Object.entries(isRecord(value) ? value : {}).filter(
+  return Object.entries(muirMoiraMutatorsIsRecord(value) ? value : {}).filter(
     ([, member]) => member !== undefined,
   );
 }

@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  lzDescendants,
-  lzLeftovers,
-  lzNewEntries,
-  lzParseProcSamples,
-  lzParseSamples,
-  lzPeaks,
-  type LzProcessRow,
+  muirDescendants,
+  muirLeftovers,
+  muirNewEntries,
+  muirParseProcSamples,
+  muirParseSamples,
+  muirPeaks,
+  type MuirProcessRow,
 } from '../../src/oss/processes.ts';
 
 function row(
@@ -16,7 +16,7 @@ function row(
   ppid: number,
   created = pid,
   workingSetBytes = 100,
-): LzProcessRow {
+): MuirProcessRow {
   return {
     pid,
     ppid,
@@ -26,12 +26,12 @@ function row(
   };
 }
 
-describe('lzParseSamples', () => {
+describe('muirParseSamples', () => {
   it('reads each sample up to its -- line, with CRLF line ends and spaces in a name', () => {
     const text =
       '4 0 10 0 System\r\n10 42 2048 133000000000000001 my tool.exe\r\n--\r\n4 0 10 0 System\r\n--\r\n';
 
-    assert.deepEqual(lzParseSamples(text), [
+    assert.deepEqual(muirParseSamples(text), [
       [
         { pid: 4, ppid: 0, workingSetBytes: 10, created: 0n, name: 'System' },
         {
@@ -47,17 +47,17 @@ describe('lzParseSamples', () => {
   });
 
   it('drops a sample that the stop cut short', () => {
-    assert.equal(lzParseSamples('4 0 10 0 System\n--\n5 4 1').length, 1);
+    assert.equal(muirParseSamples('4 0 10 0 System\n--\n5 4 1').length, 1);
   });
 
   it('refuses a line that is no process', () => {
-    assert.throws(() => lzParseSamples('WARNING: slow\n--\n'), {
+    assert.throws(() => muirParseSamples('WARNING: slow\n--\n'), {
       message: 'Not a process line: "WARNING: slow"',
     });
   });
 
   it('splits samples only at a line that is -- and nothing else', () => {
-    assert.deepEqual(lzParseSamples('10 4 2048 1 tool --\n--\n'), [
+    assert.deepEqual(muirParseSamples('10 4 2048 1 tool --\n--\n'), [
       [
         {
           pid: 10,
@@ -68,22 +68,22 @@ describe('lzParseSamples', () => {
         },
       ],
     ]);
-    assert.throws(() => lzParseSamples('--x\n--\n'), {
+    assert.throws(() => muirParseSamples('--x\n--\n'), {
       message: 'Not a process line: "--x"',
     });
   });
 
   it('refuses a line with text before its pid or a stray carriage return in it', () => {
-    assert.throws(() => lzParseSamples('x4 0 10 0 System\n--\n'), {
+    assert.throws(() => muirParseSamples('x4 0 10 0 System\n--\n'), {
       message: 'Not a process line: "x4 0 10 0 System"',
     });
-    assert.throws(() => lzParseSamples('4 0 10 0 Sys\rtem\n--\n'), {
+    assert.throws(() => muirParseSamples('4 0 10 0 Sys\rtem\n--\n'), {
       message: 'Not a process line: "4 0 10 0 Sys\rtem"',
     });
   });
 });
 
-describe('lzParseProcSamples', () => {
+describe('muirParseProcSamples', () => {
   const init =
     '1 (node) S 0 1 1 34816 1 4194560 21542 0 0 0 51 12 0 0 20 0 11 0 2845 1093210112 12880 18446744073709551615 1 1 0 0 0 0 0 16781312 134235650 0 0 0 17 3 0 0 0 0 0 0 0 0 0 0 0 0 0';
   const tool =
@@ -91,7 +91,7 @@ describe('lzParseProcSamples', () => {
 
   it('reads the page size, then each sample of /proc/<pid>/stat lines up to its -- line', () => {
     assert.deepEqual(
-      lzParseProcSamples(`4096\n${init}\n${tool}\n--\n${init}\n--\n`),
+      muirParseProcSamples(`4096\n${init}\n${tool}\n--\n${init}\n--\n`),
       [
         [
           {
@@ -123,7 +123,7 @@ describe('lzParseProcSamples', () => {
   });
 
   it('names a process by its command line after the tab, and by its stat name when that is empty', () => {
-    const [sample] = lzParseProcSamples(
+    const [sample] = muirParseProcSamples(
       `4096\n${init}\tnode --test test/a.test.js \n${tool}\t\n--\n`,
     );
 
@@ -134,17 +134,17 @@ describe('lzParseProcSamples', () => {
   });
 
   it('drops a sample that the stop cut short', () => {
-    assert.equal(lzParseProcSamples(`4096\n${init}\n--\n${init}`).length, 1);
+    assert.equal(muirParseProcSamples(`4096\n${init}\n--\n${init}`).length, 1);
   });
 
   it('refuses text that does not start with the page size', () => {
-    assert.throws(() => lzParseProcSamples(`${init}\n--\n`), {
+    assert.throws(() => muirParseProcSamples(`${init}\n--\n`), {
       message: `Not a page size: "${init}"`,
     });
   });
 
   it('refuses a line that is no /proc/<pid>/stat line', () => {
-    assert.throws(() => lzParseProcSamples('4096\n1 (node) S 0\n--\n'), {
+    assert.throws(() => muirParseProcSamples('4096\n1 (node) S 0\n--\n'), {
       message: 'Not a /proc/<pid>/stat line: "1 (node) S 0"',
     });
   });
@@ -152,7 +152,7 @@ describe('lzParseProcSamples', () => {
   it('reads a state of more than one character and a parent id of more than one digit', () => {
     const child = tool.replace('4021 (my (tool) x) R 1 ', '4022 (sh) Ss 4021 ');
 
-    assert.deepEqual(lzParseProcSamples(`4096\n${child}\n--\n`), [
+    assert.deepEqual(muirParseProcSamples(`4096\n${child}\n--\n`), [
       [
         {
           pid: 4022,
@@ -166,21 +166,21 @@ describe('lzParseProcSamples', () => {
   });
 
   it('refuses a stat line with text before its pid or after its last field', () => {
-    assert.throws(() => lzParseProcSamples(`4096\nx${init}\n--\n`), {
+    assert.throws(() => muirParseProcSamples(`4096\nx${init}\n--\n`), {
       message: `Not a /proc/<pid>/stat line: "x${init}"`,
     });
-    assert.throws(() => lzParseProcSamples(`4096\n${init} \n--\n`), {
+    assert.throws(() => muirParseProcSamples(`4096\n${init} \n--\n`), {
       message: `Not a /proc/<pid>/stat line: "${init} "`,
     });
   });
 });
 
-describe('lzDescendants', () => {
+describe('muirDescendants', () => {
   it('walks the tree below the root and leaves the root out', () => {
     const rows = [row(1, 0), row(2, 1), row(3, 2), row(4, 0)];
 
     assert.deepEqual(
-      lzDescendants(rows, 1, new Set()).map(({ pid }) => pid),
+      muirDescendants(rows, 1, new Set()).map(({ pid }) => pid),
       [2, 3],
     );
   });
@@ -189,7 +189,7 @@ describe('lzDescendants', () => {
     const rows = [row(1, 0), row(2, 1), row(3, 2), row(5, 1)];
 
     assert.deepEqual(
-      lzDescendants(rows, 1, new Set([2])).map(({ pid }) => pid),
+      muirDescendants(rows, 1, new Set([2])).map(({ pid }) => pid),
       [5],
     );
   });
@@ -198,7 +198,7 @@ describe('lzDescendants', () => {
     const rows = [row(1, 0, 50), row(2, 1, 40), row(3, 1, 60)];
 
     assert.deepEqual(
-      lzDescendants(rows, 1, new Set()).map(({ pid }) => pid),
+      muirDescendants(rows, 1, new Set()).map(({ pid }) => pid),
       [3],
     );
   });
@@ -207,7 +207,7 @@ describe('lzDescendants', () => {
     const rows = [row(0, 0), row(4, 0)];
 
     assert.deepEqual(
-      lzDescendants(rows, 0, new Set()).map(({ pid }) => pid),
+      muirDescendants(rows, 0, new Set()).map(({ pid }) => pid),
       [4],
     );
   });
@@ -216,7 +216,7 @@ describe('lzDescendants', () => {
     const rows = [row(9, 0, 100), row(1, 0, 50), row(2, 1, 60)];
 
     assert.deepEqual(
-      lzDescendants(rows, 1, new Set()).map(({ pid }) => pid),
+      muirDescendants(rows, 1, new Set()).map(({ pid }) => pid),
       [2],
     );
   });
@@ -225,20 +225,20 @@ describe('lzDescendants', () => {
     const rows = [row(1, 0, 50), row(2, 1, 50)];
 
     assert.deepEqual(
-      lzDescendants(rows, 1, new Set()).map(({ pid }) => pid),
+      muirDescendants(rows, 1, new Set()).map(({ pid }) => pid),
       [2],
     );
   });
 });
 
-describe('lzPeaks', () => {
+describe('muirPeaks', () => {
   it('takes the largest count and the largest summed working set of any sample', () => {
     const samples = [
       [row(1, 0, 1, 500)],
       [row(1, 0, 1, 100), row(2, 1, 2, 300)],
     ];
 
-    assert.deepEqual(lzPeaks(samples), {
+    assert.deepEqual(muirPeaks(samples), {
       samples: 2,
       peakCount: 2,
       peakWorkingSetBytes: 500,
@@ -246,7 +246,7 @@ describe('lzPeaks', () => {
   });
 
   it('reads zero from no samples', () => {
-    assert.deepEqual(lzPeaks([]), {
+    assert.deepEqual(muirPeaks([]), {
       samples: 0,
       peakCount: 0,
       peakWorkingSetBytes: 0,
@@ -254,43 +254,43 @@ describe('lzPeaks', () => {
   });
 });
 
-describe('lzLeftovers', () => {
+describe('muirLeftovers', () => {
   it('finds the seen processes that still run', () => {
     const seen = [row(10, 1), row(11, 10), row(12, 11)];
     const now = [row(1, 0), row(12, 11), row(10, 1)];
 
     assert.deepEqual(
-      lzLeftovers(seen, now).map(({ pid }) => pid),
+      muirLeftovers(seen, now).map(({ pid }) => pid),
       [12, 10],
     );
   });
 
   it('leaves out a child of the root that no sample saw, such as the snapshot itself', () => {
-    assert.deepEqual(lzLeftovers([row(10, 1)], [row(1, 0), row(20, 1)]), []);
+    assert.deepEqual(muirLeftovers([row(10, 1)], [row(1, 0), row(20, 1)]), []);
   });
 
   it('leaves out a child of an ended run process that no sample saw in the run', () => {
     assert.deepEqual(
-      lzLeftovers([row(10, 1), row(11, 10)], [row(1, 0), row(12, 10, 50)]),
+      muirLeftovers([row(10, 1), row(11, 10)], [row(1, 0), row(12, 10, 50)]),
       [],
     );
   });
 
   it('leaves out a process that started at the same time as a seen one under another id', () => {
-    assert.deepEqual(lzLeftovers([row(10, 1, 5)], [row(20, 1, 5)]), []);
+    assert.deepEqual(muirLeftovers([row(10, 1, 5)], [row(20, 1, 5)]), []);
   });
 
   it('leaves out a process that reuses the id of an ended one', () => {
     assert.deepEqual(
-      lzLeftovers([row(10, 1), row(11, 10)], [row(1, 0), row(11, 7, 99)]),
+      muirLeftovers([row(10, 1), row(11, 10)], [row(1, 0), row(11, 7, 99)]),
       [],
     );
   });
 });
 
-describe('lzNewEntries', () => {
+describe('muirNewEntries', () => {
   it('lists what the second listing adds, sorted', () => {
-    assert.deepEqual(lzNewEntries(['a', 'b'], ['c', 'a', 'b', 'Z']), [
+    assert.deepEqual(muirNewEntries(['a', 'b'], ['c', 'a', 'b', 'Z']), [
       'Z',
       'c',
     ]);

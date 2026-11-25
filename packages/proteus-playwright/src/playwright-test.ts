@@ -1,9 +1,14 @@
-import { fieldOf } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsFieldOf } from '@muirjs/moira-mutators';
 
-import { isCall, isTestCallee } from './ast.ts';
+import {
+  muirProteusPlaywrightIsCall,
+  muirProteusPlaywrightIsTestCallee,
+} from './ast.ts';
 
-export function looksLikePlaywrightTest(program: unknown): boolean {
-  const body = fieldOf(program, 'body');
+export function muirProteusPlaywrightLooksLikePlaywrightTest(
+  program: unknown,
+): boolean {
+  const body = muirMoiraMutatorsFieldOf(program, 'body');
 
   return (
     Array.isArray(body) &&
@@ -15,20 +20,23 @@ export function looksLikePlaywrightTest(program: unknown): boolean {
 }
 
 function isPlaywrightImport(statement: unknown): boolean {
-  const source = fieldOf(fieldOf(statement, 'source'), 'value');
+  const source = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(statement, 'source'),
+    'value',
+  );
 
   return (
-    fieldOf(statement, 'type') === 'ImportDeclaration' &&
+    muirMoiraMutatorsFieldOf(statement, 'type') === 'ImportDeclaration' &&
     String(source).startsWith('@playwright/')
   );
 }
 
 function isTopLevelTestCall(statement: unknown): boolean {
-  const call = fieldOf(statement, 'expression');
+  const call = muirMoiraMutatorsFieldOf(statement, 'expression');
 
   return (
-    fieldOf(statement, 'type') === 'ExpressionStatement' &&
-    isCall(call) &&
-    isTestCallee(fieldOf(call, 'callee'))
+    muirMoiraMutatorsFieldOf(statement, 'type') === 'ExpressionStatement' &&
+    muirProteusPlaywrightIsCall(call) &&
+    muirProteusPlaywrightIsTestCallee(muirMoiraMutatorsFieldOf(call, 'callee'))
   );
 }

@@ -1,8 +1,8 @@
 # Server-side mutants are a runner option, off by default, isolated by default
 
 Code that the Playwright config's `webServer` runs (server rendering, loaders, actions, API routes) gets the active
-mutant only with `lzPlaywright.webServer.mutate`. The runner, not an ignorer, owns this: Lars ruled "Don't add the
-lz-playwright-server ignorer. Add server and API test support to the siryn-playwright instead." `mutate`
+mutant only with `muirSirynPlaywright.webServer.mutate`. The runner, not an ignorer, owns this: Lars ruled "Don't add the
+muir-playwright-server ignorer. Add server and API test support to the siryn-playwright instead." `mutate`
 takes `false`, `true` or `'auto'`. `false` is the default, and the dry run then logs that the server's mutants stay
 NoCoverage; Lars chose that shipped default over `true`. `true` gives the `webServer` each mutant and stops the
 runner at startup when the setup cannot work. `'auto'` does the same but falls back to `false` with a warning.
@@ -11,7 +11,7 @@ tests a server-side mutant, so state that one mutant run leaves in the server is
 
 ## Considered Options
 
-- An `lz-playwright-server` ignorer that hides server-side mutants. Rejected by the ruling above. On a copy of
+- An `muir-playwright-server` ignorer that hides server-side mutants. Rejected by the ruling above. On a copy of
   epic-stack, 80 of 244 mutants sat in loaders and actions that never ran with a mutant.
 - `'auto'` as the default. It is planned as a later default, once the restart behaviour is settled and the cost of
   the dry run's detection hint is measured; it is not the default yet.

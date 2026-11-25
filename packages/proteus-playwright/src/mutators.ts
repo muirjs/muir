@@ -1,35 +1,39 @@
 import {
-  roleSite,
-  swapMutator,
-  type MutatorOptions,
-  type MutatorSets,
-  type SampledMutator,
+  muirMoiraMutatorsRoleSite,
+  muirMoiraMutatorsSwapMutator,
+  type MuirMoiraMutatorsMutatorOptions,
+  type MuirMoiraMutatorsMutatorSets,
+  type MuirMoiraMutatorsSampledMutator,
 } from '@muirjs/moira-mutators';
 
-import type { BabelTypes } from './install.ts';
-import { fulfillMutator, outcomeMutator } from './route-mocks.ts';
-import { requestDataMutator } from './request-data.ts';
-import { requestUrlMutator } from './request-url.ts';
+import type { MuirProteusPlaywrightBabelTypes } from './install.ts';
 import {
-  clickAction,
-  clock,
-  focusAction,
-  inputAction,
-  navigationAction,
-  networkWait,
-  removalMutator,
-  sleepWait,
-  stateWait,
+  muirProteusPlaywrightFulfillMutator,
+  muirProteusPlaywrightOutcomeMutator,
+} from './route-mocks.ts';
+import { muirProteusPlaywrightRequestDataMutator } from './request-data.ts';
+import { muirProteusPlaywrightRequestUrlMutator } from './request-url.ts';
+import {
+  muirProteusPlaywrightClickAction,
+  muirProteusPlaywrightClock,
+  muirProteusPlaywrightFocusAction,
+  muirProteusPlaywrightInputAction,
+  muirProteusPlaywrightNavigationAction,
+  muirProteusPlaywrightNetworkWait,
+  muirProteusPlaywrightRemovalMutator,
+  muirProteusPlaywrightSleepWait,
+  muirProteusPlaywrightStateWait,
 } from './statement-removal.ts';
 import {
-  isSameStory,
-  mountStorySite,
-  testIdSite,
-  textSite,
+  muirProteusPlaywrightIsSameStory,
+  muirProteusPlaywrightMountStorySite,
+  muirProteusPlaywrightTestIdSite,
+  muirProteusPlaywrightTextSite,
 } from './swap-sites.ts';
 
-export interface LzPlaywrightMutator extends SampledMutator {
-  mutate(path: unknown, t: BabelTypes): Iterable<unknown>;
+export interface MuirProteusPlaywrightMutator
+  extends MuirMoiraMutatorsSampledMutator {
+  mutate(path: unknown, t: MuirProteusPlaywrightBabelTypes): Iterable<unknown>;
 }
 
 function sampleOf(statement: string): string {
@@ -38,68 +42,91 @@ function sampleOf(statement: string): string {
 
 // In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave the roster out of a
 // mutation run. The literal names are what the option type reads.
-function roster<const T extends MutatorSets<LzPlaywrightMutator>>(sets: T): T {
+function roster<
+  const T extends MuirMoiraMutatorsMutatorSets<MuirProteusPlaywrightMutator>,
+>(sets: T): T {
   return sets;
 }
 
-export const mutatorSets = roster({
+export const muirProteusPlaywrightMutatorSets = roster({
   defaults: [
-    removalMutator(clickAction, sampleOf("await page.locator('#a').click();")),
-    removalMutator(
-      inputAction,
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightClickAction,
+      sampleOf("await page.locator('#a').click();"),
+    ),
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightInputAction,
       sampleOf("await page.locator('#a').fill('x');"),
     ),
-    removalMutator(focusAction, sampleOf("await page.locator('#a').hover();")),
-    removalMutator(navigationAction, sampleOf("await page.goto('/');")),
-    swapMutator(
-      'LzPlaywrightTestIdLocator',
-      sampleOf("page.getByTestId('a');\n  page.getByTestId('b');"),
-      testIdSite,
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightFocusAction,
+      sampleOf("await page.locator('#a').hover();"),
     ),
-    swapMutator(
-      'LzPlaywrightRoleLocator',
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightNavigationAction,
+      sampleOf("await page.goto('/');"),
+    ),
+    muirMoiraMutatorsSwapMutator(
+      'MuirProteusPlaywrightTestIdLocator',
+      sampleOf("page.getByTestId('a');\n  page.getByTestId('b');"),
+      muirProteusPlaywrightTestIdSite,
+    ),
+    muirMoiraMutatorsSwapMutator(
+      'MuirProteusPlaywrightRoleLocator',
       sampleOf(
         "page.getByRole('button', { name: 'a' });\n  page.getByRole('button', { name: 'b' });",
       ),
-      roleSite(['getByRole']),
+      muirMoiraMutatorsRoleSite(['getByRole']),
     ),
-    swapMutator(
-      'LzPlaywrightTextLocator',
+    muirMoiraMutatorsSwapMutator(
+      'MuirProteusPlaywrightTextLocator',
       sampleOf("page.getByText('a');\n  page.getByText('b');"),
-      textSite,
+      muirProteusPlaywrightTextSite,
     ),
-    fulfillMutator(
-      'LzPlaywrightFulfill',
+    muirProteusPlaywrightFulfillMutator(
+      'MuirProteusPlaywrightFulfill',
       sampleOf(
         "await page.route('**/api', (route) => route.fulfill({ json: { a: 1 } }));",
       ),
     ),
-    outcomeMutator(
-      'LzPlaywrightRouteOutcome',
+    muirProteusPlaywrightOutcomeMutator(
+      'MuirProteusPlaywrightRouteOutcome',
       sampleOf("await page.route('**/api', (route) => route.abort());"),
     ),
   ],
   optIn: [
-    removalMutator(sleepWait, sampleOf('await page.waitForTimeout(100);')),
-    removalMutator(stateWait, sampleOf('await page.waitForLoadState();')),
-    removalMutator(networkWait, sampleOf("await page.waitForResponse('/a');")),
-    removalMutator(clock, sampleOf('await page.clock.runFor(1000);')),
-    swapMutator(
-      'LzPlaywrightMountStory',
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightSleepWait,
+      sampleOf('await page.waitForTimeout(100);'),
+    ),
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightStateWait,
+      sampleOf('await page.waitForLoadState();'),
+    ),
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightNetworkWait,
+      sampleOf("await page.waitForResponse('/a');"),
+    ),
+    muirProteusPlaywrightRemovalMutator(
+      muirProteusPlaywrightClock,
+      sampleOf('await page.clock.runFor(1000);'),
+    ),
+    muirMoiraMutatorsSwapMutator(
+      'MuirProteusPlaywrightMountStory',
       sampleOf("await mount('a');\n  await mount('b');"),
-      mountStorySite,
-      isSameStory,
+      muirProteusPlaywrightMountStorySite,
+      muirProteusPlaywrightIsSameStory,
     ),
   ],
   experimental: [
-    requestDataMutator(
-      'LzPlaywrightRequestData',
+    muirProteusPlaywrightRequestDataMutator(
+      'MuirProteusPlaywrightRequestData',
       sampleOf(
         "const response = await page.request.post('/a', { data: { a: 'b' } });\n  expect(response.ok()).toBe(true);",
       ),
     ),
-    requestUrlMutator(
-      'LzPlaywrightRequestUrl',
+    muirProteusPlaywrightRequestUrlMutator(
+      'MuirProteusPlaywrightRequestUrl',
       sampleOf(
         "const response = await page.request.get('/a');\n  expect(response.ok()).toBe(true);",
       ),
@@ -107,9 +134,11 @@ export const mutatorSets = roster({
   ],
 });
 
-type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];
+type NamesIn<TTier extends readonly MuirMoiraMutatorsSampledMutator[]> =
+  TTier[number]['name'];
 
-export type LzPlaywrightMutatorOptions = MutatorOptions<
-  NamesIn<(typeof mutatorSets)['optIn']>,
-  NamesIn<(typeof mutatorSets)['experimental']>
->;
+export type MuirProteusPlaywrightMutatorOptions =
+  MuirMoiraMutatorsMutatorOptions<
+    NamesIn<(typeof muirProteusPlaywrightMutatorSets)['optIn']>,
+    NamesIn<(typeof muirProteusPlaywrightMutatorSets)['experimental']>
+  >;

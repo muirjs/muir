@@ -3,7 +3,7 @@ import parser from '@typescript-eslint/parser';
 import { RuleTester } from 'eslint';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import rule from './require-windows-hide.ts';
 
 /** With no global describe or it, as under node:test, RuleTester runs each case inside the calling test. */
@@ -12,7 +12,7 @@ function tester(): RuleTester {
 }
 
 describe('require-windows-hide', () => {
-  lzTestEach([
+  muirTestEach([
     [
       'a detached spawn with windowsHide: true',
       'spawn(cmd, [], { detached: true, windowsHide: true });',
@@ -88,7 +88,7 @@ describe('require-windows-hide', () => {
     tester().run('require-windows-hide', rule, { valid: [code], invalid: [] });
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'a detached spawn without windowsHide',
       "spawn(cmd, [], { detached: true, stdio: 'ignore' });",
@@ -147,7 +147,7 @@ describe('require-windows-hide', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     ['an assignment of detached = true', 'options.detached = true;'],
     ['an assignment to a quoted member', "options['detached'] = daemon;"],
   ])('reports %s with its own message', (_, code) => {
@@ -157,7 +157,7 @@ describe('require-windows-hide', () => {
     });
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'an object',
       '({ detached: daemon });',

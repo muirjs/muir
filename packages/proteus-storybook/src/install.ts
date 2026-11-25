@@ -1,41 +1,46 @@
 import type { NodePath } from '@babel/core';
 import {
-  checkNames,
-  corePackageJson,
-  fieldOf,
-  register,
-  resolveInstrumenter,
-  selectMutators,
-  selfCheck,
-  undoOnThrow,
-  warnUntested,
-  type Instrumenter as CoreInstrumenter,
-  type MutatorSets,
+  muirMoiraMutatorsCheckNames,
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsRegister,
+  muirMoiraMutatorsResolveInstrumenter,
+  muirMoiraMutatorsSelectMutators,
+  muirMoiraMutatorsSelfCheck,
+  muirMoiraMutatorsUndoOnThrow,
+  muirMoiraMutatorsWarnUntested,
+  type MuirMoiraMutatorsInstrumenter as CoreInstrumenter,
+  type MuirMoiraMutatorsMutatorSets,
 } from '@muirjs/moira-mutators';
 
 import {
-  babelTypeMembers,
-  type BabelTypes,
-  type LzStorybookMutator,
+  muirProteusStorybookBabelTypeMembers,
+  type MuirProteusStorybookBabelTypes,
+  type MuirProteusStorybookMutator,
 } from './mutator.ts';
-import { packageName } from './package-name.ts';
+import { muirProteusStorybookPackageName } from './package-name.ts';
 
-export type Instrumenter = CoreInstrumenter<BabelTypes>;
+export type MuirProteusStorybookInstrumenter =
+  CoreInstrumenter<MuirProteusStorybookBabelTypes>;
 
-export const testedVersion = '10.1.1';
+export const muirProteusStorybookTestedVersion = '10.1.1';
 
-export function resolveFromCore(
-  corePackage: string = corePackageJson(),
-): Promise<Instrumenter> {
-  return resolveInstrumenter(packageName, assertBabelTypes, corePackage);
+export function muirProteusStorybookResolveFromCore(
+  corePackage: string = muirMoiraMutatorsCorePackageJson(),
+): Promise<MuirProteusStorybookInstrumenter> {
+  return muirMoiraMutatorsResolveInstrumenter(
+    muirProteusStorybookPackageName,
+    assertBabelTypes,
+    corePackage,
+  );
 }
 
 function assertBabelTypes(
   value: unknown,
   missing: (name: string) => Error,
-): asserts value is BabelTypes {
-  const absent = babelTypeMembers.filter(
-    (member) => typeof fieldOf(value, member) !== 'function',
+): asserts value is MuirProteusStorybookBabelTypes {
+  const absent = muirProteusStorybookBabelTypeMembers.filter(
+    (member) => typeof muirMoiraMutatorsFieldOf(value, member) !== 'function',
   );
 
   if (absent.length > 0) {
@@ -43,48 +48,61 @@ function assertBabelTypes(
   }
 }
 
-export async function install(
-  sets: MutatorSets<LzStorybookMutator>,
+export async function muirProteusStorybookInstall(
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusStorybookMutator>,
   options: unknown,
-  resolve: () => Promise<Instrumenter>,
+  resolve: () => Promise<MuirProteusStorybookInstrumenter>,
   warn: (message: string) => void = console.warn,
   info: (message: string) => void = console.info,
 ): Promise<void> {
-  const mutators = selectMutators(
-    packageName,
-    'lzStorybookMutators',
+  const mutators = muirMoiraMutatorsSelectMutators(
+    muirProteusStorybookPackageName,
+    'muirProteusStorybookMutators',
     sets,
     options,
   );
   const instrumenter = await resolve();
 
-  checkNames(packageName, mutators, instrumenter.allMutators);
-  await undoOnThrow([instrumenter.allMutators], async () => {
-    register(
-      packageName,
+  muirMoiraMutatorsCheckNames(
+    muirProteusStorybookPackageName,
+    mutators,
+    instrumenter.allMutators,
+  );
+  await muirMoiraMutatorsUndoOnThrow([instrumenter.allMutators], async () => {
+    muirMoiraMutatorsRegister(
+      muirProteusStorybookPackageName,
       instrumenter.allMutators,
       mutators.map(({ name, mutate }) => ({
         name,
         mutate: (path: NodePath) => mutate(path, instrumenter.types),
       })),
     );
-    await selfCheck(packageName, instrumenter, mutators);
+    await muirMoiraMutatorsSelfCheck(
+      muirProteusStorybookPackageName,
+      instrumenter,
+      mutators,
+    );
   });
 
-  warnUntested(packageName, testedVersion, instrumenter, warn);
+  muirMoiraMutatorsWarnUntested(
+    muirProteusStorybookPackageName,
+    muirProteusStorybookTestedVersion,
+    instrumenter,
+    warn,
+  );
   info(startLine(sets, mutators));
 }
 
 function startLine(
-  sets: MutatorSets<LzStorybookMutator>,
-  mutators: readonly LzStorybookMutator[],
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusStorybookMutator>,
+  mutators: readonly MuirProteusStorybookMutator[],
 ): string {
   const optional = mutators.filter(
     (mutator) => !sets.defaults.includes(mutator),
   );
 
   return (
-    `${packageName}: ${mutators.length} LzStorybook mutators on, beside Stryker's built-in mutators.` +
+    `${muirProteusStorybookPackageName}: ${mutators.length} MuirProteusStorybook mutators on, beside Stryker's built-in mutators.` +
     (optional.length > 0
       ? ` Opt-in or experimental: ${optional.map(({ name }) => name).join(', ')}.`
       : '')

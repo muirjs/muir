@@ -1,24 +1,24 @@
-import { selectMutators } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsSelectMutators } from '@muirjs/moira-mutators';
 import { declareFactoryPlugin, PluginKind } from '@stryker-mutator/api/plugin';
 
 import {
-  consoleIgnorer,
-  consoleIgnorerName,
-  lzConsoleSchema,
+  muirProteusJsxConsoleIgnorer,
+  muirProteusJsxConsoleIgnorerName,
+  muirProteusJsxConsoleSchema,
 } from './console-ignorer.ts';
-import { implicitRoles } from './implicit-roles.ts';
-import { install } from './install.ts';
-import { mutatorsFor } from './mutators.ts';
-import { packageName } from './package-name.ts';
+import { muirProteusJsxImplicitRoles } from './implicit-roles.ts';
+import { muirProteusJsxInstall } from './install.ts';
+import { muirProteusJsxMutatorsFor } from './mutators.ts';
+import { muirProteusJsxPackageName } from './package-name.ts';
 import {
-  lzJsxStylingSchema,
-  stylingIgnorer,
-  stylingIgnorerName,
+  muirProteusJsxStylingSchema,
+  muirProteusJsxStylingIgnorer,
+  muirProteusJsxStylingIgnorerName,
 } from './styling-ignorer.ts';
 import {
-  lzTelemetrySchema,
-  telemetryIgnorer,
-  telemetryIgnorerName,
+  muirProteusJsxTelemetrySchema,
+  muirProteusJsxTelemetryIgnorer,
+  muirProteusJsxTelemetryIgnorerName,
 } from './telemetry-ignorer.ts';
 
 /**
@@ -29,38 +29,50 @@ export const strykerValidationSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    lzJsxStyling: lzJsxStylingSchema,
-    lzTelemetry: lzTelemetrySchema,
-    lzConsole: lzConsoleSchema,
+    muirProteusJsxStyling: muirProteusJsxStylingSchema,
+    muirProteusJsxTelemetry: muirProteusJsxTelemetrySchema,
+    muirProteusJsxConsole: muirProteusJsxConsoleSchema,
   },
 };
 
 /** This package has no opt-in or experimental mutators yet, so the options name none. */
-export type LzJsxMutatorOptions = Readonly<Record<string, never>>;
+export type MuirProteusJsxMutatorOptions = Readonly<Record<string, never>>;
 
 /**
  * Installs this package's mutators into Stryker. A Stryker configuration file awaits it, so that an error in the install
  * stops the run; Stryker only warns when a module in `plugins` fails to load.
  */
-export async function lzJsxMutators(
-  options?: LzJsxMutatorOptions,
+export async function muirProteusJsxMutators(
+  options?: MuirProteusJsxMutatorOptions,
 ): Promise<void> {
-  await install(
-    selectMutators(
-      packageName,
-      'lzJsxMutators',
-      { defaults: mutatorsFor(implicitRoles), optIn: [], experimental: [] },
+  await muirProteusJsxInstall(
+    muirMoiraMutatorsSelectMutators(
+      muirProteusJsxPackageName,
+      'muirProteusJsxMutators',
+      {
+        defaults: muirProteusJsxMutatorsFor(muirProteusJsxImplicitRoles),
+        optIn: [],
+        experimental: [],
+      },
       options,
     ),
   );
 }
 
 export const strykerPlugins = [
-  declareFactoryPlugin(PluginKind.Ignore, stylingIgnorerName, stylingIgnorer),
   declareFactoryPlugin(
     PluginKind.Ignore,
-    telemetryIgnorerName,
-    telemetryIgnorer,
+    muirProteusJsxStylingIgnorerName,
+    muirProteusJsxStylingIgnorer,
   ),
-  declareFactoryPlugin(PluginKind.Ignore, consoleIgnorerName, consoleIgnorer),
+  declareFactoryPlugin(
+    PluginKind.Ignore,
+    muirProteusJsxTelemetryIgnorerName,
+    muirProteusJsxTelemetryIgnorer,
+  ),
+  declareFactoryPlugin(
+    PluginKind.Ignore,
+    muirProteusJsxConsoleIgnorerName,
+    muirProteusJsxConsoleIgnorer,
+  ),
 ];

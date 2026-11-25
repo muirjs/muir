@@ -1,44 +1,49 @@
 import type { NodePath } from '@babel/core';
 import {
-  builtInNames,
-  checkBuiltInsRemoved,
-  checkNames,
-  corePackageJson,
-  fieldOf,
-  register,
-  removeBuiltIns,
-  resolveInstrumenter,
-  selectMutators,
-  selfCheck,
-  undoOnThrow,
-  warnUntested,
-  type Instrumenter as CoreInstrumenter,
-  type MutatorSets,
+  muirMoiraMutatorsBuiltInNames,
+  muirMoiraMutatorsCheckBuiltInsRemoved,
+  muirMoiraMutatorsCheckNames,
+  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsRegister,
+  muirMoiraMutatorsRemoveBuiltIns,
+  muirMoiraMutatorsResolveInstrumenter,
+  muirMoiraMutatorsSelectMutators,
+  muirMoiraMutatorsSelfCheck,
+  muirMoiraMutatorsUndoOnThrow,
+  muirMoiraMutatorsWarnUntested,
+  type MuirMoiraMutatorsInstrumenter as CoreInstrumenter,
+  type MuirMoiraMutatorsMutatorSets,
 } from '@muirjs/moira-mutators';
 
 import {
-  babelTypeMembers,
-  type BabelTypes,
-  type LzStorybookTestMutator,
+  muirProteusStorybookTestBabelTypeMembers,
+  type MuirProteusStorybookTestBabelTypes,
+  type MuirProteusStorybookTestMutator,
 } from './mutator.ts';
-import { packageName } from './package-name.ts';
+import { muirProteusStorybookTestPackageName } from './package-name.ts';
 
-export type Instrumenter = CoreInstrumenter<BabelTypes>;
+export type MuirProteusStorybookTestInstrumenter =
+  CoreInstrumenter<MuirProteusStorybookTestBabelTypes>;
 
-export const testedVersion = '10.1.1';
+export const muirProteusStorybookTestTestedVersion = '10.1.1';
 
-export function resolveFromCore(
-  corePackage: string = corePackageJson(),
-): Promise<Instrumenter> {
-  return resolveInstrumenter(packageName, assertBabelTypes, corePackage);
+export function muirProteusStorybookTestResolveFromCore(
+  corePackage: string = muirMoiraMutatorsCorePackageJson(),
+): Promise<MuirProteusStorybookTestInstrumenter> {
+  return muirMoiraMutatorsResolveInstrumenter(
+    muirProteusStorybookTestPackageName,
+    muirProteusStorybookTestAssertBabelTypes,
+    corePackage,
+  );
 }
 
-export function assertBabelTypes(
+export function muirProteusStorybookTestAssertBabelTypes(
   value: unknown,
   missing: (name: string) => Error,
-): asserts value is BabelTypes {
-  const absent = babelTypeMembers.filter(
-    (member) => typeof fieldOf(value, member) !== 'function',
+): asserts value is MuirProteusStorybookTestBabelTypes {
+  const absent = muirProteusStorybookTestBabelTypeMembers.filter(
+    (member) => typeof muirMoiraMutatorsFieldOf(value, member) !== 'function',
   );
 
   if (absent.length > 0) {
@@ -46,51 +51,71 @@ export function assertBabelTypes(
   }
 }
 
-export async function install(
-  sets: MutatorSets<LzStorybookTestMutator>,
+export async function muirProteusStorybookTestInstall(
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusStorybookTestMutator>,
   options: unknown,
-  resolve: () => Promise<Instrumenter>,
+  resolve: () => Promise<MuirProteusStorybookTestInstrumenter>,
   warn: (message: string) => void = console.warn,
   info: (message: string) => void = console.info,
 ): Promise<void> {
-  const mutators = selectMutators(
-    packageName,
-    'lzStorybookTestMutators',
+  const mutators = muirMoiraMutatorsSelectMutators(
+    muirProteusStorybookTestPackageName,
+    'muirProteusStorybookTestMutators',
     sets,
     options,
   );
   const instrumenter = await resolve();
 
-  checkNames(packageName, mutators, instrumenter.allMutators);
-  await undoOnThrow([instrumenter.allMutators], async () => {
-    removeBuiltIns(packageName, instrumenter, warn);
-    register(
-      packageName,
+  muirMoiraMutatorsCheckNames(
+    muirProteusStorybookTestPackageName,
+    mutators,
+    instrumenter.allMutators,
+  );
+  await muirMoiraMutatorsUndoOnThrow([instrumenter.allMutators], async () => {
+    muirMoiraMutatorsRemoveBuiltIns(
+      muirProteusStorybookTestPackageName,
+      instrumenter,
+      warn,
+    );
+    muirMoiraMutatorsRegister(
+      muirProteusStorybookTestPackageName,
       instrumenter.allMutators,
       mutators.map(({ name, mutate }) => ({
         name,
         mutate: (path: NodePath) => mutate(path, instrumenter.types),
       })),
     );
-    await selfCheck(packageName, instrumenter, mutators);
-    await checkBuiltInsRemoved(packageName, instrumenter);
+    await muirMoiraMutatorsSelfCheck(
+      muirProteusStorybookTestPackageName,
+      instrumenter,
+      mutators,
+    );
+    await muirMoiraMutatorsCheckBuiltInsRemoved(
+      muirProteusStorybookTestPackageName,
+      instrumenter,
+    );
   });
 
-  warnUntested(packageName, testedVersion, instrumenter, warn);
+  muirMoiraMutatorsWarnUntested(
+    muirProteusStorybookTestPackageName,
+    muirProteusStorybookTestTestedVersion,
+    instrumenter,
+    warn,
+  );
   info(startLine(sets, mutators));
 }
 
 function startLine(
-  sets: MutatorSets<LzStorybookTestMutator>,
-  mutators: readonly LzStorybookTestMutator[],
+  sets: MuirMoiraMutatorsMutatorSets<MuirProteusStorybookTestMutator>,
+  mutators: readonly MuirProteusStorybookTestMutator[],
 ): string {
   const optional = mutators.filter(
     (mutator) => !sets.defaults.includes(mutator),
   );
 
   return (
-    `${packageName}: Stryker's ${builtInNames.length} built-in mutators are off for every file in this run; ` +
-    `${mutators.length} LzStorybook mutators on.` +
+    `${muirProteusStorybookTestPackageName}: Stryker's ${muirMoiraMutatorsBuiltInNames.length} built-in mutators are off for every file in this run; ` +
+    `${mutators.length} MuirProteusStorybookTest mutators on.` +
     (optional.length > 0
       ? ` Opt-in or experimental: ${optional.map(({ name }) => name).join(', ')}.`
       : '')

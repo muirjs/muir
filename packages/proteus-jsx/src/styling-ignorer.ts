@@ -1,32 +1,35 @@
-import { fieldOf, isRecord } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsIsRecord,
+} from '@muirjs/moira-mutators';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import { listOption } from './list-option.ts';
-import { typeOf } from './type-of.ts';
+import { muirProteusJsxListOption } from './list-option.ts';
+import { muirProteusJsxTypeOf } from './type-of.ts';
 
-export const stylingIgnorerName = 'lz-jsx-styling';
+export const muirProteusJsxStylingIgnorerName = 'muir-proteus-jsx-styling';
 
 const classNamePattern = /^\S+$/;
 
-export const lzJsxStylingSchema = {
+export const muirProteusJsxStylingSchema = {
   type: 'object',
   additionalProperties: false,
-  description: `Options of the ${stylingIgnorerName} ignorer.`,
+  description: `Options of the ${muirProteusJsxStylingIgnorerName} ignorer.`,
   properties: {
     visibilityClasses: {
       type: 'array',
       items: { type: 'string', pattern: classNamePattern.source },
       description:
-        `Class names that hide an element, added to the built-in ones. ${stylingIgnorerName} keeps the mutants of ` +
+        `Class names that hide an element, added to the built-in ones. ${muirProteusJsxStylingIgnorerName} keeps the mutants of ` +
         'a class expression that holds one of them.',
     },
   },
 };
 
-const classReason = `${stylingIgnorerName}: class names only style the element; DOM tests do not observe them`;
-const builderReason = `${stylingIgnorerName}: class-name builder call; DOM tests do not observe class names`;
-const styleReason = `${stylingIgnorerName}: inline styles only style the element; DOM tests do not observe them`;
+const classReason = `${muirProteusJsxStylingIgnorerName}: class names only style the element; DOM tests do not observe them`;
+const builderReason = `${muirProteusJsxStylingIgnorerName}: class-name builder call; DOM tests do not observe class names`;
+const styleReason = `${muirProteusJsxStylingIgnorerName}: inline styles only style the element; DOM tests do not observe them`;
 const visibilityClasses = [
   'hidden',
   'invisible',
@@ -76,12 +79,12 @@ const paintKeys: readonly string[] = [
   'stroke',
 ];
 
-export function stylingIgnorer(options: object): Ignorer {
+export function muirProteusJsxStylingIgnorer(options: object): Ignorer {
   const hiding = new Set([
     ...visibilityClasses,
-    ...listOption(
+    ...muirProteusJsxListOption(
       options,
-      'lzJsxStyling',
+      'muirProteusJsxStyling',
       'visibilityClasses',
       [],
       isClassName,
@@ -95,7 +98,7 @@ export function stylingIgnorer(options: object): Ignorer {
 
   return {
     shouldIgnore(path) {
-      const node = fieldOf(path, 'node');
+      const node = muirMoiraMutatorsFieldOf(path, 'node');
 
       if (isPlainStyleAttribute(node)) {
         return styleReason;
@@ -113,40 +116,50 @@ export function stylingIgnorer(options: object): Ignorer {
     },
   };
 }
-stylingIgnorer.inject = tokens(commonTokens.options);
+muirProteusJsxStylingIgnorer.inject = tokens(commonTokens.options);
 
 function isClassName(name: unknown): name is string {
   return typeof name === 'string' && classNamePattern.test(name);
 }
 
 function isClassAttribute(node: unknown): boolean {
-  const name = fieldOf(fieldOf(node, 'name'), 'name');
+  const name = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(node, 'name'),
+    'name',
+  );
 
   return (
     (name === 'className' ||
       name === 'class' ||
       (typeof name === 'string' && name.endsWith('ClassName'))) &&
-    typeOf(fieldOf(node, 'value')) === 'JSXExpressionContainer'
+    muirProteusJsxTypeOf(muirMoiraMutatorsFieldOf(node, 'value')) ===
+      'JSXExpressionContainer'
   );
 }
 
 function isPlainStyleAttribute(node: unknown): boolean {
-  const value = fieldOf(fieldOf(node, 'value'), 'expression');
-  const properties = fieldOf(value, 'properties');
+  const value = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(node, 'value'),
+    'expression',
+  );
+  const properties = muirMoiraMutatorsFieldOf(value, 'properties');
 
   return (
-    fieldOf(fieldOf(node, 'name'), 'name') === 'style' &&
+    muirMoiraMutatorsFieldOf(muirMoiraMutatorsFieldOf(node, 'name'), 'name') ===
+      'style' &&
     Array.isArray(properties) &&
     properties.every(isPlainStyleProperty)
   );
 }
 
 function isPlainStyleProperty(property: unknown): boolean {
-  const key = fieldOf(property, 'key');
-  const name = fieldOf(key, 'name') ?? fieldOf(key, 'value');
+  const key = muirMoiraMutatorsFieldOf(property, 'key');
+  const name =
+    muirMoiraMutatorsFieldOf(key, 'name') ??
+    muirMoiraMutatorsFieldOf(key, 'value');
 
   return (
-    fieldOf(property, 'computed') === false &&
+    muirMoiraMutatorsFieldOf(property, 'computed') === false &&
     typeof name === 'string' &&
     paintKeys.includes(
       name.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase()),
@@ -155,41 +168,53 @@ function isPlainStyleProperty(property: unknown): boolean {
 }
 
 function isClassVariable(node: unknown): boolean {
-  const name = fieldOf(fieldOf(node, 'id'), 'name');
+  const name = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(node, 'id'),
+    'name',
+  );
 
   return (
     typeof name === 'string' &&
     (name.endsWith('ClassName') || name.endsWith('Classes')) &&
-    classValueTypes.includes(typeOf(fieldOf(node, 'init')))
+    classValueTypes.includes(
+      muirProteusJsxTypeOf(muirMoiraMutatorsFieldOf(node, 'init')),
+    )
   );
 }
 
 function isClassBuilderCall(node: unknown): boolean {
   return (
-    typeOf(node) === 'CallExpression' &&
-    classBuilders.includes(fieldOf(fieldOf(node, 'callee'), 'name'))
+    muirProteusJsxTypeOf(node) === 'CallExpression' &&
+    classBuilders.includes(
+      muirMoiraMutatorsFieldOf(
+        muirMoiraMutatorsFieldOf(node, 'callee'),
+        'name',
+      ),
+    )
   );
 }
 
 function insideClassAttribute(path: unknown): boolean {
-  const parent = fieldOf(path, 'parentPath');
+  const parent = muirMoiraMutatorsFieldOf(path, 'parentPath');
 
   return (
-    isRecord(parent) &&
+    muirMoiraMutatorsIsRecord(parent) &&
     (isClassAttribute(parent['node']) || insideClassAttribute(parent))
   );
 }
 
 /** The strings in a subtree that can hold class names: string literals, template parts, and object keys. */
 function classTexts(node: unknown): string[] {
-  if (!isRecord(node)) {
+  if (!muirMoiraMutatorsIsRecord(node)) {
     return [];
   }
 
   const own = [
-    typeOf(node) === 'StringLiteral' ? node['value'] : undefined,
-    fieldOf(node['value'], 'cooked'),
-    node['computed'] === false ? fieldOf(node['key'], 'name') : undefined,
+    muirProteusJsxTypeOf(node) === 'StringLiteral' ? node['value'] : undefined,
+    muirMoiraMutatorsFieldOf(node['value'], 'cooked'),
+    node['computed'] === false
+      ? muirMoiraMutatorsFieldOf(node['key'], 'name')
+      : undefined,
   ].filter((text) => typeof text === 'string');
 
   return [...own, ...Object.values(node).flatMap(classTexts)];

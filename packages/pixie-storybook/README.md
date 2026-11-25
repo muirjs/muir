@@ -2,9 +2,9 @@
 
 Two Vite plugins that make Storybook's spies behave the same in every story test, with or without Stryker:
 
-- `lzStorybookMockTransformerPlugin()`, the mock transformer, rewrites spy stubs that Storybook's mock reset would
+- `muirPixieStorybookMockTransformerPlugin()`, the mock transformer, rewrites spy stubs that Storybook's mock reset would
   erase into a form the reset keeps.
-- `lzStorybookMockResetPlugin()`, the mock reset plugin, resets every module mock spy before each test, so a stub one
+- `muirPixieStorybookMockResetPlugin()`, the mock reset plugin, resets every module mock spy before each test, so a stub one
   story sets cannot leak into the next.
 
 The package has no Stryker dependency. `@muirjs/shadowcat-storybook` reads what the mock transformer did, and its
@@ -54,7 +54,7 @@ Add the plugin to `viteFinal` in Storybook's main file:
 
 ```ts
 // .storybook/main.ts
-import { lzStorybookMockTransformerPlugin } from '@muirjs/pixie-storybook';
+import { muirPixieStorybookMockTransformerPlugin } from '@muirjs/pixie-storybook';
 import type { StorybookConfig } from '@storybook/react-vite';
 import { mergeConfig } from 'vite';
 
@@ -63,14 +63,14 @@ const config: StorybookConfig = {
   framework: '@storybook/react-vite',
   viteFinal: (viteConfig) =>
     mergeConfig(viteConfig, {
-      plugins: [lzStorybookMockTransformerPlugin()],
+      plugins: [muirPixieStorybookMockTransformerPlugin()],
     }),
 };
 
 export default config;
 ```
 
-There, the Storybook UI and Storybook's Vitest addon both run the rewritten stories, and the `lz-storybook` ignorer
+There, the Storybook UI and Storybook's Vitest addon both run the rewritten stories, and the `muir-shadowcat-storybook` ignorer
 of `@muirjs/shadowcat-storybook` learns that the transformer is on.
 
 ### What the transformer leaves as written
@@ -83,7 +83,7 @@ mock reset still erases them:
 - A stub after the first of its chain, as in `fn().mockResolvedValueOnce(a).mockResolvedValue(b)`.
 - A stub on a spy call that takes arguments, as in `fn(impl).mockReturnValue(1)`. The rewrite would replace `impl`.
 
-The `lz-storybook` report lists each of these, with a fix: pass the implementation to `fn()`, as in
+The `muir-shadowcat-storybook` report lists each of these, with a fix: pass the implementation to `fn()`, as in
 `fn(() => value)`, return the value from the function `fn()` already takes, or set the stub in `beforeEach`.
 
 A later call in a rewritten chain that resets the implementation, such as `mockReset()`, then falls back to the
@@ -100,16 +100,16 @@ one story sets on a module mock spy is still there when a later story renders. A
 passes in a full run and fails when it runs alone. Stryker runs a story alone when only that story covers a mutant,
 and then reports the mutant Killed whatever it changes.
 
-`lzStorybookMockResetPlugin()` adds a Vitest setup file that resets every spy in the registry before each test. Add
+`muirPixieStorybookMockResetPlugin()` adds a Vitest setup file that resets every spy in the registry before each test. Add
 it to the Vitest configuration that runs the story tests:
 
 ```ts
 // vitest.config.ts
-import { lzStorybookMockResetPlugin } from '@muirjs/pixie-storybook';
+import { muirPixieStorybookMockResetPlugin } from '@muirjs/pixie-storybook';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [lzStorybookMockResetPlugin()],
+  plugins: [muirPixieStorybookMockResetPlugin()],
 });
 ```
 
@@ -121,7 +121,7 @@ Only module mock spies are reset. Spies that a story makes with `fn()` keep Stor
 
 Vitest's browser mode serves setup files through Vite's dev server, which refuses files outside
 `server.fs.allow`. The plugin adds the setup file's folder to that list. When your configuration sets no list, it
-also adds the workspace root that Vite allows by default. In Stryker's sandbox, add `lzStorybookStrykerPlugin()` from
+also adds the workspace root that Vite allows by default. In Stryker's sandbox, add `muirShadowcatStorybookStrykerPlugin()` from
 `@muirjs/shadowcat-storybook` as well.
 
 ## License

@@ -1,18 +1,21 @@
-import type { Bindings } from './bindings.ts';
+import type { MuirMoiraStorybookBindings } from './bindings.ts';
 import {
-  assignmentOf,
-  assignmentRootWithoutUnwrap,
-  declarationOf,
-  isIndexedTestCall,
-  isMember,
-  isStoryFactoryCall,
-  memberRoot,
-  storyArgument,
-  unwrap,
-  type Assignment,
+  muirMoiraStorybookAssignmentOf,
+  muirMoiraStorybookAssignmentRootWithoutUnwrap,
+  muirMoiraStorybookDeclarationOf,
+  muirMoiraStorybookIsIndexedTestCall,
+  muirMoiraStorybookIsMember,
+  muirMoiraStorybookIsStoryFactoryCall,
+  muirMoiraStorybookMemberRoot,
+  muirMoiraStorybookStoryArgument,
+  muirMoiraStorybookUnwrap,
+  type MuirMoiraStorybookAssignment,
 } from './csf-nodes.ts';
-import { isRecord } from './is-record.ts';
-import { field, list } from './node-field.ts';
+import { muirMoiraStorybookIsRecord } from './is-record.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
 
 interface NamesReadElsewhere {
   readonly usedOutsideReadForms: ReadonlySet<unknown>;
@@ -21,9 +24,9 @@ interface NamesReadElsewhere {
   readonly readByOtherObjects: ReadonlySet<unknown>;
 }
 
-export function namesReadElsewhere(
+export function muirMoiraStorybookNamesReadElsewhere(
   body: readonly unknown[],
-  bindings: Bindings,
+  bindings: MuirMoiraStorybookBindings,
   metaBindings: readonly (readonly [unknown, unknown])[],
 ): NamesReadElsewhere {
   const reaches = reachesOf([...bindings, ...metaBindings], bindings);
@@ -33,8 +36,8 @@ export function namesReadElsewhere(
   ]);
   const usedOutsideReadForms = identifiersIgnoringScopes(body)
     .filter((identifier) => !read.has(identifier))
-    .map((identifier) => field(identifier, 'name'));
-  const assignments = body.flatMap(assignmentOf);
+    .map((identifier) => muirMoiraStorybookField(identifier, 'name'));
+  const assignments = body.flatMap(muirMoiraStorybookAssignmentOf);
   const written = withFamilies(
     new Set([
       ...usedOutsideReadForms,
@@ -64,35 +67,45 @@ export function namesReadElsewhere(
 }
 
 function identifiersInReadForms(statement: unknown): readonly unknown[] {
-  const declaration = declarationOf(statement);
+  const declaration = muirMoiraStorybookDeclarationOf(statement);
 
   return [
-    field(declaration, 'id'),
-    ...list(field(declaration, 'declarations')).flatMap((declarator) => {
-      const init = unwrap(field(declarator, 'init'));
+    muirMoiraStorybookField(declaration, 'id'),
+    ...muirMoiraStorybookList(
+      muirMoiraStorybookField(declaration, 'declarations'),
+    ).flatMap((declarator) => {
+      const init = muirMoiraStorybookUnwrap(
+        muirMoiraStorybookField(declarator, 'init'),
+      );
 
       return [
-        field(declarator, 'id'),
-        isStoryFactoryCall(init) ? field(init, 'callee', 'object') : undefined,
+        muirMoiraStorybookField(declarator, 'id'),
+        muirMoiraStorybookIsStoryFactoryCall(init)
+          ? muirMoiraStorybookField(init, 'callee', 'object')
+          : undefined,
       ];
     }),
-    ...list(field(statement, 'specifiers')).flatMap((specifier) => [
-      field(specifier, 'local'),
-      field(specifier, 'exported'),
+    ...muirMoiraStorybookList(
+      muirMoiraStorybookField(statement, 'specifiers'),
+    ).flatMap((specifier) => [
+      muirMoiraStorybookField(specifier, 'local'),
+      muirMoiraStorybookField(specifier, 'exported'),
     ]),
-    ...(isIndexedTestCall(statement)
+    ...(muirMoiraStorybookIsIndexedTestCall(statement)
       ? [
-          field(statement, 'expression', 'callee', 'object'),
-          ...list(field(statement, 'expression', 'arguments')),
+          muirMoiraStorybookField(statement, 'expression', 'callee', 'object'),
+          ...muirMoiraStorybookList(
+            muirMoiraStorybookField(statement, 'expression', 'arguments'),
+          ),
         ]
       : // Stryker disable next-line ArrayDeclaration: this list is only searched for identifier nodes, and a string is none
         []),
-    ...(field(statement, 'expression', 'operator') === '='
+    ...(muirMoiraStorybookField(statement, 'expression', 'operator') === '='
       ? [
-          assignmentRootWithoutUnwrap(
-            field(statement, 'expression', 'left', 'object'),
+          muirMoiraStorybookAssignmentRootWithoutUnwrap(
+            muirMoiraStorybookField(statement, 'expression', 'left', 'object'),
           ),
-          field(statement, 'expression', 'right'),
+          muirMoiraStorybookField(statement, 'expression', 'right'),
         ]
       : // Stryker disable next-line ArrayDeclaration: this list is only searched for identifier nodes, and a string is none
         []),
@@ -114,11 +127,11 @@ function withReachedAndWholeHolders(
 }
 
 function writtenThrough(
-  assignments: readonly Assignment[],
+  assignments: readonly MuirMoiraStorybookAssignment[],
   usedOutsideReadForms: readonly unknown[],
 ): readonly string[] {
   return assignments.flatMap(({ target, path, value }) => {
-    const name = field(value, 'name');
+    const name = muirMoiraStorybookField(value, 'name');
 
     return typeof name === 'string' &&
       (usedOutsideReadForms.includes(target) ||
@@ -156,17 +169,22 @@ interface Reach {
 
 function reachesOf(
   inits: readonly (readonly [unknown, unknown])[],
-  bindings: Bindings,
+  bindings: MuirMoiraStorybookBindings,
 ): readonly Reach[] {
   return inits.flatMap(([from, init]) => {
     const wholeHeld = wholeHeldRoots(init);
 
     return identifiersSharedBy(init).flatMap((identifier) => {
-      const to = field(identifier, 'name');
+      const to = muirMoiraStorybookField(identifier, 'name');
 
       return typeof to === 'string' &&
         bindings.has(to) &&
-        !primitiveTypes.includes(field(unwrap(bindings.get(to)), 'type'))
+        !primitiveTypes.includes(
+          muirMoiraStorybookField(
+            muirMoiraStorybookUnwrap(bindings.get(to)),
+            'type',
+          ),
+        )
         ? [
             {
               from,
@@ -182,14 +200,19 @@ function reachesOf(
 
 /** The nodes whose whole object `init` holds: `init` itself as a name, else the root of each spread of its story object. Only looked up by identifier, so a property that is no spread adds an `undefined` root that matches none. */
 function wholeHeldRoots(init: unknown): readonly unknown[] {
-  const current = unwrap(init);
+  const current = muirMoiraStorybookUnwrap(init);
 
-  if (field(current, 'type') === 'Identifier') {
+  if (muirMoiraStorybookField(current, 'type') === 'Identifier') {
     return [current];
   }
 
-  return list(field(storyArgument(current), 'properties')).map((property) =>
-    memberRoot(field(property, 'argument')),
+  return muirMoiraStorybookList(
+    muirMoiraStorybookField(
+      muirMoiraStorybookStoryArgument(current),
+      'properties',
+    ),
+  ).map((property) =>
+    muirMoiraStorybookMemberRoot(muirMoiraStorybookField(property, 'argument')),
   );
 }
 
@@ -203,32 +226,36 @@ const primitiveTypes: readonly unknown[] = [
 ];
 
 function identifiersSharedBy(node: unknown): readonly unknown[] {
-  const current = unwrap(node);
+  const current = muirMoiraStorybookUnwrap(node);
 
-  if (field(current, 'type') === 'Identifier') {
+  if (muirMoiraStorybookField(current, 'type') === 'Identifier') {
     return [current];
   }
 
-  if (isStoryFactoryCall(current)) {
-    return identifiersSharedBy(storyArgument(current));
+  if (muirMoiraStorybookIsStoryFactoryCall(current)) {
+    return identifiersSharedBy(muirMoiraStorybookStoryArgument(current));
   }
 
-  if (isMember(current)) {
-    return identifiersSharedBy(field(current, 'object'));
+  if (muirMoiraStorybookIsMember(current)) {
+    return identifiersSharedBy(muirMoiraStorybookField(current, 'object'));
   }
 
-  return list(field(current, 'properties')).flatMap((property) =>
+  return muirMoiraStorybookList(
+    muirMoiraStorybookField(current, 'properties'),
+  ).flatMap((property) =>
     identifiersSharedBy(
-      field(
+      muirMoiraStorybookField(
         property,
-        field(property, 'type') === 'SpreadElement' ? 'argument' : 'value',
+        muirMoiraStorybookField(property, 'type') === 'SpreadElement'
+          ? 'argument'
+          : 'value',
       ),
     ),
   );
 }
 
 function identifiersIgnoringScopes(node: unknown): readonly unknown[] {
-  if (!isRecord(node) || node['type'] === 'TSTypeQuery') {
+  if (!muirMoiraStorybookIsRecord(node) || node['type'] === 'TSTypeQuery') {
     // Stryker disable next-line ArrayDeclaration: a string in this list gives namesReadElsewhere an undefined name, which marks only a story whose local is undefined: a namespace re-export, which Storybook 10.6.5's index never lists, or a re-export by string name, which its Vitest transform does not test; classifyStubs drops both, and csfShapes never reads the flag
     return [];
   }

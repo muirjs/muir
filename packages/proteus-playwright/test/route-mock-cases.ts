@@ -1,7 +1,7 @@
 import type { Case } from './cases.ts';
 
-const fulfill = 'LzPlaywrightFulfill';
-const outcome = 'LzPlaywrightRouteOutcome';
+const fulfill = 'MuirProteusPlaywrightFulfill';
+const outcome = 'MuirProteusPlaywrightRouteOutcome';
 
 function inRoute(statement: string): string {
   return `test('case', async ({ page }) => {\n  await page.route('**/api', async (route) => {\n    ${statement}\n  });\n});`;

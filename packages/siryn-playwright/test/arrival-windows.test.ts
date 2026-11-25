@@ -6,12 +6,12 @@ import { fileURLToPath } from 'node:url';
 
 import { DryRunStatus } from '@stryker-mutator/api/test-runner';
 
-import { withEnv } from '../src/process-env.ts';
-import { loadPlaywright } from '../src/playwright-internals.ts';
-import { parseSnapshotLine } from '../src/protocol.ts';
-import { LzPlaywrightCollectingReporter } from '../src/reporter.ts';
-import { dryRunResult } from '../src/run-result.ts';
-import { untaggedKey } from '../src/server-protocol.ts';
+import { muirSirynPlaywrightWithEnv } from '../src/process-env.ts';
+import { muirSirynPlaywrightLoadPlaywright } from '../src/playwright-internals.ts';
+import { muirSirynPlaywrightParseSnapshotLine } from '../src/protocol.ts';
+import { MuirSirynPlaywrightCollectingReporter } from '../src/reporter.ts';
+import { muirSirynPlaywrightDryRunResult } from '../src/run-result.ts';
+import { muirSirynPlaywrightUntaggedKey } from '../src/server-protocol.ts';
 import {
   dryRequest,
   runOutput,
@@ -23,7 +23,7 @@ const packageJson = fileURLToPath(new URL('../package.json', import.meta.url));
 const playwrightTest = import.meta.resolve('@playwright/test');
 
 async function runStampingTest(t: TestContext, workerFixtureMs: number) {
-  const dir = tempTree(t, 'lz-arrival-windows-', {
+  const dir = tempTree(t, 'muir-arrival-windows-', {
     'playwright.config.mjs': "export default { testDir: './tests' };\n",
     'tests/stamp.spec.mjs': [
       `import { test as base } from ${JSON.stringify(playwrightTest)};`,
@@ -38,27 +38,28 @@ async function runStampingTest(t: TestContext, workerFixtureMs: number) {
       '  ],',
       '});',
       "test('stamps', async ({ slow }, info) => {",
-      '  fs.writeFileSync(process.env.LZ_STAMP_FILE, `${info.testId} ${Date.now()}`);',
+      '  fs.writeFileSync(process.env.MUIR_SIRYN_PLAYWRIGHT_STAMP_FILE, `${info.testId} ${Date.now()}`);',
       '});',
       '',
     ].join('\n'),
   });
   const stampFile = path.join(dir, 'stamp.txt');
-  const playwright = await loadPlaywright(packageJson).createTestRunner(
-    path.join(dir, 'playwright.config.mjs'),
-    {},
-  );
+  const playwright = await muirSirynPlaywrightLoadPlaywright(
+    packageJson,
+  ).createTestRunner(path.join(dir, 'playwright.config.mjs'), {});
   await playwright.loadConfig();
-  const reporter = new LzPlaywrightCollectingReporter();
+  const reporter = new MuirSirynPlaywrightCollectingReporter();
 
   try {
     await playwright.runGlobalSetup([reporter]);
-    const { status } = await withEnv({ LZ_STAMP_FILE: stampFile }, () =>
-      playwright.runTests(reporter, {
-        locations: [],
-        workers: 1,
-        disableConfigReporters: true,
-      }),
+    const { status } = await muirSirynPlaywrightWithEnv(
+      { MUIR_SIRYN_PLAYWRIGHT_STAMP_FILE: stampFile },
+      () =>
+        playwright.runTests(reporter, {
+          locations: [],
+          workers: 1,
+          disableConfigReporters: true,
+        }),
     );
     assert.equal(status, 'passed', reporter.outputTail);
   } finally {
@@ -72,17 +73,17 @@ async function runStampingTest(t: TestContext, workerFixtureMs: number) {
 
 test('a server request that arrives while a test runs counts for that test, after a worker fixture that took longer than the duration Playwright reports', async (t) => {
   const { reporter, testId, stampedAt } = await runStampingTest(t, 300);
-  const snapshot = parseSnapshotLine(
+  const snapshot = muirSirynPlaywrightParseSnapshotLine(
     JSON.stringify({
       mutantCoverage: {
         static: {},
-        perTest: { [untaggedKey(stampedAt)]: { '1': 1 } },
+        perTest: { [muirSirynPlaywrightUntaggedKey(stampedAt)]: { '1': 1 } },
       },
     }),
   );
   assert.ok(snapshot);
 
-  const { result } = dryRunResult(
+  const { result } = muirSirynPlaywrightDryRunResult(
     runOutput({ reporter, snapshots: [snapshot] }),
     dryRequest(),
   );

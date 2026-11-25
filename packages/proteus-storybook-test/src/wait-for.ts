@@ -1,24 +1,30 @@
-import { waitCall } from '@muirjs/moira-storybook';
+import { muirMoiraStorybookWaitCall } from '@muirjs/moira-storybook';
 
-import { queryMethods } from './queries.ts';
-import type { LzStorybookTestMutator } from './mutator.ts';
+import { muirProteusStorybookTestQueryMethods } from './queries.ts';
+import type { MuirProteusStorybookTestMutator } from './mutator.ts';
 
-const findQueries = queryMethods(['findBy', 'findAllBy']);
+const findQueries = muirProteusStorybookTestQueryMethods([
+  'findBy',
+  'findAllBy',
+]);
 
-export function waitForMutator(): LzStorybookTestMutator & {
-  readonly name: 'LzStorybookWaitFor';
+export function muirProteusStorybookTestWaitForMutator(): MuirProteusStorybookTestMutator & {
+  readonly name: 'MuirProteusStorybookTestWaitFor';
 } {
   return {
-    name: 'LzStorybookWaitFor',
+    name: 'MuirProteusStorybookTestWaitFor',
     sample: `export const Story = {\n  play: async ({ canvas }) => {\n    await waitFor(() => expect(canvas.getByText('a')).toBeVisible());\n  },\n};\n`,
     *mutate(path, t) {
       const call = path.node;
 
-      if (call.type === 'ExpressionStatement' && waitCall(call) === 'removal') {
+      if (
+        call.type === 'ExpressionStatement' &&
+        muirMoiraStorybookWaitCall(call) === 'removal'
+      ) {
         yield t.emptyStatement();
       } else if (
         call.type === 'CallExpression' &&
-        waitCall(call) === 'waitFor' &&
+        muirMoiraStorybookWaitCall(call) === 'waitFor' &&
         call.arguments[0]?.type === 'ArrowFunctionExpression'
       ) {
         yield t.callExpression(

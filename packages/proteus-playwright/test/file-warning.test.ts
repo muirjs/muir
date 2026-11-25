@@ -2,8 +2,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { install, resolveFromCore } from '../src/install.ts';
-import { mutatorSets } from '../src/mutators.ts';
+import {
+  muirProteusPlaywrightInstall,
+  muirProteusPlaywrightResolveFromCore,
+} from '../src/install.ts';
+import { muirProteusPlaywrightMutatorSets } from '../src/mutators.ts';
 import { mutantsOf } from './support/mutants.ts';
 
 const plain =
@@ -14,12 +17,12 @@ const spec =
 describe('the warning for a file that is not Playwright test code, through the real instrumenter', () => {
   it('warns once for a plain file and never for a spec file, also when the plain file is instrumented again', async () => {
     const warnings: string[] = [];
-    const instrumenter = await resolveFromCore();
+    const instrumenter = await muirProteusPlaywrightResolveFromCore();
 
-    await install(
-      mutatorSets,
+    await muirProteusPlaywrightInstall(
+      muirProteusPlaywrightMutatorSets,
       undefined,
-      resolveFromCore,
+      muirProteusPlaywrightResolveFromCore,
       (message) => warnings.push(message),
       () => undefined,
     );

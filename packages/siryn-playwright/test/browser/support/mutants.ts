@@ -4,8 +4,8 @@ import { after, before, test } from 'node:test';
 import { dirname, join } from 'node:path';
 
 import {
-  lzPlaywrightMutators,
-  type LzPlaywrightMutatorOptions,
+  muirProteusPlaywrightMutators,
+  type MuirProteusPlaywrightMutatorOptions,
 } from '@muirjs/proteus-playwright';
 import type { Location, Mutant } from '@stryker-mutator/api/core';
 import { MutantRunStatus, TestStatus } from '@stryker-mutator/api/test-runner';
@@ -38,7 +38,7 @@ export function playwrightMutatorRows(
     readonly testDir: string;
     readonly configFile: string;
     readonly testCount: number;
-    readonly options?: LzPlaywrightMutatorOptions;
+    readonly options?: MuirProteusPlaywrightMutatorOptions;
   },
   rows: readonly Row[],
 ): void {
@@ -106,7 +106,7 @@ export function playwrightMutatorRows(
     writeFileSync(compiled, transpile(source));
 
     session = await startSession(configFile, spec, log, async () => {
-      await lzPlaywrightMutators(options);
+      await muirProteusPlaywrightMutators(options);
       const result = await new Instrumenter(log).instrument(
         [{ name: spec, content: source, mutate: true }],
         { plugins: null, excludedMutations: [], ignorers: [] },

@@ -16,15 +16,19 @@ import {
 } from '@stryker-mutator/api/test-runner';
 
 import { strykerPlugins, strykerValidationSchema } from '../src/index.ts';
-import { optionProperties } from '../src/lz-playwright-runner-options-with-stryker-options.ts';
-import { fieldOf } from '../src/is-record.ts';
-import { loadPageHelpers } from '../src/page-helpers.ts';
-import { installErrorSuffix } from '../src/protocol.ts';
-import { LzPlaywrightTestRunner } from '../src/lz-playwright-test-runner.ts';
-import { withEnv } from '../src/process-env.ts';
-import { acceptsConnections } from '../src/server-checks.ts';
-import { LzPlaywrightTracesReporter } from '../src/traces-reporter.ts';
-import { namespaceToken, ownerFile, rootPrefix } from '../src/temp-root.ts';
+import { muirSirynPlaywrightOptionProperties } from '../src/muir-siryn-playwright-runner-options-with-stryker-options.ts';
+import { muirSirynPlaywrightFieldOf } from '../src/is-record.ts';
+import { muirSirynPlaywrightLoadPageHelpers } from '../src/page-helpers.ts';
+import { muirSirynPlaywrightInstallErrorSuffix } from '../src/protocol.ts';
+import { MuirSirynPlaywrightTestRunner } from '../src/muir-siryn-playwright-test-runner.ts';
+import { muirSirynPlaywrightWithEnv } from '../src/process-env.ts';
+import { muirSirynPlaywrightAcceptsConnections } from '../src/server-checks.ts';
+import { MuirSirynPlaywrightTracesReporter } from '../src/traces-reporter.ts';
+import {
+  muirSirynPlaywrightNamespaceToken,
+  muirSirynPlaywrightOwnerFile,
+  muirSirynPlaywrightRootPrefix,
+} from '../src/temp-root.ts';
 import {
   dryRunOptions,
   finishedTest,
@@ -53,28 +57,31 @@ async function listening(): Promise<{ server: net.Server; port: number }> {
   return { server, port: address.port };
 }
 
-test('the package declares the runner as the lz-playwright test runner, with its options schema', () => {
+test('the package declares the runner as the muir-siryn-playwright test runner, with its options schema', () => {
   assert.deepEqual(strykerPlugins, [
     {
       kind: PluginKind.TestRunner,
-      name: 'lz-playwright',
-      injectableClass: LzPlaywrightTestRunner,
+      name: 'muir-siryn-playwright',
+      injectableClass: MuirSirynPlaywrightTestRunner,
     },
     {
       kind: PluginKind.Reporter,
-      name: 'lz-playwright-traces',
-      injectableClass: LzPlaywrightTracesReporter,
+      name: 'muir-siryn-playwright-traces',
+      injectableClass: MuirSirynPlaywrightTracesReporter,
     },
   ]);
   assert.equal(
-    strykerValidationSchema.properties.lzPlaywright.properties,
-    optionProperties,
+    strykerValidationSchema.properties.muirSirynPlaywright.properties,
+    muirSirynPlaywrightOptionProperties,
   );
 });
 
 test('the runner can reload its environment', () => {
   assert.deepEqual(
-    new LzPlaywrightTestRunner(strykerOptions({}), logger().log).capabilities(),
+    new MuirSirynPlaywrightTestRunner(
+      strykerOptions({}),
+      logger().log,
+    ).capabilities(),
     { reloadEnvironment: true },
   );
 });
@@ -93,7 +100,7 @@ test('init creates the TestRunner on the resolved config with the run overrides,
   const [first, ...rest] = fake.calls;
   assert.ok(first);
   const [, configLocation, overrides] = first;
-  const outputDir = fieldOf(overrides, 'outputDir');
+  const outputDir = muirSirynPlaywrightFieldOf(overrides, 'outputDir');
   assert.ok(typeof outputDir === 'string');
 
   assert.deepEqual(configLocation, { resolved: fake.configFile });
@@ -101,7 +108,7 @@ test('init creates the TestRunner on the resolved config with the run overrides,
     outputDir,
     use: { screenshot: 'off', trace: 'off', video: 'off' },
   });
-  assert.match(path.basename(path.dirname(outputDir)), /^lz-playwright-\d+-/);
+  assert.match(path.basename(path.dirname(outputDir)), /^muir-playwright-\d+-/);
   assert.equal(path.dirname(path.dirname(outputDir)), fake.tmp);
   assert.deepEqual(rest, [
     ['initialize', {}],
@@ -114,7 +121,7 @@ test('init creates the TestRunner on the resolved config with the run overrides,
 test('init lists the projects the option names', async (t) => {
   const fake = fakePlaywright(t);
   const { shell } = fake.runner({
-    lzPlaywright: { projects: ['manual'] },
+    muirSirynPlaywright: { projects: ['manual'] },
   });
 
   await shell.init();
@@ -126,7 +133,7 @@ test('without a config file, Playwright is found from the working directory', as
   const fake = fakePlaywright(t);
   const cwd = process.cwd();
   const { shell } = fake.runner({
-    lzPlaywright: { configFile: undefined },
+    muirSirynPlaywright: { configFile: undefined },
   });
   process.chdir(fake.dir);
 
@@ -192,9 +199,12 @@ function leaveDeadRoots(tmp: string, suffixes: string[]): string[] {
   const dead = spawnSync(process.execPath, ['-e', '']).pid;
 
   return suffixes.map((suffix) => {
-    const name = `${rootPrefix}${dead}-${suffix}`;
+    const name = `${muirSirynPlaywrightRootPrefix}${dead}-${suffix}`;
     mkdirSync(path.join(tmp, name));
-    writeFileSync(path.join(tmp, name, ownerFile), namespaceToken());
+    writeFileSync(
+      path.join(tmp, name, muirSirynPlaywrightOwnerFile),
+      muirSirynPlaywrightNamespaceToken(),
+    );
 
     return name;
   });
@@ -250,8 +260,11 @@ test('the temp root init creates holds the namespace token its sweep matches', a
   const [rootName] = readdirSync(fake.tmp);
   assert.ok(rootName);
   assert.equal(
-    fs.readFileSync(path.join(fake.tmp, rootName, ownerFile), 'utf8'),
-    namespaceToken(),
+    fs.readFileSync(
+      path.join(fake.tmp, rootName, muirSirynPlaywrightOwnerFile),
+      'utf8',
+    ),
+    muirSirynPlaywrightNamespaceToken(),
   );
 });
 
@@ -307,7 +320,10 @@ test('a temp root that cannot be removed after a failed init leaves the init err
 });
 
 test('a run before init finished fails with a clear error', async () => {
-  const shell = new LzPlaywrightTestRunner(strykerOptions({}), logger().log);
+  const shell = new MuirSirynPlaywrightTestRunner(
+    strykerOptions({}),
+    logger().log,
+  );
 
   await assert.rejects(shell.dryRun(dryRunOptions()), {
     message: 'The Playwright test runner was used before init() finished.',
@@ -331,7 +347,10 @@ test('dispose stops the tests, tears down and removes the temp root, once', asyn
 });
 
 test('dispose without init does nothing', async () => {
-  await new LzPlaywrightTestRunner(strykerOptions({}), logger().log).dispose();
+  await new MuirSirynPlaywrightTestRunner(
+    strykerOptions({}),
+    logger().log,
+  ).dispose();
 });
 
 test('dispose removes the run folders and output before it waits for the workers', async (t) => {
@@ -349,11 +368,15 @@ test('dispose removes the run folders and output before it waits for the workers
   root = path.join(fake.tmp, rootName);
   // Playwright creates the output folder; the runner creates the runs folder.
   mkdirSync(path.join(root, 'output'));
-  assert.deepEqual(readdirSync(root).sort(), ['output', ownerFile, 'runs']);
+  assert.deepEqual(readdirSync(root).sort(), [
+    'output',
+    muirSirynPlaywrightOwnerFile,
+    'runs',
+  ]);
 
   await shell.dispose();
 
-  assert.deepEqual(seen, [ownerFile]);
+  assert.deepEqual(seen, [muirSirynPlaywrightOwnerFile]);
 });
 
 test("every run gives the workers Stryker's page helpers from the installed instrumenter", async (t) => {
@@ -364,7 +387,7 @@ test("every run gives the workers Stryker's page helpers from the installed inst
   await shell.dryRun(dryRunOptions());
   await shell.mutantRun(mutantRunOptions());
 
-  const helpers = await loadPageHelpers();
+  const helpers = await muirSirynPlaywrightLoadPageHelpers();
   assert.deepEqual(
     fake.runs.map((run) => run.settings.pageHelpers),
     [helpers, helpers],
@@ -374,7 +397,7 @@ test("every run gives the workers Stryker's page helpers from the installed inst
 test('a dry run runs every test with the hook and the run settings in the workers environment', async (t) => {
   const fake = fakePlaywright(t);
   const { shell } = fake.runner({
-    lzPlaywright: { projects: ['chromium'], workers: 3 },
+    muirSirynPlaywright: { projects: ['chromium'], workers: 3 },
   });
   await shell.init();
   const before = { ...process.env };
@@ -636,7 +659,10 @@ test('a run whose worker failed to install the hook reports the error the worker
     runTests: async (run) => {
       run.reporter.onTestEnd(finishedTest('a', 'failed'));
       writeFileSync(
-        path.join(run.settings.outDir, `worker-1${installErrorSuffix}`),
+        path.join(
+          run.settings.outDir,
+          `worker-1${muirSirynPlaywrightInstallErrorSuffix}`,
+        ),
         'Error: no test.info()',
       );
 
@@ -845,7 +871,7 @@ test('a port check that neither connects nor fails gives up at its timeout, and 
     },
   });
   const asked: unknown[] = [];
-  const answer = acceptsConnections(4321, (options) => {
+  const answer = muirSirynPlaywrightAcceptsConnections(4321, (options) => {
     asked.push(options);
 
     return socket;
@@ -863,7 +889,7 @@ test('a port check that neither connects nor fails gives up at its timeout, and 
 
 ['::1', '127.0.0.1'].forEach((loopback) => {
   test(`a port answers when only ${loopback} accepts connections on it`, async () => {
-    const answer = acceptsConnections(4321, (options) => {
+    const answer = muirSirynPlaywrightAcceptsConnections(4321, (options) => {
       const socket = new net.Socket();
       setImmediate(() => {
         if (options.host === loopback) {
@@ -888,17 +914,17 @@ test('a port accepts connections while a server listens on it, and not after', a
     }
   });
 
-  assert.equal(await acceptsConnections(port), true);
+  assert.equal(await muirSirynPlaywrightAcceptsConnections(port), true);
 
   await new Promise((resolve) => server.close(resolve));
 
-  assert.equal(await acceptsConnections(port), false);
+  assert.equal(await muirSirynPlaywrightAcceptsConnections(port), false);
 });
 
 test('a run leaves no run settings behind in the environment, also when it throws', async (t) => {
   stubEnv(t, { WITH_ENV_KEPT: 'before', WITH_ENV_ADDED: undefined });
 
-  const seen = await withEnv(
+  const seen = await muirSirynPlaywrightWithEnv(
     { WITH_ENV_KEPT: undefined, WITH_ENV_ADDED: 'during' },
     async () => [process.env['WITH_ENV_KEPT'], process.env['WITH_ENV_ADDED']],
   );
@@ -908,7 +934,7 @@ test('a run leaves no run settings behind in the environment, also when it throw
   assert.equal('WITH_ENV_ADDED' in process.env, false);
 
   await assert.rejects(
-    withEnv({ WITH_ENV_KEPT: 'during' }, async () => {
+    muirSirynPlaywrightWithEnv({ WITH_ENV_KEPT: 'during' }, async () => {
       throw new Error('run failed');
     }),
     { message: 'run failed' },
@@ -917,10 +943,10 @@ test('a run leaves no run settings behind in the environment, also when it throw
 });
 
 test('init refuses --testFiles before it loads the Playwright config', async () => {
-  const shell = new LzPlaywrightTestRunner(
+  const shell = new MuirSirynPlaywrightTestRunner(
     strykerOptions({
       testFiles: ['a.spec.ts'],
-      lzPlaywright: { configFile: 'missing.playwright.config.ts' },
+      muirSirynPlaywright: { configFile: 'missing.playwright.config.ts' },
     }),
     logger().log,
   );

@@ -5,7 +5,10 @@ import { pathToFileURL } from 'node:url';
 
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
-import { fieldOf, isRecord } from './is-record.ts';
+import {
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsIsRecord,
+} from './is-record.ts';
 
 const coreBin = /[\\/]@stryker-mutator[\\/]core[\\/]bin[\\/]stryker\.js$/;
 const nothing = (): undefined => undefined;
@@ -20,60 +23,63 @@ const silentLogger = {
   isTraceEnabled: () => false,
 };
 
-export interface SourceFile {
+export interface MuirMoiraMutatorsSourceFile {
   readonly name: string;
   readonly content: string;
 }
 
-export interface MutantOrigin {
+export interface MuirMoiraMutatorsMutantOrigin {
   readonly fileName: string;
   readonly mutatorName: string;
 }
 
-export interface ListedMutator {
+export interface MuirMoiraMutatorsListedMutator {
   readonly name: string;
   readonly mutate: (...args: readonly never[]) => unknown;
 }
 
-export interface MutatorList extends ReadonlyArray<ListedMutator> {
-  push(...mutators: ListedMutator[]): number;
+export interface MuirMoiraMutatorsMutatorList
+  extends ReadonlyArray<MuirMoiraMutatorsListedMutator> {
+  push(...mutators: MuirMoiraMutatorsListedMutator[]): number;
   splice(
     start: number,
     deleteCount: number,
-    ...mutators: ListedMutator[]
-  ): ListedMutator[];
+    ...mutators: MuirMoiraMutatorsListedMutator[]
+  ): MuirMoiraMutatorsListedMutator[];
 }
 
 /** Babel's `NodePath` and `types.Node` in the instrumenter; this package does not depend on Babel. */
-export interface ExpressionPlacerMethods {
+export interface MuirMoiraMutatorsExpressionPlacerMethods {
   canPlace(path: unknown): boolean;
   place(path: unknown, appliedMutants: Map<unknown, unknown>): void;
 }
 
-export interface Instrumenter<TTypes> {
+export interface MuirMoiraMutatorsInstrumenter<TTypes> {
   readonly dir: string;
   readonly version: string;
   readonly types: TTypes;
   /** The array `transformBabel` reads by default on every file (`babel-transformer.js:8`). */
-  readonly allMutators: MutatorList;
-  instrument(files: readonly SourceFile[]): Promise<readonly MutantOrigin[]>;
+  readonly allMutators: MuirMoiraMutatorsMutatorList;
+  instrument(
+    files: readonly MuirMoiraMutatorsSourceFile[],
+  ): Promise<readonly MuirMoiraMutatorsMutantOrigin[]>;
 }
 
 /**
  * `target` is the first entry of the frozen `allMutantPlacers`; the array is frozen, this object is not
  * (`mutant-placers/index.js:6`).
  */
-export interface ExpressionPlacer {
+export interface MuirMoiraMutatorsExpressionPlacer {
   readonly target: object;
-  readonly original: ExpressionPlacerMethods;
+  readonly original: MuirMoiraMutatorsExpressionPlacerMethods;
 }
 
-export type AssertTypes<TTypes> = (
+export type MuirMoiraMutatorsAssertTypes<TTypes> = (
   value: unknown,
   missing: (name: string) => Error,
 ) => asserts value is TTypes;
 
-export function corePackageJson(
+export function muirMoiraMutatorsCorePackageJson(
   argv1: string | undefined = process.argv[1],
   realpath: (path: string) => string = realpathSync,
   resolveHere: (specifier: string) => string = createRequire(import.meta.url)
@@ -93,31 +99,35 @@ export function corePackageJson(
 }
 
 /** `packageName` starts every error message, so the user sees which mutator package failed. */
-export async function resolveInstrumenter<TTypes>(
+export async function muirMoiraMutatorsResolveInstrumenter<TTypes>(
   packageName: string,
-  assertTypes: AssertTypes<TTypes>,
+  assertTypes: MuirMoiraMutatorsAssertTypes<TTypes>,
   corePackage: string,
-): Promise<Instrumenter<TTypes>> {
+): Promise<MuirMoiraMutatorsInstrumenter<TTypes>> {
   const fromCore = createRequire(corePackage);
   const packageJson = fromCore.resolve(
     '@stryker-mutator/instrumenter/package.json',
   );
   const dir = dirname(packageJson);
   const manifest: unknown = fromCore(packageJson);
-  const version = String(fieldOf(manifest, 'version'));
+  const version = String(muirMoiraMutatorsFieldOf(manifest, 'version'));
   const [mutate, babel] = await Promise.all([
     importFile(join(dir, 'dist', 'src', 'mutators', 'mutate.js')),
     importFile(createRequire(packageJson).resolve('@babel/core')),
   ]);
-  const allMutators = fieldOf(mutate, 'allMutators');
-  const types = fieldOf(babel, 'types');
+  const allMutators = muirMoiraMutatorsFieldOf(mutate, 'allMutators');
+  const types = muirMoiraMutatorsFieldOf(babel, 'types');
   const missing = hasNo({ packageName, dir, version });
 
   if (!Array.isArray(allMutators) || !allMutators.every(isListedMutator)) {
     throw missing('allMutators');
   }
 
-  const instrument = await coreInstrument({ packageName, dir, version });
+  const instrument = await muirMoiraMutatorsCoreInstrument({
+    packageName,
+    dir,
+    version,
+  });
 
   assertTypes(types, missing);
 
@@ -127,7 +137,10 @@ export async function resolveInstrumenter<TTypes>(
     types,
     allMutators,
     async instrument(files) {
-      const mutants = fieldOf(await instrument(files), 'mutants');
+      const mutants = muirMoiraMutatorsFieldOf(
+        await instrument(files),
+        'mutants',
+      );
 
       if (!Array.isArray(mutants) || !mutants.every(isMutantOrigin)) {
         throw new Error(
@@ -145,14 +158,17 @@ export async function resolveInstrumenter<TTypes>(
 }
 
 /** The instrumenter's `expressionMutantPlacer`, for the packages that patch it. */
-export async function resolveExpressionPlacer(
+export async function muirMoiraMutatorsResolveExpressionPlacer(
   packageName: string,
-  { dir, version }: Pick<Located, 'dir' | 'version'>,
-): Promise<ExpressionPlacer> {
+  { dir, version }: Pick<MuirMoiraMutatorsLocated, 'dir' | 'version'>,
+): Promise<MuirMoiraMutatorsExpressionPlacer> {
   const placers = await importFile(
     join(dir, 'dist', 'src', 'mutant-placers', 'index.js'),
   );
-  const allMutantPlacers = fieldOf(placers, 'allMutantPlacers');
+  const allMutantPlacers = muirMoiraMutatorsFieldOf(
+    placers,
+    'allMutantPlacers',
+  );
   const missing = hasNo({ packageName, dir, version });
 
   if (!Array.isArray(allMutantPlacers)) {
@@ -160,7 +176,7 @@ export async function resolveExpressionPlacer(
   }
 
   const placer = allMutantPlacers
-    .filter(isRecord)
+    .filter(muirMoiraMutatorsIsRecord)
     .find(({ name }) => name === 'expressionMutantPlacer');
 
   if (
@@ -196,7 +212,7 @@ export async function resolveExpressionPlacer(
 }
 
 /** What an error message says: the mutator package, and the instrumenter in use. */
-export interface Located {
+export interface MuirMoiraMutatorsLocated {
   readonly packageName: string;
   readonly dir: string;
   readonly version: string;
@@ -206,29 +222,29 @@ function hasNo({
   packageName,
   dir,
   version,
-}: Located): (name: string) => Error {
+}: MuirMoiraMutatorsLocated): (name: string) => Error {
   return (name) =>
     new Error(
       `${packageName}: the instrumenter ${version} in ${dir} has no ${name}.`,
     );
 }
 
-export async function coreInstrument(
-  instrumenter: Located,
+export async function muirMoiraMutatorsCoreInstrument(
+  instrumenter: MuirMoiraMutatorsLocated,
 ): Promise<
   (
-    files: readonly SourceFile[],
+    files: readonly MuirMoiraMutatorsSourceFile[],
     excludedMutations?: readonly string[],
     ignorers?: readonly Ignorer[],
   ) => Promise<unknown>
 > {
-  const Instrumenter = fieldOf(
+  const Instrumenter = muirMoiraMutatorsFieldOf(
     await importFile(join(instrumenter.dir, 'dist', 'src', 'index.js')),
     'Instrumenter',
   );
   const instrument =
     typeof Instrumenter === 'function'
-      ? fieldOf(Instrumenter.prototype, 'instrument')
+      ? muirMoiraMutatorsFieldOf(Instrumenter.prototype, 'instrument')
       : undefined;
 
   if (typeof Instrumenter !== 'function' || typeof instrument !== 'function') {
@@ -249,10 +265,12 @@ export async function coreInstrument(
   };
 }
 
-function isMutantOrigin(value: unknown): value is MutantOrigin {
+function isMutantOrigin(
+  value: unknown,
+): value is MuirMoiraMutatorsMutantOrigin {
   return (
-    typeof fieldOf(value, 'fileName') === 'string' &&
-    typeof fieldOf(value, 'mutatorName') === 'string'
+    typeof muirMoiraMutatorsFieldOf(value, 'fileName') === 'string' &&
+    typeof muirMoiraMutatorsFieldOf(value, 'mutatorName') === 'string'
   );
 }
 
@@ -261,9 +279,11 @@ function importFile(path: string): Promise<unknown> {
   return import(pathToFileURL(path).href);
 }
 
-function isListedMutator(value: unknown): value is ListedMutator {
+function isListedMutator(
+  value: unknown,
+): value is MuirMoiraMutatorsListedMutator {
   return (
-    isRecord(value) &&
+    muirMoiraMutatorsIsRecord(value) &&
     typeof value['name'] === 'string' &&
     typeof value['mutate'] === 'function'
   );

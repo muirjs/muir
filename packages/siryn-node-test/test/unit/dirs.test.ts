@@ -10,17 +10,17 @@ import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  isOwn,
-  isRunning,
-  lzDirPrefix,
-  ownDir,
-  removeDir,
-  removeLeftDirs,
+  muirSirynNodeTestIsOwn,
+  muirSirynNodeTestIsRunning,
+  muirSirynNodeTestDirPrefix,
+  muirSirynNodeTestOwnDir,
+  muirSirynNodeTestRemoveDir,
+  muirSirynNodeTestRemoveLeftDirs,
 } from '../../src/dirs.ts';
 import { logger, noProcess } from '../runner.fixtures.ts';
-import { lzDryRunDir } from '../../src/dry-run-store.ts';
+import { muirSirynNodeTestDryRunDir } from '../../src/dry-run-store.ts';
 
 function tempDirWith(
   t: TestContext,
@@ -47,14 +47,18 @@ describe('removeDir', () => {
     const warnings: string[] = [];
     const removed: string[] = [];
     let state = 'pending';
-    void removeDir(dir, logger({ debugEnabled: false, warnings }), {
-      waitMs: 1_000,
-      remove: (path) => {
-        removed.push(path);
+    void muirSirynNodeTestRemoveDir(
+      dir,
+      logger({ debugEnabled: false, warnings }),
+      {
+        waitMs: 1_000,
+        remove: (path) => {
+          removed.push(path);
 
-        return remove();
+          return remove();
+        },
       },
-    }).then(() => (state = 'done'));
+    ).then(() => (state = 'done'));
     const settled = async () => {
       await new Promise(setImmediate);
 
@@ -127,10 +131,14 @@ describe('removeDir', () => {
         .filter((resource) => resource === 'Timeout').length;
     const before = timers();
 
-    await removeDir(dir, logger({ debugEnabled: false, warnings: [] }), {
-      waitMs: 5_000,
-      remove: async () => {},
-    });
+    await muirSirynNodeTestRemoveDir(
+      dir,
+      logger({ debugEnabled: false, warnings: [] }),
+      {
+        waitMs: 5_000,
+        remove: async () => {},
+      },
+    );
 
     assert.equal(timers(), before);
   });
@@ -157,13 +165,15 @@ describe('isRunning', () => {
     const system = process.platform === 'win32' ? 4 : 1;
 
     assert.deepEqual(
-      [process.pid, system, noProcess].map((pid) => isRunning(pid)),
+      [process.pid, system, noProcess].map((pid) =>
+        muirSirynNodeTestIsRunning(pid),
+      ),
       [true, true, false],
     );
   });
 
   // As root every signal is allowed, so the real processes above reach EPERM only for other users.
-  lzTestEach([
+  muirTestEach([
     ['signalled', true, undefined],
     ['refused with EPERM', true, 'EPERM'],
     ['gone with ESRCH', false, 'ESRCH'],
@@ -176,10 +186,10 @@ describe('isRunning', () => {
       }
     };
 
-    assert.equal(isRunning(42, kill), expected);
+    assert.equal(muirSirynNodeTestIsRunning(42, kill), expected);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['an Error without a code', new Error('kill failed')],
     ['an object with the code ESRCH that is no Error', { code: 'ESRCH' }],
     ['a string', 'ESRCH'],
@@ -190,7 +200,7 @@ describe('isRunning', () => {
         throw thrown;
       };
 
-      assert.equal(isRunning(42, kill), true);
+      assert.equal(muirSirynNodeTestIsRunning(42, kill), true);
     },
   );
 });
@@ -199,9 +209,9 @@ describe('ownDir', () => {
   it("creates the directory, and keeps one that is this user's with what it holds", (t) => {
     const dir = join(tempDirWith(t, 'own-dir-'), 'peaks');
 
-    ownDir(dir, () => true);
+    muirSirynNodeTestOwnDir(dir, () => true);
     writeFileSync(join(dir, 'kept'), '');
-    ownDir(dir, () => true);
+    muirSirynNodeTestOwnDir(dir, () => true);
 
     assert.deepEqual(readdirSync(dir), ['kept']);
   });
@@ -209,7 +219,7 @@ describe('ownDir', () => {
   it('creates the directory for this user alone', () => {
     const made: unknown[] = [];
 
-    ownDir(
+    muirSirynNodeTestOwnDir(
       'peaks',
       () => true,
       (path, options) => {
@@ -226,7 +236,7 @@ describe('ownDir', () => {
 
     assert.throws(
       () => {
-        ownDir(dir, (path) => {
+        muirSirynNodeTestOwnDir(dir, (path) => {
           asked.push(path);
 
           return false;
@@ -240,17 +250,17 @@ describe('ownDir', () => {
   });
 });
 
-describe('lzDirPrefix', () => {
-  const rows: [Parameters<typeof lzDirPrefix>[0], string][] = [
-    ['run', 'lz-node-test-111-'],
-    ['cache', 'lz-node-test-cache-111-'],
-    ['dryRun', 'lz-node-test-dry-run-111-'],
+describe('muirSirynNodeTestDirPrefix', () => {
+  const rows: [Parameters<typeof muirSirynNodeTestDirPrefix>[0], string][] = [
+    ['run', 'muir-node-test-111-'],
+    ['cache', 'muir-node-test-cache-111-'],
+    ['dryRun', 'muir-node-test-dry-run-111-'],
   ];
 
-  lzTestEach(rows)(
+  muirTestEach(rows)(
     'names the %s directories of a process %s',
     (kind, prefix) => {
-      assert.equal(lzDirPrefix(kind, 111), prefix);
+      assert.equal(muirSirynNodeTestDirPrefix(kind, 111), prefix);
     },
   );
 });
@@ -258,19 +268,19 @@ describe('lzDirPrefix', () => {
 describe('removeLeftDirs', () => {
   it('removes the run, cache and dry-run directories whose processes ended, and leaves everything else', (t) => {
     const names = [
-      'lz-node-test-111-a',
-      'lz-node-test-cache-111-b',
-      basename(lzDryRunDir(111)),
-      'lz-node-test-222-c',
-      'lz-node-test-cache-222-d',
-      basename(lzDryRunDir(222)),
-      'lz-node-test-e',
+      'muir-node-test-111-a',
+      'muir-node-test-cache-111-b',
+      basename(muirSirynNodeTestDryRunDir(111)),
+      'muir-node-test-222-c',
+      'muir-node-test-cache-222-d',
+      basename(muirSirynNodeTestDryRunDir(222)),
+      'muir-node-test-e',
       'other-111-f',
-      'other-lz-node-test-111-g',
+      'other-muir-node-test-111-g',
     ];
     const dir = tempDirWith(t, 'left-dirs-', names);
     const asked: number[] = [];
-    removeLeftDirs(dir, {
+    muirSirynNodeTestRemoveLeftDirs(dir, {
       running: (pid) => {
         asked.push(pid);
 
@@ -284,13 +294,13 @@ describe('removeLeftDirs', () => {
 
   it("leaves the directories of other users' runners", (t) => {
     const names = [
-      'lz-node-test-111-mine',
-      'lz-node-test-111-theirs',
-      'lz-node-test-222-running',
+      'muir-node-test-111-mine',
+      'muir-node-test-111-theirs',
+      'muir-node-test-222-running',
     ];
     const dir = tempDirWith(t, 'left-dirs-', names);
     const asked: string[] = [];
-    removeLeftDirs(dir, {
+    muirSirynNodeTestRemoveLeftDirs(dir, {
       running: (pid) => pid === 222,
       owned: (path) => {
         asked.push(path);
@@ -308,14 +318,14 @@ describe('removeLeftDirs', () => {
 
   it('leaves a directory it cannot check or remove yet and goes on with the others', (t) => {
     const names = [
-      'lz-node-test-111-a',
-      'lz-node-test-111-b',
-      'lz-node-test-111-c',
+      'muir-node-test-111-a',
+      'muir-node-test-111-b',
+      'muir-node-test-111-c',
     ];
     const dir = tempDirWith(t, 'left-dirs-', names);
     const removed: string[] = [];
 
-    removeLeftDirs(dir, {
+    muirSirynNodeTestRemoveLeftDirs(dir, {
       running: () => false,
       owned: (path) => {
         if (path.endsWith('a')) {
@@ -345,8 +355,8 @@ describe('isOwn', () => {
 
     assert.deepEqual(
       [
-        isOwn('a', { getuid: () => 7 }, stat),
-        isOwn('b', { getuid: () => 8 }, stat),
+        muirSirynNodeTestIsOwn('a', { getuid: () => 7 }, stat),
+        muirSirynNodeTestIsOwn('b', { getuid: () => 8 }, stat),
       ],
       [true, false],
     );
@@ -355,7 +365,7 @@ describe('isOwn', () => {
 
   it('counts every file as owned where there are no user ids, as on Windows', () => {
     assert.equal(
-      isOwn('a', {}, () => assert.fail('looked up the owner')),
+      muirSirynNodeTestIsOwn('a', {}, () => assert.fail('looked up the owner')),
       true,
     );
   });
@@ -363,6 +373,6 @@ describe('isOwn', () => {
   it('counts a directory this process created as owned', (t) => {
     const dir = tempDirWith(t, 'own-');
 
-    assert.equal(isOwn(dir), true);
+    assert.equal(muirSirynNodeTestIsOwn(dir), true);
   });
 });

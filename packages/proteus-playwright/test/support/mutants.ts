@@ -1,12 +1,12 @@
 import {
-  coreInstrument,
-  fieldOf,
-  type SourceFile,
+  muirMoiraMutatorsCoreInstrument,
+  muirMoiraMutatorsFieldOf,
+  type MuirMoiraMutatorsSourceFile,
 } from '@muirjs/moira-mutators';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
-import type { Instrumenter } from '../../src/install.ts';
-import { packageName } from '../../src/package-name.ts';
+import type { MuirProteusPlaywrightInstrumenter } from '../../src/install.ts';
+import { muirProteusPlaywrightPackageName } from '../../src/package-name.ts';
 
 export interface Mutant {
   readonly fileName: string;
@@ -16,12 +16,18 @@ export interface Mutant {
 
 /** The mutants the core instrumenter makes of `files`, as it returns them. */
 export async function instrumentedMutants(
-  instrumenter: Instrumenter,
-  files: readonly SourceFile[],
+  instrumenter: MuirProteusPlaywrightInstrumenter,
+  files: readonly MuirMoiraMutatorsSourceFile[],
   ignorers: readonly Ignorer[] = [],
 ): Promise<readonly unknown[]> {
-  const instrument = await coreInstrument({ packageName, ...instrumenter });
-  const mutants = fieldOf(await instrument(files, [], ignorers), 'mutants');
+  const instrument = await muirMoiraMutatorsCoreInstrument({
+    packageName: muirProteusPlaywrightPackageName,
+    ...instrumenter,
+  });
+  const mutants = muirMoiraMutatorsFieldOf(
+    await instrument(files, [], ignorers),
+    'mutants',
+  );
 
   if (!Array.isArray(mutants)) {
     throw new Error('Instrumenter.instrument() gave no mutants');
@@ -33,14 +39,14 @@ export async function instrumentedMutants(
 }
 
 export async function mutantsOf(
-  instrumenter: Instrumenter,
-  files: readonly SourceFile[],
+  instrumenter: MuirProteusPlaywrightInstrumenter,
+  files: readonly MuirMoiraMutatorsSourceFile[],
 ): Promise<readonly Mutant[]> {
   const mutants = await instrumentedMutants(instrumenter, files);
 
   return mutants.map((mutant) => ({
-    fileName: String(fieldOf(mutant, 'fileName')),
-    mutatorName: String(fieldOf(mutant, 'mutatorName')),
-    replacement: String(fieldOf(mutant, 'replacement')),
+    fileName: String(muirMoiraMutatorsFieldOf(mutant, 'fileName')),
+    mutatorName: String(muirMoiraMutatorsFieldOf(mutant, 'mutatorName')),
+    replacement: String(muirMoiraMutatorsFieldOf(mutant, 'replacement')),
   }));
 }

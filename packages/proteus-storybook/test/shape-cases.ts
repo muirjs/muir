@@ -1,6 +1,6 @@
 import { type Case, inStory } from './support/case.ts';
 
-const args = 'LzStorybookArgs';
+const args = 'MuirProteusStorybookArgs';
 
 export const shapeCases: readonly Case[] = [
   {

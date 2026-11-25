@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { waitCall } from '../src/following-checks.ts';
-import { field, list } from '../src/node-field.ts';
+import { muirMoiraStorybookWaitCall } from '../src/following-checks.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from '../src/node-field.ts';
 import {
   type FollowingCase,
   followingIn,
@@ -941,7 +944,7 @@ interface WaitCallCase {
   readonly source: string;
   /** Whether `waitCall` reads the statement or its expression. */
   readonly at: 'statement' | 'expression';
-  readonly expect: ReturnType<typeof waitCall>;
+  readonly expect: ReturnType<typeof muirMoiraStorybookWaitCall>;
 }
 
 const waitCallCases: readonly WaitCallCase[] = [
@@ -989,10 +992,14 @@ describe('waitCall', () => {
     it(title, () => {
       assert.deepEqual(
         programsOf(source).map((program) => {
-          const [statement] = list(field(program, 'body'));
+          const [statement] = muirMoiraStorybookList(
+            muirMoiraStorybookField(program, 'body'),
+          );
 
-          return waitCall(
-            at === 'statement' ? statement : field(statement, 'expression'),
+          return muirMoiraStorybookWaitCall(
+            at === 'statement'
+              ? statement
+              : muirMoiraStorybookField(statement, 'expression'),
           );
         }),
         [expect, expect],

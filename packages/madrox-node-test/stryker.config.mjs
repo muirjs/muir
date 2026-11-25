@@ -8,10 +8,10 @@ export default await production(
     incrementalFile:
       'reports/stryker-incremental/@muirjs/madrox-node-test.src.json',
     ...reportFiles('@muirjs/madrox-node-test.src'),
-    lzNodeTest: {
+    muirSirynNodeTest: {
       testFiles: ['packages/madrox-node-test/test/**/*.test.ts'],
       nodeArgs: [source],
     },
   },
-  { LzJsNumericLiteral: true },
+  { MuirProteusJsNumericLiteral: true },
 );

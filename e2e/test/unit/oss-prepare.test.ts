@@ -10,11 +10,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzApplyPatches, lzFileWriters } from '../../src/oss/prepare.ts';
+import { muirApplyPatches, muirFileWriters } from '../../src/oss/prepare.ts';
 
 /** A project folder with an empty test folder, removed after the test. */
 function project(t: TestContext): string {
-  const dir = mkdtempSync(join(tmpdir(), 'lz-oss-prepare-'));
+  const dir = mkdtempSync(join(tmpdir(), 'muir-oss-prepare-'));
 
   t.after(() => {
     rmSync(dir, { recursive: true, force: true });
@@ -24,12 +24,12 @@ function project(t: TestContext): string {
   return dir;
 }
 
-describe('lzApplyPatches', () => {
+describe('muirApplyPatches', () => {
   it('replaces the text once, taking the replacement literally', (t) => {
     const dir = project(t);
 
     writeFileSync(join(dir, 'test', 'once.js'), "const a = 'x'\n");
-    lzApplyPatches(dir, [{ file: 'test/once.js', from: "'x'", to: "'$&y'" }]);
+    muirApplyPatches(dir, [{ file: 'test/once.js', from: "'x'", to: "'$&y'" }]);
 
     assert.equal(
       readFileSync(join(dir, 'test', 'once.js'), 'utf8'),
@@ -44,7 +44,7 @@ describe('lzApplyPatches', () => {
 
     assert.throws(
       () => {
-        lzApplyPatches(dir, [{ file: 'test/twice.js', from: 'x', to: 'y' }]);
+        muirApplyPatches(dir, [{ file: 'test/twice.js', from: 'x', to: 'y' }]);
       },
       {
         message:
@@ -53,7 +53,7 @@ describe('lzApplyPatches', () => {
     );
     assert.throws(
       () => {
-        lzApplyPatches(dir, [{ file: 'test/twice.js', from: 'z', to: 'y' }]);
+        muirApplyPatches(dir, [{ file: 'test/twice.js', from: 'z', to: 'y' }]);
       },
       {
         message:
@@ -63,7 +63,7 @@ describe('lzApplyPatches', () => {
   });
 });
 
-describe('lzFileWriters', () => {
+describe('muirFileWriters', () => {
   it('lists the matched test files that call fs writes, with their calls, and skips the others', (t) => {
     const dir = project(t);
 
@@ -75,7 +75,7 @@ describe('lzFileWriters', () => {
     writeFileSync(join(dir, 'writes.js'), 'fs.writeFileSync(p, c)\n');
 
     assert.deepEqual(
-      lzFileWriters(dir, ['test/*.test.js'], []),
+      muirFileWriters(dir, ['test/*.test.js'], []),
       new Map([['test/writes.test.js', ['rmSync', 'writeFile']]]),
     );
   });
@@ -87,7 +87,13 @@ describe('lzFileWriters', () => {
     writeFileSync(join(dir, 'test', 'b.test.js'), 'fs.rmSync(p)\n');
 
     assert.deepEqual(
-      [...lzFileWriters(dir, ['test/b.test.js', 'test/a.test.js'], []).keys()],
+      [
+        ...muirFileWriters(
+          dir,
+          ['test/b.test.js', 'test/a.test.js'],
+          [],
+        ).keys(),
+      ],
       ['test/a.test.js', 'test/b.test.js'],
     );
   });
@@ -105,7 +111,7 @@ describe('lzFileWriters', () => {
     );
 
     assert.deepEqual(
-      lzFileWriters(dir, ['test/*.test.js'], ['test/patched.test.js']),
+      muirFileWriters(dir, ['test/*.test.js'], ['test/patched.test.js']),
       new Map([['test/other.test.js', ['writeFileSync']]]),
     );
   });

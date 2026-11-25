@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { before, test } from 'node:test';
 
-import { resolveFromCore } from '../src/install.ts';
+import { muirProteusJsxResolveFromCore } from '../src/install.ts';
 import { cases, type Case } from './cases.ts';
 import { defined } from './support/defined.ts';
 import {
@@ -29,7 +29,7 @@ const files = cases.map((testCase) => ({
 let result: InstrumentResult;
 
 before(async () => {
-  const instrumenter = await installInto(await resolveFromCore());
+  const instrumenter = await installInto(await muirProteusJsxResolveFromCore());
   result = await instrumentFully(instrumenter, files);
 });
 

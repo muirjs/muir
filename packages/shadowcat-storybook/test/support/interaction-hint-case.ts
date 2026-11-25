@@ -1,6 +1,6 @@
 import type { schema } from '@stryker-mutator/api/core';
 
-import type { InteractionShape } from '../../src/interaction-shapes.ts';
+import type { MuirShadowcatStorybookInteractionShape } from '../../src/interaction-shapes.ts';
 
 /** A surviving mutant as [mutator name, 1-based line], or with the 1-based column it starts at when the line holds another mutant of that mutator that does not survive. */
 export type Survivor = readonly [string, number, number?];
@@ -15,7 +15,7 @@ export interface InteractionHintCase {
   /** The hints, as [line, shape, mutator names]. */
   readonly expect: readonly (readonly [
     number,
-    InteractionShape,
+    MuirShadowcatStorybookInteractionShape,
     readonly string[],
   ])[];
 }

@@ -2,9 +2,15 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 
-import { fieldOf, isRecord } from '@muirjs/moira-mutators';
+import {
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsIsRecord,
+} from '@muirjs/moira-mutators';
 
-import type { ImplicitRole, RoleTable } from '../../src/implicit-roles.ts';
+import type {
+  MuirProteusJsxImplicitRole,
+  MuirProteusJsxRoleTable,
+} from '../../src/implicit-roles.ts';
 
 const require = createRequire(import.meta.url);
 
@@ -48,7 +54,7 @@ export function playwrightEntryTags(): readonly string[] {
   );
 }
 
-export function playwrightRoles(): RoleTable {
+export function playwrightRoles(): MuirProteusJsxRoleTable {
   const table = playwrightTable();
 
   return new Map([
@@ -83,8 +89,8 @@ function conceptOf(entry: unknown): Concept {
 
   const concept: unknown = entry[0];
   const roles: unknown = entry[1];
-  const name = fieldOf(concept, 'name');
-  const attributes = fieldOf(concept, 'attributes') ?? [];
+  const name = muirMoiraMutatorsFieldOf(concept, 'name');
+  const attributes = muirMoiraMutatorsFieldOf(concept, 'attributes') ?? [];
 
   if (!isString(name) || !Array.isArray(attributes) || !Array.isArray(roles)) {
     throw new Error('an aria-query elementRoles entry has an unknown shape');
@@ -93,7 +99,7 @@ function conceptOf(entry: unknown): Concept {
   return {
     name,
     attributes: attributes
-      .map((attribute: unknown) => fieldOf(attribute, 'name'))
+      .map((attribute: unknown) => muirMoiraMutatorsFieldOf(attribute, 'name'))
       .filter(isString),
     roles: roles.filter(isString),
   };
@@ -101,10 +107,13 @@ function conceptOf(entry: unknown): Concept {
 
 export function ariaQueryConcepts(): readonly Concept[] {
   const ariaQuery: unknown = require('aria-query');
-  const elementRoles = fieldOf(ariaQuery, 'elementRoles');
-  const entries = fieldOf(elementRoles, 'entries');
+  const elementRoles = muirMoiraMutatorsFieldOf(ariaQuery, 'elementRoles');
+  const entries = muirMoiraMutatorsFieldOf(elementRoles, 'entries');
 
-  if (!isRecord(elementRoles) || typeof entries !== 'function') {
+  if (
+    !muirMoiraMutatorsIsRecord(elementRoles) ||
+    typeof entries !== 'function'
+  ) {
     throw new Error('aria-query has no elementRoles.entries()');
   }
 
@@ -130,7 +139,7 @@ export function ariaQueryTagRoles(
 export function ariaQueryGives(
   concepts: readonly Concept[],
   tag: string,
-  { role, requiredAttribute }: ImplicitRole,
+  { role, requiredAttribute }: MuirProteusJsxImplicitRole,
 ): boolean {
   return (
     requiredAttribute === undefined &&

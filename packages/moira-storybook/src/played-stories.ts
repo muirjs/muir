@@ -1,60 +1,87 @@
-import type { Bindings } from './bindings.ts';
-import { isIndexedTestCall, storyArgument, unwrap } from './csf-nodes.ts';
+import type { MuirMoiraStorybookBindings } from './bindings.ts';
 import {
-  firstTestCalls,
-  testArguments,
-  testCallOf,
-  topLevelValueOrSelf,
-  unchangedBindings,
-  type CsfFile,
-  type StoryExport,
-  type TestChild,
+  muirMoiraStorybookIsIndexedTestCall,
+  muirMoiraStorybookStoryArgument,
+  muirMoiraStorybookUnwrap,
+} from './csf-nodes.ts';
+import {
+  muirMoiraStorybookFirstTestCalls,
+  muirMoiraStorybookTestArguments,
+  muirMoiraStorybookTestCallOf,
+  muirMoiraStorybookTopLevelValueOrSelf,
+  muirMoiraStorybookUnchangedBindings,
+  type MuirMoiraStorybookCsfFile,
+  type MuirMoiraStorybookStoryExport,
+  type MuirMoiraStorybookTestChild,
 } from './csf.ts';
-import { isRecord } from './is-record.ts';
-import { field, list } from './node-field.ts';
-import { unknownValue, writtenValue } from './object-value.ts';
-import { asWrittenLayer, valuesOf } from './resolved-values.ts';
-import { extendLevels } from './story-layers.ts';
+import { muirMoiraStorybookIsRecord } from './is-record.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
+import {
+  muirMoiraStorybookUnknownValue,
+  muirMoiraStorybookWrittenValue,
+} from './object-value.ts';
+import {
+  muirMoiraStorybookAsWrittenLayer,
+  muirMoiraStorybookValuesOf,
+} from './resolved-values.ts';
+import { muirMoiraStorybookExtendLevels } from './story-layers.ts';
 
 /** An unknown play with a play the file reads under it, which runs when the unknown one sets none: an earlier own play, an `.extend()` base's or the meta's. */
-export const unknownOverAPlay = 'unknown over a play';
+export const muirMoiraStorybookUnknownOverAPlay = 'unknown over a play';
 
 /** A play that something the file cannot read, such as a spread of an imported object, may set: `unknownOverAPlay`, or `unknownValue` when no play the file reads is under it. */
-export type UnknownPlay = typeof unknownValue | typeof unknownOverAPlay;
+export type MuirMoiraStorybookUnknownPlay =
+  | typeof muirMoiraStorybookUnknownValue
+  | typeof muirMoiraStorybookUnknownOverAPlay;
 
-export function isUnknownPlay(play: unknown): play is UnknownPlay {
-  return play === unknownValue || play === unknownOverAPlay;
+export function muirMoiraStorybookIsUnknownPlay(
+  play: unknown,
+): play is MuirMoiraStorybookUnknownPlay {
+  return (
+    play === muirMoiraStorybookUnknownValue ||
+    play === muirMoiraStorybookUnknownOverAPlay
+  );
 }
 
 /** A tested story that runs a play or a `.test()` call. */
-export interface PlayedStory {
-  readonly story: StoryExport;
+export interface MuirMoiraStorybookPlayedStory {
+  readonly story: MuirMoiraStorybookStoryExport;
   /** The play Storybook runs for the story, or a top-level function it names; `undefined` when it has none. */
-  readonly play: object | UnknownPlay | undefined;
+  readonly play: object | MuirMoiraStorybookUnknownPlay | undefined;
   /** Its `.test()` calls, `'unmatched'` for a call with a spread argument, whose arguments only running the file tells. */
-  readonly tests: readonly TestChild[];
+  readonly tests: readonly MuirMoiraStorybookTestChild[];
 }
 
 /** The stories Storybook 10.6.5's Vitest transform tests that run a play or a `.test()` call. In a file with no meta object Storybook indexes no story, so there are none. */
-export function playedStories(
+export function muirMoiraStorybookPlayedStories(
   body: readonly unknown[],
-  bindings: Bindings,
-  { metas, stories, written }: CsfFile,
-): readonly PlayedStory[] {
+  bindings: MuirMoiraStorybookBindings,
+  { metas, stories, written }: MuirMoiraStorybookCsfFile,
+): readonly MuirMoiraStorybookPlayedStory[] {
   if (metas.length === 0) {
     return [];
   }
 
   const metaObjects = metas.map(({ object }) => object);
-  const unchanged = unchangedBindings(bindings, written);
+  const unchanged = muirMoiraStorybookUnchangedBindings(bindings, written);
   const metaPlays = metaObjects.flatMap((meta) =>
-    valuesOf(asWrittenLayer(meta, unchanged), 'play'),
+    muirMoiraStorybookValuesOf(
+      muirMoiraStorybookAsWrittenLayer(meta, unchanged),
+      'play',
+    ),
   );
 
   return stories
     .filter(
       ({ tested, init }) =>
-        tested && isTaggedTest([...metaObjects, storyArgument(unwrap(init))]),
+        tested &&
+        isTaggedTest([
+          ...metaObjects,
+          muirMoiraStorybookStoryArgument(muirMoiraStorybookUnwrap(init)),
+        ]),
     )
     .map((story) => {
       const assignedPlay = story.runtimeAssignments
@@ -65,11 +92,18 @@ export function playedStories(
         story,
         play: storyPlay(
           assignedPlay,
-          extendLevels(story.init, story.local, unchanged).flatMap((level) =>
-            valuesOf(
-              level === unknownValue
+          muirMoiraStorybookExtendLevels(
+            story.init,
+            story.local,
+            unchanged,
+          ).flatMap((level) =>
+            muirMoiraStorybookValuesOf(
+              level === muirMoiraStorybookUnknownValue
                 ? level
-                : asWrittenLayer(level.argument, level.bindings),
+                : muirMoiraStorybookAsWrittenLayer(
+                    level.argument,
+                    level.bindings,
+                  ),
               'play',
             ),
           ),
@@ -81,7 +115,10 @@ export function playedStories(
             ? test
             : {
                 options: test.options,
-                testFunction: topLevelValueOrSelf(test.testFunction, unchanged),
+                testFunction: muirMoiraStorybookTopLevelValueOrSelf(
+                  test.testFunction,
+                  unchanged,
+                ),
               },
         ),
       };
@@ -93,8 +130,15 @@ export function playedStories(
 function isTaggedTest(owners: readonly unknown[]): boolean {
   return (
     owners
-      .flatMap((owner) => list(field(writtenValue(owner, 'tags'), 'elements')))
-      .map((tag) => field(tag, 'value'))
+      .flatMap((owner) =>
+        muirMoiraStorybookList(
+          muirMoiraStorybookField(
+            muirMoiraStorybookWrittenValue(owner, 'tags'),
+            'elements',
+          ),
+        ),
+      )
+      .map((tag) => muirMoiraStorybookField(tag, 'value'))
       .filter((tag) => tag === 'test' || tag === '!test')
       .at(-1) !== '!test'
   );
@@ -105,8 +149,8 @@ function storyPlay(
   assignedPlay: unknown,
   storyChain: readonly unknown[],
   metaPlays: readonly unknown[],
-  bindings: Bindings,
-): object | UnknownPlay | undefined {
+  bindings: MuirMoiraStorybookBindings,
+): object | MuirMoiraStorybookUnknownPlay | undefined {
   const own = assignedPlay ?? storyChain[0];
 
   if (isNullish(own)) {
@@ -116,8 +160,8 @@ function storyPlay(
 
   const [first, ...under] = [...storyChain, ...metaPlays];
 
-  if (assignedPlay === undefined && first === unknownValue) {
-    return unknownPlay(under.some(isRecord));
+  if (assignedPlay === undefined && first === muirMoiraStorybookUnknownValue) {
+    return unknownPlay(under.some(muirMoiraStorybookIsRecord));
   }
 
   return knownPlay(assignedPlay ?? first, bindings);
@@ -126,33 +170,43 @@ function storyPlay(
 /** `null` or `undefined` written as a value; of the value nodes, only an identifier has a name. */
 function isNullish(node: unknown): boolean {
   return (
-    field(node, 'type') === 'NullLiteral' || field(node, 'name') === 'undefined'
+    muirMoiraStorybookField(node, 'type') === 'NullLiteral' ||
+    muirMoiraStorybookField(node, 'name') === 'undefined'
   );
 }
 
-function unknownPlay(overAPlay: boolean): UnknownPlay {
-  return overAPlay ? unknownOverAPlay : unknownValue;
+function unknownPlay(overAPlay: boolean): MuirMoiraStorybookUnknownPlay {
+  return overAPlay
+    ? muirMoiraStorybookUnknownOverAPlay
+    : muirMoiraStorybookUnknownValue;
 }
 
-function knownPlay(node: unknown, bindings: Bindings): object | undefined {
-  const play = topLevelValueOrSelf(node, bindings);
+function knownPlay(
+  node: unknown,
+  bindings: MuirMoiraStorybookBindings,
+): object | undefined {
+  const play = muirMoiraStorybookTopLevelValueOrSelf(node, bindings);
 
-  return isRecord(play) ? play : undefined;
+  return muirMoiraStorybookIsRecord(play) ? play : undefined;
 }
 
 /** The top-level `<story>.test(name, [options,] fn)` calls on a story that Storybook 10.6.5 indexes and runs, the first of each name; a call with a spread argument is `'unmatched'`. */
 function testCallsOn(
   body: readonly unknown[],
   local: unknown,
-): readonly TestChild[] {
-  return firstTestCalls(
-    body.flatMap(testCallOf).filter(({ target }) => target === local),
-  ).flatMap((call): readonly TestChild[] => {
-    if (isIndexedTestCall(call.statement)) {
-      return [testArguments(call)];
+): readonly MuirMoiraStorybookTestChild[] {
+  return muirMoiraStorybookFirstTestCalls(
+    body
+      .flatMap(muirMoiraStorybookTestCallOf)
+      .filter(({ target }) => target === local),
+  ).flatMap((call): readonly MuirMoiraStorybookTestChild[] => {
+    if (muirMoiraStorybookIsIndexedTestCall(call.statement)) {
+      return [muirMoiraStorybookTestArguments(call)];
     }
 
-    return call.args.some((arg) => field(arg, 'type') === 'SpreadElement')
+    return call.args.some(
+      (arg) => muirMoiraStorybookField(arg, 'type') === 'SpreadElement',
+    )
       ? ['unmatched']
       : [];
   });

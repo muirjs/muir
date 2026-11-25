@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
-import { lzCompareReports } from './compare-reports.ts';
-import { lzParseReport } from './report.ts';
+import { muirCompareReports } from './compare-reports.ts';
+import { muirParseReport } from './report.ts';
 
 const [firstFile, secondFile, ...extra] = process.argv.slice(2);
 
@@ -11,9 +11,9 @@ if (firstFile === undefined || secondFile === undefined || extra.length > 0) {
   );
 }
 
-const differences = lzCompareReports(
-  lzParseReport(readFileSync(firstFile, 'utf8')),
-  lzParseReport(readFileSync(secondFile, 'utf8')),
+const differences = muirCompareReports(
+  muirParseReport(readFileSync(firstFile, 'utf8')),
+  muirParseReport(readFileSync(secondFile, 'utf8')),
 );
 
 for (const difference of differences) {

@@ -1,6 +1,6 @@
 import type { Case } from './support/case.ts';
 
-const interaction = 'LzStorybookInteraction';
+const interaction = 'MuirProteusStorybookTestInteraction';
 
 export const skippedInteractionCases: readonly Case[] = [
   {

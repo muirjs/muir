@@ -1,9 +1,12 @@
 import type { MutantCoverage } from '@stryker-mutator/api/core';
 
-import type { LzTimeWindow, ProcessRecord } from './record.ts';
+import type {
+  MuirSirynNodeTestTimeWindow,
+  MuirSirynNodeTestProcessRecord,
+} from './record.ts';
 
 /** Adds up the hits of `coverages`, static and by test. */
-export function lzMergeCoverage(
+export function muirSirynNodeTestMergeCoverage(
   coverages: readonly (MutantCoverage | undefined)[],
 ): MutantCoverage {
   const total: MutantCoverage = { static: {}, perTest: {} };
@@ -29,12 +32,12 @@ export function lzMergeCoverage(
 }
 
 /** Adds up the hits of `coverages` as static, those inside tests too, as Stryker's coverage analysis `all` expects. */
-export function lzMergeAsStatic(
+export function muirSirynNodeTestMergeAsStatic(
   coverages: readonly (MutantCoverage | undefined)[],
 ): MutantCoverage {
-  const { static: hits, perTest } = lzMergeCoverage(coverages);
+  const { static: hits, perTest } = muirSirynNodeTestMergeCoverage(coverages);
 
-  return lzMergeCoverage(
+  return muirSirynNodeTestMergeCoverage(
     [hits, ...Object.values(perTest)].map((ofTest) => ({
       static: ofTest,
       perTest: {},
@@ -42,11 +45,13 @@ export function lzMergeAsStatic(
   );
 }
 
-const creditsOutsideTests = (record: ProcessRecord) =>
+const creditsOutsideTests = (record: MuirSirynNodeTestProcessRecord) =>
   record.main === true && record.tests.length > 0;
 
 /** The mutants that a test file's own process reached outside its tests, which each of its tests is credited with. */
-export function lzOutsideTests(records: readonly ProcessRecord[]): string[] {
+export function muirSirynNodeTestOutsideTests(
+  records: readonly MuirSirynNodeTestProcessRecord[],
+): string[] {
   return records
     .filter(creditsOutsideTests)
     .flatMap((record) => Object.keys(record.mutantCoverage?.static ?? {}));
@@ -63,9 +68,9 @@ export function lzOutsideTests(records: readonly ProcessRecord[]): string[] {
  * start of the span of the test it read, as it starts before its hook runs. Without its lifetime or the file's spans,
  * its hits count as static.
  */
-export function lzOverlapCoverage(
-  record: ProcessRecord,
-  testSpans: ProcessRecord['testSpans'],
+export function muirSirynNodeTestOverlapCoverage(
+  record: MuirSirynNodeTestProcessRecord,
+  testSpans: MuirSirynNodeTestProcessRecord['testSpans'],
 ): MutantCoverage | undefined {
   const { mutantCoverage: coverage, lifetime } = record;
 
@@ -82,7 +87,7 @@ export function lzOverlapCoverage(
       Object.keys(coverage.static).map((mutantId) => [mutantId, 1]),
     );
 
-    return lzMergeCoverage([
+    return muirSirynNodeTestMergeCoverage([
       { static: {}, perTest: coverage.perTest },
       ...record.tests.map(({ id }, index) => ({
         static: {},
@@ -92,7 +97,7 @@ export function lzOverlapCoverage(
   }
 
   if (!lifetime || !testSpans) {
-    return lzMergeAsStatic([coverage]);
+    return muirSirynNodeTestMergeAsStatic([coverage]);
   }
 
   const timeline = Object.values(testSpans)
@@ -114,7 +119,7 @@ export function lzOverlapCoverage(
     },
   );
 
-  return lzMergeCoverage([
+  return muirSirynNodeTestMergeCoverage([
     { static: coverage.static, perTest: {} },
     ...attributed,
   ]);
@@ -122,8 +127,8 @@ export function lzOverlapCoverage(
 
 /** The start of the latest span of `spansOfTest` that began by the start of `lifetime`, or else that start. */
 function anchoredStart(
-  spansOfTest: readonly LzTimeWindow[] | undefined,
-  lifetime: LzTimeWindow,
+  spansOfTest: readonly MuirSirynNodeTestTimeWindow[] | undefined,
+  lifetime: MuirSirynNodeTestTimeWindow,
 ): number {
   return (
     spansOfTest?.findLast((span) => span.start <= lifetime.start)?.start ??
@@ -133,8 +138,8 @@ function anchoredStart(
 
 /** The tests with a span that overlaps `window`. */
 function testsOverlapping(
-  testSpans: Readonly<Record<string, readonly LzTimeWindow[]>>,
-  window: LzTimeWindow,
+  testSpans: Readonly<Record<string, readonly MuirSirynNodeTestTimeWindow[]>>,
+  window: MuirSirynNodeTestTimeWindow,
 ): readonly string[] {
   return Object.entries(testSpans)
     .filter(([, spans]) =>
@@ -145,8 +150,8 @@ function testsOverlapping(
 
 /** Whether `timeline`, the spans of every test sorted by start, leaves no part of `window` outside them. */
 function coversWholly(
-  timeline: readonly LzTimeWindow[],
-  window: LzTimeWindow,
+  timeline: readonly MuirSirynNodeTestTimeWindow[],
+  window: MuirSirynNodeTestTimeWindow,
 ): boolean {
   const coveredUntil = timeline.reduce(
     (until, span) => (span.start <= until ? Math.max(until, span.end) : until),

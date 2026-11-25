@@ -3,10 +3,13 @@ import { describe, it } from 'node:test';
 
 import { types } from '@babel/core';
 
-import { builtInNames } from '@muirjs/moira-mutators';
+import { muirMoiraMutatorsBuiltInNames } from '@muirjs/moira-mutators';
 
-import { assertBabelTypes, install } from '../src/install.ts';
-import { mutatorSets } from '../src/mutators.ts';
+import {
+  muirProteusStorybookTestAssertBabelTypes,
+  muirProteusStorybookTestInstall,
+} from '../src/install.ts';
+import { muirProteusStorybookTestMutatorSets } from '../src/mutators.ts';
 import { defined } from './support/defined.ts';
 import {
   fakeInstrumenter,
@@ -21,21 +24,30 @@ describe('assertBabelTypes', () => {
   const missing = (name: string) => new Error(`no ${name}`);
 
   it("accepts Babel's types", () => {
-    assert.doesNotThrow(() => assertBabelTypes(types, missing));
+    assert.doesNotThrow(() =>
+      muirProteusStorybookTestAssertBabelTypes(types, missing),
+    );
   });
 
   it('names the member an object lacks, through the missing-member error', () => {
     assert.throws(
-      () => assertBabelTypes({ ...types, identifier: 1 }, missing),
+      () =>
+        muirProteusStorybookTestAssertBabelTypes(
+          { ...types, identifier: 1 },
+          missing,
+        ),
       { message: 'no Babel types with identifier' },
     );
   });
 
   it('lists every member a value lacks, comma-separated', () => {
-    assert.throws(() => assertBabelTypes(undefined, missing), {
-      message:
-        'no Babel types with arrowFunctionExpression, awaitExpression, blockStatement, callExpression, cloneNode, emptyStatement, expressionStatement, identifier, isNode, isStatement, memberExpression, newExpression, objectExpression, sequenceExpression, stringLiteral',
-    });
+    assert.throws(
+      () => muirProteusStorybookTestAssertBabelTypes(undefined, missing),
+      {
+        message:
+          'no Babel types with arrowFunctionExpression, awaitExpression, blockStatement, callExpression, cloneNode, emptyStatement, expressionStatement, identifier, isNode, isStatement, memberExpression, newExpression, objectExpression, sequenceExpression, stringLiteral',
+      },
+    );
   });
 });
 
@@ -43,15 +55,18 @@ describe('install', () => {
   it("removes Stryker's 17 built-ins and appends the default mutators, marked", async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
-    await install(
-      sets(['LzOne', 'LzTwo']),
+    await muirProteusStorybookTestInstall(
+      sets(['MuirProteusStorybookTestOne', 'MuirProteusStorybookTestTwo']),
       undefined,
       async () => instrumenter,
       silent,
       silent,
     );
 
-    assert.deepEqual(names(), ['LzOne', 'LzTwo']);
+    assert.deepEqual(names(), [
+      'MuirProteusStorybookTestOne',
+      'MuirProteusStorybookTestTwo',
+    ]);
     assert.equal(
       instrumenter.allMutators.every((listed) => ownMark in listed),
       true,
@@ -61,15 +76,23 @@ describe('install', () => {
   it('appends the opt-in and experimental mutators the options turn on, after the defaults', async () => {
     const { instrumenter, names } = fakeInstrumenter();
 
-    await install(
-      sets(['LzOne'], ['LzTwo', 'LzThree'], ['LzFour']),
-      { LzThree: true, experimental: true },
+    await muirProteusStorybookTestInstall(
+      sets(
+        ['MuirProteusStorybookTestOne'],
+        ['MuirProteusStorybookTestTwo', 'MuirProteusStorybookTestThree'],
+        ['MuirProteusStorybookTestFour'],
+      ),
+      { MuirProteusStorybookTestThree: true, experimental: true },
       async () => instrumenter,
       silent,
       silent,
     );
 
-    assert.deepEqual(names(), ['LzOne', 'LzThree', 'LzFour']);
+    assert.deepEqual(names(), [
+      'MuirProteusStorybookTestOne',
+      'MuirProteusStorybookTestThree',
+      'MuirProteusStorybookTestFour',
+    ]);
   });
 
   it('throws on an experimental name given as an opt-in key, and leaves the list as it was', async () => {
@@ -77,16 +100,20 @@ describe('install', () => {
     const before = names();
 
     await assert.rejects(
-      install(
-        sets(['LzOne'], ['LzTwo'], ['LzFour']),
-        { LzFour: true },
+      muirProteusStorybookTestInstall(
+        sets(
+          ['MuirProteusStorybookTestOne'],
+          ['MuirProteusStorybookTestTwo'],
+          ['MuirProteusStorybookTestFour'],
+        ),
+        { MuirProteusStorybookTestFour: true },
         async () => instrumenter,
         silent,
         silent,
       ),
       {
         message:
-          '@muirjs/proteus-storybook-test: no opt-in mutator is named LzFour; it is experimental, so it ' +
+          '@muirjs/proteus-storybook-test: no opt-in mutator is named MuirProteusStorybookTestFour; it is experimental, so it ' +
           'goes inside experimental.',
       },
     );
@@ -97,8 +124,12 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
 
     await assert.rejects(
-      install(
-        sets(['LzOne'], [], ['LzFour']),
+      muirProteusStorybookTestInstall(
+        sets(
+          ['MuirProteusStorybookTestOne'],
+          [],
+          ['MuirProteusStorybookTestFour'],
+        ),
         { extended: true },
         async () => instrumenter,
         silent,
@@ -107,7 +138,7 @@ describe('install', () => {
       {
         message:
           '@muirjs/proteus-storybook-test: the package has no opt-in mutators yet, so ' +
-          'lzStorybookTestMutators() takes no extended option.',
+          'muirProteusStorybookTestMutators() takes no extended option.',
       },
     );
   });
@@ -116,8 +147,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const lines: string[] = [];
 
-    await install(
-      sets(['LzOne', 'LzTwo']),
+    await muirProteusStorybookTestInstall(
+      sets(['MuirProteusStorybookTestOne', 'MuirProteusStorybookTestTwo']),
       undefined,
       async () => instrumenter,
       silent,
@@ -126,7 +157,7 @@ describe('install', () => {
 
     assert.deepEqual(lines, [
       "@muirjs/proteus-storybook-test: Stryker's 17 built-in mutators are off for every file in this run; " +
-        '2 LzStorybook mutators on.',
+        '2 MuirProteusStorybookTest mutators on.',
     ]);
   });
 
@@ -134,9 +165,13 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const lines: string[] = [];
 
-    await install(
-      sets(['LzOne'], ['LzTwo', 'LzThree'], ['LzFour']),
-      { LzThree: true, experimental: true },
+    await muirProteusStorybookTestInstall(
+      sets(
+        ['MuirProteusStorybookTestOne'],
+        ['MuirProteusStorybookTestTwo', 'MuirProteusStorybookTestThree'],
+        ['MuirProteusStorybookTestFour'],
+      ),
+      { MuirProteusStorybookTestThree: true, experimental: true },
       async () => instrumenter,
       silent,
       (message) => lines.push(message),
@@ -144,7 +179,7 @@ describe('install', () => {
 
     assert.deepEqual(lines, [
       "@muirjs/proteus-storybook-test: Stryker's 17 built-in mutators are off for every file in this run; " +
-        '3 LzStorybook mutators on. Opt-in or experimental: LzThree, LzFour.',
+        '3 MuirProteusStorybookTest mutators on. Opt-in or experimental: MuirProteusStorybookTestThree, MuirProteusStorybookTestFour.',
     ]);
   });
 
@@ -152,7 +187,7 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter();
     const calls: unknown[] = [];
     const echo = {
-      ...mutator('LzEcho'),
+      ...mutator('MuirProteusStorybookTestEcho'),
       mutate: (path: unknown, t: unknown) => {
         calls.push([path, t]);
 
@@ -160,7 +195,7 @@ describe('install', () => {
       },
     };
 
-    await install(
+    await muirProteusStorybookTestInstall(
       { defaults: [echo], optIn: [], experimental: [] },
       undefined,
       async () => instrumenter,
@@ -175,45 +210,13 @@ describe('install', () => {
   });
 
   it('throws when a mutator makes no mutant of its sample, and leaves the list as it was', async () => {
-    const { instrumenter, names } = fakeInstrumenter({ silent: ['LzTwo'] });
+    const { instrumenter, names } = fakeInstrumenter({
+      silent: ['MuirProteusStorybookTestTwo'],
+    });
 
     await assert.rejects(
-      install(
-        sets(['LzOne', 'LzTwo']),
-        undefined,
-        async () => instrumenter,
-        silent,
-        silent,
-      ),
-      { message: /made no mutants of LzTwo from their samples/ },
-    );
-    assert.deepEqual(names(), builtInNames);
-  });
-
-  it('throws when a built-in still makes a mutant after the removal, and leaves the list as it was', async () => {
-    const { instrumenter, names } = fakeInstrumenter({ leaking: ['Regex'] });
-
-    await assert.rejects(
-      install(
-        sets(['LzOne']),
-        undefined,
-        async () => instrumenter,
-        silent,
-        silent,
-      ),
-      { message: /still made mutants of the built-ins Regex/ },
-    );
-    assert.deepEqual(names(), builtInNames);
-  });
-
-  it('refuses a name that another mutator holds, ignoring case', async () => {
-    const { instrumenter } = fakeInstrumenter();
-
-    instrumenter.allMutators.push({ name: 'lzone', mutate: () => undefined });
-
-    await assert.rejects(
-      install(
-        sets(['LzOne']),
+      muirProteusStorybookTestInstall(
+        sets(['MuirProteusStorybookTestOne', 'MuirProteusStorybookTestTwo']),
         undefined,
         async () => instrumenter,
         silent,
@@ -221,7 +224,47 @@ describe('install', () => {
       ),
       {
         message:
-          '@muirjs/proteus-storybook-test: another mutator already has the name LzOne.',
+          /made no mutants of MuirProteusStorybookTestTwo from their samples/,
+      },
+    );
+    assert.deepEqual(names(), muirMoiraMutatorsBuiltInNames);
+  });
+
+  it('throws when a built-in still makes a mutant after the removal, and leaves the list as it was', async () => {
+    const { instrumenter, names } = fakeInstrumenter({ leaking: ['Regex'] });
+
+    await assert.rejects(
+      muirProteusStorybookTestInstall(
+        sets(['MuirProteusStorybookTestOne']),
+        undefined,
+        async () => instrumenter,
+        silent,
+        silent,
+      ),
+      { message: /still made mutants of the built-ins Regex/ },
+    );
+    assert.deepEqual(names(), muirMoiraMutatorsBuiltInNames);
+  });
+
+  it('refuses a name that another mutator holds, ignoring case', async () => {
+    const { instrumenter } = fakeInstrumenter();
+
+    instrumenter.allMutators.push({
+      name: 'muirproteusstorybooktestone',
+      mutate: () => undefined,
+    });
+
+    await assert.rejects(
+      muirProteusStorybookTestInstall(
+        sets(['MuirProteusStorybookTestOne']),
+        undefined,
+        async () => instrumenter,
+        silent,
+        silent,
+      ),
+      {
+        message:
+          '@muirjs/proteus-storybook-test: another mutator already has the name MuirProteusStorybookTestOne.',
       },
     );
   });
@@ -230,8 +273,8 @@ describe('install', () => {
     const { instrumenter } = fakeInstrumenter({ version: '10.2.0' });
     const warnings: string[] = [];
 
-    await install(
-      sets(['LzOne']),
+    await muirProteusStorybookTestInstall(
+      sets(['MuirProteusStorybookTestOne']),
       undefined,
       async () => instrumenter,
       (message) => warnings.push(message),
@@ -249,8 +292,8 @@ describe('roster', () => {
   async function namesWith(options: unknown): Promise<readonly string[]> {
     const { instrumenter, names } = fakeInstrumenter();
 
-    await install(
-      mutatorSets,
+    await muirProteusStorybookTestInstall(
+      muirProteusStorybookTestMutatorSets,
       options,
       async () => instrumenter,
       silent,
@@ -260,85 +303,103 @@ describe('roster', () => {
     return names();
   }
 
-  const defaults = ['LzStorybookInteraction', 'LzStorybookClickFocus'];
+  const defaults = [
+    'MuirProteusStorybookTestInteraction',
+    'MuirProteusStorybookTestClickFocus',
+  ];
 
   it('installs the default mutators with no options', async () => {
     assert.deepEqual(await namesWith(undefined), defaults);
   });
 
-  it('turns LzStorybookInteractionRepeat on by its name, after the defaults', async () => {
-    assert.deepEqual(await namesWith({ LzStorybookInteractionRepeat: true }), [
-      ...defaults,
-      'LzStorybookInteractionRepeat',
-    ]);
+  it('turns MuirProteusStorybookTestInteractionRepeat on by its name, after the defaults', async () => {
+    assert.deepEqual(
+      await namesWith({ MuirProteusStorybookTestInteractionRepeat: true }),
+      [...defaults, 'MuirProteusStorybookTestInteractionRepeat'],
+    );
   });
 
-  it('turns LzStorybookInteractionTarget on by its name inside experimental', async () => {
+  it('turns MuirProteusStorybookTestInteractionTarget on by its name inside experimental', async () => {
     assert.deepEqual(
       await namesWith({
-        experimental: { LzStorybookInteractionTarget: true },
+        experimental: { MuirProteusStorybookTestInteractionTarget: true },
       }),
-      [...defaults, 'LzStorybookInteractionTarget'],
+      [...defaults, 'MuirProteusStorybookTestInteractionTarget'],
     );
   });
 
-  it('turns LzStorybookWaitFor on by its name inside experimental', async () => {
+  it('turns MuirProteusStorybookTestWaitFor on by its name inside experimental', async () => {
     assert.deepEqual(
-      await namesWith({ experimental: { LzStorybookWaitFor: true } }),
-      [...defaults, 'LzStorybookWaitFor'],
+      await namesWith({
+        experimental: { MuirProteusStorybookTestWaitFor: true },
+      }),
+      [...defaults, 'MuirProteusStorybookTestWaitFor'],
     );
   });
 
-  it('turns LzStorybookAssertionBefore on by its name inside experimental', async () => {
+  it('turns MuirProteusStorybookTestAssertionBefore on by its name inside experimental', async () => {
     assert.deepEqual(
-      await namesWith({ experimental: { LzStorybookAssertionBefore: true } }),
-      [...defaults, 'LzStorybookAssertionBefore'],
+      await namesWith({
+        experimental: { MuirProteusStorybookTestAssertionBefore: true },
+      }),
+      [...defaults, 'MuirProteusStorybookTestAssertionBefore'],
     );
   });
 
-  it('turns LzStorybookSpyStub on by its name inside experimental', async () => {
+  it('turns MuirProteusStorybookTestSpyStub on by its name inside experimental', async () => {
     assert.deepEqual(
-      await namesWith({ experimental: { LzStorybookSpyStub: true } }),
-      [...defaults, 'LzStorybookSpyStub'],
+      await namesWith({
+        experimental: { MuirProteusStorybookTestSpyStub: true },
+      }),
+      [...defaults, 'MuirProteusStorybookTestSpyStub'],
     );
   });
 
-  it('turns LzStorybookSpyStubOutcome on by its name inside experimental', async () => {
+  it('turns MuirProteusStorybookTestSpyStubOutcome on by its name inside experimental', async () => {
     assert.deepEqual(
-      await namesWith({ experimental: { LzStorybookSpyStubOutcome: true } }),
-      [...defaults, 'LzStorybookSpyStubOutcome'],
+      await namesWith({
+        experimental: { MuirProteusStorybookTestSpyStubOutcome: true },
+      }),
+      [...defaults, 'MuirProteusStorybookTestSpyStubOutcome'],
     );
   });
 
-  it('turns LzStorybookStoryGlobals on by its name inside experimental', async () => {
+  it('turns MuirProteusStorybookTestStoryGlobals on by its name inside experimental', async () => {
     assert.deepEqual(
-      await namesWith({ experimental: { LzStorybookStoryGlobals: true } }),
-      [...defaults, 'LzStorybookStoryGlobals'],
+      await namesWith({
+        experimental: { MuirProteusStorybookTestStoryGlobals: true },
+      }),
+      [...defaults, 'MuirProteusStorybookTestStoryGlobals'],
     );
   });
 
-  it('refuses LzStorybookWaitFor as an opt-in key, as it is experimental', async () => {
-    await assert.rejects(namesWith({ LzStorybookWaitFor: true }), {
+  it('refuses MuirProteusStorybookTestWaitFor as an opt-in key, as it is experimental', async () => {
+    await assert.rejects(namesWith({ MuirProteusStorybookTestWaitFor: true }), {
       message:
-        '@muirjs/proteus-storybook-test: no opt-in mutator is named LzStorybookWaitFor; it is ' +
+        '@muirjs/proteus-storybook-test: no opt-in mutator is named MuirProteusStorybookTestWaitFor; it is ' +
         'experimental, so it goes inside experimental.',
     });
   });
 
-  it('refuses LzStorybookAssertionBefore as an opt-in key, as it is experimental', async () => {
-    await assert.rejects(namesWith({ LzStorybookAssertionBefore: true }), {
-      message:
-        '@muirjs/proteus-storybook-test: no opt-in mutator is named LzStorybookAssertionBefore; it is ' +
-        'experimental, so it goes inside experimental.',
-    });
-  });
-
-  it('refuses LzStorybookInteractionRepeat inside experimental, as it is opt-in', async () => {
+  it('refuses MuirProteusStorybookTestAssertionBefore as an opt-in key, as it is experimental', async () => {
     await assert.rejects(
-      namesWith({ experimental: { LzStorybookInteractionRepeat: true } }),
+      namesWith({ MuirProteusStorybookTestAssertionBefore: true }),
       {
         message:
-          '@muirjs/proteus-storybook-test: no experimental mutator is named LzStorybookInteractionRepeat; ' +
+          '@muirjs/proteus-storybook-test: no opt-in mutator is named MuirProteusStorybookTestAssertionBefore; it is ' +
+          'experimental, so it goes inside experimental.',
+      },
+    );
+  });
+
+  it('refuses MuirProteusStorybookTestInteractionRepeat inside experimental, as it is opt-in', async () => {
+    await assert.rejects(
+      namesWith({
+        experimental: { MuirProteusStorybookTestInteractionRepeat: true },
+      }),
+      {
+        message:
+          '@muirjs/proteus-storybook-test: no experimental mutator is named MuirProteusStorybookTestInteractionRepeat; ' +
           'it is opt-in, so it goes outside experimental.',
       },
     );
@@ -347,7 +408,7 @@ describe('roster', () => {
   it('turns every opt-in mutator on with extended', async () => {
     assert.deepEqual(await namesWith({ extended: true }), [
       ...defaults,
-      'LzStorybookInteractionRepeat',
+      'MuirProteusStorybookTestInteractionRepeat',
     ]);
   });
 });

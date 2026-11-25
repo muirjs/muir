@@ -3,8 +3,11 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { setImmediate } from 'node:timers/promises';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { activeMutantEnv, envNames } from '../../src/record.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import {
+  muirSirynNodeTestActiveMutantEnv,
+  muirSirynNodeTestEnvNames,
+} from '../../src/record.ts';
 import {
   bodyOf,
   callable,
@@ -245,7 +248,7 @@ describe('wrapNodeTest', () => {
     ]);
   });
 
-  lzTestEach<'describe' | 'suite' | 'test'>(['describe', 'suite', 'test'])(
+  muirTestEach<'describe' | 'suite' | 'test'>(['describe', 'suite', 'test'])(
     "keeps the other properties of node:test's %s",
     (kind) => {
       const { module } = wrapped();
@@ -345,7 +348,7 @@ describe('wrapNodeTest', () => {
     );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['makes t.runOnly do nothing without --test-only', false, []],
     ['leaves t.runOnly to node:test under --test-only', true, [[true]]],
   ])('%s', async (_title, testOnly, expected) => {
@@ -411,7 +414,7 @@ describe('wrapNodeTest', () => {
       ],
     );
     assert.equal(ns.currentTestId, '');
-    assert.ok(!(envNames.current in env));
+    assert.ok(!(muirSirynNodeTestEnvNames.current in env));
   });
 
   it('keeps a subtest that its parent does not await current until it ends, after its parent ends', async () => {
@@ -438,7 +441,7 @@ describe('wrapNodeTest', () => {
     const childId = `${testFile} > parent > child`;
     assert.deepEqual(seen, [undefined, childId, childId]);
     assert.equal(ns.currentTestId, '');
-    assert.ok(!(envNames.current in env));
+    assert.ok(!(muirSirynNodeTestEnvNames.current in env));
     // The clock ticks once per read, so a span moved while the child stayed current would shift the child's end.
     assert.deepEqual(testSpans(), {
       [`${testFile} > parent`]: [{ start: 1, end: 2 }],
@@ -683,7 +686,7 @@ describe('wrapNodeTest', () => {
     );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['without a test context', {}],
     [
       'with a context that lacks a function the wrapper calls',
@@ -735,7 +738,7 @@ describe('wrapNodeTest', () => {
 
       assert.deepEqual(seen, [receiver, context]);
       assert.deepEqual(
-        [ns.currentTestId, env[envNames.current]],
+        [ns.currentTestId, env[muirSirynNodeTestEnvNames.current]],
         [`${testFile} > calls back`, `${testFile} > calls back`],
       );
       assert.deepEqual(calls, []);
@@ -748,7 +751,7 @@ describe('wrapNodeTest', () => {
 
       assert.deepEqual(calls, [[undefined]]);
       assert.equal(ns.currentTestId, '');
-      assert.ok(!(envNames.current in env));
+      assert.ok(!(muirSirynNodeTestEnvNames.current in env));
       assert.equal(context.skipped, false);
     });
 
@@ -821,7 +824,7 @@ describe('wrapNodeTest', () => {
     const { module, registrations, ns, env } = wrapped();
     const seen: unknown[] = [];
     module.it('observes', () => {
-      seen.push(ns.currentTestId, env[envNames.current]);
+      seen.push(ns.currentTestId, env[muirSirynNodeTestEnvNames.current]);
     });
 
     await bodyOf(registrations, 'observes')(testContext());
@@ -869,7 +872,7 @@ describe('wrapNodeTest', () => {
     const { module, registrations, ns, env } = wrapped({ activeMutant: '7' });
     const seen: unknown[] = [];
     module.it('first', () => {
-      seen.push(ns.activeMutant, env[activeMutantEnv]);
+      seen.push(ns.activeMutant, env[muirSirynNodeTestActiveMutantEnv]);
     });
     module.it('second', (_t: unknown, done: () => void) => {
       seen.push(ns.activeMutant);
@@ -877,13 +880,16 @@ describe('wrapNodeTest', () => {
     });
 
     assert.deepEqual(
-      [ns.activeMutant, env[activeMutantEnv]],
+      [ns.activeMutant, env[muirSirynNodeTestActiveMutantEnv]],
       [undefined, undefined],
     );
 
     await bodyOf(registrations, 'first')(testContext());
 
-    assert.deepEqual([ns.activeMutant, env[activeMutantEnv]], ['7', '7']);
+    assert.deepEqual(
+      [ns.activeMutant, env[muirSirynNodeTestActiveMutantEnv]],
+      ['7', '7'],
+    );
 
     delete ns.activeMutant;
     await bodyOf(registrations, 'second')(testContext(), () => {});
@@ -895,7 +901,12 @@ describe('wrapNodeTest', () => {
     const { module, registrations, ns, env } = wrapped({ activeMutant: '7' });
     const seen: unknown[] = [];
     const observe = function (this: unknown, ...args: unknown[]) {
-      seen.push(ns.activeMutant, env[activeMutantEnv], this, args);
+      seen.push(
+        ns.activeMutant,
+        env[muirSirynNodeTestActiveMutantEnv],
+        this,
+        args,
+      );
 
       return 'hook result';
     };
@@ -926,7 +937,7 @@ describe('wrapNodeTest', () => {
     );
     assert.equal(hooks[0]?.rest[0], topLevelBefore);
     assert.deepEqual(
-      [ns.activeMutant, env[activeMutantEnv]],
+      [ns.activeMutant, env[muirSirynNodeTestActiveMutantEnv]],
       [undefined, undefined],
     );
 
@@ -960,7 +971,7 @@ describe('wrapNodeTest', () => {
     await bodyOf(registrations, 'runs')(testContext());
 
     assert.equal(ns.activeMutant, '3');
-    assert.ok(!(activeMutantEnv in env));
+    assert.ok(!(muirSirynNodeTestActiveMutantEnv in env));
   });
 
   it('clears the current test id after a test, also after a failure', async () => {
@@ -973,14 +984,14 @@ describe('wrapNodeTest', () => {
     await bodyOf(registrations, 'passes')(testContext());
 
     assert.equal(ns.currentTestId, '');
-    assert.ok(!(envNames.current in env));
+    assert.ok(!(muirSirynNodeTestEnvNames.current in env));
 
     await assert.rejects(bodyOf(registrations, 'fails')(testContext()), {
       message: 'no',
     });
 
     assert.equal(ns.currentTestId, '');
-    assert.ok(!(envNames.current in env));
+    assert.ok(!(muirSirynNodeTestEnvNames.current in env));
   });
 
   it('registers the tests outside the filter as skipped, so node:test runs neither them nor their hooks', () => {
@@ -1136,7 +1147,7 @@ describe('wrapNodeTest', () => {
     mode: bail ? 'on' : 'off',
   }));
 
-  lzTestEach(bails)(
+  muirTestEach(bails)(
     '$verb the tests after a reported failure with bail $mode',
     async ({ bail }) => {
       const { module, registrations, tests } = wrapped({ bail });

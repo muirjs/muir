@@ -1,4 +1,4 @@
-export interface LzProcessRow {
+export interface MuirProcessRow {
   readonly pid: number;
   readonly ppid: number;
   readonly workingSetBytes: number;
@@ -10,7 +10,7 @@ export interface LzProcessRow {
   readonly name: string;
 }
 
-export interface LzProcessPeaks {
+export interface MuirProcessPeaks {
   readonly samples: number;
   readonly peakCount: number;
   readonly peakWorkingSetBytes: number;
@@ -20,7 +20,7 @@ export interface LzProcessPeaks {
  * Reads the sampler's output: one line per process, `pid ppid workingSetBytes created name`, and a `--` line after
  * each sample. Text after the last `--` is a sample the stop cut short, and is dropped.
  */
-export function lzParseSamples(text: string): LzProcessRow[][] {
+export function muirParseSamples(text: string): MuirProcessRow[][] {
   return parseSamples(text, parseRow);
 }
 
@@ -28,7 +28,7 @@ export function lzParseSamples(text: string): LzProcessRow[][] {
  * Reads the Linux sampler's output: the page size in bytes on the first line, then each sample as the
  * `/proc/<pid>/stat` lines of every process and a `--` line. Text after the last `--` is dropped.
  */
-export function lzParseProcSamples(text: string): LzProcessRow[][] {
+export function muirParseProcSamples(text: string): MuirProcessRow[][] {
   const lines = text.split('\n');
   // Stryker disable next-line StringLiteral: equivalent, as split returns at least one string, so the default never applies
   const [first = '', ...rest] = lines;
@@ -44,8 +44,8 @@ export function lzParseProcSamples(text: string): LzProcessRow[][] {
 
 function parseSamples(
   text: string,
-  parse: (line: string) => LzProcessRow,
-): LzProcessRow[][] {
+  parse: (line: string) => MuirProcessRow,
+): MuirProcessRow[][] {
   return text
     .split(/^--\r?$/m)
     .slice(0, -1)
@@ -62,7 +62,7 @@ function parseSamples(
  * name is the main thread's, `MainThread` for every Node.js process, so a command line after a tab names the process
  * instead; the sampler turns its NULs, newlines and tabs into spaces, so the last tab starts it.
  */
-function parseProcStat(line: string, pageSize: number): LzProcessRow {
+function parseProcStat(line: string, pageSize: number): MuirProcessRow {
   const tab = line.lastIndexOf('\t');
   const stat = tab === -1 ? line : line.slice(0, tab);
   const commandLine = tab === -1 ? '' : line.slice(tab).trim();
@@ -88,7 +88,7 @@ function parseProcStat(line: string, pageSize: number): LzProcessRow {
   };
 }
 
-function parseRow(line: string): LzProcessRow {
+function parseRow(line: string): MuirProcessRow {
   const match = /^(\d+) (\d+) (\d+) (\d+) (.*)$/.exec(line);
 
   if (match === null) {
@@ -113,15 +113,15 @@ function parseRow(line: string): LzProcessRow {
  * earlier than its parent, as one whose parent id was reused by a later process did not. Equal counts, because a
  * Linux start time is in clock ticks and a fast child often shares its parent's tick.
  */
-export function lzDescendants(
-  rows: readonly LzProcessRow[],
+export function muirDescendants(
+  rows: readonly MuirProcessRow[],
   rootPid: number,
   excluded: ReadonlySet<number>,
-): LzProcessRow[] {
+): MuirProcessRow[] {
   const childrenOf = (
-    parent: LzProcessRow | undefined,
+    parent: MuirProcessRow | undefined,
     pid: number,
-  ): LzProcessRow[] =>
+  ): MuirProcessRow[] =>
     rows
       .filter(
         (row) =>
@@ -138,9 +138,9 @@ export function lzDescendants(
   );
 }
 
-export function lzPeaks(
-  samples: readonly (readonly LzProcessRow[])[],
-): LzProcessPeaks {
+export function muirPeaks(
+  samples: readonly (readonly MuirProcessRow[])[],
+): MuirProcessPeaks {
   return {
     samples: samples.length,
     peakCount: Math.max(0, ...samples.map((sample) => sample.length)),
@@ -158,16 +158,16 @@ export function lzPeaks(
  * between two samples and that outlived it is missed: walking from an ended process to its id's children would also
  * reach the children of a later process that reused that id.
  */
-export function lzLeftovers(
-  seen: readonly LzProcessRow[],
-  now: readonly LzProcessRow[],
-): LzProcessRow[] {
+export function muirLeftovers(
+  seen: readonly MuirProcessRow[],
+  now: readonly MuirProcessRow[],
+): MuirProcessRow[] {
   return now.filter((row) =>
     seen.some(({ pid, created }) => pid === row.pid && created === row.created),
   );
 }
 
-export function lzNewEntries(
+export function muirNewEntries(
   before: readonly string[],
   after: readonly string[],
 ): string[] {

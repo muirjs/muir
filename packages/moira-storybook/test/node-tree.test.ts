@@ -3,87 +3,115 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { field, list } from '../src/node-field.ts';
 import {
-  childNodes,
-  descendants,
-  equivalenceTokens,
-  equivalent,
-  indexTree,
-  isFunction,
-  isNode,
-  memberName,
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from '../src/node-field.ts';
+import {
+  muirMoiraStorybookChildNodes,
+  muirMoiraStorybookDescendants,
+  muirMoiraStorybookEquivalenceTokens,
+  muirMoiraStorybookEquivalent,
+  muirMoiraStorybookIndexTree,
+  muirMoiraStorybookIsFunction,
+  muirMoiraStorybookIsNode,
+  muirMoiraStorybookMemberName,
 } from '../src/node-tree.ts';
 import { programOf } from './support/parse-module.ts';
 
 describe('isNode', () => {
   it('is false for an object whose type is not a string', () => {
-    assert.equal(isNode({ type: 1 }), false);
+    assert.equal(muirMoiraStorybookIsNode({ type: 1 }), false);
   });
 });
 
 describe('isFunction', () => {
   it('is true for a private class method', () => {
-    const method = descendants(programOf('class A { #m() {} }')).find(
-      (node) => field(node, 'type') === 'ClassPrivateMethod',
+    const method = muirMoiraStorybookDescendants(
+      programOf('class A { #m() {} }'),
+    ).find(
+      (node) => muirMoiraStorybookField(node, 'type') === 'ClassPrivateMethod',
     );
 
-    assert.equal(isFunction(method), true);
+    assert.equal(muirMoiraStorybookIsFunction(method), true);
   });
 });
 
 describe('childNodes', () => {
   it('leaves out the comments of a node', () => {
-    const [statement] = list(field(programOf('// note', 'a;'), 'body'));
+    const [statement] = muirMoiraStorybookList(
+      muirMoiraStorybookField(programOf('// note', 'a;'), 'body'),
+    );
 
-    assert.deepEqual(childNodes(statement), [field(statement, 'expression')]);
+    assert.deepEqual(muirMoiraStorybookChildNodes(statement), [
+      muirMoiraStorybookField(statement, 'expression'),
+    ]);
   });
 });
 
 describe('descendants', () => {
   it('gives the node and every node below it', () => {
-    const [statement] = list(field(programOf('a;'), 'body'));
+    const [statement] = muirMoiraStorybookList(
+      muirMoiraStorybookField(programOf('a;'), 'body'),
+    );
 
-    assert.deepEqual(descendants(statement), [
+    assert.deepEqual(muirMoiraStorybookDescendants(statement), [
       statement,
-      field(statement, 'expression'),
+      muirMoiraStorybookField(statement, 'expression'),
     ]);
   });
 });
 
 describe('memberName', () => {
   it('gives undefined for a computed member whose key is a bigint, whose value Babel holds as a string', () => {
-    const [statement] = list(field(programOf('a[1n];'), 'body'));
+    const [statement] = muirMoiraStorybookList(
+      muirMoiraStorybookField(programOf('a[1n];'), 'body'),
+    );
 
-    assert.equal(memberName(field(statement, 'expression')), undefined);
+    assert.equal(
+      muirMoiraStorybookMemberName(
+        muirMoiraStorybookField(statement, 'expression'),
+      ),
+      undefined,
+    );
   });
 
   it('gives undefined for a JSX member, whose key is a JSX identifier', () => {
-    const member = descendants(
+    const member = muirMoiraStorybookDescendants(
       parse('<a.b />;', { plugins: ['jsx'] }).program,
-    ).find((node) => field(node, 'type') === 'JSXMemberExpression');
+    ).find(
+      (node) => muirMoiraStorybookField(node, 'type') === 'JSXMemberExpression',
+    );
 
-    assert.equal(memberName(member), undefined);
+    assert.equal(muirMoiraStorybookMemberName(member), undefined);
   });
 });
 
 describe('indexTree', () => {
   it('gives the parent of a node', () => {
     const program = programOf('call(a);');
-    const [statement] = list(field(program, 'body'));
+    const [statement] = muirMoiraStorybookList(
+      muirMoiraStorybookField(program, 'body'),
+    );
 
     assert.equal(
-      indexTree(program).parentOf(field(statement, 'expression')),
+      muirMoiraStorybookIndexTree(program).parentOf(
+        muirMoiraStorybookField(statement, 'expression'),
+      ),
       statement,
     );
   });
 
   it('gives the ancestors of a node, nearest first, up to the program', () => {
     const program = programOf('call(a);');
-    const [statement] = list(field(program, 'body'));
+    const [statement] = muirMoiraStorybookList(
+      muirMoiraStorybookField(program, 'body'),
+    );
 
     assert.deepEqual(
-      indexTree(program).ancestors(field(statement, 'expression')),
+      muirMoiraStorybookIndexTree(program).ancestors(
+        muirMoiraStorybookField(statement, 'expression'),
+      ),
       [statement, program],
     );
   });
@@ -91,7 +119,7 @@ describe('indexTree', () => {
   it('gives the statement list a statement stands in as the file was when it was indexed', () => {
     const program = programOf('first();', 'second();');
     const body = [...program.body];
-    const tree = indexTree(program);
+    const tree = muirMoiraStorybookIndexTree(program);
 
     program.body.splice(0, 1);
 
@@ -106,10 +134,17 @@ describe('indexTree', () => {
       '    second();',
       '}',
     );
-    const [switchCase] = list(field(program.body[0], 'cases'));
-    const consequent = list(field(switchCase, 'consequent'));
+    const [switchCase] = muirMoiraStorybookList(
+      muirMoiraStorybookField(program.body[0], 'cases'),
+    );
+    const consequent = muirMoiraStorybookList(
+      muirMoiraStorybookField(switchCase, 'consequent'),
+    );
 
-    assert.deepEqual(indexTree(program).listOf(consequent[1]), consequent);
+    assert.deepEqual(
+      muirMoiraStorybookIndexTree(program).listOf(consequent[1]),
+      consequent,
+    );
   });
 
   it("gives a static block's statements as the list a statement in the block stands in", () => {
@@ -120,22 +155,28 @@ describe('indexTree', () => {
       '  }',
       '}',
     );
-    const block = descendants(program).find(
-      (node) => field(node, 'type') === 'StaticBlock',
+    const block = muirMoiraStorybookDescendants(program).find(
+      (node) => muirMoiraStorybookField(node, 'type') === 'StaticBlock',
     );
-    const body = list(field(block, 'body'));
+    const body = muirMoiraStorybookList(muirMoiraStorybookField(block, 'body'));
 
-    assert.deepEqual(indexTree(program).listOf(body[0]), body);
+    assert.deepEqual(
+      muirMoiraStorybookIndexTree(program).listOf(body[0]),
+      body,
+    );
   });
 
   it("gives a namespace's statements as the list a statement in the namespace stands in", () => {
     const program = programOf('namespace N {', '  first();', '}');
-    const block = descendants(program).find(
-      (node) => field(node, 'type') === 'TSModuleBlock',
+    const block = muirMoiraStorybookDescendants(program).find(
+      (node) => muirMoiraStorybookField(node, 'type') === 'TSModuleBlock',
     );
-    const body = list(field(block, 'body'));
+    const body = muirMoiraStorybookList(muirMoiraStorybookField(block, 'body'));
 
-    assert.deepEqual(indexTree(program).listOf(body[0]), body);
+    assert.deepEqual(
+      muirMoiraStorybookIndexTree(program).listOf(body[0]),
+      body,
+    );
   });
 });
 
@@ -184,7 +225,9 @@ describe('equivalent', () => {
     ).program.body;
     assert.deepEqual(
       statements.map((statement) =>
-        statements.findIndex((other) => equivalent(other, statement)),
+        statements.findIndex((other) =>
+          muirMoiraStorybookEquivalent(other, statement),
+        ),
       ),
       [
         0, 0, 2, 3, 4, 4, 6, 7, 7, 9, 10, 11, 10, 13, 14, 14, 14, 17, 18, 19,
@@ -194,17 +237,17 @@ describe('equivalent', () => {
   });
 
   it('pairs calls whose empty argument lists hold different comments, as Babel does', () => {
-    const [first, second] = list(
-      field(programOf('f(/* a */);', 'f(/* b */);'), 'body'),
+    const [first, second] = muirMoiraStorybookList(
+      muirMoiraStorybookField(programOf('f(/* a */);', 'f(/* b */);'), 'body'),
     );
 
-    assert.equal(equivalent(first, second), true);
+    assert.equal(muirMoiraStorybookEquivalent(first, second), true);
   });
 });
 
 describe('equivalenceTokens', () => {
   it('gives each node outside the roots a token no other value shares, whatever the order of the calls', () => {
-    const tokenOf = equivalenceTokens([]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([]);
     const tokens = [
       tokenOf({ type: 'A' }),
       tokenOf([]),
@@ -216,19 +259,19 @@ describe('equivalenceTokens', () => {
   });
 
   it('gives plain objects with the same fields in another order the same token', () => {
-    const tokenOf = equivalenceTokens([]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([]);
 
     assert.equal(tokenOf({ a: 1, b: 2 }), tokenOf({ b: 2, a: 1 }));
   });
 
   it('gives a plain object with an undefined field the token of the object without it', () => {
-    const tokenOf = equivalenceTokens([]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([]);
 
     assert.equal(tokenOf({ a: 1, b: undefined }), tokenOf({ a: 1 }));
   });
 
   it('gives plain objects whose fields differ different tokens', () => {
-    const tokenOf = equivalenceTokens([]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([]);
 
     assert.notEqual(tokenOf({ a: 1 }), tokenOf({ a: 2 }));
   });
@@ -236,23 +279,26 @@ describe('equivalenceTokens', () => {
   it('gives nodes with the same fields in another order the same token', () => {
     const first = { type: 'A', x: 1, y: 2 };
     const second = { type: 'A', y: 2, x: 1 };
-    const tokenOf = equivalenceTokens([first, second]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([first, second]);
 
     assert.equal(tokenOf(first), tokenOf(second));
   });
 
   it('gives a node with an undefined field the token of the node without it', () => {
-    assert.equal(equivalent({ type: 'A', x: undefined }, { type: 'A' }), true);
+    assert.equal(
+      muirMoiraStorybookEquivalent({ type: 'A', x: undefined }, { type: 'A' }),
+      true,
+    );
   });
 
   it('gives two NaNs different tokens, as NaN is not equal to itself', () => {
-    const tokenOf = equivalenceTokens([]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([]);
 
     assert.notEqual(tokenOf(NaN), tokenOf(NaN));
   });
 
   it('gives two functions with the same source different tokens', () => {
-    const tokenOf = equivalenceTokens([]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([]);
 
     assert.notEqual(
       tokenOf(() => undefined),
@@ -261,7 +307,7 @@ describe('equivalenceTokens', () => {
   });
 
   it('gives the same function the same token wherever it stands', () => {
-    const tokenOf = equivalenceTokens([]);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([]);
     const callback = (): undefined => undefined;
 
     assert.equal(tokenOf({ a: callback }), tokenOf({ a: callback }));

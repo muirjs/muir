@@ -13,12 +13,12 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import { lzOwnDryRun } from '../../src/dry-run-store.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import { muirSirynNodeTestOwnDryRun } from '../../src/dry-run-store.ts';
 
 // Run here, outside any test, as the runner module does when it loads: the processes these tests start leave out the
 // runner's variables and report no coverage, so the runner credits the exit listener's mutants to this file's tests.
-lzOwnDryRun();
+muirSirynNodeTestOwnDryRun();
 
 const src = (file: string) =>
   JSON.stringify(
@@ -34,8 +34,8 @@ function strykerMain(end: string): string {
     "import { mkdirSync, writeFileSync } from 'node:fs';",
     "import { join } from 'node:path';",
     `await import(${src('index.ts')});`,
-    `const { lzDryRunDir } = await import(${src('dry-run-store.ts')});`,
-    'const dir = lzDryRunDir(process.pid);',
+    `const { muirSirynNodeTestDryRunDir } = await import(${src('dry-run-store.ts')});`,
+    'const dir = muirSirynNodeTestDryRunDir(process.pid);',
     'mkdirSync(dir);',
     "writeFileSync(join(dir, 'peak'), '100');",
     'process.stdout.write(dir);',
@@ -45,11 +45,11 @@ function strykerMain(end: string): string {
 
 /** Builds a runner, as a test file under `node --test` does, and runs a dry run that records each file's peak. */
 const dryRunInOwnProcess = [
-  `const { LzNodeTestTestRunner } = await import(${src('index.ts')});`,
+  `const { MuirSirynNodeTestTestRunner } = await import(${src('index.ts')});`,
   "const log = Object.fromEntries(['trace', 'debug', 'info', 'warn', 'error', 'fatal'].map((level) => [level, () => {}]));",
   'Object.assign(log, { isTraceEnabled: () => false, isDebugEnabled: () => false, isInfoEnabled: () => false });',
-  'const runner = new LzNodeTestTestRunner(',
-  "  { allowEmpty: false, testFiles: [], checkers: [], timeoutFactor: 1.5, lzNodeTest: { testFiles: ['a.test.mjs'] } },",
+  'const runner = new MuirSirynNodeTestTestRunner(',
+  "  { allowEmpty: false, testFiles: [], checkers: [], timeoutFactor: 1.5, muirSirynNodeTest: { testFiles: ['a.test.mjs'] } },",
   '  log,',
   ');',
   'await runner.init();',
@@ -74,7 +74,7 @@ const strykerMainWithWorker = [
   "  { encoding: 'utf8', windowsHide: true },",
   ');',
   'const stores = readdirSync(tmpdir())',
-  "  .filter((name) => name.startsWith('lz-node-test-dry-run-'))",
+  "  .filter((name) => name.startsWith('muir-node-test-dry-run-'))",
   '  .flatMap((name) => [',
   "    name.replace(`-${process.pid}-`, '-<main>-'),",
   "    ...readdirSync(join(tmpdir(), name)).map((record) => record.replace(/^[0-9a-f]{64}/, '<file>')).sort(),",
@@ -84,7 +84,7 @@ const strykerMainWithWorker = [
 
 function ownEnv(tmp: string): NodeJS.ProcessEnv {
   const inherited = Object.entries(process.env).filter(
-    ([key]) => !key.startsWith('LZ_STRYKER_NODE_TEST_'),
+    ([key]) => !key.startsWith('MUIR_SIRYN_NODE_TEST_'),
   );
 
   return { ...Object.fromEntries(inherited), TMP: tmp, TEMP: tmp, TMPDIR: tmp };
@@ -92,13 +92,13 @@ function ownEnv(tmp: string): NodeJS.ProcessEnv {
 
 function storesIn(dir: string): string[] {
   return readdirSync(dir).filter((name) =>
-    name.startsWith('lz-node-test-dry-run-'),
+    name.startsWith('muir-node-test-dry-run-'),
   );
 }
 
 /** A temporary directory with a project of one passing test file, for a process to run in with that TEMP. */
 function projectIn(t: TestContext): { tmp: string; project: string } {
-  const tmp = mkdtempSync(join(tmpdir(), 'lz-dry-run-exit-'));
+  const tmp = mkdtempSync(join(tmpdir(), 'muir-dry-run-exit-'));
   t.after(() => {
     rmSync(tmp, { recursive: true, force: true });
   });
@@ -148,17 +148,17 @@ describe("the runner module in Stryker's main process", () => {
     );
     assert.equal(
       child.stdout,
-      'complete lz-node-test-dry-run-<main>-store <file>.files <file>.outside-tests <file>.peak <file>.start-up',
+      'complete muir-node-test-dry-run-<main>-store <file>.files <file>.outside-tests <file>.peak <file>.start-up',
       child.stderr,
     );
     assert.deepEqual(storesIn(tmp), []);
   });
 
-  lzTestFor<readonly [string, string]>([
+  muirTestFor<readonly [string, string]>([
     ['ends by itself', ''],
     ['calls process.exit', 'process.exit(1);'],
   ])('removes the dry-run store when the process %s', ([, end], t) => {
-    const tmp = mkdtempSync(join(tmpdir(), 'lz-dry-run-exit-'));
+    const tmp = mkdtempSync(join(tmpdir(), 'muir-dry-run-exit-'));
     t.after(() => {
       rmSync(tmp, { recursive: true, force: true });
     });

@@ -1,62 +1,78 @@
 import {
-  csfFile,
-  defaultExport,
-  definitionTimeStubs,
-  field,
-  isRecord,
-  isStringArray,
-  isTemplateBind,
-  list,
-  mayImportItself,
-  namedExports,
-  storyArgument,
-  type DefinitionTimeStub,
-  topLevelBindings,
-  unchangedBindings,
-  unwrap,
-  withoutBinding,
+  muirMoiraStorybookCsfFile,
+  muirMoiraStorybookDefaultExport,
+  muirMoiraStorybookDefinitionTimeStubs,
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookIsStringArray,
+  muirMoiraStorybookIsTemplateBind,
+  muirMoiraStorybookList,
+  muirMoiraStorybookMayImportItself,
+  muirMoiraStorybookNamedExports,
+  muirMoiraStorybookStoryArgument,
+  type MuirMoiraStorybookDefinitionTimeStub,
+  muirMoiraStorybookTopLevelBindings,
+  muirMoiraStorybookUnchangedBindings,
+  muirMoiraStorybookUnwrap,
+  muirMoiraStorybookWithoutBinding,
 } from '@muirjs/moira-storybook';
 import { combineTags } from 'storybook/internal/csf';
 
-import { storyIndex } from './story-index.ts';
+import { muirShadowcatStorybookStoryIndex } from './story-index.ts';
 
-export type ResetBranch = 'reset' | 'clear' | 'restore' | 'none' | 'unknown';
+export type MuirShadowcatStorybookResetBranch =
+  | 'reset'
+  | 'clear'
+  | 'restore'
+  | 'none'
+  | 'unknown';
 
-export type StubVerdict = 'kept' | 'erased' | 'order-dependent' | 'unknown';
+export type MuirShadowcatStorybookStubVerdict =
+  | 'kept'
+  | 'erased'
+  | 'order-dependent'
+  | 'unknown';
 
-export interface StoryReset {
+export interface MuirShadowcatStorybookStoryReset {
   readonly name: string;
-  readonly branch: ResetBranch;
+  readonly branch: MuirShadowcatStorybookResetBranch;
 }
 
-export interface ClassifiedStub extends DefinitionTimeStub {
-  readonly verdict: StubVerdict;
+export interface MuirShadowcatStorybookClassifiedStub
+  extends MuirMoiraStorybookDefinitionTimeStub {
+  readonly verdict: MuirShadowcatStorybookStubVerdict;
 }
 
-export interface StubClassification {
-  readonly stories: readonly StoryReset[];
-  readonly stubs: readonly ClassifiedStub[];
+export interface MuirShadowcatStorybookStubClassification {
+  readonly stories: readonly MuirShadowcatStorybookStoryReset[];
+  readonly stubs: readonly MuirShadowcatStorybookClassifiedStub[];
 }
 
-export type ResetSetting = boolean | 'unreadable';
+export type MuirShadowcatStorybookResetSetting = boolean | 'unreadable';
 
-export type ResetSettings = Readonly<Partial<Record<ResetKey, ResetSetting>>>;
+export type MuirShadowcatStorybookResetSettings = Readonly<
+  Partial<Record<ResetKey, MuirShadowcatStorybookResetSetting>>
+>;
 
 /** In the order Storybook 10.6.5's mock-reset loader checks them. */
 const resetKeys = ['mockReset', 'clearMocks', 'restoreMocks'] as const;
 
 type ResetKey = (typeof resetKeys)[number];
 
-export const unreadableSettings: Readonly<Record<ResetKey, ResetSetting>> = {
+export const muirShadowcatStorybookUnreadableSettings: Readonly<
+  Record<ResetKey, MuirShadowcatStorybookResetSetting>
+> = {
   mockReset: 'unreadable',
   clearMocks: 'unreadable',
   restoreMocks: 'unreadable',
 };
 
-export function readPreviewTest(program: unknown): ResetSettings {
-  const body = list(field(program, 'body'));
-  const bindings = topLevelBindings(body);
-  const exported = defaultExport(body);
+export function muirShadowcatStorybookReadPreviewTest(
+  program: unknown,
+): MuirShadowcatStorybookResetSettings {
+  const body = muirMoiraStorybookList(muirMoiraStorybookField(program, 'body'));
+  const bindings = muirMoiraStorybookTopLevelBindings(body);
+  const exported = muirMoiraStorybookDefaultExport(body);
 
   if (exported !== undefined) {
     return testSettings(
@@ -64,7 +80,7 @@ export function readPreviewTest(program: unknown): ResetSettings {
     );
   }
 
-  const parameters = namedExports(body, bindings).find(
+  const parameters = muirMoiraStorybookNamedExports(body, bindings).find(
     ({ name, typeOnly }) => name === 'parameters' && !typeOnly,
   );
 
@@ -74,73 +90,81 @@ export function readPreviewTest(program: unknown): ResetSettings {
 }
 
 function definePreviewArgument(node: unknown): unknown {
-  const current = unwrap(node);
+  const current = muirMoiraStorybookUnwrap(node);
 
-  return field(current, 'type') === 'CallExpression' &&
-    field(current, 'callee', 'name') === 'definePreview'
-    ? field(current, 'arguments', '0')
+  return muirMoiraStorybookField(current, 'type') === 'CallExpression' &&
+    muirMoiraStorybookField(current, 'callee', 'name') === 'definePreview'
+    ? muirMoiraStorybookField(current, 'arguments', '0')
     : current;
 }
 
-function testSettings(parameters: unknown): ResetSettings {
+function testSettings(
+  parameters: unknown,
+): MuirShadowcatStorybookResetSettings {
   const test = member(parameters, 'test');
 
   // Storybook 10.6.5 combineParameters lets any value that is not a plain object replace an object instead of merging into it.
-  if (test !== undefined && (!isRecord(test) || Array.isArray(test))) {
-    return unreadableSettings;
+  if (
+    test !== undefined &&
+    (!muirMoiraStorybookIsRecord(test) || Array.isArray(test))
+  ) {
+    return muirShadowcatStorybookUnreadableSettings;
   }
 
-  return resetKeys.reduce<Partial<Record<ResetKey, ResetSetting>>>(
-    (settings, key) => {
-      const value = member(test, key);
+  return resetKeys.reduce<
+    Partial<Record<ResetKey, MuirShadowcatStorybookResetSetting>>
+  >((settings, key) => {
+    const value = member(test, key);
 
-      if (value !== undefined) {
-        settings[key] = typeof value === 'boolean' ? value : 'unreadable';
-      }
+    if (value !== undefined) {
+      settings[key] = typeof value === 'boolean' ? value : 'unreadable';
+    }
 
-      return settings;
-    },
-    {},
-  );
+    return settings;
+  }, {});
 }
 
 /** The tag filter of Storybook's Vitest plugin, and the preview's tags that every story starts from. */
-export interface TestTags {
+export interface MuirShadowcatStorybookTestTags {
   readonly previewTags: readonly string[];
   readonly include: readonly string[];
   readonly exclude: readonly string[];
   readonly skip: readonly string[];
 }
 
-export type TagFilter = Omit<TestTags, 'previewTags'>;
+export type MuirShadowcatStorybookTagFilter = Omit<
+  MuirShadowcatStorybookTestTags,
+  'previewTags'
+>;
 
-export const defaultTestTags: TagFilter = {
-  include: ['test'],
-  exclude: [],
-  skip: [],
-};
+export const muirShadowcatStorybookDefaultTestTags: MuirShadowcatStorybookTagFilter =
+  {
+    include: ['test'],
+    exclude: [],
+    skip: [],
+  };
 
-export interface StoryFile {
+export interface MuirShadowcatStorybookStoryFile {
   readonly program: unknown;
   readonly code: string;
   readonly fileName: string;
 }
 
-export function classifyStubs(
-  { program, code, fileName }: StoryFile,
-  previewTest: ResetSettings,
-  testTags: TestTags,
-): StubClassification {
-  const body = list(field(program, 'body'));
-  const topLevel = topLevelBindings(body);
-  const index = storyIndex(code, fileName);
+export function muirShadowcatStorybookClassifyStubs(
+  { program, code, fileName }: MuirShadowcatStorybookStoryFile,
+  previewTest: MuirShadowcatStorybookResetSettings,
+  testTags: MuirShadowcatStorybookTestTags,
+): MuirShadowcatStorybookStubClassification {
+  const body = muirMoiraStorybookList(muirMoiraStorybookField(program, 'body'));
+  const topLevel = muirMoiraStorybookTopLevelBindings(body);
+  const index = muirShadowcatStorybookStoryIndex(code, fileName);
   const {
     metas: [meta],
     stories: exported,
     written: writtenNames,
-  } = csfFile(body, topLevel, index);
-  const bindings = unchangedBindings(topLevel, writtenNames);
-  const isSelfImported = mayImportItself(body, fileName);
+  } = muirMoiraStorybookCsfFile(body, topLevel, index);
+  const bindings = muirMoiraStorybookUnchangedBindings(topLevel, writtenNames);
+  const isSelfImported = muirMoiraStorybookMayImportItself(body, fileName);
   const metaValue = evaluate(meta?.object, bindings);
   const metaTest = testSettings(member(metaValue, 'parameters'));
   const declared = exported
@@ -165,7 +189,9 @@ export function classifyStubs(
               assignment.path,
               evaluate(assignment.value, bindings),
             ),
-          extendsBase ? unknownValue : evaluate(storyArgument(init), bindings),
+          extendsBase
+            ? unknownValue
+            : evaluate(muirMoiraStorybookStoryArgument(init), bindings),
         );
         const isSkipped =
           referencedElsewhere || isSelfImported
@@ -212,7 +238,7 @@ export function classifyStubs(
       },
     );
   const stories = declared.map(({ story }) => story);
-  const stubs = definitionTimeStubs(program).map((stub) => {
+  const stubs = muirMoiraStorybookDefinitionTimeStubs(program).map((stub) => {
     const owner = declared.findIndex(({ init }) => contains(init, stub.start));
     const users = owner === -1 ? stories.map((_, index) => index) : [owner];
 
@@ -224,7 +250,7 @@ export function classifyStubs(
 
 /** Storybook 10.6.5 runs each `.test()` call on a factory story as a test of its own, so one of them can run when the story's own test is skipped, and with parameters of its own. */
 function storySkipped(
-  testTags: TestTags,
+  testTags: MuirShadowcatStorybookTestTags,
   metaTags: unknown,
   story: unknown,
   testOptions: readonly unknown[],
@@ -252,7 +278,7 @@ function storySkipped(
 
 /** Storybook 10.6.5 test-utils.ts `testStory` checks skip tags on the tags prepareStory.ts composes at run time, which hold no play-fn. */
 function skipped(
-  { previewTags, skip }: TestTags,
+  { previewTags, skip }: MuirShadowcatStorybookTestTags,
   metaTags: unknown,
   story: readonly string[] | undefined,
 ): boolean | 'unknown' {
@@ -289,12 +315,12 @@ function tagList(value: unknown): readonly string[] | undefined {
     return [];
   }
 
-  return isStringArray(value) ? value : undefined;
+  return muirMoiraStorybookIsStringArray(value) ? value : undefined;
 }
 
 /** Storybook 10.6.5 vitest-plugin transformer.ts `isValidTest`. */
 function isTestedByTags(
-  { previewTags, include, exclude }: TestTags,
+  { previewTags, include, exclude }: MuirShadowcatStorybookTestTags,
   fileTags: readonly string[],
 ): boolean {
   const tags = combineTags('test', 'dev', ...previewTags, ...fileTags);
@@ -320,15 +346,15 @@ function written(
     return unknownValue;
   }
 
-  const base = isRecord(object) ? object : {};
+  const base = muirMoiraStorybookIsRecord(object) ? object : {};
 
   return { ...base, [key]: written(member(base, key), rest, value) };
 }
 
 function siteVerdict(
-  stories: readonly StoryReset[],
+  stories: readonly MuirShadowcatStorybookStoryReset[],
   users: readonly number[],
-): StubVerdict {
+): MuirShadowcatStorybookStubVerdict {
   const firstEraser = stories.findIndex(({ branch }) => erases(branch));
 
   if (firstEraser === -1) {
@@ -342,13 +368,13 @@ function siteVerdict(
     : 'order-dependent';
 }
 
-function erases(branch: ResetBranch): boolean {
+function erases(branch: MuirShadowcatStorybookResetBranch): boolean {
   return branch === 'reset' || branch === 'restore';
 }
 
 function contains(node: unknown, position: number): boolean {
-  const start = field(node, 'start');
-  const end = field(node, 'end');
+  const start = muirMoiraStorybookField(node, 'start');
+  const end = muirMoiraStorybookField(node, 'end');
 
   return (
     typeof start === 'number' &&
@@ -359,22 +385,23 @@ function contains(node: unknown, position: number): boolean {
 }
 
 const decisiveSettings: Readonly<
-  Record<ResetKey, readonly [boolean, ResetBranch]>
+  Record<ResetKey, readonly [boolean, MuirShadowcatStorybookResetBranch]>
 > = {
   mockReset: [true, 'reset'],
   clearMocks: [true, 'clear'],
   restoreMocks: [false, 'none'],
 };
 
-function branchOf(levels: readonly ResetSettings[]): ResetBranch {
+function branchOf(
+  levels: readonly MuirShadowcatStorybookResetSettings[],
+): MuirShadowcatStorybookResetBranch {
   return (
     resetKeys
       .map((key) => {
         const [decisive, branch] = decisiveSettings[key];
-        const setting = levels.reduce<ResetSetting | undefined>(
-          (value, level) => level[key] ?? value,
-          undefined,
-        );
+        const setting = levels.reduce<
+          MuirShadowcatStorybookResetSetting | undefined
+        >((value, level) => level[key] ?? value, undefined);
 
         if (setting === 'unreadable') {
           return 'unknown';
@@ -390,11 +417,11 @@ function evaluate(
   node: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
-  const current = unwrap(node);
+  const current = muirMoiraStorybookUnwrap(node);
 
-  switch (field(current, 'type')) {
+  switch (muirMoiraStorybookField(current, 'type')) {
     case 'BooleanLiteral': {
-      return field(current, 'value');
+      return muirMoiraStorybookField(current, 'value');
     }
     case 'FunctionDeclaration':
     case 'FunctionExpression':
@@ -402,31 +429,38 @@ function evaluate(
       return undefined;
     }
     case 'CallExpression': {
-      return isTemplateBind(current) ? undefined : unknownValue;
+      return muirMoiraStorybookIsTemplateBind(current)
+        ? undefined
+        : unknownValue;
     }
     case 'Identifier': {
-      const name = field(current, 'name');
+      const name = muirMoiraStorybookField(current, 'name');
 
       if (name === 'undefined') {
         return undefined;
       }
 
       return typeof name === 'string' && bindings.has(name)
-        ? evaluate(bindings.get(name), withoutBinding(bindings, name))
+        ? evaluate(
+            bindings.get(name),
+            muirMoiraStorybookWithoutBinding(bindings, name),
+          )
         : unknownValue;
     }
     case 'ArrayExpression': {
-      return list(field(current, 'elements')).map((element) =>
-        field(element, 'type') === 'StringLiteral'
-          ? field(element, 'value')
+      return muirMoiraStorybookList(
+        muirMoiraStorybookField(current, 'elements'),
+      ).map((element) =>
+        muirMoiraStorybookField(element, 'type') === 'StringLiteral'
+          ? muirMoiraStorybookField(element, 'value')
           : unknownValue,
       );
     }
     case 'ObjectExpression': {
       return spread(
-        list(field(current, 'properties')).map((property) =>
-          objectPart(property, bindings),
-        ),
+        muirMoiraStorybookList(
+          muirMoiraStorybookField(current, 'properties'),
+        ).map((property) => objectPart(property, bindings)),
       );
     }
     default: {
@@ -438,7 +472,7 @@ function evaluate(
 function spread(parts: readonly unknown[]): unknown {
   return parts.reduce<Readonly<Record<PropertyKey, unknown>>>(
     (object, part) => {
-      if (!isRecord(part)) {
+      if (!muirMoiraStorybookIsRecord(part)) {
         return object;
       }
 
@@ -452,17 +486,19 @@ function objectPart(
   property: unknown,
   bindings: ReadonlyMap<string, unknown>,
 ): unknown {
-  if (field(property, 'type') === 'SpreadElement') {
-    return evaluate(field(property, 'argument'), bindings);
+  if (muirMoiraStorybookField(property, 'type') === 'SpreadElement') {
+    return evaluate(muirMoiraStorybookField(property, 'argument'), bindings);
   }
 
-  if (field(property, 'computed') === true) {
+  if (muirMoiraStorybookField(property, 'computed') === true) {
     return unknownValue;
   }
 
   return {
-    [String(field(property, 'key', 'name') ?? field(property, 'key', 'value'))]:
-      evaluate(field(property, 'value'), bindings),
+    [String(
+      muirMoiraStorybookField(property, 'key', 'name') ??
+        muirMoiraStorybookField(property, 'key', 'value'),
+    )]: evaluate(muirMoiraStorybookField(property, 'value'), bindings),
   };
 }
 
@@ -472,12 +508,12 @@ const unknownValue: Readonly<Record<symbol, true>> = { [unknownRest]: true };
 
 function member(value: unknown, key: string): unknown {
   if (
-    isRecord(value) &&
+    muirMoiraStorybookIsRecord(value) &&
     !Object.hasOwn(value, key) &&
     Object.hasOwn(value, unknownRest)
   ) {
     return unknownValue;
   }
 
-  return field(value, key);
+  return muirMoiraStorybookField(value, key);
 }

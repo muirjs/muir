@@ -13,7 +13,7 @@ one with a sample.
 _Avoid_: operator, mutation operator, rule
 
 **Mutator name**:
-The letters-only name with the `Lz` prefix, such as `LzNodeTimerDelay`, that configurations, `excludedMutations` and
+The letters-only name with its package's `Muir<Mutant><Technology>` prefix, such as `MuirProteusNodeTimerDelay`, that configurations, `excludedMutations` and
 Stryker disable comments use.
 _Avoid_: the camelCase export name
 

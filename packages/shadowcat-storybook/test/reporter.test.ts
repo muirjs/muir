@@ -14,14 +14,20 @@ import { describe, it, type TestContext } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
-  appendRecord,
-  isRecord,
-  recordVariable,
+  muirMoiraStorybookAppendRecord,
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookRecordVariable,
 } from '@muirjs/moira-storybook';
 import { PlanKind, type schema } from '@stryker-mutator/api/core';
 
-import { storybookReporter, storyFileFindings } from '../src/reporter.ts';
-import { describeVerdict, spyStubReason } from '../src/stub-verdict.ts';
+import {
+  muirShadowcatStorybookReporter,
+  muirShadowcatStorybookStoryFileFindings,
+} from '../src/reporter.ts';
+import {
+  muirShadowcatStorybookDescribeVerdict,
+  muirShadowcatStorybookSpyStubReason,
+} from '../src/stub-verdict.ts';
 import { project } from './support/storybook-project.ts';
 import recorded from './fixtures/reporter/mutation.json' with { type: 'json' };
 
@@ -134,21 +140,21 @@ function stubMutant(
   };
 }
 
-/** A `LzStorybookSpyStub` mutant, which removes the stub at `columns` on line 3. */
+/** A `MuirProteusStorybookTestSpyStub` mutant, which removes the stub at `columns` on line 3. */
 function removalMutant(
   status: StubMutantStatus,
   columns: readonly [number, number] = stubColumns,
 ) {
-  return stubMutant('LzStorybookSpyStub', 'fn()', status, columns);
+  return stubMutant('MuirProteusStorybookTestSpyStub', 'fn()', status, columns);
 }
 
-/** A `LzStorybookSpyStubOutcome` mutant, which makes the stub at `columns` on line 3 reject. */
+/** A `MuirProteusStorybookTestSpyStubOutcome` mutant, which makes the stub at `columns` on line 3 reject. */
 function outcomeMutant(
   status: StubMutantStatus,
   columns: readonly [number, number] = stubColumns,
 ) {
   return stubMutant(
-    'LzStorybookSpyStubOutcome',
+    'MuirProteusStorybookTestSpyStubOutcome',
     'fn().mockRejectedValue(new Error("Stryker"))',
     status,
     columns,
@@ -158,7 +164,7 @@ function outcomeMutant(
 /** The file and line of each finding with `verdict`. */
 function linesWith(findings: readonly unknown[], verdict: string) {
   return findings
-    .filter(isRecord)
+    .filter(muirMoiraStorybookIsRecord)
     .filter((finding) => finding['verdict'] === verdict)
     .map((finding) => [finding['file'], finding['line']]);
 }
@@ -171,7 +177,7 @@ function ignoredAt(source: string, text: string, mutatorName: string) {
   return {
     mutatorName,
     status: 'Ignored',
-    statusReason: spyStubReason('erased'),
+    statusReason: muirShadowcatStorybookSpyStubReason('erased'),
     location: {
       start: { line, column },
       end: { line, column: column + text.length },
@@ -194,13 +200,13 @@ const shapedPlay = [
   '',
 ].join('\n');
 
-/** The LzStorybookInteraction mutant of the statement on `line` of `shapedPlay`, as the report gives it. */
+/** The MuirProteusStorybookTestInteraction mutant of the statement on `line` of `shapedPlay`, as the report gives it. */
 function interactionMutant(line: number, status: schema.MutantStatus) {
   const text = (shapedPlay.split('\n')[line - 1] ?? '').trim();
   const column = (shapedPlay.split('\n')[line - 1] ?? '').indexOf(text) + 1;
 
   return {
-    mutatorName: 'LzStorybookInteraction',
+    mutatorName: 'MuirProteusStorybookTestInteraction',
     status,
     location: {
       start: { line, column },
@@ -235,7 +241,7 @@ function runPlan(fileName: string, line: number, isStatic = true) {
     netTime: 362,
     mutant: {
       fileName,
-      mutatorName: 'LzStorybookSpyStub',
+      mutatorName: 'MuirProteusStorybookTestSpyStub',
       static: isStatic,
       location: { start: { line, column: 1 }, end: { line, column: 2 } },
     },
@@ -249,23 +255,23 @@ function setup(
   root = fixtures,
 ) {
   const previousDir = process.cwd();
-  const projectDir = mkdtempSync(join(tmpdir(), 'lz-storybook-reporter-'));
-  const previousRecord = process.env[recordVariable];
+  const projectDir = mkdtempSync(join(tmpdir(), 'muir-storybook-reporter-'));
+  const previousRecord = process.env[muirMoiraStorybookRecordVariable];
   process.chdir(projectDir);
   t.after(() => {
     process.chdir(previousDir);
 
     if (previousRecord === undefined) {
-      delete process.env[recordVariable];
+      delete process.env[muirMoiraStorybookRecordVariable];
     } else {
-      process.env[recordVariable] = previousRecord;
+      process.env[muirMoiraStorybookRecordVariable] = previousRecord;
     }
   });
   const lines: string[] = [];
-  const reporter = storybookReporter(
+  const reporter = muirShadowcatStorybookReporter(
     {
       ...options,
-      lzStorybook: { configDir: join(root, fixture, '.storybook') },
+      muirShadowcatStorybook: { configDir: join(root, fixture, '.storybook') },
     },
     {
       info: (message) => lines.push(`info: ${message}`),
@@ -275,7 +281,10 @@ function setup(
 
   const written = (): unknown =>
     JSON.parse(
-      readFileSync(join(projectDir, 'reports', 'lz-storybook.json'), 'utf8'),
+      readFileSync(
+        join(projectDir, 'reports', 'muir-shadowcat-storybook.json'),
+        'utf8',
+      ),
     );
 
   return {
@@ -287,7 +296,10 @@ function setup(
     findings: (): readonly unknown[] => {
       const report = written();
 
-      if (!isRecord(report) || !Array.isArray(report['findings'])) {
+      if (
+        !muirMoiraStorybookIsRecord(report) ||
+        !Array.isArray(report['findings'])
+      ) {
         throw new Error(
           `The report holds no findings array: ${JSON.stringify(report)}`,
         );
@@ -300,7 +312,7 @@ function setup(
 
 /** Storybook finds no story file from a working directory on another drive than the main file's globs, so the main file's fixture goes beside the temporary working directory. */
 function copiedFixture(t: TestContext): string {
-  const root = mkdtempSync(join(tmpdir(), 'lz-storybook-reporter-fixture-'));
+  const root = mkdtempSync(join(tmpdir(), 'muir-storybook-reporter-fixture-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   cpSync(join(fixtures, 'main-cts'), join(root, 'main-cts'), {
     recursive: true,
@@ -328,14 +340,16 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(
       findings().filter(
-        (finding) => isRecord(finding) && finding['verdict'] === 'erased',
+        (finding) =>
+          muirMoiraStorybookIsRecord(finding) &&
+          finding['verdict'] === 'erased',
       ),
       [
         {
           file: 'src/SpyStubDefault.stories.tsx',
           line: 15,
           method: 'mockReturnValue',
-          ...describeVerdict('erased'),
+          ...muirShadowcatStorybookDescribeVerdict('erased'),
         },
       ],
     );
@@ -349,22 +363,22 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       findings().filter(
         (finding) =>
-          isRecord(finding) &&
+          muirMoiraStorybookIsRecord(finding) &&
           (finding['verdict'] === 'order-dependent' ||
             finding['verdict'] === 'unknown'),
       ),
       [
         {
-          file: 'src/lzsb/Imported.stories.tsx',
+          file: 'src/muirsb/Imported.stories.tsx',
           line: 14,
           method: 'mockReturnValue',
-          ...describeVerdict('unknown'),
+          ...muirShadowcatStorybookDescribeVerdict('unknown'),
         },
         {
-          file: 'src/lzsb/OrderDep.stories.tsx',
+          file: 'src/muirsb/OrderDep.stories.tsx',
           line: 13,
           method: 'mockReturnValue',
-          ...describeVerdict('order-dependent'),
+          ...muirShadowcatStorybookDescribeVerdict('order-dependent'),
         },
       ],
     );
@@ -391,7 +405,7 @@ describe('storybookReporter', () => {
         file: 'src/Literal.stories.tsx',
         line: 4,
         method: 'mockReturnValue',
-        ...describeVerdict('erased'),
+        ...muirShadowcatStorybookDescribeVerdict('erased'),
       },
     ]);
   });
@@ -419,7 +433,7 @@ describe('storybookReporter', () => {
         file: 'src/Meta.stories.tsx',
         line: 3,
         method: 'mockReturnValue',
-        ...describeVerdict('erased'),
+        ...muirShadowcatStorybookDescribeVerdict('erased'),
       },
     ]);
   });
@@ -428,7 +442,7 @@ describe('storybookReporter', () => {
     const { reporter, findings } = setup(t);
     const source = literalStub.replace(
       '  args:',
-      '  // Stryker disable next-line LzStorybookSpyStub\n  args:',
+      '  // Stryker disable next-line MuirProteusStorybookTestSpyStub\n  args:',
     );
 
     reporter.onMutationTestReportReady({
@@ -445,7 +459,7 @@ describe('storybookReporter', () => {
 
   it('leaves out a reported stub when the spy stub mutator is in excludedMutations', (t) => {
     const { reporter, findings } = setup(t, 'no-main', {
-      mutator: { excludedMutations: ['LzStorybookSpyStub'] },
+      mutator: { excludedMutations: ['MuirProteusStorybookTestSpyStub'] },
     });
 
     reporter.onMutationTestReportReady({
@@ -467,7 +481,9 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(
       findings().filter(
-        (finding) => isRecord(finding) && finding['verdict'] === 'unchecked',
+        (finding) =>
+          muirMoiraStorybookIsRecord(finding) &&
+          finding['verdict'] === 'unchecked',
       ),
       [
         {
@@ -482,7 +498,7 @@ describe('storybookReporter', () => {
     );
   });
 
-  it("reports no unchecked and no outcome-unchecked stub for a Survived LzStorybookSpyStubOutcome mutant alone, as the stub's removal is what tells whether a check reads it", (t) => {
+  it("reports no unchecked and no outcome-unchecked stub for a Survived MuirProteusStorybookTestSpyStubOutcome mutant alone, as the stub's removal is what tells whether a check reads it", (t) => {
     const { reporter, findings } = setup(t);
 
     reporter.onMutationTestReportReady({
@@ -503,7 +519,7 @@ describe('storybookReporter', () => {
     );
   });
 
-  it('reports an outcome-unchecked stub where a LzStorybookSpyStubOutcome mutant survived and the removal of the stub was killed', (t) => {
+  it('reports an outcome-unchecked stub where a MuirProteusStorybookTestSpyStubOutcome mutant survived and the removal of the stub was killed', (t) => {
     const { reporter, findings } = setup(t);
 
     reporter.onMutationTestReportReady({
@@ -518,7 +534,8 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       findings().filter(
         (finding) =>
-          isRecord(finding) && finding['verdict'] === 'outcome-unchecked',
+          muirMoiraStorybookIsRecord(finding) &&
+          finding['verdict'] === 'outcome-unchecked',
       ),
       [
         {
@@ -694,7 +711,9 @@ describe('storybookReporter', () => {
     reporter.onMutationTestReportReady(recordedReport);
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['verdict']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['verdict'],
+      ),
       [
         'unknown',
         'order-dependent',
@@ -722,7 +741,7 @@ describe('storybookReporter', () => {
         {
           file: 'src/SpyStubMetaOff.stories.tsx',
           line: 17,
-          mutatorName: 'LzStorybookSpyStub',
+          mutatorName: 'MuirProteusStorybookTestSpyStub',
           netTime: 362,
         },
       ],
@@ -785,7 +804,7 @@ describe('storybookReporter', () => {
 
   it('prints one line per finding with its verdict, place, cause and fix', (t) => {
     const { reporter, consoleBlock } = setup(t);
-    const erased = describeVerdict('erased');
+    const erased = muirShadowcatStorybookDescribeVerdict('erased');
 
     reporter.onMutationTestReportReady(recordedReport);
 
@@ -808,7 +827,7 @@ describe('storybookReporter', () => {
 
     assert.equal(
       consoleBlock().at(-1),
-      '  static story mutants: 2, each runs every test; net times in reports/lz-storybook.json',
+      '  static story mutants: 2, each runs every test; net times in reports/muir-shadowcat-storybook.json',
     );
   });
 
@@ -849,19 +868,25 @@ describe('storybookReporter', () => {
   it('points the transformer record variable at an absolute path when created', (t) => {
     setup(t);
 
-    assert.equal(isAbsolute(process.env[recordVariable] ?? ''), true);
+    assert.equal(
+      isAbsolute(process.env[muirMoiraStorybookRecordVariable] ?? ''),
+      true,
+    );
   });
 
   it('warns once when the transformer rewrote stubs that Storybook did not show it for', (t) => {
     const { reporter, lines, projectDir } = setup(t);
-    appendRecord(join(projectDir, 'src', 'Stub.stories.tsx'), 1);
+    muirMoiraStorybookAppendRecord(
+      join(projectDir, 'src', 'Stub.stories.tsx'),
+      1,
+    );
 
     reporter.onDryRunCompleted();
 
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [
-        "warn: @muirjs/shadowcat-storybook: the mock transformer rewrote stubs during the dry run, but the Storybook main file's viteFinal does not add lzStorybookMockTransformerPlugin(), so the lz-storybook ignorer treated repaired stubs as erased; add the plugin through viteFinal",
+        "warn: @muirjs/shadowcat-storybook: the mock transformer rewrote stubs during the dry run, but the Storybook main file's viteFinal does not add muirPixieStorybookMockTransformerPlugin(), so the muir-shadowcat-storybook ignorer treated repaired stubs as erased; add the plugin through viteFinal",
       ],
     );
   });
@@ -874,14 +899,17 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [
-        "warn: @muirjs/shadowcat-storybook: the Storybook main file's viteFinal adds lzStorybookMockTransformerPlugin(), but it rewrote no stub during the dry run, so the lz-storybook ignorer may have kept stubs that the mock reset erases; check that the test run uses the Storybook Vite config, or ignore this if no story file stubs a spy outside a function",
+        "warn: @muirjs/shadowcat-storybook: the Storybook main file's viteFinal adds muirPixieStorybookMockTransformerPlugin(), but it rewrote no stub during the dry run, so the muir-shadowcat-storybook ignorer may have kept stubs that the mock reset erases; check that the test run uses the Storybook Vite config, or ignore this if no story file stubs a spy outside a function",
       ],
     );
   });
 
   it('stays quiet when Storybook shows the transformer and it rewrote stubs', (t) => {
     const { reporter, lines, projectDir } = setup(t, 'transformer');
-    appendRecord(join(projectDir, 'src', 'Stub.stories.tsx'), 1);
+    muirMoiraStorybookAppendRecord(
+      join(projectDir, 'src', 'Stub.stories.tsx'),
+      1,
+    );
 
     reporter.onDryRunCompleted();
 
@@ -902,7 +930,7 @@ describe('storybookReporter', () => {
         file: 'src/Meta.stories.tsx',
         line: 3,
         method: 'mockReturnValue',
-        ...describeVerdict('erased'),
+        ...muirShadowcatStorybookDescribeVerdict('erased'),
       },
     ]);
   });
@@ -931,7 +959,7 @@ describe('storybookReporter', () => {
 
   it('prints a scanned finding in its console block', (t) => {
     const { reporter, consoleBlock, projectDir } = setup(t);
-    const erased = describeVerdict('erased');
+    const erased = muirShadowcatStorybookDescribeVerdict('erased');
     writeStory(projectDir, 'Meta.stories.tsx', erasedStub);
 
     reporter.onMutationTestReportReady({ files: {} });
@@ -953,7 +981,9 @@ describe('storybookReporter', () => {
     });
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['line']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['line'],
+      ),
       [4],
     );
   });
@@ -964,7 +994,7 @@ describe('storybookReporter', () => {
       projectDir,
       'Meta.stories.tsx',
       commentedStub(
-        '// Stryker disable next-line LzStorybookSpyStub: kept on purpose',
+        '// Stryker disable next-line MuirProteusStorybookTestSpyStub: kept on purpose',
       ),
     );
 
@@ -991,7 +1021,7 @@ describe('storybookReporter', () => {
     writeStory(
       projectDir,
       'Meta.stories.tsx',
-      `// Stryker disable LzStorybookSpyStub\n${erasedStub}`,
+      `// Stryker disable MuirProteusStorybookTestSpyStub\n${erasedStub}`,
     );
 
     reporter.onMutationTestReportReady({ files: {} });
@@ -1004,13 +1034,15 @@ describe('storybookReporter', () => {
     writeStory(
       projectDir,
       'Meta.stories.tsx',
-      `// Stryker disable LzStorybookSpyStub\n${commentedStub('// Stryker restore all')}`,
+      `// Stryker disable MuirProteusStorybookTestSpyStub\n${commentedStub('// Stryker restore all')}`,
     );
 
     reporter.onMutationTestReportReady({ files: {} });
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['verdict']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['verdict'],
+      ),
       ['erased'],
     );
   });
@@ -1021,7 +1053,7 @@ describe('storybookReporter', () => {
       projectDir,
       'Meta.stories.tsx',
       commentedStub(
-        '// Stryker disable next-line StringLiteral, lzstorybookspystub',
+        '// Stryker disable next-line StringLiteral, muirproteusstorybooktestspystub',
       ),
     );
 
@@ -1038,7 +1070,7 @@ describe('storybookReporter', () => {
       [
         "import { fn } from 'storybook/test';",
         '',
-        '// Stryker disable next-line LzStorybookSpyStub',
+        '// Stryker disable next-line MuirProteusStorybookTestSpyStub',
         'export default {',
         "  args: { onClick: fn().mockReturnValue('stubbed') },",
         '};',
@@ -1051,7 +1083,9 @@ describe('storybookReporter', () => {
     reporter.onMutationTestReportReady({ files: {} });
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['line']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['line'],
+      ),
       [5],
     );
   });
@@ -1063,7 +1097,9 @@ describe('storybookReporter', () => {
     reporter.onMutationTestReportReady({ files: {} });
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['file']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['file'],
+      ),
       ['src/Meta.story.tsx'],
     );
   });
@@ -1102,7 +1138,9 @@ describe('storybookReporter', () => {
     reporter.onMutationTestReportReady({ files: {} });
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['file']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['file'],
+      ),
       ['src/Meta.stories.tsx'],
     );
   });
@@ -1116,7 +1154,7 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [
-        'warn: @muirjs/shadowcat-storybook: Babel could not parse src/Broken.stories.tsx, so lz-storybook skipped its spy stubs: Unexpected token (1:13)',
+        'warn: @muirjs/shadowcat-storybook: Babel could not parse src/Broken.stories.tsx, so muir-shadowcat-storybook skipped its spy stubs: Unexpected token (1:13)',
       ],
     );
   });
@@ -1136,7 +1174,7 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [
-        'warn: @muirjs/shadowcat-storybook: Babel could not parse src/Broken.ts, so lz-storybook gave no interaction hints for it: Unexpected token (1:13)',
+        'warn: @muirjs/shadowcat-storybook: Babel could not parse src/Broken.ts, so muir-shadowcat-storybook gave no interaction hints for it: Unexpected token (1:13)',
       ],
     );
   });
@@ -1153,20 +1191,22 @@ describe('storybookReporter', () => {
     reporter.onMutationTestReportReady({ files: {} });
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['file']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['file'],
+      ),
       ['src/Meta.stories.tsx'],
     );
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [
-        'warn: @muirjs/shadowcat-storybook: lz-storybook could not read the spy stubs of src/Deep.stories.tsx, so it skipped them: Maximum call stack size exceeded',
+        'warn: @muirjs/shadowcat-storybook: muir-shadowcat-storybook could not read the spy stubs of src/Deep.stories.tsx, so it skipped them: Maximum call stack size exceeded',
       ],
     );
   });
 
   it('scans no story file when the spy stub mutator is in excludedMutations', (t) => {
     const { reporter, findings, projectDir } = setup(t, 'no-main', {
-      mutator: { excludedMutations: ['LzStorybookSpyStub'] },
+      mutator: { excludedMutations: ['MuirProteusStorybookTestSpyStub'] },
     });
     writeStory(projectDir, 'Meta.stories.tsx', erasedStub);
 
@@ -1186,18 +1226,26 @@ describe('storybookReporter', () => {
     reporter.onMutationTestReportReady({ files: {} });
 
     assert.deepEqual(
-      findings().map((finding) => isRecord(finding) && finding['verdict']),
+      findings().map(
+        (finding) => muirMoiraStorybookIsRecord(finding) && finding['verdict'],
+      ),
       ['erased'],
     );
   });
 
   it('removes the transformer record file when the run ends', (t) => {
     const { reporter, projectDir } = setup(t);
-    appendRecord(join(projectDir, 'src', 'Stub.stories.tsx'), 1);
+    muirMoiraStorybookAppendRecord(
+      join(projectDir, 'src', 'Stub.stories.tsx'),
+      1,
+    );
 
     reporter.wrapUp();
 
-    assert.equal(existsSync(process.env[recordVariable] ?? ''), false);
+    assert.equal(
+      existsSync(process.env[muirMoiraStorybookRecordVariable] ?? ''),
+      false,
+    );
   });
 
   it('ends the run without error when the transformer wrote no record file', (t) => {
@@ -1235,11 +1283,11 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(consoleBlock().slice(2), [
       '  negative-only  src/Form.stories.tsx:5  every check after this interaction up to the next one is negative, so the play also passes when the interaction does nothing; if the control is meant to ignore it, such as a disabled one, disable the mutant, otherwise add a check that the interaction makes true',
-      '    // Stryker disable next-line LzStorybookInteraction: lz-storybook: negative-only: every check up to the next interaction is negative',
+      '    // Stryker disable next-line MuirProteusStorybookTestInteraction: muir-shadowcat-storybook: negative-only: every check up to the next interaction is negative',
       "  click-before-type  src/Form.stories.tsx:7  the type in the next statement clicks the same target first (user-event 14's type does, unless given skipClick), so this click repeats it; disable the mutant or remove the click, unless the click itself must do something, then add a check for that before the type",
-      '    // Stryker disable next-line LzStorybookInteraction: lz-storybook: click-before-type: the next type clicks the same target first',
+      '    // Stryker disable next-line MuirProteusStorybookTestInteraction: muir-shadowcat-storybook: click-before-type: the next type clicks the same target first',
       '  cleared-later  src/Form.stories.tsx:8  the next interaction clears the same target with no check between them, so nothing reads what this one leaves; disable the mutant if no handler records the input, otherwise add a check of what it records before the clear',
-      '    // Stryker disable next-line LzStorybookInteraction: lz-storybook: cleared-later: the next interaction clears the same target before any check',
+      '    // Stryker disable next-line MuirProteusStorybookTestInteraction: muir-shadowcat-storybook: cleared-later: the next interaction clears the same target before any check',
     ]);
   });
 
@@ -1267,8 +1315,8 @@ describe('storybookReporter', () => {
 
     assert.deepEqual(consoleBlock(), [
       'info: @muirjs/shadowcat-storybook: 5 spy stub findings (1 unknown, 1 order-dependent, 1 erased, 1 unchecked, 1 outcome-unchecked)',
-      "  unknown  src/lzsb/Imported.stories.tsx:14 mockReturnValue  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach",
-      '  order-dependent  src/lzsb/OrderDep.stories.tsx:13 mockReturnValue  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach',
+      "  unknown  src/muirsb/Imported.stories.tsx:14 mockReturnValue  the file's parameters.test cannot be read without running it, so whether the mock reset erases this stub is unknown; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach",
+      '  order-dependent  src/muirsb/OrderDep.stories.tsx:13 mockReturnValue  another story in this file resets mocks before it renders, which erases this stub when that story renders first; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach',
       '  erased  src/SpyStubDefault.stories.tsx:15 mockReturnValue  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach',
       '  unchecked  src/SpyStubMetaOff.stories.tsx:24  no test fails without this stub, so no play checks what it changes; assert in the play what the stubbed value changes',
       '  outcome-unchecked  src/SpyStubOutcome.stories.tsx:17  a test fails or hangs without this stub, but none fails when it settles the other way, so no play checks what its outcome changes; assert in the play what the story shows for this outcome, such as its success or error message',
@@ -1326,7 +1374,7 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       findings().map(
         (finding) =>
-          isRecord(finding) &&
+          muirMoiraStorybookIsRecord(finding) &&
           `${String(finding['file']).split('/').slice(-2).join('/')} ${String(finding['verdict'])}`,
       ),
       ['src/Button.stories.cts erased'],
@@ -1351,7 +1399,7 @@ describe('storyFileFindings', () => {
 
     assert.throws(
       () =>
-        storyFileFindings(
+        muirShadowcatStorybookStoryFileFindings(
           'src/Big.stories.tsx',
           () => {
             throw tooLarge;

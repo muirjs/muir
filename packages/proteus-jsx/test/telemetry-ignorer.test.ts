@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 
 import { strykerValidationSchema } from '../src/index.ts';
 import {
-  lzTelemetrySchema,
-  telemetryIgnorer,
+  muirProteusJsxTelemetrySchema,
+  muirProteusJsxTelemetryIgnorer,
 } from '../src/telemetry-ignorer.ts';
 import {
   assertEveryOutcome,
@@ -13,16 +13,16 @@ import {
 import { validateOptions } from './support/validate-options.ts';
 
 const analyticsReason =
-  'lz-telemetry: analytics call; DOM tests do not observe what it sends';
+  'muir-proteus-jsx-telemetry: analytics call; DOM tests do not observe what it sends';
 const callsReason =
-  'lz-telemetry: telemetry call from lzTelemetry.calls; DOM tests do not observe what it sends';
+  'muir-proteus-jsx-telemetry: telemetry call from muirProteusJsxTelemetry.calls; DOM tests do not observe what it sends';
 const errorReason =
-  'lz-telemetry: error-monitoring call; DOM tests do not observe what it reports';
+  'muir-proteus-jsx-telemetry: error-monitoring call; DOM tests do not observe what it reports';
 
 const assertEvery = (code: string, outcome: string, options: object = {}) =>
-  assertEveryOutcome(telemetryIgnorer(options), code, outcome);
+  assertEveryOutcome(muirProteusJsxTelemetryIgnorer(options), code, outcome);
 
-describe('lz-telemetry', () => {
+describe('muir-proteus-jsx-telemetry', () => {
   [
     'gtag',
     'window.gtag',
@@ -172,9 +172,9 @@ describe('lz-telemetry', () => {
   });
 
   ['track', 'telemetry.send'].forEach((callee) => {
-    it(`ignores every mutant of a ${callee} call statement listed in lzTelemetry.calls, with the calls reason`, async () => {
+    it(`ignores every mutant of a ${callee} call statement listed in muirProteusJsxTelemetry.calls, with the calls reason`, async () => {
       await assertEvery(`${callee}('event', on ? 'a' : 'b');`, callsReason, {
-        lzTelemetry: { calls: ['track', 'telemetry.send'] },
+        muirProteusJsxTelemetry: { calls: ['track', 'telemetry.send'] },
       });
     });
   });
@@ -185,9 +185,9 @@ describe('lz-telemetry', () => {
       ['Sentry.flush', errorReason],
     ] as const
   ).forEach(([callee, reason]) => {
-    it(`gives a ${callee} call statement its built-in reason when lzTelemetry.calls lists it too`, async () => {
+    it(`gives a ${callee} call statement its built-in reason when muirProteusJsxTelemetry.calls lists it too`, async () => {
       await assertEvery(`${callee}('event', on ? 'a' : 'b');`, reason, {
-        lzTelemetry: { calls: [callee] },
+        muirProteusJsxTelemetry: { calls: [callee] },
       });
     });
   });
@@ -208,20 +208,26 @@ describe('lz-telemetry', () => {
     ['track', null],
   ].forEach((calls) => {
     it(`refuses calls ${JSON.stringify(calls)} when it is created`, () => {
-      assert.throws(() => telemetryIgnorer({ lzTelemetry: { calls } }), {
-        message: `@muirjs/proteus-jsx: lzTelemetry.calls must be an array of callee names such as track or analytics.track, not ${JSON.stringify(calls)}.`,
-      });
+      assert.throws(
+        () =>
+          muirProteusJsxTelemetryIgnorer({
+            muirProteusJsxTelemetry: { calls },
+          }),
+        {
+          message: `@muirjs/proteus-jsx: muirProteusJsxTelemetry.calls must be an array of callee names such as track or analytics.track, not ${JSON.stringify(calls)}.`,
+        },
+      );
     });
   });
 
   [
     {},
-    { lzTelemetry: {} },
-    { lzTelemetry: { calls: [] } },
-    { lzTelemetry: { calls: ['$track', '_t.send', 'a1.b2.c3'] } },
+    { muirProteusJsxTelemetry: {} },
+    { muirProteusJsxTelemetry: { calls: [] } },
+    { muirProteusJsxTelemetry: { calls: ['$track', '_t.send', 'a1.b2.c3'] } },
   ].forEach((options) => {
     it(`accepts the options ${JSON.stringify(options)}`, () => {
-      assert.doesNotThrow(() => telemetryIgnorer(options));
+      assert.doesNotThrow(() => muirProteusJsxTelemetryIgnorer(options));
     });
   });
 
@@ -243,7 +249,7 @@ describe('lz-telemetry', () => {
     assert.deepEqual(
       new Set(
         await ignorerOutcomes(
-          telemetryIgnorer({}),
+          muirProteusJsxTelemetryIgnorer({}),
           "gtag('event', on ? 'a' : 'b');\nsetOpen(on ? 1 : 2);",
         ),
       ),
@@ -263,12 +269,12 @@ describe('lz-telemetry', () => {
   });
 });
 
-describe('the lz-telemetry options schema', () => {
-  it('describes lzTelemetry.calls as a list of callee names', () => {
-    assert.deepEqual(lzTelemetrySchema, {
+describe('the muir-proteus-jsx-telemetry options schema', () => {
+  it('describes muirProteusJsxTelemetry.calls as a list of callee names', () => {
+    assert.deepEqual(muirProteusJsxTelemetrySchema, {
       type: 'object',
       additionalProperties: false,
-      description: 'Options of the lz-telemetry ignorer.',
+      description: 'Options of the muir-proteus-jsx-telemetry ignorer.',
       properties: {
         calls: {
           type: 'array',
@@ -277,16 +283,16 @@ describe('the lz-telemetry options schema', () => {
             pattern: '^[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*)*$',
           },
           description:
-            'Callees, such as track or analytics.track, added to the built-in ones. lz-telemetry hides the ' +
+            'Callees, such as track or analytics.track, added to the built-in ones. muir-proteus-jsx-telemetry hides the ' +
             'mutants of a statement that is just a call to one of them, unless an argument can act on the page.',
         },
       },
     });
   });
 
-  it('lets core accept lzTelemetry without an unknown-option warning', async () => {
+  it('lets core accept muirProteusJsxTelemetry without an unknown-option warning', async () => {
     assert.deepEqual(
-      await validateOptions({ lzTelemetry: { calls: ['track'] } }, [
+      await validateOptions({ muirProteusJsxTelemetry: { calls: ['track'] } }, [
         strykerValidationSchema,
       ]),
       { valid: true, log: [] },
@@ -299,16 +305,19 @@ describe('the lz-telemetry options schema', () => {
     { calls: ['a b'] },
     { callees: ['track'] },
     [],
-  ].forEach((lzTelemetry) => {
-    it(`lets core refuse lzTelemetry ${JSON.stringify(lzTelemetry)}`, async () => {
-      const { valid, log } = await validateOptions({ lzTelemetry }, [
-        strykerValidationSchema,
-      ]);
+  ].forEach((muirProteusJsxTelemetry) => {
+    it(`lets core refuse muirProteusJsxTelemetry ${JSON.stringify(muirProteusJsxTelemetry)}`, async () => {
+      const { valid, log } = await validateOptions(
+        { muirProteusJsxTelemetry },
+        [strykerValidationSchema],
+      );
 
       assert.equal(valid, false);
       assert.ok(
         log.some(
-          (line) => line.startsWith('error') && line.includes('lzTelemetry'),
+          (line) =>
+            line.startsWith('error') &&
+            line.includes('muirProteusJsxTelemetry'),
         ),
         log.join('\n'),
       );

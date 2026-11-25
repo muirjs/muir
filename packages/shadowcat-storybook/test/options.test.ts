@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzStorybookOptions, vitestConfigFile } from '../src/options.ts';
+import {
+  muirShadowcatStorybookOptions,
+  muirShadowcatStorybookVitestConfigFile,
+} from '../src/options.ts';
 
 describe('vitestConfigFile', () => {
   it("takes the config file from Stryker's vitest.configFile", () => {
     assert.equal(
-      vitestConfigFile({
+      muirShadowcatStorybookVitestConfigFile({
         vitest: { configFile: 'vitest.storybook.config.ts' },
       }),
       'vitest.storybook.config.ts',
@@ -14,28 +17,38 @@ describe('vitestConfigFile', () => {
   });
 
   it('leaves the config file to Vitest without vitest.configFile', () => {
-    assert.equal(vitestConfigFile({ vitest: {} }), undefined);
+    assert.equal(
+      muirShadowcatStorybookVitestConfigFile({ vitest: {} }),
+      undefined,
+    );
   });
 });
 
-describe('lzStorybookOptions', () => {
-  it('uses .storybook as the config folder when lzStorybook is not set', () => {
-    assert.deepEqual(lzStorybookOptions({}), { configDir: '.storybook' });
+describe('muirShadowcatStorybookOptions', () => {
+  it('uses .storybook as the config folder when muirShadowcatStorybook is not set', () => {
+    assert.deepEqual(muirShadowcatStorybookOptions({}), {
+      configDir: '.storybook',
+    });
   });
 
-  it('takes the config folder from lzStorybook.configDir', () => {
+  it('takes the config folder from muirShadowcatStorybook.configDir', () => {
     assert.deepEqual(
-      lzStorybookOptions({ lzStorybook: { configDir: 'apps/ui/.storybook' } }),
+      muirShadowcatStorybookOptions({
+        muirShadowcatStorybook: { configDir: 'apps/ui/.storybook' },
+      }),
       { configDir: 'apps/ui/.storybook' },
     );
   });
 
   it('rejects a config folder that is not a string, naming the option', () => {
     assert.throws(
-      () => lzStorybookOptions({ lzStorybook: { configDir: 42 } }),
+      () =>
+        muirShadowcatStorybookOptions({
+          muirShadowcatStorybook: { configDir: 42 },
+        }),
       {
         message:
-          '@muirjs/shadowcat-storybook: lzStorybook.configDir must be a string, not 42',
+          '@muirjs/shadowcat-storybook: muirShadowcatStorybook.configDir must be a string, not 42',
       },
     );
   });

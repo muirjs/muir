@@ -3,8 +3,11 @@ import { dirname, join, resolve } from 'node:path';
 
 import type { Plugin, UserConfig } from 'vite';
 
-export function lzStorybookStrykerPlugin(): Plugin {
-  return { name: 'lz-storybook-stryker', config: sandboxConfig };
+export function muirShadowcatStorybookStrykerPlugin(): Plugin {
+  return {
+    name: 'muir-shadowcat-storybook-stryker',
+    config: muirShadowcatStorybookSandboxConfig,
+  };
 }
 
 /**
@@ -12,7 +15,7 @@ export function lzStorybookStrykerPlugin(): Plugin {
  * through that link to its real path, which `server.fs.allow` refuses, so a Stryker worker allows the real folders.
  * A plugin's list replaces Vite's default, the workspace root, so the workspace root stays in it.
  */
-export async function sandboxConfig(
+export async function muirShadowcatStorybookSandboxConfig(
   config: UserConfig,
 ): Promise<UserConfig | undefined> {
   if (process.env['STRYKER_MUTATOR_WORKER'] === undefined) {

@@ -1,1 +1,2 @@
-export const packageName = '@muirjs/proteus-storybook-test';
+export const muirProteusStorybookTestPackageName =
+  '@muirjs/proteus-storybook-test';

@@ -4,15 +4,15 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import {
-  cleanTracesDir,
-  copySurvivorTraces,
-  folderName,
-  mutantFile,
-  mutantKey,
-  projectRootEnv,
-  readTracesTarget,
-  reportFileName,
-  tracesDirEnv,
+  muirSirynPlaywrightCleanTracesDir,
+  muirSirynPlaywrightCopySurvivorTraces,
+  muirSirynPlaywrightFolderName,
+  muirSirynPlaywrightMutantFile,
+  muirSirynPlaywrightMutantKey,
+  muirSirynPlaywrightProjectRootEnv,
+  muirSirynPlaywrightReadTracesTarget,
+  muirSirynPlaywrightReportFileName,
+  muirSirynPlaywrightTracesDirEnv,
 } from '../src/survivor-traces.ts';
 import { addAttempt, fakeTestCase, tempTree } from './support/doubles.ts';
 
@@ -29,36 +29,54 @@ const mutant = (replacement: string, fileName = 'unused') => ({
 
 test('a mutant key uses the report positions, which count lines and columns from 1', () => {
   assert.equal(
-    mutantKey('src/price-tag.tsx', mutant('compareAtCents < cents')),
+    muirSirynPlaywrightMutantKey(
+      'src/price-tag.tsx',
+      mutant('compareAtCents < cents'),
+    ),
     'src/price-tag.tsx@9:7-9:30\nEqualityOperator: compareAtCents < cents',
   );
 });
 
 test('folder names keep apart mutants that differ only in operators', () => {
-  const less = mutantKey('src/price-tag.tsx', mutant('compareAtCents < cents'));
-  const more = mutantKey('src/price-tag.tsx', mutant('compareAtCents > cents'));
+  const less = muirSirynPlaywrightMutantKey(
+    'src/price-tag.tsx',
+    mutant('compareAtCents < cents'),
+  );
+  const more = muirSirynPlaywrightMutantKey(
+    'src/price-tag.tsx',
+    mutant('compareAtCents > cents'),
+  );
 
-  assert.notEqual(folderName(less), folderName(more));
+  assert.notEqual(
+    muirSirynPlaywrightFolderName(less),
+    muirSirynPlaywrightFolderName(more),
+  );
   assert.match(
-    folderName(less),
+    muirSirynPlaywrightFolderName(less),
     /^src-price-tag-tsx-9-7-9-30-EqualityOperator-compareAtCents-cents-[0-9a-f]{8}$/,
   );
 });
 
 test('folder names keep a key of up to 91 characters whole and trim a longer one in the middle', () => {
-  assert.match(folderName('x'.repeat(91)), /^x{91}-[0-9a-f]{8}$/);
   assert.match(
-    folderName('a'.repeat(300) + 'b'.repeat(300)),
+    muirSirynPlaywrightFolderName('x'.repeat(91)),
+    /^x{91}-[0-9a-f]{8}$/,
+  );
+  assert.match(
+    muirSirynPlaywrightFolderName('a'.repeat(300) + 'b'.repeat(300)),
     /^a{45}-b{45}-[0-9a-f]{8}$/,
   );
 });
 
 test('folder names replace each run of unsafe ASCII characters with one dash and keep other characters', () => {
-  assert.match(folderName('a\u0000b<>c_d.é😀'), /^a-b-c-d-é😀-[0-9a-f]{8}$/u);
+  assert.match(
+    muirSirynPlaywrightFolderName('a\u0000b<>c_d.é😀'),
+    /^a-b-c-d-é😀-[0-9a-f]{8}$/u,
+  );
 });
 
 test('a survivor gets one trace per attempt of every test that ran, and a mutant.json with each status', (t) => {
-  const tmp = tempTree(t, 'lz-traces-test-', {
+  const tmp = tempTree(t, 'muir-traces-test-', {
     'first.zip': 'one',
     'retry.zip': 'two',
   });
@@ -76,7 +94,7 @@ test('a survivor gets one trace per attempt of every test that ran, and a mutant
   );
   const untraced = addAttempt(fakeTestCase('t2'), 'expected', 'passed');
 
-  const dir = copySurvivorTraces(
+  const dir = muirSirynPlaywrightCopySurvivorTraces(
     { dir: traces, projectRoot: tmp },
     mutant('a > b', path.join(tmp, 'src', 'a.ts')),
     [retried, untraced],
@@ -84,13 +102,15 @@ test('a survivor gets one trace per attempt of every test that ran, and a mutant
 
   assert.equal(path.dirname(dir), traces);
   assert.deepEqual(fs.readdirSync(dir).sort(), [
-    mutantFile,
+    muirSirynPlaywrightMutantFile,
     't1-0.zip',
     't1-1.zip',
   ]);
   assert.equal(fs.readFileSync(path.join(dir, 't1-1.zip'), 'utf8'), 'two');
   assert.deepEqual(
-    JSON.parse(fs.readFileSync(path.join(dir, mutantFile), 'utf8')),
+    JSON.parse(
+      fs.readFileSync(path.join(dir, muirSirynPlaywrightMutantFile), 'utf8'),
+    ),
     {
       key: 'src/a.ts@9:7-9:30\nEqualityOperator: a > b',
       tests: [
@@ -113,13 +133,13 @@ test('a survivor gets one trace per attempt of every test that ran, and a mutant
 });
 
 test('cleaning the traces folder empties it, or creates it when it is missing', (t) => {
-  const tmp = tempTree(t, 'lz-traces-test-', {
+  const tmp = tempTree(t, 'muir-traces-test-', {
     'traces/old/mutant.json': '{}',
   });
   const fresh = path.join(tmp, 'new', 'traces');
 
-  cleanTracesDir(path.join(tmp, 'traces'));
-  cleanTracesDir(fresh);
+  muirSirynPlaywrightCleanTracesDir(path.join(tmp, 'traces'));
+  muirSirynPlaywrightCleanTracesDir(fresh);
 
   assert.deepEqual(fs.readdirSync(path.join(tmp, 'traces')), []);
   assert.deepEqual(fs.readdirSync(fresh), []);
@@ -127,11 +147,11 @@ test('cleaning the traces folder empties it, or creates it when it is missing', 
 
 test('the runner reads the traces folder and project root that the reporter passed, not its own sandbox', () => {
   const env = {
-    [tracesDirEnv]: 'D:/p/reports/traces',
-    [projectRootEnv]: 'D:/p',
+    [muirSirynPlaywrightTracesDirEnv]: 'D:/p/reports/traces',
+    [muirSirynPlaywrightProjectRootEnv]: 'D:/p',
   };
 
-  assert.deepEqual(readTracesTarget('reports/traces', env), {
+  assert.deepEqual(muirSirynPlaywrightReadTracesTarget('reports/traces', env), {
     dir: 'D:/p/reports/traces',
     projectRoot: 'D:/p',
   });
@@ -139,18 +159,21 @@ test('the runner reads the traces folder and project root that the reporter pass
 
 test('a report file name is relative to the project root, with forward slashes', () => {
   assert.equal(
-    reportFileName(path.join('D:/p', 'apps', 'demo', 'src', 'app.tsx'), 'D:/p'),
+    muirSirynPlaywrightReportFileName(
+      path.join('D:/p', 'apps', 'demo', 'src', 'app.tsx'),
+      'D:/p',
+    ),
     'apps/demo/src/app.tsx',
   );
 });
 
 test('without survivorTraces the runner reads no traces target', () => {
-  assert.equal(readTracesTarget(undefined, {}), undefined);
+  assert.equal(muirSirynPlaywrightReadTracesTarget(undefined, {}), undefined);
 });
 
-test('with survivorTraces and no lz-playwright-traces reporter the runner stops', () => {
+test('with survivorTraces and no muir-siryn-playwright-traces reporter the runner stops', () => {
   assert.throws(
-    () => readTracesTarget('reports/traces', {}),
-    /lz-playwright-traces reporter is not in reporters\. Add it: it empties the traces folder/,
+    () => muirSirynPlaywrightReadTracesTarget('reports/traces', {}),
+    /muir-siryn-playwright-traces reporter is not in reporters\. Add it: it empties the traces folder/,
   );
 });

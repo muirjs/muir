@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import type { LzMutator } from '@muirjs/moira-node-test';
-import { lzAssertMethod } from '../../src/bindings.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import type { MuirMoiraNodeTestMutator } from '@muirjs/moira-node-test';
+import { muirProteusNodeAssertMethod } from '../../src/bindings.ts';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
 
-const probe: LzMutator = {
+const probe: MuirMoiraNodeTestMutator = {
   name: 'Probe',
   sample: '',
   *mutate(path, t) {
     const method = path.isCallExpression()
-      ? lzAssertMethod(path, path.node.callee)
+      ? muirProteusNodeAssertMethod(path, path.node.callee)
       : undefined;
 
     if (method !== undefined) {
@@ -20,8 +20,8 @@ const probe: LzMutator = {
   },
 };
 
-describe('lzAssertMethod', () => {
-  lzTestEach([
+describe('muirProteusNodeAssertMethod', () => {
+  muirTestEach([
     [
       'a call of the default import',
       "import assert from 'node:assert';\nassert(x);",

@@ -7,18 +7,18 @@ import { join } from 'node:path';
 import { before, test } from 'node:test';
 
 import {
-  coreInstrument,
-  fieldOf,
-  type SourceFile,
+  muirMoiraMutatorsCoreInstrument,
+  muirMoiraMutatorsFieldOf,
+  type MuirMoiraMutatorsSourceFile,
 } from '@muirjs/moira-mutators';
 
 import {
-  lzStorybookTestMutators,
-  type LzStorybookTestMutatorOptions,
+  muirProteusStorybookTestMutators,
+  type MuirProteusStorybookTestMutatorOptions,
 } from '../../src/index.ts';
-import { resolveFromCore } from '../../src/install.ts';
-import { mutatorSets } from '../../src/mutators.ts';
-import { packageName } from '../../src/package-name.ts';
+import { muirProteusStorybookTestResolveFromCore } from '../../src/install.ts';
+import { muirProteusStorybookTestMutatorSets } from '../../src/mutators.ts';
+import { muirProteusStorybookTestPackageName } from '../../src/package-name.ts';
 import type { Case } from './case.ts';
 
 interface Mutant {
@@ -28,27 +28,27 @@ interface Mutant {
 }
 
 async function mutantsOf(
-  files: readonly SourceFile[],
+  files: readonly MuirMoiraMutatorsSourceFile[],
 ): Promise<readonly Mutant[]> {
-  const instrument = await coreInstrument({
-    packageName,
-    ...(await resolveFromCore()),
+  const instrument = await muirMoiraMutatorsCoreInstrument({
+    packageName: muirProteusStorybookTestPackageName,
+    ...(await muirProteusStorybookTestResolveFromCore()),
   });
-  const mutants = fieldOf(await instrument(files), 'mutants');
+  const mutants = muirMoiraMutatorsFieldOf(await instrument(files), 'mutants');
 
   if (!Array.isArray(mutants)) {
     throw new Error('Instrumenter.instrument() gave no mutants');
   }
 
   return mutants.map((mutant: unknown) => ({
-    fileName: String(fieldOf(mutant, 'fileName')),
-    mutatorName: String(fieldOf(mutant, 'mutatorName')),
-    replacement: String(fieldOf(mutant, 'replacement')),
+    fileName: String(muirMoiraMutatorsFieldOf(mutant, 'fileName')),
+    mutatorName: String(muirMoiraMutatorsFieldOf(mutant, 'mutatorName')),
+    replacement: String(muirMoiraMutatorsFieldOf(mutant, 'replacement')),
   }));
 }
 
-const lzNames: ReadonlySet<string> = new Set(
-  Object.values(mutatorSets)
+const muirProteusStorybookTestNames: ReadonlySet<string> = new Set(
+  Object.values(muirProteusStorybookTestMutatorSets)
     .flat()
     .map(({ name }) => name),
 );
@@ -63,7 +63,7 @@ function mutantLine(mutatorName: string, replacement: string): string {
 
 /** Each file's mutants of `mutatorName` and of every mutator outside this package, as sorted `<mutator> <replacement>` lines. */
 export async function mutantLinesByFile(
-  files: readonly SourceFile[],
+  files: readonly MuirMoiraMutatorsSourceFile[],
   mutatorName: string,
 ): Promise<ReadonlyMap<string, readonly string[]>> {
   const mutants = await mutantsOf(files);
@@ -76,7 +76,7 @@ export async function mutantLinesByFile(
           (mutant) =>
             mutant.fileName === name &&
             (mutant.mutatorName === mutatorName ||
-              !lzNames.has(mutant.mutatorName)),
+              !muirProteusStorybookTestNames.has(mutant.mutatorName)),
         )
         .map((mutant) => mutantLine(mutant.mutatorName, mutant.replacement))
         .sort(),
@@ -87,12 +87,12 @@ export async function mutantLinesByFile(
 export function runCases(
   mutatorName: string,
   cases: readonly Case[],
-  options?: LzStorybookTestMutatorOptions,
+  options?: MuirProteusStorybookTestMutatorOptions,
 ): void {
   let lines: ReadonlyMap<string, readonly string[]>;
 
   before(async () => {
-    await lzStorybookTestMutators(options);
+    await muirProteusStorybookTestMutators(options);
     lines = await mutantLinesByFile(
       cases.map((testCase) => ({
         name: fileOf(testCase),

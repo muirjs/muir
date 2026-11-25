@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { siteFindings } from '../src/stub-findings.ts';
+import { muirShadowcatStorybookSiteFindings } from '../src/stub-findings.ts';
 import { project } from './support/storybook-project.ts';
 import { untaggedPreviewTestTags } from './support/test-tags.ts';
 
@@ -15,7 +15,7 @@ describe('siteFindings', () => {
       'export const Primary = {};',
     ].join('\n');
 
-    const findings = siteFindings(
+    const findings = muirShadowcatStorybookSiteFindings(
       code,
       'Meta.stories.tsx',
       project('seen'),
@@ -37,7 +37,7 @@ describe('siteFindings', () => {
       'export const Primary = {};',
     ].join('\n');
 
-    const findings = siteFindings(
+    const findings = muirShadowcatStorybookSiteFindings(
       code,
       'Meta.stories.tsx',
       project('seen'),
@@ -59,7 +59,7 @@ describe('siteFindings', () => {
       'export const Primary = {};',
     ].join('\n');
 
-    const findings = siteFindings(
+    const findings = muirShadowcatStorybookSiteFindings(
       code,
       'Meta.stories.tsx',
       project('seen'),
@@ -85,7 +85,7 @@ describe('siteFindings', () => {
       'export const Primary = {};',
     ].join('\n');
 
-    const findings = siteFindings(
+    const findings = muirShadowcatStorybookSiteFindings(
       code,
       'Meta.stories.tsx',
       project('seen'),
@@ -110,7 +110,7 @@ describe('siteFindings', () => {
       'export const Primary = {};',
     ].join('\n');
 
-    const findings = siteFindings(
+    const findings = muirShadowcatStorybookSiteFindings(
       code,
       'Meta.stories.tsx',
       project('seen'),
@@ -138,7 +138,7 @@ describe('siteFindings', () => {
       'export const Primary = {};',
     ].join('\n');
 
-    const findings = siteFindings(
+    const findings = muirShadowcatStorybookSiteFindings(
       code,
       'Meta.stories.tsx',
       project('seen'),
@@ -162,7 +162,7 @@ describe('siteFindings', () => {
         'export const Primary = {};',
       ].join('\n');
 
-      const findings = siteFindings(
+      const findings = muirShadowcatStorybookSiteFindings(
         code,
         'Meta.stories.tsx',
         project('seen'),
@@ -184,7 +184,7 @@ describe('siteFindings', () => {
       "export const B = { tags: ['smoke'], args: { g: fn().mockReturnValue(1) } };",
     ].join('\n');
 
-    const findings = siteFindings(
+    const findings = muirShadowcatStorybookSiteFindings(
       code,
       'Tags.stories.tsx',
       project('not-seen', { ...untaggedPreviewTestTags, include: ['smoke'] }),

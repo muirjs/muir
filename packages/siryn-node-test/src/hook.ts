@@ -3,9 +3,17 @@ import { extname, resolve } from 'node:path';
 import { getCallSites, inspect } from 'node:util';
 import { isMainThread, threadId, Worker } from 'node:worker_threads';
 
-import { install, writesAllowed, type HookDependencies } from './hook-core.ts';
-import { envNames, lzRecordNonce, lzWriteRecord } from './record.ts';
-import { workersAllowed } from './watchdog.ts';
+import {
+  muirSirynNodeTestInstall,
+  muirSirynNodeTestWritesAllowed,
+  type MuirSirynNodeTestHookDependencies,
+} from './hook-core.ts';
+import {
+  muirSirynNodeTestEnvNames,
+  muirSirynNodeTestRecordNonce,
+  muirSirynNodeTestWriteRecord,
+} from './record.ts';
+import { muirSirynNodeTestWorkersAllowed } from './watchdog.ts';
 
 // The memory watchdog's thread runs this script, where Stryker sees no coverage, so it only starts watchdog.ts's watch,
 // whose code this process's tests reach.
@@ -16,24 +24,27 @@ const watchdog = `Promise.all([
 
 // Exported so the tests can call them in their own process: those of the test files they start report no coverage.
 // process.exit(undefined) sets the exit code to undefined, so it would exit with 0.
-export const exit: HookDependencies['exit'] = (code) =>
-  // eslint-disable-next-line n/no-process-exit -- the hook ends a test file's process once its tests are done, though something may hold it open
-  process.exit(code ?? process.exitCode);
+export const muirSirynNodeTestExit: MuirSirynNodeTestHookDependencies['exit'] =
+  (code) =>
+    // eslint-disable-next-line n/no-process-exit -- the hook ends a test file's process once its tests are done, though something may hold it open
+    process.exit(code ?? process.exitCode);
 
-export const activeResources: HookDependencies['activeResources'] = () =>
-  process.getActiveResourcesInfo();
+export const muirSirynNodeTestActiveResources: MuirSirynNodeTestHookDependencies['activeResources'] =
+  () => process.getActiveResourcesInfo();
 
-export const later: HookDependencies['later'] = (callback, ms) => {
-  setTimeout(callback, ms).unref();
-};
+export const muirSirynNodeTestLater: MuirSirynNodeTestHookDependencies['later'] =
+  (callback, ms) => {
+    setTimeout(callback, ms).unref();
+  };
 
-export const lzEvery: HookDependencies['every'] = (callback, ms) => {
-  setInterval(callback, ms).unref();
-};
+export const muirSirynNodeTestEvery: MuirSirynNodeTestHookDependencies['every'] =
+  (callback, ms) => {
+    setInterval(callback, ms).unref();
+  };
 
-export function lzSignals(
+export function muirSirynNodeTestSignals(
   platform: NodeJS.Platform,
-): HookDependencies['signals'] {
+): MuirSirynNodeTestHookDependencies['signals'] {
   return platform === 'win32'
     ? undefined
     : {
@@ -59,14 +70,15 @@ export function lzSignals(
 // Found once, so that a test that fakes process.hrtime, as fake timers do, leaves the clock of every span alone.
 const hrtime = process.hrtime.bigint.bind(process.hrtime);
 
-export const now: HookDependencies['now'] = () => Number(hrtime()) / 1e6;
+export const muirSirynNodeTestNow: MuirSirynNodeTestHookDependencies['now'] =
+  () => Number(hrtime()) / 1e6;
 
-install({
+muirSirynNodeTestInstall({
   env: process.env,
   execArgv: process.execArgv,
   mainFile: process.argv[1] ? resolve(process.argv[1]) : undefined,
   pid: process.pid,
-  nonce: lzRecordNonce(),
+  nonce: muirSirynNodeTestRecordNonce(),
   threadId,
   global: globalThis,
   nodeTest: () => process.getBuiltinModule('node:test'),
@@ -74,14 +86,18 @@ install({
   onExit: (listener) => process.on('exit', listener),
   offExit: (listener) => process.off('exit', listener),
   onBeforeExit: (listener) => process.on('beforeExit', listener),
-  writeRecord: lzWriteRecord,
-  every: lzEvery,
-  exit,
-  activeResources,
-  later,
-  canWriteRecords: writesAllowed(process.permission, process.env[envNames.out]),
+  writeRecord: muirSirynNodeTestWriteRecord,
+  every: muirSirynNodeTestEvery,
+  exit: muirSirynNodeTestExit,
+  activeResources: muirSirynNodeTestActiveResources,
+  later: muirSirynNodeTestLater,
+  canWriteRecords: muirSirynNodeTestWritesAllowed(
+    process.permission,
+    process.env[muirSirynNodeTestEnvNames.out],
+  ),
   maxRssKiB: () => process.resourceUsage().maxRSS,
-  canWatchMemory: isMainThread && workersAllowed(process.permission),
+  canWatchMemory:
+    isMainThread && muirSirynNodeTestWorkersAllowed(process.permission),
   watchMemory: (options) => {
     // Stryker disable next-line ArrayDeclaration: equivalent, as hook-core always passes execArgv: []
     const worker = new Worker(watchdog, {
@@ -93,7 +109,7 @@ install({
     worker.on('error', (error: unknown) => {
       const message = error instanceof Error ? error.message : inspect(error);
       process.stderr.write(
-        `lz-node-test: the memory watchdog failed, so no memory limit guards this process: ${message}\n`,
+        `muir-siryn-node-test: the memory watchdog failed, so no memory limit guards this process: ${message}\n`,
       );
     });
     worker.unref();
@@ -101,8 +117,8 @@ install({
     return worker;
   },
   callSites: getCallSites,
-  now,
-  signals: lzSignals(process.platform),
+  now: muirSirynNodeTestNow,
+  signals: muirSirynNodeTestSignals(process.platform),
   platform: process.platform,
   parentPid: () => process.ppid,
   // Stryker disable next-line ArrowFunction: POSIX only, as Windows has no process groups to end; the Linux run kills it

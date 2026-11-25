@@ -1,8 +1,8 @@
 import type { Case } from './cases.ts';
 
-const data = 'LzPlaywrightRequestData';
-const url = 'LzPlaywrightRequestUrl';
-const input = 'LzPlaywrightInputAction';
+const data = 'MuirProteusPlaywrightRequestData';
+const url = 'MuirProteusPlaywrightRequestUrl';
+const input = 'MuirProteusPlaywrightInputAction';
 
 function inTest(statement: string): string {
   return `test('case', async ({ request }) => {\n  ${statement}\n});`;
@@ -592,7 +592,7 @@ export const requestCases: readonly Case[] = [
     id: 'url-goto',
     title: 'the URL of page.goto makes no RequestUrl mutant',
     source: inTest("await page.goto('/goto');"),
-    expect: [['LzPlaywrightNavigationAction', ';']],
+    expect: [['MuirProteusPlaywrightNavigationAction', ';']],
   },
   {
     id: 'url-scheme-in-query',

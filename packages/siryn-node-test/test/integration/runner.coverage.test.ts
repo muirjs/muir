@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 
 import type { DryRunOptions } from '@stryker-mutator/api/test-runner';
 
-import { envNames } from '../../src/record.ts';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 import {
   complete,
   cover,
@@ -22,7 +22,7 @@ import {
 
 shareCompileCache();
 
-describe('LzNodeTestTestRunner coverage', () => {
+describe('MuirSirynNodeTestTestRunner coverage', () => {
   it('reports the results and coverage of every test, including coverage of the processes a test starts', async (t) => {
     const child = `${cover} cover('f-shared'); cover('f-child');`;
     const dir = project(t, {
@@ -325,7 +325,7 @@ describe('LzNodeTestTestRunner coverage', () => {
   const recorded = [
     "import { readdirSync } from 'node:fs';",
     'const recorded = async (prefix) => {',
-    `  const written = () => readdirSync(process.env.${envNames.out}).some((name) => name.startsWith(prefix) && name.endsWith('.json'));`,
+    `  const written = () => readdirSync(process.env.${muirSirynNodeTestEnvNames.out}).some((name) => name.startsWith(prefix) && name.endsWith('.json'));`,
     '  for (let wait = 0; wait < 100 && !written(); wait++) await new Promise((resolve) => setTimeout(resolve, 20));',
     '};',
   ];
@@ -415,7 +415,7 @@ describe('LzNodeTestTestRunner coverage', () => {
 
       const { mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.deepEqual(fixtureCoverage(mutantCoverage), {
         static: {},
         perTest: { [`${join(dir, 'a.test.mjs')} > kills`]: { killed: 1 } },
@@ -433,7 +433,7 @@ describe('LzNodeTestTestRunner coverage', () => {
         "import { writeFileSync } from 'node:fs';",
         "import { join } from 'node:path';",
         "it('passes', () => {",
-        `  writeFileSync(join(process.env.${envNames.out}, '1.0.json.tmp'), ${JSON.stringify(temp)});`,
+        `  writeFileSync(join(process.env.${muirSirynNodeTestEnvNames.out}, '1.0.json.tmp'), ${JSON.stringify(temp)});`,
         '});',
       ),
     });

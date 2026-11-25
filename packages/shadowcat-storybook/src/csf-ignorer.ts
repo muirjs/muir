@@ -1,31 +1,37 @@
 import {
-  csfShapes,
-  field,
-  fileNameOf,
-  isRecord,
-  list,
-  propertyKey,
-  type CsfShapes,
+  muirMoiraStorybookCsfShapes,
+  muirMoiraStorybookField,
+  muirMoiraStorybookFileNameOf,
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookList,
+  muirMoiraStorybookPropertyKey,
+  type MuirMoiraStorybookCsfShapes,
 } from '@muirjs/moira-storybook';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
 import {
-  isStoryFile,
-  strykerStorybookProject,
-  type ProjectLog,
+  muirShadowcatStorybookIsStoryFile,
+  muirShadowcatStorybookStrykerStorybookProject,
+  type MuirShadowcatStorybookProjectLog,
 } from './storybook-project.ts';
 
-export const csfIgnorerName = 'lz-storybook-csf';
+export const muirShadowcatStorybookCsfIgnorerName =
+  'muir-shadowcat-storybook-csf';
 
-const staticReason = `${csfIgnorerName}: Storybook reads this CSF value without running the file, so it stays as written`;
-const metaReason = `${csfIgnorerName}: Storybook reads the meta object without running the file, so it stays an object literal`;
-const containerReason = `${csfIgnorerName}: Storybook reads this story, its parameters or its test options without running the file, so it stays an object or a function`;
-const testReason = `${csfIgnorerName}: test code in a story file is mutated by the Stryker config with lzStorybookCsf.play set to mutate`;
-const mswReason = `${csfIgnorerName}: msw handlers in a story file are mutated by the Stryker config with lzStorybookCsf.play set to mutate`;
+const staticReason = `${muirShadowcatStorybookCsfIgnorerName}: Storybook reads this CSF value without running the file, so it stays as written`;
+const metaReason = `${muirShadowcatStorybookCsfIgnorerName}: Storybook reads the meta object without running the file, so it stays an object literal`;
+const containerReason = `${muirShadowcatStorybookCsfIgnorerName}: Storybook reads this story, its parameters or its test options without running the file, so it stays an object or a function`;
+const testReason = `${muirShadowcatStorybookCsfIgnorerName}: test code in a story file is mutated by the Stryker config with muirShadowcatStorybookCsf.play set to mutate`;
+const mswReason = `${muirShadowcatStorybookCsfIgnorerName}: msw handlers in a story file are mutated by the Stryker config with muirShadowcatStorybookCsf.play set to mutate`;
 
-export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
-  const ignoreMode = field(options, 'lzStorybookCsf', 'play') !== 'mutate';
+export function muirShadowcatStorybookCsfIgnorer(
+  options: object,
+  log: MuirShadowcatStorybookProjectLog,
+): Ignorer {
+  const ignoreMode =
+    muirMoiraStorybookField(options, 'muirShadowcatStorybookCsf', 'play') !==
+    'mutate';
   let reasons: ReadonlyMap<unknown, string> = new Map();
   const fileReasons = (
     program: unknown,
@@ -33,12 +39,15 @@ export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
   ): ReadonlyMap<unknown, string> => {
     if (
       fileName === undefined ||
-      !isStoryFile(strykerStorybookProject(options, log), fileName)
+      !muirShadowcatStorybookIsStoryFile(
+        muirShadowcatStorybookStrykerStorybookProject(options, log),
+        fileName,
+      )
     ) {
       return new Map();
     }
 
-    const shapes = csfShapes(program);
+    const shapes = muirMoiraStorybookCsfShapes(program);
 
     if (!ignoreMode) {
       return staticReasons(shapes);
@@ -54,10 +63,10 @@ export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
 
   return {
     shouldIgnore(path) {
-      const node = field(path, 'node');
+      const node = muirMoiraStorybookField(path, 'node');
 
-      if (field(node, 'type') === 'Program') {
-        reasons = fileReasons(node, fileNameOf(path));
+      if (muirMoiraStorybookField(node, 'type') === 'Program') {
+        reasons = fileReasons(node, muirMoiraStorybookFileNameOf(path));
       }
 
       return reasons.get(node);
@@ -65,15 +74,22 @@ export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
   };
 }
 
-csfIgnorer.inject = tokens(commonTokens.options, commonTokens.logger);
+muirShadowcatStorybookCsfIgnorer.inject = tokens(
+  commonTokens.options,
+  commonTokens.logger,
+);
 
-function staticReasons(shapes: CsfShapes): ReadonlyMap<unknown, string> {
+function staticReasons(
+  shapes: MuirMoiraStorybookCsfShapes,
+): ReadonlyMap<unknown, string> {
   return new Map(
     [...shapes.staticValues].map((node) => [node, staticReason] as const),
   );
 }
 
-function ignoreModeReasons(shapes: CsfShapes): ReadonlyMap<unknown, string> {
+function ignoreModeReasons(
+  shapes: MuirMoiraStorybookCsfShapes,
+): ReadonlyMap<unknown, string> {
   // A later entry wins: meta over test code over msw over static values.
   return new Map([
     ...staticReasons(shapes),
@@ -87,9 +103,9 @@ function ignoreModeReasons(shapes: CsfShapes): ReadonlyMap<unknown, string> {
 
 /** Every property of a meta object but its `args`, which are story data, mutated as a story's are. */
 function metaPartsKept(meta: unknown): readonly unknown[] {
-  return list(field(meta, 'properties')).filter(
-    (property) => propertyKey(property) !== 'args',
-  );
+  return muirMoiraStorybookList(
+    muirMoiraStorybookField(meta, 'properties'),
+  ).filter((property) => muirMoiraStorybookPropertyKey(property) !== 'args');
 }
 
 // An ignorer skips a whole subtree, so the meta object itself is kept by a directive, leaving its args unignored. A next-line directive matches every ObjectLiteral mutant on the meta's first line, so the `{}` of args written on that line is kept too, as a story's own is.
@@ -114,12 +130,12 @@ function keepTestCall(statement: unknown): void {
 }
 
 function addDirective(node: unknown, directive: string): void {
-  if (!isRecord(node)) {
+  if (!muirMoiraStorybookIsRecord(node)) {
     return;
   }
 
   node['leadingComments'] = [
-    ...list(node['leadingComments']),
+    ...muirMoiraStorybookList(node['leadingComments']),
     {
       // Stryker disable next-line StringLiteral: the type keeps the node a well-formed Babel comment, but no output depends on its value: StrykerJS reads only the comment's value, and Babel's generator prints a comment of any type but CommentBlock as a line comment
       type: 'CommentLine',

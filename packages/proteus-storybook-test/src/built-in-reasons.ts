@@ -1,5 +1,7 @@
 /** Why the install turns each of Stryker's 17 built-in mutators off in Storybook play functions. */
-export const builtInReasons: Readonly<Record<string, string>> = {
+export const muirProteusStorybookTestBuiltInReasons: Readonly<
+  Record<string, string>
+> = {
   ArithmeticOperator:
     'Changes expected geometry and computed test data, which fails wherever it runs, or a sort comparator, which survives by construction.',
   ArrayDeclaration:
@@ -13,7 +15,7 @@ export const builtInReasons: Readonly<Record<string, string>> = {
   BooleanLiteral:
     'Flips expected booleans and query flags, which fails wherever it runs.',
   CallExpression:
-    'Removes expect and helper assertion statements, which survive by construction; LzStorybookInteraction removes interaction statements.',
+    'Removes expect and helper assertion statements, which survive by construction; MuirProteusStorybookTestInteraction removes interaction statements.',
   ConditionalExpression:
     'Forces guards that a passing play never takes, which survive by construction, or that it always takes, which fail.',
   EqualityOperator:

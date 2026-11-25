@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import { ESLint } from 'eslint';
 
 const workspaceRoot = join(import.meta.dirname, '..', '..');
@@ -25,7 +25,7 @@ async function reports(
 }
 
 describe('the .only guard', () => {
-  lzTestEach(['lzTestEach', 'lzTestFor'])(
+  muirTestEach(['muirTestEach', 'muirTestFor'])(
     'reports %s.only in a test',
     async (name) => {
       const found = await reports(
@@ -39,7 +39,7 @@ describe('the .only guard', () => {
     },
   );
 
-  lzTestEach(['lzTestEach', 'lzTestFor'])(
+  muirTestEach(['muirTestEach', 'muirTestFor'])(
     'leaves %s.skip alone',
     async (name) => {
       const found = await reports(
@@ -54,7 +54,7 @@ describe('the .only guard', () => {
 });
 
 describe('the type-safety disable guard', () => {
-  lzTestEach([
+  muirTestEach([
     'packages/madrox-node-test/src/title.ts',
     'packages/madrox-node-test/test/reported.fixtures.ts',
   ])('reports a disable of no-explicit-any in %s', async (file) => {
@@ -71,7 +71,7 @@ describe('the type-safety disable guard', () => {
 });
 
 describe('curly', () => {
-  lzTestEach([
+  muirTestEach([
     'packages/madrox-node-test/src/title.ts',
     testFile,
     'tools/eslint-rules/index.ts',

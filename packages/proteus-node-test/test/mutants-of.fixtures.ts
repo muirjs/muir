@@ -1,27 +1,33 @@
 import {
-  lzResolveFromCore,
-  lzToNodeMutator,
-  type LzInstrumentedMutant,
-  type LzMutator,
+  muirMoiraNodeTestResolveFromCore,
+  muirMoiraNodeTestToNodeMutator,
+  type MuirMoiraNodeTestInstrumentedMutant,
+  type MuirMoiraNodeTestMutator,
 } from '@muirjs/moira-node-test';
-import { lzPackageName } from '../src/package-name.ts';
+import { muirProteusNodeTestPackageName } from '../src/package-name.ts';
 
 export const strict = "import assert from 'node:assert/strict';\n";
 
 export async function instrumentWith(
-  mutator: LzMutator,
+  mutator: MuirMoiraNodeTestMutator,
   source: string,
-): Promise<readonly LzInstrumentedMutant[]> {
-  const instrumenter = await lzResolveFromCore();
+): Promise<readonly MuirMoiraNodeTestInstrumentedMutant[]> {
+  const instrumenter = await muirMoiraNodeTestResolveFromCore();
 
   return instrumenter.instrument(
     [{ name: 'sample.ts', content: source }],
-    [lzToNodeMutator(mutator, instrumenter.types, lzPackageName)],
+    [
+      muirMoiraNodeTestToNodeMutator(
+        mutator,
+        instrumenter.types,
+        muirProteusNodeTestPackageName,
+      ),
+    ],
   );
 }
 
 export async function mutantsOf(
-  mutator: LzMutator,
+  mutator: MuirMoiraNodeTestMutator,
   source: string,
 ): Promise<string[]> {
   const mutants = await instrumentWith(mutator, source);

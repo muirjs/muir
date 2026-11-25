@@ -1,6 +1,9 @@
 import type { NodePath, types } from '@babel/core';
 
-import type { LzBabelTypes, LzMutator } from '@muirjs/moira-node-test';
+import type {
+  MuirMoiraNodeTestBabelTypes,
+  MuirMoiraNodeTestMutator,
+} from '@muirjs/moira-node-test';
 
 /**
  * Moves an integer literal by 1 each way, as an off-by-one in a limit, an index or a count does. A literal that another
@@ -9,33 +12,34 @@ import type { LzBabelTypes, LzMutator } from '@muirjs/moira-node-test';
  * a real process or run one as another user. The indentation of `JSON.stringify` is left alone too, as a mutant there
  * changes only whitespace.
  */
-export const jsNumericLiteral: LzMutator<'LzJsNumericLiteral'> = {
-  name: 'LzJsNumericLiteral',
-  sample: 'const limit = 40;\n',
-  *mutate(path, t) {
-    if (
-      path.isNumericLiteral() &&
-      Number.isSafeInteger(path.node.value) &&
-      !isPropertyKey(path) &&
-      !isOctal(path.node) &&
-      !isLiteralType(path) &&
-      !isKillArgument(path) &&
-      !isUserOrGroupId(path) &&
-      !isJsonIndentation(path)
-    ) {
-      yield numberNode(t, path.node.value + 1);
-      yield numberNode(t, path.node.value - 1);
-    }
-  },
-  filter: (mutantsInScope) => mutantsInScope.every(isOwnMutant),
-};
+export const muirProteusJsNumericLiteral: MuirMoiraNodeTestMutator<'MuirProteusJsNumericLiteral'> =
+  {
+    name: 'MuirProteusJsNumericLiteral',
+    sample: 'const limit = 40;\n',
+    *mutate(path, t) {
+      if (
+        path.isNumericLiteral() &&
+        Number.isSafeInteger(path.node.value) &&
+        !isPropertyKey(path) &&
+        !isOctal(path.node) &&
+        !isLiteralType(path) &&
+        !isKillArgument(path) &&
+        !isUserOrGroupId(path) &&
+        !isJsonIndentation(path)
+      ) {
+        yield numberNode(t, path.node.value + 1);
+        yield numberNode(t, path.node.value - 1);
+      }
+    },
+    filter: (mutantsInScope) => mutantsInScope.every(isOwnMutant),
+  };
 
 function isOwnMutant(mutant: unknown): boolean {
   return (
     typeof mutant === 'object' &&
     mutant !== null &&
     'mutatorName' in mutant &&
-    mutant.mutatorName === jsNumericLiteral.name
+    mutant.mutatorName === muirProteusJsNumericLiteral.name
   );
 }
 
@@ -147,7 +151,10 @@ function nameOf(node: types.Node): string | undefined {
 }
 
 /** Babel's numericLiteral takes no negative number. */
-function numberNode(t: LzBabelTypes, value: number): types.Expression {
+function numberNode(
+  t: MuirMoiraNodeTestBabelTypes,
+  value: number,
+): types.Expression {
   return value < 0
     ? t.unaryExpression('-', t.numericLiteral(-value))
     : t.numericLiteral(value);

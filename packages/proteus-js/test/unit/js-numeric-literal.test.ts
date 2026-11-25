@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import type { LzMutator } from '@muirjs/moira-node-test';
-import { jsAssignmentStatement } from '../../src/js-assignment-statement.ts';
-import { jsNumericLiteral } from '../../src/js-numeric-literal.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import type { MuirMoiraNodeTestMutator } from '@muirjs/moira-node-test';
+import { muirProteusJsAssignmentStatement } from '../../src/js-assignment-statement.ts';
+import { muirProteusJsNumericLiteral } from '../../src/js-numeric-literal.ts';
 import { mutantsOf, mutantsOfAll } from '../mutants-of.fixtures.ts';
 
 /**
- * Stands in for a mutator of a site that holds a number: the argument of a call, as LzNodeTimerDelay mutates a timer's
- * delay, or an assigned number, as LzNodeExitCode mutates `process.exitCode = 1`.
+ * Stands in for a mutator of a site that holds a number: the argument of a call, as MuirProteusNodeTimerDelay mutates a timer's
+ * delay, or an assigned number, as MuirProteusNodeExitCode mutates `process.exitCode = 1`.
  */
-const site: LzMutator = {
+const site: MuirMoiraNodeTestMutator = {
   name: 'Site',
   sample: '',
   *mutate(path, t) {
@@ -29,8 +29,8 @@ const site: LzMutator = {
   },
 };
 
-describe('LzJsNumericLiteral', () => {
-  lzTestEach([
+describe('MuirProteusJsNumericLiteral', () => {
+  muirTestEach([
     ['2', 'const n = 2;', ['3', '1']],
     ['1, down to 0', 'const n = 1;', ['2', '0']],
     ['0, down to a negative number', 'const n = 0;', ['1', '-1']],
@@ -85,10 +85,13 @@ describe('LzJsNumericLiteral', () => {
       ['5', '3'],
     ],
   ])('moves %s by 1 each way', async (_title, source, expected) => {
-    assert.deepEqual(await mutantsOf(jsNumericLiteral, source), expected);
+    assert.deepEqual(
+      await mutantsOf(muirProteusJsNumericLiteral, source),
+      expected,
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['a fraction', 'const n = 2.5;'],
     [
       'an integer beyond the safe range, where 1 more is the same number',
@@ -148,10 +151,10 @@ describe('LzJsNumericLiteral', () => {
       'class C {\n  #kill(pid, signal) {}\n  stop() {\n    this.#kill(pid, 0);\n  }\n}',
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(jsNumericLiteral, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusJsNumericLiteral, source), []);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['an argument', 'setTimeout(f, 10);\nconst n = 2;', ['10 + 1', '3', '1']],
     [
       'a number assigned in a statement, which keeps it',
@@ -162,7 +165,7 @@ describe('LzJsNumericLiteral', () => {
     'leaves a number that another mutator mutates, as %s, to that mutator',
     async (_title, source, expected) => {
       const mutants = await mutantsOfAll(
-        [site, jsAssignmentStatement, jsNumericLiteral],
+        [site, muirProteusJsAssignmentStatement, muirProteusJsNumericLiteral],
         source,
       );
 
@@ -173,12 +176,15 @@ describe('LzJsNumericLiteral', () => {
     },
   );
 
-  it('keeps its mutants of an assigned number, so LzJsAssignmentStatement leaves the statement alone', async () => {
+  it('keeps its mutants of an assigned number, so MuirProteusJsAssignmentStatement leaves the statement alone', async () => {
     assert.deepEqual(
-      await mutantsOfAll([jsAssignmentStatement, jsNumericLiteral], 'x = 1;'),
+      await mutantsOfAll(
+        [muirProteusJsAssignmentStatement, muirProteusJsNumericLiteral],
+        'x = 1;',
+      ),
       [
-        ['LzJsNumericLiteral', '2'],
-        ['LzJsNumericLiteral', '0'],
+        ['MuirProteusJsNumericLiteral', '2'],
+        ['MuirProteusJsNumericLiteral', '0'],
       ],
     );
   });

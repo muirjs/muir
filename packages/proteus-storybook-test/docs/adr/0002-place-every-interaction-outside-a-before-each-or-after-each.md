@@ -1,7 +1,7 @@
 # The interaction mutators place every interaction outside a beforeEach or afterEach
 
-`LzStorybookInteraction`, `LzStorybookClickFocus`, `LzStorybookInteractionRepeat`, `LzStorybookInteractionTarget`
-and `LzStorybookAssertionBefore` skip an interaction only when it stands in a `beforeEach` or `afterEach` (a site
+`MuirProteusStorybookTestInteraction`, `MuirProteusStorybookTestClickFocus`, `MuirProteusStorybookTestInteractionRepeat`, `MuirProteusStorybookTestInteractionTarget`
+and `MuirProteusStorybookTestAssertionBefore` skip an interaction only when it stands in a `beforeEach` or `afterEach` (a site
 rule, which the interaction reader's `inHook` decides and `story-file.ts` applies once for all five). Every other
 interaction gets its mutants, including one that looks redundant: an interaction whose following checks are all
 negative, a click or hover directly before a `type` of the same target, and a `type` or `clear` that a later `clear`

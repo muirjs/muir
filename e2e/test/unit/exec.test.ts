@@ -16,7 +16,7 @@ import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { describe, it } from 'node:test';
 
-import { lzExec } from '../../src/exec.ts';
+import { muirExec } from '../../src/exec.ts';
 
 // Writes to both streams, then waits for the flag file before writing again, so the log can be read mid-run.
 const child = `
@@ -48,13 +48,13 @@ async function logOnceItHas(
   throw new Error(`${path} never held ${parts.join(', ')}`);
 }
 
-describe('lzExec', () => {
+describe('muirExec', () => {
   it('writes stdout and stderr to the log file while the process runs, and still returns both', async (t) => {
-    const dir = mkdtempSync(join(tmpdir(), 'lz-exec-'));
+    const dir = mkdtempSync(join(tmpdir(), 'muir-exec-'));
     const flag = join(dir, 'flag');
     const logFile = join(dir, 'run.log');
 
-    const running = lzExec(process.execPath, ['-e', child, flag], {
+    const running = muirExec(process.execPath, ['-e', child, flag], {
       cwd: dir,
       logFile,
     });
@@ -84,7 +84,7 @@ describe('lzExec', () => {
   });
 
   it('ends a process that outlives its timeout, and names the signal that ended it', async () => {
-    const result = await lzExec(
+    const result = await muirExec(
       process.execPath,
       ['-e', 'setInterval(() => {}, 1000)'],
       {
@@ -106,7 +106,7 @@ describe('lzExec', () => {
   it('records a timeout even when the process exits with its own code on SIGTERM, as Stryker does on Linux', async () => {
     const stryker =
       "process.on('SIGTERM', () => process.exit(143)); setInterval(() => {}, 1000);";
-    const result = await lzExec(process.execPath, ['-e', stryker], {
+    const result = await muirExec(process.execPath, ['-e', stryker], {
       cwd: tmpdir(),
       timeoutMs: 300,
     });
@@ -115,7 +115,7 @@ describe('lzExec', () => {
   });
 
   it('records no timeout or signal for a process that exits with an error code before its timeout', async () => {
-    const result = await lzExec(process.execPath, ['-e', 'process.exit(3)'], {
+    const result = await muirExec(process.execPath, ['-e', 'process.exit(3)'], {
       cwd: tmpdir(),
       timeoutMs: 60_000,
     });
@@ -134,7 +134,7 @@ describe('lzExec', () => {
     const parent =
       "require('node:child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 3500)'], " +
       "{ stdio: ['ignore', 'inherit', 'inherit'], detached: true, windowsHide: true }).unref(); process.exit(0);";
-    const result = await lzExec(process.execPath, ['-e', parent], {
+    const result = await muirExec(process.execPath, ['-e', parent], {
       cwd: tmpdir(),
       timeoutMs: 3_000,
     });
@@ -152,7 +152,7 @@ describe('lzExec', () => {
       `require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(late)}], ` +
       "{ stdio: ['ignore', 'inherit', 'inherit'], detached: true, windowsHide: true }).unref(); " +
       "process.stdout.write('early\\n'); process.stderr.write('early\\n'); process.exit(0);";
-    const result = await lzExec(process.execPath, ['-e', parent], {
+    const result = await muirExec(process.execPath, ['-e', parent], {
       cwd: tmpdir(),
       timeoutMs: 10_000,
     });
@@ -170,7 +170,7 @@ describe('lzExec', () => {
   it('gives the process no input, so a process that reads stdin to its end goes on at once', async () => {
     const reader =
       "process.stdin.on('end', () => process.stdout.write('ended')).resume();";
-    const result = await lzExec(process.execPath, ['-e', reader], {
+    const result = await muirExec(process.execPath, ['-e', reader], {
       cwd: tmpdir(),
       timeoutMs: 10_000,
     });
@@ -189,7 +189,10 @@ describe('lzExec', () => {
     const before = timers();
 
     await assert.rejects(
-      lzExec('lz-exec-no-such-file', [], { cwd: tmpdir(), timeoutMs: 60_000 }),
+      muirExec('muir-exec-no-such-file', [], {
+        cwd: tmpdir(),
+        timeoutMs: 60_000,
+      }),
       { code: 'ENOENT' },
     );
 
@@ -205,7 +208,7 @@ describe('lzExec', () => {
         'Linux may free a lower descriptor during the run',
     },
     async (t) => {
-      const dir = mkdtempSync(join(tmpdir(), 'lz-exec-'));
+      const dir = mkdtempSync(join(tmpdir(), 'muir-exec-'));
 
       t.after(() => {
         rmSync(dir, { recursive: true, force: true });
@@ -214,14 +217,14 @@ describe('lzExec', () => {
       const free = openSync(probe, 'w');
 
       closeSync(free);
-      await lzExec(process.execPath, ['-e', "process.stdout.write('x')"], {
+      await muirExec(process.execPath, ['-e', "process.stdout.write('x')"], {
         cwd: dir,
         logFile: join(dir, 'run.log'),
       });
       const next = openSync(probe, 'w');
 
       closeSync(next);
-      // Stryker disable next-line LzNodeTestAssertCall: runs on Windows only, so the Linux mutation run cannot reach it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on Windows only, so the Linux mutation run cannot reach it
       assert.equal(next, free);
     },
   );
@@ -234,14 +237,14 @@ describe('lzExec', () => {
         process.platform !== 'linux' && 'reads the open descriptors from /proc',
     },
     async (t) => {
-      const dir = mkdtempSync(join(tmpdir(), 'lz-exec-'));
+      const dir = mkdtempSync(join(tmpdir(), 'muir-exec-'));
 
       t.after(() => {
         rmSync(dir, { recursive: true, force: true });
       });
       const logFile = join(dir, 'run.log');
 
-      await lzExec(process.execPath, ['-e', "process.stdout.write('x')"], {
+      await muirExec(process.execPath, ['-e', "process.stdout.write('x')"], {
         cwd: dir,
         logFile,
       });
@@ -253,7 +256,7 @@ describe('lzExec', () => {
         }
       });
 
-      // Stryker disable next-line LzNodeTestAssertCall: runs on Linux only, so the Windows mutation run cannot reach it
+      // Stryker disable next-line MuirProteusNodeTestAssertCall: runs on Linux only, so the Windows mutation run cannot reach it
       assert.ok(
         !targets.includes(realpathSync(logFile)),
         `still open: ${realpathSync(logFile)}`,

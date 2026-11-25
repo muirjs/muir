@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeTestCatchAssert } from '../../src/node-test-catch-assert.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeTestCatchAssert } from '../../src/node-test-catch-assert.ts';
 import { mutantsOf, strict } from '../mutants-of.fixtures.ts';
 
 const test = "import { it } from 'node:test';\n";
 
-describe('LzNodeTestCatchAssert', () => {
-  lzTestEach([
+describe('MuirProteusNodeTestCatchAssert', () => {
+  muirTestEach([
     [
       'an assertion of a default import',
       `${strict}try {\n  parse('');\n} catch (error: any) {\n  assert.equal(error.message, 'empty');\n}`,
@@ -51,10 +51,12 @@ describe('LzNodeTestCatchAssert', () => {
       `${strict}try {\n  parse('');\n} catch {\n  assert.ok(true);\n}`,
     ],
   ])('empties the try block of %s', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeTestCatchAssert, source), ['{}']);
+    assert.deepEqual(await mutantsOf(muirProteusNodeTestCatchAssert, source), [
+      '{}',
+    ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     [
       'a catch that only fails',
       `${strict}try {\n  parse('');\n} catch (error) {\n  assert.fail(String(error));\n}`,
@@ -125,6 +127,9 @@ describe('LzNodeTestCatchAssert', () => {
       `${test}it('works', (t: any) => {\n  try {\n    parse('');\n  } catch (e) {\n    t.assert[method](e);\n  }\n});`,
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeTestCatchAssert, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeTestCatchAssert, source),
+      [],
+    );
   });
 });

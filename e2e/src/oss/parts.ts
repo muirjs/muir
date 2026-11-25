@@ -2,13 +2,13 @@ import { readFileSync } from 'node:fs';
 
 import { parseSync } from '@babel/core';
 
-import { lzParseReport } from '../report.ts';
+import { muirParseReport } from '../report.ts';
 
 /**
  * Cuts fall between top-level statements because Stryker places a mutant only in a range that holds all of it. Each
  * line weighs its mutants in `counts`, and a line without any weighs 0; without counts, every line weighs the same.
  */
-export function lzPartRanges(
+export function muirPartRanges(
   file: string,
   source: string,
   parts: number,
@@ -24,7 +24,7 @@ export function lzPartRanges(
   const sumBefore = (line: number): number => {
     const index = line - 1;
 
-    // Stryker disable next-line LzJsNumericLiteral: unreachable, as every line from 1 to lineCount + 1 has a sum
+    // Stryker disable next-line MuirProteusJsNumericLiteral: unreachable, as every line from 1 to lineCount + 1 has a sum
     return weightBefore[index] ?? 0;
   };
 
@@ -101,18 +101,18 @@ function lineWeights(
   counts: ReadonlyMap<number, number> | undefined,
 ): (line: number) => number {
   if (counts === undefined) {
-    // Stryker disable next-line LzJsNumericLiteral: the 2 is equivalent, as a weight every line shares scales every target and distance alike; the 0 is killed by the even-share test but cannot be enabled alone
+    // Stryker disable next-line MuirProteusJsNumericLiteral: the 2 is equivalent, as a weight every line shares scales every target and distance alike; the 0 is killed by the even-share test but cannot be enabled alone
     return () => 1;
   }
 
   return (line) => counts.get(line) ?? 0;
 }
 
-export function lzMutantsByLine(
+export function muirMutantsByLine(
   reportFile: string,
   file: string,
 ): Map<number, number> {
-  const report = lzParseReport(readFileSync(reportFile, 'utf8'));
+  const report = muirParseReport(readFileSync(reportFile, 'utf8'));
   const mutants = report.get(file);
 
   if (mutants === undefined) {

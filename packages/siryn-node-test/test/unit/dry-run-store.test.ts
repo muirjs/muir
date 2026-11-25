@@ -10,9 +10,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import { lzDryRunStore, lzOwnDryRun } from '../../src/dry-run-store.ts';
-import { envNames } from '../../src/record.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import {
+  muirSirynNodeTestDryRunStore,
+  muirSirynNodeTestOwnDryRun,
+} from '../../src/dry-run-store.ts';
+import { muirSirynNodeTestEnvNames } from '../../src/record.ts';
 
 function setup(t: TestContext) {
   const parent = mkdtempSync(join(tmpdir(), 'dry-run-store-'));
@@ -20,13 +23,13 @@ function setup(t: TestContext) {
     rmSync(parent, { recursive: true, force: true });
   });
   const dir = join(parent, 'dry-run');
-  const store = lzDryRunStore(dir);
+  const store = muirSirynNodeTestDryRunStore(dir);
   store.start();
 
   return { dir, store };
 }
 
-describe('lzDryRunStore', () => {
+describe('muirSirynNodeTestDryRunStore', () => {
   it('starts empty, whatever an earlier run left in its directory', (t) => {
     const { dir, store } = setup(t);
     store.write('a.test.ts', 'peak', '370');
@@ -34,7 +37,7 @@ describe('lzDryRunStore', () => {
     mkdirSync(join(dir, 'left'));
     writeFileSync(join(dir, 'left', 'other'), 'x');
 
-    lzDryRunStore(dir).start();
+    muirSirynNodeTestDryRunStore(dir).start();
 
     assert.deepEqual(
       [
@@ -73,27 +76,33 @@ describe('lzDryRunStore', () => {
   });
 });
 
-describe('lzOwnDryRun', () => {
+describe('muirSirynNodeTestOwnDryRun', () => {
   function inherit(t: TestContext, owner: string): void {
-    const before = process.env[envNames.dryRunOwner];
+    const before = process.env[muirSirynNodeTestEnvNames.dryRunOwner];
     t.after(() => {
       if (before === undefined) {
-        Reflect.deleteProperty(process.env, envNames.dryRunOwner);
+        Reflect.deleteProperty(
+          process.env,
+          muirSirynNodeTestEnvNames.dryRunOwner,
+        );
       } else {
-        process.env[envNames.dryRunOwner] = before;
+        process.env[muirSirynNodeTestEnvNames.dryRunOwner] = before;
       }
     });
-    process.env[envNames.dryRunOwner] = owner;
+    process.env[muirSirynNodeTestEnvNames.dryRunOwner] = owner;
   }
 
   it('returns the owner its parent process passed on, and keeps it', (t) => {
     inherit(t, String(process.ppid));
 
-    assert.equal(lzOwnDryRun(), process.ppid);
-    assert.equal(process.env[envNames.dryRunOwner], String(process.ppid));
+    assert.equal(muirSirynNodeTestOwnDryRun(), process.ppid);
+    assert.equal(
+      process.env[muirSirynNodeTestEnvNames.dryRunOwner],
+      String(process.ppid),
+    );
   });
 
-  lzTestFor<readonly [string]>([
+  muirTestFor<readonly [string]>([
     [''],
     ['not a pid'],
     ['0'],
@@ -106,8 +115,11 @@ describe('lzOwnDryRun', () => {
     ([owner], t) => {
       inherit(t, owner);
 
-      assert.equal(lzOwnDryRun(), process.pid);
-      assert.equal(process.env[envNames.dryRunOwner], String(process.pid));
+      assert.equal(muirSirynNodeTestOwnDryRun(), process.pid);
+      assert.equal(
+        process.env[muirSirynNodeTestEnvNames.dryRunOwner],
+        String(process.pid),
+      );
     },
   );
 });

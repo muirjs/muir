@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
-import { resolveFromCore } from '../../src/install.ts';
+import { muirProteusJsxResolveFromCore } from '../../src/install.ts';
 import { instrumentFully } from './instrument-result.ts';
 
-const instrumenter = resolveFromCore();
+const instrumenter = muirProteusJsxResolveFromCore();
 
 export async function ignorerOutcomes(
   ignorer: Ignorer,

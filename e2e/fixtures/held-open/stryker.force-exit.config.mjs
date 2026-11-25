@@ -2,8 +2,8 @@
 export default {
   mutate: ['src/**/*.js'],
   plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
-  testRunner: 'lz-node-test',
-  lzNodeTest: {
+  testRunner: 'muir-siryn-node-test',
+  muirSirynNodeTest: {
     testFiles: ['test/**/*.test.js'],
     nodeArgs: ['--test-force-exit'],
   },

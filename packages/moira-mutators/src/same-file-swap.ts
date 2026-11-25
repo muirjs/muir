@@ -1,36 +1,47 @@
-import { argumentOf, callTypes, findProperty, memberNameOf } from './ast.ts';
-import type { SampledMutator } from './install.ts';
-import { fieldOf, isRecord } from './is-record.ts';
+import {
+  muirMoiraMutatorsArgumentOf,
+  muirMoiraMutatorsCallTypes,
+  muirMoiraMutatorsFindProperty,
+  muirMoiraMutatorsMemberNameOf,
+} from './ast.ts';
+import type { MuirMoiraMutatorsSampledMutator } from './install.ts';
+import {
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsIsRecord,
+} from './is-record.ts';
 
 /** A literal that a mutator may swap: the node, and the value that tells it from another literal of the same key. */
-export interface Site {
+export interface MuirMoiraMutatorsSite {
   readonly key: string;
   readonly value: string;
   readonly node: unknown;
 }
 
 /** Reads the site of a call expression, when the call has one. */
-export type SiteReader = (call: unknown) => Site | undefined;
+export type MuirMoiraMutatorsSiteReader = (
+  call: unknown,
+) => MuirMoiraMutatorsSite | undefined;
 
 /** True when two site values must never replace each other. */
 type Excludes = (one: string, other: string) => boolean;
 
 /** The Babel types a same-file swap uses. */
-export interface SwapTypes {
+export interface MuirMoiraMutatorsSwapTypes {
   cloneNode(node: unknown): unknown;
 }
 
-export interface SwapMutator<TName extends string> extends SampledMutator {
+export interface MuirMoiraMutatorsSwapMutator<TName extends string>
+  extends MuirMoiraMutatorsSampledMutator {
   readonly name: TName;
-  mutate(path: unknown, t: SwapTypes): Iterable<unknown>;
+  mutate(path: unknown, t: MuirMoiraMutatorsSwapTypes): Iterable<unknown>;
 }
 
-export function swapMutator<const TName extends string>(
+export function muirMoiraMutatorsSwapMutator<const TName extends string>(
   name: TName,
   sample: string,
-  read: SiteReader,
+  read: MuirMoiraMutatorsSiteReader,
   excludes: Excludes = (one, other) => one === other,
-): SwapMutator<TName> {
+): MuirMoiraMutatorsSwapMutator<TName> {
   const indexed = new WeakMap<
     object,
     ReadonlyMap<unknown, readonly unknown[]>
@@ -42,12 +53,12 @@ export function swapMutator<const TName extends string>(
     *mutate(path, t) {
       const program = programOf(path);
 
-      if (!isRecord(program)) {
+      if (!muirMoiraMutatorsIsRecord(program)) {
         return;
       }
 
       // Built on the first node this mutator is shown of the file: Program, the first node of a line range, or, for
-      // LzStorybookInteractionTarget, its first site. Stryker places mutants on exit, so other mutators' mutants may
+      // MuirProteusStorybookTestInteractionTarget, its first site. Stryker places mutants on exit, so other mutators' mutants may
       // already stand in earlier statements; they copy the literals of sites unchanged, and no swap of this mutator
       // has been placed yet.
       const replacements =
@@ -59,9 +70,9 @@ export function swapMutator<const TName extends string>(
 
       indexed.set(program, replacements);
 
-      yield* (replacements.get(fieldOf(path, 'node')) ?? []).map(
-        (replacement) => t.cloneNode(replacement),
-      );
+      yield* (
+        replacements.get(muirMoiraMutatorsFieldOf(path, 'node')) ?? []
+      ).map((replacement) => t.cloneNode(replacement));
     },
   };
 }
@@ -70,33 +81,40 @@ export function swapMutator<const TName extends string>(
  * What tells two literal values apart: a string literal and an expression-free template literal by their text, a
  * regex literal by pattern and flags. A string and a regex never compare equal.
  */
-export function literalValue(node: unknown): string | undefined {
-  switch (fieldOf(node, 'type')) {
+export function muirMoiraMutatorsLiteralValue(
+  node: unknown,
+): string | undefined {
+  switch (muirMoiraMutatorsFieldOf(node, 'type')) {
     case 'StringLiteral':
     case 'TemplateLiteral': {
-      const text = literalText(node);
+      const text = muirMoiraMutatorsLiteralText(node);
 
       return text === undefined ? undefined : `string:${text}`;
     }
     case 'RegExpLiteral':
-      return `regex:/${String(fieldOf(node, 'pattern'))}/${String(fieldOf(node, 'flags'))}`;
+      return `regex:/${String(muirMoiraMutatorsFieldOf(node, 'pattern'))}/${String(muirMoiraMutatorsFieldOf(node, 'flags'))}`;
     default:
       return undefined;
   }
 }
 
 /** The text of a string literal or of an expression-free template literal. */
-export function literalText(node: unknown): string | undefined {
-  switch (fieldOf(node, 'type')) {
+export function muirMoiraMutatorsLiteralText(
+  node: unknown,
+): string | undefined {
+  switch (muirMoiraMutatorsFieldOf(node, 'type')) {
     case 'StringLiteral': {
-      const text = fieldOf(node, 'value');
+      const text = muirMoiraMutatorsFieldOf(node, 'value');
 
       return typeof text === 'string' ? text : undefined;
     }
     case 'TemplateLiteral': {
-      const quasis = fieldOf(node, 'quasis');
-      const text = fieldOf(
-        fieldOf(Array.isArray(quasis) ? quasis[0] : undefined, 'value'),
+      const quasis = muirMoiraMutatorsFieldOf(node, 'quasis');
+      const text = muirMoiraMutatorsFieldOf(
+        muirMoiraMutatorsFieldOf(
+          Array.isArray(quasis) ? quasis[0] : undefined,
+          'value',
+        ),
         'cooked',
       );
 
@@ -115,28 +133,46 @@ export function literalText(node: unknown): string | undefined {
  * The `name` of a call to one of the methods with a string-literal role, such as `getByRole('button', { name: 'Save'
  * })`; the role is the key, so the methods share replacements.
  */
-export function roleSite(methods: readonly string[]): SiteReader {
+export function muirMoiraMutatorsRoleSite(
+  methods: readonly string[],
+): MuirMoiraMutatorsSiteReader {
   return (call) => {
-    const method = memberNameOf(fieldOf(call, 'callee'));
-    const role = argumentOf(call, 0);
-    const name = fieldOf(findProperty(argumentOf(call, 1), 'name'), 'value');
-    const value = literalValue(name);
+    const method = muirMoiraMutatorsMemberNameOf(
+      muirMoiraMutatorsFieldOf(call, 'callee'),
+    );
+    const role = muirMoiraMutatorsArgumentOf(call, 0);
+    const name = muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFindProperty(
+        muirMoiraMutatorsArgumentOf(call, 1),
+        'name',
+      ),
+      'value',
+    );
+    const value = muirMoiraMutatorsLiteralValue(name);
 
     return typeof method === 'string' &&
       methods.includes(method) &&
-      fieldOf(role, 'type') === 'StringLiteral' &&
+      muirMoiraMutatorsFieldOf(role, 'type') === 'StringLiteral' &&
       value !== undefined
-      ? { key: `role:${literalValue(role)}`, value, node: name }
+      ? {
+          key: `role:${muirMoiraMutatorsLiteralValue(role)}`,
+          value,
+          node: name,
+        }
       : undefined;
   };
 }
 
 /** The first argument of a call to one of the methods; the method is the key. */
-export function firstArgumentSite(methods: readonly string[]): SiteReader {
+export function muirMoiraMutatorsFirstArgumentSite(
+  methods: readonly string[],
+): MuirMoiraMutatorsSiteReader {
   return (call) => {
-    const method = memberNameOf(fieldOf(call, 'callee'));
-    const argument = argumentOf(call, 0);
-    const value = literalValue(argument);
+    const method = muirMoiraMutatorsMemberNameOf(
+      muirMoiraMutatorsFieldOf(call, 'callee'),
+    );
+    const argument = muirMoiraMutatorsArgumentOf(call, 0);
+    const value = muirMoiraMutatorsLiteralValue(argument);
 
     return typeof method === 'string' &&
       methods.includes(method) &&
@@ -147,11 +183,13 @@ export function firstArgumentSite(methods: readonly string[]): SiteReader {
 }
 
 function isCall(node: unknown): boolean {
-  return callTypes.includes(fieldOf(node, 'type'));
+  return muirMoiraMutatorsCallTypes.includes(
+    muirMoiraMutatorsFieldOf(node, 'type'),
+  );
 }
 
 function replacementsBySite(
-  found: readonly (Site | undefined)[],
+  found: readonly (MuirMoiraMutatorsSite | undefined)[],
   excludes: Excludes,
 ): ReadonlyMap<unknown, readonly unknown[]> {
   const sites = found
@@ -177,21 +215,24 @@ function replacementsBySite(
 }
 
 function startOf(node: unknown): number {
-  const start = fieldOf(node, 'start');
+  const start = muirMoiraMutatorsFieldOf(node, 'start');
 
   return typeof start === 'number' ? start : 0;
 }
 
 function isReplacementFor(
-  site: Site,
+  site: MuirMoiraMutatorsSite,
   excludes: Excludes,
-): (other: Site) => boolean {
+): (other: MuirMoiraMutatorsSite) => boolean {
   return ({ key, value }) => key === site.key && !excludes(value, site.value);
 }
 
 function programOf(path: unknown): unknown {
-  return fieldOf(
-    fieldOf(fieldOf(fieldOf(path, 'hub'), 'file'), 'ast'),
+  return muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFieldOf(muirMoiraMutatorsFieldOf(path, 'hub'), 'file'),
+      'ast',
+    ),
     'program',
   );
 }
@@ -204,7 +245,7 @@ function recordsIn(record: object): readonly object[] {
       .flatMap((value): readonly unknown[] =>
         Array.isArray(value) ? value : [value],
       )
-      .filter(isRecord)
+      .filter(muirMoiraMutatorsIsRecord)
       .flatMap(recordsIn),
   ];
 }

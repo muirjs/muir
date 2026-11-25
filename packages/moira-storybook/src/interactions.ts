@@ -1,43 +1,59 @@
-import type { CsfShapes } from './csf.ts';
-import { isCall, isMember, primitiveLiteralOf, unwrap } from './csf-nodes.ts';
+import type { MuirMoiraStorybookCsfShapes } from './csf.ts';
 import {
-  type FollowingChecks,
-  followingChecksReader,
-  isStepCall,
-  type StatementRead,
-  targetOf,
+  muirMoiraStorybookIsCall,
+  muirMoiraStorybookIsMember,
+  muirMoiraStorybookPrimitiveLiteralOf,
+  muirMoiraStorybookUnwrap,
+} from './csf-nodes.ts';
+import {
+  type MuirMoiraStorybookFollowingChecks,
+  muirMoiraStorybookFollowingChecksReader,
+  muirMoiraStorybookIsStepCall,
+  type MuirMoiraStorybookStatementRead,
+  muirMoiraStorybookTargetOf,
 } from './following-checks.ts';
-import { field, list } from './node-field.ts';
 import {
-  awaited,
-  descendants,
-  indexTree,
-  isFunction,
-  isNode,
-  memberName,
-  type TreeIndex,
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
+import {
+  muirMoiraStorybookAwaited,
+  muirMoiraStorybookDescendants,
+  muirMoiraStorybookIndexTree,
+  muirMoiraStorybookIsFunction,
+  muirMoiraStorybookIsNode,
+  muirMoiraStorybookMemberName,
+  type MuirMoiraStorybookTreeIndex,
 } from './node-tree.ts';
-import { type FileScope, fileScope, functionsOf } from './scope.ts';
 import {
-  type UserEventOrigin,
-  userEventMethods,
-  userEventOrigins,
+  type MuirMoiraStorybookFileScope,
+  muirMoiraStorybookFileScope,
+  muirMoiraStorybookFunctionsOf,
+} from './scope.ts';
+import {
+  type MuirMoiraStorybookUserEventOrigin,
+  muirMoiraStorybookUserEventMethods,
+  muirMoiraStorybookUserEventOrigins,
 } from './user-event-origin.ts';
 
-export type { Check, FollowingChecks, WindowEnd } from './following-checks.ts';
-export type { UserEventOrigin } from './user-event-origin.ts';
+export type {
+  MuirMoiraStorybookCheck,
+  MuirMoiraStorybookFollowingChecks,
+  MuirMoiraStorybookWindowEnd,
+} from './following-checks.ts';
+export type { MuirMoiraStorybookUserEventOrigin } from './user-event-origin.ts';
 
 type Kind =
   | {
       readonly kind: 'userEvent';
       /** `undefined` for a computed key that is not a string literal. */
       readonly method: string | undefined;
-      readonly origin: UserEventOrigin;
+      readonly origin: MuirMoiraStorybookUserEventOrigin;
     }
   | { readonly kind: 'fireEvent'; readonly method: string | undefined }
   | { readonly kind: 'composedPlay' | 'rawDom'; readonly method: string };
 
-export type Interaction = {
+export type MuirMoiraStorybookInteraction = {
   /** The statement: an expression statement, or the expression body of an arrow. Its identity is the join key. */
   readonly node: unknown;
   /** The call, without `await`, optional chaining or type wrappers. */
@@ -47,16 +63,18 @@ export type Interaction = {
   readonly targetValue: unknown;
   /** Stands in a `beforeEach` or `afterEach` function. */
   readonly inHook: boolean;
-  readonly following: FollowingChecks;
+  readonly following: MuirMoiraStorybookFollowingChecks;
 } & Kind;
 
-export interface StoryInteractions {
+export interface MuirMoiraStorybookStoryInteractions {
   /** Source order. */
-  readonly all: readonly Interaction[];
+  readonly all: readonly MuirMoiraStorybookInteraction[];
   /** The interaction whose statement is `node`, by identity. */
-  readonly at: (node: unknown) => Interaction | undefined;
+  readonly at: (node: unknown) => MuirMoiraStorybookInteraction | undefined;
   /** The interaction whose target query is the call nearest around `node`. */
-  readonly aimedAt: (node: unknown) => Interaction | undefined;
+  readonly aimedAt: (
+    node: unknown,
+  ) => MuirMoiraStorybookInteraction | undefined;
 }
 
 const hooks: ReadonlySet<unknown> = new Set(['beforeEach', 'afterEach']);
@@ -74,29 +92,30 @@ const composedPlayMethods: ReadonlySet<string> = new Set(['play', 'run']);
 
 /** An identifier, or a member chain that starts at one, computed or optional members and type wrappers included, such as `Stories.Other`, `Stories['Other']` or `Stories?.Other`. */
 function startsAtIdentifier(node: unknown): boolean {
-  const inner = unwrap(node);
+  const inner = muirMoiraStorybookUnwrap(node);
 
   return (
-    field(inner, 'type') === 'Identifier' ||
-    (isMember(inner) && startsAtIdentifier(field(inner, 'object')))
+    muirMoiraStorybookField(inner, 'type') === 'Identifier' ||
+    (muirMoiraStorybookIsMember(inner) &&
+      startsAtIdentifier(muirMoiraStorybookField(inner, 'object')))
   );
 }
 
 /** `<Story>.play`, where `<Story>` starts at an identifier, such as `Other`, `Stories.Other` or `Stories?.Other`. */
 function isStoryPlay(argument: unknown): boolean {
-  const node = unwrap(argument);
+  const node = muirMoiraStorybookUnwrap(argument);
 
   return (
-    isMember(node) &&
-    startsAtIdentifier(field(node, 'object')) &&
-    memberName(node) === 'play'
+    muirMoiraStorybookIsMember(node) &&
+    startsAtIdentifier(muirMoiraStorybookField(node, 'object')) &&
+    muirMoiraStorybookMemberName(node) === 'play'
   );
 }
 
 /** `node` when it is a call, else the nearest call around it. */
-function callAround(tree: TreeIndex, node: unknown): unknown {
+function callAround(tree: MuirMoiraStorybookTreeIndex, node: unknown): unknown {
   return [node, ...tree.ancestors(node)].find(
-    (each) => field(each, 'type') === 'CallExpression',
+    (each) => muirMoiraStorybookField(each, 'type') === 'CallExpression',
   );
 }
 
@@ -106,92 +125,111 @@ function callAround(tree: TreeIndex, node: unknown): unknown {
  * functions `functionsOf` gives. The property's value, the array and each element are read through parentheses,
  * casts and non-null assertions.
  */
-function hooksOf(program: unknown, scope: FileScope): ReadonlySet<unknown> {
+function hooksOf(
+  program: unknown,
+  scope: MuirMoiraStorybookFileScope,
+): ReadonlySet<unknown> {
   return new Set(
-    descendants(program).flatMap((node): readonly unknown[] => {
-      if (
-        !hooks.has(
-          field(node, 'key', 'name') ??
-            primitiveLiteralOf(field(node, 'key'))?.value,
-        )
-      ) {
-        // Stryker disable next-line ArrayDeclaration: the hook set is searched for function nodes, and a string is none
-        return [];
-      }
+    muirMoiraStorybookDescendants(program).flatMap(
+      (node): readonly unknown[] => {
+        if (
+          !hooks.has(
+            muirMoiraStorybookField(node, 'key', 'name') ??
+              muirMoiraStorybookPrimitiveLiteralOf(
+                muirMoiraStorybookField(node, 'key'),
+              )?.value,
+          )
+        ) {
+          // Stryker disable next-line ArrayDeclaration: the hook set is searched for function nodes, and a string is none
+          return [];
+        }
 
-      if (field(node, 'type') === 'ObjectMethod') {
-        return [node];
-      }
+        if (muirMoiraStorybookField(node, 'type') === 'ObjectMethod') {
+          return [node];
+        }
 
-      if (field(node, 'type') !== 'ObjectProperty') {
-        // Stryker disable next-line ArrayDeclaration: the hook set is searched for function nodes, and a string is none
-        return [];
-      }
+        if (muirMoiraStorybookField(node, 'type') !== 'ObjectProperty') {
+          // Stryker disable next-line ArrayDeclaration: the hook set is searched for function nodes, and a string is none
+          return [];
+        }
 
-      const value = unwrap(field(node, 'value'));
-      const values =
-        field(value, 'type') === 'ArrayExpression'
-          ? list(field(value, 'elements')).map(unwrap)
-          : [value];
+        const value = muirMoiraStorybookUnwrap(
+          muirMoiraStorybookField(node, 'value'),
+        );
+        const values =
+          muirMoiraStorybookField(value, 'type') === 'ArrayExpression'
+            ? muirMoiraStorybookList(
+                muirMoiraStorybookField(value, 'elements'),
+              ).map(muirMoiraStorybookUnwrap)
+            : [value];
 
-      return values.flatMap((each) =>
-        isFunction(each) ? [each] : functionsOf(scope.bindingOf(each)),
-      );
-    }),
+        return values.flatMap((each) =>
+          muirMoiraStorybookIsFunction(each)
+            ? [each]
+            : muirMoiraStorybookFunctionsOf(scope.bindingOf(each)),
+        );
+      },
+    ),
   );
 }
 
 /** Reads every interaction of one file, once, from its Program. Accepts Babel 7 and Babel 8 trees. `shapes` is `csfShapes(program)`. */
-export function interactionsOf(
+export function muirMoiraStorybookInteractionsOf(
   program: unknown,
-  shapes: CsfShapes,
-): StoryInteractions {
-  const tree = indexTree(program);
-  const scope = fileScope(program);
+  shapes: MuirMoiraStorybookCsfShapes,
+): MuirMoiraStorybookStoryInteractions {
+  const tree = muirMoiraStorybookIndexTree(program);
+  const scope = muirMoiraStorybookFileScope(program);
   const isInTestCode = (node: unknown): boolean =>
     [node, ...tree.ancestors(node)].some((each) => shapes.testCode.has(each));
   const hookFunctions = hooksOf(program, scope);
   const isInHook = (node: unknown): boolean =>
     [node, ...tree.ancestors(node)].some((each) => hookFunctions.has(each));
   const isUnderComputedKey = (node: unknown): boolean =>
-    field(node, 'computed') === true ||
-    field(tree.parentOf(node), 'computed') === true;
-  const originOf = userEventOrigins(
+    muirMoiraStorybookField(node, 'computed') === true ||
+    muirMoiraStorybookField(tree.parentOf(node), 'computed') === true;
+  const originOf = muirMoiraStorybookUserEventOrigins(
     program,
     tree,
     scope,
     new Set(
       [...shapes.testCode].filter(
-        (node) => isNode(node) && !isUnderComputedKey(node),
+        (node) => muirMoiraStorybookIsNode(node) && !isUnderComputedKey(node),
       ),
     ),
   );
   const kindOf = (call: unknown): Kind | undefined => {
-    if (!isCall(call)) {
+    if (!muirMoiraStorybookIsCall(call)) {
       return undefined;
     }
 
-    const callee = unwrap(field(call, 'callee'));
-    const method = memberName(callee);
-    const receiver = field(callee, 'object');
+    const callee = muirMoiraStorybookUnwrap(
+      muirMoiraStorybookField(call, 'callee'),
+    );
+    const method = muirMoiraStorybookMemberName(callee);
+    const receiver = muirMoiraStorybookField(callee, 'object');
     const actsOnPage =
       method === undefined
-        ? field(callee, 'computed') === true
-        : userEventMethods.has(method);
+        ? muirMoiraStorybookField(callee, 'computed') === true
+        : muirMoiraStorybookUserEventMethods.has(method);
     const origin = actsOnPage ? originOf(receiver) : undefined;
 
     if (origin !== undefined) {
       return { kind: 'userEvent', method, origin };
     }
 
-    const fireEvent = isMember(callee) ? unwrap(receiver) : callee;
+    const fireEvent = muirMoiraStorybookIsMember(callee)
+      ? muirMoiraStorybookUnwrap(receiver)
+      : callee;
 
-    if (field(fireEvent, 'name') === 'fireEvent') {
+    if (muirMoiraStorybookField(fireEvent, 'name') === 'fireEvent') {
       return { kind: 'fireEvent', method };
     }
 
-    if (isStepCall(call)) {
-      return isStoryPlay(list(field(call, 'arguments'))[1])
+    if (muirMoiraStorybookIsStepCall(call)) {
+      return isStoryPlay(
+        muirMoiraStorybookList(muirMoiraStorybookField(call, 'arguments'))[1],
+      )
         ? { kind: 'composedPlay', method: 'step' }
         : undefined;
     }
@@ -206,7 +244,8 @@ export function interactionsOf(
         : undefined;
     }
 
-    return rawDomArguments.get(method) === list(field(call, 'arguments')).length
+    return rawDomArguments.get(method) ===
+      muirMoiraStorybookList(muirMoiraStorybookField(call, 'arguments')).length
       ? { kind: 'rawDom', method }
       : undefined;
   };
@@ -216,21 +255,23 @@ export function interactionsOf(
     const declaration = binding?.declaration;
 
     return binding?.kind === 'const' &&
-      field(declaration, 'id') === binding.identifier
-      ? awaited(field(declaration, 'init'))
+      muirMoiraStorybookField(declaration, 'id') === binding.identifier
+      ? muirMoiraStorybookAwaited(muirMoiraStorybookField(declaration, 'init'))
       : node;
   };
   /** The expression `node` stands for as a statement: an expression statement's expression, or `node` itself when it is its parent's `body`, which among expressions only an arrow's expression body is; `undefined` otherwise. */
   const statementExpressionOf = (node: unknown): unknown =>
-    field(node, 'type') === 'ExpressionStatement'
-      ? field(node, 'expression')
-      : field(tree.parentOf(node), 'body') === node
+    muirMoiraStorybookField(node, 'type') === 'ExpressionStatement'
+      ? muirMoiraStorybookField(node, 'expression')
+      : muirMoiraStorybookField(tree.parentOf(node), 'body') === node
         ? node
         : undefined;
-  const found = descendants(program).flatMap((node) => {
-    const call = awaited(statementExpressionOf(node));
+  const found = muirMoiraStorybookDescendants(program).flatMap((node) => {
+    const call = muirMoiraStorybookAwaited(statementExpressionOf(node));
     const kind = kindOf(call);
-    const args = list(field(call, 'arguments'));
+    const args = muirMoiraStorybookList(
+      muirMoiraStorybookField(call, 'arguments'),
+    );
 
     return kind === undefined
       ? []
@@ -240,25 +281,29 @@ export function interactionsOf(
               node,
               call,
               args,
-              targetValue: valueOf(targetOf({ node, args })),
+              targetValue: valueOf(muirMoiraStorybookTargetOf({ node, args })),
               inHook: isInHook(node),
             },
             kind,
           },
         ];
   });
-  const reads: ReadonlyMap<unknown, StatementRead> = new Map(
+  const reads: ReadonlyMap<unknown, MuirMoiraStorybookStatementRead> = new Map(
     found.map(({ read }) => [read.node, read]),
   );
-  const followingChecksOf = followingChecksReader(tree, scope, (node) =>
-    reads.get(node),
+  const followingChecksOf = muirMoiraStorybookFollowingChecksReader(
+    tree,
+    scope,
+    (node) => reads.get(node),
   );
-  const all: readonly Interaction[] = found.map(({ read, kind }) => ({
-    ...read,
-    ...kind,
-    following: followingChecksOf(read),
-  }));
-  const byNode: ReadonlyMap<unknown, Interaction> = new Map(
+  const all: readonly MuirMoiraStorybookInteraction[] = found.map(
+    ({ read, kind }) => ({
+      ...read,
+      ...kind,
+      following: followingChecksOf(read),
+    }),
+  );
+  const byNode: ReadonlyMap<unknown, MuirMoiraStorybookInteraction> = new Map(
     all.map((interaction) => [interaction.node, interaction]),
   );
 
@@ -270,7 +315,9 @@ export function interactionsOf(
 
       return query === undefined
         ? undefined
-        : all.find((interaction) => targetOf(interaction) === query);
+        : all.find(
+            (interaction) => muirMoiraStorybookTargetOf(interaction) === query,
+          );
     },
   };
 }

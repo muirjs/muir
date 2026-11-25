@@ -1,16 +1,19 @@
 import type { types } from '@babel/core';
 
 import {
-  attributeName,
-  elementSiteOf,
-  isJsxChild,
-  mutatorTable,
-  type AttributeSite,
-  type BabelTypes,
-  type ElementSite,
+  muirProteusJsxAttributeName,
+  muirProteusJsxElementSiteOf,
+  muirProteusJsxIsJsxChild,
+  muirProteusJsxMutatorTable,
+  type MuirProteusJsxAttributeSite,
+  type MuirProteusJsxBabelTypes,
+  type MuirProteusJsxElementSite,
 } from './mutator.ts';
-import type { RoleTable } from './implicit-roles.ts';
-import { notOnSpan, swapsToSpan } from './span-swap.ts';
+import type { MuirProteusJsxRoleTable } from './implicit-roles.ts';
+import {
+  muirProteusJsxNotOnSpan,
+  muirProteusJsxSwapsToSpan,
+} from './span-swap.ts';
 
 const hasWord = /[\p{L}\p{N}]/u;
 const comparisonOperators: ReadonlySet<string> = new Set([
@@ -37,10 +40,10 @@ const labelableElements: ReadonlySet<string> = new Set([
   'textarea',
 ]);
 
-export function mutatorsFor(roles: RoleTable) {
-  return mutatorTable([
+export function muirProteusJsxMutatorsFor(roles: MuirProteusJsxRoleTable) {
+  return muirProteusJsxMutatorTable([
     {
-      name: 'LzJsxTextLiteral',
+      name: 'MuirProteusJsxTextLiteral',
       sample: 'export const a = <p>Hello</p>;\n',
       rules: [
         {
@@ -51,7 +54,7 @@ export function mutatorsFor(roles: RoleTable) {
               hasWord.test(path.node.value) &&
               !isNamed(
                 unrenderedText,
-                elementSiteOf(path.parentPath.node, t)?.name,
+                muirProteusJsxElementSiteOf(path.parentPath.node, t)?.name,
               )
             ) {
               yield t.jsxText('');
@@ -61,7 +64,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxLabelAttribute',
+      name: 'MuirProteusJsxLabelAttribute',
       sample: 'export const a = <img alt="Logo" />;\n',
       rules: [
         {
@@ -83,7 +86,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxEventHandler',
+      name: 'MuirProteusJsxEventHandler',
       sample: 'export const a = (f: () => void) => <b onClick={f} />;\n',
       rules: [
         {
@@ -95,7 +98,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxConditionalElement',
+      name: 'MuirProteusJsxConditionalElement',
       sample:
         'export const a = (open: boolean) => <div>{open && <p />}</div>;\n',
       rules: [
@@ -118,7 +121,7 @@ export function mutatorsFor(roles: RoleTable) {
             if (
               path.isConditionalExpression() &&
               path.parentPath.isJSXExpressionContainer() &&
-              isJsxChild(path.parentPath) &&
+              muirProteusJsxIsJsxChild(path.parentPath) &&
               (isJsxBranch(path.node.consequent, t) ||
                 isJsxBranch(path.node.alternate, t)) &&
               !builtInForces(path.node.test, t)
@@ -131,7 +134,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxUrlAttribute',
+      name: 'MuirProteusJsxUrlAttribute',
       sample: 'export const a = <a href="/about">About</a>;\n',
       rules: [
         {
@@ -142,7 +145,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxDisabledAttribute',
+      name: 'MuirProteusJsxDisabledAttribute',
       sample: 'export const a = <input disabled />;\n',
       rules: [
         {
@@ -154,7 +157,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxHiddenAttribute',
+      name: 'MuirProteusJsxHiddenAttribute',
       sample: 'export const a = <div hidden />;\n',
       rules: [
         {
@@ -169,7 +172,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxElementRole',
+      name: 'MuirProteusJsxElementRole',
       sample: 'export const a = <div role="dialog" />;\n',
       rules: [
         {
@@ -183,11 +186,11 @@ export function mutatorsFor(roles: RoleTable) {
         {
           kind: 'node',
           *mutate(path, t) {
-            const element = elementSiteOf(path.node, t);
+            const element = muirProteusJsxElementSiteOf(path.node, t);
 
             if (
               element === undefined ||
-              !swapsToSpan(implicitRole(element, roles))
+              !muirProteusJsxSwapsToSpan(implicitRole(element, roles))
             ) {
               return;
             }
@@ -198,7 +201,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxChildExpression',
+      name: 'MuirProteusJsxChildExpression',
       sample: 'export const a = (n: number) => <p>{n}</p>;\n',
       rules: [
         {
@@ -208,7 +211,7 @@ export function mutatorsFor(roles: RoleTable) {
 
             if (
               container?.isJSXExpressionContainer() &&
-              isJsxChild(container) &&
+              muirProteusJsxIsJsxChild(container) &&
               isRenderedValue(path.node, t)
             ) {
               yield t.nullLiteral();
@@ -218,7 +221,7 @@ export function mutatorsFor(roles: RoleTable) {
       ],
     },
     {
-      name: 'LzJsxStateAttribute',
+      name: 'MuirProteusJsxStateAttribute',
       sample:
         'export const a = (open: boolean) => <button aria-expanded={open} />;\n',
       rules: [
@@ -238,7 +241,9 @@ export function mutatorsFor(roles: RoleTable) {
   ]);
 }
 
-export type MutatorName = ReturnType<typeof mutatorsFor>[number]['name'];
+export type MuirProteusJsxMutatorName = ReturnType<
+  typeof muirProteusJsxMutatorsFor
+>[number]['name'];
 
 function isNamed(
   names: ReadonlySet<string>,
@@ -247,12 +252,12 @@ function isNamed(
   return name !== undefined && names.has(name);
 }
 
-function isJsxBranch(node: types.Node, t: BabelTypes): boolean {
+function isJsxBranch(node: types.Node, t: MuirProteusJsxBabelTypes): boolean {
   return t.isJSXElement(node) || t.isJSXFragment(node) || t.isNullLiteral(node);
 }
 
 /** A comparison, or `&&`/`||`: built-in ConditionalExpression already makes the same mutants for this test. */
-function builtInForces(test: types.Node, t: BabelTypes): boolean {
+function builtInForces(test: types.Node, t: MuirProteusJsxBabelTypes): boolean {
   return (
     isComparison(test, t) ||
     (t.isLogicalExpression(test) && test.operator !== '??')
@@ -260,7 +265,10 @@ function builtInForces(test: types.Node, t: BabelTypes): boolean {
 }
 
 /** Built-in ConditionalExpression already sets this value to `false`. */
-function builtInForcesValue(site: AttributeSite, t: BabelTypes): boolean {
+function builtInForcesValue(
+  site: MuirProteusJsxAttributeSite,
+  t: MuirProteusJsxBabelTypes,
+): boolean {
   return (
     site.value.kind === 'expression' && builtInForces(site.value.expression, t)
   );
@@ -270,7 +278,10 @@ function builtInForcesValue(site: AttributeSite, t: BabelTypes): boolean {
  * Built-in EqualityOperator already negates a comparison, and BooleanLiteral's `x` for a `!x` value renders
  * like `!!x` when `x` is a boolean.
  */
-function builtInNegates(site: AttributeSite, t: BabelTypes): boolean {
+function builtInNegates(
+  site: MuirProteusJsxAttributeSite,
+  t: MuirProteusJsxBabelTypes,
+): boolean {
   if (site.value.kind !== 'expression') {
     return false;
   }
@@ -285,7 +296,10 @@ function builtInNegates(site: AttributeSite, t: BabelTypes): boolean {
 }
 
 // Babel keeps no node for parentheses, so `!(a === b)` reaches this as the comparison.
-function isBooleanBySyntax(node: types.Node, t: BabelTypes): boolean {
+function isBooleanBySyntax(
+  node: types.Node,
+  t: MuirProteusJsxBabelTypes,
+): boolean {
   if (t.isLogicalExpression(node) && node.operator !== '??') {
     return isBooleanBySyntax(node.left, t) && isBooleanBySyntax(node.right, t);
   }
@@ -297,15 +311,22 @@ function isBooleanBySyntax(node: types.Node, t: BabelTypes): boolean {
   );
 }
 
-function isComparison(node: types.Node, t: BabelTypes): boolean {
+function isComparison(node: types.Node, t: MuirProteusJsxBabelTypes): boolean {
   return t.isBinaryExpression(node) && comparisonOperators.has(node.operator);
 }
 
-function asSpan(element: ElementSite, t: BabelTypes): types.JSXElement {
+function asSpan(
+  element: MuirProteusJsxElementSite,
+  t: MuirProteusJsxBabelTypes,
+): types.JSXElement {
   const span = t.cloneNode(element.node, true);
   span.openingElement.name = t.jsxIdentifier('span');
   span.openingElement.attributes = span.openingElement.attributes.filter(
-    (attribute) => !isNamed(notOnSpan, attributeName(attribute, t)),
+    (attribute) =>
+      !isNamed(
+        muirProteusJsxNotOnSpan,
+        muirProteusJsxAttributeName(attribute, t),
+      ),
   );
 
   if (span.closingElement) {
@@ -316,8 +337,8 @@ function asSpan(element: ElementSite, t: BabelTypes): types.JSXElement {
 }
 
 function implicitRole(
-  element: ElementSite,
-  roles: RoleTable,
+  element: MuirProteusJsxElementSite,
+  roles: MuirProteusJsxRoleTable,
 ): string | undefined {
   const entry =
     element.name === undefined ? undefined : roles.get(element.name);
@@ -330,12 +351,18 @@ function implicitRole(
 }
 
 /** A `label` whose subtree holds an `input`, `select` or `textarea`: nesting keeps the association without `htmlFor`. */
-function wrapsControl(label: ElementSite, t: BabelTypes): boolean {
+function wrapsControl(
+  label: MuirProteusJsxElementSite,
+  t: MuirProteusJsxBabelTypes,
+): boolean {
   const holds = (children: types.JSXElement['children']): boolean =>
     children.some(
       (child) =>
         (t.isJSXElement(child) &&
-          (isNamed(labelableElements, elementSiteOf(child, t)?.name) ||
+          (isNamed(
+            labelableElements,
+            muirProteusJsxElementSiteOf(child, t)?.name,
+          ) ||
             holds(child.children))) ||
         (t.isJSXFragment(child) && holds(child.children)),
     );
@@ -343,7 +370,10 @@ function wrapsControl(label: ElementSite, t: BabelTypes): boolean {
   return holds(label.node.children);
 }
 
-function isRenderedValue(node: types.Node, t: BabelTypes): boolean {
+function isRenderedValue(
+  node: types.Node,
+  t: MuirProteusJsxBabelTypes,
+): boolean {
   if (t.isCallExpression(node)) {
     const { callee } = node;
 
@@ -365,7 +395,9 @@ function isRenderedValue(node: types.Node, t: BabelTypes): boolean {
  * The handler is an Identifier bound in this file to a function declaration, or to a `const` whose initializer is a
  * function or an arrow, and this attribute is its only reference: built-in BlockStatement already empties it.
  */
-function isOnlyReferenceOfLocalFunction(site: AttributeSite): boolean {
+function isOnlyReferenceOfLocalFunction(
+  site: MuirProteusJsxAttributeSite,
+): boolean {
   if (
     site.value.kind !== 'expression' ||
     site.value.expression.type !== 'Identifier'

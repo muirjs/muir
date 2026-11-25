@@ -4,35 +4,35 @@ import { describe, it } from 'node:test';
 
 import type { MutantCoverage } from '@stryker-mutator/api/core';
 
-import { lzTestFor } from '@muirjs/madrox-node-test';
-import type { ProcessRecord } from '../../src/record.ts';
+import { muirTestFor } from '@muirjs/madrox-node-test';
+import type { MuirSirynNodeTestProcessRecord } from '../../src/record.ts';
 import {
-  lzEndingSignals,
-  lzHits,
-  lzPersistRecord,
-  type LzEndingSignal,
-  type LzRecordDependencies,
+  muirSirynNodeTestEndingSignals,
+  muirSirynNodeTestHits,
+  muirSirynNodeTestPersistRecord,
+  type MuirSirynNodeTestEndingSignal,
+  type MuirSirynNodeTestRecordDependencies,
 } from '../../src/record-writer.ts';
 
 interface Written {
   readonly path: string;
-  readonly record: ProcessRecord;
+  readonly record: MuirSirynNodeTestProcessRecord;
 }
 
 const path = join('/tmp', 'out', '4321.0.json');
 
 /** The process's events, record writes and timers, which a test drives as Node.js would. */
-function fakeProcess(overrides: Partial<LzRecordDependencies>) {
+function fakeProcess(overrides: Partial<MuirSirynNodeTestRecordDependencies>) {
   const exitListeners: (() => void)[] = [];
   const signalListeners: {
-    readonly signal: LzEndingSignal;
+    readonly signal: MuirSirynNodeTestEndingSignal;
     readonly listener: () => void;
   }[] = [];
   let signalExitEmitters: readonly unknown[] = [];
-  const raised: LzEndingSignal[] = [];
+  const raised: MuirSirynNodeTestEndingSignal[] = [];
   const records: Written[] = [];
   const intervals: { readonly ms: number; readonly fire: () => void }[] = [];
-  const deps: LzRecordDependencies = {
+  const deps: MuirSirynNodeTestRecordDependencies = {
     onExit: (listener) => {
       exitListeners.push(listener);
     },
@@ -82,11 +82,11 @@ function fakeProcess(overrides: Partial<LzRecordDependencies>) {
       signalExitEmitters = emitters;
     },
     /** Adds a signal listener as the test file would, after the hook's. */
-    listen: (signal: LzEndingSignal, listener: () => void) => {
+    listen: (signal: MuirSirynNodeTestEndingSignal, listener: () => void) => {
       signalListeners.push({ signal, listener });
     },
     /** Runs the listeners of `signal` as Node.js does when the process gets it. */
-    signal: (signal: LzEndingSignal) => {
+    signal: (signal: MuirSirynNodeTestEndingSignal) => {
       signalListeners
         .filter((entry) => entry.signal === signal)
         .forEach((entry) => {
@@ -95,7 +95,7 @@ function fakeProcess(overrides: Partial<LzRecordDependencies>) {
     },
     listenerCounts: () =>
       Object.fromEntries(
-        lzEndingSignals.map((signal) => [
+        muirSirynNodeTestEndingSignals.map((signal) => [
           signal,
           deps.signals?.listenerCount(signal),
         ]),
@@ -109,11 +109,11 @@ function persisted(
     main: false,
     dryRun: false,
   },
-  overrides: Partial<LzRecordDependencies> = {},
+  overrides: Partial<MuirSirynNodeTestRecordDependencies> = {},
 ) {
   const fake = fakeProcess(overrides);
   const coverage: MutantCoverage = { static: {}, perTest: {} };
-  lzPersistRecord(
+  muirSirynNodeTestPersistRecord(
     fake.deps,
     path,
     () => ({ tests: [], mutantCoverage: structuredClone(coverage) }),
@@ -130,7 +130,7 @@ function persisted(
 
 const noListeners = { SIGTERM: 0, SIGINT: 0, SIGHUP: 0 };
 
-describe('lzPersistRecord, for a process that a signal ends', () => {
+describe('muirSirynNodeTestPersistRecord, for a process that a signal ends', () => {
   it('listens for SIGTERM, SIGINT and SIGHUP', () => {
     const { listenerCounts } = persisted();
 
@@ -151,8 +151,8 @@ describe('lzPersistRecord, for a process that a signal ends', () => {
     assert.equal(windows.records.length, 1);
   });
 
-  lzTestFor<readonly [LzEndingSignal]>(
-    lzEndingSignals.map((signal) => [signal]),
+  muirTestFor<readonly [MuirSirynNodeTestEndingSignal]>(
+    muirSirynNodeTestEndingSignals.map((signal) => [signal]),
   )(
     'writes the record on %s, stops listening and raises the signal again, as no other listener decides how the process ends',
     ([signal]) => {
@@ -192,7 +192,13 @@ describe('lzPersistRecord, for a process that a signal ends', () => {
     assert.deepEqual(listenerCounts(), { SIGTERM: 2, SIGINT: 1, SIGHUP: 1 });
   });
 
-  lzTestFor<readonly [string, readonly unknown[], readonly LzEndingSignal[]]>([
+  muirTestFor<
+    readonly [
+      string,
+      readonly unknown[],
+      readonly MuirSirynNodeTestEndingSignal[],
+    ]
+  >([
     [
       "raises the signal when every other listener is signal-exit's",
       [{ count: 1 }, { count: 1 }],
@@ -231,7 +237,7 @@ function writeError(code: string): Error {
   return Object.assign(new Error(`${code}: record write failed`), { code });
 }
 
-describe('lzPersistRecord, at exit', () => {
+describe('muirSirynNodeTestPersistRecord, at exit', () => {
   /** A process whose record writes fail with `code`, counting them. */
   function failingWrites(
     options: { readonly main: boolean; readonly dryRun: boolean },
@@ -250,7 +256,7 @@ describe('lzPersistRecord, at exit', () => {
     return { exit, writes: () => writes };
   }
 
-  lzTestFor(['EPERM', 'EBUSY'])(
+  muirTestFor(['EPERM', 'EBUSY'])(
     'exits without an error on Windows when the record of a process the tests started fails with %s, as the run is over',
     (code) => {
       const { exit, writes } = failingWrites(
@@ -310,23 +316,26 @@ describe('lzPersistRecord, at exit', () => {
 
   it('lets the error through when the record of a process the tests started cannot be built', () => {
     const { deps, exit } = fakeProcess({});
-    const unbuildable = (): ProcessRecord => {
+    const unbuildable = (): MuirSirynNodeTestProcessRecord => {
       throw new Error('no peak memory');
     };
-    lzPersistRecord(deps, path, unbuildable, { main: false, dryRun: false });
+    muirSirynNodeTestPersistRecord(deps, path, unbuildable, {
+      main: false,
+      dryRun: false,
+    });
 
     assert.throws(exit, /no peak memory/);
   });
 });
 
-describe('lzHits', () => {
+describe('muirSirynNodeTestHits', () => {
   it('counts no hits without coverage', () => {
-    assert.equal(lzHits(undefined), 0);
+    assert.equal(muirSirynNodeTestHits(undefined), 0);
   });
 
   it('counts the hits of every mutant, static and per test', () => {
     assert.equal(
-      lzHits({
+      muirSirynNodeTestHits({
         static: { 1: 2, 2: 1 },
         perTest: { a: { 1: 3 }, b: { 3: 1, 4: 5 } },
       }),
@@ -335,7 +344,7 @@ describe('lzHits', () => {
   });
 });
 
-describe('lzPersistRecord, in the dry run, for a process that ends without running its exit listeners', () => {
+describe('muirSirynNodeTestPersistRecord, in the dry run, for a process that ends without running its exit listeners', () => {
   const descendant = { main: false, dryRun: true };
 
   it('writes the record of a process the tests started every 250 ms, once its coverage has grown, as it writes every record', () => {
@@ -367,7 +376,7 @@ describe('lzPersistRecord, in the dry run, for a process that ends without runni
     );
   });
 
-  lzTestFor<
+  muirTestFor<
     readonly [string, { readonly main: boolean; readonly dryRun: boolean }]
   >([
     ['outside the dry run', { main: false, dryRun: false }],
@@ -425,7 +434,7 @@ describe('lzPersistRecord, in the dry run, for a process that ends without runni
     assert.throws(write, /EPERM/);
   });
 
-  lzTestFor(['EPERM', 'EBUSY'])(
+  muirTestFor(['EPERM', 'EBUSY'])(
     'keeps the process running on Windows when its record write fails with %s',
     (code) => {
       const { write, attempts } = writeWhileRunning(code, 'win32');
@@ -448,7 +457,7 @@ describe('lzPersistRecord, in the dry run, for a process that ends without runni
           throw writeError('EPERM');
         }
 
-        written.push(lzHits(record.mutantCoverage));
+        written.push(muirSirynNodeTestHits(record.mutantCoverage));
       },
     });
     const [only] = p.intervals;

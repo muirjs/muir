@@ -10,14 +10,14 @@ terms; install, tier and built-in mutator terms belong to the Mutator install co
 What a story file says a story renders with, such as its `args`, rather than its story test code.
 _Avoid_: story config, story setup
 
-**LzStorybook mutator**:
-One of this package's mutators, named `LzStorybook` plus the story data it changes, such as `LzStorybookArgs`.
+**MuirProteusStorybook mutator**:
+One of this package's mutators, named `MuirProteusStorybook` plus the story data it changes, such as `MuirProteusStorybookArgs`.
 _Avoid_: story mutator, Storybook operator
 
 ### Args
 
 **Args site**:
-An `args` object literal in a story file that `LzStorybookArgs` mutates because a play or test function runs for it:
+An `args` object literal in a story file that `MuirProteusStorybookArgs` mutates because a play or test function runs for it:
 the `args` a story's own object ends up with (a CSF3 story object, `.story()` or `.extend()`): its own, or those of a
 later spread of an object that sets `args` and that the file resolves, story or not (a later spread or computed key
 the file cannot resolve does not count), or the `args` in a

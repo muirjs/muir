@@ -1,11 +1,11 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  lzAwaited,
-  type LzBabelTypes,
-  type LzMutator,
+  muirMoiraNodeTestAwaited,
+  type MuirMoiraNodeTestBabelTypes,
+  type MuirMoiraNodeTestMutator,
 } from '@muirjs/moira-node-test';
-import { lzAssertMethod } from '@muirjs/proteus-node/bindings';
+import { muirProteusNodeAssertMethod } from '@muirjs/proteus-node/bindings';
 
 const message = 'Stryker: assertion reached';
 const asyncMethods: ReadonlySet<string> = new Set(['rejects', 'doesNotReject']);
@@ -19,13 +19,14 @@ const asyncMethods: ReadonlySet<string> = new Set(['rejects', 'doesNotReject']);
  * the others, a custom assertion added with `assert.register` included. There the original call is kept only for its
  * type and never runs.
  */
-export const nodeTestAssertCall: LzMutator = {
-  name: 'LzNodeTestAssertCall',
+export const muirProteusNodeTestAssertCall: MuirMoiraNodeTestMutator = {
+  name: 'MuirProteusNodeTestAssertCall',
   sample: 'export function check(t: any) {\n  t.assert.ok(true);\n}\n',
   *mutate(path, t) {
     if (
       path.isExpressionStatement() &&
-      assertionMethod(path, lzAwaited(path.node.expression)) !== undefined
+      assertionMethod(path, muirMoiraNodeTestAwaited(path.node.expression)) !==
+        undefined
     ) {
       yield t.blockStatement([
         t.cloneNode(path.node),
@@ -49,11 +50,14 @@ export const nodeTestAssertCall: LzMutator = {
   },
 };
 
-function error(t: LzBabelTypes): types.NewExpression {
+function error(t: MuirMoiraNodeTestBabelTypes): types.NewExpression {
   return t.newExpression(t.identifier('Error'), [t.stringLiteral(message)]);
 }
 
-function failure(t: LzBabelTypes, method: string): types.CallExpression {
+function failure(
+  t: MuirMoiraNodeTestBabelTypes,
+  method: string,
+): types.CallExpression {
   if (asyncMethods.has(method)) {
     return t.callExpression(
       t.memberExpression(t.identifier('Promise'), t.identifier('reject')),
@@ -87,7 +91,7 @@ function assertionMethod(
     return undefined;
   }
 
-  const method = lzAssertMethod(path, node.callee);
+  const method = muirProteusNodeAssertMethod(path, node.callee);
 
   return method === 'fail' ? undefined : method;
 }

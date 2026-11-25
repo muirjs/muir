@@ -4,16 +4,20 @@ import { PassThrough } from 'node:stream';
 import { describe, it } from 'node:test';
 import timers from 'node:timers/promises';
 
-import { lzTestEach, lzTestFor } from '@muirjs/madrox-node-test';
-import { endGroup, groupOptions, processEnd } from '../../src/process-end.ts';
+import { muirTestEach, muirTestFor } from '@muirjs/madrox-node-test';
+import {
+  muirSirynNodeTestEndGroup,
+  muirSirynNodeTestGroupOptions,
+  muirSirynNodeTestProcessEnd,
+} from '../../src/process-end.ts';
 
 describe('groupOptions', () => {
-  lzTestEach<[NodeJS.Platform, { detached: boolean; windowsHide: boolean }]>([
+  muirTestEach<[NodeJS.Platform, { detached: boolean; windowsHide: boolean }]>([
     ['linux', { detached: true, windowsHide: true }],
     ['darwin', { detached: true, windowsHide: true }],
     ['win32', { detached: false, windowsHide: true }],
   ])('spawns a test file on %s with %j', (platform, options) => {
-    assert.deepEqual(groupOptions(platform), options);
+    assert.deepEqual(muirSirynNodeTestGroupOptions(platform), options);
   });
 });
 
@@ -39,7 +43,7 @@ describe('endGroup', () => {
   function setup(platform: NodeJS.Platform, failure?: Failure) {
     const calls: unknown[][] = [];
     const end = () =>
-      endGroup(123, platform, (pid, signal) => {
+      muirSirynNodeTestEndGroup(123, platform, (pid, signal) => {
         calls.push([pid, signal]);
 
         if (failure && signal === (failure.signal ?? 'SIGTERM')) {
@@ -127,7 +131,7 @@ describe('endGroup', () => {
     assert.deepEqual(sent(calls), groupEnded);
   });
 
-  lzTestFor<readonly [string, NodeJS.Signals | 0, unknown]>([
+  muirTestFor<readonly [string, NodeJS.Signals | 0, unknown]>([
     [
       'an Error with another code',
       'SIGTERM',
@@ -174,13 +178,17 @@ describe('processEnd', () => {
       stderr: new PassThrough(),
     });
     const kills: unknown[][] = [];
-    const end = processEnd(child, platform, (target, signal) => {
-      kills.push([target, signal]);
+    const end = muirSirynNodeTestProcessEnd(
+      child,
+      platform,
+      (target, signal) => {
+        kills.push([target, signal]);
 
-      if (killError) {
-        throw killError;
-      }
-    });
+        if (killError) {
+          throw killError;
+        }
+      },
+    );
     let state: unknown = 'pending';
     end.then(
       (value) => (state = value),
@@ -234,7 +242,7 @@ describe('processEnd', () => {
       pid: 123,
       stderr: new PassThrough(),
     });
-    const end = processEnd(child, 'linux');
+    const end = muirSirynNodeTestProcessEnd(child, 'linux');
     child.emit('exit', 0);
     child.emit('close', 0);
     await end;
@@ -277,7 +285,7 @@ describe('processEnd', () => {
     assert.deepEqual(await settled(), { exitCode: 3, stderr: 'first second' });
   });
 
-  lzTestFor<readonly [string, readonly (string | Buffer)[], string]>([
+  muirTestFor<readonly [string, readonly (string | Buffer)[], string]>([
     [
       'the last 8 KiB of stderr',
       ['dropped', 'x'.repeat(8191), 'y'],

@@ -1,4 +1,7 @@
-import { lzPropertyName, type LzMutator } from '@muirjs/moira-node-test';
+import {
+  muirMoiraNodeTestPropertyName,
+  type MuirMoiraNodeTestMutator,
+} from '@muirjs/moira-node-test';
 
 /** Events that fire at most once, so `on` and `once` behave the same for them. */
 const oneShot: ReadonlySet<string> = new Set([
@@ -28,39 +31,40 @@ const swaps: ReadonlyMap<string | undefined, string> = new Map([
  * every event misses the ones after the first. It matches the method name on any receiver, and leaves events that fire
  * at most once and `once('error')`; `on('error')` still becomes `once('error')`.
  */
-export const nodeListenerOnce: LzMutator<'LzNodeListenerOnce'> = {
-  name: 'LzNodeListenerOnce',
-  sample: "emitter.on('data', () => {});\n",
-  *mutate(path, t) {
-    if (!path.isIdentifier() || path.key !== 'property') {
-      return;
-    }
+export const muirProteusNodeListenerOnce: MuirMoiraNodeTestMutator<'MuirProteusNodeListenerOnce'> =
+  {
+    name: 'MuirProteusNodeListenerOnce',
+    sample: "emitter.on('data', () => {});\n",
+    *mutate(path, t) {
+      if (!path.isIdentifier() || path.key !== 'property') {
+        return;
+      }
 
-    const callee = path.parentPath;
-    const call = callee.parentPath;
+      const callee = path.parentPath;
+      const call = callee.parentPath;
 
-    if (
-      !callee.isMemberExpression() ||
-      callee.key !== 'callee' ||
-      !call.isCallExpression()
-    ) {
-      return;
-    }
+      if (
+        !callee.isMemberExpression() ||
+        callee.key !== 'callee' ||
+        !call.isCallExpression()
+      ) {
+        return;
+      }
 
-    const [event, listener] = call.node.arguments;
-    const method = lzPropertyName(callee.node);
-    const swap = swaps.get(method);
+      const [event, listener] = call.node.arguments;
+      const method = muirMoiraNodeTestPropertyName(callee.node);
+      const swap = swaps.get(method);
 
-    if (
-      event?.type !== 'StringLiteral' ||
-      listener === undefined ||
-      swap === undefined ||
-      oneShot.has(event.value) ||
-      (method === 'once' && event.value === 'error')
-    ) {
-      return;
-    }
+      if (
+        event?.type !== 'StringLiteral' ||
+        listener === undefined ||
+        swap === undefined ||
+        oneShot.has(event.value) ||
+        (method === 'once' && event.value === 'error')
+      ) {
+        return;
+      }
 
-    yield t.identifier(swap);
-  },
-};
+      yield t.identifier(swap);
+    },
+  };

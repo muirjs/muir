@@ -1,20 +1,23 @@
 import {
-  lzMutantsByKey,
-  lzOneLine,
-  type LzMutantStatus,
-  type LzReport,
+  muirMutantsByKey,
+  muirOneLine,
+  type MuirMutantStatus,
+  type MuirReport,
 } from './report.ts';
 
 interface Entry {
   readonly label: string;
-  readonly status: LzMutantStatus;
+  readonly status: MuirMutantStatus;
 }
 
 /**
  * Each mutant whose status differs, or that one report lacks. Mutants are keyed as Stryker's incremental mode keys
  * them: file, location, mutator and replacement, which tells apart the mutants one mutator makes at one place.
  */
-export function lzCompareReports(first: LzReport, second: LzReport): string[] {
+export function muirCompareReports(
+  first: MuirReport,
+  second: MuirReport,
+): string[] {
   const firstEntries = entriesByKey(first);
   const secondEntries = entriesByKey(second);
   const differences: string[] = [];
@@ -35,9 +38,9 @@ export function lzCompareReports(first: LzReport, second: LzReport): string[] {
   return differences;
 }
 
-function entriesByKey(report: LzReport): Map<string, Entry> {
+function entriesByKey(report: MuirReport): Map<string, Entry> {
   return new Map(
-    [...lzMutantsByKey(report)].map(
+    [...muirMutantsByKey(report)].map(
       ([key, { file, mutant }]): [string, Entry] => {
         const {
           line,
@@ -48,7 +51,7 @@ function entriesByKey(report: LzReport): Map<string, Entry> {
           replacement,
           status,
         } = mutant;
-        const label = `${file}@${line}:${column}-${endLine}:${endColumn} ${mutator}: ${lzOneLine(replacement)}`;
+        const label = `${file}@${line}:${column}-${endLine}:${endColumn} ${mutator}: ${muirOneLine(replacement)}`;
 
         return [key, { label, status }];
       },

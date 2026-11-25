@@ -1,30 +1,35 @@
 import {
-  argumentOf,
-  bindingOf,
-  fieldOf,
-  memberNameOf,
-  propertyKey,
+  muirMoiraMutatorsArgumentOf,
+  muirMoiraMutatorsBindingOf,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsMemberNameOf,
+  muirMoiraMutatorsPropertyKey,
 } from '@muirjs/moira-mutators';
 
-import { hasProperty, isCall, outermost, rowOf } from './ast.ts';
-import type { LzPlaywrightMutator } from './mutators.ts';
+import {
+  muirProteusPlaywrightHasProperty,
+  muirProteusPlaywrightIsCall,
+  muirProteusPlaywrightOutermost,
+  muirProteusPlaywrightRowOf,
+} from './ast.ts';
+import type { MuirProteusPlaywrightMutator } from './mutators.ts';
 
-export function fulfillMutator<const TName extends string>(
+export function muirProteusPlaywrightFulfillMutator<const TName extends string>(
   name: TName,
   sample: string,
-): LzPlaywrightMutator & { readonly name: TName } {
+): MuirProteusPlaywrightMutator & { readonly name: TName } {
   return {
     name,
     sample,
     *mutate(path, t) {
-      const node = fieldOf(path, 'node');
+      const node = muirMoiraMutatorsFieldOf(path, 'node');
 
       if (isEmptyValue(node)) {
         return;
       }
 
       if (isFulfillOption(path, 'json')) {
-        yield fieldOf(node, 'type') === 'ArrayExpression'
+        yield muirMoiraMutatorsFieldOf(node, 'type') === 'ArrayExpression'
           ? t.arrayExpression([])
           : t.objectExpression([]);
       }
@@ -53,21 +58,21 @@ const outcomeFlips: Readonly<Record<string, string>> = {
   fallback: 'abort',
 };
 
-export function outcomeMutator<const TName extends string>(
+export function muirProteusPlaywrightOutcomeMutator<const TName extends string>(
   name: TName,
   sample: string,
-): LzPlaywrightMutator & { readonly name: TName } {
+): MuirProteusPlaywrightMutator & { readonly name: TName } {
   return {
     name,
     sample,
     *mutate(path, t) {
-      const node = fieldOf(path, 'node');
-      const flipped = rowOf(
+      const node = muirMoiraMutatorsFieldOf(path, 'node');
+      const flipped = muirProteusPlaywrightRowOf(
         outcomeFlips,
-        memberNameOf(fieldOf(node, 'callee')),
+        muirMoiraMutatorsMemberNameOf(muirMoiraMutatorsFieldOf(node, 'callee')),
       );
 
-      if (!isCall(node) || flipped === undefined) {
+      if (!muirProteusPlaywrightIsCall(node) || flipped === undefined) {
         return;
       }
 
@@ -85,7 +90,13 @@ export function outcomeMutator<const TName extends string>(
 
 /** The name of the receiver of `call`, when it is the route parameter of a handler around `path`. */
 function handlerRouteOf(path: unknown, call: unknown): string | undefined {
-  const route = fieldOf(fieldOf(fieldOf(call, 'callee'), 'object'), 'name');
+  const route = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFieldOf(call, 'callee'),
+      'object',
+    ),
+    'name',
+  );
 
   return typeof route === 'string' && isInHandlerOf(path, route)
     ? route
@@ -94,50 +105,59 @@ function handlerRouteOf(path: unknown, call: unknown): string | undefined {
 
 /** `route`, in the scope of `path`, is the first parameter of a route handler, named on its own or with a default. */
 function isInHandlerOf(path: unknown, route: string): boolean {
-  const paramPath = fieldOf(bindingOf(path, route), 'path');
-  const handlerPath = fieldOf(paramPath, 'parentPath');
-  const param = withoutDefault(fieldOf(paramPath, 'node'));
+  const paramPath = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsBindingOf(path, route),
+    'path',
+  );
+  const handlerPath = muirMoiraMutatorsFieldOf(paramPath, 'parentPath');
+  const param = withoutDefault(muirMoiraMutatorsFieldOf(paramPath, 'node'));
 
   return (
-    fieldOf(param, 'type') === 'Identifier' &&
-    fieldOf(paramPath, 'key') === 0 &&
+    muirMoiraMutatorsFieldOf(param, 'type') === 'Identifier' &&
+    muirMoiraMutatorsFieldOf(paramPath, 'key') === 0 &&
     (isRouteAnnotated(param) ||
       isRouteCallback(
-        fieldOf(handlerPath, 'parent'),
-        fieldOf(handlerPath, 'node'),
+        muirMoiraMutatorsFieldOf(handlerPath, 'parent'),
+        muirMoiraMutatorsFieldOf(handlerPath, 'node'),
       ))
   );
 }
 
 /** The parameter `node` names: the left side of `<name> = <default>`, else `node` itself. */
 function withoutDefault(node: unknown): unknown {
-  return fieldOf(node, 'type') === 'AssignmentPattern'
-    ? fieldOf(node, 'left')
+  return muirMoiraMutatorsFieldOf(node, 'type') === 'AssignmentPattern'
+    ? muirMoiraMutatorsFieldOf(node, 'left')
     : node;
 }
 
 /** `handler` is the second argument of `<x>.route(...)`. */
 function isRouteCallback(call: unknown, handler: unknown): boolean {
   return (
-    isCall(call) &&
-    argumentOf(call, 1) === handler &&
-    memberNameOf(fieldOf(call, 'callee')) === 'route'
+    muirProteusPlaywrightIsCall(call) &&
+    muirMoiraMutatorsArgumentOf(call, 1) === handler &&
+    muirMoiraMutatorsMemberNameOf(muirMoiraMutatorsFieldOf(call, 'callee')) ===
+      'route'
   );
 }
 
 /** The parameter is written `<name>: Route`. */
 function isRouteAnnotated(parameter: unknown): boolean {
-  const annotation = fieldOf(
-    fieldOf(parameter, 'typeAnnotation'),
+  const annotation = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(parameter, 'typeAnnotation'),
     'typeAnnotation',
   );
 
-  return fieldOf(fieldOf(annotation, 'typeName'), 'name') === 'Route';
+  return (
+    muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFieldOf(annotation, 'typeName'),
+      'name',
+    ) === 'Route'
+  );
 }
 
 /** A numeric literal from `min` to `max`. */
 function isNumberBetween(node: unknown, min: number, max: number): boolean {
-  const value = fieldOf(node, 'value');
+  const value = muirMoiraMutatorsFieldOf(node, 'value');
 
   return typeof value === 'number' && value >= min && value <= max;
 }
@@ -145,9 +165,9 @@ function isNumberBetween(node: unknown, min: number, max: number): boolean {
 /** A fulfill option value that is already empty: `{}`, `[]` or `''`. */
 function isEmptyValue(node: unknown): boolean {
   return (
-    lengthOf(fieldOf(node, 'properties')) === 0 ||
-    lengthOf(fieldOf(node, 'elements')) === 0 ||
-    fieldOf(node, 'value') === ''
+    lengthOf(muirMoiraMutatorsFieldOf(node, 'properties')) === 0 ||
+    lengthOf(muirMoiraMutatorsFieldOf(node, 'elements')) === 0 ||
+    muirMoiraMutatorsFieldOf(node, 'value') === ''
   );
 }
 
@@ -158,20 +178,29 @@ function lengthOf(list: unknown): number | undefined {
 /** The value of the property `key` in the object literal that is the first argument of `<route>.fulfill(...)`, under
  * any type wrapper, in a handler of `<route>`. */
 function isFulfillOption(path: unknown, key: string): boolean {
-  const property = fieldOf(path, 'parent');
-  const object = fieldOf(fieldOf(path, 'parentPath'), 'parent');
-  const optionsPath = outermost(
-    fieldOf(fieldOf(path, 'parentPath'), 'parentPath'),
+  const property = muirMoiraMutatorsFieldOf(path, 'parent');
+  const object = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(path, 'parentPath'),
+    'parent',
   );
-  const call = fieldOf(optionsPath, 'parent');
+  const optionsPath = muirProteusPlaywrightOutermost(
+    muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFieldOf(path, 'parentPath'),
+      'parentPath',
+    ),
+  );
+  const call = muirMoiraMutatorsFieldOf(optionsPath, 'parent');
 
   return (
-    propertyKey(property) === key &&
-    fieldOf(property, 'value') === fieldOf(path, 'node') &&
-    argumentOf(call, 0) === fieldOf(optionsPath, 'node') &&
-    !hasProperty(object, 'response') &&
-    isCall(call) &&
-    memberNameOf(fieldOf(call, 'callee')) === 'fulfill' &&
+    muirMoiraMutatorsPropertyKey(property) === key &&
+    muirMoiraMutatorsFieldOf(property, 'value') ===
+      muirMoiraMutatorsFieldOf(path, 'node') &&
+    muirMoiraMutatorsArgumentOf(call, 0) ===
+      muirMoiraMutatorsFieldOf(optionsPath, 'node') &&
+    !muirProteusPlaywrightHasProperty(object, 'response') &&
+    muirProteusPlaywrightIsCall(call) &&
+    muirMoiraMutatorsMemberNameOf(muirMoiraMutatorsFieldOf(call, 'callee')) ===
+      'fulfill' &&
     handlerRouteOf(path, call) !== undefined
   );
 }

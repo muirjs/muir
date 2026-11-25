@@ -1,17 +1,17 @@
-export type { LzTestModified } from './modified.ts';
+export type { MuirTestModified } from './modified.ts';
 export type {
-  LzTestName,
-  LzTestTableOptions,
-  LzTestTableReturn,
+  MuirTestName,
+  MuirTestTableOptions,
+  MuirTestTableReturn,
 } from './register.ts';
 export {
-  lzTestEach,
-  type LzTestEachCallbackArgs,
-  type LzTestEachFunction,
-  type LzTestEachFunctionReturn,
+  muirTestEach,
+  type MuirTestEachCallbackArgs,
+  type MuirTestEachFunction,
+  type MuirTestEachFunctionReturn,
 } from './test-each.ts';
 export {
-  lzTestFor,
-  type LzTestForFunction,
-  type LzTestForFunctionReturn,
+  muirTestFor,
+  type MuirTestForFunction,
+  type MuirTestForFunctionReturn,
 } from './test-for.ts';

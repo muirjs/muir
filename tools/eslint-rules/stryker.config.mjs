@@ -18,10 +18,10 @@ export default await production(
     incrementalFile:
       'reports/stryker-incremental/@muirjs/eslint-rules.src.json',
     ...reportFiles('@muirjs/eslint-rules.src'),
-    lzNodeTest: {
+    muirSirynNodeTest: {
       testFiles: ['tools/eslint-rules/*.test.ts'],
       nodeArgs: [source],
     },
   },
-  { LzJsNumericLiteral: true },
+  { MuirProteusJsNumericLiteral: true },
 );

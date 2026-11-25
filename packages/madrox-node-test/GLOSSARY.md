@@ -1,12 +1,12 @@
 # Table tests
 
-`lzTestEach` and `lzTestFor`: Vitest's `test.each` and `test.for` for node:test, which turn a table of cases into one
+`muirTestEach` and `muirTestFor`: Vitest's `test.each` and `test.for` for node:test, which turn a table of cases into one
 test per case.
 
 ## Language
 
 **Table**:
-The cases given to `lzTestEach` or `lzTestFor`: an array, or a template table.
+The cases given to `muirTestEach` or `muirTestFor`: an array, or a template table.
 _Avoid_: dataset, matrix
 
 **Case**:
@@ -21,7 +21,7 @@ _Avoid_: tagged table
 One line of a template table, which becomes a case with one property per column.
 
 **Spread**:
-How `lzTestEach` passes an array case to the test function as separate arguments, when every case is an array.
+How `muirTestEach` passes an array case to the test function as separate arguments, when every case is an array.
 _Avoid_: destructure
 
 **Name template**:

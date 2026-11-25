@@ -1,44 +1,45 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  lzCalleeRoot,
-  lzPropertyName,
-  type LzMutator,
+  muirMoiraNodeTestCalleeRoot,
+  muirMoiraNodeTestPropertyName,
+  type MuirMoiraNodeTestMutator,
 } from '@muirjs/moira-node-test';
 
 /**
  * Empties the `try` block of a `try`/`catch` whose `catch` asserts and does not throw, so a survivor is a test that
  * passes when the code under test stops throwing; `assert.throws` or a plan would catch it. Assertions are matched by
- * syntax, so CommonJS `require` of node:assert counts, unlike in LzNodeTestAssertCall, which follows the import: any
+ * syntax, so CommonJS `require` of node:assert counts, unlike in MuirProteusNodeTestAssertCall, which follows the import: any
  * method other than `fail` of a callee rooted at `assert` or of an `assert` member, and a call of `assert` itself.
  * Functions inside the `catch` are not searched. A `try` block that ends in a `throw` or a `fail` is left alone.
  */
-export const nodeTestCatchAssert: LzMutator<'LzNodeTestCatchAssert'> = {
-  name: 'LzNodeTestCatchAssert',
-  sample:
-    "try {\n  JSON.parse('');\n} catch (error) {\n  assert.ok(error);\n}\n",
-  *mutate(path, t) {
-    if (
-      !path.isBlockStatement() ||
-      path.node.body.length === 0 ||
-      endsInFailure(path.node.body)
-    ) {
-      return;
-    }
+export const muirProteusNodeTestCatchAssert: MuirMoiraNodeTestMutator<'MuirProteusNodeTestCatchAssert'> =
+  {
+    name: 'MuirProteusNodeTestCatchAssert',
+    sample:
+      "try {\n  JSON.parse('');\n} catch (error) {\n  assert.ok(error);\n}\n",
+    *mutate(path, t) {
+      if (
+        !path.isBlockStatement() ||
+        path.node.body.length === 0 ||
+        endsInFailure(path.node.body)
+      ) {
+        return;
+      }
 
-    const { parentPath } = path;
+      const { parentPath } = path;
 
-    if (!parentPath.isTryStatement() || parentPath.node.block !== path.node) {
-      return;
-    }
+      if (!parentPath.isTryStatement() || parentPath.node.block !== path.node) {
+        return;
+      }
 
-    const handler = parentPath.get('handler');
+      const handler = parentPath.get('handler');
 
-    if (handler.isCatchClause() && assertsWithoutThrow(handler.get('body'))) {
-      yield t.blockStatement([]);
-    }
-  },
-};
+      if (handler.isCatchClause() && assertsWithoutThrow(handler.get('body'))) {
+        yield t.blockStatement([]);
+      }
+    },
+  };
 
 function assertsWithoutThrow(body: NodePath<types.BlockStatement>): boolean {
   const found = { asserts: false, throws: false };
@@ -86,11 +87,11 @@ function assertMethod(callee: types.Node): string | undefined {
     return callee.name === 'assert' ? callee.name : undefined;
   }
 
-  const method = lzPropertyName(callee);
+  const method = muirMoiraNodeTestPropertyName(callee);
   const onAssert =
-    lzCalleeRoot(callee)?.name === 'assert' ||
+    muirMoiraNodeTestCalleeRoot(callee)?.name === 'assert' ||
     (callee.type === 'MemberExpression' &&
-      lzPropertyName(callee.object) === 'assert');
+      muirMoiraNodeTestPropertyName(callee.object) === 'assert');
 
   return onAssert ? method : undefined;
 }

@@ -1,18 +1,21 @@
 import {
-  lzInstall,
-  lzSelectMutators,
-  type LzMutatorOptions,
+  muirMoiraNodeTestInstall,
+  muirMoiraNodeTestSelectMutators,
+  type MuirMoiraNodeTestMutatorOptions,
 } from '@muirjs/moira-node-test';
-import { testMutatorSets } from './mutators.ts';
-import { lzCorePeerRange, lzPackageName } from './package-name.ts';
+import { muirProteusNodeTestTestMutatorSets } from './mutators.ts';
+import {
+  muirProteusNodeTestCorePeerRange,
+  muirProteusNodeTestPackageName,
+} from './package-name.ts';
 
 /** The mutators measured on too few projects to run by default, turned on inside `experimental`. */
-export type LzNodeTestExperimentalMutator =
-  (typeof testMutatorSets.experimental)[number]['name'];
+export type MuirProteusNodeTestExperimentalMutator =
+  (typeof muirProteusNodeTestTestMutatorSets.experimental)[number]['name'];
 
-export type LzNodeTestMutatorOptions = LzMutatorOptions<
+export type MuirProteusNodeTestMutatorOptions = MuirMoiraNodeTestMutatorOptions<
   never,
-  LzNodeTestExperimentalMutator
+  MuirProteusNodeTestExperimentalMutator
 >;
 
 /**
@@ -20,13 +23,17 @@ export type LzNodeTestMutatorOptions = LzMutatorOptions<
  * Stryker configuration file that mutates test files awaits it, so that an error in the install stops the run; Stryker
  * only warns when a module in `plugins` fails to load.
  */
-export async function lzNodeTestMutators(
-  options?: LzNodeTestMutatorOptions,
+export async function muirProteusNodeTestMutators(
+  options?: MuirProteusNodeTestMutatorOptions,
 ): Promise<void> {
-  await lzInstall({
-    packageName: lzPackageName,
-    corePeerRange: lzCorePeerRange,
+  await muirMoiraNodeTestInstall({
+    packageName: muirProteusNodeTestPackageName,
+    corePeerRange: muirProteusNodeTestCorePeerRange,
     mode: 'replace',
-    mutators: lzSelectMutators(lzPackageName, testMutatorSets, options),
+    mutators: muirMoiraNodeTestSelectMutators(
+      muirProteusNodeTestPackageName,
+      muirProteusNodeTestTestMutatorSets,
+      options,
+    ),
   });
 }

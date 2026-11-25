@@ -5,9 +5,9 @@ import type {
   TestResult,
 } from '@playwright/test/reporter';
 
-import { raiseRetries } from './playwright-internals.ts';
+import { muirSirynPlaywrightRaiseRetries } from './playwright-internals.ts';
 
-export interface ReportedAttempt {
+export interface MuirSirynPlaywrightReportedAttempt {
   readonly status: TestResult['status'];
   readonly startTime?: Date | undefined;
   readonly duration: number;
@@ -18,37 +18,37 @@ export interface ReportedAttempt {
   >[];
 }
 
-export interface ReportedTest {
+export interface MuirSirynPlaywrightReportedTest {
   readonly id: string;
   readonly expectedStatus: TestCase['expectedStatus'];
-  readonly results: readonly ReportedAttempt[];
+  readonly results: readonly MuirSirynPlaywrightReportedAttempt[];
   readonly location: Readonly<TestCase['location']>;
   readonly parent: unknown;
   titlePath(): string[];
   outcome(): ReturnType<TestCase['outcome']>;
 }
 
-export interface ReportedSuite {
-  allTests(): readonly ReportedTest[];
+export interface MuirSirynPlaywrightReportedSuite {
+  allTests(): readonly MuirSirynPlaywrightReportedTest[];
 }
 
-export interface TestWindow {
+export interface MuirSirynPlaywrightTestWindow {
   readonly testId: string;
   readonly start: number;
   readonly end: number;
 }
 
-export class LzPlaywrightCollectingReporter {
+export class MuirSirynPlaywrightCollectingReporter {
   readonly errors: string[] = [];
   retriesNotRaised: string | undefined;
   failOnFlakyTests = false;
   outputTail = '';
   // Playwright reports each attempt of a retried test with the same TestCase, which holds them all.
-  readonly testCases = new Map<string, ReportedTest>();
-  readonly windows: TestWindow[] = [];
+  readonly testCases = new Map<string, MuirSirynPlaywrightReportedTest>();
+  readonly windows: MuirSirynPlaywrightTestWindow[] = [];
   readonly #retriesByProject: ReadonlyMap<string, number>;
   readonly #now: () => number;
-  #suite: ReportedSuite | undefined;
+  #suite: MuirSirynPlaywrightReportedSuite | undefined;
 
   constructor(
     retriesByProject: ReadonlyMap<string, number> = new Map(),
@@ -64,25 +64,25 @@ export class LzPlaywrightCollectingReporter {
 
   onBegin(
     { failOnFlakyTests }: Pick<FullConfig, 'failOnFlakyTests'>,
-    suite: ReportedSuite,
+    suite: MuirSirynPlaywrightReportedSuite,
   ) {
     this.failOnFlakyTests = failOnFlakyTests;
     this.#suite = suite;
 
     if ([...this.#retriesByProject.values()].some(Boolean)) {
       try {
-        raiseRetries(suite, this.#retriesByProject);
+        muirSirynPlaywrightRaiseRetries(suite, this.#retriesByProject);
       } catch (error) {
         this.retriesNotRaised = String(error);
       }
     }
   }
 
-  get listedTests(): readonly ReportedTest[] {
+  get listedTests(): readonly MuirSirynPlaywrightReportedTest[] {
     return this.#suite?.allTests() ?? [];
   }
 
-  onTestEnd(test: ReportedTest) {
+  onTestEnd(test: MuirSirynPlaywrightReportedTest) {
     this.testCases.set(test.id, test);
     const startTime = test.results.at(-1)?.startTime;
 
@@ -104,10 +104,12 @@ export class LzPlaywrightCollectingReporter {
   }
 
   onError(error: TestError) {
-    this.errors.push(errorText(error));
+    this.errors.push(muirSirynPlaywrightErrorText(error));
   }
 }
 
-export function errorText(error: TestError | undefined): string {
+export function muirSirynPlaywrightErrorText(
+  error: TestError | undefined,
+): string {
   return error?.message ?? error?.value ?? 'Test failed';
 }

@@ -1,7 +1,11 @@
 import type { InstrumenterContext, Position } from '@stryker-mutator/api/core';
 
-import type { RecordedTest } from '../src/record.ts';
-import { lzCurrentTests, wrapNodeTest, type CallSite } from '../src/wrap.ts';
+import type { MuirSirynNodeTestRecordedTest } from '../src/record.ts';
+import {
+  muirSirynNodeTestCurrentTests,
+  muirSirynNodeTestWrapNodeTest,
+  type MuirSirynNodeTestCallSite,
+} from '../src/wrap.ts';
 import {
   bodyOf,
   fakeNodeTest,
@@ -42,16 +46,20 @@ export function wrapped({
   const fake = fakeNodeTest(expectFailure);
   const ns: InstrumenterContext = {};
   const env: Record<string, string | undefined> = {};
-  const tests: RecordedTest[] = [];
+  const tests: MuirSirynNodeTestRecordedTest[] = [];
   const seen: (string | undefined)[] = [];
   const positions = new Map<string, Position>();
-  const sites: CallSite[] = [];
+  const sites: MuirSirynNodeTestCallSite[] = [];
   /** Each call of `registering`: how many registrations node:test had then. */
   const registering: number[] = [];
   const rootAfters: unknown[] = [];
   let time = 0;
-  const currentTests = lzCurrentTests({ ns, env, now: () => ++time });
-  const module = wrapNodeTest({
+  const currentTests = muirSirynNodeTestCurrentTests({
+    ns,
+    env,
+    now: () => ++time,
+  });
+  const module = muirSirynNodeTestWrapNodeTest({
     ns,
     testFile: testFile,
     tests,

@@ -9,24 +9,27 @@ import type { TestContext } from 'node:test';
 import type { FullResult, Reporter } from '@playwright/test/reporter';
 import { INSTRUMENTER_CONSTANTS } from '@stryker-mutator/api/core';
 
-import { fieldOf, isRecord } from '../../src/is-record.ts';
-import type {
-  RunTestsParams,
-  TestRunner,
-} from '../../src/playwright-internals.ts';
-import { LzPlaywrightTestRunner } from '../../src/lz-playwright-test-runner.ts';
-import { setEnv } from '../../src/process-env.ts';
 import {
-  readRunSettings,
-  runSettingsEnv,
-  type RunSettings,
-  serializeSnapshot,
-  type SnapshotLine,
+  muirSirynPlaywrightFieldOf,
+  muirSirynPlaywrightIsRecord,
+} from '../../src/is-record.ts';
+import type {
+  MuirSirynPlaywrightRunTestsParams,
+  MuirSirynPlaywrightInternalTestRunner,
+} from '../../src/playwright-internals.ts';
+import { MuirSirynPlaywrightTestRunner } from '../../src/muir-siryn-playwright-test-runner.ts';
+import { muirSirynPlaywrightSetEnv } from '../../src/process-env.ts';
+import {
+  muirSirynPlaywrightReadRunSettings,
+  muirSirynPlaywrightRunSettingsEnv,
+  type MuirSirynPlaywrightRunSettings,
+  muirSirynPlaywrightSerializeSnapshot,
+  type MuirSirynPlaywrightSnapshotLine,
 } from '../../src/protocol.ts';
 import {
-  LzPlaywrightCollectingReporter,
-  type ReportedSuite,
-  type ReportedTest,
+  MuirSirynPlaywrightCollectingReporter,
+  type MuirSirynPlaywrightReportedSuite,
+  type MuirSirynPlaywrightReportedTest,
 } from '../../src/reporter.ts';
 import { finishedTest, logger, strykerOptions, tempTree } from './doubles.ts';
 
@@ -35,7 +38,7 @@ export type Status = FullResult['status'];
 export const activeMutantEnv =
   INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE;
 const fakeGlobal = '__fakePlaywright__';
-const projectUtils = fieldOf(
+const projectUtils = muirSirynPlaywrightFieldOf(
   createRequire(import.meta.url)('playwright/lib/runner'),
   'projectUtils',
 );
@@ -75,9 +78,9 @@ export type WebServerOptions = Record<string, unknown> & {
 
 /** What one runTests call saw: its params, the run settings and the environment the workers get. */
 export interface Run {
-  readonly reporter: LzPlaywrightCollectingReporter;
-  readonly params: RunTestsParams;
-  readonly settings: RunSettings;
+  readonly reporter: MuirSirynPlaywrightCollectingReporter;
+  readonly params: MuirSirynPlaywrightRunTestsParams;
+  readonly settings: MuirSirynPlaywrightRunSettings;
   readonly env: Record<string, string | undefined>;
 }
 
@@ -86,8 +89,8 @@ export interface Behaviour {
   readonly webServers?: readonly WebServer[];
   readonly failOnFlakyTests?: boolean;
   /** The root suite each run's reporter gets at onBegin. */
-  readonly root?: ReportedSuite;
-  readonly listed?: readonly ReportedTest[];
+  readonly root?: MuirSirynPlaywrightReportedSuite;
+  readonly listed?: readonly MuirSirynPlaywrightReportedTest[];
   readonly initialize?: () => Promise<void>;
   readonly globalSetup?: (reporter: Reporter) => Status | Promise<Status>;
   readonly globalTeardown?: () => Promise<void>;
@@ -105,14 +108,17 @@ export function stubEnv(
   const previous = Object.fromEntries(
     Object.keys(values).map((name) => [name, process.env[name]]),
   );
-  t.after(() => setEnv(previous));
-  setEnv(values);
+  t.after(() => muirSirynPlaywrightSetEnv(previous));
+  muirSirynPlaywrightSetEnv(values);
 }
 
-export function writeSnapshots(run: Run, lines: SnapshotLine[]) {
+export function writeSnapshots(
+  run: Run,
+  lines: MuirSirynPlaywrightSnapshotLine[],
+) {
   writeFileSync(
     path.join(run.settings.outDir, 'worker-1.ndjson'),
-    lines.map(serializeSnapshot).join('\n') + '\n',
+    lines.map(muirSirynPlaywrightSerializeSnapshot).join('\n') + '\n',
   );
 }
 
@@ -126,7 +132,7 @@ export function fakePlaywright(
   behaviour: Behaviour = {},
   version = '1.63.0',
 ) {
-  const live: LzPlaywrightTestRunner[] = [];
+  const live: MuirSirynPlaywrightTestRunner[] = [];
   const globals: Record<string, unknown> = globalThis;
 
   // Registered first, so the runners are disposed before the folder goes and the temp variables are restored.
@@ -167,7 +173,7 @@ export function fakePlaywright(
   let lastPlugins = webServerPlugins();
   let serversUp = false;
 
-  class FakeTestRunner implements TestRunner {
+  class FakeTestRunner implements MuirSirynPlaywrightInternalTestRunner {
     readonly _configCLIOverrides: Record<string, unknown>;
     readonly #plugins = webServerPlugins();
 
@@ -244,16 +250,19 @@ export function fakePlaywright(
       await behaviour.globalTeardown?.();
     }
 
-    async runTests(reporter: Reporter, params: RunTestsParams) {
+    async runTests(
+      reporter: Reporter,
+      params: MuirSirynPlaywrightRunTestsParams,
+    ) {
       const env = Object.fromEntries(
         [
           'NODE_OPTIONS',
-          runSettingsEnv,
+          muirSirynPlaywrightRunSettingsEnv,
           activeMutantEnv,
           'PLAYWRIGHT_NO_COPY_PROMPT',
         ].map((name) => [name, process.env[name]]),
       );
-      const settings = readRunSettings(env);
+      const settings = muirSirynPlaywrightReadRunSettings(env);
       assert.ok(settings);
       const run: Run = {
         reporter: collecting(reporter),
@@ -312,7 +321,7 @@ export function fakePlaywright(
       lastPlugins.map(({ factory }) => factory._options),
     overrides: (): Record<string, unknown> => {
       const overrides = calls.findLast(([name]) => name === 'new')?.[2];
-      assert.ok(isRecord(overrides));
+      assert.ok(muirSirynPlaywrightIsRecord(overrides));
 
       return overrides;
     },
@@ -320,20 +329,20 @@ export function fakePlaywright(
       timeoutMS = 11_000,
       concurrency = 1,
       checkers = [],
-      lzPlaywright = {},
+      muirSirynPlaywright = {},
     }: {
       timeoutMS?: number;
       concurrency?: number | string;
       checkers?: readonly string[];
-      lzPlaywright?: object;
+      muirSirynPlaywright?: object;
     } = {}) => {
       const { log, lines } = logger();
-      const shell = new LzPlaywrightTestRunner(
+      const shell = new MuirSirynPlaywrightTestRunner(
         strykerOptions({
           timeoutMS,
           concurrency,
           checkers,
-          lzPlaywright: { configFile, ...lzPlaywright },
+          muirSirynPlaywright: { configFile, ...muirSirynPlaywright },
         }),
         log,
       );
@@ -351,10 +360,10 @@ export function fakePlaywright(
   };
 }
 
-function collecting(reporter: Reporter): LzPlaywrightCollectingReporter {
+function collecting(reporter: Reporter): MuirSirynPlaywrightCollectingReporter {
   assert.ok(
-    reporter instanceof LzPlaywrightCollectingReporter,
-    'an LzPlaywrightCollectingReporter',
+    reporter instanceof MuirSirynPlaywrightCollectingReporter,
+    'an MuirSirynPlaywrightCollectingReporter',
   );
 
   return reporter;

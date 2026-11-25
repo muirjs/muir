@@ -1,19 +1,30 @@
-import { isCall, isMember, unwrap } from './csf-nodes.ts';
-import { field, list } from './node-field.ts';
 import {
-  awaited,
-  childNodes,
-  descendants,
-  equivalenceTokens,
-  equivalent,
-  isFunction,
-  isNode,
-  memberName,
-  type TreeIndex,
+  muirMoiraStorybookIsCall,
+  muirMoiraStorybookIsMember,
+  muirMoiraStorybookUnwrap,
+} from './csf-nodes.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
+import {
+  muirMoiraStorybookAwaited,
+  muirMoiraStorybookChildNodes,
+  muirMoiraStorybookDescendants,
+  muirMoiraStorybookEquivalenceTokens,
+  muirMoiraStorybookEquivalent,
+  muirMoiraStorybookIsFunction,
+  muirMoiraStorybookIsNode,
+  muirMoiraStorybookMemberName,
+  type MuirMoiraStorybookTreeIndex,
 } from './node-tree.ts';
-import { type Binding, type FileScope, functionsOf } from './scope.ts';
+import {
+  type MuirMoiraStorybookBinding,
+  type MuirMoiraStorybookFileScope,
+  muirMoiraStorybookFunctionsOf,
+} from './scope.ts';
 
-export interface Check {
+export interface MuirMoiraStorybookCheck {
   readonly node: unknown;
   /** `expect`: `expect(...)`, or `expect.soft`, `expect.element` or `expect.poll`; `query`: a failing query, `find(All)?By*` or `get(All)?By*`, which throws when it finds nothing. */
   readonly kind: 'expect' | 'query';
@@ -22,7 +33,7 @@ export interface Check {
 }
 
 /** The statement that ends the following checks. */
-export type WindowEnd =
+export type MuirMoiraStorybookWindowEnd =
   | {
       readonly by: 'interaction';
       /** The ending interaction's statement; `at(node)` gives its interaction. */
@@ -38,10 +49,10 @@ export type WindowEnd =
   | { readonly by: 'maybe' }
   | { readonly by: 'none' };
 
-export interface FollowingChecks {
+export interface MuirMoiraStorybookFollowingChecks {
   /** For each window statement in turn, the checks it runs, in source order, with those of each function it runs by name where that name first stands. */
-  readonly checks: readonly Check[];
-  readonly end: WindowEnd;
+  readonly checks: readonly MuirMoiraStorybookCheck[];
+  readonly end: MuirMoiraStorybookWindowEnd;
   /** The statement that may be copied before the interaction, or `undefined`. */
   readonly copy: unknown;
 }
@@ -59,45 +70,52 @@ const expectMembers: ReadonlySet<unknown> = new Set([
 /** `expect`, or `expect.soft`, `expect.element` or `expect.poll`. */
 function isExpectCallee(callee: unknown): boolean {
   return (
-    field(callee, 'name') === 'expect' ||
-    (field(callee, 'object', 'name') === 'expect' &&
-      expectMembers.has(memberName(callee)))
+    muirMoiraStorybookField(callee, 'name') === 'expect' ||
+    (muirMoiraStorybookField(callee, 'object', 'name') === 'expect' &&
+      expectMembers.has(muirMoiraStorybookMemberName(callee)))
   );
 }
 
 /** Whether the chain going inward from `node`, through call callees and member objects, reaches an expect call. */
 function startsAtExpect(node: unknown): boolean {
   return (
-    isNode(node) &&
+    muirMoiraStorybookIsNode(node) &&
     (isExpectCall(node) ||
-      startsAtExpect(field(node, 'callee') ?? field(node, 'object')))
+      startsAtExpect(
+        muirMoiraStorybookField(node, 'callee') ??
+          muirMoiraStorybookField(node, 'object'),
+      ))
   );
 }
 
 function isExpectCall(node: unknown): boolean {
   return (
-    field(node, 'type') === 'CallExpression' &&
-    isExpectCallee(field(node, 'callee'))
+    muirMoiraStorybookField(node, 'type') === 'CallExpression' &&
+    isExpectCallee(muirMoiraStorybookField(node, 'callee'))
   );
 }
 
 /** `.not` in the chain going outward from `node`, through member objects and call callees. */
-function isNegated(node: unknown, tree: TreeIndex): boolean {
+function isNegated(node: unknown, tree: MuirMoiraStorybookTreeIndex): boolean {
   const parent = tree.parentOf(node);
 
   return (
-    (field(parent, 'object') === node || field(parent, 'callee') === node) &&
-    (memberName(parent) === 'not' || isNegated(parent, tree))
+    (muirMoiraStorybookField(parent, 'object') === node ||
+      muirMoiraStorybookField(parent, 'callee') === node) &&
+    (muirMoiraStorybookMemberName(parent) === 'not' || isNegated(parent, tree))
   );
 }
 
 /** The check that `node` is, when it is a check call. */
-function checkOf(node: unknown, tree: TreeIndex): Check | undefined {
-  if (field(node, 'type') !== 'CallExpression') {
+function checkOf(
+  node: unknown,
+  tree: MuirMoiraStorybookTreeIndex,
+): MuirMoiraStorybookCheck | undefined {
+  if (muirMoiraStorybookField(node, 'type') !== 'CallExpression') {
     return undefined;
   }
 
-  const callee = field(node, 'callee');
+  const callee = muirMoiraStorybookField(node, 'callee');
 
   if (isExpectCallee(callee)) {
     return {
@@ -107,7 +125,9 @@ function checkOf(node: unknown, tree: TreeIndex): Check | undefined {
     };
   }
 
-  const name = memberName(callee) ?? field(callee, 'name');
+  const name =
+    muirMoiraStorybookMemberName(callee) ??
+    muirMoiraStorybookField(callee, 'name');
 
   return typeof name === 'string' && failingQuery.test(name)
     ? { node, kind: 'query', negative: false }
@@ -117,12 +137,17 @@ function checkOf(node: unknown, tree: TreeIndex): Check | undefined {
 /** An argument of a call that `isCall` accepts. */
 function isCallbackOf(
   node: unknown,
-  tree: TreeIndex,
+  tree: MuirMoiraStorybookTreeIndex,
   isCall: (call: unknown) => boolean,
 ): boolean {
   const call = tree.parentOf(node);
 
-  return isCall(call) && list(field(call, 'arguments')).includes(node);
+  return (
+    isCall(call) &&
+    muirMoiraStorybookList(muirMoiraStorybookField(call, 'arguments')).includes(
+      node,
+    )
+  );
 }
 
 /**
@@ -132,8 +157,8 @@ function isCallbackOf(
  */
 function nodesRunBy(
   node: unknown,
-  tree: TreeIndex,
-  scope: FileScope,
+  tree: MuirMoiraStorybookTreeIndex,
+  scope: MuirMoiraStorybookFileScope,
   outsideBranches = false,
 ): readonly unknown[] {
   // Stryker disable next-line ArrayDeclaration: a string among the nodes that run changes no result, as checkOf and statementAt find nothing in a string
@@ -146,7 +171,7 @@ function nodesRunBy(
     const runs = runsWhereItStands(each, tree);
 
     if (
-      (isFunction(each) && !runs) ||
+      (muirMoiraStorybookIsFunction(each) && !runs) ||
       (outsideBranches && isBranch(each, tree))
     ) {
       continue;
@@ -161,7 +186,10 @@ function nodesRunBy(
 
     bodies.forEach((body) => called.add(body));
     pending.push(
-      ...[...childNodes(each), ...bodies.flatMap(childNodes)].reverse(),
+      ...[
+        ...muirMoiraStorybookChildNodes(each),
+        ...bodies.flatMap(muirMoiraStorybookChildNodes),
+      ].reverse(),
     );
   }
 
@@ -175,11 +203,12 @@ const branchingTypes: ReadonlySet<unknown> = new Set([
 ]);
 
 /** What an `if`, a `switch` case or a `catch` runs, apart from its test. */
-function isBranch(node: unknown, tree: TreeIndex): boolean {
+function isBranch(node: unknown, tree: MuirMoiraStorybookTreeIndex): boolean {
   const parent = tree.parentOf(node);
 
   return (
-    branchingTypes.has(field(parent, 'type')) && field(parent, 'test') !== node
+    branchingTypes.has(muirMoiraStorybookField(parent, 'type')) &&
+    muirMoiraStorybookField(parent, 'test') !== node
   );
 }
 
@@ -187,36 +216,48 @@ function isBranch(node: unknown, tree: TreeIndex): boolean {
  * A node called where it stands, or given as an argument to a call or `new`, which may run it, through any casts and
  * parentheses around it. Only a call or `new` has arguments.
  */
-function runsWhereItStands(node: unknown, tree: TreeIndex): boolean {
+function runsWhereItStands(
+  node: unknown,
+  tree: MuirMoiraStorybookTreeIndex,
+): boolean {
   const outer = outermostWrapper(node, tree);
   const parent = tree.parentOf(outer);
 
   return (
-    field(parent, 'callee') === outer ||
-    list(field(parent, 'arguments')).includes(outer)
+    muirMoiraStorybookField(parent, 'callee') === outer ||
+    muirMoiraStorybookList(
+      muirMoiraStorybookField(parent, 'arguments'),
+    ).includes(outer)
   );
 }
 
 /** `node`, or the outermost cast, non-null assertion or parentheses around it. */
-function outermostWrapper(node: unknown, tree: TreeIndex): unknown {
+function outermostWrapper(
+  node: unknown,
+  tree: MuirMoiraStorybookTreeIndex,
+): unknown {
   const parent = tree.parentOf(node);
 
-  return unwrap(parent) === unwrap(node)
+  return muirMoiraStorybookUnwrap(parent) === muirMoiraStorybookUnwrap(node)
     ? outermostWrapper(parent, tree)
     : node;
 }
 
 /** The statements after `node` in its list, then after each enclosing statement in its own, up to the function around it unless that function is given to `step(...)`. */
-function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
+function laterStatements(
+  node: unknown,
+  tree: MuirMoiraStorybookTreeIndex,
+): readonly unknown[] {
   if (
-    !isNode(node) ||
-    (isFunction(node) && !isCallbackOf(node, tree, isStepCall))
+    !muirMoiraStorybookIsNode(node) ||
+    (muirMoiraStorybookIsFunction(node) &&
+      !isCallbackOf(node, tree, muirMoiraStorybookIsStepCall))
   ) {
     // Stryker disable next-line ArrayDeclaration: a string among the later statements changes no result, as nodesRunBy, checkOf and statementAt find nothing in a string
     return [];
   }
 
-  const statements = list(tree.listOf(node));
+  const statements = muirMoiraStorybookList(tree.listOf(node));
 
   return [
     ...statements.slice(statements.indexOf(node) + 1),
@@ -225,30 +266,38 @@ function laterStatements(node: unknown, tree: TreeIndex): readonly unknown[] {
 }
 
 /** An interaction's statement and the arguments of its call. */
-export interface StatementRead {
+export interface MuirMoiraStorybookStatementRead {
   readonly node: unknown;
   readonly args: readonly unknown[];
 }
 
 /** The target of an interaction: its first argument without `await` or type wrappers. */
-export function targetOf(read: StatementRead): unknown {
-  return awaited(read.args[0]);
+export function muirMoiraStorybookTargetOf(
+  read: MuirMoiraStorybookStatementRead,
+): unknown {
+  return muirMoiraStorybookAwaited(read.args[0]);
 }
 
 /** The nodes of one function that are `equivalent` to the statement it is given. */
 type EquivalentStatements = (statement: unknown) => readonly unknown[];
 
 /** Gives the checks that follow the interaction at a read: in the statements after it, up to the first that is or holds an interaction. `statementAt` gives the interaction whose statement is a node. */
-export function followingChecksReader(
-  tree: TreeIndex,
-  scope: FileScope,
-  statementAt: (node: unknown) => StatementRead | undefined,
-): (read: StatementRead) => FollowingChecks {
+export function muirMoiraStorybookFollowingChecksReader(
+  tree: MuirMoiraStorybookTreeIndex,
+  scope: MuirMoiraStorybookFileScope,
+  statementAt: (node: unknown) => MuirMoiraStorybookStatementRead | undefined,
+): (
+  read: MuirMoiraStorybookStatementRead,
+) => MuirMoiraStorybookFollowingChecks {
   const equivalentStatementsIn = readOnce((outermost): EquivalentStatements => {
-    const tokenOf = equivalenceTokens([outermost]);
-    const statements = Map.groupBy(descendants(outermost), tokenOf);
+    const tokenOf = muirMoiraStorybookEquivalenceTokens([outermost]);
+    const statements = Map.groupBy(
+      muirMoiraStorybookDescendants(outermost),
+      tokenOf,
+    );
 
-    return (statement) => list(statements.get(tokenOf(statement)));
+    return (statement) =>
+      muirMoiraStorybookList(statements.get(tokenOf(statement)));
   });
   const isInteractionStatement = (node: unknown): boolean =>
     statementAt(node) !== undefined;
@@ -322,9 +371,9 @@ function readOnce<T extends NonNullable<unknown>>(
 /** `statement`, the window statement that holds the first expect check, when it may be copied before the interaction at `read`: one that `checksWhenRun`, in the interaction's own list. */
 function copyOf(
   statement: unknown,
-  read: StatementRead,
-  tree: TreeIndex,
-  scope: FileScope,
+  read: MuirMoiraStorybookStatementRead,
+  tree: MuirMoiraStorybookTreeIndex,
+  scope: MuirMoiraStorybookFileScope,
   equivalentStatements: EquivalentStatements,
 ): unknown {
   return tree.listOf(statement) === tree.listOf(read.node) &&
@@ -341,18 +390,21 @@ function standsEarlier(
   interactionStatement: unknown,
   equivalentStatements: EquivalentStatements,
 ): boolean {
-  const start = field(interactionStatement, 'start');
+  const start = muirMoiraStorybookField(interactionStatement, 'start');
 
   return equivalentStatements(statement).some((node) => {
-    const end = field(node, 'end');
+    const end = muirMoiraStorybookField(node, 'end');
 
     return typeof end === 'number' && typeof start === 'number' && end <= start;
   });
 }
 
 /** The outermost function around `node`, or `undefined` outside any. */
-function outermostFunction(node: unknown, tree: TreeIndex): unknown {
-  return tree.ancestors(node).filter(isFunction).at(-1);
+function outermostFunction(
+  node: unknown,
+  tree: MuirMoiraStorybookTreeIndex,
+): unknown {
+  return tree.ancestors(node).filter(muirMoiraStorybookIsFunction).at(-1);
 }
 
 /**
@@ -365,10 +417,10 @@ function outermostFunction(node: unknown, tree: TreeIndex): unknown {
 function readsNameSetBetween(
   interactionStatement: unknown,
   statement: unknown,
-  tree: TreeIndex,
-  scope: FileScope,
+  tree: MuirMoiraStorybookTreeIndex,
+  scope: MuirMoiraStorybookFileScope,
 ): boolean {
-  const statements = list(tree.listOf(statement));
+  const statements = muirMoiraStorybookList(tree.listOf(statement));
   const betweenStatements = statements.slice(
     statements.indexOf(interactionStatement),
     statements.indexOf(statement),
@@ -380,9 +432,10 @@ function readsNameSetBetween(
       .flatMap((binding) => functionsNamed(binding, scope)),
   ]);
   const isBetween = (node: unknown): boolean =>
-    typeof field(node, 'start') === 'number' &&
-    typeof field(interactionStatement, 'start') === 'number' &&
-    typeof field(statement, 'start') === 'number' &&
+    typeof muirMoiraStorybookField(node, 'start') === 'number' &&
+    typeof muirMoiraStorybookField(interactionStatement, 'start') ===
+      'number' &&
+    typeof muirMoiraStorybookField(statement, 'start') === 'number' &&
     [node, ...tree.ancestors(node)].some((each) => between.has(each));
 
   return bindingsReadThroughFunctions(statement, scope, tree).some((binding) =>
@@ -398,10 +451,10 @@ function readsNameSetBetween(
  * counts as declared as the whole value.
  */
 function aliasChain(
-  binding: Binding | undefined,
-  scope: FileScope,
-): readonly Binding[] {
-  const chain: Binding[] = [];
+  binding: MuirMoiraStorybookBinding | undefined,
+  scope: MuirMoiraStorybookFileScope,
+): readonly MuirMoiraStorybookBinding[] {
+  const chain: MuirMoiraStorybookBinding[] = [];
 
   for (
     let each = binding;
@@ -415,8 +468,10 @@ function aliasChain(
 }
 
 /** The value `binding` is declared with, through any casts and parentheses around it. */
-function initOf(binding: Binding): unknown {
-  return unwrap(field(binding.declaration, 'init'));
+function initOf(binding: MuirMoiraStorybookBinding): unknown {
+  return muirMoiraStorybookUnwrap(
+    muirMoiraStorybookField(binding.declaration, 'init'),
+  );
 }
 
 /**
@@ -425,22 +480,24 @@ function initOf(binding: Binding): unknown {
  * of the value.
  */
 function functionsRun(
-  binding: Binding | undefined,
-  scope: FileScope,
+  binding: MuirMoiraStorybookBinding | undefined,
+  scope: MuirMoiraStorybookFileScope,
 ): readonly unknown[] {
   const chain = aliasChain(binding, scope);
 
   return chain.some(isDestructured)
     ? functionsNamed(binding, scope)
-    : chain.flatMap(functionsOf);
+    : chain.flatMap(muirMoiraStorybookFunctionsOf);
 }
 
 /**
  * A binding whose declaration's `id` is not its identifier: a destructured variable, such as `count` in
  * `const { count } = counter`, and also a parameter, a catch parameter or an import, which have no value to follow.
  */
-function isDestructured(binding: Binding): boolean {
-  return field(binding.declaration, 'id') !== binding.identifier;
+function isDestructured(binding: MuirMoiraStorybookBinding): boolean {
+  return (
+    muirMoiraStorybookField(binding.declaration, 'id') !== binding.identifier
+  );
 }
 
 /**
@@ -449,27 +506,33 @@ function isDestructured(binding: Binding): boolean {
  * holds by name, or one in a nested literal, is not among them.
  */
 function functionsNamed(
-  binding: Binding | undefined,
-  scope: FileScope,
+  binding: MuirMoiraStorybookBinding | undefined,
+  scope: MuirMoiraStorybookFileScope,
 ): readonly unknown[] {
   return aliasChain(binding, scope).flatMap((each) => [
-    ...functionsOf(each),
-    ...list(field(initOf(each), 'properties')).flatMap((property) =>
-      [property, field(property, 'value')].filter(isFunction),
+    ...muirMoiraStorybookFunctionsOf(each),
+    ...muirMoiraStorybookList(
+      muirMoiraStorybookField(initOf(each), 'properties'),
+    ).flatMap((property) =>
+      [property, muirMoiraStorybookField(property, 'value')].filter(
+        muirMoiraStorybookIsFunction,
+      ),
     ),
   ]);
 }
 
 function bindingsReadThroughFunctions(
   statement: unknown,
-  scope: FileScope,
-  tree: TreeIndex,
-): readonly Binding[] {
-  const found: Binding[] = [];
+  scope: MuirMoiraStorybookFileScope,
+  tree: MuirMoiraStorybookTreeIndex,
+): readonly MuirMoiraStorybookBinding[] {
+  const found: MuirMoiraStorybookBinding[] = [];
   const followed = new Set<unknown>();
   const pending = [statement];
-  const isDeclaredIn = (binding: Binding, node: unknown): boolean =>
-    tree.ancestors(binding.identifier).includes(node);
+  const isDeclaredIn = (
+    binding: MuirMoiraStorybookBinding,
+    node: unknown,
+  ): boolean => tree.ancestors(binding.identifier).includes(node);
 
   while (pending.length > 0) {
     const node = pending.pop();
@@ -494,37 +557,48 @@ function bindingsReadThroughFunctions(
 
 /** An expression statement that is a check, or one that `waitsOnFirstArgument` whose first argument holds an expect check. */
 function checksWhenRun(statement: unknown): boolean {
-  const expression = awaited(field(statement, 'expression'));
+  const expression = muirMoiraStorybookAwaited(
+    muirMoiraStorybookField(statement, 'expression'),
+  );
 
   return (
-    field(statement, 'type') === 'ExpressionStatement' &&
+    muirMoiraStorybookField(statement, 'type') === 'ExpressionStatement' &&
     (startsAtExpect(expression) ||
       (waitsOnFirstArgument(statement) &&
-        descendants(list(field(expression, 'arguments'))[0]).some(
-          isExpectCall,
-        )))
+        muirMoiraStorybookDescendants(
+          muirMoiraStorybookList(
+            muirMoiraStorybookField(expression, 'arguments'),
+          )[0],
+        ).some(isExpectCall)))
   );
 }
 
 /** A `waitFor(...)` statement, awaited or not, or an awaited `<x>.then(...)` statement. */
 function waitsOnFirstArgument(statement: unknown): boolean {
-  const expression = unwrap(field(statement, 'expression'));
+  const expression = muirMoiraStorybookUnwrap(
+    muirMoiraStorybookField(statement, 'expression'),
+  );
 
   return (
-    waitCall(statement) === 'waitFor' ||
-    (field(expression, 'type') === 'AwaitExpression' &&
-      memberName(field(awaited(expression), 'callee')) === 'then')
+    muirMoiraStorybookWaitCall(statement) === 'waitFor' ||
+    (muirMoiraStorybookField(expression, 'type') === 'AwaitExpression' &&
+      muirMoiraStorybookMemberName(
+        muirMoiraStorybookField(
+          muirMoiraStorybookAwaited(expression),
+          'callee',
+        ),
+      ) === 'then')
   );
 }
 
 /** What ends the window of `read` at `cut`, the first later statement that is or holds an interaction, if any. */
 function endAt(
   cut: unknown,
-  read: StatementRead,
-  tree: TreeIndex,
-  statementAt: (node: unknown) => StatementRead | undefined,
+  read: MuirMoiraStorybookStatementRead,
+  tree: MuirMoiraStorybookTreeIndex,
+  statementAt: (node: unknown) => MuirMoiraStorybookStatementRead | undefined,
   holdsAnInteractionOutsideBranches: (node: unknown) => boolean,
-): WindowEnd {
+): MuirMoiraStorybookWindowEnd {
   if (cut === undefined) {
     return { by: 'none' };
   }
@@ -532,13 +606,14 @@ function endAt(
   const ending = statementAt(cut);
 
   if (ending === undefined) {
-    return isStepCall(awaited(field(cut, 'expression'))) &&
-      holdsAnInteractionOutsideBranches(cut)
+    return muirMoiraStorybookIsStepCall(
+      muirMoiraStorybookAwaited(muirMoiraStorybookField(cut, 'expression')),
+    ) && holdsAnInteractionOutsideBranches(cut)
       ? { by: 'step' }
       : { by: 'maybe' };
   }
 
-  const statements = list(tree.listOf(read.node));
+  const statements = muirMoiraStorybookList(tree.listOf(read.node));
 
   return {
     by: 'interaction',
@@ -546,8 +621,11 @@ function endAt(
     sameList: tree.listOf(cut) === statements,
     adjacent: statements[statements.indexOf(read.node) + 1] === cut,
     sameTarget:
-      targetOf(read) !== undefined &&
-      equivalent(targetOf(read), targetOf(ending)),
+      muirMoiraStorybookTargetOf(read) !== undefined &&
+      muirMoiraStorybookEquivalent(
+        muirMoiraStorybookTargetOf(read),
+        muirMoiraStorybookTargetOf(ending),
+      ),
   };
 }
 
@@ -557,27 +635,29 @@ const waitCalls: ReadonlyMap<unknown, 'waitFor' | 'removal'> = new Map([
 ]);
 
 /** `'waitFor'` for a `waitFor(...)` call, `'removal'` for a `waitForElementToBeRemoved(...)` call, given as a statement, awaited or plain; `undefined` for anything else. */
-export function waitCall(node: unknown): 'waitFor' | 'removal' | undefined {
-  const call = awaited(
-    field(node, 'type') === 'ExpressionStatement'
-      ? field(node, 'expression')
+export function muirMoiraStorybookWaitCall(
+  node: unknown,
+): 'waitFor' | 'removal' | undefined {
+  const call = muirMoiraStorybookAwaited(
+    muirMoiraStorybookField(node, 'type') === 'ExpressionStatement'
+      ? muirMoiraStorybookField(node, 'expression')
       : node,
   );
 
-  return field(call, 'type') === 'CallExpression'
-    ? waitCalls.get(field(call, 'callee', 'name'))
+  return muirMoiraStorybookField(call, 'type') === 'CallExpression'
+    ? waitCalls.get(muirMoiraStorybookField(call, 'callee', 'name'))
     : undefined;
 }
 
 /** `step(...)`, or `<context>.step(...)` or `<context>?.step(...)` on a play context that is not destructured. */
-export function isStepCall(node: unknown): boolean {
-  const callee = field(node, 'callee');
+export function muirMoiraStorybookIsStepCall(node: unknown): boolean {
+  const callee = muirMoiraStorybookField(node, 'callee');
 
   return (
-    isCall(node) &&
-    (field(callee, 'name') === 'step' ||
-      (isMember(callee) &&
-        field(callee, 'object', 'type') === 'Identifier' &&
-        memberName(callee) === 'step'))
+    muirMoiraStorybookIsCall(node) &&
+    (muirMoiraStorybookField(callee, 'name') === 'step' ||
+      (muirMoiraStorybookIsMember(callee) &&
+        muirMoiraStorybookField(callee, 'object', 'type') === 'Identifier' &&
+        muirMoiraStorybookMemberName(callee) === 'step'))
   );
 }

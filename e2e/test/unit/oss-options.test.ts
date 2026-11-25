@@ -5,25 +5,25 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { lzRemoveDeadRunDirs } from '../../src/fixture.ts';
+import { muirRemoveDeadRunDirs } from '../../src/fixture.ts';
 import {
-  lzNodeTestCommand,
-  lzOssPreparedPrefix,
-  lzOssRunPrefix,
-  lzOssUsage,
-  lzParseCommand,
-  lzParseMergeOptions,
-  lzParseOptions,
-  lzStrykerArgs,
-  lzStrykerConfig,
-  lzStrykerOptions,
-  type LzOssProject,
+  muirNodeTestCommand,
+  muirOssPreparedPrefix,
+  muirOssRunPrefix,
+  muirOssUsage,
+  muirParseCommand,
+  muirParseMergeOptions,
+  muirParseOptions,
+  muirStrykerArgs,
+  muirStrykerConfig,
+  muirStrykerOptions,
+  type MuirOssProject,
 } from '../../src/oss/options.ts';
-import { lzDecidingFields } from '../../src/oss/result.ts';
+import { muirDecidingFields } from '../../src/oss/result.ts';
 
 describe('run folder prefixes', () => {
   it("lets the dead-run sweep remove a dead run's folder and keep a dead prepared run's", (t) => {
-    const dir = mkdtempSync(join(tmpdir(), 'lz-oss-prefixes-'));
+    const dir = mkdtempSync(join(tmpdir(), 'muir-oss-prefixes-'));
     const deadPid = spawnSync(process.execPath, ['-e', ''], {
       windowsHide: true,
     }).pid;
@@ -31,19 +31,21 @@ describe('run folder prefixes', () => {
     t.after(() => {
       rmSync(dir, { recursive: true, force: true });
     });
-    [lzOssRunPrefix, lzOssPreparedPrefix].forEach((prefix) => {
+    [muirOssRunPrefix, muirOssPreparedPrefix].forEach((prefix) => {
       mkdirSync(join(dir, `${prefix}${deadPid}-a`));
     });
 
-    lzRemoveDeadRunDirs(dir, lzOssRunPrefix);
+    muirRemoveDeadRunDirs(dir, muirOssRunPrefix);
 
-    assert.deepEqual(readdirSync(dir), [`${lzOssPreparedPrefix}${deadPid}-a`]);
+    assert.deepEqual(readdirSync(dir), [
+      `${muirOssPreparedPrefix}${deadPid}-a`,
+    ]);
   });
 
   it('names the folders as earlier runs did, so the sweep still finds theirs', () => {
     assert.deepEqual(
-      [lzOssRunPrefix, lzOssPreparedPrefix],
-      ['lz-oss-driver-', 'lz-oss-prepared-'],
+      [muirOssRunPrefix, muirOssPreparedPrefix],
+      ['muir-oss-driver-', 'muir-oss-prepared-'],
     );
   });
 });
@@ -61,9 +63,9 @@ const required = [
   '2026-11-04',
 ];
 
-describe('lzParseOptions', () => {
+describe('muirParseOptions', () => {
   it('refuses a run without --npm-before', () => {
-    assert.throws(() => lzParseOptions(required.slice(0, -2)), {
+    assert.throws(() => muirParseOptions(required.slice(0, -2)), {
       message:
         /--npm-before is required: npm installs the newest versions published before it, so runs that share it install one tree\.$/,
     });
@@ -78,7 +80,8 @@ describe('lzParseOptions', () => {
   ]) {
     it(`refuses ${value} as --npm-before: no date, no day of its month, a time without a zone, or one on the next day`, () => {
       assert.throws(
-        () => lzParseOptions([...required.slice(0, -2), '--npm-before', value]),
+        () =>
+          muirParseOptions([...required.slice(0, -2), '--npm-before', value]),
         {
           message:
             /--npm-before is a date such as 2026-11-04 or a UTC time such as 2026-11-04T12:00:00Z\.$/,
@@ -90,7 +93,7 @@ describe('lzParseOptions', () => {
   it('refuses an --npm-before in the future', () => {
     assert.throws(
       () =>
-        lzParseOptions([
+        muirParseOptions([
           ...required.slice(0, -2),
           '--npm-before',
           '2999-01-01',
@@ -105,7 +108,7 @@ describe('lzParseOptions', () => {
   it('refuses an --npm-before with anything before its year, such as the six-digit year -000001', () => {
     assert.throws(
       () =>
-        lzParseOptions([
+        muirParseOptions([
           ...required.slice(0, -2),
           '--npm-before=-000001-01-01',
         ]),
@@ -123,13 +126,13 @@ describe('lzParseOptions', () => {
     });
 
     assert.equal(
-      lzParseOptions(required).npmBefore,
+      muirParseOptions(required).npmBefore,
       '2026-11-04T00:00:00.000Z',
     );
   });
 
   it('reads an --npm-before UTC time', () => {
-    const { npmBefore } = lzParseOptions([
+    const { npmBefore } = muirParseOptions([
       ...required.slice(0, -2),
       '--npm-before',
       '2026-11-04T12:30:00Z',
@@ -139,7 +142,7 @@ describe('lzParseOptions', () => {
   });
 
   it('reads an --npm-before UTC time with milliseconds', () => {
-    const { npmBefore } = lzParseOptions([
+    const { npmBefore } = muirParseOptions([
       ...required.slice(0, -2),
       '--npm-before',
       '2026-11-04T12:30:00.123Z',
@@ -149,7 +152,7 @@ describe('lzParseOptions', () => {
   });
 
   it('reads the options and looks the project up', () => {
-    const options = lzParseOptions(required);
+    const options = muirParseOptions(required);
 
     assert.deepEqual(
       { ...options, project: options.project.name },
@@ -158,7 +161,7 @@ describe('lzParseOptions', () => {
         source: 'D:/clone',
         out: 'D:/out',
         concurrency: 5,
-        sides: ['lz', 'command'],
+        sides: ['muir', 'command'],
         mutate: [],
         tarballs: undefined,
         prepareOnly: false,
@@ -171,7 +174,7 @@ describe('lzParseOptions', () => {
 
   it("reads Stryker's extra time a mutant may take", () => {
     assert.equal(
-      lzParseOptions([...required, '--mutant-timeout-ms', '60000'])
+      muirParseOptions([...required, '--mutant-timeout-ms', '60000'])
         .mutantTimeoutMs,
       60_000,
     );
@@ -179,7 +182,7 @@ describe('lzParseOptions', () => {
 
   it('refuses an extra time of 0', () => {
     assert.throws(
-      () => lzParseOptions([...required, '--mutant-timeout-ms', '0']),
+      () => muirParseOptions([...required, '--mutant-timeout-ms', '0']),
       {
         message: /--mutant-timeout-ms is a positive integer\.$/,
       },
@@ -187,7 +190,7 @@ describe('lzParseOptions', () => {
   });
 
   it('reads the tarball folder and --prepare-only', () => {
-    const options = lzParseOptions([
+    const options = muirParseOptions([
       ...required,
       '--tarballs',
       'D:/tgz',
@@ -200,24 +203,24 @@ describe('lzParseOptions', () => {
   it('runs both sides without --side, and the named one with it', () => {
     assert.deepEqual(
       [
-        lzParseOptions(required).sides,
-        lzParseOptions([...required, '--side', 'command']).sides,
+        muirParseOptions(required).sides,
+        muirParseOptions([...required, '--side', 'command']).sides,
       ],
-      [['lz', 'command'], ['command']],
+      [['muir', 'command'], ['command']],
     );
   });
 
   it('refuses a side it does not know', () => {
-    assert.throws(() => lzParseOptions([...required, '--side', 'both']), {
-      message: /--side is lz or command\.$/,
+    assert.throws(() => muirParseOptions([...required, '--side', 'both']), {
+      message: /--side is muir or command\.$/,
     });
   });
 
   it('reads each --mutate, and none without it', () => {
     assert.deepEqual(
       [
-        lzParseOptions(required).mutate,
-        lzParseOptions([
+        muirParseOptions(required).mutate,
+        muirParseOptions([
           ...required,
           '--mutate',
           'index.js:3:1-3:9',
@@ -231,7 +234,7 @@ describe('lzParseOptions', () => {
 
   it('refuses a --mutate pattern with a comma, which Stryker would split', () => {
     assert.throws(
-      () => lzParseOptions([...required, '--mutate', 'lib/{a,b}.js']),
+      () => muirParseOptions([...required, '--mutate', 'lib/{a,b}.js']),
       {
         message:
           /--mutate takes one pattern without a comma; repeat it for more\.$/,
@@ -241,7 +244,7 @@ describe('lzParseOptions', () => {
 
   it('reads the time limit of each side in minutes', () => {
     assert.equal(
-      lzParseOptions([...required, '--time-limit-minutes', '40'])
+      muirParseOptions([...required, '--time-limit-minutes', '40'])
         .timeLimitMinutes,
       40,
     );
@@ -249,7 +252,7 @@ describe('lzParseOptions', () => {
 
   it('refuses a time limit of 0', () => {
     assert.throws(
-      () => lzParseOptions([...required, '--time-limit-minutes', '0']),
+      () => muirParseOptions([...required, '--time-limit-minutes', '0']),
       {
         message: /--time-limit-minutes is a positive integer\.$/,
       },
@@ -257,14 +260,14 @@ describe('lzParseOptions', () => {
   });
 
   it('refuses a project it has no settings for, and names those it has', () => {
-    assert.throws(() => lzParseOptions(required.with(1, 'pino')), {
+    assert.throws(() => muirParseOptions(required.with(1, 'pino')), {
       message:
         /--project is one of env-schema, fastify-cookie, fast-json-stringify, fastify, restartable, sonic-boom, pino-pretty, borp, execa\.$/,
     });
   });
 
   it("mutates pino-pretty's index.js and lib sources, and runs its test files but cli-rc, which fails on Windows", () => {
-    const { project } = lzParseOptions(required.with(1, 'pino-pretty'));
+    const { project } = muirParseOptions(required.with(1, 'pino-pretty'));
 
     assert.deepEqual(project, {
       name: 'pino-pretty',
@@ -281,14 +284,14 @@ describe('lzParseOptions', () => {
       patches: [],
     });
     assert.equal(
-      lzNodeTestCommand(project),
+      muirNodeTestCommand(project),
       'node --test --test-concurrency=1 "lib/**/*.test.js" "test/basic.test.js" "test/boolean-options.test.js" ' +
         '"test/cli.test.js" "test/crlf.test.js" "test/error-objects.test.js"',
     );
   });
 
   it("mutates restartable's two source files and runs its two test files", () => {
-    const { project } = lzParseOptions(required.with(1, 'restartable'));
+    const { project } = muirParseOptions(required.with(1, 'restartable'));
 
     assert.deepEqual(project, {
       name: 'restartable',
@@ -300,7 +303,9 @@ describe('lzParseOptions', () => {
   });
 
   it("mutates fast-json-stringify's sources, and runs its test files in one process with fixtures per process", () => {
-    const { project } = lzParseOptions(required.with(1, 'fast-json-stringify'));
+    const { project } = muirParseOptions(
+      required.with(1, 'fast-json-stringify'),
+    );
 
     assert.deepEqual(project, {
       name: 'fast-json-stringify',
@@ -318,13 +323,13 @@ describe('lzParseOptions', () => {
       ],
     });
     assert.equal(
-      lzNodeTestCommand(project),
+      muirNodeTestCommand(project),
       'node --test --experimental-test-isolation=none "test/*.test.js"',
     );
   });
 
   it("mutates sonic-boom's index.js, runs its test files one at a time with their own 240 s test timeout, and opens a path no mkdir can create", () => {
-    const { project } = lzParseOptions(required.with(1, 'sonic-boom'));
+    const { project } = muirParseOptions(required.with(1, 'sonic-boom'));
 
     assert.deepEqual(project, {
       name: 'sonic-boom',
@@ -340,14 +345,14 @@ describe('lzParseOptions', () => {
       ],
     });
     assert.equal(
-      lzNodeTestCommand(project),
+      muirNodeTestCommand(project),
       'node --test --test-concurrency=1 --test-timeout=240000 "test/*.test.js"',
     );
   });
 
   it('refuses a missing --out', () => {
     assert.throws(
-      () => lzParseOptions(required.slice(0, 4).concat(required.slice(6))),
+      () => muirParseOptions(required.slice(0, 4).concat(required.slice(6))),
       {
         message: /--source and --out are required\.$/,
       },
@@ -356,21 +361,21 @@ describe('lzParseOptions', () => {
 
   for (const value of ['0', '05', '5x']) {
     it(`refuses a concurrency of ${value}`, () => {
-      assert.throws(() => lzParseOptions(required.with(7, value)), {
+      assert.throws(() => muirParseOptions(required.with(7, value)), {
         message: /--concurrency is a positive integer/,
       });
     });
   }
 
   it('refuses a positional argument', () => {
-    assert.throws(() => lzParseOptions([...required, 'extra']), {
+    assert.throws(() => muirParseOptions([...required, 'extra']), {
       code: 'ERR_PARSE_ARGS_UNEXPECTED_POSITIONAL',
     });
   });
 
   const plainProjects: readonly (readonly [
     string,
-    Omit<LzOssProject, 'name'>,
+    Omit<MuirOssProject, 'name'>,
   ])[] = [
     [
       'env-schema',
@@ -417,7 +422,7 @@ describe('lzParseOptions', () => {
 
   for (const [name, settings] of plainProjects) {
     it(`mutates ${name}'s sources and runs its test files with no flags or patches`, () => {
-      assert.deepEqual(lzParseOptions(required.with(1, name)).project, {
+      assert.deepEqual(muirParseOptions(required.with(1, name)).project, {
         name,
         ...settings,
       });
@@ -425,7 +430,7 @@ describe('lzParseOptions', () => {
   }
 
   it("mutates execa's sources, runs its test files but those that fail on Windows one at a time, with a 240 s test timeout", () => {
-    const { project } = lzParseOptions(required.with(1, 'execa'));
+    const { project } = muirParseOptions(required.with(1, 'execa'));
 
     assert.deepEqual(project, {
       name: 'execa',
@@ -486,42 +491,42 @@ describe('lzParseOptions', () => {
   });
 
   it('names --side and --merge in the usage', () => {
-    assert.match(lzOssUsage, /\[--side <lz\|command>\]/);
+    assert.match(muirOssUsage, /\[--side <muir\|command>\]/);
     assert.match(
-      lzOssUsage,
+      muirOssUsage,
       /--merge <result\.json> \[--merge <result\.json>\]\.\.\. --out <folder>/,
     );
   });
 
   it('names --mutate in the usage, with the column to widen a range by on each side', () => {
-    assert.match(lzOssUsage, /\[--mutate <pattern>\]\.\.\./);
-    assert.match(lzOssUsage, /one column on each side/);
+    assert.match(muirOssUsage, /\[--mutate <pattern>\]\.\.\./);
+    assert.match(muirOssUsage, /one column on each side/);
   });
 
   it('says in the usage that a merged result.json cannot be merged again', () => {
-    assert.match(lzOssUsage, /merges do not compose/);
+    assert.match(muirOssUsage, /merges do not compose/);
   });
 
   it('says in the usage that a merge refuses a side that wrote no report', () => {
-    assert.match(lzOssUsage, /A side that wrote no\s+report is refused/);
+    assert.match(muirOssUsage, /A side that wrote no\s+report is refused/);
   });
 
   it('names in the usage every header field the runs of a merge must share', () => {
     assert.deepEqual(
-      lzDecidingFields.filter((field) => !lzOssUsage.includes(field)),
+      muirDecidingFields.filter((field) => !muirOssUsage.includes(field)),
       [],
     );
   });
 
   it("says in the usage that a merge matches each side's Stryker configuration, not the workspace commit", () => {
     assert.match(
-      lzOssUsage,
+      muirOssUsage,
       /runs of one side whose strykerConfig differs[\s\S]+the workspace commit may\s+differ/,
     );
   });
 
   it('says in the usage that a result.json given twice is refused', () => {
-    assert.match(lzOssUsage, /A result\.json\s+given twice is refused/);
+    assert.match(muirOssUsage, /A result\.json\s+given twice is refused/);
   });
 
   it('explains --npm-before, --side, --mutate, the checkpoint and --merge in the usage', () => {
@@ -546,29 +551,29 @@ describe('lzParseOptions', () => {
     ];
 
     assert.deepEqual(
-      lines.filter((line) => !lzOssUsage.includes(line)),
+      lines.filter((line) => !muirOssUsage.includes(line)),
       [],
     );
   });
 
   it('refuses an option it does not know', () => {
-    assert.throws(() => lzParseOptions([...required, '--sides', 'lz']), {
+    assert.throws(() => muirParseOptions([...required, '--sides', 'muir']), {
       code: 'ERR_PARSE_ARGS_UNKNOWN_OPTION',
     });
   });
 });
 
-describe('lzStrykerArgs', () => {
+describe('muirStrykerArgs', () => {
   it('passes nothing without --mutate, as the configuration selects the files', () => {
     assert.deepEqual(
-      lzStrykerArgs({ mutate: [], mutantTimeoutMs: undefined }),
+      muirStrykerArgs({ mutate: [], mutantTimeoutMs: undefined }),
       [],
     );
   });
 
   it('passes the patterns to stryker run as one comma-separated --mutate', () => {
     assert.deepEqual(
-      lzStrykerArgs({
+      muirStrykerArgs({
         mutate: ['index.js:3:1-3:9', 'lib/a.js'],
         mutantTimeoutMs: undefined,
       }),
@@ -578,19 +583,19 @@ describe('lzStrykerArgs', () => {
 
   it("passes the extra time to stryker run as --timeoutMS, which Stryker adds to each mutant's limit", () => {
     assert.deepEqual(
-      lzStrykerArgs({ mutate: ['lib/a.js'], mutantTimeoutMs: 60_000 }),
+      muirStrykerArgs({ mutate: ['lib/a.js'], mutantTimeoutMs: 60_000 }),
       ['--mutate', 'lib/a.js', '--timeoutMS', '60000'],
     );
   });
 });
 
-describe('lzParseCommand', () => {
+describe('muirParseCommand', () => {
   it('asks for the usage on --help or -h, whatever else is given', () => {
     assert.deepEqual(
       [
-        lzParseCommand(['--help']),
-        lzParseCommand(['-h', '--merge', 'a']),
-        lzParseCommand([...required, '--help']),
+        muirParseCommand(['--help']),
+        muirParseCommand(['-h', '--merge', 'a']),
+        muirParseCommand([...required, '--help']),
       ],
       [{ kind: 'help' }, { kind: 'help' }, { kind: 'help' }],
     );
@@ -599,8 +604,8 @@ describe('lzParseCommand', () => {
   it('merges when --merge is given, in either form', () => {
     assert.deepEqual(
       [
-        lzParseCommand(['--merge', 'a', '--out', 'o']),
-        lzParseCommand(['--merge=a', '--out', 'o']),
+        muirParseCommand(['--merge', 'a', '--out', 'o']),
+        muirParseCommand(['--merge=a', '--out', 'o']),
       ],
       [
         { kind: 'merge', options: { merge: ['a'], out: 'o' } },
@@ -610,7 +615,7 @@ describe('lzParseCommand', () => {
   });
 
   it('runs the driver otherwise', () => {
-    const command = lzParseCommand(required);
+    const command = muirParseCommand(required);
 
     assert.equal(
       command.kind === 'run' ? command.options.project.name : command.kind,
@@ -619,10 +624,10 @@ describe('lzParseCommand', () => {
   });
 });
 
-describe('lzParseMergeOptions', () => {
+describe('muirParseMergeOptions', () => {
   it('reads each --merge and --out', () => {
     assert.deepEqual(
-      lzParseMergeOptions([
+      muirParseMergeOptions([
         '--merge',
         'a/result.json',
         '--merge',
@@ -638,27 +643,31 @@ describe('lzParseMergeOptions', () => {
   });
 
   it('reads no runs without --merge', () => {
-    assert.deepEqual(lzParseMergeOptions(['--out', 'D:/out']), {
+    assert.deepEqual(muirParseMergeOptions(['--out', 'D:/out']), {
       merge: [],
       out: 'D:/out',
     });
   });
 
   it('refuses a missing --out', () => {
-    assert.throws(() => lzParseMergeOptions(['--merge', 'a/result.json']), {
+    assert.throws(() => muirParseMergeOptions(['--merge', 'a/result.json']), {
       message: /--out is required\.$/,
     });
   });
 
   it('refuses a positional argument', () => {
-    assert.throws(() => lzParseMergeOptions(['a/result.json', '--out', 'o']), {
-      code: 'ERR_PARSE_ARGS_UNEXPECTED_POSITIONAL',
-    });
+    assert.throws(
+      () => muirParseMergeOptions(['a/result.json', '--out', 'o']),
+      {
+        code: 'ERR_PARSE_ARGS_UNEXPECTED_POSITIONAL',
+      },
+    );
   });
 
   it('refuses the options of a run, as a merge runs no Stryker', () => {
     assert.throws(
-      () => lzParseMergeOptions(['--merge', 'a', '--out', 'o', '--side', 'lz']),
+      () =>
+        muirParseMergeOptions(['--merge', 'a', '--out', 'o', '--side', 'muir']),
       {
         code: 'ERR_PARSE_ARGS_UNKNOWN_OPTION',
       },
@@ -666,7 +675,7 @@ describe('lzParseMergeOptions', () => {
   });
 });
 
-const project: LzOssProject = {
+const project: MuirOssProject = {
   name: 'p',
   mutate: ['index.js'],
   testFiles: ['test/*.test.js'],
@@ -674,10 +683,10 @@ const project: LzOssProject = {
   patches: [],
 };
 
-describe('lzNodeTestCommand', () => {
+describe('muirNodeTestCommand', () => {
   it('names the test files after the flags, so node --test discovers nothing else', () => {
     assert.equal(
-      lzNodeTestCommand({
+      muirNodeTestCommand({
         ...project,
         testFiles: ['a/*.test.js', 'b.test.mjs'],
         nodeTestFlags: ['--test-concurrency=1'],
@@ -687,18 +696,18 @@ describe('lzNodeTestCommand', () => {
   });
 });
 
-describe('lzStrykerOptions', () => {
-  it('selects the runner of this workspace with the test files on the lz side', () => {
-    assert.deepEqual(lzStrykerOptions('lz', project), {
+describe('muirStrykerOptions', () => {
+  it('selects the runner of this workspace with the test files on the muir side', () => {
+    assert.deepEqual(muirStrykerOptions('muir', project), {
       mutate: ['index.js'],
       plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
-      testRunner: 'lz-node-test',
-      lzNodeTest: { testFiles: ['test/*.test.js'] },
+      testRunner: 'muir-siryn-node-test',
+      muirSirynNodeTest: { testFiles: ['test/*.test.js'] },
     });
   });
 
   it("runs the project's command with coverage analysis off on the command side", () => {
-    assert.deepEqual(lzStrykerOptions('command', project), {
+    assert.deepEqual(muirStrykerOptions('command', project), {
       mutate: ['index.js'],
       testRunner: 'command',
       commandRunner: { command: 'node --test "test/*.test.js"' },
@@ -707,13 +716,13 @@ describe('lzStrykerOptions', () => {
   });
 });
 
-describe('lzStrykerConfig', () => {
+describe('muirStrykerConfig', () => {
   it('installs the mutators and exports the options on either side', () => {
-    const config = lzStrykerConfig('command', project);
+    const config = muirStrykerConfig('command', project);
 
     assert.match(
       config,
-      /^import \{ lzNodeMutators \} from '@muirjs\/proteus-node';\n\nawait lzNodeMutators\(\);\n\nexport default \{\n/,
+      /^import \{ muirProteusNodeMutators \} from '@muirjs\/proteus-node';\n\nawait muirProteusNodeMutators\(\);\n\nexport default \{\n/,
     );
     assert.match(config, /"testRunner": "command"/);
   });

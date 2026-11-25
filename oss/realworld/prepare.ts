@@ -120,18 +120,18 @@ writeFileSync(
   path.join(copy, 'stryker.playwright.config.ts'),
   `import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
-const webServerMutate = process.env['LZ_CORPUS_WEBSERVER_MUTATE'] ?? 'true';
+const webServerMutate = process.env['MUIR_CORPUS_WEBSERVER_MUTATE'] ?? 'true';
 
 if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
   throw new Error(
-    \`LZ_CORPUS_WEBSERVER_MUTATE must be true or auto, got \${JSON.stringify(webServerMutate)}.\`,
+    \`MUIR_CORPUS_WEBSERVER_MUTATE must be true or auto, got \${JSON.stringify(webServerMutate)}.\`,
   );
 }
 
 export default {
   plugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
-  lzPlaywright: {
+  testRunner: 'muir-siryn-playwright',
+  muirSirynPlaywright: {
     configFile: 'apps/conduit-e2e/playwright.config.ts',
     webServer: { mutate: webServerMutate === 'auto' ? 'auto' : true },
   },

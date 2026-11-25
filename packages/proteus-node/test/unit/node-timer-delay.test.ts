@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
-import { nodeTimerDelay } from '../../src/node-timer-delay.ts';
+import { muirProteusNodeTimerDelay } from '../../src/node-timer-delay.ts';
 
 const promises =
   "import { setTimeout as sleep } from 'node:timers/promises';\n";
 
-describe('LzNodeTimerDelay', () => {
-  lzTestEach([
+describe('MuirProteusNodeTimerDelay', () => {
+  muirTestEach([
     ['the global setTimeout', 'setTimeout(() => {}, graceMs);', 'graceMs'],
     ['the global setInterval', 'setInterval(tick, 100);', '100'],
     [
@@ -51,13 +51,13 @@ describe('LzNodeTimerDelay', () => {
     ['a negated variable', 'setTimeout(f, -ms);', '-ms'],
     ['a literal with a plus sign', 'setTimeout(f, +5);', '+5'],
   ])('moves the delay of %s by 1 each way', async (_title, source, delay) => {
-    assert.deepEqual(await mutantsOf(nodeTimerDelay, source), [
+    assert.deepEqual(await mutantsOf(muirProteusNodeTimerDelay, source), [
       `${delay} + 1`,
       `${delay} - 1`,
     ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     ['1, which a move down leaves at 1', 'setTimeout(f, 1);', ['1 + 1']],
     ['0, which either move leaves at 1', 'setTimeout(f, 0);', []],
     ['undefined, which is 1 already', 'setTimeout(f, undefined);', []],
@@ -66,11 +66,14 @@ describe('LzNodeTimerDelay', () => {
   ])(
     'moves a delay of %s only where it changes',
     async (_title, source, expected) => {
-      assert.deepEqual(await mutantsOf(nodeTimerDelay, source), expected);
+      assert.deepEqual(
+        await mutantsOf(muirProteusNodeTimerDelay, source),
+        expected,
+      );
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     ["mock timers' tick", 't.mock.timers.tick(999);'],
     ['the callback of a global setTimeout', 'setTimeout(delay);'],
     [
@@ -149,6 +152,6 @@ describe('LzNodeTimerDelay', () => {
     // fast-json-stringify/index.js:576
     ['a timer in generated source', "new Function('f', 'setTimeout(f, 5)');"],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeTimerDelay, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusNodeTimerDelay, source), []);
   });
 });

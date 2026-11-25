@@ -1,37 +1,40 @@
 import type { Logger } from '@stryker-mutator/api/logging';
 
-import type { LzDryRunStore } from './dry-run-store.ts';
-import { isObject } from './guards.ts';
+import type { MuirSirynNodeTestDryRunStore } from './dry-run-store.ts';
+import { muirSirynNodeTestIsObject } from './guards.ts';
 import {
-  lzNamesFile,
-  lzOutsideMs,
-  within,
-  type RecordedTest,
+  muirSirynNodeTestNamesFile,
+  muirSirynNodeTestOutsideMs,
+  muirSirynNodeTestWithin,
+  type MuirSirynNodeTestRecordedTest,
 } from './record.ts';
 
 /** What a mutant run's deadline needs to know of a test file from the dry run. */
-export interface LzStartUp {
+export interface MuirSirynNodeTestStartUp {
   readonly startUpMs: number;
   readonly tests: number;
 }
 
-export function lzStartUpOf(
-  tests: readonly RecordedTest[],
+export function muirSirynNodeTestStartUpOf(
+  tests: readonly MuirSirynNodeTestRecordedTest[],
   fileMs: number,
-): LzStartUp {
+): MuirSirynNodeTestStartUp {
   return {
-    startUpMs: Math.max(0, Math.floor(lzOutsideMs(tests, fileMs))),
+    startUpMs: Math.max(
+      0,
+      Math.floor(muirSirynNodeTestOutsideMs(tests, fileMs)),
+    ),
     tests: tests.length,
   };
 }
 
 /**
  * Each test file's start-up from the dry run, kept in the dry-run store that Stryker's own process owns and removes as it
- * exits (see `lzOwnDryRun`), so that every worker's mutant runs read what one worker's dry run measured. A worker's
+ * exits (see `muirSirynNodeTestOwnDryRun`), so that every worker's mutant runs read what one worker's dry run measured. A worker's
  * runner cannot remove them: Stryker replaces runners while other workers still read them.
  */
-export interface LzStartUps {
-  record(file: string, startUp: LzStartUp): void;
+export interface MuirSirynNodeTestStartUps {
+  record(file: string, startUp: MuirSirynNodeTestStartUp): void;
   deadline(
     files: readonly string[],
     testFilter: readonly string[] | undefined,
@@ -39,11 +42,11 @@ export interface LzStartUps {
   ): number;
 }
 
-export function lzStartUps(
-  store: LzDryRunStore,
+export function muirSirynNodeTestStartUps(
+  store: MuirSirynNodeTestDryRunStore,
   timeoutFactor: number,
   log: Logger,
-): LzStartUps {
+): MuirSirynNodeTestStartUps {
   const unmeasured = new Set<string>();
   const read = (file: string) => {
     const startUp = storedStartUp(store.read(file, 'start-up'));
@@ -65,7 +68,7 @@ export function lzStartUps(
     },
 
     deadline(files, testFilter, timeout) {
-      return lzDeadlineMs(
+      return muirSirynNodeTestDeadlineMs(
         timeout,
         timeoutFactor,
         files.flatMap((file) => {
@@ -78,13 +81,15 @@ export function lzStartUps(
           // Stryker runs every test of a file for a static mutant, or without coverage, and then sums the time of
           // every test of the dry run.
           const wholeFile =
-            testFilter === undefined || lzNamesFile(testFilter, file);
+            testFilter === undefined ||
+            muirSirynNodeTestNamesFile(testFilter, file);
 
           return [
             {
               covering: wholeFile
                 ? startUp.tests
-                : testFilter.filter((id) => within(id, file)).length,
+                : testFilter.filter((id) => muirSirynNodeTestWithin(id, file))
+                    .length,
               startUpMs: startUp.startUpMs,
             },
           ];
@@ -97,7 +102,9 @@ export function lzStartUps(
 const isCount = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 
-function storedStartUp(content: string | undefined): LzStartUp | undefined {
+function storedStartUp(
+  content: string | undefined,
+): MuirSirynNodeTestStartUp | undefined {
   if (content === undefined) {
     return undefined;
   }
@@ -105,7 +112,7 @@ function storedStartUp(content: string | undefined): LzStartUp | undefined {
   try {
     const stored: unknown = JSON.parse(content);
 
-    if (isObject(stored)) {
+    if (muirSirynNodeTestIsObject(stored)) {
       const { startUpMs, tests } = stored;
 
       if (isCount(startUpMs) && isCount(tests)) {
@@ -120,7 +127,7 @@ function storedStartUp(content: string | undefined): LzStartUp | undefined {
 }
 
 /** A test file of a mutant run: its covering tests and its start-up time from the dry run. */
-export interface LzDeadlineFile {
+export interface MuirSirynNodeTestDeadlineFile {
   readonly covering: number;
   readonly startUpMs: number;
 }
@@ -131,10 +138,10 @@ export interface LzDeadlineFile {
  * the file once. A millisecond of each start-up stays counted, so that what is left never falls below the tests' time
  * and each start-up once, however Stryker rounded each test's time.
  */
-export function lzDeadlineMs(
+export function muirSirynNodeTestDeadlineMs(
   timeout: number,
   timeoutFactor: number,
-  files: readonly LzDeadlineFile[],
+  files: readonly MuirSirynNodeTestDeadlineFile[],
 ): number {
   const extraStartUpMs = files.reduce(
     (sum, { covering, startUpMs }) =>

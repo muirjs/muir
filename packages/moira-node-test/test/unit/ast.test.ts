@@ -3,12 +3,12 @@ import { describe, it } from 'node:test';
 
 import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  lzAwaited,
-  lzCalleeRoot,
-  lzImportOf,
-  lzPropertyName,
+  muirMoiraNodeTestAwaited,
+  muirMoiraNodeTestCalleeRoot,
+  muirMoiraNodeTestImportOf,
+  muirMoiraNodeTestPropertyName,
 } from '../../src/ast.ts';
 
 /** The path of the first call in `source`, parsed as a TypeScript module. */
@@ -35,11 +35,11 @@ function firstCall(source: string): NodePath<types.CallExpression> {
 function calleeName(source: string): string | undefined {
   const call = firstCall(source);
 
-  return lzCalleeRoot(call.node.callee)?.name;
+  return muirMoiraNodeTestCalleeRoot(call.node.callee)?.name;
 }
 
-describe('lzImportOf', () => {
-  lzTestEach([
+describe('muirMoiraNodeTestImportOf', () => {
+  muirTestEach([
     [
       'a default import',
       "import f from 'm';\nf();",
@@ -75,12 +75,15 @@ describe('lzImportOf', () => {
     ['a global', 'f();', 'f', undefined],
     ['a CommonJS require', "const f = require('m');\nf();", 'f', undefined],
   ])('finds %s', (_title, source, name, expected) => {
-    assert.deepEqual(lzImportOf(firstCall(source), name), expected);
+    assert.deepEqual(
+      muirMoiraNodeTestImportOf(firstCall(source), name),
+      expected,
+    );
   });
 });
 
-describe('lzPropertyName', () => {
-  lzTestEach([
+describe('muirMoiraNodeTestPropertyName', () => {
+  muirTestEach([
     ['a member', 'a.b();', 'b'],
     ['a computed member', "a['b']();", undefined],
     [
@@ -90,12 +93,15 @@ describe('lzPropertyName', () => {
     ],
     ['an identifier', 'b();', undefined],
   ])('names the property of %s', (_title, source, expected) => {
-    assert.equal(lzPropertyName(firstCall(source).node.callee), expected);
+    assert.equal(
+      muirMoiraNodeTestPropertyName(firstCall(source).node.callee),
+      expected,
+    );
   });
 });
 
-describe('lzCalleeRoot', () => {
-  lzTestEach([
+describe('muirMoiraNodeTestCalleeRoot', () => {
+  muirTestEach([
     ['an identifier', 'f();', 'f'],
     ['a member', 'a.b();', 'a'],
     ['a member of a member', 'a.b.c();', 'a'],
@@ -106,16 +112,16 @@ describe('lzCalleeRoot', () => {
   });
 });
 
-describe('lzAwaited', () => {
+describe('muirMoiraNodeTestAwaited', () => {
   it('gives the argument of an await expression', () => {
     const call = types.callExpression(types.identifier('f'), []);
 
-    assert.equal(lzAwaited(types.awaitExpression(call)), call);
+    assert.equal(muirMoiraNodeTestAwaited(types.awaitExpression(call)), call);
   });
 
   it('gives any other expression as it is', () => {
     const call = types.callExpression(types.identifier('f'), []);
 
-    assert.equal(lzAwaited(call), call);
+    assert.equal(muirMoiraNodeTestAwaited(call), call);
   });
 });

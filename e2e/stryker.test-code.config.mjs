@@ -15,5 +15,8 @@ export default await testCode({
   tsconfigFile: 'e2e/tsconfig.stryker.json',
   incrementalFile: 'reports/stryker-incremental/e2e.test-code.json',
   ...reportFiles('e2e.test-code'),
-  lzNodeTest: { testFiles: ['e2e/test/unit/*.test.ts'], nodeArgs: [source] },
+  muirSirynNodeTest: {
+    testFiles: ['e2e/test/unit/*.test.ts'],
+    nodeArgs: [source],
+  },
 });

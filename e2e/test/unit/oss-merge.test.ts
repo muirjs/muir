@@ -10,10 +10,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import { lzMerge } from '../../src/oss/merge.ts';
-import { lzSides, type LzSide } from '../../src/oss/options.ts';
+import { muirMerge } from '../../src/oss/merge.ts';
+import { muirSides, type MuirSide } from '../../src/oss/options.ts';
 
-interface LzFakeMutant {
+interface MuirFakeMutant {
   readonly line: number;
   readonly status: string;
 }
@@ -36,7 +36,7 @@ const header = {
 };
 
 function setup(t: TestContext) {
-  const dir = mkdtempSync(join(tmpdir(), 'lz-oss-merge-'));
+  const dir = mkdtempSync(join(tmpdir(), 'muir-oss-merge-'));
 
   t.after(() => {
     rmSync(dir, { recursive: true, force: true });
@@ -48,9 +48,9 @@ function setup(t: TestContext) {
     run: (
       name: string,
       project: string,
-      mutantsBySide: Partial<Record<LzSide, readonly LzFakeMutant[]>>,
+      mutantsBySide: Partial<Record<MuirSide, readonly MuirFakeMutant[]>>,
       headerOverrides: Partial<Record<keyof typeof header, unknown>> = {},
-      configs: Partial<Record<LzSide, string>> = {},
+      configs: Partial<Record<MuirSide, string>> = {},
     ): string => {
       const runDir = join(dir, name);
 
@@ -84,7 +84,7 @@ function setup(t: TestContext) {
           ...header,
           ...headerOverrides,
           sides: Object.fromEntries(
-            lzSides
+            muirSides
               .filter((side) => side in mutantsBySide)
               .map((side) => [
                 side,
@@ -102,11 +102,11 @@ function setup(t: TestContext) {
   };
 }
 
-describe('lzMerge', () => {
-  it('compares a run of the lz side with a run of the command side, and writes result.json', (t) => {
+describe('muirMerge', () => {
+  it('compares a run of the muir side with a run of the command side, and writes result.json', (t) => {
     const { run, out } = setup(t);
-    const lz = run('lz', 'p', {
-      lz: [
+    const muir = run('muir', 'p', {
+      muir: [
         { line: 1, status: 'Killed' },
         { line: 2, status: 'Survived' },
       ],
@@ -118,7 +118,7 @@ describe('lzMerge', () => {
       ],
     });
 
-    lzMerge([lz, command], out);
+    muirMerge([muir, command], out);
 
     const result: unknown = JSON.parse(
       readFileSync(join(out, 'result.json'), 'utf8'),
@@ -126,28 +126,28 @@ describe('lzMerge', () => {
 
     assert.deepEqual(result, {
       project: 'p',
-      mergedFrom: [lz, command],
+      mergedFrom: [muir, command],
       scores: {
-        lz: { counts: { Killed: 1, Survived: 1 }, score: 50, mutants: 2 },
+        muir: { counts: { Killed: 1, Survived: 1 }, score: 50, mutants: 2 },
         command: { counts: { Killed: 2 }, score: 100, mutants: 2 },
       },
       compared: true,
       disagreements: [
         {
           mutant: 'index.js:2:3-2:9 StringLiteral ""',
-          lz: 'Survived',
+          muir: 'Survived',
           command: 'Killed',
         },
       ],
       verdicts: [
         {
           mutant: 'index.js:1:3-1:9 StringLiteral ""',
-          lz: 'Killed',
+          muir: 'Killed',
           command: 'Killed',
         },
         {
           mutant: 'index.js:2:3-2:9 StringLiteral ""',
-          lz: 'Survived',
+          muir: 'Survived',
           command: 'Killed',
         },
       ],
@@ -157,9 +157,9 @@ describe('lzMerge', () => {
   it('compares nothing with only one side', (t) => {
     const { run, out } = setup(t);
 
-    const lz = run('lz', 'p', { lz: [{ line: 1, status: 'Killed' }] });
+    const muir = run('muir', 'p', { muir: [{ line: 1, status: 'Killed' }] });
 
-    lzMerge([lz], out);
+    muirMerge([muir], out);
 
     const result: unknown = JSON.parse(
       readFileSync(join(out, 'result.json'), 'utf8'),
@@ -167,11 +167,11 @@ describe('lzMerge', () => {
 
     assert.deepEqual(result, {
       project: 'p',
-      mergedFrom: [lz],
-      scores: { lz: { counts: { Killed: 1 }, score: 100, mutants: 1 } },
+      mergedFrom: [muir],
+      scores: { muir: { counts: { Killed: 1 }, score: 100, mutants: 1 } },
       compared: false,
       reason:
-        'Only the lz side ran; merge its result.json with a command run with --merge.',
+        'Only the muir side ran; merge its result.json with a command run with --merge.',
     });
   });
 
@@ -180,7 +180,7 @@ describe('lzMerge', () => {
     const deep = join(out, 'a', 'b');
 
     assert.equal(
-      lzMerge([run('lz', 'p', { lz: [] })], deep),
+      muirMerge([run('muir', 'p', { muir: [] })], deep),
       join(deep, 'result.json'),
     );
   });
@@ -188,7 +188,7 @@ describe('lzMerge', () => {
   it('refuses to merge no result.json at all', (t) => {
     const { out } = setup(t);
 
-    assert.throws(() => lzMerge([], out), {
+    assert.throws(() => muirMerge([], out), {
       message: '--merge takes at least one result.json.',
     });
   });
@@ -199,7 +199,7 @@ describe('lzMerge', () => {
       run(
         'a',
         'p',
-        { lz: [] },
+        { muir: [] },
         { installedVersions: ['node_modules/z@1.0.0'] },
       ),
       run(
@@ -210,7 +210,7 @@ describe('lzMerge', () => {
       ),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one installedVersions; some runs only have node_modules/a@1.0.0, node_modules/z@1.0.0.',
     });
@@ -219,12 +219,12 @@ describe('lzMerge', () => {
   it('shows every value when not all of them are lists, even if the lists differ in entries', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }, { tarballDigests: ['d1'] }),
+      run('a', 'p', { muir: [] }, { tarballDigests: ['d1'] }),
       run('b', 'p', { command: [] }, { tarballDigests: ['d2'] }),
       run('c', 'p', { command: [] }, { tarballDigests: 'd3' }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one tarballDigests; found ["d1"] and ["d2"] and d3.',
     });
@@ -233,7 +233,7 @@ describe('lzMerge', () => {
   it('leaves two mutants at one key inside one report for the comparison to refuse', (t) => {
     const { run, out } = setup(t);
     const file = run('a', 'p', {
-      lz: [
+      muir: [
         { line: 1, status: 'Killed' },
         { line: 1, status: 'Survived' },
       ],
@@ -241,14 +241,14 @@ describe('lzMerge', () => {
     });
 
     const result: unknown = JSON.parse(
-      readFileSync(lzMerge([file], out), 'utf8'),
+      readFileSync(muirMerge([file], out), 'utf8'),
     );
 
     assert.deepEqual(result, {
       project: 'p',
       mergedFrom: [file],
       scores: {
-        lz: { counts: { Killed: 1, Survived: 1 }, score: 50, mutants: 2 },
+        muir: { counts: { Killed: 1, Survived: 1 }, score: 50, mutants: 2 },
         command: { counts: { Killed: 1 }, score: 100, mutants: 1 },
       },
       compared: false,
@@ -263,7 +263,7 @@ describe('lzMerge', () => {
 
     writeFileSync(file, '[]');
 
-    assert.throws(() => lzMerge([file], out), {
+    assert.throws(() => muirMerge([file], out), {
       message: `${file} is not the result.json of a driver run.`,
     });
   });
@@ -273,8 +273,8 @@ describe('lzMerge', () => {
 
     assert.throws(
       () =>
-        lzMerge(
-          [run('a', 'p', { lz: [] }), run('b', 'q', { command: [] })],
+        muirMerge(
+          [run('a', 'p', { muir: [] }), run('b', 'q', { command: [] })],
           out,
         ),
       {
@@ -286,16 +286,16 @@ describe('lzMerge', () => {
   it('merges runs of two workspace commits whose sides ran the same Stryker configuration', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] }),
+      run('a', 'p', { muir: [{ line: 1, status: 'Killed' }] }),
       run(
         'b',
         'p',
-        { lz: [{ line: 2, status: 'Killed' }] },
+        { muir: [{ line: 2, status: 'Killed' }] },
         { workspaceCommit: 'def456' },
       ),
     ];
 
-    lzMerge(runs, out);
+    muirMerge(runs, out);
 
     const result: unknown = JSON.parse(
       readFileSync(join(out, 'result.json'), 'utf8'),
@@ -304,10 +304,10 @@ describe('lzMerge', () => {
     assert.deepEqual(result, {
       project: 'p',
       mergedFrom: runs,
-      scores: { lz: { counts: { Killed: 2 }, score: 100, mutants: 2 } },
+      scores: { muir: { counts: { Killed: 2 }, score: 100, mutants: 2 } },
       compared: false,
       reason:
-        'Only the lz side ran; merge its result.json with a command run with --merge.',
+        'Only the muir side ran; merge its result.json with a command run with --merge.',
     });
   });
 
@@ -328,41 +328,41 @@ describe('lzMerge', () => {
       { command: 'node --test --test-isolation=none' },
     );
 
-    assert.throws(() => lzMerge([first, second], out), {
+    assert.throws(() => muirMerge([first, second], out), {
       message: `--merge takes runs of one Stryker configuration per side; the command sides of ${first} and ${second} ran different ones.`,
     });
   });
 
   it('refuses a side that records no Stryker configuration', (t) => {
     const { run, out } = setup(t);
-    const file = run('a', 'p', { lz: [] });
+    const file = run('a', 'p', { muir: [] });
 
     writeFileSync(
       file,
       JSON.stringify({
         project: 'p',
         ...header,
-        sides: { lz: { stryker: { reported: true } } },
+        sides: { muir: { stryker: { reported: true } } },
       }),
     );
 
-    assert.throws(() => lzMerge([file], out), {
-      message: `The lz side of ${file} records no strykerConfig, so a merge cannot tell what it ran.`,
+    assert.throws(() => muirMerge([file], out), {
+      message: `The muir side of ${file} records no strykerConfig, so a merge cannot tell what it ran.`,
     });
   });
 
-  it('refuses an lz run and a command run whose shared project setup differs, such as their patches', (t) => {
+  it('refuses an muir run and a command run whose shared project setup differs, such as their patches', (t) => {
     const { run, out } = setup(t);
     const patched = {
       ...header.projectSetup,
       patches: [{ file: 'test/a.test.js', from: 'a', to: 'b' }],
     };
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { projectSetup: patched }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         /^--merge takes runs of one projectSetup; found \{"mutate".+ and \{"mutate".+"from":"a".+\.$/,
     });
@@ -371,11 +371,11 @@ describe('lzMerge', () => {
   it('names the one entry that not every run has', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { tarballDigests: ['d1'] }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one tarballDigests; some runs only have d2.',
     });
@@ -384,11 +384,11 @@ describe('lzMerge', () => {
   it('refuses runs whose tarballs differ in content under the same names', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { tarballDigests: ['d1', 'd3'] }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one tarballDigests; some runs only have d2, d3.',
     });
@@ -397,7 +397,7 @@ describe('lzMerge', () => {
   it('refuses runs that installed different dependency versions, naming those not every run has', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run(
         'b',
         'p',
@@ -412,7 +412,7 @@ describe('lzMerge', () => {
       ),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one installedVersions; some runs only have ' +
         'node_modules/b@2.0.0, node_modules/b@2.1.0, node_modules/c@3.0.0.',
@@ -422,11 +422,11 @@ describe('lzMerge', () => {
   it('shows both lists when they hold the same entries in another order', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { tarballDigests: ['d2', 'd1'] }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one tarballDigests; found ["d1","d2"] and ["d2","d1"].',
     });
@@ -434,7 +434,7 @@ describe('lzMerge', () => {
 
   it('refuses the result.json of an older driver, naming the field it lacks', (t) => {
     const { run, out } = setup(t);
-    const file = run('a', 'p', { lz: [] });
+    const file = run('a', 'p', { muir: [] });
     const older = Object.fromEntries(
       Object.entries(header).filter(([field]) => field !== 'installedVersions'),
     );
@@ -444,11 +444,11 @@ describe('lzMerge', () => {
       JSON.stringify({
         project: 'p',
         ...older,
-        sides: { lz: { stryker: { reported: true } } },
+        sides: { muir: { stryker: { reported: true } } },
       }),
     );
 
-    assert.throws(() => lzMerge([file], out), {
+    assert.throws(() => muirMerge([file], out), {
       message: `${file} is not the result.json of a driver run that a merge can read: it lacks installedVersions.`,
     });
   });
@@ -456,11 +456,11 @@ describe('lzMerge', () => {
   it('refuses runs of two source commits', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { sourceCommit: 'beef' }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message: '--merge takes runs of one sourceCommit; found f00d and beef.',
     });
   });
@@ -468,11 +468,11 @@ describe('lzMerge', () => {
   it('refuses runs of two platforms', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { platform: 'linux-arm64' }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one platform; found win32-arm64 and linux-arm64.',
     });
@@ -481,11 +481,11 @@ describe('lzMerge', () => {
   it("refuses runs of two mutant timeouts, Stryker's default among them", (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { mutantTimeoutMs: null }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message:
         '--merge takes runs of one mutantTimeoutMs; found 30000 and null.',
     });
@@ -494,11 +494,11 @@ describe('lzMerge', () => {
   it('refuses a field written as a string in one run and a number in another', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { mutantTimeoutMs: '30000' }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message: /^--merge takes runs of one mutantTimeoutMs; /,
     });
   });
@@ -506,31 +506,31 @@ describe('lzMerge', () => {
   it('refuses runs of two Node.js versions', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }),
+      run('a', 'p', { muir: [] }),
       run('b', 'p', { command: [] }, { node: 'v22.23.1' }),
     ];
 
-    assert.throws(() => lzMerge(runs, out), {
+    assert.throws(() => muirMerge(runs, out), {
       message: '--merge takes runs of one node; found v24.18.1 and v22.23.1.',
     });
   });
 
   it('refuses a result.json given twice, however its path is spelt', (t) => {
     const { run, out } = setup(t);
-    const file = run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] });
+    const file = run('a', 'p', { muir: [{ line: 1, status: 'Killed' }] });
     const respelt = [dirname(file), '.', 'result.json'].join(sep);
 
-    assert.throws(() => lzMerge([file, respelt], out), {
+    assert.throws(() => muirMerge([file, respelt], out), {
       message: `--merge got ${file} more than once; give each result.json once.`,
     });
   });
 
   it('refuses an --out that holds one of the runs, and leaves that run as it was', (t) => {
     const { run } = setup(t);
-    const file = run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] });
+    const file = run('a', 'p', { muir: [{ line: 1, status: 'Killed' }] });
     const before = readFileSync(file, 'utf8');
 
-    assert.throws(() => lzMerge([file], join(dirname(file), '.')), {
+    assert.throws(() => muirMerge([file], join(dirname(file), '.')), {
       message: `--out holds ${file}, one of the runs being merged; give --out another folder.`,
     });
     assert.equal(readFileSync(file, 'utf8'), before);
@@ -539,8 +539,8 @@ describe('lzMerge', () => {
   it('merges batches of one side into one before it compares', (t) => {
     const { run, out } = setup(t);
     const batches = [
-      run('lz-1', 'p', { lz: [{ line: 1, status: 'Killed' }] }),
-      run('lz-2', 'p', { lz: [{ line: 2, status: 'Survived' }] }),
+      run('muir-1', 'p', { muir: [{ line: 1, status: 'Killed' }] }),
+      run('muir-2', 'p', { muir: [{ line: 2, status: 'Survived' }] }),
       run('command', 'p', {
         command: [
           { line: 1, status: 'Killed' },
@@ -549,7 +549,7 @@ describe('lzMerge', () => {
       }),
     ];
 
-    lzMerge(batches, out);
+    muirMerge(batches, out);
 
     const result: unknown = JSON.parse(
       readFileSync(join(out, 'result.json'), 'utf8'),
@@ -559,26 +559,26 @@ describe('lzMerge', () => {
       project: 'p',
       mergedFrom: batches,
       scores: {
-        lz: { counts: { Killed: 1, Survived: 1 }, score: 50, mutants: 2 },
+        muir: { counts: { Killed: 1, Survived: 1 }, score: 50, mutants: 2 },
         command: { counts: { Killed: 2 }, score: 100, mutants: 2 },
       },
       compared: true,
       disagreements: [
         {
           mutant: 'index.js:2:3-2:9 StringLiteral ""',
-          lz: 'Survived',
+          muir: 'Survived',
           command: 'Killed',
         },
       ],
       verdicts: [
         {
           mutant: 'index.js:1:3-1:9 StringLiteral ""',
-          lz: 'Killed',
+          muir: 'Killed',
           command: 'Killed',
         },
         {
           mutant: 'index.js:2:3-2:9 StringLiteral ""',
-          lz: 'Survived',
+          muir: 'Survived',
           command: 'Killed',
         },
       ],
@@ -587,11 +587,11 @@ describe('lzMerge', () => {
 
   it('refuses a mutant that two batches of one side hold, and names both', (t) => {
     const { run, out } = setup(t);
-    const first = run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] });
-    const second = run('b', 'p', { lz: [{ line: 1, status: 'Survived' }] });
+    const first = run('a', 'p', { muir: [{ line: 1, status: 'Killed' }] });
+    const second = run('b', 'p', { muir: [{ line: 1, status: 'Survived' }] });
 
-    assert.throws(() => lzMerge([first, second], out), {
-      message: `The lz side of ${first} and ${second} both hold index.js:1:3-1:9 StringLiteral ""; batches must not overlap.`,
+    assert.throws(() => muirMerge([first, second], out), {
+      message: `The muir side of ${first} and ${second} both hold index.js:1:3-1:9 StringLiteral ""; batches must not overlap.`,
     });
   });
 
@@ -599,7 +599,7 @@ describe('lzMerge', () => {
     const { run, out } = setup(t);
     const file = run('a', 'p', {});
 
-    assert.throws(() => lzMerge([file], out), {
+    assert.throws(() => muirMerge([file], out), {
       message: `${file} holds no side's results.`,
     });
   });
@@ -607,40 +607,40 @@ describe('lzMerge', () => {
   it('refuses a merged result.json, as merges do not compose', (t) => {
     const { run, out } = setup(t);
 
-    lzMerge([run('a', 'p', { lz: [] })], out);
+    muirMerge([run('a', 'p', { muir: [] })], out);
     const merged = join(out, 'result.json');
 
-    assert.throws(() => lzMerge([merged], join(out, 'again')), {
+    assert.throws(() => muirMerge([merged], join(out, 'again')), {
       message: `${merged} is the result of a merge; merges do not compose, so merge the runs it lists in mergedFrom.`,
     });
   });
 
   it('refuses a side that wrote no report, even with an older report beside its result.json', (t) => {
     const { run, out } = setup(t);
-    const file = run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] });
+    const file = run('a', 'p', { muir: [{ line: 1, status: 'Killed' }] });
 
     writeFileSync(
       file,
       JSON.stringify({
         project: 'p',
         ...header,
-        sides: { lz: { stryker: { reported: false } } },
+        sides: { muir: { stryker: { reported: false } } },
       }),
     );
 
-    assert.throws(() => lzMerge([file], out), {
-      message: `The lz side of ${file} wrote no report, so its lz.mutation.json is not this run's.`,
+    assert.throws(() => muirMerge([file], out), {
+      message: `The muir side of ${file} wrote no report, so its muir.mutation.json is not this run's.`,
     });
   });
 
   it('refuses a side whose report file is missing, naming the side and the file', (t) => {
     const { run, out } = setup(t);
-    const file = run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] });
+    const file = run('a', 'p', { muir: [{ line: 1, status: 'Killed' }] });
 
-    rmSync(join(dirname(file), 'lz.mutation.json'));
+    rmSync(join(dirname(file), 'muir.mutation.json'));
 
-    assert.throws(() => lzMerge([file], out), {
-      message: `The lz side of ${file} has no lz.mutation.json beside it.`,
+    assert.throws(() => muirMerge([file], out), {
+      message: `The muir side of ${file} has no muir.mutation.json beside it.`,
     });
   });
 
@@ -657,7 +657,7 @@ describe('lzMerge', () => {
       }),
     );
 
-    assert.throws(() => lzMerge([file], out), {
+    assert.throws(() => muirMerge([file], out), {
       message: `The command side of ${file} wrote no report, so its command.mutation.json is not this run's.`,
     });
   });

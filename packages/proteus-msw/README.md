@@ -1,7 +1,7 @@
 # @muirjs/proteus-msw
 
 StrykerJS mutators for the responses that msw request handlers send. A handler is test code: it plays the server
-for the code under test. `LzMswResponse` empties the body of a response that a handler builds, or turns the
+for the code under test. `MuirProteusMswResponse` empties the body of a response that a handler builds, or turns the
 response into a network error. When the tests still pass, no test outcome depends on that response. The mutators
 work with any test runner and are not tied to Storybook.
 
@@ -18,14 +18,14 @@ experimental. The package is private and not on npm yet.
 
 ## Turn the mutators on
 
-List the files that hold your handlers in the `mutate` of a Stryker configuration for test code. Call `lzMswMutators`
+List the files that hold your handlers in the `mutate` of a Stryker configuration for test code. Call `muirProteusMswMutators`
 at the top of the Stryker configuration file and await it:
 
 ```ts
 // stryker.test-code.config.mjs
-import { lzMswMutators } from '@muirjs/proteus-msw';
+import { muirProteusMswMutators } from '@muirjs/proteus-msw';
 
-await lzMswMutators();
+await muirProteusMswMutators();
 
 export default {
   testRunner: 'vitest',
@@ -40,7 +40,7 @@ TypeScript ES module, because a JSON configuration cannot import a module.
 The call prints one line:
 
 ```text
-@muirjs/proteus-msw: 1 LzMsw mutators on, beside Stryker's built-in mutators.
+@muirjs/proteus-msw: 1 MuirProteusMsw mutators on, beside Stryker's built-in mutators.
 ```
 
 The call checks that each mutator it installs makes a mutant of a sample, and stops the run when one does not. It
@@ -51,13 +51,13 @@ The package has no opt-in or experimental mutators, so the call takes no options
 than `undefined` or an object whose every value is `undefined`, such as `{}`:
 
 ```text
-@muirjs/proteus-msw: the package has no opt-in or experimental mutators yet, so lzMswMutators() takes no options. Turn a mutator off with mutator.excludedMutations.
+@muirjs/proteus-msw: the package has no opt-in or experimental mutators yet, so muirProteusMswMutators() takes no options. Turn a mutator off with mutator.excludedMutations.
 ```
 
 ### Handlers next to Storybook or Playwright test code
 
-`lzStorybookTestMutators()` and `lzPlaywrightMutators()` turn Stryker's built-in mutators off for every file in the
-run. In a configuration that installs either of them, the handlers get the `LzMswResponse` mutants and no built-in
+`muirProteusStorybookTestMutators()` and `muirProteusPlaywrightMutators()` turn Stryker's built-in mutators off for every file in the
+run. In a configuration that installs either of them, the handlers get the `MuirProteusMswResponse` mutants and no built-in
 mutants. Mutate the handlers in a configuration of their own to keep the built-ins.
 
 Handlers in a story's `parameters.msw` are story test code. With `@muirjs/shadowcat-storybook`, the CSF ignorer reports
@@ -71,11 +71,11 @@ Each mutator's name is the mutator name in Stryker's reports.
 
 ### Default mutators
 
-These run on `await lzMswMutators()`.
+These run on `await muirProteusMswMutators()`.
 
-| Mutator         | What it changes                                                                                                            | Example                                                                                                                  |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `LzMswResponse` | In a handler callback, empties the body of a response and, in a second mutant, replaces the response with a network error. | `HttpResponse.json({ items: [1] })` becomes `HttpResponse.json({})` in one mutant and `HttpResponse.error()` in another. |
+| Mutator                  | What it changes                                                                                                            | Example                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `MuirProteusMswResponse` | In a handler callback, empties the body of a response and, in a second mutant, replaces the response with a network error. | `HttpResponse.json({ items: [1] })` becomes `HttpResponse.json({})` in one mutant and `HttpResponse.error()` in another. |
 
 ### Opt-in mutators
 
@@ -85,7 +85,7 @@ None.
 
 None.
 
-## What LzMswResponse mutates
+## What MuirProteusMswResponse mutates
 
 A handler callback is a function written as an argument of `http.<method>(...)` (`all`, `get`, `post`, `put`,
 `patch`, `delete`, `head` or `options`) or `graphql.<operation>(...)` (`query`, `mutation` or `operation`), where
@@ -111,7 +111,7 @@ Each response gets two mutants:
 
 A handler behaves like app code for the code under test: it decides what the server answers. An analysis of 130
 built-in mutants sampled from one open-source repository's msw handlers and other test doubles turned no built-in
-off. It kept nine of them and left the rest open, most for lack of test outcomes. `LzMswResponse` adds what the
+off. It kept nine of them and left the rest open, most for lack of test outcomes. `MuirProteusMswResponse` adds what the
 built-ins cannot do: a network error, and a body emptied by its kind instead of every object literal emptied.
 
 ## Turn a mutator off
@@ -124,7 +124,7 @@ For one mutant, put a Stryker disable comment with a reason on the line before t
 
 ```ts
 http.get('https://api.pwnedpasswords.com/range/:prefix', () =>
-  // Stryker disable next-line LzMswResponse: the app treats a failed breach check as no breach
+  // Stryker disable next-line MuirProteusMswResponse: the app treats a failed breach check as no breach
   HttpResponse.text(''),
 );
 ```
@@ -133,7 +133,7 @@ For a block, use `// Stryker disable <name>: <reason>` and `// Stryker restore <
 
 ## Survivors to expect and limits
 
-On two open-source repositories, 7 of the 10 `LzMswResponse` survivors pointed at a test that does not check what
+On two open-source repositories, 7 of the 10 `MuirProteusMswResponse` survivors pointed at a test that does not check what
 the response changes, such as a test that also passes before any response arrives, or one that cannot tell an error
 status from a network error. Read a survivor as a missing check first. These survive without one:
 

@@ -4,10 +4,10 @@ import { tmpdir } from 'node:os';
 import { join, relative, resolve, sep } from 'node:path';
 
 import {
-  field,
-  hasRecords,
-  list,
-  recordVariable,
+  muirMoiraStorybookField,
+  muirMoiraStorybookHasRecords,
+  muirMoiraStorybookList,
+  muirMoiraStorybookRecordVariable,
 } from '@muirjs/moira-storybook';
 import {
   PlanKind,
@@ -19,46 +19,52 @@ import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 import type { Reporter } from '@stryker-mutator/api/report';
 
 import {
-  interactionHints,
-  type InteractionHint,
-  type ReportFiles,
-  type ReportMutant,
-  skippedOnRangeError,
+  muirShadowcatStorybookInteractionHints,
+  type MuirShadowcatStorybookInteractionHint,
+  type MuirShadowcatStorybookReportFiles,
+  type MuirShadowcatStorybookReportMutant,
+  muirShadowcatStorybookSkippedOnRangeError,
 } from './interaction-hints.ts';
-import { packageName } from './package-name.ts';
+import { muirShadowcatStorybookPackageName } from './package-name.ts';
 import {
-  isStoryFile,
-  storyFilePaths,
-  strykerStorybookProject,
-  type ProjectLog,
-  type StorybookProject,
+  muirShadowcatStorybookIsStoryFile,
+  muirShadowcatStorybookStoryFilePaths,
+  muirShadowcatStorybookStrykerStorybookProject,
+  type MuirShadowcatStorybookProjectLog,
+  type MuirShadowcatStorybookProject,
 } from './storybook-project.ts';
-import { siteFindings, type SiteFinding } from './stub-findings.ts';
 import {
-  outcomeUncheckedFinding,
-  spyStubName,
-  spyStubOutcomeName,
-  uncheckedFinding,
+  muirShadowcatStorybookSiteFindings,
+  type MuirShadowcatStorybookSiteFinding,
+} from './stub-findings.ts';
+import {
+  muirShadowcatStorybookOutcomeUncheckedFinding,
+  muirShadowcatStorybookSpyStubName,
+  muirShadowcatStorybookSpyStubOutcomeName,
+  muirShadowcatStorybookUncheckedFinding,
 } from './stub-verdict.ts';
 
-export interface LzStorybookReport {
+export interface MuirShadowcatStorybookReport {
   readonly findings: readonly StubFinding[];
-  readonly interactionHints: readonly InteractionHint[];
+  readonly interactionHints: readonly MuirShadowcatStorybookInteractionHint[];
   readonly staticStoryMutants: readonly StaticStoryMutant[];
 }
 
 type StubFinding =
-  | (SiteFinding & { readonly file: string })
-  | ((typeof uncheckedFinding | typeof outcomeUncheckedFinding) & {
+  | (MuirShadowcatStorybookSiteFinding & { readonly file: string })
+  | ((
+      | typeof muirShadowcatStorybookUncheckedFinding
+      | typeof muirShadowcatStorybookOutcomeUncheckedFinding
+    ) & {
       readonly file: string;
       readonly line: number;
     });
 
 interface ReportInput {
-  readonly files: ReportFiles;
+  readonly files: MuirShadowcatStorybookReportFiles;
 }
 
-type Position = ReportMutant['location']['start'];
+type Position = MuirShadowcatStorybookReportMutant['location']['start'];
 
 interface StaticStoryMutant {
   readonly file: string;
@@ -81,30 +87,33 @@ interface PlanEvent {
   readonly mutantPlans: readonly MutantPlan[];
 }
 
-export function storybookReporter(options: object, log: ProjectLog) {
+export function muirShadowcatStorybookReporter(
+  options: object,
+  log: MuirShadowcatStorybookProjectLog,
+) {
   let staticStoryMutants: readonly StaticStoryMutant[] = [];
   const recordFile = join(
     tmpdir(),
-    `lz-storybook-records-${randomUUID()}.jsonl`,
+    `muir-storybook-records-${randomUUID()}.jsonl`,
   );
-  process.env[recordVariable] = recordFile;
-  const storybook = (): StorybookProject =>
-    strykerStorybookProject(options, log);
+  process.env[muirMoiraStorybookRecordVariable] = recordFile;
+  const storybook = (): MuirShadowcatStorybookProject =>
+    muirShadowcatStorybookStrykerStorybookProject(options, log);
 
   return {
     onDryRunCompleted(): void {
-      const rewritten = hasRecords(recordFile);
+      const rewritten = muirMoiraStorybookHasRecords(recordFile);
       const seen = storybook().transformer === 'seen';
 
       if (rewritten && !seen) {
         log.warn(
-          `${packageName}: the mock transformer rewrote stubs during the dry run, but the Storybook main file's viteFinal does not add lzStorybookMockTransformerPlugin(), so the lz-storybook ignorer treated repaired stubs as erased; add the plugin through viteFinal`,
+          `${muirShadowcatStorybookPackageName}: the mock transformer rewrote stubs during the dry run, but the Storybook main file's viteFinal does not add muirPixieStorybookMockTransformerPlugin(), so the muir-shadowcat-storybook ignorer treated repaired stubs as erased; add the plugin through viteFinal`,
         );
       }
 
       if (seen && !rewritten) {
         log.warn(
-          `${packageName}: the Storybook main file's viteFinal adds lzStorybookMockTransformerPlugin(), but it rewrote no stub during the dry run, so the lz-storybook ignorer may have kept stubs that the mock reset erases; check that the test run uses the Storybook Vite config, or ignore this if no story file stubs a spy outside a function`,
+          `${muirShadowcatStorybookPackageName}: the Storybook main file's viteFinal adds muirPixieStorybookMockTransformerPlugin(), but it rewrote no stub during the dry run, so the muir-shadowcat-storybook ignorer may have kept stubs that the mock reset erases; check that the test run uses the Storybook Vite config, or ignore this if no story file stubs a spy outside a function`,
         );
       }
     },
@@ -112,7 +121,7 @@ export function storybookReporter(options: object, log: ProjectLog) {
       staticStoryMutants = mutantPlans.flatMap((plan) =>
         plan.plan === PlanKind.Run &&
         plan.mutant.static === true &&
-        isStoryFile(storybook(), plan.mutant.fileName)
+        muirShadowcatStorybookIsStoryFile(storybook(), plan.mutant.fileName)
           ? [
               {
                 file: projectPath(plan.mutant.fileName),
@@ -128,15 +137,17 @@ export function storybookReporter(options: object, log: ProjectLog) {
       const findings = excludesSpyStub(options)
         ? []
         : stubFindings(files, storybook(), (message) => log.warn(message));
-      const hints = interactionHints(files, (message) => log.warn(message));
-      const report: LzStorybookReport = {
+      const hints = muirShadowcatStorybookInteractionHints(files, (message) =>
+        log.warn(message),
+      );
+      const report: MuirShadowcatStorybookReport = {
         findings,
         interactionHints: hints,
         staticStoryMutants,
       };
       mkdirSync('reports', { recursive: true });
       writeFileSync(
-        join('reports', 'lz-storybook.json'),
+        join('reports', 'muir-shadowcat-storybook.json'),
         JSON.stringify(report, null, 2),
       );
       log.info(consoleBlock(report));
@@ -147,19 +158,22 @@ export function storybookReporter(options: object, log: ProjectLog) {
   } satisfies Reporter;
 }
 
-storybookReporter.inject = tokens(commonTokens.options, commonTokens.logger);
+muirShadowcatStorybookReporter.inject = tokens(
+  commonTokens.options,
+  commonTokens.logger,
+);
 
 function consoleBlock({
   findings,
   interactionHints: hints,
   staticStoryMutants,
-}: LzStorybookReport): string {
+}: MuirShadowcatStorybookReport): string {
   if (
     findings.length === 0 &&
     hints.length === 0 &&
     staticStoryMutants.length === 0
   ) {
-    return `${packageName}: no spy stub findings and no static story mutants`;
+    return `${muirShadowcatStorybookPackageName}: no spy stub findings and no static story mutants`;
   }
 
   const counts = Object.entries(
@@ -171,8 +185,8 @@ function consoleBlock({
 
   return [
     findings.length === 0
-      ? `${packageName}: no spy stub findings`
-      : `${packageName}: ${findings.length} spy stub findings (${counts.join(', ')})`,
+      ? `${muirShadowcatStorybookPackageName}: no spy stub findings`
+      : `${muirShadowcatStorybookPackageName}: ${findings.length} spy stub findings (${counts.join(', ')})`,
     ...findings.map((finding) => {
       const method = 'method' in finding ? ` ${finding.method}` : '';
 
@@ -181,7 +195,7 @@ function consoleBlock({
     ...(hints.length === 0
       ? []
       : [
-          `${packageName}: ${hints.length} interaction hints (${shapeCounts.join(', ')})`,
+          `${muirShadowcatStorybookPackageName}: ${hints.length} interaction hints (${shapeCounts.join(', ')})`,
           ...hints.flatMap(({ shape, file, line, reason, fix, comment }) => [
             `  ${shape}  ${file}:${line}  ${reason}; ${fix}`,
             `    ${comment}`,
@@ -190,24 +204,26 @@ function consoleBlock({
     ...(staticStoryMutants.length === 0
       ? []
       : [
-          `  static story mutants: ${staticStoryMutants.length}, each runs every test; net times in reports/lz-storybook.json`,
+          `  static story mutants: ${staticStoryMutants.length}, each runs every test; net times in reports/muir-shadowcat-storybook.json`,
         ]),
   ].join('\n');
 }
 
 function stubFindings(
   files: ReportInput['files'],
-  project: StorybookProject,
+  project: MuirShadowcatStorybookProject,
   warn: (message: string) => void,
 ): readonly StubFinding[] {
   const storyFiles = new Set([
-    ...Object.keys(files).filter((file) => isStoryFile(project, resolve(file))),
-    ...storyFilePaths(project).map(projectPath),
+    ...Object.keys(files).filter((file) =>
+      muirShadowcatStorybookIsStoryFile(project, resolve(file)),
+    ),
+    ...muirShadowcatStorybookStoryFilePaths(project).map(projectPath),
   ]);
 
   return [
     ...[...storyFiles].flatMap((file) =>
-      storyFileFindings(
+      muirShadowcatStorybookStoryFileFindings(
         file,
         () => files[file]?.source ?? readFileSync(file, 'utf8'),
         project,
@@ -226,24 +242,28 @@ function stubFindings(
  */
 function survivorFindings(
   file: string,
-  mutants: readonly ReportMutant[],
+  mutants: readonly MuirShadowcatStorybookReportMutant[],
 ): readonly StubFinding[] {
   const mutantsOf = (
-    mutatorName: typeof spyStubName | typeof spyStubOutcomeName,
-    statuses: readonly ReportMutant['status'][],
-  ): readonly ReportMutant[] =>
+    mutatorName:
+      | typeof muirShadowcatStorybookSpyStubName
+      | typeof muirShadowcatStorybookSpyStubOutcomeName,
+    statuses: readonly MuirShadowcatStorybookReportMutant['status'][],
+  ): readonly MuirShadowcatStorybookReportMutant[] =>
     mutants.filter(
       (mutant) =>
         mutant.mutatorName === mutatorName && statuses.includes(mutant.status),
     );
   const detectedRemovals = new Set(
-    mutantsOf(spyStubName, ['Killed', 'Timeout']).flatMap(pairedOutcomeSpans),
+    mutantsOf(muirShadowcatStorybookSpyStubName, ['Killed', 'Timeout']).flatMap(
+      pairedOutcomeSpans,
+    ),
   );
   const uncheckedLines = new Set(
-    mutantsOf(spyStubName, ['Survived']).map(lineOf),
+    mutantsOf(muirShadowcatStorybookSpyStubName, ['Survived']).map(lineOf),
   );
   const outcomeUncheckedLines = new Set(
-    mutantsOf(spyStubOutcomeName, ['Survived'])
+    mutantsOf(muirShadowcatStorybookSpyStubOutcomeName, ['Survived'])
       .filter((mutant) => detectedRemovals.has(spanOf(mutant)))
       .map(lineOf),
   );
@@ -252,17 +272,17 @@ function survivorFindings(
     ...[...uncheckedLines].map((line) => ({
       file,
       line,
-      ...uncheckedFinding,
+      ...muirShadowcatStorybookUncheckedFinding,
     })),
     ...[...outcomeUncheckedLines].map((line) => ({
       file,
       line,
-      ...outcomeUncheckedFinding,
+      ...muirShadowcatStorybookOutcomeUncheckedFinding,
     })),
   ];
 }
 
-function lineOf({ location }: ReportMutant): number {
+function lineOf({ location }: MuirShadowcatStorybookReportMutant): number {
   return location.start.line;
 }
 
@@ -271,7 +291,9 @@ function lineOf({ location }: ReportMutant): number {
  * stub, and the removal's less one column, as the removal of a stub statement also covers its semicolon. The stubs
  * of one chain start at the same place but end apart, so the end tells them apart.
  */
-function pairedOutcomeSpans(removal: ReportMutant): readonly string[] {
+function pairedOutcomeSpans(
+  removal: MuirShadowcatStorybookReportMutant,
+): readonly string[] {
   const { start, end } = removal.location;
 
   return [
@@ -280,7 +302,9 @@ function pairedOutcomeSpans(removal: ReportMutant): readonly string[] {
   ];
 }
 
-function spanOf({ location: { start, end } }: ReportMutant): string {
+function spanOf({
+  location: { start, end },
+}: MuirShadowcatStorybookReportMutant): string {
   return spanKey(start, end);
 }
 
@@ -293,22 +317,23 @@ function spanKey(start: Position, end: Position): string {
  * cannot parse it or reading its tree throws a `RangeError`. An error from `sourceOf`, such as
  * `ERR_FS_FILE_TOO_LARGE` for a file over 2 GiB, propagates and fails the report.
  */
-export function storyFileFindings(
+export function muirShadowcatStorybookStoryFileFindings(
   file: string,
   sourceOf: () => string,
-  project: StorybookProject,
+  project: MuirShadowcatStorybookProject,
   warn: (message: string) => void,
 ): readonly StubFinding[] {
   const onUnparsable = (fileName: string, error: unknown): void =>
     warn(
-      `${packageName}: Babel could not parse ${projectPath(fileName)}, so lz-storybook skipped its spy stubs: ${error instanceof Error ? error.message : String(error)}`,
+      `${muirShadowcatStorybookPackageName}: Babel could not parse ${projectPath(fileName)}, so muir-shadowcat-storybook skipped its spy stubs: ${error instanceof Error ? error.message : String(error)}`,
     );
   const source = sourceOf();
-  const findings = skippedOnRangeError(
-    () => siteFindings(source, file, project, onUnparsable),
+  const findings = muirShadowcatStorybookSkippedOnRangeError(
+    () =>
+      muirShadowcatStorybookSiteFindings(source, file, project, onUnparsable),
     (message) =>
       warn(
-        `${packageName}: lz-storybook could not read the spy stubs of ${projectPath(file)}, so it skipped them: ${message}`,
+        `${muirShadowcatStorybookPackageName}: muir-shadowcat-storybook could not read the spy stubs of ${projectPath(file)}, so it skipped them: ${message}`,
       ),
   );
 
@@ -316,9 +341,9 @@ export function storyFileFindings(
 }
 
 function excludesSpyStub(options: object): boolean {
-  return list(field(options, 'mutator', 'excludedMutations')).includes(
-    spyStubName,
-  );
+  return muirMoiraStorybookList(
+    muirMoiraStorybookField(options, 'mutator', 'excludedMutations'),
+  ).includes(muirShadowcatStorybookSpyStubName);
 }
 
 function projectPath(fileName: string): string {

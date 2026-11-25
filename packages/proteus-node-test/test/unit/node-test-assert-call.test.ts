@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeTestAssertCall } from '../../src/node-test-assert-call.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeTestAssertCall } from '../../src/node-test-assert-call.ts';
 import { mutantsOf, strict } from '../mutants-of.fixtures.ts';
 
 const throwStatement = 'throw new Error("Stryker: assertion reached");';
@@ -61,8 +61,8 @@ function typeErrors(source: string): string[] {
     );
 }
 
-describe('LzNodeTestAssertCall', () => {
-  lzTestEach([
+describe('MuirProteusNodeTestAssertCall', () => {
+  muirTestEach([
     ['a default import', `${strict}assert.equal(1, 1);`],
     [
       'a default import called itself',
@@ -105,13 +105,13 @@ describe('LzNodeTestAssertCall', () => {
         ?.trim();
       assert.ok(statement);
 
-      assert.deepEqual(await mutantsOf(nodeTestAssertCall, source), [
+      assert.deepEqual(await mutantsOf(muirProteusNodeTestAssertCall, source), [
         `{ ${statement} ${throwStatement} }`,
       ]);
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     [
       "an arrow function's body",
       `${strict}[1].forEach((n) => assert.ok(n));`,
@@ -151,14 +151,17 @@ describe('LzNodeTestAssertCall', () => {
   ])(
     'makes %s fail in its place, keeping the call only for its type',
     async (_title, source, expected) => {
-      assert.deepEqual(await mutantsOf(nodeTestAssertCall, source), [
+      assert.deepEqual(await mutantsOf(muirProteusNodeTestAssertCall, source), [
         `(${expected})`,
       ]);
     },
   );
 
   it('keeps the inferred return type of a returned rejects whose caller chains it', async () => {
-    const [replacement] = await mutantsOf(nodeTestAssertCall, chained);
+    const [replacement] = await mutantsOf(
+      muirProteusNodeTestAssertCall,
+      chained,
+    );
     assert.ok(replacement);
 
     assert.deepEqual(typeErrors(chained), []);
@@ -175,7 +178,7 @@ describe('LzNodeTestAssertCall', () => {
     );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['assert.fail', `${strict}assert.fail('never');`],
     [
       'a named import of fail',
@@ -202,10 +205,13 @@ describe('LzNodeTestAssertCall', () => {
       `${strict}function never() {\n  return assert.fail('never');\n}`,
     ],
   ])('leaves %s, which fails already', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeTestAssertCall, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeTestAssertCall, source),
+      [],
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['console.assert', 'console.assert(true);'],
     [
       'a function of its own named assert',
@@ -281,6 +287,9 @@ describe('LzNodeTestAssertCall', () => {
       `${test}it('works', (t) => {\n  [1].forEach(() => {\n    const t = { assert: { ok(value: unknown) {} } };\n    t.assert.ok(true);\n  });\n});`,
     ],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeTestAssertCall, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusNodeTestAssertCall, source),
+      [],
+    );
   });
 });

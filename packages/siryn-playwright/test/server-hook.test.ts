@@ -7,14 +7,14 @@ import https from 'node:https';
 import path from 'node:path';
 import { before, test } from 'node:test';
 
-import { readSnapshotDir } from '../src/protocol.ts';
+import { muirSirynPlaywrightReadSnapshotDir } from '../src/protocol.ts';
 import {
-  anyHooked,
-  forgetHooked,
-  serverSnapshotPrefix,
-  testIdHeader,
-  untaggedArrival,
-  writeServerControl,
+  muirSirynPlaywrightAnyHooked,
+  muirSirynPlaywrightForgetHooked,
+  muirSirynPlaywrightServerSnapshotPrefix,
+  muirSirynPlaywrightTestIdHeader,
+  muirSirynPlaywrightUntaggedArrival,
+  muirSirynPlaywrightWriteServerControl,
 } from '../src/server-protocol.ts';
 import {
   hookTestActiveMutantEnv,
@@ -61,7 +61,7 @@ async function askHttp2(
 test('the hook marks its server hooked once it listens', async (t) => {
   const server = await startServer(t);
 
-  assert.equal(anyHooked(server.serverDir), true);
+  assert.equal(muirSirynPlaywrightAnyHooked(server.serverDir), true);
 });
 
 test('the active mutant switches per request from the control file, without a restart', async (t) => {
@@ -85,10 +85,10 @@ test('the active mutant switches per request from the control file, without a re
 
 test('a server process that the runner forgot as hooked does not mark itself hooked again when it listens again', async (t) => {
   const server = await startServer(t, { server: 'listen-again' });
-  forgetHooked(server.serverDir);
+  muirSirynPlaywrightForgetHooked(server.serverDir);
 
   assert.equal(await server.ask({ n: 0 }), 'listened again');
-  assert.equal(anyHooked(server.serverDir), false);
+  assert.equal(muirSirynPlaywrightAnyHooked(server.serverDir), false);
 });
 
 test('an http2 server switches the active mutant per request too', async (t) => {
@@ -101,7 +101,7 @@ test('an http2 server switches the active mutant per request too', async (t) => 
 test('an http2 server is marked hooked once it listens', async (t) => {
   const server = await startServer(t, { server: 'answer-http2' });
 
-  assert.equal(anyHooked(server.serverDir), true);
+  assert.equal(muirSirynPlaywrightAnyHooked(server.serverDir), true);
 });
 
 test('an http2 server collects coverage per test id header', async (t) => {
@@ -111,7 +111,7 @@ test('an http2 server collects coverage per test id header', async (t) => {
     `http://127.0.0.1:${server.port}`,
     2,
     {},
-    { [testIdHeader]: 'big' },
+    { [muirSirynPlaywrightTestIdHeader]: 'big' },
   );
 
   assert.deepEqual(
@@ -183,7 +183,7 @@ test('a server that fails to listen is not marked hooked', async (t) => {
     args: [String(takenPort)],
   });
 
-  assert.equal(anyHooked(server.serverDir), false);
+  assert.equal(muirSirynPlaywrightAnyHooked(server.serverDir), false);
 });
 
 test('a mutant run once at module scope is active only in a server started with it', async (t) => {
@@ -205,7 +205,7 @@ test('code the server runs in a vm realm reports no coverage and gets only the m
   const dryRun = switched.run({ perTest: true });
 
   assert.equal(await switched.ask({ n: 2, testId: 'big' }), 'hi many');
-  assert.deepEqual(readSnapshotDir(dryRun).snapshots, []);
+  assert.deepEqual(muirSirynPlaywrightReadSnapshotDir(dryRun).snapshots, []);
 
   switched.run({ perTest: false, activeMutant: '2' });
 
@@ -238,7 +238,9 @@ test('coverage goes to the run folder per test id header, with what ran before t
   const coverage = coverageOf(first);
 
   assert.ok(
-    readdirSync(first).every((file) => file.startsWith(serverSnapshotPrefix)),
+    readdirSync(first).every((file) =>
+      file.startsWith(muirSirynPlaywrightServerSnapshotPrefix),
+    ),
   );
   assert.deepEqual(
     mutantIdsOf(coverage.static),
@@ -266,10 +268,12 @@ test('a run whose requests reach no mutant still hears that the server loaded in
   await server.ask({ n: 0 });
 
   assert.deepEqual(
-    readSnapshotDir(second).snapshots.map(({ coverage, instrumented }) => ({
-      coverage,
-      instrumented,
-    })),
+    muirSirynPlaywrightReadSnapshotDir(second).snapshots.map(
+      ({ coverage, instrumented }) => ({
+        coverage,
+        instrumented,
+      }),
+    ),
     [{ coverage: undefined, instrumented: true }],
   );
 });
@@ -279,7 +283,7 @@ test('a server that reads the namespace without instrumented code tells the run 
   const outDir = server.run({ perTest: true });
   await server.ask({ n: 0 });
 
-  assert.deepEqual(readSnapshotDir(outDir).snapshots, []);
+  assert.deepEqual(muirSirynPlaywrightReadSnapshotDir(outDir).snapshots, []);
 });
 
 test('hits a request makes after its response ended reach the run folder when the server exits', async (t) => {
@@ -363,7 +367,7 @@ test('a copy of the hook from another install that loaded first leaves the serve
     ],
   });
 
-  assert.equal(anyHooked(server.serverDir), false);
+  assert.equal(muirSirynPlaywrightAnyHooked(server.serverDir), false);
 });
 
 test('without per-test coverage lazily evaluated module scope and the request are static', async (t) => {
@@ -395,7 +399,7 @@ test('a request without the header counts under its arrival time', async (t) => 
 
   assert.equal(keys.length, 1);
   const [key = ''] = keys;
-  const arrivedAt = untaggedArrival(key);
+  const arrivedAt = muirSirynPlaywrightUntaggedArrival(key);
   const crossProcessClockSkewMs = 50;
   assert.ok(
     arrivedAt !== undefined &&
@@ -413,7 +417,11 @@ test('a test id header the runner did not issue counts as untagged, under its ar
   const keys = perTestKeysOf(outDir);
 
   assert.equal(keys.length, 1);
-  assert.notEqual(untaggedArrival(keys[0] ?? ''), undefined, keys[0]);
+  assert.notEqual(
+    muirSirynPlaywrightUntaggedArrival(keys[0] ?? ''),
+    undefined,
+    keys[0],
+  );
 });
 
 test('without per-test coverage every hit is static, header or not', async (t) => {
@@ -441,7 +449,7 @@ test("a run's hit count counts only the active mutant's hits in that run", async
   await server.ask({ n: 0 });
 
   const hits = (outDir: string) =>
-    readSnapshotDir(outDir).snapshots.reduce(
+    muirSirynPlaywrightReadSnapshotDir(outDir).snapshots.reduce(
       (sum, { hitCount }) => sum + hitCount,
       0,
     );
@@ -452,7 +460,7 @@ test("a run's hit count counts only the active mutant's hits in that run", async
 
 test('a run folder that is gone drops the coverage, and the server keeps serving', async (t) => {
   const server = await startServer(t);
-  writeServerControl(server.serverDir, {
+  muirSirynPlaywrightWriteServerControl(server.serverDir, {
     outDir: path.join(server.serverDir, 'gone'),
     perTest: true,
   });

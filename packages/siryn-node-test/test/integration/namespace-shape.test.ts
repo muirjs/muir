@@ -8,10 +8,10 @@ import { describe, it } from 'node:test';
 const child = [
   `import { install } from ${JSON.stringify(new URL('../../src/hook-core.ts', import.meta.url).href)};`,
   `import { envNames } from ${JSON.stringify(new URL('../../src/record.ts', import.meta.url).href)};`,
-  `import { lzCurrentTests } from ${JSON.stringify(new URL('../../src/wrap.ts', import.meta.url).href)};`,
+  `import { muirSirynNodeTestCurrentTests } from ${JSON.stringify(new URL('../../src/wrap.ts', import.meta.url).href)};`,
   `import { harness, out } from ${JSON.stringify(new URL('../hook-core.fixtures.ts', import.meta.url).href)};`,
   'const ended = {};',
-  "const end = lzCurrentTests({ ns: ended, env: {}, now: () => 0 }).makeCurrent('a.test.ts > first');",
+  "const end = muirSirynNodeTestCurrentTests({ ns: ended, env: {}, now: () => 0 }).makeCurrent('a.test.ts > first');",
   'ended.mutantCoverage = { static: {}, perTest: {} };',
   'end();',
   'const { deps } = harness({ [envNames.out]: out });',

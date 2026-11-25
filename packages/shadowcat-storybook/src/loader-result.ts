@@ -1,7 +1,10 @@
 /** What the Storybook loader child writes to its result file; the parent still parses it, as it crosses a process boundary. */
-export type LoaderResult = LoadResult & { readonly testTags: LoaderTestTags };
+export type MuirShadowcatStorybookLoaderResult =
+  MuirShadowcatStorybookLoadResult & {
+    readonly testTags: MuirShadowcatStorybookLoaderTestTags;
+  };
 
-export type LoadResult =
+export type MuirShadowcatStorybookLoadResult =
   | {
       readonly kind: 'loaded';
       readonly storyFiles: readonly string[];
@@ -11,7 +14,7 @@ export type LoadResult =
   | { readonly kind: 'failed'; readonly error: string };
 
 /** The env values that storybookTest() sets, as Vitest resolved them; a field is missing when no project runs storybookTest(). */
-export type LoaderTestTags =
+export type MuirShadowcatStorybookLoaderTestTags =
   | {
       readonly kind: 'resolved';
       readonly include: unknown;

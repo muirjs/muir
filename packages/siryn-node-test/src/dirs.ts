@@ -5,16 +5,16 @@ import timers from 'node:timers/promises';
 
 import type { Logger } from '@stryker-mutator/api/logging';
 
-// Stryker disable next-line LzJsNumericLiteral: a tuning value, not a contract a test should pin
+// Stryker disable next-line MuirProteusJsNumericLiteral: a tuning value, not a contract a test should pin
 const removeWaitMs = 2_000;
 
 /**
  * Creates `dir` for this user alone, or checks that the one that exists is this user's: in a temporary directory that
  * other users share, someone else could have made it first, with links in it, to read or plant what the dry run kept.
  */
-export function ownDir(
+export function muirSirynNodeTestOwnDir(
   dir: string,
-  owned: (path: string) => boolean = isOwn,
+  owned: (path: string) => boolean = muirSirynNodeTestIsOwn,
   makeDir: (
     path: string,
     options: { recursive: true; mode: number },
@@ -35,12 +35,12 @@ export function ownDir(
  * itself, but waits until the process ends when it works in a directory inside it, as in the run's temporary
  * directory.
  */
-export async function removeDir(
+export async function muirSirynNodeTestRemoveDir(
   dir: string,
   log: Logger,
   {
     waitMs = removeWaitMs,
-    // Stryker disable next-line LzJsNumericLiteral: tuning values, not a contract a test should pin
+    // Stryker disable next-line MuirProteusJsNumericLiteral: tuning values, not a contract a test should pin
     remove = (path: string) =>
       rm(path, { recursive: true, maxRetries: 10, retryDelay: 20 }),
   } = {},
@@ -64,7 +64,7 @@ export async function removeDir(
 }
 
 /** Whether a process with this id runs; one that exists but may not be signalled runs too. */
-export function isRunning(
+export function muirSirynNodeTestIsRunning(
   pid: number,
   kill: (pid: number, signal: 0) => void = (target, signal) =>
     process.kill(target, signal),
@@ -86,7 +86,7 @@ export function isRunning(
  * Whether this user owns the file or directory itself, not what a link points to. Windows has no user ids, so there
  * every one counts as owned.
  */
-export function isOwn(
+export function muirSirynNodeTestIsOwn(
   path: string,
   user: { getuid?: () => number } = process,
   stat: (path: string) => { uid: number } = lstatSync,
@@ -94,23 +94,23 @@ export function isOwn(
   return user.getuid === undefined || stat(path).uid === user.getuid();
 }
 
-const lzDirBase = 'lz-node-test-';
-const lzDirKinds = {
+const muirSirynNodeTestDirBase = 'muir-node-test-';
+const muirSirynNodeTestDirKinds = {
   run: '',
   cache: 'cache-',
   dryRun: 'dry-run-',
   copy: 'copy-',
 };
-const lzDirPattern = new RegExp(
-  `^${lzDirBase}(?:${Object.values(lzDirKinds).join('|')})(\\d+)-`,
+const muirSirynNodeTestDirPattern = new RegExp(
+  `^${muirSirynNodeTestDirBase}(?:${Object.values(muirSirynNodeTestDirKinds).join('|')})(\\d+)-`,
 );
 
 /** The start of the name of a directory that the runners of process `pid` make, which `removeLeftDirs` recognizes. */
-export function lzDirPrefix(
-  kind: keyof typeof lzDirKinds,
+export function muirSirynNodeTestDirPrefix(
+  kind: keyof typeof muirSirynNodeTestDirKinds,
   pid: number,
 ): string {
-  return `${lzDirBase}${lzDirKinds[kind]}${pid}-`;
+  return `${muirSirynNodeTestDirBase}${muirSirynNodeTestDirKinds[kind]}${pid}-`;
 }
 
 /**
@@ -120,18 +120,18 @@ export function lzDirPrefix(
  * removes the dry-run store as it exits, so only a killed one leaves it. A directory that cannot be removed yet is
  * left for a later runner.
  */
-export function removeLeftDirs(
+export function muirSirynNodeTestRemoveLeftDirs(
   dir: string,
   {
-    running = isRunning,
-    owned = isOwn,
+    running = muirSirynNodeTestIsRunning,
+    owned = muirSirynNodeTestIsOwn,
     remove = (path: string) => {
       rmSync(path, { recursive: true });
     },
   } = {},
 ): void {
   for (const name of readdirSync(dir)) {
-    const pid = lzDirPattern.exec(name)?.[1];
+    const pid = muirSirynNodeTestDirPattern.exec(name)?.[1];
     const path = join(dir, name);
 
     if (pid !== undefined && !running(Number(pid))) {

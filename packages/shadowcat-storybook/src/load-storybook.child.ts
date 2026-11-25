@@ -3,12 +3,15 @@ import { register } from 'node:module';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { field, isRecord } from '@muirjs/moira-storybook';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+} from '@muirjs/moira-storybook';
 
 import type {
-  LoaderResult,
-  LoaderTestTags,
-  LoadResult,
+  MuirShadowcatStorybookLoaderResult,
+  MuirShadowcatStorybookLoaderTestTags,
+  MuirShadowcatStorybookLoadResult,
 } from './loader-result.ts';
 
 const [configDir, resultFile, vitestConfigFile] = process.argv.slice(2);
@@ -52,7 +55,7 @@ register(`data:text/javascript,${encodeURIComponent(projectFirstResolve)}`, {
 });
 
 const storybook = await load(configDir, projectDir);
-const result: LoaderResult = {
+const result: MuirShadowcatStorybookLoaderResult = {
   ...storybook,
   testTags: await testTags(
     vitestConfigFile,
@@ -66,7 +69,7 @@ writeFileSync(resultFile, JSON.stringify(result));
 async function testTags(
   configFile: string | undefined,
   storyFiles: readonly string[],
-): Promise<LoaderTestTags> {
+): Promise<MuirShadowcatStorybookLoaderTestTags> {
   // Only the Vitest CLI sets VITEST, and storybookTest() returns no plugins without it.
   process.env['VITEST'] = 'true';
   process.env['STORYBOOK_DISABLE_TELEMETRY'] = '1';
@@ -93,7 +96,8 @@ async function testTags(
       // Storybook 10.6.5 addon-vitest vitest-manager.ts 612 finds its projects by this key.
       const storybookProjects = vitest.projects.filter(
         (project) =>
-          field(project.config.env, '__STORYBOOK_URL__') !== undefined,
+          muirMoiraStorybookField(project.config.env, '__STORYBOOK_URL__') !==
+          undefined,
       );
       // Not realpathSync.native, which throws on a RAM disk and gives a mapped drive's UNC path (Vite 8.3.5 utils.ts safeRealpathSync).
       const realStoryFiles = storyFiles.map((file) => realpathSync(file));
@@ -105,9 +109,9 @@ async function testTags(
 
       return {
         kind: 'resolved',
-        include: field(env, '__VITEST_INCLUDE_TAGS__'),
-        exclude: field(env, '__VITEST_EXCLUDE_TAGS__'),
-        skip: field(env, '__VITEST_SKIP_TAGS__'),
+        include: muirMoiraStorybookField(env, '__VITEST_INCLUDE_TAGS__'),
+        exclude: muirMoiraStorybookField(env, '__VITEST_EXCLUDE_TAGS__'),
+        skip: muirMoiraStorybookField(env, '__VITEST_SKIP_TAGS__'),
       };
     } finally {
       await vitest.close();
@@ -135,7 +139,7 @@ function withoutStack(error: unknown): string {
 async function load(
   configDir: string,
   projectDir: string,
-): Promise<LoadResult> {
+): Promise<MuirShadowcatStorybookLoadResult> {
   try {
     const { experimental_loadStorybook, getStoriesPathsFromConfig } =
       await import('storybook/internal/core-server');
@@ -152,11 +156,12 @@ async function load(
       root: projectDir,
     });
     const plugins =
-      isRecord(viteConfig) && Array.isArray(viteConfig['plugins'])
+      muirMoiraStorybookIsRecord(viteConfig) &&
+      Array.isArray(viteConfig['plugins'])
         ? viteConfig['plugins'].flat(Infinity)
         : [];
     const pluginNames = plugins.flatMap((plugin: unknown) =>
-      isRecord(plugin) && typeof plugin['name'] === 'string'
+      muirMoiraStorybookIsRecord(plugin) && typeof plugin['name'] === 'string'
         ? [plugin['name']]
         : [],
     );

@@ -1,6 +1,6 @@
 # Playwright runner
 
-The `lz-playwright` StrykerJS test runner: it runs Playwright e2e and component tests as Stryker tests, gives
+The `muir-siryn-playwright` StrykerJS test runner: it runs Playwright e2e and component tests as Stryker tests, gives
 each run's mutant to the pages, the Playwright workers and, with server support on, the `webServer`, and
 collects per-test coverage from all three.
 
@@ -14,7 +14,7 @@ Stryker replaces it after a timeout or `maxTestRunnerReuse` runs.
 _Avoid_: Stryker worker, runner instance
 
 **Playwright worker**:
-A process that Playwright starts inside a test runner process to run test files; `lzPlaywright.workers`
+A process that Playwright starts inside a test runner process to run test files; `muirSirynPlaywright.workers`
 sets how many.
 _Avoid_: worker (alone), test worker
 
@@ -73,7 +73,7 @@ _Avoid_: init script, Stryker helpers
 ### Server support
 
 **Server support**:
-The mode, turned on by `lzPlaywright.webServer.mutate`, in which the `webServer` gets each run's mutant and
+The mode, turned on by `muirSirynPlaywright.webServer.mutate`, in which the `webServer` gets each run's mutant and
 reports per-test coverage.
 _Avoid_: server mode, server-side mutation
 
@@ -92,7 +92,7 @@ The file the runner writes before each run that tells the server hook the run's 
 _Avoid_: mutant file, server config
 
 **Test id header**:
-The `x-lz-stryker-test` request header that carries the id of the test that sent a request to the
+The `x-muir-stryker-test` request header that carries the id of the test that sent a request to the
 `webServer`, added only in the dry run under per-test coverage.
 _Avoid_: test header
 
@@ -121,7 +121,7 @@ a server-side mutant, so that no state of one run reaches the next.
 _Avoid_: server reset, sandboxing
 
 **Server mutants file**:
-The file `.lz-playwright-server-mutants` in Stryker's sandbox, in which the dry run's process lists the
+The file `.muir-playwright-server-mutants` in Stryker's sandbox, in which the dry run's process lists the
 server-side mutants for the other test runner processes.
 _Avoid_: mutant list
 
@@ -147,6 +147,6 @@ mutant under the `survivorTraces` folder.
 _Avoid_: mutant traces, failure traces
 
 **Traces index**:
-The `index.html` that the `lz-playwright-traces` reporter writes in the `survivorTraces` folder: Stryker's
+The `index.html` that the `muir-siryn-playwright-traces` reporter writes in the `survivorTraces` folder: Stryker's
 report with each survivor's traces and the command that runs it again.
 _Avoid_: trace report

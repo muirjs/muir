@@ -8,14 +8,17 @@ import { pathToFileURL } from 'node:url';
 import type { Location, Mutant, Position } from '@stryker-mutator/api/core';
 
 import {
-  hasMember,
-  isFunction,
-  isNumber,
-  isObject,
-  isString,
-  member,
+  muirMoiraNodeTestHasMember,
+  muirMoiraNodeTestIsFunction,
+  muirMoiraNodeTestIsNumber,
+  muirMoiraNodeTestIsObject,
+  muirMoiraNodeTestIsString,
+  muirMoiraNodeTestMember,
 } from './guards.ts';
-import { mutatorBuilders, type LzBabelTypes } from './mutator.ts';
+import {
+  muirMoiraNodeTestMutatorBuilders,
+  type MuirMoiraNodeTestBabelTypes,
+} from './mutator.ts';
 
 const coreBinPattern =
   /[\\/]@stryker-mutator[\\/]core[\\/]bin[\\/]stryker\.js$/;
@@ -27,40 +30,44 @@ const silent = {
   isDebugEnabled: nothing,
 };
 
-export interface LzSourceFile {
+export interface MuirMoiraNodeTestSourceFile {
   readonly name: string;
   readonly content: string;
 }
 
-export type LzInstrumentedMutant = Pick<
+export type MuirMoiraNodeTestInstrumentedMutant = Pick<
   Mutant,
   'mutatorName' | 'replacement' | 'location'
 >;
 
 /** A mutator of the instrumenter's list, Stryker's or this module's, as far as this module checks it. */
-export interface LzListedMutator {
+export interface MuirMoiraNodeTestListedMutator {
   readonly name: string;
   readonly mutate: (...args: never) => unknown;
 }
 
-export interface LzInstrumenter {
+export interface MuirMoiraNodeTestInstrumenter {
   readonly dir: string;
   readonly version: string;
   /** The list that the instrumenter reads its mutators from each time it transforms a file. */
-  readonly allMutators: readonly LzListedMutator[];
+  readonly allMutators: readonly MuirMoiraNodeTestListedMutator[];
   /** Replaces the contents of `allMutators`, in place, so the instrumenter reads the new list. */
-  setMutators(mutators: readonly LzListedMutator[]): void;
+  setMutators(mutators: readonly MuirMoiraNodeTestListedMutator[]): void;
   /** The Babel types of the instrumenter's own @babel/core, to build the nodes it places. */
-  readonly types: LzBabelTypes;
+  readonly types: MuirMoiraNodeTestBabelTypes;
   instrument(
-    files: readonly LzSourceFile[],
-    mutators?: readonly LzListedMutator[],
-  ): Promise<readonly LzInstrumentedMutant[]>;
+    files: readonly MuirMoiraNodeTestSourceFile[],
+    mutators?: readonly MuirMoiraNodeTestListedMutator[],
+  ): Promise<readonly MuirMoiraNodeTestInstrumentedMutant[]>;
 }
 
-export function resolveEachCore(): Promise<readonly LzInstrumenter[]> {
+export function muirMoiraNodeTestResolveEachCore(): Promise<
+  readonly MuirMoiraNodeTestInstrumenter[]
+> {
   return Promise.all(
-    corePackageJsons().map((corePackage) => lzResolveFromCore(corePackage)),
+    muirMoiraNodeTestCorePackageJsons().map((corePackage) =>
+      muirMoiraNodeTestResolveFromCore(corePackage),
+    ),
   );
 }
 
@@ -69,7 +76,7 @@ export function resolveEachCore(): Promise<readonly LzInstrumenter[]> {
  * when that is core's bin, as when Stryker runs from a global install; otherwise, as when a program uses Stryker's API,
  * the core that this module resolves, in the drive-letter case of that program's script and in this module's own.
  */
-export function corePackageJsons(
+export function muirMoiraNodeTestCorePackageJsons(
   argv: readonly string[] = process.argv,
   realpath: (path: string) => string = realpathSync,
   resolveHere: (specifier: string) => string = createRequire(import.meta.url)
@@ -124,10 +131,10 @@ function withDriveLetterOf(script: string, path: string): string {
  * `load` imports a file of the instrumenter or of its @babel/core. The instrumenter exports only its index, so these
  * modules have no importable types, and their members are checked before use.
  */
-export async function lzResolveFromCore(
-  corePackage: string = corePackageJsons()[0],
+export async function muirMoiraNodeTestResolveFromCore(
+  corePackage: string = muirMoiraNodeTestCorePackageJsons()[0],
   load: (path: string) => Promise<unknown> = importFile,
-): Promise<LzInstrumenter> {
+): Promise<MuirMoiraNodeTestInstrumenter> {
   const fromCore = createRequire(corePackage);
   const packageJson = fromCore.resolve(
     '@stryker-mutator/instrumenter/package.json',
@@ -146,28 +153,38 @@ export async function lzResolveFromCore(
   const [mutate, transformer, index, babel] = await Promise.all(
     [mutateFile, transformerFile, indexFile, babelFile].map(load),
   );
-  const transformBabel = member(
+  const transformBabel = muirMoiraNodeTestMember(
     transformer,
     'transformBabel',
-    isFunction,
+    muirMoiraNodeTestIsFunction,
     transformerFile,
   );
-  const instrumenterClass = member(
+  const instrumenterClass = muirMoiraNodeTestMember(
     index,
     'Instrumenter',
-    isFunction,
+    muirMoiraNodeTestIsFunction,
     indexFile,
   );
-  const allMutators = member(mutate, 'allMutators', isMutatorList, mutateFile);
+  const allMutators = muirMoiraNodeTestMember(
+    mutate,
+    'allMutators',
+    isMutatorList,
+    mutateFile,
+  );
 
   return {
     dir,
-    version: member(fromCore(packageJson), 'version', isString, packageJson),
+    version: muirMoiraNodeTestMember(
+      fromCore(packageJson),
+      'version',
+      muirMoiraNodeTestIsString,
+      packageJson,
+    ),
     allMutators,
     setMutators(mutators) {
       allMutators.splice(0, allMutators.length, ...mutators);
     },
-    types: member(babel, 'types', isBabelTypes, babelFile),
+    types: muirMoiraNodeTestMember(babel, 'types', isBabelTypes, babelFile),
     async instrument(files, mutators) {
       // The instrumenter takes a transform of its own in place of the one that reads `allMutators`.
       const transform =
@@ -185,10 +202,10 @@ export async function lzResolveFromCore(
         undefined,
         transform,
       ]);
-      const instrument = member(
+      const instrument = muirMoiraNodeTestMember(
         instance,
         'instrument',
-        isFunction,
+        muirMoiraNodeTestIsFunction,
         `the Instrumenter of ${indexFile}`,
       );
       const result: unknown = await Reflect.apply(instrument, instance, [
@@ -201,7 +218,7 @@ export async function lzResolveFromCore(
         },
       ]);
 
-      return member(
+      return muirMoiraNodeTestMember(
         result,
         'mutants',
         isMutantList,
@@ -215,13 +232,18 @@ function importFile(path: string): Promise<unknown> {
   return import(pathToFileURL(path).href);
 }
 
-function isMutatorList(value: unknown): value is LzListedMutator[] {
+function isMutatorList(
+  value: unknown,
+): value is MuirMoiraNodeTestListedMutator[] {
   return Array.isArray(value) && value.every(isListedMutator);
 }
 
-function isListedMutator(value: unknown): value is LzListedMutator {
+function isListedMutator(
+  value: unknown,
+): value is MuirMoiraNodeTestListedMutator {
   return (
-    hasMember(value, 'name', isString) && hasMember(value, 'mutate', isFunction)
+    muirMoiraNodeTestHasMember(value, 'name', muirMoiraNodeTestIsString) &&
+    muirMoiraNodeTestHasMember(value, 'mutate', muirMoiraNodeTestIsFunction)
   );
 }
 
@@ -229,33 +251,49 @@ function isListedMutator(value: unknown): value is LzListedMutator {
  * Has a function for each member of the Babel types that the mutators may call. The other members can differ, as when
  * the consumer's @babel/core is a newer patch than the instrumenter's.
  */
-function isBabelTypes(value: unknown): value is LzBabelTypes {
+function isBabelTypes(value: unknown): value is MuirMoiraNodeTestBabelTypes {
   return (
-    isObject(value) &&
-    mutatorBuilders.every((key) => isFunction(Reflect.get(value, key)))
+    muirMoiraNodeTestIsObject(value) &&
+    muirMoiraNodeTestMutatorBuilders.every((key) =>
+      muirMoiraNodeTestIsFunction(Reflect.get(value, key)),
+    )
   );
 }
 
-function isMutantList(value: unknown): value is LzInstrumentedMutant[] {
+function isMutantList(
+  value: unknown,
+): value is MuirMoiraNodeTestInstrumentedMutant[] {
   return Array.isArray(value) && value.every(isMutant);
 }
 
-function isMutant(value: unknown): value is LzInstrumentedMutant {
+function isMutant(
+  value: unknown,
+): value is MuirMoiraNodeTestInstrumentedMutant {
   return (
-    hasMember(value, 'mutatorName', isString) &&
-    hasMember(value, 'replacement', isString) &&
-    hasMember(value, 'location', isLocation)
+    muirMoiraNodeTestHasMember(
+      value,
+      'mutatorName',
+      muirMoiraNodeTestIsString,
+    ) &&
+    muirMoiraNodeTestHasMember(
+      value,
+      'replacement',
+      muirMoiraNodeTestIsString,
+    ) &&
+    muirMoiraNodeTestHasMember(value, 'location', isLocation)
   );
 }
 
 function isLocation(value: unknown): value is Location {
   return (
-    hasMember(value, 'start', isPosition) && hasMember(value, 'end', isPosition)
+    muirMoiraNodeTestHasMember(value, 'start', isPosition) &&
+    muirMoiraNodeTestHasMember(value, 'end', isPosition)
   );
 }
 
 function isPosition(value: unknown): value is Position {
   return (
-    hasMember(value, 'line', isNumber) && hasMember(value, 'column', isNumber)
+    muirMoiraNodeTestHasMember(value, 'line', muirMoiraNodeTestIsNumber) &&
+    muirMoiraNodeTestHasMember(value, 'column', muirMoiraNodeTestIsNumber)
   );
 }

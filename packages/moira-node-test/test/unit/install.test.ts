@@ -3,23 +3,29 @@ import { describe, it } from 'node:test';
 
 import { types } from '@babel/core';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { lzInstall, type LzInstallMode } from '../../src/install.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import {
+  muirMoiraNodeTestInstall,
+  type MuirMoiraNodeTestInstallMode,
+} from '../../src/install.ts';
 import type {
-  LzInstrumentedMutant,
-  LzInstrumenter,
-  LzListedMutator,
-  LzSourceFile,
+  MuirMoiraNodeTestInstrumentedMutant,
+  MuirMoiraNodeTestInstrumenter,
+  MuirMoiraNodeTestListedMutator,
+  MuirMoiraNodeTestSourceFile,
 } from '../../src/instrumenter.ts';
-import { lzIsOwn, type LzMutator } from '../../src/mutator.ts';
+import {
+  muirMoiraNodeTestIsOwn,
+  type MuirMoiraNodeTestMutator,
+} from '../../src/mutator.ts';
 
 const sampleLocation = {
   start: { line: 0, column: 0 },
   end: { line: 0, column: 1 },
 };
-const packageName = 'lz-sample-mutators';
+const packageName = 'muir-sample-mutators';
 
-function mutator(name: string): LzMutator {
+function mutator(name: string): MuirMoiraNodeTestMutator {
   return { name, sample: `${name}();`, *mutate() {} };
 }
 
@@ -34,13 +40,15 @@ function setup({
   version?: string;
   dir?: string;
 } = {}) {
-  const allMutators: LzListedMutator[] = builtIns.map((name) => ({
-    name,
-    *mutate() {},
-  }));
-  const instrumented: LzSourceFile[][] = [];
+  const allMutators: MuirMoiraNodeTestListedMutator[] = builtIns.map(
+    (name) => ({
+      name,
+      *mutate() {},
+    }),
+  );
+  const instrumented: MuirMoiraNodeTestSourceFile[][] = [];
   const warnings: string[] = [];
-  const instrumenter: LzInstrumenter = {
+  const instrumenter: MuirMoiraNodeTestInstrumenter = {
     dir,
     version,
     allMutators,
@@ -54,10 +62,11 @@ function setup({
       return Promise.resolve(
         allMutators
           .filter(
-            (mutator) => lzIsOwn(mutator) && !silent.includes(mutator.name),
+            (mutator) =>
+              muirMoiraNodeTestIsOwn(mutator) && !silent.includes(mutator.name),
           )
           .map(
-            (mutator): LzInstrumentedMutant => ({
+            (mutator): MuirMoiraNodeTestInstrumentedMutant => ({
               mutatorName: mutator.name,
               replacement: '',
               location: sampleLocation,
@@ -67,12 +76,12 @@ function setup({
     },
   };
   const run = (
-    mode: LzInstallMode,
-    mutators: LzMutator[],
+    mode: MuirMoiraNodeTestInstallMode,
+    mutators: MuirMoiraNodeTestMutator[],
     corePeerRange = '^10.1.1',
     by = packageName,
   ) =>
-    lzInstall(
+    muirMoiraNodeTestInstall(
       { packageName: by, corePeerRange, mode, mutators },
       () => Promise.resolve([instrumenter]),
       (message) => warnings.push(message),
@@ -82,7 +91,7 @@ function setup({
   return { run, names, instrumented, warnings, instrumenter };
 }
 
-describe('lzInstall', () => {
+describe('muirMoiraNodeTestInstall', () => {
   it("adds the mutators after Stryker's mutators, and instruments each one's sample", async () => {
     const { run, names, instrumented, warnings } = setup();
 
@@ -103,7 +112,7 @@ describe('lzInstall', () => {
     const second = setup({ silent: ['Alpha'], dir: '/stryker/copy' });
 
     await assert.rejects(
-      lzInstall(
+      muirMoiraNodeTestInstall(
         {
           packageName,
           corePeerRange: '^10.1.1',
@@ -114,7 +123,7 @@ describe('lzInstall', () => {
       ),
       {
         message:
-          /^lz-sample-mutators: the instrumenter in \/stryker\/copy made no mutants of Alpha /,
+          /^muir-sample-mutators: the instrumenter in \/stryker\/copy made no mutants of Alpha /,
       },
     );
     assert.deepEqual(
@@ -152,7 +161,7 @@ describe('lzInstall', () => {
       builtIns: ['StringLiteral', 'CallExpression'],
     });
 
-    await run('add', [mutator('Delta')], '^10.1.1', 'lz-other-mutators');
+    await run('add', [mutator('Delta')], '^10.1.1', 'muir-other-mutators');
     await run('add', [mutator('Alpha')]);
     await run('replace', [mutator('Beta')]);
 
@@ -162,11 +171,11 @@ describe('lzInstall', () => {
   it('refuses a name that another package installed', async () => {
     const { run, names } = setup();
 
-    await run('add', [mutator('Delta')], '^10.1.1', 'lz-other-mutators');
+    await run('add', [mutator('Delta')], '^10.1.1', 'muir-other-mutators');
 
     await assert.rejects(run('add', [mutator('DELTA')]), {
       message:
-        'lz-sample-mutators: another mutator already has the name DELTA.',
+        'muir-sample-mutators: another mutator already has the name DELTA.',
     });
     assert.deepEqual(names(), ['StringLiteral', 'Delta']);
   });
@@ -178,7 +187,7 @@ describe('lzInstall', () => {
       run('add', [mutator('Alpha'), mutator('Beta'), mutator('Gamma')]),
       {
         message:
-          'lz-sample-mutators: the instrumenter in /stryker/instrumenter made no mutants of Alpha, Gamma from their ' +
+          'muir-sample-mutators: the instrumenter in /stryker/instrumenter made no mutants of Alpha, Gamma from their ' +
           'samples, so it does not read the mutator list this module added to. A bundled instrumenter does that.',
       },
     );
@@ -186,8 +195,8 @@ describe('lzInstall', () => {
 
   const refusals: readonly (readonly [
     string,
-    LzInstallMode,
-    readonly LzMutator[],
+    MuirMoiraNodeTestInstallMode,
+    readonly MuirMoiraNodeTestMutator[],
     string,
   ])[] = [
     ["a name of Stryker's", 'add', [mutator('StringLiteral')], 'StringLiteral'],
@@ -223,7 +232,7 @@ describe('lzInstall', () => {
     ],
   ];
 
-  lzTestEach(refusals)(
+  muirTestEach(refusals)(
     'refuses %s before it changes the list',
     async (_title, mode, mutators, name) => {
       const { run, names, instrumented } = setup({
@@ -231,7 +240,7 @@ describe('lzInstall', () => {
       });
 
       await assert.rejects(run(mode, [...mutators]), {
-        message: `lz-sample-mutators: another mutator already has the name ${name}.`,
+        message: `muir-sample-mutators: another mutator already has the name ${name}.`,
       });
       assert.deepEqual(
         [names(), instrumented],
@@ -240,14 +249,14 @@ describe('lzInstall', () => {
     },
   );
 
-  lzTestEach(['NodeTimer1', 'Node-Timer', 'Node_Timer', 'Node Timer', ''])(
+  muirTestEach(['NodeTimer1', 'Node-Timer', 'Node_Timer', 'Node Timer', ''])(
     'refuses the name %j, as a name has letters only',
     async (name) => {
       const { run, names } = setup();
 
       await assert.rejects(run('add', [mutator('Alpha'), mutator(name)]), {
         message:
-          "lz-sample-mutators: a mutator name has letters only, as Stryker's directives match no other " +
+          "muir-sample-mutators: a mutator name has letters only, as Stryker's directives match no other " +
           `character: ${JSON.stringify(name)}`,
       });
       assert.deepEqual(names(), ['StringLiteral']);
@@ -261,7 +270,7 @@ describe('lzInstall', () => {
       run('add', [mutator('Node1'), mutator('Alpha'), mutator('Node-2')]),
       {
         message:
-          "lz-sample-mutators: a mutator name has letters only, as Stryker's directives match no other " +
+          "muir-sample-mutators: a mutator name has letters only, as Stryker's directives match no other " +
           'character: "Node1", "Node-2"',
       },
     );
@@ -271,7 +280,7 @@ describe('lzInstall', () => {
     const { run, names, instrumented } = setup();
 
     await assert.rejects(run('add', [mutator('Alpha')], '~10.1.1'), {
-      message: 'lz-sample-mutators: ~10.1.1 is no caret range of a release.',
+      message: 'muir-sample-mutators: ~10.1.1 is no caret range of a release.',
     });
     assert.deepEqual([names(), instrumented], [['StringLiteral'], []]);
   });
@@ -282,7 +291,7 @@ describe('lzInstall', () => {
     await run('add', [mutator('Alpha')], '^10.2.0');
 
     assert.deepEqual(warnings, [
-      'lz-sample-mutators accepts @stryker-mutator/instrumenter 10.2.0 or a later 10.x, not 10.1.1. Its install ' +
+      'muir-sample-mutators accepts @stryker-mutator/instrumenter 10.2.0 or a later 10.x, not 10.1.1. Its install ' +
         'check passed, but it sees only this process, so mutants of its mutators may be missing.',
     ]);
   });

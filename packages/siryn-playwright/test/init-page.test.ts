@@ -2,9 +2,9 @@
 import assert from 'node:assert/strict';
 import { before, type TestContext, test } from 'node:test';
 
-import type { PageSettings } from '../src/protocol.ts';
+import type { MuirSirynPlaywrightPageSettings } from '../src/protocol.ts';
 import type * as Hook from '../src/worker-hook.ts';
-import type { StrykerNamespace } from '../src/namespace.ts';
+import type { MuirSirynPlaywrightStrykerNamespace } from '../src/namespace.ts';
 
 let hook: typeof Hook;
 
@@ -23,7 +23,7 @@ interface FakePage {
 /** Runs the init script with the page globals it uses, and returns the namespace and storage it left. */
 function pageRun(
   t: TestContext,
-  settings: Omit<PageSettings, 'ns'>,
+  settings: Omit<MuirSirynPlaywrightPageSettings, 'ns'>,
   { top = true, carried = null, storageThrows = false, prepare }: FakePage = {},
 ) {
   const ns = `__pageTest${Math.random().toString(36).slice(2)}__`;
@@ -84,10 +84,10 @@ function pageRun(
     }
   }
 
-  inPage(() => hook.initPage({ ns, ...settings }));
+  inPage(() => hook.muirSirynPlaywrightInitPage({ ns, ...settings }));
   const found = scope[ns];
   assert.ok(typeof found === 'object' && found !== null, 'a page namespace');
-  const s: StrykerNamespace = found;
+  const s: MuirSirynPlaywrightStrykerNamespace = found;
 
   return {
     ns,

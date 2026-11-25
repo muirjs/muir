@@ -15,22 +15,26 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import type { ProcessRecord } from '../../src/record.ts';
+import type { MuirSirynNodeTestProcessRecord } from '../../src/record.ts';
 import { logger } from '../runner.fixtures.ts';
 import {
-  lzCopySandbox,
-  lzRebase,
-  lzRebaseRecord,
-  lzRemoveCopy,
+  muirSirynNodeTestCopySandbox,
+  muirSirynNodeTestRebase,
+  muirSirynNodeTestRebaseRecord,
+  muirSirynNodeTestRemoveCopy,
 } from '../../src/worker-copy.ts';
 
-describe('lzRebase', () => {
+describe('muirSirynNodeTestRebase', () => {
   it("gives a test id under the sandbox the copy's path instead", () => {
     const sandbox = join('work', 'sandbox');
     const copy = join('work', 'copy');
 
     assert.equal(
-      lzRebase(`${join(sandbox, 'test', 'a.test.js')} > adds`, sandbox, copy),
+      muirSirynNodeTestRebase(
+        `${join(sandbox, 'test', 'a.test.js')} > adds`,
+        sandbox,
+        copy,
+      ),
       `${join(copy, 'test', 'a.test.js')} > adds`,
     );
   });
@@ -39,7 +43,10 @@ describe('lzRebase', () => {
     const sandbox = join('work', 'sandbox');
     const sibling = join('work', 'sandbox-2', 'a.test.js');
 
-    assert.equal(lzRebase(sibling, sandbox, join('work', 'copy')), sibling);
+    assert.equal(
+      muirSirynNodeTestRebase(sibling, sandbox, join('work', 'copy')),
+      sibling,
+    );
   });
 
   it("gives the sandbox's path in a test's name the copy's path too, as each worker's copy differs", () => {
@@ -47,7 +54,7 @@ describe('lzRebase', () => {
     const copy = join('work', 'copy');
 
     assert.equal(
-      lzRebase(
+      muirSirynNodeTestRebase(
         `${join(sandbox, 'a.test.js')} > writes ${join(sandbox, 'out')}`,
         sandbox,
         copy,
@@ -80,21 +87,23 @@ function sandboxDir(
   return sandbox;
 }
 
-describe('lzCopySandbox', () => {
+describe('muirSirynNodeTestCopySandbox', () => {
   it('removes its folder again when the copy fails', (t) => {
     const missing = sandboxDir(t, {});
 
-    assert.throws(() => lzCopySandbox(missing, 123), { code: 'ENOENT' });
+    assert.throws(() => muirSirynNodeTestCopySandbox(missing, 123), {
+      code: 'ENOENT',
+    });
     assert.deepEqual(readdirSync(dirname(missing)), []);
   });
 
   it("copies the sandbox's files into a folder of this process beside it", (t) => {
     const sandbox = sandboxDir(t, { [join('test', 'a.test.js')]: 'content' });
 
-    const { dir: copy } = lzCopySandbox(sandbox, 123);
+    const { dir: copy } = muirSirynNodeTestCopySandbox(sandbox, 123);
 
     assert.equal(dirname(copy), dirname(sandbox));
-    assert.ok(basename(copy).startsWith('lz-node-test-copy-123-'), copy);
+    assert.ok(basename(copy).startsWith('muir-node-test-copy-123-'), copy);
     assert.equal(
       readFileSync(join(copy, 'test', 'a.test.js'), 'utf8'),
       'content',
@@ -107,7 +116,7 @@ describe('lzCopySandbox', () => {
     mkdirSync(join(modules, 'dep'), { recursive: true });
     symlinkSync(modules, join(sandbox, 'node_modules'), 'junction');
 
-    const { dir: copy } = lzCopySandbox(sandbox, 123);
+    const { dir: copy } = muirSirynNodeTestCopySandbox(sandbox, 123);
 
     assert.ok(lstatSync(join(copy, 'node_modules')).isSymbolicLink());
     assert.equal(realpathSync.native(join(copy, 'node_modules')), modules);
@@ -118,7 +127,7 @@ describe('lzCopySandbox', () => {
     const missing = join(dirname(sandbox), 'missing');
     symlinkSync(missing, join(sandbox, 'dangling'), 'junction');
 
-    const { dir: copy } = lzCopySandbox(sandbox, 123);
+    const { dir: copy } = muirSirynNodeTestCopySandbox(sandbox, 123);
 
     assert.equal(
       readlinkSync(join(copy, 'dangling')),
@@ -132,7 +141,7 @@ describe('lzCopySandbox', () => {
     mkdirSync(modules);
     symlinkSync(modules, join(sandbox, 'node_modules'), 'junction');
 
-    const { dir, links } = lzCopySandbox(sandbox, 123);
+    const { dir, links } = muirSirynNodeTestCopySandbox(sandbox, 123);
 
     assert.deepEqual(links, [join(dir, 'node_modules')]);
   });
@@ -141,7 +150,7 @@ describe('lzCopySandbox', () => {
     const sandbox = sandboxDir(t, { [join('sub', 'a.js')]: '' });
     symlinkSync('sub', join(sandbox, 'relative'), 'dir');
 
-    const { dir: copy } = lzCopySandbox(sandbox, 123);
+    const { dir: copy } = muirSirynNodeTestCopySandbox(sandbox, 123);
 
     assert.equal(
       realpathSync.native(join(copy, 'relative')),
@@ -154,7 +163,7 @@ describe('lzCopySandbox', () => {
     const missing = join(dirname(sandbox), 'missing');
     symlinkSync(missing, join(sandbox, 'dangling'), 'junction');
 
-    const { dir: copy } = lzCopySandbox(sandbox, 123);
+    const { dir: copy } = muirSirynNodeTestCopySandbox(sandbox, 123);
     mkdirSync(join(missing, 'dep'), { recursive: true });
 
     assert.deepEqual(readdirSync(join(copy, 'dangling')), ['dep']);
@@ -175,7 +184,7 @@ function removal(options: { readonly failingLink?: string } = {}) {
     warnings,
     copy,
     run: () =>
-      lzRemoveCopy(copy, log, {
+      muirSirynNodeTestRemoveCopy(copy, log, {
         unlink: (link: string) => {
           calls.push(`unlink ${link}`);
 
@@ -192,7 +201,7 @@ function removal(options: { readonly failingLink?: string } = {}) {
   };
 }
 
-describe('lzRemoveCopy', () => {
+describe('muirSirynNodeTestRemoveCopy', () => {
   it('removes each link on its own before the folder, so the removal never follows a link', async () => {
     const { calls, copy, run } = removal();
 
@@ -219,12 +228,12 @@ describe('lzRemoveCopy', () => {
   });
 });
 
-describe('lzRebaseRecord', () => {
+describe('muirSirynNodeTestRebaseRecord', () => {
   it("names a record's tests, their coverage and their spans by the sandbox's path", () => {
     const copy = join('work', 'copy');
     const sandbox = join('work', 'sandbox');
     const span = [{ start: 1, end: 2 }];
-    const record: ProcessRecord = {
+    const record: MuirSirynNodeTestProcessRecord = {
       main: true,
       tests: [
         {
@@ -241,7 +250,7 @@ describe('lzRebaseRecord', () => {
       testSpans: { [`${join(copy, 'a.test.js')} > adds`]: span },
     };
 
-    assert.deepEqual(lzRebaseRecord(record, copy, sandbox), {
+    assert.deepEqual(muirSirynNodeTestRebaseRecord(record, copy, sandbox), {
       main: true,
       tests: [
         {

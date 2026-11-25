@@ -1,8 +1,12 @@
 import path from 'node:path';
 
-import { fieldOf, isRecord, isStringArray } from './is-record.ts';
+import {
+  muirSirynPlaywrightFieldOf,
+  muirSirynPlaywrightIsRecord,
+  muirSirynPlaywrightIsStringArray,
+} from './is-record.ts';
 
-export interface LzPlaywrightOptions {
+export interface MuirSirynPlaywrightOptions {
   readonly configFile?: string;
   readonly projects?: readonly string[];
   readonly workers?: number;
@@ -22,10 +26,10 @@ type JsonType<T> = T extends string
         : never;
 
 type OptionSchemas = {
-  [K in keyof Required<LzPlaywrightOptions>]: {
-    readonly type: JsonType<Required<LzPlaywrightOptions>[K]>;
+  [K in keyof Required<MuirSirynPlaywrightOptions>]: {
+    readonly type: JsonType<Required<MuirSirynPlaywrightOptions>[K]>;
     readonly description: string;
-    readonly default?: Required<LzPlaywrightOptions>[K];
+    readonly default?: Required<MuirSirynPlaywrightOptions>[K];
     readonly minimum?: number;
     readonly items?: { readonly type: 'string' };
   };
@@ -58,7 +62,7 @@ const scalarOptionProperties = {
   survivorTraces: {
     type: 'string',
     description:
-      'Folder, relative to the folder you run Stryker from, for the Playwright traces of surviving mutants. Records a trace of every test run; needs the lz-playwright-traces reporter.',
+      'Folder, relative to the folder you run Stryker from, for the Playwright traces of surviving mutants. Records a trace of every test run; needs the muir-siryn-playwright-traces reporter.',
   },
   traceScreenshots: {
     type: 'boolean',
@@ -68,7 +72,7 @@ const scalarOptionProperties = {
   },
 } satisfies OptionSchemas;
 
-export const optionProperties = {
+export const muirSirynPlaywrightOptionProperties = {
   ...scalarOptionProperties,
   webServer: {
     type: 'object',
@@ -86,65 +90,66 @@ export const strykerValidationSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    lzPlaywright: {
+    muirSirynPlaywright: {
       type: 'object',
       default: {},
       additionalProperties: false,
-      properties: optionProperties,
+      properties: muirSirynPlaywrightOptionProperties,
     },
   },
 };
 
-export interface RunnerOptions {
+export interface MuirSirynPlaywrightRunnerOptions {
   readonly configFile: string | undefined;
   readonly projects: readonly string[] | undefined;
   readonly workers: number;
   readonly retries: number | undefined;
   readonly survivorTraces: string | undefined;
   readonly traceScreenshots: boolean;
-  readonly webServer: WebServerOptions;
+  readonly webServer: MuirSirynPlaywrightWebServerOptions;
   readonly strykerTimeoutMS: number;
 }
 
-export interface WebServerOptions {
+export interface MuirSirynPlaywrightWebServerOptions {
   readonly mutate: boolean | 'auto';
   readonly isolate: boolean;
 }
 
-export interface LzPlaywrightRunnerOptionsWithStrykerOptions {
+export interface MuirSirynPlaywrightRunnerOptionsWithStrykerOptions {
   readonly testFiles?: readonly string[];
   readonly timeoutMS: number;
   readonly concurrency?: number | string | undefined;
   readonly checkers?: readonly string[] | undefined;
-  readonly lzPlaywright?: unknown;
+  readonly muirSirynPlaywright?: unknown;
 }
 
 const optionGuards = {
   configFile: (value) => value === undefined || typeof value === 'string',
-  projects: (value) => value === undefined || isStringArray(value),
+  projects: (value) =>
+    value === undefined || muirSirynPlaywrightIsStringArray(value),
   workers: (value) => value === undefined || typeof value === 'number',
   retries: (value) => value === undefined || typeof value === 'number',
   survivorTraces: (value) => value === undefined || typeof value === 'string',
   traceScreenshots: (value) =>
     value === undefined || typeof value === 'boolean',
 } satisfies {
-  readonly [K in keyof LzPlaywrightOptions]-?: (
+  readonly [K in keyof MuirSirynPlaywrightOptions]-?: (
     value: unknown,
-  ) => value is LzPlaywrightOptions[K];
+  ) => value is MuirSirynPlaywrightOptions[K];
 };
 
-export function readRunnerOptions(
-  options: LzPlaywrightRunnerOptionsWithStrykerOptions,
-): RunnerOptions {
+export function muirSirynPlaywrightReadRunnerOptions(
+  options: MuirSirynPlaywrightRunnerOptionsWithStrykerOptions,
+): MuirSirynPlaywrightRunnerOptions {
   if (options.testFiles?.length) {
     throw new Error(
       'The Playwright test runner does not support the --testFiles option.',
     );
   }
 
-  const own = options.lzPlaywright ?? {};
+  const own = options.muirSirynPlaywright ?? {};
 
-  if (isRecord(own) && !Array.isArray(own)) {
+  if (muirSirynPlaywrightIsRecord(own) && !Array.isArray(own)) {
     const {
       configFile,
       projects,
@@ -163,14 +168,15 @@ export function readRunnerOptions(
       optionGuards.survivorTraces(survivorTraces) &&
       optionGuards.traceScreenshots(traceScreenshots)
     ) {
-      const workerCount = workers ?? optionProperties.workers.default;
+      const workerCount =
+        workers ?? muirSirynPlaywrightOptionProperties.workers.default;
 
       if (
         Number.isInteger(workerCount) &&
-        workerCount >= optionProperties.workers.minimum &&
+        workerCount >= muirSirynPlaywrightOptionProperties.workers.minimum &&
         (retries === undefined ||
           (Number.isInteger(retries) &&
-            retries >= optionProperties.retries.minimum))
+            retries >= muirSirynPlaywrightOptionProperties.retries.minimum))
       ) {
         return {
           configFile: configFile ? path.resolve(configFile) : undefined,
@@ -179,7 +185,8 @@ export function readRunnerOptions(
           retries,
           survivorTraces,
           traceScreenshots:
-            traceScreenshots ?? optionProperties.traceScreenshots.default,
+            traceScreenshots ??
+            muirSirynPlaywrightOptionProperties.traceScreenshots.default,
           webServer: readWebServer(webServer),
           strykerTimeoutMS: options.timeoutMS,
         };
@@ -188,31 +195,36 @@ export function readRunnerOptions(
   }
 
   throw new Error(
-    `The lzPlaywright options do not match their schema: ${JSON.stringify(own)}`,
+    `The muirSirynPlaywright options do not match their schema: ${JSON.stringify(own)}`,
   );
 }
 
-function readWebServer(value: unknown): WebServerOptions {
-  const knownKeys = Object.keys(optionProperties.webServer.properties);
+function readWebServer(value: unknown): MuirSirynPlaywrightWebServerOptions {
+  const knownKeys = Object.keys(
+    muirSirynPlaywrightOptionProperties.webServer.properties,
+  );
   const knownList = knownKeys.join(' and ');
 
-  if (value !== undefined && (!isRecord(value) || Array.isArray(value))) {
+  if (
+    value !== undefined &&
+    (!muirSirynPlaywrightIsRecord(value) || Array.isArray(value))
+  ) {
     throw new Error(
-      `lzPlaywright.webServer must be an object with ${knownList}, got ${JSON.stringify(value)}.`,
+      `muirSirynPlaywright.webServer must be an object with ${knownList}, got ${JSON.stringify(value)}.`,
     );
   }
 
-  const unknownKey = (isRecord(value) ? Object.keys(value) : []).find(
-    (key) => !knownKeys.includes(key),
-  );
+  const unknownKey = (
+    muirSirynPlaywrightIsRecord(value) ? Object.keys(value) : []
+  ).find((key) => !knownKeys.includes(key));
 
   if (unknownKey !== undefined) {
     throw new Error(
-      `lzPlaywright.webServer has no option ${unknownKey}; it takes ${knownList}.`,
+      `muirSirynPlaywright.webServer has no option ${unknownKey}; it takes ${knownList}.`,
     );
   }
 
-  const mutate = fieldOf(value, 'mutate');
+  const mutate = muirSirynPlaywrightFieldOf(value, 'mutate');
 
   if (
     mutate !== undefined &&
@@ -221,15 +233,15 @@ function readWebServer(value: unknown): WebServerOptions {
     mutate !== 'auto'
   ) {
     throw new Error(
-      `lzPlaywright.webServer.mutate must be true, false or 'auto', got ${JSON.stringify(mutate)}.`,
+      `muirSirynPlaywright.webServer.mutate must be true, false or 'auto', got ${JSON.stringify(mutate)}.`,
     );
   }
 
-  const isolate = fieldOf(value, 'isolate');
+  const isolate = muirSirynPlaywrightFieldOf(value, 'isolate');
 
   if (isolate !== undefined && typeof isolate !== 'boolean') {
     throw new Error(
-      `lzPlaywright.webServer.isolate must be true or false, got ${JSON.stringify(isolate)}.`,
+      `muirSirynPlaywright.webServer.isolate must be true or false, got ${JSON.stringify(isolate)}.`,
     );
   }
 

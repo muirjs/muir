@@ -1,20 +1,20 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { lzResolveFromCore } from '@muirjs/moira-node-test';
-import { lzJsMutators } from '../../src/index.ts';
+import { muirMoiraNodeTestResolveFromCore } from '@muirjs/moira-node-test';
+import { muirProteusJsMutators } from '../../src/index.ts';
 
-describe('lzJsMutators', () => {
+describe('muirProteusJsMutators', () => {
   it("installs the mutators its options turn on into Stryker's instrumenter", async () => {
-    await lzJsMutators({ LzJsNumericLiteral: true });
+    await muirProteusJsMutators({ MuirProteusJsNumericLiteral: true });
 
-    const names = (await lzResolveFromCore()).allMutators.map(
+    const names = (await muirMoiraNodeTestResolveFromCore()).allMutators.map(
       ({ name }) => name,
     );
 
     assert.deepEqual(
-      ['LzJsNumericLiteral', 'LzJsAssignmentStatement'].map((name) =>
-        names.includes(name),
+      ['MuirProteusJsNumericLiteral', 'MuirProteusJsAssignmentStatement'].map(
+        (name) => names.includes(name),
       ),
       [true, false],
     );
@@ -22,8 +22,8 @@ describe('lzJsMutators', () => {
 
   it('names this package in the error for a mutator its options cannot turn on there', async () => {
     await assert.rejects(
-      // @ts-expect-error -- LzJsAssignmentStatement is experimental, so it goes inside `experimental`
-      lzJsMutators({ LzJsAssignmentStatement: true }),
+      // @ts-expect-error -- MuirProteusJsAssignmentStatement is experimental, so it goes inside `experimental`
+      muirProteusJsMutators({ MuirProteusJsAssignmentStatement: true }),
       /^Error: proteus-js: /,
     );
   });

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { nodeListenerOnce } from '../../src/node-listener-once.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusNodeListenerOnce } from '../../src/node-listener-once.ts';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
 
 const oneShotEvents = [
@@ -23,8 +23,8 @@ const oneShotEvents = [
   'goaway',
 ];
 
-describe('LzNodeListenerOnce', () => {
-  lzTestEach([
+describe('MuirProteusNodeListenerOnce', () => {
+  muirTestEach([
     ['on', "emitter.on('data', f);", 'once'],
     ['once', "emitter.once('data', f);", 'on'],
     ["an error's on", "stream.on('error', f);", 'once'],
@@ -42,10 +42,12 @@ describe('LzNodeListenerOnce', () => {
     ['an on with more arguments', "emitter.on('data', f, extra);", 'once'],
     ['an on with a type argument', "emitter.on<string>('data', f);", 'once'],
   ])('swaps %s', async (_title, source, expected) => {
-    assert.deepEqual(await mutantsOf(nodeListenerOnce, source), [expected]);
+    assert.deepEqual(await mutantsOf(muirProteusNodeListenerOnce, source), [
+      expected,
+    ]);
   });
 
-  lzTestEach([
+  muirTestEach([
     ...oneShotEvents.flatMap((event): [string, string][] => [
       [`on of the one-shot ${event}`, `emitter.on('${event}', f);`],
       [`once of the one-shot ${event}`, `emitter.once('${event}', f);`],
@@ -68,6 +70,6 @@ describe('LzNodeListenerOnce', () => {
     ['emit', "emitter.emit('data', value);"],
     ['addEventListener', "target.addEventListener('data', f);"],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeListenerOnce, source), []);
+    assert.deepEqual(await mutantsOf(muirProteusNodeListenerOnce, source), []);
   });
 });

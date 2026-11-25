@@ -1,14 +1,14 @@
 import { isDeepStrictEqual } from 'node:util';
 
-import { composeSkips } from '@muirjs/test-util-mutator-packages/compose-skips';
+import { muirComposeSkips } from '@muirjs/test-util-mutator-packages/compose-skips';
 
-import { sitesIn } from '../src/args.ts';
+import { muirProteusStorybookSitesIn } from '../src/args.ts';
 import { crashCases, fallbackCases } from './fallback-cases.ts';
 import { playCases } from './play-cases.ts';
 import { readCases } from './read-cases.ts';
 import { shapeCases } from './shape-cases.ts';
 
-composeSkips({
+muirComposeSkips({
   cases: [
     ...fallbackCases,
     ...crashCases,
@@ -17,7 +17,12 @@ composeSkips({
     ...shapeCases,
   ],
   skipsOf: (program) =>
-    new Map([...sitesIn(program)].map(([site, { proofs }]) => [site, proofs])),
+    new Map(
+      [...muirProteusStorybookSitesIn(program)].map(([site, { proofs }]) => [
+        site,
+        proofs,
+      ]),
+    ),
   layer: 'args',
   same: isDeepStrictEqual,
   unloadable: new Map([

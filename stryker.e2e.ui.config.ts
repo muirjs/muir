@@ -1,14 +1,14 @@
-import { lzJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 import base from './stryker.base.ts';
 
-await lzJsxMutators();
+await muirProteusJsxMutators();
 
 export default {
   ...base,
   appendPlugins: ['@muirjs/siryn-playwright'],
-  testRunner: 'lz-playwright',
-  lzPlaywright: {
+  testRunner: 'muir-siryn-playwright',
+  muirSirynPlaywright: {
     configFile: 'apps/demo-app-e2e/playwright.config.mts',
   },
   mutate: [

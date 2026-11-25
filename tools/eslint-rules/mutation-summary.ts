@@ -1,4 +1,4 @@
-import { lzParseReport } from './stryker-report.ts';
+import { muirParseReport } from './stryker-report.ts';
 
 // Pending has no column: it does not appear in a finished report.
 const statuses = [
@@ -15,8 +15,8 @@ const statuses = [
  * A Markdown section for a GitHub job summary: the mutation score of Stryker's JSON report and its mutants per status.
  * The score is Stryker's: Killed and Timeout mutants out of those plus Survived and NoCoverage ones.
  */
-export function lzMutationSummary(title: string, report: unknown): string {
-  const found = lzParseReport(report).flatMap(([, mutants]) =>
+export function muirMutationSummary(title: string, report: unknown): string {
+  const found = muirParseReport(report).flatMap(([, mutants]) =>
     mutants.map(({ status }) => status),
   );
   const count = (status: string): number =>

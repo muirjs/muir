@@ -3,17 +3,23 @@ import { describe, it } from 'node:test';
 
 import { types as t } from '@babel/core';
 
-import { withJsxPlacement, type PlacerMethods } from '../src/placer.ts';
+import {
+  muirProteusJsxWithJsxPlacement,
+  type MuirProteusJsxPlacerMethods,
+} from '../src/placer.ts';
 import { firstPath, parse } from './support/babel.ts';
 
 describe('withJsxPlacement', () => {
   function placeOn(
     code: string,
     type: 'JSXAttribute' | 'JSXText',
-    original: PlacerMethods = { canPlace: () => false, place: () => undefined },
+    original: MuirProteusJsxPlacerMethods = {
+      canPlace: () => false,
+      place: () => undefined,
+    },
   ) {
     const path = firstPath(parse(code), type);
-    const methods = withJsxPlacement(original, t);
+    const methods = muirProteusJsxWithJsxPlacement(original, t);
 
     return {
       path,

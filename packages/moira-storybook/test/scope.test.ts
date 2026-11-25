@@ -3,9 +3,9 @@ import { describe, it } from 'node:test';
 
 import { parse } from '@babel/parser';
 
-import { field } from '../src/node-field.ts';
-import { everyRecordIn } from '../src/node-tree.ts';
-import { fileScope } from '../src/scope.ts';
+import { muirMoiraStorybookField } from '../src/node-field.ts';
+import { muirMoiraStorybookEveryRecordIn } from '../src/node-tree.ts';
+import { muirMoiraStorybookFileScope } from '../src/scope.ts';
 import { programOf, programsOf, renameKey } from './support/parse-module.ts';
 
 interface ScopeCase {
@@ -27,10 +27,11 @@ function occurrences(source: string, name: string): readonly number[] {
 
 /** The identifier that starts at `start`; the value of a shorthand property, which shares its key's start, before the key. */
 function identifierAt(program: object, start: number | undefined): unknown {
-  return everyRecordIn(program)
+  return muirMoiraStorybookEveryRecordIn(program)
     .filter(
       (node) =>
-        field(node, 'type') === 'Identifier' && field(node, 'start') === start,
+        muirMoiraStorybookField(node, 'type') === 'Identifier' &&
+        muirMoiraStorybookField(node, 'start') === start,
     )
     .at(-1);
 }
@@ -44,13 +45,15 @@ function declarationsOf({
   const starts = occurrences(lines.join('\n'), name);
 
   return programsOf(...lines).map((program) => {
-    const binding = fileScope(program).bindingOf(
+    const binding = muirMoiraStorybookFileScope(program).bindingOf(
       identifierAt(program, starts[reference]),
     );
 
     return binding === undefined
       ? undefined
-      : starts.indexOf(Number(field(binding.identifier, 'start')));
+      : starts.indexOf(
+          Number(muirMoiraStorybookField(binding.identifier, 'start')),
+        );
   });
 }
 
@@ -539,9 +542,10 @@ function writesOf({
 
   return programsOf(...lines).map((program) =>
     (
-      fileScope(program).bindingOf(identifierAt(program, starts[reference]))
-        ?.writes ?? []
-    ).map((write) => field(write, 'type')),
+      muirMoiraStorybookFileScope(program).bindingOf(
+        identifierAt(program, starts[reference]),
+      )?.writes ?? []
+    ).map((write) => muirMoiraStorybookField(write, 'type')),
   );
 }
 
@@ -697,9 +701,9 @@ interface ReadCase {
 }
 
 function namesReadIn(program: object): readonly unknown[] {
-  return fileScope(program)
+  return muirMoiraStorybookFileScope(program)
     .referencesIn(program)
-    .map((identifier) => field(identifier, 'name'));
+    .map((identifier) => muirMoiraStorybookField(identifier, 'name'));
 }
 
 const readCases: readonly ReadCase[] = [
@@ -815,11 +819,14 @@ describe('fileScope binding kind and declaration', () => {
 
       assert.deepEqual(
         programsOf(...lines).map((program) => {
-          const binding = fileScope(program).bindingOf(
+          const binding = muirMoiraStorybookFileScope(program).bindingOf(
             identifierAt(program, start),
           );
 
-          return [binding?.kind, field(binding?.declaration, 'type')];
+          return [
+            binding?.kind,
+            muirMoiraStorybookField(binding?.declaration, 'type'),
+          ];
         }),
         [
           [kind, declaration],
@@ -835,12 +842,12 @@ describe('fileScope referencesIn', () => {
     assert.deepEqual(
       programsOf('use(page.user, { key: value });', 'count = 1;').map(
         (program) => {
-          const scope = fileScope(program);
+          const scope = muirMoiraStorybookFileScope(program);
 
           return program.body.map((statement) =>
             scope
               .referencesIn(statement)
-              .map((identifier) => field(identifier, 'name')),
+              .map((identifier) => muirMoiraStorybookField(identifier, 'name')),
           );
         },
       ),
@@ -884,8 +891,8 @@ describe('fileScope writtenMembers', () => {
     assert.deepEqual(
       programsOf('try {', '  run();', '} catch {}', 'page.user = second;').map(
         (program) =>
-          fileScope(program).writtenMembers.map((member) =>
-            field(member, 'type'),
+          muirMoiraStorybookFileScope(program).writtenMembers.map((member) =>
+            muirMoiraStorybookField(member, 'type'),
           ),
       ),
       [['MemberExpression'], ['MemberExpression']],

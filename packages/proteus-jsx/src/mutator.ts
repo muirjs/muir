@@ -1,7 +1,7 @@
 import type { NodePath, types } from '@babel/core';
 
 // `as const` though Stryker leaves it unmutated (https://github.com/stryker-mutator/stryker-js/issues/6208): the compiler rejects a call to a member it lacks.
-export const babelTypeMembers = [
+export const muirProteusJsxBabelTypeMembers = [
   'booleanLiteral',
   'cloneNode',
   'conditionalExpression',
@@ -42,28 +42,32 @@ export const babelTypeMembers = [
   'unaryExpression',
 ] as const satisfies readonly (keyof typeof types)[];
 
-export type BabelTypes = Pick<
+export type MuirProteusJsxBabelTypes = Pick<
   typeof types,
-  (typeof babelTypeMembers)[number]
+  (typeof muirProteusJsxBabelTypeMembers)[number]
 > & {
   readonly react: Pick<typeof types.react, 'buildChildren'>;
 };
 
-export interface Mutator {
+export interface MuirProteusJsxMutator {
   readonly name: string;
   readonly sample: string;
-  readonly rules: readonly Rule[];
+  readonly rules: readonly MuirProteusJsxRule[];
 }
 
 // In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave every rule of the
 // table out of a mutation run.
-export function mutatorTable<const T extends readonly Mutator[]>(table: T): T {
+export function muirProteusJsxMutatorTable<
+  const T extends readonly MuirProteusJsxMutator[],
+>(table: T): T {
   return table;
 }
 
-export type Rule = AttributeRule | NodeRule;
+export type MuirProteusJsxRule =
+  | MuirProteusJsxAttributeRule
+  | MuirProteusJsxNodeRule;
 
-export interface AttributeRule {
+export interface MuirProteusJsxAttributeRule {
   readonly kind: 'attribute';
   readonly attributes: readonly string[] | RegExp;
   readonly on: {
@@ -71,35 +75,40 @@ export interface AttributeRule {
     readonly string?: 'empty' | 'remove' | 'flip';
     readonly expression?: 'empty' | 'remove' | 'false' | 'negate';
   };
-  skip?(site: AttributeSite, t: BabelTypes): boolean;
+  skip?(
+    site: MuirProteusJsxAttributeSite,
+    t: MuirProteusJsxBabelTypes,
+  ): boolean;
 }
 
-export interface NodeRule {
+export interface MuirProteusJsxNodeRule {
   readonly kind: 'node';
-  mutate(path: NodePath, t: BabelTypes): Iterable<types.Node>;
+  mutate(path: NodePath, t: MuirProteusJsxBabelTypes): Iterable<types.Node>;
 }
 
-export interface AttributeSite {
+export interface MuirProteusJsxAttributeSite {
   readonly name: string;
-  readonly value: AttributeValue;
-  readonly element: ElementSite;
+  readonly value: MuirProteusJsxAttributeValue;
+  readonly element: MuirProteusJsxElementSite;
   readonly path: NodePath<types.JSXAttribute>;
 }
 
-export type AttributeValue =
+export type MuirProteusJsxAttributeValue =
   | { readonly kind: 'bare' }
   | { readonly kind: 'string'; readonly text: string }
   | { readonly kind: 'expression'; readonly expression: types.Expression };
 
-export interface ElementSite {
+export interface MuirProteusJsxElementSite {
   readonly name: string | undefined;
   readonly attributes: ReadonlySet<string>;
   readonly node: types.JSXElement;
 }
 
-type Replacement = NonNullable<AttributeRule['on'][keyof AttributeRule['on']]>;
+type Replacement = NonNullable<
+  MuirProteusJsxAttributeRule['on'][keyof MuirProteusJsxAttributeRule['on']]
+>;
 
-export interface NodeMutatorLike {
+export interface MuirProteusJsxNodeMutatorLike {
   readonly name: string;
   mutate(
     path: NodePath,
@@ -107,10 +116,10 @@ export interface NodeMutatorLike {
   ): Iterable<types.Node>;
 }
 
-export function toNodeMutator(
-  mutator: Mutator,
-  t: BabelTypes,
-): NodeMutatorLike {
+export function muirProteusJsxToNodeMutator(
+  mutator: MuirProteusJsxMutator,
+  t: MuirProteusJsxBabelTypes,
+): MuirProteusJsxNodeMutatorLike {
   return {
     name: mutator.name,
     *mutate(path) {
@@ -126,9 +135,9 @@ export function toNodeMutator(
 }
 
 function* attributeMutants(
-  rule: AttributeRule,
-  site: AttributeSite | undefined,
-  t: BabelTypes,
+  rule: MuirProteusJsxAttributeRule,
+  site: MuirProteusJsxAttributeSite | undefined,
+  t: MuirProteusJsxBabelTypes,
 ): Iterable<types.JSXAttribute> {
   if (
     site === undefined ||
@@ -146,7 +155,7 @@ function* attributeMutants(
 }
 
 function matches(
-  attributes: AttributeRule['attributes'],
+  attributes: MuirProteusJsxAttributeRule['attributes'],
   name: string,
 ): boolean {
   return attributes instanceof RegExp
@@ -156,30 +165,35 @@ function matches(
 
 function attributeSite(
   path: NodePath,
-  t: BabelTypes,
-): AttributeSite | undefined {
+  t: MuirProteusJsxBabelTypes,
+): MuirProteusJsxAttributeSite | undefined {
   if (!path.isJSXAttribute() || !t.isJSXIdentifier(path.node.name)) {
     return undefined;
   }
 
   const value = readValue(path.node.value, t);
-  const element = elementSiteOf(path.parentPath.parentPath?.node, t);
+  const element = muirProteusJsxElementSiteOf(
+    path.parentPath.parentPath?.node,
+    t,
+  );
 
   return value === undefined || element === undefined
     ? undefined
     : { name: path.node.name.name, value, element, path };
 }
 
-export function elementSiteOf(
+export function muirProteusJsxElementSiteOf(
   node: types.Node | null | undefined,
-  t: BabelTypes,
-): ElementSite | undefined {
+  t: MuirProteusJsxBabelTypes,
+): MuirProteusJsxElementSite | undefined {
   if (!t.isJSXElement(node)) {
     return undefined;
   }
 
   const { name, attributes } = node.openingElement;
-  const names = attributes.flatMap((entry) => attributeName(entry, t) ?? []);
+  const names = attributes.flatMap(
+    (entry) => muirProteusJsxAttributeName(entry, t) ?? [],
+  );
 
   return {
     name: t.isJSXIdentifier(name) ? name.name : undefined,
@@ -188,19 +202,19 @@ export function elementSiteOf(
   };
 }
 
-export function attributeName(
+export function muirProteusJsxAttributeName(
   entry: types.JSXOpeningElement['attributes'][number],
-  t: BabelTypes,
+  t: MuirProteusJsxBabelTypes,
 ): string | undefined {
   return t.isJSXAttribute(entry) && t.isJSXIdentifier(entry.name)
     ? entry.name.name
     : undefined;
 }
 
-export function decodeValue(
+export function muirProteusJsxDecodeValue(
   value: types.JSXAttribute['value'],
-  t: BabelTypes,
-): AttributeValue | { readonly kind: 'other' } {
+  t: MuirProteusJsxBabelTypes,
+): MuirProteusJsxAttributeValue | { readonly kind: 'other' } {
   if (value === null || value === undefined) {
     return { kind: 'bare' };
   }
@@ -217,9 +231,9 @@ export function decodeValue(
 
 function readValue(
   value: types.JSXAttribute['value'],
-  t: BabelTypes,
-): AttributeValue | undefined {
-  const decoded = decodeValue(value, t);
+  t: MuirProteusJsxBabelTypes,
+): MuirProteusJsxAttributeValue | undefined {
+  const decoded = muirProteusJsxDecodeValue(value, t);
 
   if (decoded.kind === 'other') {
     return undefined;
@@ -233,9 +247,9 @@ function readValue(
 }
 
 function* replaced(
-  site: AttributeSite,
+  site: MuirProteusJsxAttributeSite,
   replacement: Replacement,
-  t: BabelTypes,
+  t: MuirProteusJsxBabelTypes,
 ): Iterable<types.JSXAttribute> {
   const name = t.jsxIdentifier(site.name);
   const { value } = site;
@@ -293,8 +307,8 @@ function* replaced(
 // Playwright reads only aria-hidden="true", so removing "false" changes nothing. aria-disabled="false" is
 // not like it: it stops a disabled ancestor from disabling the element (hasAriaDisabledInChain).
 function removalChangesNothing(
-  { name, value }: AttributeSite,
-  t: BabelTypes,
+  { name, value }: MuirProteusJsxAttributeSite,
+  t: MuirProteusJsxBabelTypes,
 ): boolean {
   return (
     (value.kind === 'string' &&
@@ -308,7 +322,7 @@ function removalChangesNothing(
 // `!(expr)` is always false for a string value, as in `!(c ? 'true' : 'false')` and `!String(open)`.
 function negation(
   expression: types.Expression,
-  t: BabelTypes,
+  t: MuirProteusJsxBabelTypes,
 ): types.Expression | undefined {
   const value = withoutTypeWrapper(expression, t);
 
@@ -350,7 +364,7 @@ function flipped(text: string): string {
 
 function withoutTypeWrapper(
   expression: types.Expression,
-  t: BabelTypes,
+  t: MuirProteusJsxBabelTypes,
 ): types.Expression {
   return t.isTSAsExpression(expression) ||
     t.isTSSatisfiesExpression(expression) ||
@@ -359,7 +373,10 @@ function withoutTypeWrapper(
     : expression;
 }
 
-function isStringCall(expression: types.Expression, t: BabelTypes): boolean {
+function isStringCall(
+  expression: types.Expression,
+  t: MuirProteusJsxBabelTypes,
+): boolean {
   if (
     !t.isCallExpression(expression) &&
     !t.isOptionalCallExpression(expression)
@@ -376,7 +393,7 @@ function isStringCall(expression: types.Expression, t: BabelTypes): boolean {
   );
 }
 
-export function isJsxChild(path: NodePath): boolean {
+export function muirProteusJsxIsJsxChild(path: NodePath): boolean {
   return (
     path.parentPath?.isJSXElement() === true ||
     path.parentPath?.isJSXFragment() === true

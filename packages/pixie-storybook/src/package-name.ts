@@ -1,1 +1,1 @@
-export const packageName = '@muirjs/pixie-storybook';
+export const muirPixieStorybookPackageName = '@muirjs/pixie-storybook';

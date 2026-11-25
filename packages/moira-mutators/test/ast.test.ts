@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { bindingOf, callTypes, memberTypes } from '../src/ast.ts';
+import {
+  muirMoiraMutatorsBindingOf,
+  muirMoiraMutatorsCallTypes,
+  muirMoiraMutatorsMemberTypes,
+} from '../src/ast.ts';
 
 describe('bindingOf', () => {
   it('returns what the scope binds the name to', () => {
@@ -12,21 +16,24 @@ describe('bindingOf', () => {
       },
     };
 
-    assert.equal(bindingOf({ scope }, 'track'), binding);
+    assert.equal(muirMoiraMutatorsBindingOf({ scope }, 'track'), binding);
   });
 
   it('returns undefined for a path without a scope', () => {
-    assert.equal(bindingOf({}, 'track'), undefined);
+    assert.equal(muirMoiraMutatorsBindingOf({}, 'track'), undefined);
   });
 });
 
 describe('the Babel node type lists', () => {
   it('names the plain and optional call', () => {
-    assert.deepEqual(callTypes, ['CallExpression', 'OptionalCallExpression']);
+    assert.deepEqual(muirMoiraMutatorsCallTypes, [
+      'CallExpression',
+      'OptionalCallExpression',
+    ]);
   });
 
   it('names the plain and optional member access', () => {
-    assert.deepEqual(memberTypes, [
+    assert.deepEqual(muirMoiraMutatorsMemberTypes, [
       'MemberExpression',
       'OptionalMemberExpression',
     ]);

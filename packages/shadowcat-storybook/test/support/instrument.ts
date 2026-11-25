@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { field } from '@muirjs/moira-storybook';
+import { muirMoiraStorybookField } from '@muirjs/moira-storybook';
 import type { schema } from '@stryker-mutator/api/core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 
@@ -37,7 +37,10 @@ export async function instrument(
   content: string,
   ignorers: readonly Ignorer[],
 ): Promise<Instrumented> {
-  const Instrumenter = field(instrumenterModule, 'Instrumenter');
+  const Instrumenter = muirMoiraStorybookField(
+    instrumenterModule,
+    'Instrumenter',
+  );
   const warnings: string[] = [];
   const logger = {
     isDebugEnabled: () => false,
@@ -55,7 +58,7 @@ export async function instrument(
   }
 
   const instrumenter: unknown = Reflect.construct(Instrumenter, [logger]);
-  const instrumentMethod = field(instrumenter, 'instrument');
+  const instrumentMethod = muirMoiraStorybookField(instrumenter, 'instrument');
 
   if (typeof instrumentMethod !== 'function') {
     throw new Error('the Stryker instrumenter has no instrument method');
@@ -65,9 +68,11 @@ export async function instrument(
     [{ name: fileName, content, mutate: true }],
     { plugins: null, excludedMutations: [], ignorers },
   ]);
-  const files = field(result, 'files');
-  const mutants = field(result, 'mutants');
-  const code = Array.isArray(files) ? field(files[0], 'content') : undefined;
+  const files = muirMoiraStorybookField(result, 'files');
+  const mutants = muirMoiraStorybookField(result, 'mutants');
+  const code = Array.isArray(files)
+    ? muirMoiraStorybookField(files[0], 'content')
+    : undefined;
 
   if (typeof code !== 'string' || !Array.isArray(mutants)) {
     throw new Error('Instrumenter.instrument() gave no files or mutants');
@@ -77,11 +82,15 @@ export async function instrument(
     code,
     warnings,
     mutants: mutants.map((mutant: unknown) => {
-      const mutatorName = field(mutant, 'mutatorName');
-      const start = schemaPosition(field(mutant, 'location', 'start'));
-      const end = schemaPosition(field(mutant, 'location', 'end'));
-      const replacement = field(mutant, 'replacement');
-      const statusReason = field(mutant, 'statusReason');
+      const mutatorName = muirMoiraStorybookField(mutant, 'mutatorName');
+      const start = schemaPosition(
+        muirMoiraStorybookField(mutant, 'location', 'start'),
+      );
+      const end = schemaPosition(
+        muirMoiraStorybookField(mutant, 'location', 'end'),
+      );
+      const replacement = muirMoiraStorybookField(mutant, 'replacement');
+      const statusReason = muirMoiraStorybookField(mutant, 'statusReason');
 
       if (
         typeof mutatorName !== 'string' ||
@@ -100,7 +109,7 @@ export async function instrument(
         location: { start, end },
         replacement,
         ignoreReason:
-          field(mutant, 'status') === 'Ignored' &&
+          muirMoiraStorybookField(mutant, 'status') === 'Ignored' &&
           typeof statusReason === 'string'
             ? statusReason
             : undefined,
@@ -111,8 +120,8 @@ export async function instrument(
 
 /** StrykerJS 10.1.1 `objectUtils.toSchemaPosition`: its 0-based position, 1-based as in the report. */
 function schemaPosition(position: unknown): schema.Position | undefined {
-  const line = field(position, 'line');
-  const column = field(position, 'column');
+  const line = muirMoiraStorybookField(position, 'line');
+  const column = muirMoiraStorybookField(position, 'column');
 
   return typeof line === 'number' && typeof column === 'number'
     ? { line: line + 1, column: column + 1 }

@@ -1,11 +1,17 @@
-import { field, list } from './node-field.ts';
 import {
-  isObjectLiteral,
-  objectValue,
-  propertyKey,
-  type LayerValue,
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
+import {
+  muirMoiraStorybookIsObjectLiteral,
+  muirMoiraStorybookObjectValue,
+  muirMoiraStorybookPropertyKey,
+  type MuirMoiraStorybookLayerValue,
 } from './object-value.ts';
-import { valuesOf, type Layer } from './resolved-values.ts';
+import {
+  muirMoiraStorybookValuesOf,
+  type MuirMoiraStorybookLayer,
+} from './resolved-values.ts';
 
 // Storybook 10.6.5's own initial globals (`initialGlobals` of its viewport, backgrounds, measure and outline addons,
 // and its `DEFAULT_VIEWPORT` name). A project's preview `initialGlobals` can differ; the file does not show them.
@@ -18,19 +24,22 @@ const defaultBackgrounds: ReadonlyMap<string, readonly unknown[]> = new Map([
 
 const initialGlobals: ReadonlyMap<
   string,
-  (value: unknown, parameters: readonly Layer[]) => boolean
+  (value: unknown, parameters: readonly MuirMoiraStorybookLayer[]) => boolean
 > = new Map([
   [
     // The Vitest addon's `setViewport` uses a viewport global's `value`, else `parameters.viewport.defaultViewport`,
     // so a viewport is no default where a `parameters` layer of the site's runs may set `viewport`.
     'viewport',
-    (value: unknown, parameters: readonly Layer[]) =>
+    (value: unknown, parameters: readonly MuirMoiraStorybookLayer[]) =>
       parameters.every(
-        (layer) => valuesOf(layer, 'viewport')[0] === undefined,
+        (layer) =>
+          muirMoiraStorybookValuesOf(layer, 'viewport')[0] === undefined,
       ) &&
       (viewportDefaults.includes(stringBooleanOrUndefinedOf(value)) ||
-        (isObjectLiteral(value) &&
-          isDefaultViewportValue(objectValue(value, 'value')))),
+        (muirMoiraStorybookIsObjectLiteral(value) &&
+          isDefaultViewportValue(
+            muirMoiraStorybookObjectValue(value, 'value'),
+          ))),
   ],
   [
     'backgrounds',
@@ -40,10 +49,10 @@ const initialGlobals: ReadonlyMap<
   ['outline', isFalse],
 ]);
 
-export function isInitialGlobal(
+export function muirMoiraStorybookIsInitialGlobal(
   key: string,
   value: unknown,
-  parameters: readonly Layer[],
+  parameters: readonly MuirMoiraStorybookLayer[],
 ): boolean {
   return initialGlobals.get(key)?.(value, parameters) === true;
 }
@@ -57,22 +66,25 @@ function isObjectOfAllowedLiterals(
   allowed: ReadonlyMap<string, readonly unknown[]>,
 ): boolean {
   return (
-    isObjectLiteral(value) &&
-    list(value['properties']).every((property) => {
-      const key = propertyKey(property);
+    muirMoiraStorybookIsObjectLiteral(value) &&
+    muirMoiraStorybookList(value['properties']).every((property) => {
+      const key = muirMoiraStorybookPropertyKey(property);
 
       return (
         typeof key === 'string' &&
         allowed
           .get(key)
-          ?.includes(stringBooleanOrUndefinedOf(field(property, 'value'))) ===
-          true
+          ?.includes(
+            stringBooleanOrUndefinedOf(
+              muirMoiraStorybookField(property, 'value'),
+            ),
+          ) === true
       );
     })
   );
 }
 
-function isDefaultViewportValue(value: LayerValue): boolean {
+function isDefaultViewportValue(value: MuirMoiraStorybookLayerValue): boolean {
   return (
     value === undefined ||
     [undefined, ...viewportDefaults].includes(stringBooleanOrUndefinedOf(value))
@@ -82,13 +94,15 @@ function isDefaultViewportValue(value: LayerValue): boolean {
 const notALiteral = Symbol('not a literal');
 
 function stringBooleanOrUndefinedOf(node: unknown): unknown {
-  if (field(node, 'type') === 'Identifier') {
-    return field(node, 'name') === 'undefined' ? undefined : notALiteral;
+  if (muirMoiraStorybookField(node, 'type') === 'Identifier') {
+    return muirMoiraStorybookField(node, 'name') === 'undefined'
+      ? undefined
+      : notALiteral;
   }
 
-  const type = field(node, 'type');
+  const type = muirMoiraStorybookField(node, 'type');
 
   return type === 'StringLiteral' || type === 'BooleanLiteral'
-    ? field(node, 'value')
+    ? muirMoiraStorybookField(node, 'value')
     : notALiteral;
 }

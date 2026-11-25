@@ -5,14 +5,18 @@ import { basename, join, sep } from 'node:path';
 import { describe, it } from 'node:test';
 import { isDeepStrictEqual } from 'node:util';
 
-import { field, isRecord, propertyKey } from '@muirjs/moira-storybook';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookPropertyKey,
+} from '@muirjs/moira-storybook';
 
 import {
-  type Case,
-  type ComposeSkips,
-  composeSkips,
-  type HarnessContext,
-  type Skip,
+  type MuirCase,
+  type MuirComposeSkips,
+  muirComposeSkips,
+  type MuirHarnessContext,
+  type MuirSkip,
 } from '../src/compose-skips.ts';
 
 /** The names on globalThis before any run, which every run leaves as it found them. */
@@ -35,13 +39,13 @@ interface Run {
 /** A mutator that skips every property named by a key of `reasons`, with one proof for each of its reasons. */
 function skipsOfKeys(
   reasons: Readonly<Record<string, readonly string[]>>,
-): ComposeSkips['skipsOf'] {
+): MuirComposeSkips['skipsOf'] {
   return (program) => {
-    const skips = new Map<unknown, readonly Skip[]>();
+    const skips = new Map<unknown, readonly MuirSkip[]>();
 
     program.traverse({
       ObjectProperty(path) {
-        const key = propertyKey(path.node);
+        const key = muirMoiraStorybookPropertyKey(path.node);
         const proofs = typeof key === 'string' ? (reasons[key] ?? []) : [];
 
         if (proofs.length > 0) {
@@ -61,7 +65,7 @@ function skipsOfKeys(
 function skipsOfKey(
   key: string,
   reason = 'same-as-below',
-): ComposeSkips['skipsOf'] {
+): MuirComposeSkips['skipsOf'] {
   return skipsOfKeys({ [key]: [reason] });
 }
 
@@ -70,14 +74,16 @@ function skipsOfKey(
  * the first row's result is reported, while the harness's module hook is in place.
  */
 async function run(
-  options: Pick<ComposeSkips, 'cases'> & Partial<ComposeSkips>,
+  options: Pick<MuirComposeSkips, 'cases'> & Partial<MuirComposeSkips>,
   whileRegistered?: () => Promise<void>,
 ): Promise<Run> {
-  const tests: { name: string; fn: (t: HarnessContext) => Promise<void> }[] =
-    [];
+  const tests: {
+    name: string;
+    fn: (t: MuirHarnessContext) => Promise<void>;
+  }[] = [];
   const composed: unknown[] = [];
   const { same = isDeepStrictEqual } = options;
-  composeSkips(
+  muirComposeSkips(
     {
       skipsOf: skipsOfKey('label'),
       layer: 'args',
@@ -98,7 +104,7 @@ async function run(
   const rows = new Map<string, string | undefined>();
   const notes: string[] = [];
   const diagnostics: string[] = [];
-  const context: HarnessContext = {
+  const context: MuirHarnessContext = {
     after: (fn) => afters.push(fn),
     diagnostic: (message) => {
       diagnostics.push(message);
@@ -142,7 +148,7 @@ function file(...lines: readonly string[]): string {
   return `${lines.join('\n')}\n`;
 }
 
-const same: Case = {
+const same: MuirCase = {
   id: 'same',
   source:
     "export default { title: 'a', args: { label: 'x' } };\nexport const Story = { args: { label: 'x' } };\n",
@@ -225,7 +231,7 @@ describe('composeSkips', () => {
   });
 
   it('fails a row with proofs that cannot load, unless the unloadable list names it, where it only notes the error', async () => {
-    const broken: Case = {
+    const broken: MuirCase = {
       id: 'broken',
       source:
         "export default { title: 'a' };\nexport const Story = { args: { label: 'x' } };\nthrow new Error('no import');\n",
@@ -259,7 +265,7 @@ describe('composeSkips', () => {
   });
 
   it('passes a row with no proof that cannot load, and fails it when the unloadable list names it', async () => {
-    const empty: Case = {
+    const empty: MuirCase = {
       id: 'empty',
       source: "export default { title: 'a' };\nthrow new Error('no import');\n",
     };
@@ -424,9 +430,9 @@ describe('composeSkips', () => {
 
     assert.deepEqual([...rows], [['stubs', undefined]]);
     const [args] = composed;
-    assert.ok(isRecord(args));
+    assert.ok(muirMoiraStorybookIsRecord(args));
     const { spread, called, claimed, unclaimed, items, free, alsoFree } = args;
-    assert.ok(isRecord(spread));
+    assert.ok(muirMoiraStorybookIsRecord(spread));
     assert.deepEqual(Object.keys(spread), [
       'args',
       'globals',
@@ -465,7 +471,7 @@ describe('composeSkips', () => {
     assert.equal(args['max'], 2);
     assert.deepEqual(args['tuple'], [1, 2]);
     const { everything } = args;
-    assert.ok(isRecord(everything));
+    assert.ok(muirMoiraStorybookIsRecord(everything));
     assert.deepEqual(Object.keys(everything), []);
     assert.deepEqual(Object.getOwnPropertyNames(globalThis), globalNames);
   });
@@ -628,7 +634,7 @@ describe('composeSkips', () => {
 
     assert.deepEqual([...rows], [['meta', undefined]]);
     const [args] = composed;
-    assert.ok(isRecord(args));
+    assert.ok(muirMoiraStorybookIsRecord(args));
     assert.deepEqual(Object.keys(args), [
       'args',
       'globals',
@@ -686,7 +692,17 @@ describe('composeSkips', () => {
       cases: [same],
       skipsOf: (program) => {
         names.push(
-          basename(String(field(program, 'hub', 'file', 'opts', 'filename'))),
+          basename(
+            String(
+              muirMoiraStorybookField(
+                program,
+                'hub',
+                'file',
+                'opts',
+                'filename',
+              ),
+            ),
+          ),
         );
 
         return skips(program);
@@ -701,7 +717,7 @@ describe('composeSkips', () => {
     const imported: unknown[] = [];
     await run({ cases: [same] }, async () => {
       const module: unknown = await import(outside);
-      imported.push(field(module, 'default'));
+      imported.push(muirMoiraStorybookField(module, 'default'));
     });
 
     assert.deepEqual(imported, ['outside']);

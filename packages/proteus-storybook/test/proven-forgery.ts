@@ -1,18 +1,25 @@
 import type * as csf from '@muirjs/moira-storybook';
-import type { ProofReason, Proven, Site } from '@muirjs/moira-storybook';
+import type {
+  MuirMoiraStorybookProofReason,
+  MuirMoiraStorybookProven,
+  MuirMoiraStorybookSite,
+} from '@muirjs/moira-storybook';
 
 type Assignable<TFrom, TTo> = [TFrom] extends [TTo] ? true : false;
 
 interface ProvenMembers {
   readonly property: object;
-  readonly reason: ProofReason;
+  readonly reason: MuirMoiraStorybookProofReason;
 }
 
-export function spreadCopy(proven: Proven) {
+export function spreadCopy(proven: MuirMoiraStorybookProven) {
   return { ...proven };
 }
 
-export const literalIsNotProven: Assignable<ProvenMembers, Proven> = false;
+export const literalIsNotProven: Assignable<
+  ProvenMembers,
+  MuirMoiraStorybookProven
+> = false;
 
 export const provenIsNotConstructible: 'Proven' extends keyof typeof csf
   ? true
@@ -20,7 +27,7 @@ export const provenIsNotConstructible: 'Proven' extends keyof typeof csf
 
 export const spreadCopyIsNotProven: Assignable<
   ReturnType<typeof spreadCopy>,
-  Proven
+  MuirMoiraStorybookProven
 > = false;
 
 export const siteWithLiteralProofsIsNotSite: Assignable<
@@ -29,5 +36,5 @@ export const siteWithLiteralProofsIsNotSite: Assignable<
     readonly runs: readonly [];
     readonly proofs: readonly ProvenMembers[];
   },
-  Site
+  MuirMoiraStorybookSite
 > = false;

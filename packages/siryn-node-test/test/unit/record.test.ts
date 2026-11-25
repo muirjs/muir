@@ -2,23 +2,23 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { lzTestFor } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirTestFor } from '@muirjs/madrox-node-test';
 import {
-  lzIsRecordName,
-  lzNamesFile,
-  lzNodeRecordFiles,
-  lzParseRecord,
-  lzParseRecordName,
-  lzRecordNonce,
-  type LzRecordName,
-  lzTempRecordPath,
-  lzWriteRecord,
-  memoryRecordName,
-  recordName,
-  testId,
-  uniqueIds,
-  envNames,
+  muirSirynNodeTestIsRecordName,
+  muirSirynNodeTestNamesFile,
+  muirSirynNodeTestRecordFiles,
+  muirSirynNodeTestParseRecord,
+  muirSirynNodeTestParseRecordName,
+  muirSirynNodeTestRecordNonce,
+  type MuirSirynNodeTestRecordName,
+  muirSirynNodeTestTempRecordPath,
+  muirSirynNodeTestWriteRecord,
+  muirSirynNodeTestMemoryRecordName,
+  muirSirynNodeTestRecordName,
+  muirSirynNodeTestTestId,
+  muirSirynNodeTestUniqueIds,
+  muirSirynNodeTestEnvNames,
 } from '../../src/record.ts';
 
 const file = join('/repo', 'a.test.mjs');
@@ -27,10 +27,10 @@ const nonce = 'c2563c34-4f2f-439d-962d-51e1663f0dcd';
 
 describe('envNames', () => {
   it("names each variable once, with the runner's prefix, as a POSIX shell can set it", () => {
-    const names = Object.values(envNames);
+    const names = Object.values(muirSirynNodeTestEnvNames);
 
     assert.deepEqual(
-      names.filter((name) => !/^LZ_STRYKER_NODE_TEST_[A-Z_]+$/.test(name)),
+      names.filter((name) => !/^MUIR_SIRYN_NODE_TEST_[A-Z_]+$/.test(name)),
       [],
     );
     assert.equal(new Set(names).size, names.length);
@@ -38,7 +38,7 @@ describe('envNames', () => {
 });
 
 describe('testId', () => {
-  lzTestFor<readonly [string, string]>([
+  muirTestFor<readonly [string, string]>([
     ['a > b', `${file} > a \\> b`],
     ['x > > y', `${file} > x \\> \\> y`],
     ['> a', `${file} > \\> a`],
@@ -48,11 +48,11 @@ describe('testId', () => {
   ])(
     'escapes `>` and `\\` in a name whose `>` could form the separator: %j',
     ([name, id]) => {
-      assert.equal(testId(file, name), id);
+      assert.equal(muirSirynNodeTestTestId(file, name), id);
     },
   );
 
-  lzTestEach([
+  muirTestEach([
     'a name',
     'a \\ b',
     'a \\> b',
@@ -65,13 +65,13 @@ describe('testId', () => {
   ])(
     'leaves a name whose `>` cannot form the separator as it is: %j',
     (name) => {
-      assert.equal(testId(file, name), `${file} > ${name}`);
+      assert.equal(muirSirynNodeTestTestId(file, name), `${file} > ${name}`);
     },
   );
 });
 
-describe('lzNamesFile', () => {
-  lzTestFor<readonly [string, readonly string[] | undefined, boolean]>([
+describe('muirSirynNodeTestNamesFile', () => {
+  muirTestFor<readonly [string, readonly string[] | undefined, boolean]>([
     ['lists the file itself', [file, join('/repo', 'b.test.mjs')], true],
     ['lists only a test of the file', [`${file} > works`], false],
     ['lists other files', [join('/repo', 'b.test.mjs')], false],
@@ -79,14 +79,14 @@ describe('lzNamesFile', () => {
   ])(
     'tells whether a filter that %s names the file',
     ([, testFilter, named]) => {
-      assert.equal(lzNamesFile(testFilter, file), named);
+      assert.equal(muirSirynNodeTestNamesFile(testFilter, file), named);
     },
   );
 });
 
 describe('uniqueIds', () => {
   it('numbers the suites and tests that would share an id from 2, in the order they are named', () => {
-    const idOf = uniqueIds();
+    const idOf = muirSirynNodeTestUniqueIds();
 
     assert.deepEqual(
       [
@@ -94,7 +94,7 @@ describe('uniqueIds', () => {
         idOf(file, 'works'),
         idOf(file, 'works (2)'),
         idOf(file, 'works'),
-        idOf(testId(file, 's'), 'works'),
+        idOf(muirSirynNodeTestTestId(file, 's'), 'works'),
       ],
       [
         `${file} > works`,
@@ -107,55 +107,85 @@ describe('uniqueIds', () => {
   });
 });
 
-describe('lzIsRecordName', () => {
-  lzTestEach([
-    recordName(4321, 0, nonce),
-    recordName(4321, 3, nonce),
-    recordName(4321, 12, nonce),
-    memoryRecordName(4321, nonce),
+describe('muirSirynNodeTestIsRecordName', () => {
+  muirTestEach([
+    muirSirynNodeTestRecordName(4321, 0, nonce),
+    muirSirynNodeTestRecordName(4321, 3, nonce),
+    muirSirynNodeTestRecordName(4321, 12, nonce),
+    muirSirynNodeTestMemoryRecordName(4321, nonce),
   ])('takes %s as a record', (name) => {
-    assert.equal(lzIsRecordName(name), true);
+    assert.equal(muirSirynNodeTestIsRecordName(name), true);
   });
 
-  lzTestEach([
-    lzTempRecordPath(recordName(4321, 0, nonce)),
-    lzTempRecordPath(memoryRecordName(4321, nonce)),
-    `a${recordName(4321, 0, nonce)}`,
-    `a${memoryRecordName(4321, nonce)}`,
+  muirTestEach([
+    muirSirynNodeTestTempRecordPath(
+      muirSirynNodeTestRecordName(4321, 0, nonce),
+    ),
+    muirSirynNodeTestTempRecordPath(
+      muirSirynNodeTestMemoryRecordName(4321, nonce),
+    ),
+    `a${muirSirynNodeTestRecordName(4321, 0, nonce)}`,
+    `a${muirSirynNodeTestMemoryRecordName(4321, nonce)}`,
     '4321.0.json',
     'notes.json',
     '4321.0.js',
   ])('takes %s as no record', (name) => {
-    assert.equal(lzIsRecordName(name), false);
+    assert.equal(muirSirynNodeTestIsRecordName(name), false);
   });
 
-  it('takes the name of a record with a nonce from lzRecordNonce as a record', () => {
-    assert.equal(lzIsRecordName(recordName(4321, 0, lzRecordNonce())), true);
+  it('takes the name of a record with a nonce from muirSirynNodeTestRecordNonce as a record', () => {
+    assert.equal(
+      muirSirynNodeTestIsRecordName(
+        muirSirynNodeTestRecordName(4321, 0, muirSirynNodeTestRecordNonce()),
+      ),
+      true,
+    );
   });
 });
 
-describe('lzParseRecordName', () => {
-  lzTestFor<readonly [string, LzRecordName | undefined]>([
-    [recordName(4321, 3, nonce), { pid: 4321, thread: 3, nonce }],
-    [recordName(4321, 12, nonce), { pid: 4321, thread: 12, nonce }],
-    [memoryRecordName(4321, nonce), { pid: 4321, thread: 'memory', nonce }],
-    [lzTempRecordPath(recordName(4321, 3, nonce)), undefined],
+describe('muirSirynNodeTestParseRecordName', () => {
+  muirTestFor<readonly [string, MuirSirynNodeTestRecordName | undefined]>([
+    [
+      muirSirynNodeTestRecordName(4321, 3, nonce),
+      { pid: 4321, thread: 3, nonce },
+    ],
+    [
+      muirSirynNodeTestRecordName(4321, 12, nonce),
+      { pid: 4321, thread: 12, nonce },
+    ],
+    [
+      muirSirynNodeTestMemoryRecordName(4321, nonce),
+      { pid: 4321, thread: 'memory', nonce },
+    ],
+    [
+      muirSirynNodeTestTempRecordPath(
+        muirSirynNodeTestRecordName(4321, 3, nonce),
+      ),
+      undefined,
+    ],
   ])('reads %s as %j', ([name, parsed]) => {
-    assert.deepEqual(lzParseRecordName(name), parsed);
+    assert.deepEqual(muirSirynNodeTestParseRecordName(name), parsed);
   });
 });
 
-describe('lzWriteRecord', () => {
-  const path = join('/out', recordName(4321, 0, lzRecordNonce()));
-  const written = ['write', lzTempRecordPath(path), '{"tests":[]}'];
-  const renamed = ['rename', lzTempRecordPath(path), path];
+describe('muirSirynNodeTestWriteRecord', () => {
+  const path = join(
+    '/out',
+    muirSirynNodeTestRecordName(4321, 0, muirSirynNodeTestRecordNonce()),
+  );
+  const written = [
+    'write',
+    muirSirynNodeTestTempRecordPath(path),
+    '{"tests":[]}',
+  ];
+  const renamed = ['rename', muirSirynNodeTestTempRecordPath(path), path];
 
   /** Writes a record on `platform` where each rename fails with the next code of `failures`, and then succeeds. */
   function writeRecord(platform: NodeJS.Platform, failures: readonly string[]) {
     const calls: unknown[][] = [];
     let attempt = 0;
     const write = () => {
-      lzWriteRecord(
+      muirSirynNodeTestWriteRecord(
         path,
         { tests: [] },
         {
@@ -186,7 +216,7 @@ describe('lzWriteRecord', () => {
     assert.deepEqual(calls, [written, renamed]);
   });
 
-  lzTestEach(['EPERM', 'EBUSY'])(
+  muirTestEach(['EPERM', 'EBUSY'])(
     'renames again 10 ms later on Windows when the rename fails with %s, as while another process reads the record',
     (code) => {
       const { calls, write } = writeRecord('win32', [code]);
@@ -215,7 +245,7 @@ describe('lzWriteRecord', () => {
     ]);
   });
 
-  lzTestFor<readonly [NodeJS.Platform, string]>([
+  muirTestFor<readonly [NodeJS.Platform, string]>([
     ['linux', 'EPERM'],
     ['win32', 'ENOENT'],
   ])(
@@ -229,18 +259,18 @@ describe('lzWriteRecord', () => {
   );
 });
 
-describe('lzNodeRecordFiles', () => {
+describe('muirSirynNodeTestRecordFiles', () => {
   it('blocks the thread for the pause it is asked for', () => {
     const started = performance.now();
 
-    lzNodeRecordFiles.pause(50);
+    muirSirynNodeTestRecordFiles.pause(50);
 
     const waited = performance.now() - started;
     assert.ok(waited >= 50, `${waited} ms`);
   });
 });
 
-describe('lzParseRecord', () => {
+describe('muirSirynNodeTestParseRecord', () => {
   it('returns the record a process wrote', () => {
     const record = {
       main: true,
@@ -248,7 +278,10 @@ describe('lzParseRecord', () => {
       hitCount: 3,
     };
 
-    assert.deepEqual(lzParseRecord(JSON.stringify(record)), record);
+    assert.deepEqual(
+      muirSirynNodeTestParseRecord(JSON.stringify(record)),
+      record,
+    );
   });
 
   it('returns a record with every field', () => {
@@ -289,11 +322,14 @@ describe('lzParseRecord', () => {
       },
     };
 
-    assert.deepEqual(lzParseRecord(JSON.stringify(record)), record);
+    assert.deepEqual(
+      muirSirynNodeTestParseRecord(JSON.stringify(record)),
+      record,
+    );
   });
 
-  lzTestFor(['null', '[]', '1'])('refuses %s, which is no record', (json) => {
-    assert.throws(() => lzParseRecord(json), {
+  muirTestFor(['null', '[]', '1'])('refuses %s, which is no record', (json) => {
+    assert.throws(() => muirSirynNodeTestParseRecord(json), {
       message: 'not a record of test results',
     });
   });
@@ -304,7 +340,7 @@ describe('lzParseRecord', () => {
   const withTestFields = (fields: object) =>
     JSON.stringify({ tests: [{ ...test, ...fields }] });
 
-  lzTestEach([
+  muirTestEach([
     ['{}', 'tests'],
     ['{"tests":{}}', 'tests'],
     ['{"tests":[1]}', 'tests[0]'],
@@ -372,12 +408,12 @@ describe('lzParseRecord', () => {
       'testSpans',
     ],
   ])('refuses %s, naming %s', (json, field) => {
-    assert.throws(() => lzParseRecord(json), {
+    assert.throws(() => muirSirynNodeTestParseRecord(json), {
       message: `not a record of test results: ${field}`,
     });
   });
 
   it('refuses what does not parse', () => {
-    assert.throws(() => lzParseRecord('{'), SyntaxError);
+    assert.throws(() => muirSirynNodeTestParseRecord('{'), SyntaxError);
   });
 });

@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { setup, containerReason } from './support/csf-ignorer.ts';
 
-describe('lz-storybook-csf', () => {
+describe('muir-shadowcat-storybook-csf', () => {
   it("places the mutants of a story's args", async () => {
     const { outcomes } = setup();
 

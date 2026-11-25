@@ -2,20 +2,20 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  builtInNames,
-  builtInSample,
-  checkBuiltInsRemoved,
-  removeBuiltIns,
+  muirMoiraMutatorsBuiltInNames,
+  muirMoiraMutatorsBuiltInSample,
+  muirMoiraMutatorsCheckBuiltInsRemoved,
+  muirMoiraMutatorsRemoveBuiltIns,
 } from '../src/built-ins.ts';
-import type { ListedMutator } from '../src/instrumenter.ts';
+import type { MuirMoiraMutatorsListedMutator } from '../src/instrumenter.ts';
 
 const packageName = '@muirjs/test-mutators';
-const listed = (name: string): ListedMutator => ({
+const listed = (name: string): MuirMoiraMutatorsListedMutator => ({
   name,
   mutate: () => undefined,
 });
 const ignoreWarning = (): undefined => undefined;
-const fakeInstrumenter = (allMutators: ListedMutator[]) => ({
+const fakeInstrumenter = (allMutators: MuirMoiraMutatorsListedMutator[]) => ({
   dir: '/fake/instrumenter',
   version: '1.2.3',
   allMutators,
@@ -23,35 +23,52 @@ const fakeInstrumenter = (allMutators: ListedMutator[]) => ({
 
 describe('removeBuiltIns', () => {
   it('removes the 17 built-ins in place and keeps the other entries', () => {
-    const own = listed('LzOwn');
+    const own = listed('MuirMoiraMutatorsOwn');
     const allMutators = [
-      ...builtInNames.slice(0, 5).map(listed),
+      ...muirMoiraMutatorsBuiltInNames.slice(0, 5).map(listed),
       own,
-      ...builtInNames.slice(5).map(listed),
+      ...muirMoiraMutatorsBuiltInNames.slice(5).map(listed),
     ];
 
-    removeBuiltIns(packageName, fakeInstrumenter(allMutators), ignoreWarning);
+    muirMoiraMutatorsRemoveBuiltIns(
+      packageName,
+      fakeInstrumenter(allMutators),
+      ignoreWarning,
+    );
 
     assert.deepEqual(allMutators, [own]);
   });
 
   it('does nothing when none of the built-ins is present, as an earlier call removed them', () => {
-    const own = listed('LzOwn');
+    const own = listed('MuirMoiraMutatorsOwn');
     const allMutators = [own];
 
-    removeBuiltIns(packageName, fakeInstrumenter(allMutators), ignoreWarning);
+    muirMoiraMutatorsRemoveBuiltIns(
+      packageName,
+      fakeInstrumenter(allMutators),
+      ignoreWarning,
+    );
 
     assert.deepEqual(allMutators, [own]);
   });
 
   it('warns once about each unmarked entry that is not a built-in, and keeps it', () => {
     const unknown = listed('NewStrykerMutator');
-    const marked = { ...listed('LzMarked'), [Symbol.for('@muirjs/other')]: 1 };
-    const allMutators = [...builtInNames.map(listed), unknown, marked];
+    const marked = {
+      ...listed('MuirMoiraMutatorsMarked'),
+      [Symbol.for('@muirjs/other')]: 1,
+    };
+    const allMutators = [
+      ...muirMoiraMutatorsBuiltInNames.map(listed),
+      unknown,
+      marked,
+    ];
     const warnings: string[] = [];
 
-    removeBuiltIns(packageName, fakeInstrumenter(allMutators), (message) =>
-      warnings.push(message),
+    muirMoiraMutatorsRemoveBuiltIns(
+      packageName,
+      fakeInstrumenter(allMutators),
+      (message) => warnings.push(message),
     );
 
     assert.deepEqual(warnings, [
@@ -68,9 +85,9 @@ describe('removeBuiltIns', () => {
     };
     const warnings: string[] = [];
 
-    removeBuiltIns(
+    muirMoiraMutatorsRemoveBuiltIns(
       packageName,
-      fakeInstrumenter([...builtInNames.map(listed), foreign]),
+      fakeInstrumenter([...muirMoiraMutatorsBuiltInNames.map(listed), foreign]),
       (message) => warnings.push(message),
     );
 
@@ -80,7 +97,7 @@ describe('removeBuiltIns', () => {
   it('does not warn when none of the built-ins is present, as nothing is removed', () => {
     const warnings: string[] = [];
 
-    removeBuiltIns(
+    muirMoiraMutatorsRemoveBuiltIns(
       packageName,
       fakeInstrumenter([listed('NewStrykerMutator')]),
       (message) => warnings.push(message),
@@ -90,14 +107,14 @@ describe('removeBuiltIns', () => {
   });
 
   it('throws, naming the missing ones, when only some built-ins are present', () => {
-    const allMutators = builtInNames
+    const allMutators = muirMoiraMutatorsBuiltInNames
       .filter((name) => name !== 'Regex' && name !== 'UpdateOperator')
       .map(listed);
     const before = [...allMutators];
 
     assert.throws(
       () =>
-        removeBuiltIns(
+        muirMoiraMutatorsRemoveBuiltIns(
           packageName,
           fakeInstrumenter(allMutators),
           ignoreWarning,
@@ -125,9 +142,14 @@ describe('checkBuiltInsRemoved', () => {
 
   it('throws, naming the built-ins that still made a mutant of the sample, in the order of the 17', async () => {
     await assert.rejects(
-      checkBuiltInsRemoved(
+      muirMoiraMutatorsCheckBuiltInsRemoved(
         packageName,
-        instrumenterMaking(['Regex', 'LzOwn', 'ArrowFunction', 'Regex']),
+        instrumenterMaking([
+          'Regex',
+          'MuirMoiraMutatorsOwn',
+          'ArrowFunction',
+          'Regex',
+        ]),
       ),
       {
         message:
@@ -147,21 +169,31 @@ describe('checkBuiltInsRemoved', () => {
       ) => {
         seen.push([...files]);
 
-        return [{ fileName: 'built-ins.self-check.tsx', mutatorName: 'LzOwn' }];
+        return [
+          {
+            fileName: 'built-ins.self-check.tsx',
+            mutatorName: 'MuirMoiraMutatorsOwn',
+          },
+        ];
       },
     };
 
-    await checkBuiltInsRemoved(packageName, instrumenter);
+    await muirMoiraMutatorsCheckBuiltInsRemoved(packageName, instrumenter);
 
     assert.deepEqual(seen, [
-      [{ name: 'built-ins.self-check.tsx', content: builtInSample }],
+      [
+        {
+          name: 'built-ins.self-check.tsx',
+          content: muirMoiraMutatorsBuiltInSample,
+        },
+      ],
     ]);
   });
 });
 
 describe('builtInNames', () => {
   it('lists the 17 built-in mutators of Stryker', () => {
-    assert.deepEqual([...builtInNames].sort(), [
+    assert.deepEqual([...muirMoiraMutatorsBuiltInNames].sort(), [
       'ArithmeticOperator',
       'ArrayDeclaration',
       'ArrowFunction',

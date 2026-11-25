@@ -3,12 +3,12 @@ import { describe, it } from 'node:test';
 
 import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  lzIsOwn,
-  lzToNodeMutator,
-  own,
-  type LzMutator,
+  muirMoiraNodeTestIsOwn,
+  muirMoiraNodeTestToNodeMutator,
+  muirMoiraNodeTestOwn,
+  type MuirMoiraNodeTestMutator,
 } from '../../src/mutator.ts';
 
 const node = types.emptyStatement();
@@ -28,7 +28,7 @@ function programPath(): NodePath {
   return path;
 }
 
-const mutator: LzMutator = {
+const mutator: MuirMoiraNodeTestMutator = {
   name: 'Alpha',
   sample: '',
   *mutate() {
@@ -38,36 +38,47 @@ const mutator: LzMutator = {
 
 describe('own', () => {
   it("is the core's symbol, the same in every package that installs through the core", () => {
-    assert.equal(own, Symbol.for('@muirjs/moira-node-test'));
+    assert.equal(muirMoiraNodeTestOwn, Symbol.for('@muirjs/moira-node-test'));
   });
 });
 
-describe('lzToNodeMutator', () => {
-  lzTestEach([
+describe('muirMoiraNodeTestToNodeMutator', () => {
+  muirTestEach([
     [false, [node]],
     [true, []],
   ])(
     'gives, where isExpressionContext is %s, %j',
     (isExpressionContext, nodes) => {
-      const nodeMutator = lzToNodeMutator(mutator, types, 'lz-sample-mutators');
+      const nodeMutator = muirMoiraNodeTestToNodeMutator(
+        mutator,
+        types,
+        'muir-sample-mutators',
+      );
 
       assert.deepEqual(
         [...nodeMutator.mutate(programPath(), { isExpressionContext })],
         nodes,
       );
-      assert.equal(lzIsOwn(nodeMutator), true);
+      assert.equal(muirMoiraNodeTestIsOwn(nodeMutator), true);
     },
   );
 
   it("names the package that installs it under the core's mark", () => {
-    const nodeMutator = lzToNodeMutator(mutator, types, 'lz-sample-mutators');
+    const nodeMutator = muirMoiraNodeTestToNodeMutator(
+      mutator,
+      types,
+      'muir-sample-mutators',
+    );
 
-    assert.equal(Reflect.get(nodeMutator, own), 'lz-sample-mutators');
+    assert.equal(
+      Reflect.get(nodeMutator, muirMoiraNodeTestOwn),
+      'muir-sample-mutators',
+    );
   });
 });
 
-describe('lzIsOwn', () => {
-  lzTestEach([
+describe('muirMoiraNodeTestIsOwn', () => {
+  muirTestEach([
     [
       "a mutator with the core's mark",
       { name: 'Alpha', [Symbol.for('@muirjs/moira-node-test')]: true },
@@ -80,6 +91,6 @@ describe('lzIsOwn', () => {
     ],
     ["one of Stryker's mutators", { name: 'StringLiteral' }, false],
   ])('takes %s as %s', (_title, mutator, expected) => {
-    assert.equal(lzIsOwn(mutator), expected);
+    assert.equal(muirMoiraNodeTestIsOwn(mutator), expected);
   });
 });

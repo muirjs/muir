@@ -5,7 +5,7 @@ import https from 'node:https';
 
 import { answer } from './app.mjs';
 
-const testIdHeader = 'x-lz-stryker-test';
+const testIdHeader = 'x-muir-stryker-test';
 const tls = {
   key: readFileSync(new URL('./tls/localhost-key.pem', import.meta.url)),
   cert: readFileSync(new URL('./tls/localhost-cert.pem', import.meta.url)),

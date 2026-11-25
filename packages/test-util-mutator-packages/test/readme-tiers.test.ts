@@ -4,11 +4,11 @@ import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import {
-  testReadmeTiers,
-  type MutatorTiers,
-  type ReadmeFacts,
+  muirTestReadmeTiers,
+  type MuirMutatorTiers,
+  type MuirReadmeFacts,
 } from '../src/readme-tiers.ts';
-import { tempRoot } from '../src/temp-tree.ts';
+import { muirTempRoot } from '../src/temp-tree.ts';
 
 const countsCheck =
   'gives the size of each tier in the opening counts and in the default install line';
@@ -17,14 +17,14 @@ const tablesCheck =
 const noneCheck =
   'says None under the heading of each tier that has no mutator, and only there';
 
-const tiers: MutatorTiers = {
-  defaults: [{ name: 'LzA' }, { name: 'LzB' }],
-  optIn: [{ name: 'LzC' }],
+const tiers: MuirMutatorTiers = {
+  defaults: [{ name: 'MuirA' }, { name: 'MuirB' }],
+  optIn: [{ name: 'MuirC' }],
   experimental: [],
 };
-const facts: ReadmeFacts = {
+const facts: MuirReadmeFacts = {
   packageName: '@muirjs/example',
-  prefix: 'LzExample',
+  prefix: 'MuirExample',
   builtIns: 'on',
   builtInCount: 5,
 };
@@ -33,60 +33,64 @@ const readme = `# @muirjs/example
 The package keeps Stryker's 5 built-in mutators on and adds 3 of its own: 2 run by default, 1 is opt-in and 0 are
 experimental.
 
-@muirjs/example: 2 LzExample mutators on, beside Stryker's built-in mutators.
+@muirjs/example: 2 MuirExample mutators on, beside Stryker's built-in mutators.
 
 ### Default mutators
 
 | Mutator | Change |
 | ------- | ------ |
-| \`LzA\`   | a      |
-| \`LzB\`   | b      |
+| \`MuirA\`   | a      |
+| \`MuirB\`   | b      |
 
 ### Opt-in mutators
 
-| \`LzC\` | c |
+| \`MuirC\` | c |
 
 ### Experimental mutators
 
 None.
 `;
-const offTiers: MutatorTiers = {
-  defaults: [{ name: 'LzA' }],
-  optIn: [{ name: 'LzB' }, { name: 'LzC' }],
-  experimental: [{ name: 'LzD' }],
+const offTiers: MuirMutatorTiers = {
+  defaults: [{ name: 'MuirA' }],
+  optIn: [{ name: 'MuirB' }, { name: 'MuirC' }],
+  experimental: [{ name: 'MuirD' }],
 };
-const offFacts: ReadmeFacts = { ...facts, builtIns: 'off', builtInCount: 17 };
+const offFacts: MuirReadmeFacts = {
+  ...facts,
+  builtIns: 'off',
+  builtInCount: 17,
+};
 const offReadme = `The package turns Stryker's 17 built-in mutators off and adds 4 of its own: 1 runs by default, 2 are opt-in and
 1 is experimental.
 
-@muirjs/example: Stryker's 17 built-in mutators are off for every file in this run; 1 LzExample mutators on.
+@muirjs/example: Stryker's 17 built-in mutators are off for every file in this run; 1 MuirExample mutators on.
 
 ### Default mutators
 
-| \`LzA\` | a |
+| \`MuirA\` | a |
 
 ### Opt-in mutators
 
-| \`LzB\` | b |
-| \`LzC\` | c |
+| \`MuirB\` | b |
+| \`MuirC\` | c |
 
 ### Experimental mutators
 
-| \`LzD\` | d |
+| \`MuirD\` | d |
 `;
 
 /** The checks `testReadmeTiers` registers for `text` as the README, by name, in the order it registers them. */
 function checksOf(
   t: TestContext,
   text: string,
-  readmeTiers: MutatorTiers = tiers,
-  readmeFacts: ReadmeFacts = facts,
+  readmeTiers: MuirMutatorTiers = tiers,
+  readmeFacts: MuirReadmeFacts = facts,
 ): ReadonlyMap<string, () => void> {
-  const path = join(tempRoot(t, 'lz-readme-tiers-'), 'README.md');
+  const path = join(muirTempRoot(t, 'muir-readme-tiers-'), 'README.md');
   const checks = new Map<string, () => void>();
 
   writeFileSync(path, text);
-  testReadmeTiers(path, readmeTiers, readmeFacts, (name, check) => {
+  muirTestReadmeTiers(path, readmeTiers, readmeFacts, (name, check) => {
     checks.set(name, check);
   });
 
@@ -198,8 +202,8 @@ describe('testReadmeTiers', () => {
       t,
       edited(
         readme,
-        '2 LzExample mutators on, beside',
-        '3 LzExample mutators on, beside',
+        '2 MuirExample mutators on, beside',
+        '3 MuirExample mutators on, beside',
       ),
     );
 
@@ -211,7 +215,7 @@ describe('testReadmeTiers', () => {
   it('fails the counts when the default install line gives a wrong count, with the built-ins off', (t) => {
     const checks = checksOf(
       t,
-      edited(offReadme, 'this run; 1 LzExample', 'this run; 2 LzExample'),
+      edited(offReadme, 'this run; 1 MuirExample', 'this run; 2 MuirExample'),
       offTiers,
       offFacts,
     );
@@ -226,8 +230,8 @@ describe('testReadmeTiers', () => {
       t,
       edited(
         readme,
-        '| `LzA`   | a      |\n| `LzB`   | b      |',
-        '| `LzB`   | b      |\n| `LzA`   | a      |',
+        '| `MuirA`   | a      |\n| `MuirB`   | b      |',
+        '| `MuirB`   | b      |\n| `MuirA`   | a      |',
       ),
     );
 
@@ -250,8 +254,8 @@ describe('testReadmeTiers', () => {
       t,
       edited(
         readme,
-        '| `LzB`   | b      |',
-        '| `LzB`   | b      |\n> | `LzZ` | quoted |',
+        '| `MuirB`   | b      |',
+        '| `MuirB`   | b      |\n> | `MuirZ` | quoted |',
       ),
     );
 
@@ -273,7 +277,7 @@ describe('testReadmeTiers', () => {
   it('fails None when a tier with a mutator has None under its heading', (t) => {
     const checks = checksOf(
       t,
-      edited(readme, '| `LzC` | c |', 'None.\n\n| `LzC` | c |'),
+      edited(readme, '| `MuirC` | c |', 'None.\n\n| `MuirC` | c |'),
     );
 
     assert.throws(() => run(checks, noneCheck), { generatedMessage: true });

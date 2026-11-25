@@ -3,20 +3,30 @@ import { describe, it } from 'node:test';
 
 import { traverse, types as t } from '@babel/core';
 
-import { elementSiteOf, toNodeMutator } from '../src/mutator.ts';
-import { mutatorsFor } from '../src/mutators.ts';
-import type { RoleTable } from '../src/implicit-roles.ts';
+import {
+  muirProteusJsxElementSiteOf,
+  muirProteusJsxToNodeMutator,
+} from '../src/mutator.ts';
+import { muirProteusJsxMutatorsFor } from '../src/mutators.ts';
+import type { MuirProteusJsxRoleTable } from '../src/implicit-roles.ts';
 import { parse } from './support/babel.ts';
 import { defined } from './support/defined.ts';
 
-function elementRoleMutants(code: string, roles: RoleTable): string[] {
+function elementRoleMutants(
+  code: string,
+  roles: MuirProteusJsxRoleTable,
+): string[] {
   const file = parse(code);
-  const mutator = toNodeMutator(
-    defined(mutatorsFor(roles).find(({ name }) => name === 'LzJsxElementRole')),
+  const mutator = muirProteusJsxToNodeMutator(
+    defined(
+      muirProteusJsxMutatorsFor(roles).find(
+        ({ name }) => name === 'MuirProteusJsxElementRole',
+      ),
+    ),
     t,
   );
   const show = (node: t.Node): string => {
-    const element = elementSiteOf(node, t);
+    const element = muirProteusJsxElementSiteOf(node, t);
 
     return element === undefined
       ? node.type
@@ -38,9 +48,9 @@ function elementRoleMutants(code: string, roles: RoleTable): string[] {
   return found;
 }
 
-describe('LzJsxElementRole', () => {
+describe('MuirProteusJsxElementRole', () => {
   it('swaps for a span exactly the elements whose role in the table is button or link', () => {
-    const roles: RoleTable = new Map([
+    const roles: MuirProteusJsxRoleTable = new Map([
       ['div', { role: 'button' }],
       ['nav', { role: 'link', requiredAttribute: 'data-to' }],
       ['p', { role: 'paragraph' }],
@@ -56,7 +66,9 @@ describe('LzJsxElementRole', () => {
   });
 
   it('keeps a role attribute that restates the role the table gives', () => {
-    const roles: RoleTable = new Map([['div', { role: 'button' }]]);
+    const roles: MuirProteusJsxRoleTable = new Map([
+      ['div', { role: 'button' }],
+    ]);
 
     assert.deepEqual(
       elementRoleMutants(

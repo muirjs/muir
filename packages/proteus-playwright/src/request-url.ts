@@ -1,18 +1,18 @@
 import {
-  argumentOf,
-  bindingOf,
-  fieldOf,
-  memberNameOf,
+  muirMoiraMutatorsArgumentOf,
+  muirMoiraMutatorsBindingOf,
+  muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsMemberNameOf,
 } from '@muirjs/moira-mutators';
 
 import {
-  ancestors,
-  hasProperty,
-  isCall,
-  isRequestContext,
-  isRequestFactory,
+  muirProteusPlaywrightAncestors,
+  muirProteusPlaywrightHasProperty,
+  muirProteusPlaywrightIsCall,
+  muirProteusPlaywrightIsRequestContext,
+  muirProteusPlaywrightIsRequestFactory,
 } from './ast.ts';
-import type { LzPlaywrightMutator } from './mutators.ts';
+import type { MuirProteusPlaywrightMutator } from './mutators.ts';
 
 /** The methods that send a GET or HEAD request; `fetch` sends a GET unless it has a method option. */
 const getMethods: readonly unknown[] = ['get', 'head', 'fetch'];
@@ -26,16 +26,18 @@ function isThirdParty(url: string): boolean {
   return absolute.test(url) && !localHost.test(url);
 }
 
-export function requestUrlMutator<const TName extends string>(
+export function muirProteusPlaywrightRequestUrlMutator<
+  const TName extends string,
+>(
   name: TName,
   sample: string,
-): LzPlaywrightMutator & { readonly name: TName } {
+): MuirProteusPlaywrightMutator & { readonly name: TName } {
   return {
     name,
     sample,
     *mutate(path, t) {
       if (
-        isCandidate(fieldOf(path, 'node')) &&
+        isCandidate(muirMoiraMutatorsFieldOf(path, 'node')) &&
         (isReadUrlArgument(path) || isLoopUrl(path))
       ) {
         yield t.stringLiteral('');
@@ -57,122 +59,162 @@ function isCandidate(node: unknown): boolean {
 
 /** The URL argument of a GET or HEAD request call whose result is read. */
 function isReadUrlArgument(path: unknown): boolean {
-  const call = fieldOf(path, 'parent');
-  const callee = fieldOf(call, 'callee');
-  const method = memberNameOf(callee);
+  const call = muirMoiraMutatorsFieldOf(path, 'parent');
+  const callee = muirMoiraMutatorsFieldOf(call, 'callee');
+  const method = muirMoiraMutatorsMemberNameOf(callee);
 
   return (
-    argumentOf(call, 0) === fieldOf(path, 'node') &&
-    isRequestReceiver(path, fieldOf(callee, 'object')) &&
+    muirMoiraMutatorsArgumentOf(call, 0) ===
+      muirMoiraMutatorsFieldOf(path, 'node') &&
+    isRequestReceiver(path, muirMoiraMutatorsFieldOf(callee, 'object')) &&
     getMethods.includes(method) &&
     !(method === 'fetch' && hasMethodOption(call)) &&
-    resultIsRead(fieldOf(path, 'parentPath'))
+    resultIsRead(muirMoiraMutatorsFieldOf(path, 'parentPath'))
   );
 }
 
 /** An element of the array of `for (const <x> of [...])` where `<x>` is a read URL argument in the loop. */
 function isLoopUrl(path: unknown): boolean {
-  const loop = fieldOf(fieldOf(path, 'parentPath'), 'parentPath');
-  const loopNode = fieldOf(loop, 'node');
-  const declarations = fieldOf(fieldOf(loopNode, 'left'), 'declarations');
+  const loop = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(path, 'parentPath'),
+    'parentPath',
+  );
+  const loopNode = muirMoiraMutatorsFieldOf(loop, 'node');
+  const declarations = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(loopNode, 'left'),
+    'declarations',
+  );
 
   if (
-    fieldOf(path, 'listKey') !== 'elements' ||
-    fieldOf(loopNode, 'type') !== 'ForOfStatement' ||
+    muirMoiraMutatorsFieldOf(path, 'listKey') !== 'elements' ||
+    muirMoiraMutatorsFieldOf(loopNode, 'type') !== 'ForOfStatement' ||
     !Array.isArray(declarations)
   ) {
     return false;
   }
 
-  const variable = fieldOf(fieldOf(declarations[0], 'id'), 'name');
-  const references = fieldOf(bindingOf(loop, variable), 'referencePaths');
+  const variable = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsFieldOf(declarations[0], 'id'),
+    'name',
+  );
+  const references = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsBindingOf(loop, variable),
+    'referencePaths',
+  );
 
   return Array.isArray(references) && references.some(isReadUrlArgument);
 }
 
 /** The text of a string literal, or of a template literal up to its first expression. */
 function urlText(node: unknown): string | undefined {
-  const type = fieldOf(node, 'type');
+  const type = muirMoiraMutatorsFieldOf(node, 'type');
 
   if (type === 'StringLiteral') {
-    return String(fieldOf(node, 'value'));
+    return String(muirMoiraMutatorsFieldOf(node, 'value'));
   }
 
-  const quasis = fieldOf(node, 'quasis');
+  const quasis = muirMoiraMutatorsFieldOf(node, 'quasis');
 
   return Array.isArray(quasis)
-    ? String(fieldOf(fieldOf(quasis[0], 'value'), 'cooked'))
+    ? String(
+        muirMoiraMutatorsFieldOf(
+          muirMoiraMutatorsFieldOf(quasis[0], 'value'),
+          'cooked',
+        ),
+      )
     : undefined;
 }
 
 function hasExpressions(template: unknown): boolean {
-  const expressions = fieldOf(template, 'expressions');
+  const expressions = muirMoiraMutatorsFieldOf(template, 'expressions');
 
   return Array.isArray(expressions) && expressions.length > 0;
 }
 
 /** A request context: one by `isRequestContext`, or a name bound to `await <request factory>.newContext(...)`. */
 function isRequestReceiver(path: unknown, node: unknown): boolean {
-  if (isRequestContext(path, node)) {
+  if (muirProteusPlaywrightIsRequestContext(path, node)) {
     return true;
   }
 
-  const binding = bindingOf(path, fieldOf(node, 'name'));
-  const assignments = fieldOf(binding, 'constantViolations');
+  const binding = muirMoiraMutatorsBindingOf(
+    path,
+    muirMoiraMutatorsFieldOf(node, 'name'),
+  );
+  const assignments = muirMoiraMutatorsFieldOf(binding, 'constantViolations');
 
   return (
     isNewContextCall(
-      fieldOf(fieldOf(fieldOf(binding, 'path'), 'node'), 'init'),
+      muirMoiraMutatorsFieldOf(
+        muirMoiraMutatorsFieldOf(
+          muirMoiraMutatorsFieldOf(binding, 'path'),
+          'node',
+        ),
+        'init',
+      ),
     ) ||
     (Array.isArray(assignments) &&
       assignments.some((assignment) =>
-        isNewContextCall(fieldOf(fieldOf(assignment, 'node'), 'right')),
+        isNewContextCall(
+          muirMoiraMutatorsFieldOf(
+            muirMoiraMutatorsFieldOf(assignment, 'node'),
+            'right',
+          ),
+        ),
       ))
   );
 }
 
 function isNewContextCall(node: unknown): boolean {
   const call =
-    fieldOf(node, 'type') === 'AwaitExpression'
-      ? fieldOf(node, 'argument')
+    muirMoiraMutatorsFieldOf(node, 'type') === 'AwaitExpression'
+      ? muirMoiraMutatorsFieldOf(node, 'argument')
       : node;
-  const callee = fieldOf(call, 'callee');
+  const callee = muirMoiraMutatorsFieldOf(call, 'callee');
 
   return (
-    isCall(call) &&
-    memberNameOf(callee) === 'newContext' &&
-    isRequestFactory(fieldOf(callee, 'object'))
+    muirProteusPlaywrightIsCall(call) &&
+    muirMoiraMutatorsMemberNameOf(callee) === 'newContext' &&
+    muirProteusPlaywrightIsRequestFactory(
+      muirMoiraMutatorsFieldOf(callee, 'object'),
+    )
   );
 }
 
 function resultIsRead(callPath: unknown): boolean {
-  const parentPath = fieldOf(callPath, 'parentPath');
+  const parentPath = muirMoiraMutatorsFieldOf(callPath, 'parentPath');
   const userPath =
-    fieldOf(fieldOf(parentPath, 'node'), 'type') === 'AwaitExpression'
-      ? fieldOf(parentPath, 'parentPath')
+    muirMoiraMutatorsFieldOf(
+      muirMoiraMutatorsFieldOf(parentPath, 'node'),
+      'type',
+    ) === 'AwaitExpression'
+      ? muirMoiraMutatorsFieldOf(parentPath, 'parentPath')
       : parentPath;
-  const user = fieldOf(userPath, 'node');
+  const user = muirMoiraMutatorsFieldOf(userPath, 'node');
 
-  switch (fieldOf(user, 'type')) {
+  switch (muirMoiraMutatorsFieldOf(user, 'type')) {
     case 'ExpressionStatement':
       return false;
     case 'UnaryExpression':
-      return fieldOf(user, 'operator') !== 'void';
+      return muirMoiraMutatorsFieldOf(user, 'operator') !== 'void';
     case 'AssignmentExpression': {
-      const left = fieldOf(user, 'left');
+      const left = muirMoiraMutatorsFieldOf(user, 'left');
 
       return (
-        fieldOf(fieldOf(userPath, 'parent'), 'type') !==
-          'ExpressionStatement' ||
-        fieldOf(left, 'type') !== 'Identifier' ||
+        muirMoiraMutatorsFieldOf(
+          muirMoiraMutatorsFieldOf(userPath, 'parent'),
+          'type',
+        ) !== 'ExpressionStatement' ||
+        muirMoiraMutatorsFieldOf(left, 'type') !== 'Identifier' ||
         isReadVariable(userPath, left)
       );
     }
     default: {
-      const id = fieldOf(user, 'id');
+      const id = muirMoiraMutatorsFieldOf(user, 'id');
 
       return (
-        fieldOf(id, 'type') !== 'Identifier' || isReadVariable(userPath, id)
+        muirMoiraMutatorsFieldOf(id, 'type') !== 'Identifier' ||
+        isReadVariable(userPath, id)
       );
     }
   }
@@ -180,8 +222,11 @@ function resultIsRead(callPath: unknown): boolean {
 
 /** The variable that `identifier` names has a reference outside a console call. */
 function isReadVariable(path: unknown, identifier: unknown): boolean {
-  const references = fieldOf(
-    bindingOf(path, fieldOf(identifier, 'name')),
+  const references = muirMoiraMutatorsFieldOf(
+    muirMoiraMutatorsBindingOf(
+      path,
+      muirMoiraMutatorsFieldOf(identifier, 'name'),
+    ),
     'referencePaths',
   );
 
@@ -193,10 +238,16 @@ function isReadVariable(path: unknown, identifier: unknown): boolean {
 
 /** Some call around `path` is `console.<x>(...)`. */
 function isInConsoleCall(path: unknown): boolean {
-  return [...ancestors(path)].some(
+  return [...muirProteusPlaywrightAncestors(path)].some(
     (ancestor) =>
-      fieldOf(
-        fieldOf(fieldOf(fieldOf(ancestor, 'node'), 'callee'), 'object'),
+      muirMoiraMutatorsFieldOf(
+        muirMoiraMutatorsFieldOf(
+          muirMoiraMutatorsFieldOf(
+            muirMoiraMutatorsFieldOf(ancestor, 'node'),
+            'callee',
+          ),
+          'object',
+        ),
         'name',
       ) === 'console',
   );
@@ -205,19 +256,20 @@ function isInConsoleCall(path: unknown): boolean {
 /** The options argument names a method, or may: it is no object literal, or it holds a spread. `get` and `head` set
  * their own method over any option, so only `fetch` asks. */
 function hasMethodOption(call: unknown): boolean {
-  const options = argumentOf(call, 1);
+  const options = muirMoiraMutatorsArgumentOf(call, 1);
 
   if (options === undefined) {
     return false;
   }
 
-  const properties = fieldOf(options, 'properties');
+  const properties = muirMoiraMutatorsFieldOf(options, 'properties');
 
   return (
     !Array.isArray(properties) ||
     properties.some(
-      (property) => fieldOf(property, 'type') === 'SpreadElement',
+      (property) =>
+        muirMoiraMutatorsFieldOf(property, 'type') === 'SpreadElement',
     ) ||
-    hasProperty(options, 'method')
+    muirProteusPlaywrightHasProperty(options, 'method')
   );
 }

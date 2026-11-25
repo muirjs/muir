@@ -1,5 +1,8 @@
-import { lzAwaited, type LzMutator } from '@muirjs/moira-node-test';
-import { isNodeAssertCall } from './node-bindings.ts';
+import {
+  muirMoiraNodeTestAwaited,
+  type MuirMoiraNodeTestMutator,
+} from '@muirjs/moira-node-test';
+import { muirProteusNodeIsNodeAssertCall } from './node-bindings.ts';
 
 /**
  * AssertionRemoval: removes a `node:assert` statement from production code. Stryker's CallExpression mutator removes a
@@ -9,19 +12,23 @@ import { isNodeAssertCall } from './node-bindings.ts';
  * which a `// Stryker disable` comment then says. That comment names CallExpression too: with this mutant ignored,
  * CallExpression's own removal of the statement comes back.
  */
-export const nodeAssertStatement: LzMutator<'LzNodeAssertStatement'> = {
-  name: 'LzNodeAssertStatement',
-  sample:
-    "import assert from 'node:assert/strict';\n\nassert.fail('unreachable');\n",
-  *mutate(path, t) {
-    if (!path.isExpressionStatement()) {
-      return;
-    }
+export const muirProteusNodeAssertStatement: MuirMoiraNodeTestMutator<'MuirProteusNodeAssertStatement'> =
+  {
+    name: 'MuirProteusNodeAssertStatement',
+    sample:
+      "import assert from 'node:assert/strict';\n\nassert.fail('unreachable');\n",
+    *mutate(path, t) {
+      if (!path.isExpressionStatement()) {
+        return;
+      }
 
-    const call = lzAwaited(path.node.expression);
+      const call = muirMoiraNodeTestAwaited(path.node.expression);
 
-    if (call.type === 'CallExpression' && isNodeAssertCall(path, call)) {
-      yield t.emptyStatement();
-    }
-  },
-};
+      if (
+        call.type === 'CallExpression' &&
+        muirProteusNodeIsNodeAssertCall(path, call)
+      ) {
+        yield t.emptyStatement();
+      }
+    },
+  };

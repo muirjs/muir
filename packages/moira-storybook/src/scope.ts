@@ -1,7 +1,19 @@
-import { isMember, unwrap } from './csf-nodes.ts';
-import { isRecord, isStringArray } from './is-record.ts';
-import { field, list } from './node-field.ts';
-import { childNodes, isFunction } from './node-tree.ts';
+import {
+  muirMoiraStorybookIsMember,
+  muirMoiraStorybookUnwrap,
+} from './csf-nodes.ts';
+import {
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookIsStringArray,
+} from './is-record.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
+import {
+  muirMoiraStorybookChildNodes,
+  muirMoiraStorybookIsFunction,
+} from './node-tree.ts';
 
 type BindingKind =
   | 'var'
@@ -12,7 +24,7 @@ type BindingKind =
   | 'class'
   | 'import';
 
-export interface Binding {
+export interface MuirMoiraStorybookBinding {
   readonly kind: BindingKind;
   readonly identifier: unknown;
   /** The node that declares it: a variable declarator, an import specifier, a function, a class, a catch clause, or a parameter as the function lists it. */
@@ -24,16 +36,18 @@ export interface Binding {
   readonly writes: readonly unknown[];
 }
 
-export interface FileScope {
+export interface MuirMoiraStorybookFileScope {
   /** The binding an identifier declares, reads or writes; `undefined` when the file binds no such name in reach. */
-  readonly bindingOf: (identifier: unknown) => Binding | undefined;
+  readonly bindingOf: (
+    identifier: unknown,
+  ) => MuirMoiraStorybookBinding | undefined;
   /** The identifiers in `node` that read or write a binding, in source order. */
   readonly referencesIn: (node: unknown) => readonly unknown[];
   /** The members a write targets, such as `a.b` in `a.b = c`, `[a.b] = c` or `for (a.b of c)`. */
   readonly writtenMembers: readonly unknown[];
 }
 
-type DeclaredBinding = Omit<Binding, 'writes'>;
+type DeclaredBinding = Omit<MuirMoiraStorybookBinding, 'writes'>;
 
 interface Scope {
   readonly parent: Scope | undefined;
@@ -102,47 +116,65 @@ const typeDeclarations: readonly unknown[] = [
 
 /** The children of `node` that may read or write a binding: not its types or labels. */
 function readChildren(node: unknown): readonly unknown[] {
-  const type = field(node, 'type');
+  const type = muirMoiraStorybookField(node, 'type');
   const skipped = [
     typeKeys,
     nameKeys.get(type),
-    field(node, 'computed') === true ? undefined : keyNames.get(type),
+    muirMoiraStorybookField(node, 'computed') === true
+      ? undefined
+      : keyNames.get(type),
   ]
-    .filter(isStringArray)
+    .filter(muirMoiraStorybookIsStringArray)
     .flat()
-    .map((key) => field(node, key))
-    .flatMap((value) => (Array.isArray(value) ? list(value) : [value]));
+    .map((key) => muirMoiraStorybookField(node, key))
+    .flatMap((value) =>
+      Array.isArray(value) ? muirMoiraStorybookList(value) : [value],
+    );
 
-  return childNodes(node).filter((child) => !skipped.includes(child));
+  return muirMoiraStorybookChildNodes(node).filter(
+    (child) => !skipped.includes(child),
+  );
 }
 
 /** The function a binding names: `function <name>() {}`, or `<let | const | var> <name> = <function>`, through any parentheses, cast or non-null assertion around the function. */
-function declaredFunction(binding: Binding | undefined): unknown {
+function declaredFunction(
+  binding: MuirMoiraStorybookBinding | undefined,
+): unknown {
   if (binding?.kind === 'function') {
     return binding.declaration;
   }
 
   const declaration = binding?.declaration;
-  const init = unwrap(field(declaration, 'init'));
+  const init = muirMoiraStorybookUnwrap(
+    muirMoiraStorybookField(declaration, 'init'),
+  );
 
-  return field(declaration, 'id') === binding?.identifier && isFunction(init)
+  return muirMoiraStorybookField(declaration, 'id') === binding?.identifier &&
+    muirMoiraStorybookIsFunction(init)
     ? init
     : undefined;
 }
 
 /** The functions a binding may name: the one it is declared with, and each one a write of any assignment operator or a later `var` declaration of the same name gives it, through any parentheses, cast or non-null assertion; none for `undefined`. */
-export function functionsOf(binding: Binding | undefined): readonly unknown[] {
+export function muirMoiraStorybookFunctionsOf(
+  binding: MuirMoiraStorybookBinding | undefined,
+): readonly unknown[] {
   return [
     declaredFunction(binding),
     // Stryker disable next-line ArrayDeclaration: the isFunction filter below drops anything the fallback holds
     ...(binding?.writes ?? []).map((write) =>
-      unwrap(field(write, 'right') ?? field(write, 'init')),
+      muirMoiraStorybookUnwrap(
+        muirMoiraStorybookField(write, 'right') ??
+          muirMoiraStorybookField(write, 'init'),
+      ),
     ),
-  ].filter(isFunction);
+  ].filter(muirMoiraStorybookIsFunction);
 }
 
 /** Resolves every name of `program` as Babel's scope does, in one walk: declarations first, then each read or write by its name up the scopes it stands in, so a `var` or function declaration below a read is found. */
-export function fileScope(program: unknown): FileScope {
+export function muirMoiraStorybookFileScope(
+  program: unknown,
+): MuirMoiraStorybookFileScope {
   const resolved = new WeakMap<object, DeclaredBinding>();
   const references: (readonly [object, Scope])[] = [];
   const writes: (readonly [object, unknown])[] = [];
@@ -168,9 +200,9 @@ export function fileScope(program: unknown): FileScope {
       : varScope(scope.parent);
   /** Binds `identifier`, or, when its scope already binds the name, as a second `var` or a `var` over a parameter does, writes the existing binding. */
   const declare = (identifier: unknown, declaration: Declaration): void => {
-    const name = field(identifier, 'name');
+    const name = muirMoiraStorybookField(identifier, 'name');
 
-    if (typeof name !== 'string' || !isRecord(identifier)) {
+    if (typeof name !== 'string' || !muirMoiraStorybookIsRecord(identifier)) {
       return;
     }
 
@@ -194,37 +226,41 @@ export function fileScope(program: unknown): FileScope {
     scope: Scope,
     onName: (identifier: object) => void,
   ): void => {
-    const node = unwrap(pattern);
-    const type = field(node, 'type');
+    const node = muirMoiraStorybookUnwrap(pattern);
+    const type = muirMoiraStorybookField(node, 'type');
 
-    if (type === 'Identifier' && isRecord(node)) {
+    if (type === 'Identifier' && muirMoiraStorybookIsRecord(node)) {
       onName(node);
     } else if (type === 'ObjectPattern') {
-      list(field(node, 'properties')).forEach((property) => {
-        if (field(property, 'computed') === true) {
-          visit(field(property, 'key'), scope);
+      muirMoiraStorybookList(
+        muirMoiraStorybookField(node, 'properties'),
+      ).forEach((property) => {
+        if (muirMoiraStorybookField(property, 'computed') === true) {
+          visit(muirMoiraStorybookField(property, 'key'), scope);
         }
 
         eachName(
-          field(
+          muirMoiraStorybookField(
             property,
-            field(property, 'type') === 'RestElement' ? 'argument' : 'value',
+            muirMoiraStorybookField(property, 'type') === 'RestElement'
+              ? 'argument'
+              : 'value',
           ),
           scope,
           onName,
         );
       });
     } else if (type === 'ArrayPattern') {
-      list(field(node, 'elements')).forEach((element) =>
-        eachName(element, scope, onName),
+      muirMoiraStorybookList(muirMoiraStorybookField(node, 'elements')).forEach(
+        (element) => eachName(element, scope, onName),
       );
     } else if (type === 'AssignmentPattern') {
-      eachName(field(node, 'left'), scope, onName);
-      visit(field(node, 'right'), scope);
+      eachName(muirMoiraStorybookField(node, 'left'), scope, onName);
+      visit(muirMoiraStorybookField(node, 'right'), scope);
     } else if (type === 'RestElement') {
-      eachName(field(node, 'argument'), scope, onName);
+      eachName(muirMoiraStorybookField(node, 'argument'), scope, onName);
     } else {
-      if (isMember(node)) {
+      if (muirMoiraStorybookIsMember(node)) {
         writtenMembers.push(node);
       }
 
@@ -242,9 +278,9 @@ export function fileScope(program: unknown): FileScope {
       references.push([identifier, scope]);
     });
   const visit = (node: unknown, scope: Scope): void => {
-    const type = field(node, 'type');
+    const type = muirMoiraStorybookField(node, 'type');
 
-    if (type === 'Identifier' && isRecord(node)) {
+    if (type === 'Identifier' && muirMoiraStorybookIsRecord(node)) {
       references.push([node, scope]);
 
       return;
@@ -255,49 +291,50 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (type === 'TSModuleDeclaration') {
-      if (field(node, 'declare') !== true) {
-        visit(field(node, 'body'), scopeIn(scope, true));
+      if (muirMoiraStorybookField(node, 'declare') !== true) {
+        visit(muirMoiraStorybookField(node, 'body'), scopeIn(scope, true));
       }
 
       return;
     }
 
-    if (isFunction(node)) {
+    if (muirMoiraStorybookIsFunction(node)) {
       const own = type === 'FunctionDeclaration' ? scope : scopeIn(scope);
       const params = scopeIn(own, true);
 
-      if (field(node, 'computed') === true) {
-        visit(field(node, 'key'), scope);
+      if (muirMoiraStorybookField(node, 'computed') === true) {
+        visit(muirMoiraStorybookField(node, 'key'), scope);
       }
 
-      declare(field(node, 'id'), {
+      declare(muirMoiraStorybookField(node, 'id'), {
         kind: 'function',
         scope: own,
         readScope: own,
         node,
       });
 
-      list(field(node, 'params')).forEach((param) =>
-        declarePattern(
-          field(param, 'type') === 'TSParameterProperty'
-            ? field(param, 'parameter')
-            : param,
-          {
-            kind: 'param',
-            scope: params,
-            readScope: params,
-            node: param,
-          },
-        ),
+      muirMoiraStorybookList(muirMoiraStorybookField(node, 'params')).forEach(
+        (param) =>
+          declarePattern(
+            muirMoiraStorybookField(param, 'type') === 'TSParameterProperty'
+              ? muirMoiraStorybookField(param, 'parameter')
+              : param,
+            {
+              kind: 'param',
+              scope: params,
+              readScope: params,
+              node: param,
+            },
+          ),
       );
 
-      visit(field(node, 'body'), params);
+      visit(muirMoiraStorybookField(node, 'body'), params);
 
       return;
     }
 
     if (type === 'ClassDeclaration') {
-      declare(field(node, 'id'), {
+      declare(muirMoiraStorybookField(node, 'id'), {
         kind: 'class',
         scope,
         readScope: scope,
@@ -308,7 +345,7 @@ export function fileScope(program: unknown): FileScope {
     if (type === 'ClassExpression') {
       const inner = scopeIn(scope);
 
-      declare(field(node, 'id'), {
+      declare(muirMoiraStorybookField(node, 'id'), {
         kind: 'class',
         scope: inner,
         readScope: inner,
@@ -320,8 +357,10 @@ export function fileScope(program: unknown): FileScope {
     }
 
     if (type === 'ImportDeclaration') {
-      list(field(node, 'specifiers')).forEach((specifier) =>
-        declare(field(specifier, 'local'), {
+      muirMoiraStorybookList(
+        muirMoiraStorybookField(node, 'specifiers'),
+      ).forEach((specifier) =>
+        declare(muirMoiraStorybookField(specifier, 'local'), {
           kind: 'import',
           scope,
           readScope: scope,
@@ -343,13 +382,15 @@ export function fileScope(program: unknown): FileScope {
     if (type === 'CatchClause') {
       const inner = scopeIn(scope);
 
-      declarePattern(field(node, 'param'), {
+      declarePattern(muirMoiraStorybookField(node, 'param'), {
         kind: 'let',
         scope: inner,
         readScope: inner,
         node,
       });
-      list(field(node, 'body', 'body')).forEach((child) => visit(child, inner));
+      muirMoiraStorybookList(
+        muirMoiraStorybookField(node, 'body', 'body'),
+      ).forEach((child) => visit(child, inner));
 
       return;
     }
@@ -357,33 +398,37 @@ export function fileScope(program: unknown): FileScope {
     if (type === 'SwitchStatement') {
       const cases = scopeIn(scope);
 
-      visit(field(node, 'discriminant'), scope);
-      list(field(node, 'cases')).forEach((child) => visit(child, cases));
+      visit(muirMoiraStorybookField(node, 'discriminant'), scope);
+      muirMoiraStorybookList(muirMoiraStorybookField(node, 'cases')).forEach(
+        (child) => visit(child, cases),
+      );
 
       return;
     }
 
     if (type === 'VariableDeclaration') {
-      const declared = field(node, 'kind');
+      const declared = muirMoiraStorybookField(node, 'kind');
       const kind =
         declared === 'var' || declared === 'let' ? declared : 'const';
 
-      list(field(node, 'declarations')).forEach((declarator) => {
-        declarePattern(field(declarator, 'id'), {
+      muirMoiraStorybookList(
+        muirMoiraStorybookField(node, 'declarations'),
+      ).forEach((declarator) => {
+        declarePattern(muirMoiraStorybookField(declarator, 'id'), {
           kind,
           scope: kind === 'var' ? varScope(scope) : scope,
           readScope: scope,
           node: declarator,
         });
-        visit(field(declarator, 'init'), scope);
+        visit(muirMoiraStorybookField(declarator, 'init'), scope);
       });
 
       return;
     }
 
     if (type === 'AssignmentExpression') {
-      write(field(node, 'left'), node, scope);
-      visit(field(node, 'right'), scope);
+      write(muirMoiraStorybookField(node, 'left'), node, scope);
+      visit(muirMoiraStorybookField(node, 'right'), scope);
 
       return;
     }
@@ -392,15 +437,15 @@ export function fileScope(program: unknown): FileScope {
       const head = scopeIn(scope);
 
       // A declaring head is no pattern, so eachName visits it as a declaration rather than writing it.
-      write(field(node, 'left'), node, head);
-      visit(field(node, 'right'), head);
-      visit(field(node, 'body'), head);
+      write(muirMoiraStorybookField(node, 'left'), node, head);
+      visit(muirMoiraStorybookField(node, 'right'), head);
+      visit(muirMoiraStorybookField(node, 'body'), head);
 
       return;
     }
 
     if (type === 'UpdateExpression') {
-      write(field(node, 'argument'), node, scope);
+      write(muirMoiraStorybookField(node, 'argument'), node, scope);
 
       return;
     }
@@ -410,7 +455,7 @@ export function fileScope(program: unknown): FileScope {
 
   visit(program, scopeIn(undefined));
   references.forEach(([identifier, scope]) => {
-    const binding = lookUp(scope, field(identifier, 'name'));
+    const binding = lookUp(scope, muirMoiraStorybookField(identifier, 'name'));
 
     if (binding !== undefined) {
       resolved.set(identifier, binding);
@@ -424,9 +469,11 @@ export function fileScope(program: unknown): FileScope {
     }
   });
 
-  const bindings = new Map<DeclaredBinding, Binding>();
-  const bindingOf = (identifier: unknown): Binding | undefined => {
-    const declared = isRecord(identifier)
+  const bindings = new Map<DeclaredBinding, MuirMoiraStorybookBinding>();
+  const bindingOf = (
+    identifier: unknown,
+  ): MuirMoiraStorybookBinding | undefined => {
+    const declared = muirMoiraStorybookIsRecord(identifier)
       ? resolved.get(identifier)
       : undefined;
 
@@ -445,9 +492,9 @@ export function fileScope(program: unknown): FileScope {
   };
   const read = new Set(references.map(([identifier]) => identifier));
   const referencesIn = (node: unknown): readonly unknown[] =>
-    isRecord(node) && read.has(node)
+    muirMoiraStorybookIsRecord(node) && read.has(node)
       ? [node]
-      : childNodes(node).flatMap(referencesIn);
+      : muirMoiraStorybookChildNodes(node).flatMap(referencesIn);
 
   return { bindingOf, referencesIn, writtenMembers };
 }

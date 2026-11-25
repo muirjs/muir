@@ -1,22 +1,25 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@muirjs/madrox-node-test';
-import { jsAssignmentStatement } from '../../src/js-assignment-statement.ts';
+import { muirTestEach } from '@muirjs/madrox-node-test';
+import { muirProteusJsAssignmentStatement } from '../../src/js-assignment-statement.ts';
 import { mutantsOf, removalsNextToBuiltIns } from '../mutants-of.fixtures.ts';
 
-describe('LzJsAssignmentStatement', () => {
-  lzTestEach([
+describe('MuirProteusJsAssignmentStatement', () => {
+  muirTestEach([
     ['a variable', 'x = y;'],
     ['a property', 'obj.k = v;'],
     ['an element', 'arr[i] = v;'],
     ['a chain, as one statement', 'a = b = c;'],
     ['a property of an object named env', 'config.env.HOME = dir;'],
   ])('removes the assignment statement of %s', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(jsAssignmentStatement, source), [';']);
+    assert.deepEqual(
+      await mutantsOf(muirProteusJsAssignmentStatement, source),
+      [';'],
+    );
   });
 
-  lzTestEach([
+  muirTestEach([
     ['a compound assignment, which AssignmentOperator mutates', 'x += 1;'],
     ['an update, which UpdateOperator mutates', 'i++;'],
     ['a declaration', 'const x = y;'],
@@ -38,11 +41,19 @@ describe('LzJsAssignmentStatement', () => {
     ['an environment variable of a quoted env', "process['env'].HOME = dir;"],
     ['the whole environment', 'process.env = { HOME: dir };'],
   ])('leaves %s alone', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(jsAssignmentStatement, source), []);
+    assert.deepEqual(
+      await mutantsOf(muirProteusJsAssignmentStatement, source),
+      [],
+    );
   });
 
-  lzTestEach([
-    ['an assignment of a variable', 'x = y;', [], ['LzJsAssignmentStatement']],
+  muirTestEach([
+    [
+      'an assignment of a variable',
+      'x = y;',
+      [],
+      ['MuirProteusJsAssignmentStatement'],
+    ],
     [
       'an assignment of a literal that BooleanLiteral mutates',
       'x = true;',
@@ -65,20 +76,20 @@ describe('LzJsAssignmentStatement', () => {
       'an assignment of a call, which CallExpression does not remove',
       'x = f(a);',
       [],
-      ['LzJsAssignmentStatement'],
+      ['MuirProteusJsAssignmentStatement'],
     ],
     [
       'an assignment of an awaited call',
       'x = await g();',
       [],
-      ['LzJsAssignmentStatement'],
+      ['MuirProteusJsAssignmentStatement'],
     ],
     ['a call statement', 'f(a);', ['CallExpression'], ['CallExpression']],
   ])(
     "gives %s exactly the removals next to Stryker's mutators",
     async (_title, source, alone, together) => {
       assert.deepEqual(
-        await removalsNextToBuiltIns(jsAssignmentStatement, source),
+        await removalsNextToBuiltIns(muirProteusJsAssignmentStatement, source),
         [alone, together],
       );
     },

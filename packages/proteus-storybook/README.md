@@ -1,12 +1,12 @@
 # @muirjs/proteus-storybook
 
 StrykerJS mutators for Storybook story data: the `args` a story renders with. In many component libraries, the
-story files are app code, so a run of the components can mutate them too. `LzStorybookArgs` removes one arg at a
+story files are app code, so a run of the components can mutate them too. `MuirProteusStorybookArgs` removes one arg at a
 time from a story that runs a play function or a `.test()` call. When the story tests still pass, no check depends on
 that arg.
 
 The package keeps Stryker's 17 built-in mutators on and adds 1 of its own: 0 run by default, 1 is opt-in and 0 are
-experimental. So `await lzStorybookMutators()` with no options adds no mutator. The package is private and not on npm
+experimental. So `await muirProteusStorybookMutators()` with no options adds no mutator. The package is private and not on npm
 yet.
 
 ## Requirements
@@ -17,7 +17,7 @@ yet.
   from Storybook, so the package declares no `storybook` peer dependency.
 - Stryker's Vitest runner, `@stryker-mutator/vitest-runner`, with Storybook's Vitest addon,
   `@storybook/addon-vitest`, running the story tests.
-- `@muirjs/shadowcat-storybook`, for its CSF ignorer and its `lz-storybook` ignorer and reporter. Its README describes
+- `@muirjs/shadowcat-storybook`, for its CSF ignorer and its `muir-shadowcat-storybook` ignorer and reporter. Its README describes
   the Vitest and Storybook setup that both Stryker configurations share.
 - Node.js 22 or later.
 
@@ -28,21 +28,21 @@ CSF ignorer's play mode left at its default, `ignore`. That mode keeps the mutan
 and leaves the `args` to this package. Mutate story test code in a separate configuration, with
 `@muirjs/proteus-storybook-test`.
 
-Call `lzStorybookMutators` at the top of the Stryker configuration file, await it, and turn `LzStorybookArgs` on by
+Call `muirProteusStorybookMutators` at the top of the Stryker configuration file, await it, and turn `MuirProteusStorybookArgs` on by
 its name:
 
 ```ts
 // stryker.config.mjs
-import { lzStorybookMutators } from '@muirjs/proteus-storybook';
+import { muirProteusStorybookMutators } from '@muirjs/proteus-storybook';
 
-await lzStorybookMutators({ LzStorybookArgs: true });
+await muirProteusStorybookMutators({ MuirProteusStorybookArgs: true });
 
 export default {
   testRunner: 'vitest',
   mutate: ['src/**/*.tsx', '!src/**/*.test.tsx'],
   appendPlugins: ['@muirjs/shadowcat-storybook'],
-  ignorers: ['lz-storybook-csf', 'lz-storybook'],
-  reporters: ['clear-text', 'html', 'lz-storybook'],
+  ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook'],
+  reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
 };
 ```
 
@@ -52,13 +52,13 @@ TypeScript ES module, because a JSON configuration cannot import a module.
 Without options the call prints this line and adds no mutator:
 
 ```text
-@muirjs/proteus-storybook: 0 LzStorybook mutators on, beside Stryker's built-in mutators.
+@muirjs/proteus-storybook: 0 MuirProteusStorybook mutators on, beside Stryker's built-in mutators.
 ```
 
-With `LzStorybookArgs` on, the line names it:
+With `MuirProteusStorybookArgs` on, the line names it:
 
 ```text
-@muirjs/proteus-storybook: 1 LzStorybook mutators on, beside Stryker's built-in mutators. Opt-in or experimental: LzStorybookArgs.
+@muirjs/proteus-storybook: 1 MuirProteusStorybook mutators on, beside Stryker's built-in mutators. Opt-in or experimental: MuirProteusStorybookArgs.
 ```
 
 The call checks that each mutator it installs makes a mutant of a sample, and stops the run when one does not. It
@@ -70,14 +70,14 @@ mutators of the first.
 The argument turns on mutators beyond the default tier. Each key takes only `true`:
 
 - `extended: true` turns on every opt-in mutator.
-- `<opt-in name>: true` turns on one opt-in mutator, such as `{ LzStorybookArgs: true }`.
+- `<opt-in name>: true` turns on one opt-in mutator, such as `{ MuirProteusStorybookArgs: true }`.
 
 The call throws, with a message that starts with the package name, on options that are not a plain object, on an
 unknown key, on a value other than `true`, and on an `experimental` key, since the package has no experimental
 mutators:
 
 ```text
-@muirjs/proteus-storybook: the package has no experimental mutators yet, so lzStorybookMutators() takes no experimental option.
+@muirjs/proteus-storybook: the package has no experimental mutators yet, so muirProteusStorybookMutators() takes no experimental option.
 ```
 
 The options turn mutators on, never off. To turn one off, see [Turn a mutator off](#turn-a-mutator-off).
@@ -88,17 +88,17 @@ Each mutator's name is the mutator name in Stryker's reports.
 
 ### Default mutators
 
-None. `await lzStorybookMutators()` adds no mutator.
+None. `await muirProteusStorybookMutators()` adds no mutator.
 
 ### Opt-in mutators
 
 These run with `extended: true`, or each with its own name set to `true`.
 
-| Mutator           | What it changes                                                                                                                                        | Example                                                                                                                              |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `LzStorybookArgs` | Removes one key per mutant from an `args` object that a play or `.test()` call runs for. With two or more such keys, one more mutant removes them all. | `args: { label: 'Save', disabled: true }` becomes `args: { disabled: true }` in one mutant and `args: { label: 'Save' }` in another. |
+| Mutator                    | What it changes                                                                                                                                        | Example                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `MuirProteusStorybookArgs` | Removes one key per mutant from an `args` object that a play or `.test()` call runs for. With two or more such keys, one more mutant removes them all. | `args: { label: 'Save', disabled: true }` becomes `args: { disabled: true }` in one mutant and `args: { label: 'Save' }` in another. |
 
-`LzStorybookArgs` is opt-in because most of its survivors on one open-source design system were equivalent: 27 of
+`MuirProteusStorybookArgs` is opt-in because most of its survivors on one open-source design system were equivalent: 27 of
 its 56 mutants survived, and 18 of those removed a key whose value equals what the story gets without it. See
 [Survivors to expect](#survivors-to-expect-and-limits).
 
@@ -106,10 +106,10 @@ its 56 mutants survived, and 18 of those removed a key whose value equals what t
 
 None.
 
-## What LzStorybookArgs mutates
+## What MuirProteusStorybookArgs mutates
 
 Under Storybook's Vitest addon, a story without a play function or a `.test()` call only renders. A removed arg there
-survives unless the render crashes, and the survivor says nothing about the story's checks. So `LzStorybookArgs`
+survives unless the render crashes, and the survivor says nothing about the story's checks. So `MuirProteusStorybookArgs`
 mutates `args` only where a play or test function runs for them, decided from the story file alone:
 
 - The `args` of a story that runs a play (its own, the meta's or a composed one) or a `.test()` call: a CSF3 story
@@ -147,7 +147,7 @@ For one mutant, put a Stryker disable comment with a reason on the line before t
 ```ts
 export const Disabled = {
   args: {
-    // Stryker disable next-line LzStorybookArgs: the component defaults variant to primary
+    // Stryker disable next-line MuirProteusStorybookArgs: the component defaults variant to primary
     variant: 'primary',
     disabled: true,
   },

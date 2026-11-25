@@ -1,4 +1,7 @@
-import { field, list } from './node-field.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
 
 const wrappers: readonly unknown[] = [
   'TSSatisfiesExpression',
@@ -8,9 +11,9 @@ const wrappers: readonly unknown[] = [
   'ParenthesizedExpression',
 ];
 
-export function unwrap(node: unknown): unknown {
-  return wrappers.includes(field(node, 'type'))
-    ? unwrap(field(node, 'expression'))
+export function muirMoiraStorybookUnwrap(node: unknown): unknown {
+  return wrappers.includes(muirMoiraStorybookField(node, 'type'))
+    ? muirMoiraStorybookUnwrap(muirMoiraStorybookField(node, 'expression'))
     : node;
 }
 
@@ -21,70 +24,80 @@ const literalTypes: readonly unknown[] = [
 ];
 
 /** The value of a string, number, boolean or `null` literal, a template literal with no expression, or a negated number literal. */
-export function primitiveLiteralOf(
+export function muirMoiraStorybookPrimitiveLiteralOf(
   node: unknown,
 ): { readonly value: unknown } | undefined {
-  const type = field(node, 'type');
+  const type = muirMoiraStorybookField(node, 'type');
 
   if (type === 'NullLiteral') {
     return { value: null };
   }
 
   if (literalTypes.includes(type)) {
-    return { value: field(node, 'value') };
+    return { value: muirMoiraStorybookField(node, 'value') };
   }
 
   // Only a template literal has quasis, and only a unary minus has an operator '-' with a numeric argument value.
-  const [quasi, ...more] = list(field(node, 'quasis'));
-  const cooked = field(quasi, 'value', 'cooked');
+  const [quasi, ...more] = muirMoiraStorybookList(
+    muirMoiraStorybookField(node, 'quasis'),
+  );
+  const cooked = muirMoiraStorybookField(quasi, 'value', 'cooked');
 
   if (more.length === 0 && typeof cooked === 'string') {
     return { value: cooked };
   }
 
-  const negated = field(node, 'argument', 'value');
+  const negated = muirMoiraStorybookField(node, 'argument', 'value');
 
-  return field(node, 'operator') === '-' && typeof negated === 'number'
+  return muirMoiraStorybookField(node, 'operator') === '-' &&
+    typeof negated === 'number'
     ? { value: -negated }
     : undefined;
 }
 
-export function declarationOf(statement: unknown): unknown {
-  return field(statement, 'type') === 'ExportNamedDeclaration'
-    ? field(statement, 'declaration')
+export function muirMoiraStorybookDeclarationOf(statement: unknown): unknown {
+  return muirMoiraStorybookField(statement, 'type') === 'ExportNamedDeclaration'
+    ? muirMoiraStorybookField(statement, 'declaration')
     : statement;
 }
 
 const storyFactories: readonly unknown[] = ['story', 'extend'];
 
 /** Storybook 10.6.5 `isCsfFactoryCall`: a `.story()` or `.extend()` call on a plain name. */
-export function isStoryFactoryCall(node: unknown): boolean {
+export function muirMoiraStorybookIsStoryFactoryCall(node: unknown): boolean {
   return (
-    field(node, 'callee', 'object', 'type') === 'Identifier' &&
-    storyFactories.includes(field(node, 'callee', 'property', 'name'))
+    muirMoiraStorybookField(node, 'callee', 'object', 'type') ===
+      'Identifier' &&
+    storyFactories.includes(
+      muirMoiraStorybookField(node, 'callee', 'property', 'name'),
+    )
   );
 }
 
-export function storyArgument(init: unknown): unknown {
-  const current = unwrap(init);
+export function muirMoiraStorybookStoryArgument(init: unknown): unknown {
+  const current = muirMoiraStorybookUnwrap(init);
 
-  return isStoryFactoryCall(current)
-    ? list(field(current, 'arguments'))[0]
+  return muirMoiraStorybookIsStoryFactoryCall(current)
+    ? muirMoiraStorybookList(muirMoiraStorybookField(current, 'arguments'))[0]
     : current;
 }
 
-export interface Assignment {
+export interface MuirMoiraStorybookAssignment {
   readonly statement: unknown;
   readonly target: unknown;
   readonly path: readonly unknown[];
   readonly value: unknown;
 }
 
-export function assignmentOf(statement: unknown): readonly Assignment[] {
-  const [target, ...path] = memberChain(field(statement, 'expression', 'left'));
+export function muirMoiraStorybookAssignmentOf(
+  statement: unknown,
+): readonly MuirMoiraStorybookAssignment[] {
+  const [target, ...path] = memberChain(
+    muirMoiraStorybookField(statement, 'expression', 'left'),
+  );
 
   if (
-    field(statement, 'expression', 'operator') !== '=' ||
+    muirMoiraStorybookField(statement, 'expression', 'operator') !== '=' ||
     typeof target !== 'string'
   ) {
     return [];
@@ -95,45 +108,58 @@ export function assignmentOf(statement: unknown): readonly Assignment[] {
       statement,
       target,
       path,
-      value: field(statement, 'expression', 'right'),
+      value: muirMoiraStorybookField(statement, 'expression', 'right'),
     },
   ];
 }
 
 function memberChain(node: unknown): readonly unknown[] {
-  return field(node, 'type') === 'MemberExpression'
-    ? [...memberChain(field(node, 'object')), keyOf(node)]
-    : [field(node, 'name')];
+  return muirMoiraStorybookField(node, 'type') === 'MemberExpression'
+    ? [
+        ...memberChain(muirMoiraStorybookField(node, 'object')),
+        muirMoiraStorybookKeyOf(node),
+      ]
+    : [muirMoiraStorybookField(node, 'name')];
 }
 
-export function assignmentRootWithoutUnwrap(node: unknown): unknown {
-  return field(node, 'type') === 'MemberExpression'
-    ? assignmentRootWithoutUnwrap(field(node, 'object'))
+export function muirMoiraStorybookAssignmentRootWithoutUnwrap(
+  node: unknown,
+): unknown {
+  return muirMoiraStorybookField(node, 'type') === 'MemberExpression'
+    ? muirMoiraStorybookAssignmentRootWithoutUnwrap(
+        muirMoiraStorybookField(node, 'object'),
+      )
     : node;
 }
 
 /** Storybook 10.6.5 `keyOf`: a member's name, or `undefined` when only running the file gives it. */
-export function keyOf(member: unknown): unknown {
-  if (field(member, 'property', 'type') === 'StringLiteral') {
-    return field(member, 'property', 'value');
+export function muirMoiraStorybookKeyOf(member: unknown): unknown {
+  if (muirMoiraStorybookField(member, 'property', 'type') === 'StringLiteral') {
+    return muirMoiraStorybookField(member, 'property', 'value');
   }
 
-  return field(member, 'computed') === true
+  return muirMoiraStorybookField(member, 'computed') === true
     ? undefined
-    : field(member, 'property', 'name');
+    : muirMoiraStorybookField(member, 'property', 'name');
 }
 
 /** Storybook 10.6.5 CsfFile indexes a `B.test('name', ...)` statement that is a plain call with a string-literal name and two or more arguments; this check also needs no spread argument, as only running the file tells which argument a spread fills. */
-export function isIndexedTestCall(statement: unknown): boolean {
-  const call = field(statement, 'expression');
-  const args = list(field(call, 'arguments'));
+export function muirMoiraStorybookIsIndexedTestCall(
+  statement: unknown,
+): boolean {
+  const call = muirMoiraStorybookField(statement, 'expression');
+  const args = muirMoiraStorybookList(
+    muirMoiraStorybookField(call, 'arguments'),
+  );
 
   return (
-    field(call, 'type') === 'CallExpression' &&
-    field(call, 'callee', 'property', 'name') === 'test' &&
+    muirMoiraStorybookField(call, 'type') === 'CallExpression' &&
+    muirMoiraStorybookField(call, 'callee', 'property', 'name') === 'test' &&
     args.length >= 2 &&
-    field(args[0], 'type') === 'StringLiteral' &&
-    !args.some((arg) => field(arg, 'type') === 'SpreadElement')
+    muirMoiraStorybookField(args[0], 'type') === 'StringLiteral' &&
+    !args.some(
+      (arg) => muirMoiraStorybookField(arg, 'type') === 'SpreadElement',
+    )
   );
 }
 
@@ -142,18 +168,20 @@ const memberTypes: readonly unknown[] = [
   'OptionalMemberExpression',
 ];
 
-export function isMember(node: unknown): boolean {
-  return memberTypes.includes(field(node, 'type'));
+export function muirMoiraStorybookIsMember(node: unknown): boolean {
+  return memberTypes.includes(muirMoiraStorybookField(node, 'type'));
 }
 
-export function isCall(node: unknown): boolean {
-  const type = field(node, 'type');
+export function muirMoiraStorybookIsCall(node: unknown): boolean {
+  const type = muirMoiraStorybookField(node, 'type');
 
   return type === 'CallExpression' || type === 'OptionalCallExpression';
 }
 
-export function memberRoot(node: unknown): unknown {
-  const current = unwrap(node);
+export function muirMoiraStorybookMemberRoot(node: unknown): unknown {
+  const current = muirMoiraStorybookUnwrap(node);
 
-  return isMember(current) ? memberRoot(field(current, 'object')) : current;
+  return muirMoiraStorybookIsMember(current)
+    ? muirMoiraStorybookMemberRoot(muirMoiraStorybookField(current, 'object'))
+    : current;
 }

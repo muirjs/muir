@@ -2,7 +2,12 @@
 // remove from what Stryker's own mutators make there:
 //
 //   node packages/proteus-node/src/corpus-diff.ts <file.ts>...
-import { corpusDiff } from './mutant-diff.ts';
-import { nodeMutators } from './mutators.ts';
+import { muirProteusNodeCorpusDiff } from './mutant-diff.ts';
+import { muirProteusNodeMutators } from './mutators.ts';
 
-console.log(await corpusDiff(process.argv.slice(2), () => nodeMutators));
+console.log(
+  await muirProteusNodeCorpusDiff(
+    process.argv.slice(2),
+    () => muirProteusNodeMutators,
+  ),
+);

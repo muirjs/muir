@@ -9,43 +9,46 @@ import {
   STORY_FILE_TEST_REGEXP,
 } from 'storybook/internal/common';
 import {
-  field,
-  isRecord,
-  isStringArray,
-  mockTransformerPluginName,
+  muirMoiraStorybookField,
+  muirMoiraStorybookIsRecord,
+  muirMoiraStorybookIsStringArray,
+  muirMoiraStorybookMockTransformerPluginName,
 } from '@muirjs/moira-storybook';
 import { loadConfig } from 'storybook/internal/csf-tools';
 
-import type { LoadResult } from './loader-result.ts';
-import { lzStorybookOptions, vitestConfigFile } from './options.ts';
-import { packageName } from './package-name.ts';
-import { parseProgram } from './parse.ts';
+import type { MuirShadowcatStorybookLoadResult } from './loader-result.ts';
 import {
-  defaultTestTags,
-  readPreviewTest,
-  unreadableSettings,
-  type ResetSettings,
-  type TagFilter,
-  type TestTags,
+  muirShadowcatStorybookOptions,
+  muirShadowcatStorybookVitestConfigFile,
+} from './options.ts';
+import { muirShadowcatStorybookPackageName } from './package-name.ts';
+import { muirShadowcatStorybookParseProgram } from './parse.ts';
+import {
+  muirShadowcatStorybookDefaultTestTags,
+  muirShadowcatStorybookReadPreviewTest,
+  muirShadowcatStorybookUnreadableSettings,
+  type MuirShadowcatStorybookResetSettings,
+  type MuirShadowcatStorybookTagFilter,
+  type MuirShadowcatStorybookTestTags,
 } from './reset-setting.ts';
 
-export interface ProjectLog {
+export interface MuirShadowcatStorybookProjectLog {
   readonly info: (message: string) => void;
   readonly warn: (message: string) => void;
 }
 
-export interface StorybookProject {
+export interface MuirShadowcatStorybookProject {
   readonly configDir: string;
   readonly storyFiles: ReadonlySet<string> | 'fallback';
   readonly transformer: 'seen' | 'not-seen';
-  readonly previewTest: ResetSettings;
-  readonly testTags: TestTags;
+  readonly previewTest: MuirShadowcatStorybookResetSettings;
+  readonly testTags: MuirShadowcatStorybookTestTags;
 }
 
 type VitestTags =
   | {
       readonly kind: 'resolved';
-      readonly tags: TagFilter;
+      readonly tags: MuirShadowcatStorybookTagFilter;
     }
   | { readonly kind: 'failed'; readonly error: string }
   | { readonly kind: 'no-vitest' }
@@ -58,28 +61,28 @@ const childFile = fileURLToPath(
   ),
 );
 
-const projects = new Map<string, StorybookProject>();
+const projects = new Map<string, MuirShadowcatStorybookProject>();
 
 const fallbackStoryFiles =
   "story files are guessed by the name pattern of Storybook's CSF indexer: names ending in stories or story with a .js, .jsx, .mjs, .mjsx, .ts or .tsx extension";
 
-export function strykerStorybookProject(
+export function muirShadowcatStorybookStrykerStorybookProject(
   options: object,
-  log: ProjectLog,
-): StorybookProject {
-  return storybookProject(
-    lzStorybookOptions(options).configDir,
+  log: MuirShadowcatStorybookProjectLog,
+): MuirShadowcatStorybookProject {
+  return muirShadowcatStorybookProject(
+    muirShadowcatStorybookOptions(options).configDir,
     log,
-    vitestConfigFile(options),
+    muirShadowcatStorybookVitestConfigFile(options),
   );
 }
 
 /** `vitestConfigFile` is Stryker's `vitest.configFile`; without it, Vitest looks the config up from the working directory, as Stryker's Vitest runner does. */
-export function storybookProject(
+export function muirShadowcatStorybookProject(
   givenConfigDir: string,
-  log: ProjectLog,
+  log: MuirShadowcatStorybookProjectLog,
   vitestConfigFile?: string,
-): StorybookProject {
+): MuirShadowcatStorybookProject {
   const configDir = resolve(givenConfigDir);
   const key = `${configDir}\0${vitestConfigFile ?? ''}`;
   const project =
@@ -92,8 +95,8 @@ export function storybookProject(
 function loadProject(
   configDir: string,
   vitestConfigFile: string | undefined,
-  log: ProjectLog,
-): StorybookProject {
+  log: MuirShadowcatStorybookProjectLog,
+): MuirShadowcatStorybookProject {
   const { storybook: result, vitestTags } = loadStorybook(
     configDir,
     vitestConfigFile,
@@ -114,7 +117,9 @@ function loadProject(
             .filter((file) => extname(file) !== '.mdx')
             .map(normalizePath),
         ),
-        transformer: result.pluginNames.includes(mockTransformerPluginName)
+        transformer: result.pluginNames.includes(
+          muirMoiraStorybookMockTransformerPluginName,
+        )
           ? 'seen'
           : 'not-seen',
         previewTest,
@@ -123,14 +128,14 @@ function loadProject(
     }
     case 'no-main': {
       log.info(
-        `${packageName}: no Storybook main file in ${configDir}, so ${fallbackStoryFiles}`,
+        `${muirShadowcatStorybookPackageName}: no Storybook main file in ${configDir}, so ${fallbackStoryFiles}`,
       );
 
       return fallbackProject(configDir, previewTest, testTags);
     }
     case 'failed': {
       log.warn(
-        `${packageName}: Storybook could not load ${configDir}, so ${fallbackStoryFiles}: ${result.error}`,
+        `${muirShadowcatStorybookPackageName}: Storybook could not load ${configDir}, so ${fallbackStoryFiles}: ${result.error}`,
       );
 
       return fallbackProject(configDir, previewTest, testTags);
@@ -141,38 +146,38 @@ function loadProject(
 function tagFilter(
   vitestTags: VitestTags,
   vitestConfigFile: string | undefined,
-  log: ProjectLog,
-): TagFilter {
+  log: MuirShadowcatStorybookProjectLog,
+): MuirShadowcatStorybookTagFilter {
   switch (vitestTags.kind) {
     case 'resolved': {
       return vitestTags.tags;
     }
     case 'failed': {
       log.warn(
-        `${packageName}: Vitest could not load ${vitestConfigFile ?? `its config from ${process.cwd()}`}, so the tested stories are the stories tagged test: ${vitestTags.error}`,
+        `${muirShadowcatStorybookPackageName}: Vitest could not load ${vitestConfigFile ?? `its config from ${process.cwd()}`}, so the tested stories are the stories tagged test: ${vitestTags.error}`,
       );
 
-      return defaultTestTags;
+      return muirShadowcatStorybookDefaultTestTags;
     }
     case 'no-vitest': {
       log.warn(
-        `${packageName}: Vitest is not installed, so the tested stories are the stories tagged test`,
+        `${muirShadowcatStorybookPackageName}: Vitest is not installed, so the tested stories are the stories tagged test`,
       );
 
-      return defaultTestTags;
+      return muirShadowcatStorybookDefaultTestTags;
     }
     case 'unreadable': {
       log.warn(
-        `${packageName}: the Storybook loader wrote a tag filter of an unknown shape, so the tested stories are the stories tagged test`,
+        `${muirShadowcatStorybookPackageName}: the Storybook loader wrote a tag filter of an unknown shape, so the tested stories are the stories tagged test`,
       );
 
-      return defaultTestTags;
+      return muirShadowcatStorybookDefaultTestTags;
     }
   }
 }
 
-export function isStoryFile(
-  project: StorybookProject,
+export function muirShadowcatStorybookIsStoryFile(
+  project: MuirShadowcatStorybookProject,
   fileName: string,
 ): boolean {
   if (project.storyFiles === 'fallback') {
@@ -182,13 +187,15 @@ export function isStoryFile(
   return project.storyFiles.has(normalizePath(fileName));
 }
 
-export function storyFilePaths(project: StorybookProject): readonly string[] {
+export function muirShadowcatStorybookStoryFilePaths(
+  project: MuirShadowcatStorybookProject,
+): readonly string[] {
   return project.storyFiles === 'fallback'
     ? globSync('**/*', {
         exclude: (path) => basename(path) === 'node_modules',
       })
         .map((file) => resolve(file))
-        .filter((file) => isStoryFile(project, file))
+        .filter((file) => muirShadowcatStorybookIsStoryFile(project, file))
     : [...project.storyFiles];
 }
 
@@ -200,9 +207,9 @@ function normalizePath(path: string): string {
 
 function fallbackProject(
   configDir: string,
-  previewTest: ResetSettings,
-  testTags: TestTags,
-): StorybookProject {
+  previewTest: MuirShadowcatStorybookResetSettings,
+  testTags: MuirShadowcatStorybookTestTags,
+): MuirShadowcatStorybookProject {
   return {
     configDir,
     storyFiles: 'fallback',
@@ -215,8 +222,11 @@ function fallbackProject(
 /** The tags are read as Storybook 10.6.5 vitest-plugin index.ts `extractTagsFromPreview` reads them. */
 function readPreview(
   configDir: string,
-  log: ProjectLog,
-): { readonly test: ResetSettings; readonly tags: readonly string[] } {
+  log: MuirShadowcatStorybookProjectLog,
+): {
+  readonly test: MuirShadowcatStorybookResetSettings;
+  readonly tags: readonly string[];
+} {
   const file = getInterpretedFile(join(configDir, 'preview'));
 
   if (file === undefined) {
@@ -230,23 +240,28 @@ function readPreview(
       .getFieldValue(['tags']);
 
     return {
-      test: readPreviewTest(parseProgram(code, file)),
-      tags: isStringArray(tags) ? tags : [],
+      test: muirShadowcatStorybookReadPreviewTest(
+        muirShadowcatStorybookParseProgram(code, file),
+      ),
+      tags: muirMoiraStorybookIsStringArray(tags) ? tags : [],
     };
   } catch (error) {
     log.warn(
-      `${packageName}: could not parse ${file}, so its parameters.test is unknown and its tags are left out: ${String(error)}`,
+      `${muirShadowcatStorybookPackageName}: could not parse ${file}, so its parameters.test is unknown and its tags are left out: ${String(error)}`,
     );
 
-    return { test: unreadableSettings, tags: [] };
+    return { test: muirShadowcatStorybookUnreadableSettings, tags: [] };
   }
 }
 
 function loadStorybook(
   configDir: string,
   vitestConfigFile: string | undefined,
-): { readonly storybook: LoadResult; readonly vitestTags: VitestTags } {
-  const resultDir = mkdtempSync(join(tmpdir(), 'lz-storybook-'));
+): {
+  readonly storybook: MuirShadowcatStorybookLoadResult;
+  readonly vitestTags: VitestTags;
+} {
+  const resultDir = mkdtempSync(join(tmpdir(), 'muir-storybook-'));
   const resultFile = join(resultDir, 'result.json');
 
   try {
@@ -261,26 +276,28 @@ function loadStorybook(
       { stdio: 'ignore' },
     );
 
-    return parseLoaderResult(JSON.parse(readFileSync(resultFile, 'utf8')));
+    return muirShadowcatStorybookParseLoaderResult(
+      JSON.parse(readFileSync(resultFile, 'utf8')),
+    );
   } finally {
     rmSync(resultDir, { recursive: true, force: true });
   }
 }
 
 /** Parses the result file of the Storybook loader child, which `LoaderResult` describes. */
-export function parseLoaderResult(value: unknown): {
-  readonly storybook: LoadResult;
+export function muirShadowcatStorybookParseLoaderResult(value: unknown): {
+  readonly storybook: MuirShadowcatStorybookLoadResult;
   readonly vitestTags: VitestTags;
 } {
   return {
     storybook: parseResult(value),
-    vitestTags: parseTestTags(field(value, 'testTags')),
+    vitestTags: parseTestTags(muirMoiraStorybookField(value, 'testTags')),
   };
 }
 
 function parseTestTags(value: unknown): VitestTags {
-  const kind = field(value, 'kind');
-  const error = field(value, 'error');
+  const kind = muirMoiraStorybookField(value, 'kind');
+  const error = muirMoiraStorybookField(value, 'error');
 
   if (kind === 'failed' && typeof error === 'string') {
     return { kind, error };
@@ -290,7 +307,9 @@ function parseTestTags(value: unknown): VitestTags {
     return { kind };
   }
 
-  const values = ['include', 'exclude', 'skip'].map((key) => field(value, key));
+  const values = ['include', 'exclude', 'skip'].map((key) =>
+    muirMoiraStorybookField(value, key),
+  );
 
   if (
     kind !== 'resolved' ||
@@ -306,21 +325,21 @@ function parseTestTags(value: unknown): VitestTags {
   return {
     kind: 'resolved',
     tags: {
-      include: include ?? defaultTestTags.include,
+      include: include ?? muirShadowcatStorybookDefaultTestTags.include,
       exclude: exclude ?? [],
       skip: skip ?? [],
     },
   };
 }
 
-function parseResult(value: unknown): LoadResult {
-  if (isRecord(value)) {
+function parseResult(value: unknown): MuirShadowcatStorybookLoadResult {
+  if (muirMoiraStorybookIsRecord(value)) {
     const { kind, storyFiles, pluginNames, error } = value;
 
     if (
       kind === 'loaded' &&
-      isStringArray(storyFiles) &&
-      isStringArray(pluginNames)
+      muirMoiraStorybookIsStringArray(storyFiles) &&
+      muirMoiraStorybookIsStringArray(pluginNames)
     ) {
       return { kind, storyFiles, pluginNames };
     }
@@ -335,6 +354,6 @@ function parseResult(value: unknown): LoadResult {
   }
 
   throw new Error(
-    `${packageName}: the Storybook loader wrote a result of an unknown shape`,
+    `${muirShadowcatStorybookPackageName}: the Storybook loader wrote a result of an unknown shape`,
   );
 }

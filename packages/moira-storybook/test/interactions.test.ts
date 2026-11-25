@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { csfShapes } from '../src/csf.ts';
-import { type Interaction, interactionsOf } from '../src/interactions.ts';
-import { field } from '../src/node-field.ts';
-import { descendants, memberName } from '../src/node-tree.ts';
+import { muirMoiraStorybookCsfShapes } from '../src/csf.ts';
+import {
+  type MuirMoiraStorybookInteraction,
+  muirMoiraStorybookInteractionsOf,
+} from '../src/interactions.ts';
+import { muirMoiraStorybookField } from '../src/node-field.ts';
+import {
+  muirMoiraStorybookDescendants,
+  muirMoiraStorybookMemberName,
+} from '../src/node-tree.ts';
 import {
   inPlay,
   interactionsIn,
@@ -499,9 +505,13 @@ describe('interactionsOf kinds', () => {
 /** The first interaction of `source`, once per parse. */
 function firstInteractions(
   source: string,
-): readonly (Interaction | undefined)[] {
+): readonly (MuirMoiraStorybookInteraction | undefined)[] {
   return programsOf(source).map(
-    (program) => interactionsOf(program, csfShapes(program)).all[0],
+    (program) =>
+      muirMoiraStorybookInteractionsOf(
+        program,
+        muirMoiraStorybookCsfShapes(program),
+      ).all[0],
   );
 }
 
@@ -514,7 +524,9 @@ describe('interactionsOf targetValue', () => {
       ),
     ).forEach((interaction) => {
       assert.equal(
-        memberName(field(interaction?.targetValue, 'callee')),
+        muirMoiraStorybookMemberName(
+          muirMoiraStorybookField(interaction?.targetValue, 'callee'),
+        ),
         'findByRole',
       );
     });
@@ -526,7 +538,10 @@ function methodsIn(
   source: string,
 ): readonly (readonly (string | undefined)[])[] {
   return programsOf(source).map((program) =>
-    interactionsOf(program, csfShapes(program)).all.map(({ method }) => method),
+    muirMoiraStorybookInteractionsOf(
+      program,
+      muirMoiraStorybookCsfShapes(program),
+    ).all.map(({ method }) => method),
   );
 }
 
@@ -564,8 +579,8 @@ interface CallDescription {
 }
 
 function textOf(source: string, node: unknown): string | undefined {
-  const start = field(node, 'start');
-  const end = field(node, 'end');
+  const start = muirMoiraStorybookField(node, 'start');
+  const end = muirMoiraStorybookField(node, 'end');
 
   return typeof start === 'number' && typeof end === 'number'
     ? source.slice(start, end)
@@ -575,7 +590,10 @@ function textOf(source: string, node: unknown): string | undefined {
 /** The call and arguments of each interaction of `source`, once per parse. */
 function callsIn(source: string): readonly (readonly CallDescription[])[] {
   return programsOf(source).map((program) =>
-    interactionsOf(program, csfShapes(program)).all.map(({ call, args }) => ({
+    muirMoiraStorybookInteractionsOf(
+      program,
+      muirMoiraStorybookCsfShapes(program),
+    ).all.map(({ call, args }) => ({
       call: textOf(source, call),
       args: args.map((argument) => textOf(source, argument)),
     })),
@@ -649,18 +667,28 @@ describe('interactionsOf call and args', () => {
 /** The interactions of `source` and its Program, once per parse. */
 function readsOf(
   source: string,
-): readonly (readonly [unknown, ReturnType<typeof interactionsOf>])[] {
+): readonly (readonly [
+  unknown,
+  ReturnType<typeof muirMoiraStorybookInteractionsOf>,
+])[] {
   return programsOf(source).map(
     (program) =>
-      [program, interactionsOf(program, csfShapes(program))] as const,
+      [
+        program,
+        muirMoiraStorybookInteractionsOf(
+          program,
+          muirMoiraStorybookCsfShapes(program),
+        ),
+      ] as const,
   );
 }
 
 /** The first string literal of `program` whose value is `value`. */
 function literalIn(program: unknown, value: string): unknown {
-  return descendants(program).find(
+  return muirMoiraStorybookDescendants(program).find(
     (node) =>
-      field(node, 'type') === 'StringLiteral' && field(node, 'value') === value,
+      muirMoiraStorybookField(node, 'type') === 'StringLiteral' &&
+      muirMoiraStorybookField(node, 'value') === value,
   );
 }
 
@@ -706,8 +734,9 @@ describe('interactionsOf at', () => {
   it('gives the interaction whose statement is a node, by identity', () => {
     readsOf(inPlay('await userEvent.click(button);')).forEach(
       ([program, interactions]) => {
-        const statement = descendants(program).find(
-          (node) => field(node, 'type') === 'ExpressionStatement',
+        const statement = muirMoiraStorybookDescendants(program).find(
+          (node) =>
+            muirMoiraStorybookField(node, 'type') === 'ExpressionStatement',
         );
 
         assert.equal(

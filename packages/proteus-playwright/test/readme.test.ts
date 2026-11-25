@@ -1,14 +1,18 @@
 import { join } from 'node:path';
 
-import { builtInNames } from '@muirjs/moira-mutators';
-import { testReadmeTiers } from '@muirjs/test-util-mutator-packages';
+import { muirMoiraMutatorsBuiltInNames } from '@muirjs/moira-mutators';
+import { muirTestReadmeTiers } from '@muirjs/test-util-mutator-packages';
 
-import { mutatorSets } from '../src/mutators.ts';
-import { packageName } from '../src/package-name.ts';
+import { muirProteusPlaywrightMutatorSets } from '../src/mutators.ts';
+import { muirProteusPlaywrightPackageName } from '../src/package-name.ts';
 
-testReadmeTiers(join(import.meta.dirname, '..', 'README.md'), mutatorSets, {
-  packageName,
-  prefix: 'LzPlaywright',
-  builtIns: 'off',
-  builtInCount: builtInNames.length,
-});
+muirTestReadmeTiers(
+  join(import.meta.dirname, '..', 'README.md'),
+  muirProteusPlaywrightMutatorSets,
+  {
+    packageName: muirProteusPlaywrightPackageName,
+    prefix: 'MuirProteusPlaywright',
+    builtIns: 'off',
+    builtInCount: muirMoiraMutatorsBuiltInNames.length,
+  },
+);

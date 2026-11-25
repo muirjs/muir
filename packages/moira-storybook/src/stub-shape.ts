@@ -1,6 +1,12 @@
-import { isCall, unwrap } from './csf-nodes.ts';
-import { isRecord } from './is-record.ts';
-import { field, list } from './node-field.ts';
+import {
+  muirMoiraStorybookIsCall,
+  muirMoiraStorybookUnwrap,
+} from './csf-nodes.ts';
+import { muirMoiraStorybookIsRecord } from './is-record.ts';
+import {
+  muirMoiraStorybookField,
+  muirMoiraStorybookList,
+} from './node-field.ts';
 
 const stubMethods = [
   'mockReturnValue',
@@ -9,16 +15,18 @@ const stubMethods = [
   'mockImplementation',
 ] as const;
 
-export type StubMethod = (typeof stubMethods)[number];
+export type MuirMoiraStorybookStubMethod = (typeof stubMethods)[number];
 
 /** The stub method a spy call names, and whether it is the `Once` form. */
-export interface StubMethodCall {
-  readonly method: StubMethod;
+export interface MuirMoiraStorybookStubMethodCall {
+  readonly method: MuirMoiraStorybookStubMethod;
   readonly once: boolean;
 }
 
 /** The stub method call of a spy method name; `undefined` for any other name. */
-export function stubMethodOf(name: unknown): StubMethodCall | undefined {
+export function muirMoiraStorybookStubMethodOf(
+  name: unknown,
+): MuirMoiraStorybookStubMethodCall | undefined {
   const method = stubMethods.find(
     (candidate) => name === candidate || name === `${candidate}Once`,
   );
@@ -26,17 +34,21 @@ export function stubMethodOf(name: unknown): StubMethodCall | undefined {
   return method === undefined ? undefined : { method, once: name !== method };
 }
 
-export type WrittenStubMethod = StubMethod | `${StubMethod}Once`;
+export type MuirMoiraStorybookWrittenStubMethod =
+  | MuirMoiraStorybookStubMethod
+  | `${MuirMoiraStorybookStubMethod}Once`;
 
 /** The spy method name of a stub method call, the reverse of `stubMethodOf`. */
-export function writtenMethodOf({
+export function muirMoiraStorybookWrittenMethodOf({
   method,
   once,
-}: StubMethodCall): WrittenStubMethod {
+}: MuirMoiraStorybookStubMethodCall): MuirMoiraStorybookWrittenStubMethod {
   return once ? `${method}Once` : method;
 }
 
-export interface DefinitionTimeStub extends StubMethodCall, Span {
+export interface MuirMoiraStorybookDefinitionTimeStub
+  extends MuirMoiraStorybookStubMethodCall,
+    MuirMoiraStorybookSpan {
   readonly spy: string;
   /** Where the stub call starts: at the start of its chain, before any parentheses or cast around the spy call. */
   readonly start: number;
@@ -45,7 +57,7 @@ export interface DefinitionTimeStub extends StubMethodCall, Span {
   /** The line the stub call starts on, which is the line its chain starts on, not the line of the stub method. */
   readonly line: number;
   /** The spy call's span, inside any parentheses, cast or non-null assertion around it. */
-  readonly spyCall: Span;
+  readonly spyCall: MuirMoiraStorybookSpan;
   /** Where the stub method's name starts, after the `.` or `?.` that reads it. */
   readonly methodStart: number;
   /** The end of the stub call's callee and of its type arguments. The `(` of its argument list comes next, after any `)` of parentheses around the callee and the `?.` of an optional call that has no type arguments. */
@@ -56,32 +68,38 @@ export interface DefinitionTimeStub extends StubMethodCall, Span {
   readonly spyCallHasArguments: boolean;
 }
 
-export interface Span {
+export interface MuirMoiraStorybookSpan {
   readonly start: number;
   readonly end: number;
 }
 
 const functionType = /Function|ObjectMethod|ClassMethod|ClassPrivateMethod/;
 
-export function definitionTimeStubs(
+export function muirMoiraStorybookDefinitionTimeStubs(
   program: unknown,
-): readonly DefinitionTimeStub[] {
+): readonly MuirMoiraStorybookDefinitionTimeStub[] {
   return collectStubs(program, storybookTestFnNames(program));
 }
 
 function storybookTestFnNames(program: unknown): ReadonlySet<string> {
   return new Set(
-    list(field(program, 'body'))
+    muirMoiraStorybookList(muirMoiraStorybookField(program, 'body'))
       .filter(
-        (statement) => field(statement, 'source', 'value') === 'storybook/test',
+        (statement) =>
+          muirMoiraStorybookField(statement, 'source', 'value') ===
+          'storybook/test',
       )
-      .flatMap((statement) => list(field(statement, 'specifiers')))
+      .flatMap((statement) =>
+        muirMoiraStorybookList(
+          muirMoiraStorybookField(statement, 'specifiers'),
+        ),
+      )
       .filter(
         (specifier) =>
-          (field(specifier, 'imported', 'name') ??
-            field(specifier, 'imported', 'value')) === 'fn',
+          (muirMoiraStorybookField(specifier, 'imported', 'name') ??
+            muirMoiraStorybookField(specifier, 'imported', 'value')) === 'fn',
       )
-      .map((specifier) => field(specifier, 'local', 'name'))
+      .map((specifier) => muirMoiraStorybookField(specifier, 'local', 'name'))
       .filter((local) => typeof local === 'string'),
   );
 }
@@ -89,16 +107,21 @@ function storybookTestFnNames(program: unknown): ReadonlySet<string> {
 function collectStubs(
   node: unknown,
   spies: ReadonlySet<string>,
-): readonly DefinitionTimeStub[] {
-  const type = field(node, 'type');
+): readonly MuirMoiraStorybookDefinitionTimeStub[] {
+  const type = muirMoiraStorybookField(node, 'type');
 
-  if (!isRecord(node) || typeof type !== 'string' || functionType.test(type)) {
+  if (
+    !muirMoiraStorybookIsRecord(node) ||
+    typeof type !== 'string' ||
+    functionType.test(type)
+  ) {
     return [];
   }
 
   const stub = definitionTimeStubAt(node, spies);
   const children: readonly unknown[] = Object.values(node).flatMap(
-    (value: unknown) => (Array.isArray(value) ? list(value) : [value]),
+    (value: unknown) =>
+      Array.isArray(value) ? muirMoiraStorybookList(value) : [value],
   );
 
   return [
@@ -110,24 +133,33 @@ function collectStubs(
 function definitionTimeStubAt(
   node: unknown,
   spies: ReadonlySet<string>,
-): DefinitionTimeStub | undefined {
-  const start = field(node, 'start');
-  const end = field(node, 'end');
-  const line = field(node, 'loc', 'start', 'line');
-  const callsBelow = chainBelow(field(node, 'callee', 'object'));
+): MuirMoiraStorybookDefinitionTimeStub | undefined {
+  const start = muirMoiraStorybookField(node, 'start');
+  const end = muirMoiraStorybookField(node, 'end');
+  const line = muirMoiraStorybookField(node, 'loc', 'start', 'line');
+  const callsBelow = chainBelow(
+    muirMoiraStorybookField(node, 'callee', 'object'),
+  );
   const spyCall = callsBelow.at(-1);
-  const spy = field(spyCall, 'callee', 'name');
-  const stub = stubMethodOf(field(node, 'callee', 'property', 'name'));
-  const spyCallStart = field(spyCall, 'start');
-  const spyCallEnd = field(spyCall, 'end');
-  const methodStart = field(node, 'callee', 'property', 'start');
+  const spy = muirMoiraStorybookField(spyCall, 'callee', 'name');
+  const stub = muirMoiraStorybookStubMethodOf(
+    muirMoiraStorybookField(node, 'callee', 'property', 'name'),
+  );
+  const spyCallStart = muirMoiraStorybookField(spyCall, 'start');
+  const spyCallEnd = muirMoiraStorybookField(spyCall, 'end');
+  const methodStart = muirMoiraStorybookField(
+    node,
+    'callee',
+    'property',
+    'start',
+  );
   const calleeEnd =
-    field(node, 'typeArguments', 'end') ??
-    field(node, 'typeParameters', 'end') ??
-    field(node, 'callee', 'end');
+    muirMoiraStorybookField(node, 'typeArguments', 'end') ??
+    muirMoiraStorybookField(node, 'typeParameters', 'end') ??
+    muirMoiraStorybookField(node, 'callee', 'end');
 
   if (
-    !isCall(node) ||
+    !muirMoiraStorybookIsCall(node) ||
     typeof start !== 'number' ||
     typeof end !== 'number' ||
     typeof line !== 'number' ||
@@ -135,8 +167,8 @@ function definitionTimeStubAt(
     typeof spyCallEnd !== 'number' ||
     typeof methodStart !== 'number' ||
     typeof calleeEnd !== 'number' ||
-    field(node, 'callee', 'computed') === true ||
-    !isCall(spyCall) ||
+    muirMoiraStorybookField(node, 'callee', 'computed') === true ||
+    !muirMoiraStorybookIsCall(spyCall) ||
     typeof spy !== 'string' ||
     !spies.has(spy) ||
     stub === undefined
@@ -155,17 +187,21 @@ function definitionTimeStubAt(
     calleeEnd,
     firstOfChain: !callsBelow.some(
       (call) =>
-        stubMethodOf(field(call, 'callee', 'property', 'name')) !== undefined,
+        muirMoiraStorybookStubMethodOf(
+          muirMoiraStorybookField(call, 'callee', 'property', 'name'),
+        ) !== undefined,
     ),
-    spyCallHasArguments: list(field(spyCall, 'arguments')).length > 0,
+    spyCallHasArguments:
+      muirMoiraStorybookList(muirMoiraStorybookField(spyCall, 'arguments'))
+        .length > 0,
   };
 }
 
 /** The stubs of `stub`'s chain from its first up to `stub`: the stubs that share its spy call and end no later. */
-export function chainUpTo<
-  TStub extends Pick<DefinitionTimeStub, 'spyCall' | 'end'>,
+export function muirMoiraStorybookChainUpTo<
+  TStub extends Pick<MuirMoiraStorybookDefinitionTimeStub, 'spyCall' | 'end'>,
 >(
-  stub: Pick<DefinitionTimeStub, 'spyCall' | 'end'>,
+  stub: Pick<MuirMoiraStorybookDefinitionTimeStub, 'spyCall' | 'end'>,
   stubs: readonly TStub[],
 ): readonly TStub[] {
   return stubs.filter(
@@ -174,19 +210,19 @@ export function chainUpTo<
   );
 }
 
-export type StubRewrite =
+export type MuirMoiraStorybookStubRewrite =
   | 'rewritten'
   | 'once-not-rewritten'
   | 'chain-not-rewritten'
   | 'spy-arguments-not-rewritten';
 
 /** How the mock transformer's rule treats `stub`: rewritten, or left alone as a `Once` stub, a stub after the first of its chain, or a stub whose spy call takes arguments, which the rewrite would replace. */
-export function mockTransformerRewrite(
+export function muirMoiraStorybookMockTransformerRewrite(
   stub: Pick<
-    DefinitionTimeStub,
+    MuirMoiraStorybookDefinitionTimeStub,
     'once' | 'firstOfChain' | 'spyCallHasArguments'
   >,
-): StubRewrite {
+): MuirMoiraStorybookStubRewrite {
   if (stub.once) {
     return 'once-not-rewritten';
   }
@@ -203,14 +239,15 @@ const passedThrough: ReadonlySet<unknown> = new Set(['mockName', 'mockClear']);
 
 /** The nodes a stub is chained on, read down from it with parentheses and casts unwrapped, nearest first: each stub or passed-through call, then the node that ends the chain, which is the spy call when the chain starts at one. */
 function chainBelow(written: unknown): readonly unknown[] {
-  const node = unwrap(written);
-  const name = field(node, 'callee', 'property', 'name');
+  const node = muirMoiraStorybookUnwrap(written);
+  const name = muirMoiraStorybookField(node, 'callee', 'property', 'name');
   const chainsOn =
-    isCall(node) &&
-    field(node, 'callee', 'computed') !== true &&
-    (stubMethodOf(name) !== undefined || passedThrough.has(name));
+    muirMoiraStorybookIsCall(node) &&
+    muirMoiraStorybookField(node, 'callee', 'computed') !== true &&
+    (muirMoiraStorybookStubMethodOf(name) !== undefined ||
+      passedThrough.has(name));
 
   return chainsOn
-    ? [node, ...chainBelow(field(node, 'callee', 'object'))]
+    ? [node, ...chainBelow(muirMoiraStorybookField(node, 'callee', 'object'))]
     : [node];
 }

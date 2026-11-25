@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  lzMutantLine,
-  lzMutantsByKey,
-  lzParseReport,
+  muirMutantLine,
+  muirMutantsByKey,
+  muirParseReport,
 } from '../../src/report.ts';
 
 function failure(json: string): string {
   try {
-    lzParseReport(json);
+    muirParseReport(json);
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }
@@ -43,9 +43,9 @@ const compileError = {
   location: { start: { line: 1, column: 39 }, end: { line: 3, column: 2 } },
 };
 
-describe('lzParseReport', () => {
+describe('muirParseReport', () => {
   it('reads each mutant with the fields the report leaves out as empty', () => {
-    const report = lzParseReport(reportOf([compileError]));
+    const report = muirParseReport(reportOf([compileError]));
 
     assert.deepEqual(report.get('src/grow.ts'), [
       {
@@ -65,7 +65,7 @@ describe('lzParseReport', () => {
   });
 
   it('reads whether a mutant is static', () => {
-    const report = lzParseReport(
+    const report = muirParseReport(
       reportOf([{ ...timeout, static: true }, compileError]),
     );
 
@@ -85,7 +85,7 @@ describe('lzParseReport', () => {
       start: { line, column },
       end: { line, column },
     });
-    const report = lzParseReport(
+    const report = muirParseReport(
       reportOf([
         {
           mutatorName: 'EqualityOperator',
@@ -120,7 +120,7 @@ describe('lzParseReport', () => {
       ]),
     );
 
-    assert.deepEqual(report.get('src/grow.ts')?.map(lzMutantLine), [
+    assert.deepEqual(report.get('src/grow.ts')?.map(muirMutantLine), [
       '1:51 BlockStatement {} Killed',
       '5:44 BlockStatement {} Killed',
       '6:10 ConditionalExpression false Killed',
@@ -132,7 +132,9 @@ describe('lzParseReport', () => {
   it('names the first field that does not fit', () => {
     assert.throws(
       () =>
-        lzParseReport(reportOf([compileError, { ...timeout, status: 'Slow' }])),
+        muirParseReport(
+          reportOf([compileError, { ...timeout, status: 'Slow' }]),
+        ),
       {
         message:
           'not a mutation report: files["src/grow.ts"].mutants[1].status',
@@ -142,7 +144,7 @@ describe('lzParseReport', () => {
 
   it('names a static field that is not a boolean', () => {
     assert.throws(
-      () => lzParseReport(reportOf([{ ...timeout, static: 'yes' }])),
+      () => muirParseReport(reportOf([{ ...timeout, static: 'yes' }])),
       {
         message:
           'not a mutation report: files["src/grow.ts"].mutants[0].static',
@@ -153,7 +155,7 @@ describe('lzParseReport', () => {
   it('names a location without a start position', () => {
     assert.throws(
       () =>
-        lzParseReport(
+        muirParseReport(
           reportOf([{ ...timeout, location: { start: { line: 2 } } }]),
         ),
       {
@@ -166,7 +168,7 @@ describe('lzParseReport', () => {
   it('names a location without an end position', () => {
     assert.throws(
       () =>
-        lzParseReport(
+        muirParseReport(
           reportOf([
             { ...timeout, location: { ...timeout.location, end: { line: 2 } } },
           ]),
@@ -179,13 +181,13 @@ describe('lzParseReport', () => {
   });
 
   it('refuses a report without files', () => {
-    assert.throws(() => lzParseReport('{"schemaVersion":"2"}'), {
+    assert.throws(() => muirParseReport('{"schemaVersion":"2"}'), {
       message: 'not a mutation report: files',
     });
   });
 
   it('refuses JSON that is not an object without naming a field', () => {
-    assert.throws(() => lzParseReport('[]'), {
+    assert.throws(() => muirParseReport('[]'), {
       message: 'not a mutation report',
     });
   });
@@ -218,7 +220,7 @@ describe('lzParseReport', () => {
   });
 
   it('sorts by start position before mutator, and by mutator before replacement and end position', () => {
-    const report = lzParseReport(
+    const report = muirParseReport(
       reportOf([
         {
           ...timeout,
@@ -259,7 +261,7 @@ describe('lzParseReport', () => {
       ]),
     );
 
-    assert.deepEqual(report.get('src/grow.ts')?.map(lzMutantLine), [
+    assert.deepEqual(report.get('src/grow.ts')?.map(muirMutantLine), [
       '1:1 A a Timeout',
       '2:1 B b Timeout',
       '3:1 A b Timeout',
@@ -268,7 +270,7 @@ describe('lzParseReport', () => {
   });
 
   it('sorts a greater mutator after a smaller one even when its replacement and end come first', () => {
-    const report = lzParseReport(
+    const report = muirParseReport(
       reportOf([
         {
           ...timeout,
@@ -291,7 +293,7 @@ describe('lzParseReport', () => {
       ]),
     );
 
-    assert.deepEqual(report.get('src/grow.ts')?.map(lzMutantLine), [
+    assert.deepEqual(report.get('src/grow.ts')?.map(muirMutantLine), [
       '3:1 A b Timeout',
       '3:1 B a Timeout',
     ]);
@@ -303,7 +305,7 @@ describe('lzParseReport', () => {
       location: { start: { line: 2, column: 10 }, end: { line, column } },
     });
     const ends = (mutants: unknown[]) =>
-      lzParseReport(reportOf(mutants))
+      muirParseReport(reportOf(mutants))
         .get('src/grow.ts')
         ?.map(({ endLine, endColumn }) => `${endLine}:${endColumn}`);
 
@@ -324,24 +326,24 @@ describe('lzParseReport', () => {
   });
 });
 
-describe('lzMutantsByKey', () => {
+describe('muirMutantsByKey', () => {
   it('names the key that two mutants share', () => {
-    const report = lzParseReport(reportOf([compileError, timeout, timeout]));
+    const report = muirParseReport(reportOf([compileError, timeout, timeout]));
 
-    assert.throws(() => lzMutantsByKey(report), {
+    assert.throws(() => muirMutantsByKey(report), {
       message:
         'Two mutants share the key "src/grow.ts:2:10-2:15 BooleanLiteral true"; the comparison would drop one.',
     });
   });
 });
 
-describe('lzMutantLine', () => {
+describe('muirMutantLine', () => {
   it('collapses whitespace runs in the replacement to one space', () => {
-    const report = lzParseReport(
+    const report = muirParseReport(
       reportOf([{ ...timeout, replacement: '{\n  return\ttrue;\n}' }]),
     );
 
-    assert.deepEqual(report.get('src/grow.ts')?.map(lzMutantLine), [
+    assert.deepEqual(report.get('src/grow.ts')?.map(muirMutantLine), [
       '2:10 BooleanLiteral { return true; } Timeout',
     ]);
   });
@@ -350,9 +352,9 @@ describe('lzMutantLine', () => {
     const withoutReplacement = Object.fromEntries(
       Object.entries(timeout).filter(([key]) => key !== 'replacement'),
     );
-    const report = lzParseReport(reportOf([withoutReplacement]));
+    const report = muirParseReport(reportOf([withoutReplacement]));
 
-    assert.deepEqual(report.get('src/grow.ts')?.map(lzMutantLine), [
+    assert.deepEqual(report.get('src/grow.ts')?.map(muirMutantLine), [
       '2:10 BooleanLiteral Timeout',
     ]);
   });

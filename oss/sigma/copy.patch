@@ -10,7 +10,7 @@ index 46d143a..cd9f2f8 100644
 +# Stryker
 +.stryker-tmp
 +/reports
-+.lz-playwright-server-mutants
++.muir-playwright-server-mutants
 diff --git a/packages/browser-tests/playwright.stryker.config.ts b/packages/browser-tests/playwright.stryker.config.ts
 new file mode 100644
 index 0000000..43a4541

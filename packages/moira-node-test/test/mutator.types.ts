@@ -1,8 +1,8 @@
 import type { NodePath, types } from '@babel/core';
 
-import type { LzMutator } from '../src/mutator.ts';
+import type { MuirMoiraNodeTestMutator } from '../src/mutator.ts';
 
-export const narrowed: LzMutator = {
+export const narrowed: MuirMoiraNodeTestMutator = {
   name: 'Narrowed',
   sample: '',
   // @ts-expect-error The instrumenter passes every path, not only call expressions.

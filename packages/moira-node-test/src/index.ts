@@ -1,32 +1,32 @@
 export {
-  lzAwaited,
-  lzCalleeRoot,
-  lzImportOf,
-  lzPropertyName,
-  type LzImportOf,
+  muirMoiraNodeTestAwaited,
+  muirMoiraNodeTestCalleeRoot,
+  muirMoiraNodeTestImportOf,
+  muirMoiraNodeTestPropertyName,
+  type MuirMoiraNodeTestImportOf,
 } from './ast.ts';
 export {
-  lzInstall,
-  type LzInstallMode,
-  type LzInstallOptions,
+  muirMoiraNodeTestInstall,
+  type MuirMoiraNodeTestInstallMode,
+  type MuirMoiraNodeTestInstallOptions,
 } from './install.ts';
 export {
-  lzResolveFromCore,
-  type LzInstrumentedMutant,
-  type LzInstrumenter,
-  type LzListedMutator,
-  type LzSourceFile,
+  muirMoiraNodeTestResolveFromCore,
+  type MuirMoiraNodeTestInstrumentedMutant,
+  type MuirMoiraNodeTestInstrumenter,
+  type MuirMoiraNodeTestListedMutator,
+  type MuirMoiraNodeTestSourceFile,
 } from './instrumenter.ts';
 export {
-  lzIsOwn,
-  lzToNodeMutator,
-  type LzBabelTypes,
-  type LzNodeMutatorLike,
-  type LzMutator,
+  muirMoiraNodeTestIsOwn,
+  muirMoiraNodeTestToNodeMutator,
+  type MuirMoiraNodeTestBabelTypes,
+  type MuirMoiraNodeTestMutatorLike,
+  type MuirMoiraNodeTestMutator,
 } from './mutator.ts';
 export {
-  lzAllMutators,
-  lzSelectMutators,
-  type LzMutatorOptions,
-  type LzMutatorSets,
+  muirMoiraNodeTestAllMutators,
+  muirMoiraNodeTestSelectMutators,
+  type MuirMoiraNodeTestMutatorOptions,
+  type MuirMoiraNodeTestMutatorSets,
 } from './select.ts';

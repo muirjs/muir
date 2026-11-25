@@ -8,7 +8,7 @@ import {
   namespaceSteps,
 } from './support/case.ts';
 
-const interaction = 'LzStorybookInteraction';
+const interaction = 'MuirProteusStorybookTestInteraction';
 
 // The user-event 14 methods that act on the page, with arguments.
 const userEventCalls: readonly (readonly [string, string])[] = [

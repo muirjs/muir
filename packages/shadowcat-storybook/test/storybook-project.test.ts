@@ -13,10 +13,10 @@ import { describe, it, type TestContext } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
-  isStoryFile,
-  parseLoaderResult,
-  storyFilePaths,
-  storybookProject,
+  muirShadowcatStorybookIsStoryFile,
+  muirShadowcatStorybookParseLoaderResult,
+  muirShadowcatStorybookStoryFilePaths,
+  muirShadowcatStorybookProject,
 } from '../src/storybook-project.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -27,7 +27,10 @@ function setup(fixture: string, root = fixtures) {
     info: (message: string) => lines.push(`info: ${message}`),
     warn: (message: string) => lines.push(`warn: ${message}`),
   };
-  const project = storybookProject(join(root, fixture, '.storybook'), log);
+  const project = muirShadowcatStorybookProject(
+    join(root, fixture, '.storybook'),
+    log,
+  );
 
   return {
     lines,
@@ -38,7 +41,7 @@ function setup(fixture: string, root = fixtures) {
 }
 
 function freshSetup(t: TestContext, fixture: string) {
-  const root = mkdtempSync(join(tmpdir(), 'lz-storybook-project-'));
+  const root = mkdtempSync(join(tmpdir(), 'muir-storybook-project-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   cpSync(join(fixtures, fixture), join(root, fixture), { recursive: true });
   cpSync(join(fixtures, 'framework'), join(root, 'framework'), {
@@ -71,7 +74,10 @@ describe('storybookProject', () => {
       const { project, file } = setup('no-main');
 
       assert.equal(
-        isStoryFile(project, file('src', 'Button.stories.tsx')),
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          file('src', 'Button.stories.tsx'),
+        ),
         true,
       );
     });
@@ -79,27 +85,39 @@ describe('storybookProject', () => {
     it('counts a *.story.* file as a story file', () => {
       const { project, file } = setup('no-main');
 
-      assert.equal(isStoryFile(project, file('src', 'Button.story.ts')), true);
+      assert.equal(
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          file('src', 'Button.story.ts'),
+        ),
+        true,
+      );
     });
 
     it('does not count a file without .stories. or .story. in its name', () => {
       const { project, file } = setup('no-main');
 
-      assert.equal(isStoryFile(project, file('src', 'Button.tsx')), false);
+      assert.equal(
+        muirShadowcatStorybookIsStoryFile(project, file('src', 'Button.tsx')),
+        false,
+      );
     });
 
     it("does not count a *.stories.* file that Storybook's CSF indexer does not read", () => {
       const { project, file } = setup('no-main');
 
       assert.equal(
-        isStoryFile(project, file('src', 'Button.stories.cts')),
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          file('src', 'Button.stories.cts'),
+        ),
         false,
       );
     });
 
     it('names the config folder as an absolute path when given a relative one', () => {
       const { project } = setup('no-main');
-      const relativeProject = storybookProject(
+      const relativeProject = muirShadowcatStorybookProject(
         relative(process.cwd(), project.configDir),
         { info: () => undefined, warn: () => undefined },
       );
@@ -137,12 +155,12 @@ describe('storybookProject', () => {
   });
 
   it('reads a preview it cannot parse as unreadable, with no tags', (t) => {
-    const root = mkdtempSync(join(tmpdir(), 'lz-storybook-project-'));
+    const root = mkdtempSync(join(tmpdir(), 'muir-storybook-project-'));
     t.after(() => rmSync(root, { recursive: true, force: true }));
     mkdirSync(join(root, '.storybook'));
     writeFileSync(join(root, '.storybook', 'preview.ts'), 'export const = ;\n');
 
-    const project = storybookProject(join(root, '.storybook'), {
+    const project = muirShadowcatStorybookProject(join(root, '.storybook'), {
       info: () => undefined,
       warn: () => undefined,
     });
@@ -161,11 +179,11 @@ describe('storybookProject', () => {
   });
 
   it('reads a preview it cannot read as unreadable, with no tags', (t) => {
-    const root = mkdtempSync(join(tmpdir(), 'lz-storybook-project-'));
+    const root = mkdtempSync(join(tmpdir(), 'muir-storybook-project-'));
     t.after(() => rmSync(root, { recursive: true, force: true }));
     mkdirSync(join(root, '.storybook', 'preview.ts'), { recursive: true });
 
-    const project = storybookProject(join(root, '.storybook'), {
+    const project = muirShadowcatStorybookProject(join(root, '.storybook'), {
       info: () => undefined,
       warn: () => undefined,
     });
@@ -184,14 +202,14 @@ describe('storybookProject', () => {
   });
 
   it('warns once, naming a preview it cannot parse and the error', (t) => {
-    const root = mkdtempSync(join(tmpdir(), 'lz-storybook-project-'));
+    const root = mkdtempSync(join(tmpdir(), 'muir-storybook-project-'));
     t.after(() => rmSync(root, { recursive: true, force: true }));
     mkdirSync(join(root, '.storybook'));
     const preview = join(root, '.storybook', 'preview.ts');
     writeFileSync(preview, 'export const = ;\n');
     const lines: string[] = [];
 
-    storybookProject(join(root, '.storybook'), {
+    muirShadowcatStorybookProject(join(root, '.storybook'), {
       info: () => undefined,
       warn: (message: string) => lines.push(message),
     });
@@ -216,7 +234,10 @@ describe('storybookProject', () => {
       const { project, file } = setup('globs');
 
       assert.equal(
-        isStoryFile(project, file('src', 'Button.stories.tsx')),
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          file('src', 'Button.stories.tsx'),
+        ),
         true,
       );
     });
@@ -226,7 +247,10 @@ describe('storybookProject', () => {
       const path = file('src', 'Button.stories.tsx');
 
       assert.equal(
-        isStoryFile(project, path.charAt(0).toLowerCase() + path.slice(1)),
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          path.charAt(0).toLowerCase() + path.slice(1),
+        ),
         true,
       );
     });
@@ -247,7 +271,7 @@ describe('storybookProject', () => {
       const { project } = setup('scan');
 
       assert.deepEqual(
-        storyFilePaths(project).map((fileName) =>
+        muirShadowcatStorybookStoryFilePaths(project).map((fileName) =>
           fileName.split('/').slice(-2).join('/'),
         ),
         ['src/Listed.stories.tsx'],
@@ -258,7 +282,10 @@ describe('storybookProject', () => {
       const { project, file } = setup('globs');
 
       assert.equal(
-        isStoryFile(project, file('other', 'Outside.stories.tsx')),
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          file('other', 'Outside.stories.tsx'),
+        ),
         false,
       );
     });
@@ -269,7 +296,10 @@ describe('storybookProject', () => {
       const { project, file } = setup('main-cts');
 
       assert.equal(
-        isStoryFile(project, file('src', 'Button.stories.cts')),
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          file('src', 'Button.stories.cts'),
+        ),
         true,
       );
     });
@@ -277,7 +307,10 @@ describe('storybookProject', () => {
     it('does not count a matched .mdx file as a story file', () => {
       const { project, file } = setup('main-cts');
 
-      assert.equal(isStoryFile(project, file('src', 'Docs.mdx')), false);
+      assert.equal(
+        muirShadowcatStorybookIsStoryFile(project, file('src', 'Docs.mdx')),
+        false,
+      );
     });
   });
 
@@ -319,14 +352,17 @@ describe('storybookProject', () => {
     it("loads the project's Storybook instead of the plugin's", () => {
       const { project, file } = setup('own-storybook');
 
-      assert.equal(isStoryFile(project, file('src', 'Picked.ts')), true);
+      assert.equal(
+        muirShadowcatStorybookIsStoryFile(project, file('src', 'Picked.ts')),
+        true,
+      );
     });
   });
 
   describe('with a Vitest config that runs the stories', () => {
     function vitestSetup(fixture: string, configFile: string) {
       const lines: string[] = [];
-      const project = storybookProject(
+      const project = muirShadowcatStorybookProject(
         join(fixtures, fixture, '.storybook'),
         {
           info: (message: string) => lines.push(`info: ${message}`),
@@ -423,13 +459,13 @@ describe('storybookProject', () => {
       // Storybook found no story file through a junction in the temp folder, which can be on another drive than the working directory.
       const tmp = fileURLToPath(new URL('../../../tmp/', import.meta.url));
       mkdirSync(tmp, { recursive: true });
-      const root = mkdtempSync(join(tmp, 'lz-storybook-link-'));
+      const root = mkdtempSync(join(tmp, 'muir-storybook-link-'));
       const linked = join(root, 'vitest-tags');
 
       try {
         symlinkSync(join(fixtures, 'vitest-tags'), linked, 'junction');
 
-        const project = storybookProject(
+        const project = muirShadowcatStorybookProject(
           join(linked, '.storybook'),
           { info: () => undefined, warn: () => undefined },
           join(linked, 'vitest.several.config.ts'),
@@ -442,7 +478,7 @@ describe('storybookProject', () => {
     });
 
     it('reads the tag filter of the Storybook project when Storybook lists no story file', () => {
-      const project = storybookProject(
+      const project = muirShadowcatStorybookProject(
         join(fixtures, 'no-main', '.storybook'),
         { info: () => undefined, warn: () => undefined },
         join(fixtures, 'vitest-tags', 'vitest.config.ts'),
@@ -461,7 +497,7 @@ describe('storybookProject', () => {
         'vitest.broken.config.ts',
       );
 
-      const project = storybookProject(
+      const project = muirShadowcatStorybookProject(
         join(fixtures, 'vitest-tags', '.storybook'),
         {
           info: (message: string) => lines.push(`info: ${message}`),
@@ -501,7 +537,7 @@ describe('storybookProject', () => {
         'vitest.missing.config.ts',
       );
 
-      const project = storybookProject(
+      const project = muirShadowcatStorybookProject(
         join(fixtures, 'vitest-tags', '.storybook'),
         {
           info: (message: string) => lines.push(`info: ${message}`),
@@ -525,7 +561,7 @@ describe('storybookProject', () => {
       importInLoader(t, 'no-vitest');
       const lines: string[] = [];
 
-      const project = storybookProject(
+      const project = muirShadowcatStorybookProject(
         join(fixtures, 'no-main', '.storybook'),
         {
           info: () => undefined,
@@ -556,7 +592,7 @@ describe('storybookProject', () => {
         'vitest.plain.config.ts',
       );
 
-      const project = storybookProject(
+      const project = muirShadowcatStorybookProject(
         join(fixtures, 'broken-vitest', '.storybook'),
         {
           info: () => undefined,
@@ -580,10 +616,13 @@ describe('storybookProject', () => {
       importInLoader(t, 'broken-vitest');
       const lines: string[] = [];
 
-      storybookProject(join(fixtures, 'broken-vitest', '.storybook'), {
-        info: () => undefined,
-        warn: (message: string) => lines.push(`warn: ${message}`),
-      });
+      muirShadowcatStorybookProject(
+        join(fixtures, 'broken-vitest', '.storybook'),
+        {
+          info: () => undefined,
+          warn: (message: string) => lines.push(`warn: ${message}`),
+        },
+      );
 
       assert.deepEqual(lines, [
         `warn: @muirjs/shadowcat-storybook: Vitest could not load its config from ${process.cwd()}, so the tested stories are the stories tagged test: Error: vitest/node of the broken-vitest fixture`,
@@ -593,7 +632,7 @@ describe('storybookProject', () => {
 
   describe('parseLoaderResult', () => {
     it('reads a tag filter of an unknown kind as unreadable', () => {
-      const { vitestTags } = parseLoaderResult({
+      const { vitestTags } = muirShadowcatStorybookParseLoaderResult({
         kind: 'no-main',
         testTags: { kind: 'other' },
       });
@@ -602,7 +641,7 @@ describe('storybookProject', () => {
     });
 
     it('reads a failed tag filter without an error message as unreadable', () => {
-      const { vitestTags } = parseLoaderResult({
+      const { vitestTags } = muirShadowcatStorybookParseLoaderResult({
         kind: 'no-main',
         testTags: { kind: 'failed' },
       });
@@ -611,10 +650,13 @@ describe('storybookProject', () => {
     });
 
     it('throws on a result of an unknown kind', () => {
-      assert.throws(() => parseLoaderResult({ kind: 'other' }), {
-        message:
-          '@muirjs/shadowcat-storybook: the Storybook loader wrote a result of an unknown shape',
-      });
+      assert.throws(
+        () => muirShadowcatStorybookParseLoaderResult({ kind: 'other' }),
+        {
+          message:
+            '@muirjs/shadowcat-storybook: the Storybook loader wrote a result of an unknown shape',
+        },
+      );
     });
   });
 
@@ -623,7 +665,10 @@ describe('storybookProject', () => {
       const { project, file } = setup('failing');
 
       assert.equal(
-        isStoryFile(project, file('src', 'Button.stories.tsx')),
+        muirShadowcatStorybookIsStoryFile(
+          project,
+          file('src', 'Button.stories.tsx'),
+        ),
         true,
       );
     });

@@ -1,6 +1,6 @@
 export {
-  LzNodeTestTestRunner,
+  MuirSirynNodeTestTestRunner,
   strykerPlugins,
   strykerValidationSchema,
-  type LzNodeTestOptions,
+  type MuirSirynNodeTestOptions,
 } from './runner.ts';

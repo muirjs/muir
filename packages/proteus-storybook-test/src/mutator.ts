@@ -1,8 +1,8 @@
 import type { NodePath, types } from '@babel/core';
-import type { SampledMutator } from '@muirjs/moira-mutators';
+import type { MuirMoiraMutatorsSampledMutator } from '@muirjs/moira-mutators';
 
 // `as const` though Stryker leaves it unmutated (https://github.com/stryker-mutator/stryker-js/issues/6208): the compiler rejects a call to a member it lacks.
-export const babelTypeMembers = [
+export const muirProteusStorybookTestBabelTypeMembers = [
   'arrowFunctionExpression',
   'awaitExpression',
   'blockStatement',
@@ -20,8 +20,15 @@ export const babelTypeMembers = [
   'stringLiteral',
 ] as const satisfies readonly (keyof typeof types)[];
 
-export type BabelTypes = Pick<typeof types, (typeof babelTypeMembers)[number]>;
+export type MuirProteusStorybookTestBabelTypes = Pick<
+  typeof types,
+  (typeof muirProteusStorybookTestBabelTypeMembers)[number]
+>;
 
-export interface LzStorybookTestMutator extends SampledMutator {
-  mutate(path: NodePath, t: BabelTypes): Iterable<types.Node>;
+export interface MuirProteusStorybookTestMutator
+  extends MuirMoiraMutatorsSampledMutator {
+  mutate(
+    path: NodePath,
+    t: MuirProteusStorybookTestBabelTypes,
+  ): Iterable<types.Node>;
 }

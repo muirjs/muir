@@ -1,45 +1,53 @@
 import type {
-  MutatorOptions,
-  MutatorSets,
-  SampledMutator,
+  MuirMoiraMutatorsMutatorOptions,
+  MuirMoiraMutatorsMutatorSets,
+  MuirMoiraMutatorsSampledMutator,
 } from '@muirjs/moira-mutators';
 
 import {
-  assertionBeforeMutator,
-  clickFocusMutator,
-  interactionMutator,
-  interactionRepeatMutator,
-  interactionTargetMutator,
+  muirProteusStorybookTestAssertionBeforeMutator,
+  muirProteusStorybookTestClickFocusMutator,
+  muirProteusStorybookTestInteractionMutator,
+  muirProteusStorybookTestInteractionRepeatMutator,
+  muirProteusStorybookTestInteractionTargetMutator,
 } from './interaction-mutators.ts';
-import type { LzStorybookTestMutator } from './mutator.ts';
-import { spyStubMutator, spyStubOutcomeMutator } from './spy-stub.ts';
-import { storyGlobalsMutator } from './story-globals.ts';
-import { waitForMutator } from './wait-for.ts';
+import type { MuirProteusStorybookTestMutator } from './mutator.ts';
+import {
+  muirProteusStorybookTestSpyStubMutator,
+  muirProteusStorybookTestSpyStubOutcomeMutator,
+} from './spy-stub.ts';
+import { muirProteusStorybookTestStoryGlobalsMutator } from './story-globals.ts';
+import { muirProteusStorybookTestWaitForMutator } from './wait-for.ts';
 
 // In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave the roster out of a
 // mutation run. The literal names are what the option type reads.
-function roster<const T extends MutatorSets<LzStorybookTestMutator>>(
-  sets: T,
-): T {
+function roster<
+  const T extends MuirMoiraMutatorsMutatorSets<MuirProteusStorybookTestMutator>,
+>(sets: T): T {
   return sets;
 }
 
-export const mutatorSets = roster({
-  defaults: [interactionMutator(), clickFocusMutator()],
-  optIn: [interactionRepeatMutator()],
+export const muirProteusStorybookTestMutatorSets = roster({
+  defaults: [
+    muirProteusStorybookTestInteractionMutator(),
+    muirProteusStorybookTestClickFocusMutator(),
+  ],
+  optIn: [muirProteusStorybookTestInteractionRepeatMutator()],
   experimental: [
-    interactionTargetMutator(),
-    waitForMutator(),
-    assertionBeforeMutator(),
-    spyStubMutator(),
-    spyStubOutcomeMutator(),
-    storyGlobalsMutator(),
+    muirProteusStorybookTestInteractionTargetMutator(),
+    muirProteusStorybookTestWaitForMutator(),
+    muirProteusStorybookTestAssertionBeforeMutator(),
+    muirProteusStorybookTestSpyStubMutator(),
+    muirProteusStorybookTestSpyStubOutcomeMutator(),
+    muirProteusStorybookTestStoryGlobalsMutator(),
   ],
 });
 
-type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];
+type NamesIn<TTier extends readonly MuirMoiraMutatorsSampledMutator[]> =
+  TTier[number]['name'];
 
-export type LzStorybookTestMutatorOptions = MutatorOptions<
-  NamesIn<(typeof mutatorSets)['optIn']>,
-  NamesIn<(typeof mutatorSets)['experimental']>
->;
+export type MuirProteusStorybookTestMutatorOptions =
+  MuirMoiraMutatorsMutatorOptions<
+    NamesIn<(typeof muirProteusStorybookTestMutatorSets)['optIn']>,
+    NamesIn<(typeof muirProteusStorybookTestMutatorSets)['experimental']>
+  >;

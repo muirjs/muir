@@ -1,6 +1,9 @@
-import { csfShapes } from '../../src/csf.ts';
-import { type Interaction, interactionsOf } from '../../src/interactions.ts';
-import { field } from '../../src/node-field.ts';
+import { muirMoiraStorybookCsfShapes } from '../../src/csf.ts';
+import {
+  type MuirMoiraStorybookInteraction,
+  muirMoiraStorybookInteractionsOf,
+} from '../../src/interactions.ts';
+import { muirMoiraStorybookField } from '../../src/node-field.ts';
 import { programsOf } from './parse-module.ts';
 import { inPlayWith } from './story-source.ts';
 
@@ -16,14 +19,17 @@ export function inPlay(...statements: readonly string[]): string {
 }
 
 /** The kind of an interaction, with its method (`?` for an unknown key), its user-event origin, an arrow body statement and a hook. */
-function describeInteraction(interaction: Interaction): string {
+function describeInteraction(
+  interaction: MuirMoiraStorybookInteraction,
+): string {
   return [
     interaction.kind,
     ...(interaction.kind === 'userEvent' || interaction.kind === 'fireEvent'
       ? [interaction.method ?? '?']
       : []),
     ...(interaction.kind === 'userEvent' ? [interaction.origin] : []),
-    ...(field(interaction.node, 'type') === 'ExpressionStatement'
+    ...(muirMoiraStorybookField(interaction.node, 'type') ===
+    'ExpressionStatement'
       ? []
       : ['arrowBody']),
     ...(interaction.inHook ? ['inHook'] : []),
@@ -33,6 +39,9 @@ function describeInteraction(interaction: Interaction): string {
 /** The interactions of `source`, described, once per parse. */
 export function interactionsIn(source: string): readonly (readonly string[])[] {
   return programsOf(source).map((program) =>
-    interactionsOf(program, csfShapes(program)).all.map(describeInteraction),
+    muirMoiraStorybookInteractionsOf(
+      program,
+      muirMoiraStorybookCsfShapes(program),
+    ).all.map(describeInteraction),
   );
 }

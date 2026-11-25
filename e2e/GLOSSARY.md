@@ -29,7 +29,7 @@ The date before which every dependency of a prepared copy was published, so that
 ### Runs
 
 **Side**:
-One of the two runners compared on a project: `lz` (this runner) or `command` (Stryker's command runner running
+One of the two runners compared on a project: `muir` (this runner) or `command` (Stryker's command runner running
 `node --test`).
 _Avoid_: arm, variant
 

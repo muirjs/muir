@@ -17,28 +17,28 @@ playwrightMutatorRows(
   },
   [
     {
-      mutator: 'LzPlaywrightSleepWait',
+      mutator: 'MuirProteusPlaywrightSleepWait',
       original: 'await page.waitForTimeout(2_000);',
       replacement: ';',
       killer: 'is ready after a sleep',
       bystander: 'shows the heading',
     },
     {
-      mutator: 'LzPlaywrightStateWait',
+      mutator: 'MuirProteusPlaywrightStateWait',
       original: 'await page.waitForFunction(\'document.title === "Done"\');',
       replacement: ';',
       killer: 'titles the page when done',
       bystander: 'shows the heading',
     },
     {
-      mutator: 'LzPlaywrightNetworkWait',
+      mutator: 'MuirProteusPlaywrightNetworkWait',
       original: "await page.waitForResponse('**/api/visit');",
       replacement: ';',
       killer: 'records a visit',
       bystander: 'shows the heading',
     },
     {
-      mutator: 'LzPlaywrightClock',
+      mutator: 'MuirProteusPlaywrightClock',
       original: 'await page.clock.runFor(5_000);',
       replacement: ';',
       killer: 'expires the offer on the clock',

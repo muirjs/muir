@@ -3,7 +3,10 @@ import { test } from 'node:test';
 
 import { transformSync, types, type NodePath } from '@babel/core';
 
-import { argsMutator, sitesIn } from '../src/args.ts';
+import {
+  muirProteusStorybookArgsMutator,
+  muirProteusStorybookSitesIn,
+} from '../src/args.ts';
 
 /** What `sitesIn` throws for a story file whose traversal throws `thrown`, as a deep member chain overflows the stack. */
 function sitesInError(thrown: unknown): unknown {
@@ -28,7 +31,7 @@ function sitesInError(thrown: unknown): unknown {
             });
 
             try {
-              sitesIn(overflowing);
+              muirProteusStorybookSitesIn(overflowing);
             } catch (error) {
               errors.push(error);
             }
@@ -75,7 +78,9 @@ test('the args mutator reads no part of a file at a path that is neither the Pro
               },
             });
 
-            Array.from(argsMutator().mutate(counted, types));
+            Array.from(
+              muirProteusStorybookArgsMutator().mutate(counted, types),
+            );
           },
         },
       }),

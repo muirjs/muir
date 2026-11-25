@@ -5,20 +5,23 @@ import { describe, it } from 'node:test';
 import { types } from '@babel/core';
 
 import type {
-  LzInstrumentedMutant,
-  LzInstrumenter,
-  LzNodeMutatorLike,
-  LzMutator,
-  LzSourceFile,
+  MuirMoiraNodeTestInstrumentedMutant,
+  MuirMoiraNodeTestInstrumenter,
+  MuirMoiraNodeTestMutatorLike,
+  MuirMoiraNodeTestMutator,
+  MuirMoiraNodeTestSourceFile,
 } from '@muirjs/moira-node-test';
-import { corpusDiff, mutantDiff } from '../../src/mutant-diff.ts';
+import {
+  muirProteusNodeCorpusDiff,
+  muirProteusNodeMutantDiff,
+} from '../../src/mutant-diff.ts';
 
 function mutant(
   mutatorName: string,
   line: number,
   column: number,
   replacement = ';',
-): LzInstrumentedMutant {
+): MuirMoiraNodeTestInstrumentedMutant {
   return {
     mutatorName,
     replacement,
@@ -35,14 +38,24 @@ describe('mutantDiff', () => {
     ];
     const after = [
       mutant('StringLiteral', 2, 0, '""'),
-      mutant('LzNodeTestAssertCall', 0, 4, 'throw new Error(\n  "x"\n);'),
-      mutant('LzNodeTestAssertCall', 0, 4, 'throw new Error(\n  "x"\n);'),
+      mutant(
+        'MuirProteusNodeTestAssertCall',
+        0,
+        4,
+        'throw new Error(\n  "x"\n);',
+      ),
+      mutant(
+        'MuirProteusNodeTestAssertCall',
+        0,
+        4,
+        'throw new Error(\n  "x"\n);',
+      ),
     ];
 
-    assert.deepEqual(mutantDiff(before, after), {
+    assert.deepEqual(muirProteusNodeMutantDiff(before, after), {
       added: [
-        '1:5 LzNodeTestAssertCall throw new Error( "x" );',
-        '1:5 LzNodeTestAssertCall throw new Error( "x" );',
+        '1:5 MuirProteusNodeTestAssertCall throw new Error( "x" );',
+        '1:5 MuirProteusNodeTestAssertCall throw new Error( "x" );',
       ],
       removed: ['1:5 CallExpression ;', '3:1 StringLiteral ""'],
     });
@@ -54,7 +67,7 @@ describe('mutantDiff', () => {
       mutant('StringLiteral', 2, 0, '""'),
     ];
 
-    assert.deepEqual(mutantDiff(mutants, [...mutants]), {
+    assert.deepEqual(muirProteusNodeMutantDiff(mutants, [...mutants]), {
       added: [],
       removed: [],
     });
@@ -64,21 +77,28 @@ describe('mutantDiff', () => {
 describe('corpusDiff', () => {
   async function setup(names: string[]) {
     const read: string[] = [];
-    const instrumented: [LzSourceFile[], string[]][] = [];
-    const instrumenter: LzInstrumenter = {
+    const instrumented: [MuirMoiraNodeTestSourceFile[], string[]][] = [];
+    const instrumenter: MuirMoiraNodeTestInstrumenter = {
       dir: '/stryker/instrumenter',
       version: '10.1.1',
       allMutators: [{ name: 'StringLiteral', *mutate() {} }],
       setMutators() {},
       types,
-      instrument(files, mutators: readonly LzNodeMutatorLike[] = []) {
+      instrument(
+        files,
+        mutators: readonly MuirMoiraNodeTestMutatorLike[] = [],
+      ) {
         instrumented.push([[...files], mutators.map(({ name }) => name)]);
 
         return Promise.resolve(mutators.map(({ name }) => mutant(name, 0, 0)));
       },
     };
-    const own: LzMutator = { name: 'Own', sample: '', *mutate() {} };
-    const text = await corpusDiff(
+    const own: MuirMoiraNodeTestMutator = {
+      name: 'Own',
+      sample: '',
+      *mutate() {},
+    };
+    const text = await muirProteusNodeCorpusDiff(
       names,
       (name) => (name.includes('owned') ? [own] : []),
       () => Promise.resolve(instrumenter),
@@ -120,7 +140,7 @@ describe('corpusDiff', () => {
   });
 
   it('lists a mutant that a mutator removes', async () => {
-    const instrumenter: LzInstrumenter = {
+    const instrumenter: MuirMoiraNodeTestInstrumenter = {
       dir: '/stryker/instrumenter',
       version: '10.1.1',
       allMutators: [],
@@ -136,7 +156,7 @@ describe('corpusDiff', () => {
     };
 
     assert.equal(
-      await corpusDiff(
+      await muirProteusNodeCorpusDiff(
         ['a.ts'],
         () => [{ name: 'Own', sample: '', *mutate() {} }],
         () => Promise.resolve(instrumenter),

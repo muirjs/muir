@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { lzCheckRuntimeErrors, lzScoresAnyMutant } from './runtime-errors.ts';
+import {
+  muirCheckRuntimeErrors,
+  muirScoresAnyMutant,
+} from './runtime-errors.ts';
 
 const [reportFile] = process.argv.slice(2);
 
@@ -11,7 +14,7 @@ if (reportFile === undefined) {
   );
 }
 
-if (!lzScoresAnyMutant(JSON.parse(await readFile(reportFile, 'utf8')))) {
+if (!muirScoresAnyMutant(JSON.parse(await readFile(reportFile, 'utf8')))) {
   process.stderr.write(
     'Stryker scored no mutant, so its mutation score says nothing. Check that the mutate patterns match files ' +
       'with code to mutate.\n',
@@ -19,7 +22,7 @@ if (!lzScoresAnyMutant(JSON.parse(await readFile(reportFile, 'utf8')))) {
   process.exitCode = 1;
 }
 
-const unrecorded = await lzCheckRuntimeErrors(
+const unrecorded = await muirCheckRuntimeErrors(
   reportFile,
   join(import.meta.dirname, 'runtime-errors.json'),
 );

@@ -4,36 +4,36 @@
 // inverts. title.ts names the tests.
 import { it, type TestContext, type TestOptions } from 'node:test';
 
-import { formatName, formatTitle } from './title.ts';
+import { muirFormatName, muirFormatTitle } from './title.ts';
 
 /** A test's name: a string, or a function or class, which names it by its own name and is never called. */
-export type LzTestName =
+export type MuirTestName =
   | string
   | ((...args: never) => unknown)
   | (abstract new (...args: never) => unknown);
 
 /** node:test's options for each test of the table, and `fails`, which makes a test pass only when its body fails. */
-export interface LzTestTableOptions extends TestOptions {
+export interface MuirTestTableOptions extends TestOptions {
   readonly fails?: boolean;
 }
 
-export type Flags = Pick<
-  LzTestTableOptions,
+export type MuirFlags = Pick<
+  MuirTestTableOptions,
   'skip' | 'only' | 'todo' | 'fails'
 >;
-export type EachCallback = (...args: never) => void | Promise<void>;
+export type MuirEachCallback = (...args: never) => void | Promise<void>;
 type Body = (t: TestContext) => void | Promise<void>;
 
 /** The typed function a table returns, with the callback type its table function gives `fn`. */
-export interface LzTestTableReturn<TCallback> {
-  (name: LzTestName, fn?: TCallback, timeout?: number): void;
-  (name: LzTestName, options: LzTestTableOptions, fn?: TCallback): void;
+export interface MuirTestTableReturn<TCallback> {
+  (name: MuirTestName, fn?: TCallback, timeout?: number): void;
+  (name: MuirTestName, options: MuirTestTableOptions, fn?: TCallback): void;
 }
 
 /** What the table's returned function takes, in any of Vitest's call shapes. */
-export type Register<TCallback> = (
-  name: LzTestName,
-  optionsOrFn?: TCallback | LzTestTableOptions,
+export type MuirRegister<TCallback> = (
+  name: MuirTestName,
+  optionsOrFn?: TCallback | MuirTestTableOptions,
   fnOrTimeout?: TCallback | number,
 ) => void;
 
@@ -44,17 +44,17 @@ interface Case<TCallback> {
 }
 
 const signatures =
-  'lzTestEach and lzTestFor tables take (name, fn), (name, fn, timeout) or (name, options, fn); ' +
+  'muirTestEach and muirTestFor tables take (name, fn), (name, fn, timeout) or (name, options, fn); ' +
   'pass options as the second argument and a single function.';
 
 /**
  * Reads Vitest's call shapes: `(name, fn)`, `(name, fn, timeout)` and `(name, options, fn)`. Untyped callers can pass
  * other shapes, which throw; the parameter types include the nulls and the misplaced options they can pass.
  */
-export function parseArguments<TCallback extends EachCallback>(
-  optionsOrFn: TCallback | LzTestTableOptions | null | undefined,
-  fnOrTimeout: TCallback | LzTestTableOptions | number | null | undefined,
-): { options: LzTestTableOptions; fn?: TCallback } {
+export function muirParseArguments<TCallback extends MuirEachCallback>(
+  optionsOrFn: TCallback | MuirTestTableOptions | null | undefined,
+  fnOrTimeout: TCallback | MuirTestTableOptions | number | null | undefined,
+): { options: MuirTestTableOptions; fn?: TCallback } {
   if (
     optionsOrFn === null ||
     (typeof fnOrTimeout === 'object' && fnOrTimeout !== null) ||
@@ -80,18 +80,18 @@ export function parseArguments<TCallback extends EachCallback>(
 }
 
 /** Registers one test per case, each named after `name` and its case, with the table's options. */
-export function register<TCallback extends EachCallback>(
-  flags: Flags,
+export function muirRegister<TCallback extends MuirEachCallback>(
+  flags: MuirFlags,
   cases: readonly unknown[],
   caseOf: (row: unknown) => Case<TCallback>,
-): Register<TCallback> {
+): MuirRegister<TCallback> {
   return (name, optionsOrFn, fnOrTimeout) => {
-    const template = formatName(name);
-    const { options, fn } = parseArguments(optionsOrFn, fnOrTimeout);
+    const template = muirFormatName(name);
+    const { options, fn } = muirParseArguments(optionsOrFn, fnOrTimeout);
     const defined = Object.entries(options).filter(
       ([, value]) => value !== undefined,
     );
-    const { fails, ...testOptions }: LzTestTableOptions = {
+    const { fails, ...testOptions }: MuirTestTableOptions = {
       ...flags,
       ...Object.fromEntries(defined),
     };
@@ -105,7 +105,7 @@ export function register<TCallback extends EachCallback>(
       const body = fn && ((t: TestContext) => run(fn, t));
 
       it(
-        formatTitle(template, items, index),
+        muirFormatTitle(template, items, index),
         testOptions,
         fails ? body && failing(body) : body,
       );
