@@ -3,7 +3,7 @@
 The internal code that puts a `@muirjs` mutator package's mutators into the instrumenter that StrykerJS uses, since
 Stryker has no public way to add a mutator or to turn a built-in one off, and that checks the change took effect. It
 also holds the mutator code that more than one mutator package uses: the Babel mutator model of the Node mutator
-packages, the swap engine and the site readers it reads swap sites with.
+packages, the swap engine, and the site readers that the swap engine reads swap sites with.
 
 ## Language
 

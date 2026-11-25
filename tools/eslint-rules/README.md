@@ -1,6 +1,7 @@
 # @muirjs/eslint-rules
 
-The workspace's own ESLint rules, and tests that check the workspace's configs. It is private.
+The workspace's own ESLint rules, the tests that check the workspace's configs and package READMEs, and the scripts
+that read a mutation run's report. It is private.
 
 Rules, which `eslint.config.mjs` turns on:
 
@@ -17,8 +18,14 @@ Checks, run as its tests:
 - `eslint-config.test.ts`: the guards in `eslint.config.mjs` against `.only`, against disabling the type-safety rules,
   and for `curly`.
 - `eslint-severity.test.ts`: every rule the ESLint configs turn on runs at error level.
-- `runtime-errors.cli.ts`: fails a mutation run whose report holds a RuntimeError mutant that
-  `runtime-errors.json` does not list, as the mutation score leaves those out.
-- `mutation-summary.cli.ts`: writes a report's score and its mutants per status for the CI job summary.
+- `readmes.test.ts`: every package README shows the Muir badge, and its `## Exports` section names only what the
+  package's entry exports, its name prefix or its option keys.
 
 Run them with `npx nx test @muirjs/eslint-rules`.
+
+Scripts that run after a mutation run:
+
+- `runtime-errors.cli.ts`: the RuntimeError check, which the `mutate-src` and `mutate-test-code` targets in `nx.json`
+  run. It fails a mutation run whose report scored no mutant, or that holds a RuntimeError mutant that
+  `runtime-errors.json` does not list, as the mutation score leaves those out.
+- `mutation-summary.cli.ts`: writes a report's score and its mutants per status to the CI job summary.

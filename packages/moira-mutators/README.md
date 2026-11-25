@@ -37,6 +37,9 @@ and checks that the patch took effect.
   package's mutator already has (compared without case).
 - `muirMoiraMutatorsSelfCheck`: instruments one sample per mutator and throws when the instrumenter makes no mutant
   of it.
+- `muirMoiraMutatorsSelfCheckFile`, `muirMoiraMutatorsIsSelfCheckFile`: the name of the sample file that the
+  self-check instruments for a mutator, and the test of whether a file name is one, for a package's own patch that
+  must tell the samples from the user's files.
 - `muirMoiraMutatorsUndoOnThrow`: runs an install's changes and the checks after them. When one of them throws, it
   gives each object it was handed, such as the mutator list or the expression placer, back the own properties it had
   before, and rethrows. The restore is shallow, and it needs objects that can take new properties, as both of those

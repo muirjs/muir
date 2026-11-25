@@ -12,6 +12,9 @@ and it is not published.
 - `muirTestReadmeTiers(readmePath, tiers, facts)` registers tests that check a mutator package's README against
   its mutator tiers: the opening and the default install line give the size of each tier, each tier's table lists
   its mutators in roster order, and "None." stands under each empty tier's heading and only there.
+  `muirTestReadmeTierReasons(readmePath, tiers)` registers the test that the README's table under "Why a mutator is
+  opt-in or experimental" gives, for each opt-in and experimental mutator in roster order, why it is in its tier and
+  what would move it, and that a package without such mutators has no such table.
 - `muirComposeSkips(...)`, from `@muirjs/test-util-mutator-packages/compose-skips`, registers one test that
   composes each case's Storybook stories with and without each property a mutator skips, and fails a row where
   the two differ. The Storybook mutator packages use it to prove their equivalence skips.

@@ -6,8 +6,9 @@
 
 [StrykerJS](https://stryker-mutator.io/) plugins, mutators and utilities for JavaScript, TypeScript, Node.js,
 `node:test`, Playwright, React, Storybook and msw, as well as utilities and extensions for `node:test`, Storybook
-and Vite that work without StrykerJS. The packages are ESM-only and need Node.js 22.18 or later. CI tests them on
-Node.js 22, 24 and 26.
+and Vite that work without StrykerJS. The packages are ESM-only and need Node.js 22 or later. The `node:test` runner,
+the table tests and the three Node mutator packages need Node.js 22.18 or later. CI tests the packages on Node.js 22,
+24 and 26.
 
 ## Package names
 
@@ -26,7 +27,9 @@ Every package is named `@muirjs/<mutant>-<technology>`. The mutant names the kin
 
 Every exported symbol starts with its package's prefix, `Muir<Mutant><Technology>`, such as
 `MuirShadowcatStorybook` for `@muirjs/shadowcat-storybook`. So do the names that Stryker shows: the runner
-`muir-siryn-node-test`, the options key `muirSirynNodeTest` and the mutator `MuirProteusReactTextLiteral`.
+`muir-siryn-node-test`, the options key `muirSirynNodeTest` and the mutator `MuirProteusReactTextLiteral`. Two kinds
+of names are exceptions: the names that StrykerJS requires, `strykerPlugins` and `strykerValidationSchema`, and the
+names of extensions, which may use the shorter `Muir` prefix, as `muirTestEach` does.
 [ADR 0012](docs/adr/0012-muir-mutant-technology-prefix-on-every-name.md) records why.
 
 ## Packages
@@ -94,7 +97,7 @@ The workspace mutation tests itself with its own packages: every package's Stryk
 `@muirjs/proteus-node-test` mutators. Every config fails below a mutation score of 100
 ([ADR 0011](docs/adr/0011-gate-on-a-mutation-score-of-100.md)).
 
-- `packages/`: the published packages, and `test-util-mutator-packages` and `test-util-ignorer-packages`, the test
+- `packages/`: the packages listed above, and `test-util-mutator-packages` and `test-util-ignorer-packages`, the test
   support they share.
 - `apps/demo-app`, `apps/demo-app-e2e`: a React demo app and its Playwright tests, which the Playwright runner
   and the JSX mutators run against.

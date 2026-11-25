@@ -2,7 +2,7 @@
 
 How this repository finds new StrykerJS mutators for app code and for test code, and how it decides which
 built-in mutators a test-code configuration keeps. It is written from the Playwright and Storybook work of
-2026-11-03 to 2026-11-05 and is meant to be reused for other runners and APIs.
+2026-11-03 to 2026-11-05, and the same steps apply to other runners and APIs.
 
 Who decides: Lars. Claude and its agents research, propose, prototype and measure. Every mutator name, entry point
 (main or opt-in) and default is public API, so it is Lars's call. Record each ruling verbatim, dated, in the
@@ -63,8 +63,9 @@ Write one catalog per configuration (for example `.audit/common-mistakes/<area>.
   - **lint** when the pattern is visible in the syntax alone; search the lint plugins for the API and name the rule.
     A highly configurable rule that only matches the pattern when given a project-specific selector or pattern
     (`no-restricted-syntax`, `no-invalid-regexp`, `no-restricted-imports` and the like) counts as a custom lint
-    rule, not an available one. If no available rule exists, mark the row _lint-replaceable mutator candidate without existing lint rule_ and reconsider
-    it as a mutator proposal (section 3), so it gets a different triage outcome than Drop;
+    rule, not an available one. If no available rule exists, mark the row _lint-replaceable mutator candidate
+    without existing lint rule_ and reconsider it as a mutator proposal (section 3), so it gets a different triage
+    outcome than Drop;
   - **mutator** when only running the tests tells weak from strong (for example whether anything after a call
     depends on it);
   - **both** when a lint rule catches the obvious form and a mutator the rest.
@@ -76,7 +77,7 @@ Write one catalog per configuration (for example `.audit/common-mistakes/<area>.
 
 ### 2c. Lenses that serve the catalog
 
-Run these beside the catalog, one agent per lens, each writing its own file early (see section 7 on briefs).
+Run these beside the catalog, one agent per lens. Each agent writes its own file early (see section 8 on briefs).
 
 - **API lens.** Read the API's primary sources: the docs and the source in a local clone at the installed
   version's tag, never `node_modules`. It explains how each mistake behaves (does the call throw, resolve early,
@@ -103,7 +104,8 @@ One entry per mutator, in this shape:
 
 - The common mistake it exposes, with its row in the mistakes catalog (section 2b), and why a lint rule does not
   cover it.
-- Name: `Muir<Mutant><Technology><Name>`, letters only (for example `MuirProteusPlaywrightFulfill`, `MuirProteusStorybookTestInteraction`).
+- Name: `Muir<Mutant><Technology><Name>`, letters only (for example `MuirProteusPlaywrightFulfill` or
+  `MuirProteusStorybookTestInteraction`).
 - Configuration it serves, and the exact syntax it matches.
 - Before and after code.
 - What a kill means and what a survivor means. A survivor must point at a specific weak test or a specific missing

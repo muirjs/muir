@@ -1,4 +1,4 @@
-# Glossary Map
+# Glossary map
 
 ## Contexts
 
@@ -59,8 +59,8 @@
   built-in removal. Their Locator and MountStory mutators make each same-file swap through the swap engine and,
   for role, text and test id locators, the site readers that Mutator install holds.
 - **Storybook test mutators -> Mutator install**: installed the same way, with opt-in and experimental tiers and
-  built-in removal; `MuirProteusStorybookTestInteractionTarget` makes its same-file swaps through the same swap engine and site
-  readers.
+  built-in removal. `MuirProteusStorybookTestInteractionTarget` makes its same-file swaps through the same swap engine
+  and site readers.
 - **Storybook mutators -> Mutator install**: installed the same way, with an experimental tier, keeping Stryker's
   built-in mutators.
 - **msw mutators -> Mutator install**: installed the same way, with every mutator on by default, keeping Stryker's
@@ -69,28 +69,34 @@
 - **msw mutators <-> Storybook**: neither uses the other. The CSF ignorer hides the handlers in a story's
   `parameters.msw` where its play mode is `ignore`, so the msw mutators reach them in the configuration that sets
   `mutate`.
-- **Storybook mutators -> Storybook**: they read story files with `@muirjs/moira-storybook`, which gives
-  `MuirProteusStorybookArgs` its args sites with a Proven for each property whose removal the file proves changes nothing,
-  and, for each played story's run of the meta's args, whether the story takes a key from the meta, gets it
-  elsewhere (above the meta, or from another meta it is made from), or the file cannot tell, from the story file and
-  the path Stryker's instrumenter gives it, and mutate story data, so they belong in the Stryker configuration for
-  the components, where the CSF ignorer's play mode is `ignore`, which leaves the meta's `args` to them.
-- **Storybook test mutators -> Storybook**: they read story test code with `@muirjs/moira-storybook`
-  and mutate it, taking each interaction, its user-event origin and its following checks from the
-  `@muirjs/moira-storybook` interaction reader, and the CSF ignorer reports those mutants as Ignored unless its play
-  mode is `mutate`, so they belong in the Stryker configuration that sets that mode. `MuirProteusStorybookTestStoryGlobals` and
-  the Storybook mutators' `MuirProteusStorybookArgs` take the played stories and each story's layers from the same
-  `@muirjs/moira-storybook` rule, and `MuirProteusStorybookTestStoryGlobals` takes its globals sites, given the same path, with a
-  Proven for each default global, whose table of Storybook's initial globals `@muirjs/moira-storybook` holds.
-  `MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` read definition-time stubs from
-  the same `@muirjs/moira-storybook` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
-  the `muir-banshee-storybook-vitest` reporter makes unchecked stubs of surviving `MuirProteusStorybookTestSpyStub` mutants, and outcome-unchecked
-  stubs of surviving `MuirProteusStorybookTestSpyStubOutcome` mutants whose own stub's removal was killed or timed out;
-  the `muir-banshee-storybook-vitest` reporter reads the interaction statements with `interactionsOf` on its own parse of each story
-  file, and gives interaction hints for surviving mutants of the five interaction mutators;
-  the tests of `@muirjs/shadowcat-storybook` and `@muirjs/banshee-storybook-vitest` (a devDependency only) check that each mutant carries its name, that
-  `MuirProteusStorybookTestSpyStub` is an experimental mutator name of this package, and that each of the five interaction mutator
-  names makes mutants.
+- **Storybook mutators -> Storybook**: they read story files with `@muirjs/moira-storybook` and mutate story data.
+  From the story file and the path Stryker's instrumenter gives it, `@muirjs/moira-storybook` gives
+  `MuirProteusStorybookArgs` its args sites, with a Proven for each property whose removal the file proves changes
+  nothing. For each played story's run of the meta's args, it also tells whether the story takes a key from the meta,
+  gets it elsewhere (above the meta, or from another meta it is made from), or the file cannot tell. The Storybook
+  mutators belong in the Stryker configuration for the components, where the CSF ignorer's play mode is `ignore`,
+  which leaves the meta's `args` to them.
+- **Storybook test mutators -> Storybook**: they read story test code with `@muirjs/moira-storybook` and mutate it.
+  They take each interaction, its user-event origin and its following checks from the `@muirjs/moira-storybook`
+  interaction reader. The CSF ignorer reports their mutants as Ignored unless its play mode is `mutate`, so they
+  belong in the Stryker configuration that sets that mode.
+  - `MuirProteusStorybookTestStoryGlobals` and the Storybook mutators' `MuirProteusStorybookArgs` take the played
+    stories and each story's layers from the same `@muirjs/moira-storybook` rule. Given the same path,
+    `MuirProteusStorybookTestStoryGlobals` takes its globals sites from `@muirjs/moira-storybook`, with a Proven for
+    each default global. `@muirjs/moira-storybook` holds the table of Storybook's initial globals that this Proven
+    rests on.
+  - `MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` read definition-time stubs from the
+    same `@muirjs/moira-storybook` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored.
+  - The `muir-banshee-storybook-vitest` reporter makes unchecked stubs of surviving `MuirProteusStorybookTestSpyStub`
+    mutants. It makes outcome-unchecked stubs of surviving `MuirProteusStorybookTestSpyStubOutcome` mutants whose own
+    stub's removal was killed or timed out. It reads the interaction statements with
+    `muirMoiraStorybookInteractionsOf` on its own parse of each story file, and gives interaction hints for surviving
+    mutants of the five interaction mutators.
+  - The tests of `@muirjs/shadowcat-storybook`, `@muirjs/shadowcat-storybook-vitest` and
+    `@muirjs/banshee-storybook-vitest` use the test mutators as a devDependency only. They check that
+    `MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` are experimental mutator names of
+    `@muirjs/proteus-storybook-test`, that each mutant carries its name, and that each of the five interaction mutator
+    names makes mutants.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
   the name check keeps their mutator names distinct.
 - **JSX mutators -> Playwright runner**: JSX mutants are meant for Playwright tests, which the runner runs.
@@ -103,12 +109,12 @@
   reports as Ignored the mutants of callbacks that Playwright sends to another realm; the runner's page helpers
   make such callbacks work in pages, but not in workers, service workers or Electron.
 - **Storybook**: shares no plugin with the other contexts, and no code apart from `@muirjs/moira-storybook`, which
-  the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
-  Playwright runner. Inside it, the mock transformer writes the transformer record that the `muir-banshee-storybook-vitest` reporter
-  reads, and both take the stub shape and the rule for which stubs the transformer rewrites from
-  `@muirjs/moira-storybook`, so the two agree on every stub. The reporter reads interactions with the same
-  `@muirjs/moira-storybook` interaction reader as the Storybook test mutators, on its own parse of each story file in
-  the report.
+  the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and
+  Storybook's Vitest addon, not with the Playwright runner. Inside it, the mock transformer writes the transformer
+  record that the `muir-banshee-storybook-vitest` reporter reads. Both take the stub shape and the rule for which stubs
+  the transformer rewrites from `@muirjs/moira-storybook`, so the two agree on every stub. The reporter reads
+  interactions with the same `@muirjs/moira-storybook` interaction reader as the Storybook test mutators, on its own
+  parse of each story file in the report.
 
 ## Terms that differ between contexts
 
