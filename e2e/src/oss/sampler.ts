@@ -61,9 +61,9 @@ const linuxReader: MuirProcessReader = {
 export async function muirStartSampler(
   { command, args, loop, parse } = muirProcessReader(),
 ): Promise<MuirSampler> {
-  // Stryker disable next-line BooleanLiteral: equivalent to a test, as a console window shown or hidden changes no output it can read
   const child = spawn(command, [...args, loop], {
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Stryker disable next-line BooleanLiteral: equivalent to a test, as a console window shown or hidden changes no output it can read
     windowsHide: true,
   });
 

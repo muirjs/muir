@@ -113,8 +113,8 @@ export function muirMutantsByKey(
 
   if (byKey.size !== entries.length) {
     const keys = entries.map(([key]) => key);
-    // Stryker disable next-line StringLiteral: equivalent, as a map smaller than its entries always has a key that find returns
     const duplicate =
+      // Stryker disable next-line StringLiteral: equivalent, as a map smaller than its entries always has a key that find returns
       keys.find((key, index) => keys.indexOf(key) !== index) ?? '';
 
     throw new Error(

@@ -295,12 +295,12 @@ export async function muirPack(into: string): Promise<string[]> {
 /** npm 11 prints an array of packed packages, npm 12 an object keyed by package name. */
 export function muirPackedFile(stdout: string): string {
   const packed: unknown = JSON.parse(stdout);
-  // Stryker disable next-line ArrayDeclaration: a non-empty fallback holds only strings, which the record check below refuses with the same error as an empty one
   const entries: readonly unknown[] = Array.isArray(packed)
     ? packed
     : muirIsRecord(packed)
       ? Object.values(packed)
-      : [];
+      : // Stryker disable next-line ArrayDeclaration: a non-empty fallback holds only strings, which the record check below refuses with the same error as an empty one
+        [];
   const [entry] = entries;
 
   if (!muirIsRecord(entry) || typeof entry['filename'] !== 'string') {
@@ -410,12 +410,13 @@ function isRunning(pid: number): boolean {
 export function muirRemoveOnExit(dir: string): void {
   process.on('exit', () => {
     try {
-      // Stryker disable next-line MuirProteusJsNumericLiteral: tuning values, not a contract a test should pin
       rmSync(dir, {
         recursive: true,
         force: true,
+        // Stryker disable MuirProteusJsNumericLiteral: tuning values, not a contract a test should pin
         maxRetries: 10,
         retryDelay: 100,
+        // Stryker restore MuirProteusJsNumericLiteral
       });
     } catch (error) {
       process.stderr.write(

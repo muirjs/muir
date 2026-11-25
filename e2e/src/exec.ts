@@ -27,11 +27,11 @@ export async function muirExec(
   args: readonly string[],
   { cwd, env = process.env, timeoutMs, logFile }: MuirExecOptions,
 ): Promise<MuirExecResult> {
-  // Stryker disable next-line BooleanLiteral: equivalent for tests, as windowsHide only hides a console window that no test can see
   const child = spawn(file, args, {
     cwd,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Stryker disable next-line BooleanLiteral: equivalent for tests, as windowsHide only hides a console window that no test can see
     windowsHide: true,
   });
   const closed = once(child, 'close');

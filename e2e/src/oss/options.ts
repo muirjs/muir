@@ -276,8 +276,8 @@ export function muirParseCommand(args: readonly string[]): MuirOssCommand {
     strict: false,
     tokens: true,
   });
-  // Stryker disable next-line ArrayDeclaration: the name it adds is never help, h or merge, the only names read
   const names = new Set(
+    // Stryker disable next-line ArrayDeclaration: the name it adds is never help, h or merge, the only names read
     tokens.flatMap((token) => (token.kind === 'option' ? [token.name] : [])),
   );
 
