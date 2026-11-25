@@ -316,7 +316,7 @@ Vitest configuration, so a story that relies on a module mock leak fails in ever
 _Avoid_: module mock reset plugin, reset plugin
 
 **Sandbox plugin**:
-The Vite plugin `muir-shadowcat-storybook-stryker` that lets Storybook's tests run in Stryker's sandbox, where the project's
+The Vite plugin `muir-pixie-storybook-vite-stryker` that lets Storybook's tests run in Stryker's sandbox, where the project's
 installed packages sit outside the folders Vite serves by default. It changes nothing outside a Stryker run.
 _Avoid_: fs-allow plugin
 

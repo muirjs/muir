@@ -57,8 +57,8 @@ Ignorers and reporters:
 - [`@muirjs/shadowcat-telemetry`](packages/shadowcat-telemetry/README.md): analytics and error-monitoring calls,
   Sentry's included.
 - [`@muirjs/shadowcat-react`](packages/shadowcat-react/README.md): React class names and inline styles.
-- [`@muirjs/shadowcat-storybook`](packages/shadowcat-storybook/README.md): the CSF ignorer and the sandbox
-  plugin for Storybook stories and their play functions.
+- [`@muirjs/shadowcat-storybook`](packages/shadowcat-storybook/README.md): the CSF ignorer for Storybook
+  stories and their play functions.
 - [`@muirjs/shadowcat-storybook-vitest`](packages/shadowcat-storybook-vitest/README.md): spy stubs that the mock
   reset of Storybook's Vitest addon erases.
 - [`@muirjs/banshee-storybook-vitest`](packages/banshee-storybook-vitest/README.md): a report of the spy stubs that
@@ -70,7 +70,8 @@ Extensions and utilities:
 - [`@muirjs/madrox-node-test`](packages/madrox-node-test/README.md): `muirTestEach` and `muirTestFor`, table
   tests for `node:test` that work like Vitest's `test.each` and `test.for`.
 - [`@muirjs/pixie-storybook-vite`](packages/pixie-storybook-vite/README.md): Vite plugins that keep Storybook's
-  definition-time spy stubs through its mock reset.
+  definition-time spy stubs through its mock reset, reset module mock spies before each test, and let the story tests
+  run in Stryker's sandbox.
 
 Core, which the other packages use:
 

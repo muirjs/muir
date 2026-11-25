@@ -4,15 +4,21 @@
 
 # @muirjs/pixie-storybook-vite
 
-Two Vite plugins that make Storybook's spies behave the same in every story test, with or without Stryker:
+Three Vite plugins for Storybook's story tests:
 
 - `muirPixieStorybookViteMockTransformerPlugin()`, the mock transformer, rewrites spy stubs that Storybook's mock reset would
   erase into a form the reset keeps.
 - `muirPixieStorybookViteMockResetPlugin()`, the mock reset plugin, resets every module mock spy before each test, so a stub one
   story sets cannot leak into the next.
+- `muirPixieStorybookViteStrykerPlugin()`, the sandbox plugin, lets the story tests run in Stryker's sandbox.
 
-The package has no Stryker dependency. `@muirjs/shadowcat-storybook` reads what the mock transformer did, and its
-README shows the full Stryker setup. The package is private and not on npm yet.
+The first two make Storybook's spies behave the same in every story test, with or without Stryker. The sandbox
+plugin changes nothing outside a Stryker run.
+
+The package has no Stryker dependency. The stub ignorer of `@muirjs/shadowcat-storybook-vitest` and the reporter of
+`@muirjs/banshee-storybook-vitest` read what the mock transformer did. The
+[`@muirjs/shadowcat-storybook` README](../shadowcat-storybook/README.md) shows the full Stryker setup. The package is
+private and not on npm yet.
 
 ## Requirements
 
@@ -126,8 +132,27 @@ Only module mock spies are reset. Spies that a story makes with `fn()` keep Stor
 
 Vitest's browser mode serves setup files through Vite's dev server, which refuses files outside
 `server.fs.allow`. The plugin adds the setup file's folder to that list. When your configuration sets no list, it
-also adds the workspace root that Vite allows by default. In Stryker's sandbox, add `muirShadowcatStorybookStrykerPlugin()` from
-`@muirjs/shadowcat-storybook` as well.
+also adds the workspace root that Vite allows by default. In Stryker's sandbox, add the sandbox plugin as well.
+
+## Run the story tests in Stryker's sandbox
+
+Stryker copies the project to a sandbox and links its `node_modules`. Vitest resolves a setup file, such as the
+Vitest addon's, through that link to its real path, which Vite's `server.fs.allow` refuses. Add the sandbox plugin to
+the Vitest configuration that runs the story tests:
+
+```ts
+// vitest.config.ts
+import { muirPixieStorybookViteStrykerPlugin } from '@muirjs/pixie-storybook-vite';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  plugins: [muirPixieStorybookViteStrykerPlugin()],
+});
+```
+
+In a Stryker worker, the plugin adds the workspace root and the real `node_modules` folders from the project up to
+the workspace root to `server.fs.allow`. Outside a Stryker run it changes nothing. A list that your configuration
+sets stays, and the plugin adds its folders to it.
 
 ## License
 

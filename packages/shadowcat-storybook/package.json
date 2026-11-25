@@ -2,7 +2,7 @@
   "name": "@muirjs/shadowcat-storybook",
   "version": "0.0.0",
   "private": true,
-  "description": "StrykerJS plugins for Storybook stories and their play functions",
+  "description": "StrykerJS ignorer for Storybook stories and their play functions",
   "keywords": [
     "stryker",
     "storybook",
@@ -41,13 +41,7 @@
     "@stryker-mutator/api": "10.1.1"
   },
   "peerDependencies": {
-    "@stryker-mutator/core": "~10.1.0",
-    "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
-  },
-  "peerDependenciesMeta": {
-    "vite": {
-      "optional": true
-    }
+    "@stryker-mutator/core": "~10.1.0"
   },
   "devDependencies": {
     "@muirjs/proteus-storybook-test": "0.0.0",

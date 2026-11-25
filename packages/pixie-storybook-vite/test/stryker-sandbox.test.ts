@@ -14,9 +14,9 @@ import { type TestContext, describe, it } from 'node:test';
 import { normalizePath, resolveConfig } from 'vite';
 
 import {
-  muirShadowcatStorybookStrykerPlugin,
-  muirShadowcatStorybookSandboxConfig,
-} from '../src/stryker-vite-plugin.ts';
+  muirPixieStorybookViteSandboxConfig,
+  muirPixieStorybookViteStrykerPlugin,
+} from '../src/stryker-sandbox.ts';
 
 const workerVariable = 'STRYKER_MUTATOR_WORKER';
 
@@ -58,23 +58,23 @@ function linkedWorkspace(t: TestContext): {
 }
 
 function allowList(
-  config: Awaited<ReturnType<typeof muirShadowcatStorybookSandboxConfig>>,
+  config: Awaited<ReturnType<typeof muirPixieStorybookViteSandboxConfig>>,
 ): string[] {
   return config?.server?.fs?.allow ?? [];
 }
 
-describe('muirShadowcatStorybookStrykerPlugin', () => {
-  it('is named muir-shadowcat-storybook-stryker', () => {
+describe('muirPixieStorybookViteStrykerPlugin', () => {
+  it('is named muir-pixie-storybook-vite-stryker', () => {
     assert.equal(
-      muirShadowcatStorybookStrykerPlugin().name,
-      'muir-shadowcat-storybook-stryker',
+      muirPixieStorybookViteStrykerPlugin().name,
+      'muir-pixie-storybook-vite-stryker',
     );
   });
 
   it('sets the sandbox config as Vite resolves its config', () => {
     assert.equal(
-      muirShadowcatStorybookStrykerPlugin().config,
-      muirShadowcatStorybookSandboxConfig,
+      muirPixieStorybookViteStrykerPlugin().config,
+      muirPixieStorybookViteSandboxConfig,
     );
   });
 
@@ -87,7 +87,7 @@ describe('muirShadowcatStorybookStrykerPlugin', () => {
         root: workspace,
         configFile: false,
         logLevel: 'silent',
-        plugins: [muirShadowcatStorybookStrykerPlugin()],
+        plugins: [muirPixieStorybookViteStrykerPlugin()],
         server: { fs: { allow: ['src'] } },
       },
       'serve',
@@ -105,7 +105,7 @@ describe('sandboxConfig', () => {
     setWorker(t, undefined);
 
     assert.equal(
-      await muirShadowcatStorybookSandboxConfig({ root: process.cwd() }),
+      await muirPixieStorybookViteSandboxConfig({ root: process.cwd() }),
       undefined,
     );
   });
@@ -115,7 +115,7 @@ describe('sandboxConfig', () => {
     const { workspace, installed } = linkedWorkspace(t);
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({ root: workspace }),
+      await muirPixieStorybookViteSandboxConfig({ root: workspace }),
     );
 
     assert.ok(allow.includes(installed), `${installed} in ${allow.join(', ')}`);
@@ -126,7 +126,7 @@ describe('sandboxConfig', () => {
     const { workspace } = linkedWorkspace(t);
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({ root: workspace }),
+      await muirPixieStorybookViteSandboxConfig({ root: workspace }),
     );
 
     assert.ok(allow.includes(workspace), `${workspace} in ${allow.join(', ')}`);
@@ -140,7 +140,7 @@ describe('sandboxConfig', () => {
     writeFileSync(join(packageRoot, 'package.json'), '{}');
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({ root: packageRoot }),
+      await muirPixieStorybookViteSandboxConfig({ root: packageRoot }),
     );
 
     assert.ok(allow.includes(workspace), `${workspace} in ${allow.join(', ')}`);
@@ -152,7 +152,7 @@ describe('sandboxConfig', () => {
     mkdirSync(join(workspace, '..', 'node_modules'));
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({ root: workspace }),
+      await muirPixieStorybookViteSandboxConfig({ root: workspace }),
     );
 
     assert.deepEqual(allow, [workspace, installed]);
@@ -166,7 +166,7 @@ describe('sandboxConfig', () => {
     const { workspace, installed } = linkedWorkspace(t);
     process.chdir(workspace);
 
-    const allow = allowList(await muirShadowcatStorybookSandboxConfig({}));
+    const allow = allowList(await muirPixieStorybookViteSandboxConfig({}));
 
     assert.deepEqual(allow, [workspace, installed]);
   });
@@ -182,7 +182,7 @@ describe('sandboxConfig', () => {
     process.chdir(workspace);
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({ root: 'packages/app' }),
+      await muirPixieStorybookViteSandboxConfig({ root: 'packages/app' }),
     );
 
     assert.deepEqual(allow, [workspace, installed]);
@@ -195,7 +195,7 @@ describe('sandboxConfig', () => {
     symlinkSync(workspace, link, 'junction');
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({ root: link }),
+      await muirPixieStorybookViteSandboxConfig({ root: link }),
     );
 
     assert.deepEqual(allow, [workspace, installed]);
@@ -208,7 +208,7 @@ describe('sandboxConfig', () => {
     symlinkSync(workspace, link, 'junction');
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({
+      await muirPixieStorybookViteSandboxConfig({
         root: link,
         resolve: { preserveSymlinks: true },
       }),
@@ -225,7 +225,7 @@ describe('sandboxConfig', () => {
     writeFileSync(join(packageRoot, 'package.json'), '{}');
 
     const allow = allowList(
-      await muirShadowcatStorybookSandboxConfig({ root: packageRoot }),
+      await muirPixieStorybookViteSandboxConfig({ root: packageRoot }),
     );
 
     assert.ok(allow.includes(installed), `${installed} in ${allow.join(', ')}`);

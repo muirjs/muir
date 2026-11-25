@@ -7,7 +7,6 @@ import {
 import { muirShadowcatStorybookPlayModes } from './options.ts';
 
 export { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
-export { muirShadowcatStorybookStrykerPlugin } from './stryker-vite-plugin.ts';
 export type {
   MuirShadowcatStorybookCsfOptions,
   MuirShadowcatStorybookOptions,

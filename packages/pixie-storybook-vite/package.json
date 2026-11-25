@@ -2,7 +2,7 @@
   "name": "@muirjs/pixie-storybook-vite",
   "version": "0.0.0",
   "private": true,
-  "description": "Vite plugin that keeps Storybook's definition-time spy stubs through the default mock reset",
+  "description": "Vite plugins for Storybook's story tests: keep definition-time spy stubs through the mock reset, reset module mock spies, and run in Stryker's sandbox",
   "keywords": [
     "storybook",
     "vite",

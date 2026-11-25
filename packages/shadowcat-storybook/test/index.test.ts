@@ -8,7 +8,6 @@ import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
 import * as entry from '../src/index.ts';
 import { strykerPlugins, strykerValidationSchema } from '../src/index.ts';
 import { muirShadowcatStorybookStrykerStorybookProject } from '../src/options.ts';
-import { muirShadowcatStorybookStrykerPlugin } from '../src/stryker-vite-plugin.ts';
 
 describe('package entry', () => {
   // Stryker loads a plugin module by its package name.
@@ -16,13 +15,6 @@ describe('package entry', () => {
     assert.equal(
       import.meta.resolve('@muirjs/shadowcat-storybook'),
       new URL('../src/index.ts', import.meta.url).href,
-    );
-  });
-
-  it('exports the Vite plugin for the Vitest config that Stryker runs', () => {
-    assert.equal(
-      entry.muirShadowcatStorybookStrykerPlugin,
-      muirShadowcatStorybookStrykerPlugin,
     );
   });
 

@@ -4,20 +4,18 @@
 
 # @muirjs/shadowcat-storybook
 
-StrykerJS plugins for Storybook story files. Stories run as Stryker tests through Stryker's Vitest runner and
-Storybook's Vitest addon. This package adds what those two lack for story files:
+A StrykerJS ignorer for Storybook story files. Stories run as Stryker tests through Stryker's Vitest runner and
+Storybook's Vitest addon. The `muir-shadowcat-storybook-csf` ignorer, the CSF ignorer, keeps the values that Storybook
+reads without running the file, such as `title` and `tags`, as written. It also splits a story file into story data,
+which a run of the components mutates, and story test code, which a run of its own mutates.
 
-- The `muir-shadowcat-storybook-csf` ignorer, the CSF ignorer, keeps the values that Storybook reads without running the file,
-  such as `title` and `tags`, as written. It also splits a story file into story data, which a run of the components
-  mutates, and story test code, which a run of its own mutates.
-- `muirShadowcatStorybookStrykerPlugin()`, the sandbox plugin, is a Vite plugin that lets the story tests run in Stryker's
-  sandbox.
-
-Two other packages hold the rest. The stub ignorer in
+Other packages hold the rest. The stub ignorer in
 [`@muirjs/shadowcat-storybook-vitest`](../shadowcat-storybook-vitest/README.md) reports as Ignored the mutants of
 spy stubs that the mock reset erases. The reporter in
 [`@muirjs/banshee-storybook-vitest`](../banshee-storybook-vitest/README.md) lists those stubs and the stubs no play
-checks. It also gives hints for surviving interaction mutants and lists the story mutants that run every test.
+checks. It also gives hints for surviving interaction mutants and lists the story mutants that run every test. The
+Vite plugins in [`@muirjs/pixie-storybook-vite`](../pixie-storybook-vite/README.md) keep definition-time stubs
+through the mock reset, reset module mock spies before each test, and let the story tests run in Stryker's sandbox.
 
 The package is private and not on npm yet.
 
@@ -25,15 +23,15 @@ The package is private and not on npm yet.
 
 Seven packages work together. This README describes the setup they share.
 
-| Package                              | What it adds                                                                | Where it goes                       |
-| ------------------------------------ | --------------------------------------------------------------------------- | ----------------------------------- |
-| `@muirjs/shadowcat-storybook`        | the CSF ignorer and the sandbox plugin                                      | both Stryker configurations; Vitest |
-| `@muirjs/shadowcat-storybook-vitest` | the stub ignorer                                                            | both Stryker configurations         |
-| `@muirjs/banshee-storybook-vitest`   | the reporter                                                                | both Stryker configurations         |
-| `@muirjs/pixie-storybook-vite`       | the mock transformer and the mock reset plugin, two Vite plugins            | Storybook's `viteFinal`; Vitest     |
-| `@muirjs/proteus-storybook`          | `MuirProteusStorybookArgs`, which mutates story data                        | the components configuration        |
-| `@muirjs/proteus-storybook-test`     | the mutators for play functions, which turn Stryker's built-in mutators off | the story test code configuration   |
-| `@muirjs/proteus-msw`                | `MuirProteusMswResponse`, which mutates msw responses with any test runner  | a test code configuration           |
+| Package                              | What it adds                                                                | Where it goes                     |
+| ------------------------------------ | --------------------------------------------------------------------------- | --------------------------------- |
+| `@muirjs/shadowcat-storybook`        | the CSF ignorer                                                             | both Stryker configurations       |
+| `@muirjs/shadowcat-storybook-vitest` | the stub ignorer                                                            | both Stryker configurations       |
+| `@muirjs/banshee-storybook-vitest`   | the reporter                                                                | both Stryker configurations       |
+| `@muirjs/pixie-storybook-vite`       | the mock transformer, the mock reset plugin and the sandbox plugin          | Storybook's `viteFinal`; Vitest   |
+| `@muirjs/proteus-storybook`          | `MuirProteusStorybookArgs`, which mutates story data                        | the components configuration      |
+| `@muirjs/proteus-storybook-test`     | the mutators for play functions, which turn Stryker's built-in mutators off | the story test code configuration |
+| `@muirjs/proteus-msw`                | `MuirProteusMswResponse`, which mutates msw responses with any test runner  | a test code configuration         |
 
 ## Requirements
 
@@ -42,7 +40,7 @@ Seven packages work together. This README describes the setup they share.
   `@storybook/addon-vitest` running the story tests.
 - Vitest 4 or 5, tested on 5.1.0. Without Vitest, the plugins cannot read the addon's tag filter and take the stories
   tagged `test` as the tested stories.
-- Vite 5 to 8, for the sandbox plugin.
+- Vite 5 to 8, for the Vite plugins of `@muirjs/pixie-storybook-vite`.
 - Vitest browser mode for the story tests. The setup below uses `@vitest/browser-playwright` with Chromium, which
   `npx playwright install chromium` installs.
 - Node.js 22 or later.
@@ -91,14 +89,13 @@ Both run the same Vitest configuration.
 
    ```ts
    // vitest.config.ts
-   import { muirPixieStorybookViteMockResetPlugin } from '@muirjs/pixie-storybook-vite';
-   import { muirShadowcatStorybookStrykerPlugin } from '@muirjs/shadowcat-storybook';
+   import { muirPixieStorybookViteMockResetPlugin, muirPixieStorybookViteStrykerPlugin } from '@muirjs/pixie-storybook-vite';
    import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
    import { playwright } from '@vitest/browser-playwright';
    import { defineConfig } from 'vitest/config';
 
    export default defineConfig({
-     plugins: [muirShadowcatStorybookStrykerPlugin(), muirPixieStorybookViteMockResetPlugin()],
+     plugins: [muirPixieStorybookViteStrykerPlugin(), muirPixieStorybookViteMockResetPlugin()],
      test: {
        projects: [
          {
@@ -219,14 +216,6 @@ The `muir-shadowcat-storybook-vitest` ignorer gives each spy stub that runs when
 reports the mutants of the stubs the mock reset erases as Ignored. Its
 [README](../shadowcat-storybook-vitest/README.md) lists the verdicts and the fix. The reporter of
 [`@muirjs/banshee-storybook-vitest`](../banshee-storybook-vitest/README.md#read-the-report) lists the same stubs.
-
-## Run the story tests in Stryker's sandbox
-
-Stryker copies the project to a sandbox and links its `node_modules`. Vitest resolves a setup file, such as the
-Vitest addon's, through that link to its real path, which Vite's `server.fs.allow` refuses. In a Stryker worker,
-`muirShadowcatStorybookStrykerPlugin()` adds the workspace root and the real `node_modules` folders from the project up to the
-workspace root to `server.fs.allow`. Outside a Stryker run it changes nothing. A list that your configuration sets
-stays, and the plugin's list is added to it.
 
 ## Survivors to expect and limits
 

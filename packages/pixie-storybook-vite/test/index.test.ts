@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import * as entry from '../src/index.ts';
 import { muirPixieStorybookViteMockTransformerPlugin } from '../src/index.ts';
 import { muirPixieStorybookViteMockResetPlugin } from '../src/mock-reset.ts';
+import { muirPixieStorybookViteStrykerPlugin } from '../src/stryker-sandbox.ts';
 import { muirPixieStorybookViteTransform } from '../src/transform.ts';
 
 describe('muirPixieStorybookViteMockTransformerPlugin', () => {
@@ -31,6 +32,13 @@ describe('package entry', () => {
     assert.equal(
       entry.muirPixieStorybookViteMockResetPlugin,
       muirPixieStorybookViteMockResetPlugin,
+    );
+  });
+
+  it('exports the sandbox plugin', () => {
+    assert.equal(
+      entry.muirPixieStorybookViteStrykerPlugin,
+      muirPixieStorybookViteStrykerPlugin,
     );
   });
 });
