@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type {
-  MuirMoiraMutatorsInstrumenter,
+  MuirMoiraMutatorsCheckedInstrumenter,
   MuirMoiraMutatorsListedMutator,
   MuirMoiraMutatorsMutantOrigin,
   MuirMoiraMutatorsSourceFile,
@@ -209,10 +209,7 @@ describe('selfCheck', () => {
       files: readonly MuirMoiraMutatorsSourceFile[],
     ) => readonly MuirMoiraMutatorsMutantOrigin[],
     seen: MuirMoiraMutatorsSourceFile[] = [],
-  ): Pick<
-    MuirMoiraMutatorsInstrumenter<unknown>,
-    'dir' | 'instrument' | 'version'
-  > => ({
+  ): MuirMoiraMutatorsCheckedInstrumenter => ({
     dir: '/fake/instrumenter',
     version: '1.2.3',
     instrument: async (files) => {

@@ -1,10 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestImportOf,
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsImportOf,
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeBuiltin } from './bindings.ts';
 
 const timers: ReadonlySet<string | undefined> = new Set([
@@ -19,7 +19,7 @@ const nodeTimersPromises = muirProteusNodeBuiltin('timers/promises');
  * negative number that leave the delay Node.js runs unchanged are left out. A string delay is left out too, as `+ 1`
  * would append.
  */
-export const muirProteusNodeTimerDelay: MuirMoiraNodeTestMutator = {
+export const muirProteusNodeTimerDelay: MuirMoiraMutatorsBabelMutator = {
   name: 'MuirProteusNodeTimerDelay',
   sample: 'setTimeout(() => {}, 10);\n',
   *mutate(path, t) {
@@ -65,7 +65,7 @@ function isDelay(path: NodePath): boolean {
 
 function delayIndex(path: NodePath, callee: types.Node): number | undefined {
   if (callee.type === 'Identifier') {
-    const from = muirMoiraNodeTestImportOf(path, callee.name);
+    const from = muirMoiraMutatorsImportOf(path, callee.name);
 
     if (from === undefined) {
       return timers.has(callee.name) && !path.scope.hasBinding(callee.name)
@@ -85,8 +85,8 @@ function delayIndex(path: NodePath, callee: types.Node): number | undefined {
     return undefined;
   }
 
-  const from = muirMoiraNodeTestImportOf(path, callee.object.name);
-  const method = muirMoiraNodeTestPropertyName(callee);
+  const from = muirMoiraMutatorsImportOf(path, callee.object.name);
+  const method = muirMoiraMutatorsPropertyName(callee);
 
   if (from === undefined) {
     return undefined;

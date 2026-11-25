@@ -5,11 +5,11 @@ import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
 import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
-  muirMoiraNodeTestAwaited,
-  muirMoiraNodeTestCalleeRoot,
-  muirMoiraNodeTestImportOf,
-  muirMoiraNodeTestPropertyName,
-} from '../../src/ast.ts';
+  muirMoiraMutatorsAwaited,
+  muirMoiraMutatorsCalleeRoot,
+  muirMoiraMutatorsImportOf,
+  muirMoiraMutatorsPropertyName,
+} from '../src/ast.ts';
 
 /** The path of the first call in `source`, parsed as a TypeScript module. */
 function firstCall(source: string): NodePath<types.CallExpression> {
@@ -35,10 +35,10 @@ function firstCall(source: string): NodePath<types.CallExpression> {
 function calleeName(source: string): string | undefined {
   const call = firstCall(source);
 
-  return muirMoiraNodeTestCalleeRoot(call.node.callee)?.name;
+  return muirMoiraMutatorsCalleeRoot(call.node.callee)?.name;
 }
 
-describe('muirMoiraNodeTestImportOf', () => {
+describe('muirMoiraMutatorsImportOf', () => {
   muirTestEach([
     [
       'a default import',
@@ -76,13 +76,13 @@ describe('muirMoiraNodeTestImportOf', () => {
     ['a CommonJS require', "const f = require('m');\nf();", 'f', undefined],
   ])('finds %s', (_title, source, name, expected) => {
     assert.deepEqual(
-      muirMoiraNodeTestImportOf(firstCall(source), name),
+      muirMoiraMutatorsImportOf(firstCall(source), name),
       expected,
     );
   });
 });
 
-describe('muirMoiraNodeTestPropertyName', () => {
+describe('muirMoiraMutatorsPropertyName', () => {
   muirTestEach([
     ['a member', 'a.b();', 'b'],
     ['a computed member', "a['b']();", undefined],
@@ -94,13 +94,13 @@ describe('muirMoiraNodeTestPropertyName', () => {
     ['an identifier', 'b();', undefined],
   ])('names the property of %s', (_title, source, expected) => {
     assert.equal(
-      muirMoiraNodeTestPropertyName(firstCall(source).node.callee),
+      muirMoiraMutatorsPropertyName(firstCall(source).node.callee),
       expected,
     );
   });
 });
 
-describe('muirMoiraNodeTestCalleeRoot', () => {
+describe('muirMoiraMutatorsCalleeRoot', () => {
   muirTestEach([
     ['an identifier', 'f();', 'f'],
     ['a member', 'a.b();', 'a'],
@@ -112,16 +112,16 @@ describe('muirMoiraNodeTestCalleeRoot', () => {
   });
 });
 
-describe('muirMoiraNodeTestAwaited', () => {
+describe('muirMoiraMutatorsAwaited', () => {
   it('gives the argument of an await expression', () => {
     const call = types.callExpression(types.identifier('f'), []);
 
-    assert.equal(muirMoiraNodeTestAwaited(types.awaitExpression(call)), call);
+    assert.equal(muirMoiraMutatorsAwaited(types.awaitExpression(call)), call);
   });
 
   it('gives any other expression as it is', () => {
     const call = types.callExpression(types.identifier('f'), []);
 
-    assert.equal(muirMoiraNodeTestAwaited(call), call);
+    assert.equal(muirMoiraMutatorsAwaited(call), call);
   });
 });

@@ -35,12 +35,15 @@
     "node": ">=22.0.0"
   },
   "peerDependencies": {
+    "@babel/core": "~8.0.0",
     "@stryker-mutator/core": "~10.1.0"
   },
   "dependencies": {
     "@stryker-mutator/api": "10.1.1"
   },
   "devDependencies": {
+    "@babel/core": "8.0.9",
+    "@muirjs/madrox-node-test": "0.0.0",
     "@muirjs/test-util-mutator-packages": "0.0.0"
   },
   "nx": {

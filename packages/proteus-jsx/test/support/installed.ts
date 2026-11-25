@@ -21,7 +21,7 @@ export async function installInto<T extends MuirProteusJsxInstrumenter>(
 ): Promise<T> {
   await muirProteusJsxInstall(
     muirProteusJsxMutatorsFor(muirProteusJsxImplicitRoles),
-    async () => instrumenter,
+    async () => [instrumenter],
   );
 
   return instrumenter;

@@ -1,10 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestAwaited,
-  type MuirMoiraNodeTestBabelTypes,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsAwaited,
+  type MuirMoiraMutatorsBabelTypes,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeAssertMethod } from '@muirjs/proteus-node/bindings';
 
 const message = 'Stryker: assertion reached';
@@ -19,13 +19,13 @@ const asyncMethods: ReadonlySet<string> = new Set(['rejects', 'doesNotReject']);
  * the others, a custom assertion added with `assert.register` included. There the original call is kept only for its
  * type and never runs.
  */
-export const muirProteusNodeTestAssertCall: MuirMoiraNodeTestMutator = {
+export const muirProteusNodeTestAssertCall: MuirMoiraMutatorsBabelMutator = {
   name: 'MuirProteusNodeTestAssertCall',
   sample: 'export function check(t: any) {\n  t.assert.ok(true);\n}\n',
   *mutate(path, t) {
     if (
       path.isExpressionStatement() &&
-      assertionMethod(path, muirMoiraNodeTestAwaited(path.node.expression)) !==
+      assertionMethod(path, muirMoiraMutatorsAwaited(path.node.expression)) !==
         undefined
     ) {
       yield t.blockStatement([
@@ -50,12 +50,12 @@ export const muirProteusNodeTestAssertCall: MuirMoiraNodeTestMutator = {
   },
 };
 
-function error(t: MuirMoiraNodeTestBabelTypes): types.NewExpression {
+function error(t: MuirMoiraMutatorsBabelTypes): types.NewExpression {
   return t.newExpression(t.identifier('Error'), [t.stringLiteral(message)]);
 }
 
 function failure(
-  t: MuirMoiraNodeTestBabelTypes,
+  t: MuirMoiraMutatorsBabelTypes,
   method: string,
 ): types.CallExpression {
   if (asyncMethods.has(method)) {

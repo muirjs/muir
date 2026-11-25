@@ -1,7 +1,7 @@
 import {
-  muirMoiraNodeTestAwaited,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsAwaited,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeIsNodeAssertCall } from './node-bindings.ts';
 
 /**
@@ -12,7 +12,7 @@ import { muirProteusNodeIsNodeAssertCall } from './node-bindings.ts';
  * which a `// Stryker disable` comment then says. That comment names CallExpression too: with this mutant ignored,
  * CallExpression's own removal of the statement comes back.
  */
-export const muirProteusNodeAssertStatement: MuirMoiraNodeTestMutator<'MuirProteusNodeAssertStatement'> =
+export const muirProteusNodeAssertStatement: MuirMoiraMutatorsBabelMutator<'MuirProteusNodeAssertStatement'> =
   {
     name: 'MuirProteusNodeAssertStatement',
     sample:
@@ -22,7 +22,7 @@ export const muirProteusNodeAssertStatement: MuirMoiraNodeTestMutator<'MuirProte
         return;
       }
 
-      const call = muirMoiraNodeTestAwaited(path.node.expression);
+      const call = muirMoiraMutatorsAwaited(path.node.expression);
 
       if (
         call.type === 'CallExpression' &&

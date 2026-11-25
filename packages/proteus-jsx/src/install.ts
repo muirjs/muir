@@ -1,14 +1,11 @@
 import {
-  muirMoiraMutatorsCheckNames,
-  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsCorePackageJsons,
   muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsInstall,
   muirMoiraMutatorsMarkOf,
-  muirMoiraMutatorsRegister,
+  muirMoiraMutatorsResolveEachCore,
   muirMoiraMutatorsResolveExpressionPlacer,
   muirMoiraMutatorsResolveInstrumenter,
-  muirMoiraMutatorsSelfCheck,
-  muirMoiraMutatorsUndoOnThrow,
-  muirMoiraMutatorsWarnUntested,
   type MuirMoiraMutatorsExpressionPlacer,
   type MuirMoiraMutatorsInstrumenter as CoreInstrumenter,
 } from '@muirjs/moira-mutators';
@@ -24,7 +21,7 @@ import { muirProteusJsxPackageName } from './package-name.ts';
 
 export {
   muirMoiraMutatorsCoreInstrument,
-  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsCorePackageJsons,
   type MuirMoiraMutatorsMutantOrigin,
   type MuirMoiraMutatorsSourceFile,
 } from '@muirjs/moira-mutators';
@@ -39,48 +36,38 @@ const ownMark = muirMoiraMutatorsMarkOf(muirProteusJsxPackageName);
 
 export async function muirProteusJsxInstall(
   mutators: readonly MuirProteusJsxMutator[],
-  resolve: () => Promise<MuirProteusJsxInstrumenter> = muirProteusJsxResolveFromCore,
+  resolve: () => Promise<readonly MuirProteusJsxInstrumenter[]> = () =>
+    muirMoiraMutatorsResolveEachCore(muirProteusJsxResolveFromCore),
   warn: (message: string) => void = console.warn,
+  options?: unknown,
 ): Promise<void> {
-  const instrumenter = await resolve();
-  const { allMutators, expressionPlacer, types } = instrumenter;
-
-  muirMoiraMutatorsCheckNames(muirProteusJsxPackageName, mutators, allMutators);
-  await muirMoiraMutatorsUndoOnThrow(
-    [allMutators, expressionPlacer.target],
-    async () => {
-      muirMoiraMutatorsRegister(
-        muirProteusJsxPackageName,
-        allMutators,
-        mutators.map((mutator) => muirProteusJsxToNodeMutator(mutator, types)),
-      );
-
-      if (!(ownMark in expressionPlacer.target)) {
-        Object.assign(
-          expressionPlacer.target,
-          muirProteusJsxWithJsxPlacement(expressionPlacer.original, types),
-          { [ownMark]: ownMark },
-        );
-      }
-
-      await muirMoiraMutatorsSelfCheck(
-        muirProteusJsxPackageName,
-        instrumenter,
-        mutators,
-      );
+  await muirMoiraMutatorsInstall({
+    packageName: muirProteusJsxPackageName,
+    installName: 'muirProteusJsxMutators',
+    testedVersion: muirProteusJsxTestedVersion,
+    sets: { defaults: mutators, optIn: [], experimental: [] },
+    options,
+    resolve,
+    toListed: (mutator, { types }) =>
+      muirProteusJsxToNodeMutator(mutator, types),
+    patch: {
+      targets: ({ expressionPlacer }) => [expressionPlacer.target],
+      apply: ({ expressionPlacer, types }) => {
+        if (!(ownMark in expressionPlacer.target)) {
+          Object.assign(
+            expressionPlacer.target,
+            muirProteusJsxWithJsxPlacement(expressionPlacer.original, types),
+            { [ownMark]: ownMark },
+          );
+        }
+      },
     },
-  );
-
-  muirMoiraMutatorsWarnUntested(
-    muirProteusJsxPackageName,
-    muirProteusJsxTestedVersion,
-    instrumenter,
     warn,
-  );
+  });
 }
 
 export async function muirProteusJsxResolveFromCore(
-  corePackage: string = muirMoiraMutatorsCorePackageJson(),
+  corePackage: string = muirMoiraMutatorsCorePackageJsons()[0],
 ): Promise<MuirProteusJsxInstrumenter> {
   const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
     muirProteusJsxPackageName,

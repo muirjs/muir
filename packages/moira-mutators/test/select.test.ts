@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { muirTestEach } from '@muirjs/madrox-node-test';
+
 import {
+  muirMoiraMutatorsAllMutators,
   muirMoiraMutatorsSelectMutators,
   type MuirMoiraMutatorsMutatorOptions,
   type MuirMoiraMutatorsMutatorSets,
@@ -221,7 +224,7 @@ describe('selectMutators', () => {
     it(`rejects ${title} as the value of experimental`, () => {
       assert.throws(() => select({ experimental }), {
         message:
-          `@muirjs/test-mutators: experimental takes only true, not ${shown}; Stryker's ` +
+          `@muirjs/test-mutators: experimental takes only true or an object of names, not ${shown}; Stryker's ` +
           'mutator.excludedMutations turns mutators off.',
       });
     });
@@ -348,7 +351,7 @@ describe('selectMutators', () => {
   it('rejects false as the value of experimental', () => {
     assert.throws(() => select({ experimental: false }), {
       message:
-        "@muirjs/test-mutators: experimental takes only true, not false; Stryker's " +
+        "@muirjs/test-mutators: experimental takes only true or an object of names, not false; Stryker's " +
         'mutator.excludedMutations turns mutators off.',
     });
   });
@@ -415,5 +418,95 @@ describe('selectMutators', () => {
         sets.defaults,
       );
     });
+  });
+
+  muirTestEach([
+    ['empty options', {}, ['DefaultA', 'DefaultB']],
+    [
+      'every opt-in mutator and one by name',
+      { MuirMoiraMutatorsOptInB: true, extended: true },
+      ['DefaultA', 'DefaultB', 'OptInA', 'OptInB'],
+    ],
+    [
+      'no experimental mutator by name',
+      { experimental: {} },
+      ['DefaultA', 'DefaultB'],
+    ],
+    [
+      'no mutator for options left undefined',
+      {
+        MuirMoiraMutatorsOptInA: undefined,
+        extended: undefined,
+        experimental: { MuirMoiraMutatorsExperimentalA: undefined },
+      },
+      ['DefaultA', 'DefaultB'],
+    ],
+    [
+      'no experimental mutator for experimental left undefined',
+      { experimental: undefined },
+      ['DefaultA', 'DefaultB'],
+    ],
+    [
+      'opt-in and experimental mutators, in the order of the sets',
+      {
+        experimental: { MuirMoiraMutatorsExperimentalB: true },
+        MuirMoiraMutatorsOptInB: true,
+        extended: true,
+      },
+      ['DefaultA', 'DefaultB', 'OptInA', 'OptInB', 'ExperimentalB'],
+    ],
+  ])('selects the defaults and %s', (_title, options, expected) => {
+    assert.deepEqual(
+      select(options).map(({ name }) => name),
+      expected.map((name) => `MuirMoiraMutators${name}`),
+    );
+  });
+
+  muirTestEach([
+    [
+      'a value JSON cannot print',
+      { MuirMoiraMutatorsOptInA: 1n },
+      "MuirMoiraMutatorsOptInA takes only true, not 1n; Stryker's mutator.excludedMutations turns mutators off.",
+    ],
+    [
+      'false for an experimental mutator',
+      { experimental: { MuirMoiraMutatorsExperimentalA: false } },
+      "experimental.MuirMoiraMutatorsExperimentalA takes only true, not false; Stryker's mutator.excludedMutations " +
+        'turns mutators off.',
+    ],
+  ])('rejects %s', (_title, options, message) => {
+    assert.throws(() => select(options), {
+      message: `${packageName}: ${message}`,
+    });
+  });
+
+  it('names no mutators when a set is empty', () => {
+    assert.throws(
+      () =>
+        muirMoiraMutatorsSelectMutators(
+          packageName,
+          installName,
+          {
+            ...sets,
+            experimental: [named('MuirMoiraMutatorsExperimentalA')],
+            optIn: [],
+          },
+          { MuirMoiraMutatorsX: true },
+        ),
+      {
+        message:
+          '@muirjs/test-mutators: no opt-in mutator is named MuirMoiraMutatorsX; the names are none.',
+      },
+    );
+  });
+});
+
+describe('allMutators', () => {
+  it('lists every mutator, the defaults first', () => {
+    assert.deepEqual(muirMoiraMutatorsAllMutators(sets), [
+      ...sets.defaults,
+      ...sets.optIn,
+      ...sets.experimental,
+    ]);
   });
 });

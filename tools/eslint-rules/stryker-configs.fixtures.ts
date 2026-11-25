@@ -24,18 +24,6 @@ export const configs: readonly StrykerConfigRow[] = [
     mutate: ['packages/madrox-node-test/test/**/*.test.ts'],
   },
   {
-    file: 'packages/moira-node-test/stryker.config.mjs',
-    project: '@muirjs/moira-node-test',
-    config: 'src',
-    mutate: ['packages/moira-node-test/src/**/*.ts'],
-  },
-  {
-    file: 'packages/moira-node-test/stryker.test-code.config.mjs',
-    project: '@muirjs/moira-node-test',
-    config: 'test-code',
-    mutate: ['packages/moira-node-test/test/**/*.test.ts'],
-  },
-  {
     file: 'packages/proteus-node/stryker.config.mjs',
     project: '@muirjs/proteus-node',
     config: 'src',

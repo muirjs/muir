@@ -16,9 +16,6 @@
       "path": "./packages/madrox-node-test"
     },
     {
-      "path": "./packages/moira-node-test"
-    },
-    {
       "path": "./tools/eslint-rules"
     },
     {

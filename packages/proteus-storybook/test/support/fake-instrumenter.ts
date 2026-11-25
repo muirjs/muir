@@ -62,6 +62,11 @@ export function fakeInstrumenter({
         .map((listed) => ({
           fileName: muirMoiraMutatorsSelfCheckFile(listed.name),
           mutatorName: listed.name,
+          replacement: '',
+          location: {
+            start: { line: 0, column: 0 },
+            end: { line: 0, column: 1 },
+          },
         }));
     },
   };

@@ -2,8 +2,8 @@
 
 The internal code that puts a `@muirjs` mutator package's mutators into the instrumenter that StrykerJS uses, since
 Stryker has no public way to add a mutator or to turn a built-in one off, and that checks the change took effect. It
-also holds the mutator code that more than one mutator package uses: the swap engine and the site readers it reads
-swap sites with.
+also holds the mutator code that more than one mutator package uses: the Babel mutator model of the Node mutator
+packages, the swap engine and the site readers it reads swap sites with.
 
 ## Language
 
@@ -12,14 +12,39 @@ swap sites with.
 **Mutator package**:
 A `@muirjs` package whose mutators reach Stryker through an install: `@muirjs/proteus-jsx`,
 `@muirjs/proteus-playwright`, `@muirjs/proteus-storybook`,
-`@muirjs/proteus-storybook-test` and `@muirjs/proteus-msw`.
-_Avoid_: mutator plugin
+`@muirjs/proteus-storybook-test`, `@muirjs/proteus-msw`, and the Node mutator packages.
+_Avoid_: mutator plugin, operator package
+
+**Node mutator package**:
+One of the three mutator packages split by the kind of code they mutate: Node.js API and `node:assert` calls in
+production code (`@muirjs/proteus-node`), node:test test files (`@muirjs/proteus-node-test`), or any JavaScript and
+TypeScript (`@muirjs/proteus-js`). Each defines its mutators as Babel mutators.
+
+**Babel mutator**:
+A mutator defined by a name, a sample and a `mutate` function that takes a Babel path and Babel's types and yields
+the replacement nodes; the install turns it into Stryker's own mutator shape, which skips expression contexts.
+_Avoid_: node mutator, operator
+
+**Mutator name**:
+The letters-only name with its package's `Muir<Mutant><Technology>` prefix, such as `MuirProteusNodeTimerDelay`, that
+configurations, `excludedMutations` and Stryker disable comments use.
+_Avoid_: the camelCase export name
+
+**Bindings**:
+The functions of `@muirjs/proteus-node` that recognise Node.js built-in modules and `node:assert` calls, which
+`@muirjs/proteus-node-test` uses; they install nothing.
+_Avoid_: detector, scope bindings
 
 **Install**:
 The awaited call at the top of a Stryker config file, such as `muirProteusPlaywrightMutators()`, that puts a mutator
 package's mutators into the instrumenter's mutator list. Listing the package in `plugins` or `appendPlugins` is no
 install.
-_Avoid_: registration, plugin loading, setup
+_Avoid_: registration, plugin loading, setup, register, load
+
+**Copy of Stryker core**:
+One installation of Stryker's core package that the process may run; an install patches the instrumenter of each
+copy, so a Windows run that loads Stryker under two drive-letter cases gets the mutators in both.
+_Avoid_: instance
 
 **Mutator list**:
 The list of mutators inside the installed `@stryker-mutator/instrumenter` that every mutated file runs through, which
@@ -29,7 +54,7 @@ _Avoid_: mutator registry, plugin list
 **Muir mark**:
 The mark an install puts on each mutator it adds, naming the mutator package, so that a later install replaces only
 its own package's mutators and tells them from anyone else's.
-_Avoid_: owner flag
+_Avoid_: owner flag, own mark, brand
 
 ### Choosing mutators
 
@@ -49,6 +74,9 @@ _Avoid_: extended mutator, optional mutator
 A mutator that runs only when the install's `experimental` option names it or is `true`; its matching rules or name
 can still change.
 _Avoid_: beta mutator, unstable mutator
+
+**Extended**:
+The option that turns on every opt-in mutator of a package; on a package with no opt-in mutators it throws.
 
 ### Swaps
 
@@ -84,7 +112,7 @@ _Avoid_: core mutator, Stryker mutator, default mutator
 **Built-in removal**:
 Taking the 17 built-in mutators out of the mutator list by name for the whole run, which a mutator package for test
 code does.
-_Avoid_: disabling built-ins, excluding built-ins
+_Avoid_: disabling built-ins, excluding built-ins, replace mode
 
 **Unreviewed mutator**:
 A mutator in the mutator list that is neither a built-in mutator nor carries a Muir mark; a built-in removal leaves
@@ -104,8 +132,8 @@ source in which each built-in mutator makes one.
 _Avoid_: probe, fixture
 
 **Self-check**:
-The step of an install that instruments each mutator's sample and stops the run when a mutator makes no mutant of
-it.
+The step of an install that instruments each mutator's sample with each copy of Stryker core and stops the run when a
+mutator makes no mutant of it.
 _Avoid_: smoke test, sanity check
 
 **Tested version**:

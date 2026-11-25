@@ -7,15 +7,14 @@ mutate test files, use [`@muirjs/proteus-node-test`](../proteus-node-test/README
 ## Install
 
 ```sh
-npm install --save-dev @stryker-mutator/core@^10.1.1 @muirjs/proteus-node
+npm install --save-dev @stryker-mutator/core@~10.1.1 @muirjs/proteus-node
 ```
 
-`@stryker-mutator/core` and `@babel/core` 8.0 (Stryker 10's Babel) are peer dependencies, and `@stryker-mutator/api` is a peer dependency of
-`@muirjs/moira-node-test`, the package it installs its mutators through. The package adds its mutators
-to the instrumenter of the Stryker that runs it. It accepts Stryker 10.1.1 or a later 10.x version and is tested with
-10.1.1. The install checks that the instrumenter
-makes a mutant of each added mutator from a sample, and stops the run with an error if it does not. With a
-version of `@stryker-mutator/instrumenter` outside that range that passes the check, it logs a warning that mutants
+`@stryker-mutator/core` 10.1 and `@babel/core` 8.0 (Stryker 10's Babel) are peer dependencies. The package installs its
+mutators through `@muirjs/moira-mutators`, which adds them to the instrumenter of each copy of Stryker core that may
+run the process. It is tested with 10.1.1. The install checks that the instrumenter makes a mutant of each added
+mutator from a sample, and stops the run with an error, with the instrumenter as it was, if it does not. With a
+version of `@stryker-mutator/instrumenter` other than 10.1.1 that passes the check, it logs a warning that mutants
 may be missing: the check sees only the process that imports the configuration, and a Stryker release that
 instruments in another process would leave the mutators out.
 

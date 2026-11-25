@@ -58,7 +58,7 @@ describe('install', () => {
     await muirProteusStorybookTestInstall(
       sets(['MuirProteusStorybookTestOne', 'MuirProteusStorybookTestTwo']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       silent,
     );
@@ -83,7 +83,7 @@ describe('install', () => {
         ['MuirProteusStorybookTestFour'],
       ),
       { MuirProteusStorybookTestThree: true, experimental: true },
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       silent,
     );
@@ -107,7 +107,7 @@ describe('install', () => {
           ['MuirProteusStorybookTestFour'],
         ),
         { MuirProteusStorybookTestFour: true },
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -131,7 +131,7 @@ describe('install', () => {
           ['MuirProteusStorybookTestFour'],
         ),
         { extended: true },
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -150,7 +150,7 @@ describe('install', () => {
     await muirProteusStorybookTestInstall(
       sets(['MuirProteusStorybookTestOne', 'MuirProteusStorybookTestTwo']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       (message) => lines.push(message),
     );
@@ -172,7 +172,7 @@ describe('install', () => {
         ['MuirProteusStorybookTestFour'],
       ),
       { MuirProteusStorybookTestThree: true, experimental: true },
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       (message) => lines.push(message),
     );
@@ -198,7 +198,7 @@ describe('install', () => {
     await muirProteusStorybookTestInstall(
       { defaults: [echo], optIn: [], experimental: [] },
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       silent,
     );
@@ -218,7 +218,7 @@ describe('install', () => {
       muirProteusStorybookTestInstall(
         sets(['MuirProteusStorybookTestOne', 'MuirProteusStorybookTestTwo']),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -237,7 +237,7 @@ describe('install', () => {
       muirProteusStorybookTestInstall(
         sets(['MuirProteusStorybookTestOne']),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -258,7 +258,7 @@ describe('install', () => {
       muirProteusStorybookTestInstall(
         sets(['MuirProteusStorybookTestOne']),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -276,7 +276,7 @@ describe('install', () => {
     await muirProteusStorybookTestInstall(
       sets(['MuirProteusStorybookTestOne']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       (message) => warnings.push(message),
       silent,
     );
@@ -295,7 +295,7 @@ describe('roster', () => {
     await muirProteusStorybookTestInstall(
       muirProteusStorybookTestMutatorSets,
       options,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       silent,
     );

@@ -1,35 +1,31 @@
 import {
-  muirMoiraNodeTestIsOwn,
-  muirMoiraNodeTestResolveFromCore,
-  muirMoiraNodeTestToNodeMutator,
-  type MuirMoiraNodeTestInstrumentedMutant,
-  type MuirMoiraNodeTestListedMutator,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsBuiltInNames,
+  muirMoiraMutatorsResolveBabelInstrumenter,
+  muirMoiraMutatorsToStrykerMutator,
+  type MuirMoiraMutatorsMutant,
+  type MuirMoiraMutatorsListedMutator,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodePackageName } from '../src/package-name.ts';
 
 export const strict = "import assert from 'node:assert/strict';\n";
 
 export async function instrumentWith(
-  mutator: MuirMoiraNodeTestMutator,
+  mutator: MuirMoiraMutatorsBabelMutator,
   source: string,
-): Promise<readonly MuirMoiraNodeTestInstrumentedMutant[]> {
-  const instrumenter = await muirMoiraNodeTestResolveFromCore();
+): Promise<readonly MuirMoiraMutatorsMutant[]> {
+  const instrumenter = await muirMoiraMutatorsResolveBabelInstrumenter(
+    muirProteusNodePackageName,
+  );
 
   return instrumenter.instrument(
     [{ name: 'sample.ts', content: source }],
-    [
-      muirMoiraNodeTestToNodeMutator(
-        mutator,
-        instrumenter.types,
-        muirProteusNodePackageName,
-      ),
-    ],
+    [muirMoiraMutatorsToStrykerMutator(mutator, instrumenter.types)],
   );
 }
 
 export async function mutantsOf(
-  mutator: MuirMoiraNodeTestMutator,
+  mutator: MuirMoiraMutatorsBabelMutator,
   source: string,
 ): Promise<string[]> {
   const mutants = await instrumentWith(mutator, source);
@@ -39,15 +35,17 @@ export async function mutantsOf(
 
 /** The mutator names of the statement removals in `source`: by Stryker's mutators alone, then with `mutator` too. */
 export async function removalsNextToBuiltIns(
-  mutator: MuirMoiraNodeTestMutator,
+  mutator: MuirMoiraMutatorsBabelMutator,
   source: string,
 ): Promise<[string[], string[]]> {
-  const instrumenter = await muirMoiraNodeTestResolveFromCore();
-  const builtIns = instrumenter.allMutators.filter(
-    (listed) => !muirMoiraNodeTestIsOwn(listed),
+  const instrumenter = await muirMoiraMutatorsResolveBabelInstrumenter(
+    muirProteusNodePackageName,
+  );
+  const builtIns = instrumenter.allMutators.filter(({ name }) =>
+    muirMoiraMutatorsBuiltInNames.includes(name),
   );
   const removals = async (
-    mutators: readonly MuirMoiraNodeTestListedMutator[],
+    mutators: readonly MuirMoiraMutatorsListedMutator[],
   ) =>
     (
       await instrumenter.instrument(
@@ -62,11 +60,7 @@ export async function removalsNextToBuiltIns(
     await removals(builtIns),
     await removals([
       ...builtIns,
-      muirMoiraNodeTestToNodeMutator(
-        mutator,
-        instrumenter.types,
-        muirProteusNodePackageName,
-      ),
+      muirMoiraMutatorsToStrykerMutator(mutator, instrumenter.types),
     ]),
   ];
 }

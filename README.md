@@ -10,7 +10,7 @@ An Nx workspace with six ESM-only packages for Node.js 22.18 or later, tested on
   or TypeScript code: statements and literals Stryker leaves alone.
 - [`@muirjs/proteus-node-test`](packages/proteus-node-test/README.md): StrykerJS mutators for
   test files that use `node:assert` and `node:test`.
-- [`@muirjs/moira-node-test`](packages/moira-node-test/README.md): the install layer that packages of
+- [`@muirjs/moira-mutators`](packages/moira-mutators/README.md): the install layer that packages of
   StrykerJS mutators share.
 - [`@muirjs/madrox-node-test`](packages/madrox-node-test/README.md): `muirTestEach` and `muirTestFor`, table tests for
   `node:test` that work like Vitest's `test.each` and `test.for`.

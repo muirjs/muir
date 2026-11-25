@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { relative, sep } from 'node:path';
 
 import {
-  muirMoiraNodeTestResolveFromCore,
-  muirMoiraNodeTestToNodeMutator,
-  type MuirMoiraNodeTestInstrumentedMutant,
-  type MuirMoiraNodeTestInstrumenter,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsResolveBabelInstrumenter,
+  muirMoiraMutatorsToStrykerMutator,
+  type MuirMoiraMutatorsMutant,
+  type MuirMoiraMutatorsBabelInstrumenter,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodePackageName } from './package-name.ts';
 
 interface MutantDiff {
@@ -16,8 +16,8 @@ interface MutantDiff {
 }
 
 export function muirProteusNodeMutantDiff(
-  before: readonly MuirMoiraNodeTestInstrumentedMutant[],
-  after: readonly MuirMoiraNodeTestInstrumentedMutant[],
+  before: readonly MuirMoiraMutatorsMutant[],
+  after: readonly MuirMoiraMutatorsMutant[],
 ): MutantDiff {
   const beforeLines = before.map(line);
   const afterLines = after.map(line);
@@ -34,8 +34,9 @@ export function muirProteusNodeMutantDiff(
  */
 export async function muirProteusNodeCorpusDiff(
   names: readonly string[],
-  mutatorsFor: (name: string) => readonly MuirMoiraNodeTestMutator[],
-  resolve: () => Promise<MuirMoiraNodeTestInstrumenter> = muirMoiraNodeTestResolveFromCore,
+  mutatorsFor: (name: string) => readonly MuirMoiraMutatorsBabelMutator[],
+  resolve: () => Promise<MuirMoiraMutatorsBabelInstrumenter> = () =>
+    muirMoiraMutatorsResolveBabelInstrumenter(muirProteusNodePackageName),
   read: (name: string) => string = (name) => readFileSync(name, 'utf8'),
 ): Promise<string> {
   const instrumenter = await resolve();
@@ -43,11 +44,7 @@ export async function muirProteusNodeCorpusDiff(
 
   for (const name of names) {
     const nodeMutators = mutatorsFor(name).map((mutator) =>
-      muirMoiraNodeTestToNodeMutator(
-        mutator,
-        instrumenter.types,
-        muirProteusNodePackageName,
-      ),
+      muirMoiraMutatorsToStrykerMutator(mutator, instrumenter.types),
     );
     const files = [{ name, content: read(name) }];
     const before = await instrumenter.instrument(
@@ -78,7 +75,7 @@ function line({
   mutatorName,
   location,
   replacement,
-}: MuirMoiraNodeTestInstrumentedMutant): string {
+}: MuirMoiraMutatorsMutant): string {
   const { line: row, column } = location.start;
 
   return `${row + 1}:${column + 1} ${mutatorName} ${replacement.replace(/\s+/g, ' ')}`;

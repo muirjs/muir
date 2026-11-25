@@ -1,3 +1,5 @@
+// The one module that reaches into Stryker's internals: no other module of this package names a file of
+// @stryker-mutator/instrumenter's dist, which its exports map leaves out.
 import { realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -28,9 +30,34 @@ export interface MuirMoiraMutatorsSourceFile {
   readonly content: string;
 }
 
-export interface MuirMoiraMutatorsMutantOrigin {
+export interface MuirMoiraMutatorsPosition {
+  readonly line: number;
+  readonly column: number;
+}
+
+export interface MuirMoiraMutatorsMutant {
   readonly fileName: string;
   readonly mutatorName: string;
+  readonly replacement: string;
+  readonly location: {
+    readonly start: MuirMoiraMutatorsPosition;
+    readonly end: MuirMoiraMutatorsPosition;
+  };
+}
+
+/** What the install's checks read of a mutant. */
+export type MuirMoiraMutatorsMutantOrigin = Pick<
+  MuirMoiraMutatorsMutant,
+  'fileName' | 'mutatorName'
+>;
+
+/** An instrumenter as the install's checks use it. */
+export interface MuirMoiraMutatorsCheckedInstrumenter {
+  readonly dir: string;
+  readonly version: string;
+  instrument(
+    files: readonly MuirMoiraMutatorsSourceFile[],
+  ): Promise<readonly MuirMoiraMutatorsMutantOrigin[]>;
 }
 
 export interface MuirMoiraMutatorsListedMutator {
@@ -60,9 +87,11 @@ export interface MuirMoiraMutatorsInstrumenter<TTypes> {
   readonly types: TTypes;
   /** The array `transformBabel` reads by default on every file (`babel-transformer.js:8`). */
   readonly allMutators: MuirMoiraMutatorsMutatorList;
+  /** With `mutators`, the instrumenter reads them in place of `allMutators`. */
   instrument(
     files: readonly MuirMoiraMutatorsSourceFile[],
-  ): Promise<readonly MuirMoiraMutatorsMutantOrigin[]>;
+    mutators?: readonly MuirMoiraMutatorsListedMutator[],
+  ): Promise<readonly MuirMoiraMutatorsMutant[]>;
 }
 
 /**
@@ -79,23 +108,73 @@ export type MuirMoiraMutatorsAssertTypes<TTypes> = (
   missing: (name: string) => Error,
 ) => asserts value is TTypes;
 
-export function muirMoiraMutatorsCorePackageJson(
-  argv1: string | undefined = process.argv[1],
+/** Imports a file of the instrumenter or of its @babel/core. */
+export type MuirMoiraMutatorsLoad = (path: string) => Promise<unknown>;
+
+/**
+ * The package.json of each copy of @stryker-mutator/core that may run this process: from the script that started it
+ * when that is core's bin, as when Stryker runs from a global install; otherwise, as when a program uses Stryker's API,
+ * the core that this module resolves, in the drive-letter case of that program's script and in this module's own.
+ */
+export function muirMoiraMutatorsCorePackageJsons(
+  argv: readonly string[] = process.argv,
   realpath: (path: string) => string = realpathSync,
   resolveHere: (specifier: string) => string = createRequire(import.meta.url)
     .resolve,
-): string {
-  let bin: string | undefined;
+): readonly [string, ...string[]] {
+  const [, script] = argv;
+  const real = realScript(script, realpath);
 
-  try {
-    bin = argv1 === undefined ? undefined : realpath(argv1);
-  } catch {
-    // argv1 names no file on disk; fall back to the core this module resolves.
+  if (real !== undefined && coreBin.test(real)) {
+    return [join(real, '..', '..', 'package.json')];
   }
 
-  return bin !== undefined && coreBin.test(bin)
-    ? join(bin, '..', '..', 'package.json')
-    : resolveHere('@stryker-mutator/core/package.json');
+  const here = resolveHere('@stryker-mutator/core/package.json');
+  const scriptCase = real === undefined ? here : withDriveLetterOf(real, here);
+
+  return scriptCase === here ? [here] : [scriptCase, here];
+}
+
+function realScript(
+  script: string | undefined,
+  realpath: (path: string) => string,
+): string | undefined {
+  // `node --eval` and the REPL run no script file.
+  if (script === undefined) {
+    return undefined;
+  }
+
+  try {
+    return realpath(script);
+  } catch {
+    // What `node --eval` passes on after its code is no script file either.
+    return undefined;
+  }
+}
+
+/**
+ * Stryker's modules load with the drive-letter case of the script that started the process when that script imports
+ * Stryker, and with the case of the working directory, as this module does, when a runner such as mocha loads the
+ * module that imports Stryker. ESM caches modules by URL, which keeps that case, so `d:` and `D:` load two
+ * instrumenters, and a self-check of one would pass while Stryker runs the other.
+ */
+function withDriveLetterOf(script: string, path: string): string {
+  const drive = /^[A-Za-z]:/.exec(script)?.[0];
+
+  return drive !== undefined &&
+    path.slice(0, 2).toLowerCase() === drive.toLowerCase()
+    ? drive + path.slice(2)
+    : path;
+}
+
+/** The instrumenter of each core in `corePackages`, resolved by `resolveFromCore`. */
+export function muirMoiraMutatorsResolveEachCore<TInstrumenter>(
+  resolveFromCore: (corePackage: string) => Promise<TInstrumenter>,
+  corePackages: readonly string[] = muirMoiraMutatorsCorePackageJsons(),
+): Promise<TInstrumenter[]> {
+  return Promise.all(
+    corePackages.map((corePackage) => resolveFromCore(corePackage)),
+  );
 }
 
 /** `packageName` starts every error message, so the user sees which mutator package failed. */
@@ -103,31 +182,33 @@ export async function muirMoiraMutatorsResolveInstrumenter<TTypes>(
   packageName: string,
   assertTypes: MuirMoiraMutatorsAssertTypes<TTypes>,
   corePackage: string,
+  load: MuirMoiraMutatorsLoad = importFile,
 ): Promise<MuirMoiraMutatorsInstrumenter<TTypes>> {
   const fromCore = createRequire(corePackage);
   const packageJson = fromCore.resolve(
     '@stryker-mutator/instrumenter/package.json',
   );
   const dir = dirname(packageJson);
-  const manifest: unknown = fromCore(packageJson);
-  const version = String(muirMoiraMutatorsFieldOf(manifest, 'version'));
+  const version = muirMoiraMutatorsFieldOf(fromCore(packageJson), 'version');
+  const missing = hasNo({ packageName, dir, version: String(version) });
+
+  if (typeof version !== 'string') {
+    throw missing('version');
+  }
+
   const [mutate, babel] = await Promise.all([
-    importFile(join(dir, 'dist', 'src', 'mutators', 'mutate.js')),
-    importFile(createRequire(packageJson).resolve('@babel/core')),
+    load(join(dir, 'dist', 'src', 'mutators', 'mutate.js')),
+    load(createRequire(packageJson).resolve('@babel/core')),
   ]);
   const allMutators = muirMoiraMutatorsFieldOf(mutate, 'allMutators');
   const types = muirMoiraMutatorsFieldOf(babel, 'types');
-  const missing = hasNo({ packageName, dir, version });
 
   if (!Array.isArray(allMutators) || !allMutators.every(isListedMutator)) {
     throw missing('allMutators');
   }
 
-  const instrument = await muirMoiraMutatorsCoreInstrument({
-    packageName,
-    dir,
-    version,
-  });
+  const located = { packageName, dir, version };
+  const instrument = await muirMoiraMutatorsCoreInstrument(located, load);
 
   assertTypes(types, missing);
 
@@ -136,23 +217,27 @@ export async function muirMoiraMutatorsResolveInstrumenter<TTypes>(
     version,
     types,
     allMutators,
-    async instrument(files) {
+    async instrument(files, mutators) {
       const mutants = muirMoiraMutatorsFieldOf(
-        await instrument(files),
+        await instrument(files, [], [], mutators),
         'mutants',
       );
 
-      if (!Array.isArray(mutants) || !mutants.every(isMutantOrigin)) {
+      if (!Array.isArray(mutants) || !mutants.every(isMutant)) {
         throw new Error(
           `${packageName}: the instrumenter ${version} in ${dir} resolved Instrumenter.instrument() to a ` +
-            'value whose mutants are missing or have no string fileName and mutatorName.',
+            'value whose mutants are missing or lack a string fileName, mutatorName or replacement, or a location.',
         );
       }
 
-      return mutants.map(({ fileName, mutatorName }) => ({
-        fileName,
-        mutatorName,
-      }));
+      return mutants.map(
+        ({ fileName, mutatorName, replacement, location }) => ({
+          fileName,
+          mutatorName,
+          replacement,
+          location,
+        }),
+      );
     },
   };
 }
@@ -229,32 +314,67 @@ function hasNo({
     );
 }
 
+/**
+ * The `Instrumenter` of the entry that the instrumenter's package exports, the one Stryker constructs, so that a
+ * bundled entry fails the self-check. With `mutators`, it transforms with them in place of `allMutators`.
+ */
 export async function muirMoiraMutatorsCoreInstrument(
   instrumenter: MuirMoiraMutatorsLocated,
+  load: MuirMoiraMutatorsLoad = importFile,
 ): Promise<
   (
     files: readonly MuirMoiraMutatorsSourceFile[],
     excludedMutations?: readonly string[],
     ignorers?: readonly Ignorer[],
+    mutators?: readonly MuirMoiraMutatorsListedMutator[],
   ) => Promise<unknown>
 > {
-  const Instrumenter = muirMoiraMutatorsFieldOf(
-    await importFile(join(instrumenter.dir, 'dist', 'src', 'index.js')),
-    'Instrumenter',
-  );
+  const { dir } = instrumenter;
+  const missing = hasNo(instrumenter);
+  const [index, transformer] = await Promise.all([
+    load(
+      createRequire(join(dir, 'package.json')).resolve(
+        '@stryker-mutator/instrumenter',
+      ),
+    ),
+    load(join(dir, 'dist', 'src', 'transformers', 'babel-transformer.js')),
+  ]);
+  const Instrumenter = muirMoiraMutatorsFieldOf(index, 'Instrumenter');
   const instrument =
     typeof Instrumenter === 'function'
       ? muirMoiraMutatorsFieldOf(Instrumenter.prototype, 'instrument')
       : undefined;
+  const transformBabel = muirMoiraMutatorsFieldOf(
+    transformer,
+    'transformBabel',
+  );
 
   if (typeof Instrumenter !== 'function' || typeof instrument !== 'function') {
-    throw hasNo(instrumenter)('Instrumenter');
+    throw missing('Instrumenter');
   }
 
-  return async (files, excludedMutations = [], ignorers = []) => {
+  if (typeof transformBabel !== 'function') {
+    throw missing('transformBabel');
+  }
+
+  return async (files, excludedMutations = [], ignorers = [], mutators) => {
+    const transform =
+      mutators &&
+      ((ast: unknown, collector: unknown, context: unknown): unknown =>
+        Reflect.apply(transformBabel, undefined, [
+          ast,
+          collector,
+          context,
+          mutators,
+        ]));
     const result: unknown = await Reflect.apply(
       instrument,
-      Reflect.construct(Instrumenter, [silentLogger]),
+      Reflect.construct(Instrumenter, [
+        silentLogger,
+        undefined,
+        undefined,
+        transform,
+      ]),
       [
         files.map((file) => ({ ...file, mutate: true })),
         { plugins: null, excludedMutations, ignorers },
@@ -265,12 +385,22 @@ export async function muirMoiraMutatorsCoreInstrument(
   };
 }
 
-function isMutantOrigin(
-  value: unknown,
-): value is MuirMoiraMutatorsMutantOrigin {
+function isMutant(value: unknown): value is MuirMoiraMutatorsMutant {
+  const location = muirMoiraMutatorsFieldOf(value, 'location');
+
   return (
     typeof muirMoiraMutatorsFieldOf(value, 'fileName') === 'string' &&
-    typeof muirMoiraMutatorsFieldOf(value, 'mutatorName') === 'string'
+    typeof muirMoiraMutatorsFieldOf(value, 'mutatorName') === 'string' &&
+    typeof muirMoiraMutatorsFieldOf(value, 'replacement') === 'string' &&
+    isPosition(muirMoiraMutatorsFieldOf(location, 'start')) &&
+    isPosition(muirMoiraMutatorsFieldOf(location, 'end'))
+  );
+}
+
+function isPosition(value: unknown): value is MuirMoiraMutatorsPosition {
+  return (
+    typeof muirMoiraMutatorsFieldOf(value, 'line') === 'number' &&
+    typeof muirMoiraMutatorsFieldOf(value, 'column') === 'number'
   );
 }
 

@@ -1,5 +1,5 @@
 import type {
-  MuirMoiraMutatorsInstrumenter,
+  MuirMoiraMutatorsCheckedInstrumenter,
   MuirMoiraMutatorsListedMutator,
   MuirMoiraMutatorsLocated,
   MuirMoiraMutatorsMutatorList,
@@ -125,8 +125,7 @@ export async function muirMoiraMutatorsUndoOnThrow(
 
 export async function muirMoiraMutatorsSelfCheck(
   packageName: string,
-  instrumenter: Pick<MuirMoiraMutatorsLocated, 'dir' | 'version'> &
-    Pick<MuirMoiraMutatorsInstrumenter<unknown>, 'instrument'>,
+  instrumenter: MuirMoiraMutatorsCheckedInstrumenter,
   mutators: readonly MuirMoiraMutatorsSampledMutator[],
 ): Promise<void> {
   const mutants = await instrumenter.instrument(

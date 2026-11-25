@@ -1,4 +1,3 @@
-import { muirMoiraMutatorsSelectMutators } from '@muirjs/moira-mutators';
 import { declareFactoryPlugin, PluginKind } from '@stryker-mutator/api/plugin';
 
 import {
@@ -9,7 +8,6 @@ import {
 import { muirProteusJsxImplicitRoles } from './implicit-roles.ts';
 import { muirProteusJsxInstall } from './install.ts';
 import { muirProteusJsxMutatorsFor } from './mutators.ts';
-import { muirProteusJsxPackageName } from './package-name.ts';
 import {
   muirProteusJsxStylingSchema,
   muirProteusJsxStylingIgnorer,
@@ -46,16 +44,10 @@ export async function muirProteusJsxMutators(
   options?: MuirProteusJsxMutatorOptions,
 ): Promise<void> {
   await muirProteusJsxInstall(
-    muirMoiraMutatorsSelectMutators(
-      muirProteusJsxPackageName,
-      'muirProteusJsxMutators',
-      {
-        defaults: muirProteusJsxMutatorsFor(muirProteusJsxImplicitRoles),
-        optIn: [],
-        experimental: [],
-      },
-      options,
-    ),
+    muirProteusJsxMutatorsFor(muirProteusJsxImplicitRoles),
+    undefined,
+    undefined,
+    options,
   );
 }
 

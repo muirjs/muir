@@ -1,29 +1,38 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { muirMoiraNodeTestResolveFromCore } from '@muirjs/moira-node-test';
+import { muirMoiraMutatorsResolveBabelInstrumenter } from '@muirjs/moira-mutators';
 import { muirProteusNodeMutators } from '../../src/index.ts';
+import { muirProteusNodePackageName } from '../../src/package-name.ts';
 
 describe('muirProteusNodeMutators', () => {
-  it("installs the defaults and the mutators its options turn on into Stryker's instrumenter", async () => {
+  it("installs the defaults and the mutators its options turn on beside Stryker's, without a warning", async (t) => {
+    const warn = t.mock.method(console, 'warn', () => undefined);
+
     await muirProteusNodeMutators({
       MuirProteusNodeListenerOnce: true,
       experimental: { MuirProteusNodeByteLength: true },
     });
 
-    const names = (await muirMoiraNodeTestResolveFromCore()).allMutators.map(
-      ({ name }) => name,
-    );
+    const names = (
+      await muirMoiraMutatorsResolveBabelInstrumenter(
+        muirProteusNodePackageName,
+      )
+    ).allMutators.map(({ name }) => name);
 
     assert.deepEqual(
       [
-        'MuirProteusNodeTimerDelay',
-        'MuirProteusNodeListenerOnce',
-        'MuirProteusNodeByteLength',
-        'MuirProteusNodeAssertStatement',
-        'MuirProteusNodeCallbackError',
-      ].map((name) => names.includes(name)),
-      [true, true, true, false, false],
+        [
+          'StringLiteral',
+          'MuirProteusNodeTimerDelay',
+          'MuirProteusNodeListenerOnce',
+          'MuirProteusNodeByteLength',
+          'MuirProteusNodeAssertStatement',
+          'MuirProteusNodeCallbackError',
+        ].map((name) => names.includes(name)),
+        warn.mock.callCount(),
+      ],
+      [[true, true, true, true, false, false], 0],
     );
   });
 
@@ -31,7 +40,7 @@ describe('muirProteusNodeMutators', () => {
     await assert.rejects(
       // @ts-expect-error -- MuirProteusNodeByteLength is experimental, so it goes inside `experimental`
       muirProteusNodeMutators({ MuirProteusNodeByteLength: true }),
-      /^Error: proteus-node: /,
+      /^Error: @muirjs\/proteus-node: /,
     );
   });
 });

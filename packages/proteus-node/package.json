@@ -49,11 +49,11 @@
     "test-integration": "node --conditions=@muirjs/source --test \"test/integration/**/*.test.ts\""
   },
   "dependencies": {
-    "@muirjs/moira-node-test": "*"
+    "@muirjs/moira-mutators": "0.0.0"
   },
   "peerDependencies": {
     "@babel/core": "~8.0.0",
-    "@stryker-mutator/core": "^10.1.1"
+    "@stryker-mutator/core": "~10.1.0"
   },
   "devDependencies": {
     "@muirjs/madrox-node-test": "*"

@@ -2,30 +2,34 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { muirProteusJsCorePeerRange } from '../../src/package-name.ts';
+import { muirMoiraMutatorsResolveBabelInstrumenter } from '@muirjs/moira-mutators';
+import {
+  muirProteusJsPackageName,
+  muirProteusJsTestedVersion,
+} from '../../src/package-name.ts';
 import pkg from '../../package.json' with { type: 'json' };
 
-describe('muirProteusJsCorePeerRange', () => {
-  it('is the peer range of @stryker-mutator/core in package.json', () => {
-    assert.equal(
-      muirProteusJsCorePeerRange,
-      pkg.peerDependencies['@stryker-mutator/core'],
+describe('muirProteusJsPackageName', () => {
+  it('is the name in package.json', () => {
+    assert.equal(muirProteusJsPackageName, pkg.name);
+  });
+});
+
+describe('muirProteusJsTestedVersion', () => {
+  it('is the version of the instrumenter that the tests run', async () => {
+    const { version } = await muirMoiraMutatorsResolveBabelInstrumenter(
+      muirProteusJsPackageName,
     );
+
+    assert.equal(muirProteusJsTestedVersion, version);
   });
 
-  it('is the range the README names', () => {
+  it('is the version the README names', () => {
     const readme = readFileSync(
       new URL('../../README.md', import.meta.url),
       'utf8',
     ).replaceAll(/\s+/g, ' ');
-    const floor = muirProteusJsCorePeerRange.slice(1);
-    const [major] = floor.split('.');
-    assert.ok(major);
 
-    assert.ok(
-      readme.includes(
-        `It accepts Stryker ${floor} or a later ${major}.x version`,
-      ),
-    );
+    assert.ok(readme.includes(`is tested with ${muirProteusJsTestedVersion}`));
   });
 });

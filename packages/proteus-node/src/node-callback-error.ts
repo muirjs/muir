@@ -1,7 +1,7 @@
 import {
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 
 const callbacks: ReadonlySet<string> = new Set([
   'cb',
@@ -16,7 +16,7 @@ const errors: ReadonlySet<string> = new Set(['err', 'error', 'e', 'er']);
  * it was handed is dropped. The names decide: a callee named `cb`, `callback`, `done` or `next`, or any `destroy`
  * method, called with one argument named `err`, `error`, `e` or `er`.
  */
-export const muirProteusNodeCallbackError: MuirMoiraNodeTestMutator<'MuirProteusNodeCallbackError'> =
+export const muirProteusNodeCallbackError: MuirMoiraMutatorsBabelMutator<'MuirProteusNodeCallbackError'> =
   {
     name: 'MuirProteusNodeCallbackError',
     sample:
@@ -37,7 +37,7 @@ export const muirProteusNodeCallbackError: MuirMoiraNodeTestMutator<'MuirProteus
 
       if (
         (callee.type === 'Identifier' && callbacks.has(callee.name)) ||
-        muirMoiraNodeTestPropertyName(callee) === 'destroy'
+        muirMoiraMutatorsPropertyName(callee) === 'destroy'
       ) {
         yield t.callExpression(t.cloneNode(callee), []);
       }

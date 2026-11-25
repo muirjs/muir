@@ -1,9 +1,9 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestCalleeRoot,
-  muirMoiraNodeTestImportOf,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsCalleeRoot,
+  muirMoiraMutatorsImportOf,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeBuiltin, muirProteusNodeAssert } from './bindings.ts';
 
 const nodeProcess = muirProteusNodeBuiltin('process');
@@ -12,8 +12,8 @@ export function muirProteusNodeIsNodeAssertCall(
   path: NodePath,
   call: types.CallExpression,
 ): boolean {
-  const root = muirMoiraNodeTestCalleeRoot(call.callee);
-  const source = root && muirMoiraNodeTestImportOf(path, root.name)?.source;
+  const root = muirMoiraMutatorsCalleeRoot(call.callee);
+  const source = root && muirMoiraMutatorsImportOf(path, root.name)?.source;
 
   return source !== undefined && muirProteusNodeAssert.has(source);
 }
@@ -27,7 +27,7 @@ export function muirProteusNodeIsProcess(
     return false;
   }
 
-  const from = muirMoiraNodeTestImportOf(path, receiver.name);
+  const from = muirMoiraMutatorsImportOf(path, receiver.name);
 
   return from === undefined
     ? receiver.name === 'process' && !path.scope.hasBinding('process')

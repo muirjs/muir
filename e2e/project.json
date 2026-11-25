@@ -8,7 +8,7 @@
     "@muirjs/proteus-node",
     "@muirjs/proteus-js",
     "@muirjs/proteus-node-test",
-    "@muirjs/moira-node-test"
+    "@muirjs/moira-mutators"
   ],
   "targets": {
     "test": {

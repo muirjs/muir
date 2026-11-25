@@ -1,33 +1,29 @@
 import {
-  muirMoiraNodeTestResolveFromCore,
-  muirMoiraNodeTestToNodeMutator,
-  type MuirMoiraNodeTestInstrumentedMutant,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsResolveBabelInstrumenter,
+  muirMoiraMutatorsToStrykerMutator,
+  type MuirMoiraMutatorsMutant,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeTestPackageName } from '../src/package-name.ts';
 
 export const strict = "import assert from 'node:assert/strict';\n";
 
 export async function instrumentWith(
-  mutator: MuirMoiraNodeTestMutator,
+  mutator: MuirMoiraMutatorsBabelMutator,
   source: string,
-): Promise<readonly MuirMoiraNodeTestInstrumentedMutant[]> {
-  const instrumenter = await muirMoiraNodeTestResolveFromCore();
+): Promise<readonly MuirMoiraMutatorsMutant[]> {
+  const instrumenter = await muirMoiraMutatorsResolveBabelInstrumenter(
+    muirProteusNodeTestPackageName,
+  );
 
   return instrumenter.instrument(
     [{ name: 'sample.ts', content: source }],
-    [
-      muirMoiraNodeTestToNodeMutator(
-        mutator,
-        instrumenter.types,
-        muirProteusNodeTestPackageName,
-      ),
-    ],
+    [muirMoiraMutatorsToStrykerMutator(mutator, instrumenter.types)],
   );
 }
 
 export async function mutantsOf(
-  mutator: MuirMoiraNodeTestMutator,
+  mutator: MuirMoiraMutatorsBabelMutator,
   source: string,
 ): Promise<string[]> {
   const mutants = await instrumentWith(mutator, source);

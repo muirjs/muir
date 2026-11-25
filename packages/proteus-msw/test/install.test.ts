@@ -28,7 +28,7 @@ describe('install', () => {
     await muirProteusMswInstall(
       muirProteusMswMutatorSets,
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       silent,
     );
@@ -42,7 +42,7 @@ describe('install', () => {
     await muirProteusMswInstall(
       sets([], [], ['MuirProteusMswOne']),
       { experimental: true },
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       silent,
     );
@@ -60,7 +60,7 @@ describe('install', () => {
     await muirProteusMswInstall(
       sets([], [], ['MuirProteusMswOne']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       silent,
     );
@@ -75,7 +75,7 @@ describe('install', () => {
     await muirProteusMswInstall(
       sets([], [], ['MuirProteusMswOne', 'MuirProteusMswTwo']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       (message) => lines.push(message),
     );
@@ -93,7 +93,7 @@ describe('install', () => {
     await muirProteusMswInstall(
       sets([], [], ['MuirProteusMswOne', 'MuirProteusMswTwo']),
       { experimental: true },
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       (message) => lines.push(message),
     );
@@ -111,7 +111,7 @@ describe('install', () => {
     await muirProteusMswInstall(
       sets(['MuirProteusMswOne'], [], ['MuirProteusMswTwo']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       silent,
       (message) => lines.push(message),
     );
@@ -128,7 +128,7 @@ describe('install', () => {
       muirProteusMswInstall(
         sets(['MuirProteusMswOne']),
         { MuirProteusMswOne: true },
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -149,7 +149,7 @@ describe('install', () => {
       muirProteusMswInstall(
         sets([], [], ['MuirProteusMswOne', 'MuirProteusMswTwo']),
         { experimental: true },
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -165,7 +165,7 @@ describe('install', () => {
       muirProteusMswInstall(
         sets([], [], ['Objectliteral']),
         { experimental: true },
-        async () => instrumenter,
+        async () => [instrumenter],
         silent,
         silent,
       ),
@@ -183,7 +183,7 @@ describe('install', () => {
     await muirProteusMswInstall(
       sets([], [], ['MuirProteusMswOne']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       (message) => warnings.push(message),
       silent,
     );
@@ -204,7 +204,10 @@ describe('resolveFromCore against a fake instrumenter', () => {
       '@stryker-mutator/core/package.json':
         '{ "name": "@stryker-mutator/core", "version": "9.9.9" }',
       '@stryker-mutator/instrumenter/package.json':
-        '{ "name": "@stryker-mutator/instrumenter", "version": "9.9.8", "type": "module" }',
+        '{ "name": "@stryker-mutator/instrumenter", "version": "9.9.8", "type": "module", ' +
+        '"exports": { ".": "./dist/src/index.js", "./package.json": "./package.json" } }',
+      '@stryker-mutator/instrumenter/dist/src/transformers/babel-transformer.js':
+        'export function transformBabel() {}',
       '@stryker-mutator/instrumenter/dist/src/mutators/mutate.js':
         'export const allMutators = [];',
       '@stryker-mutator/instrumenter/dist/src/mutant-placers/index.js':

@@ -1,19 +1,18 @@
 import {
-  muirMoiraNodeTestInstall,
-  muirMoiraNodeTestSelectMutators,
-  type MuirMoiraNodeTestMutatorOptions,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsInstallBabelMutators,
+  type MuirMoiraMutatorsMutatorOptions,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeTestTestMutatorSets } from './mutators.ts';
 import {
-  muirProteusNodeTestCorePeerRange,
   muirProteusNodeTestPackageName,
+  muirProteusNodeTestTestedVersion,
 } from './package-name.ts';
 
 /** The mutators measured on too few projects to run by default, turned on inside `experimental`. */
 export type MuirProteusNodeTestExperimentalMutator =
   (typeof muirProteusNodeTestTestMutatorSets.experimental)[number]['name'];
 
-export type MuirProteusNodeTestMutatorOptions = MuirMoiraNodeTestMutatorOptions<
+export type MuirProteusNodeTestMutatorOptions = MuirMoiraMutatorsMutatorOptions<
   never,
   MuirProteusNodeTestExperimentalMutator
 >;
@@ -26,14 +25,12 @@ export type MuirProteusNodeTestMutatorOptions = MuirMoiraNodeTestMutatorOptions<
 export async function muirProteusNodeTestMutators(
   options?: MuirProteusNodeTestMutatorOptions,
 ): Promise<void> {
-  await muirMoiraNodeTestInstall({
+  await muirMoiraMutatorsInstallBabelMutators({
     packageName: muirProteusNodeTestPackageName,
-    corePeerRange: muirProteusNodeTestCorePeerRange,
-    mode: 'replace',
-    mutators: muirMoiraNodeTestSelectMutators(
-      muirProteusNodeTestPackageName,
-      muirProteusNodeTestTestMutatorSets,
-      options,
-    ),
+    installName: 'muirProteusNodeTestMutators',
+    testedVersion: muirProteusNodeTestTestedVersion,
+    removeBuiltIns: true,
+    sets: muirProteusNodeTestTestMutatorSets,
+    options,
   });
 }

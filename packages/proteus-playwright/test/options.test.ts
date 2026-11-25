@@ -12,7 +12,7 @@ async function startLineWith(options: unknown): Promise<string> {
   await muirProteusPlaywrightInstall(
     muirProteusPlaywrightMutatorSets,
     options,
-    async () => instrumenter,
+    async () => [instrumenter],
     () => undefined,
     (message) => lines.push(message),
   );
@@ -75,7 +75,7 @@ it('names muirProteusPlaywrightMutators when options reach a roster with no opt-
         experimental: [],
       },
       { extended: true },
-      async () => instrumenter,
+      async () => [instrumenter],
       () => undefined,
       () => undefined,
     ),

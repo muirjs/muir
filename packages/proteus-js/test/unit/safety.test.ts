@@ -5,7 +5,7 @@ import type { NodePath } from '@babel/core';
 import type { Location } from '@stryker-mutator/api/core';
 
 import { muirTestEach } from '@muirjs/madrox-node-test';
-import type { MuirMoiraNodeTestMutator } from '@muirjs/moira-node-test';
+import type { MuirMoiraMutatorsBabelMutator } from '@muirjs/moira-mutators';
 import { instrumentWith, mutantsOf } from '../mutants-of.fixtures.ts';
 import { muirProteusJsMutators } from '../../src/mutators.ts';
 
@@ -56,7 +56,7 @@ function textAt(source: string, { start, end }: Location): string {
 }
 
 async function newCallees(
-  mutator: MuirMoiraNodeTestMutator,
+  mutator: MuirMoiraMutatorsBabelMutator,
   source: string,
 ): Promise<string[][]> {
   const mutants = await instrumentWith(mutator, source);
@@ -72,10 +72,12 @@ async function newCallees(
 
 describe('safety', () => {
   muirTestEach(
-    mutators.map((mutator): readonly [string, MuirMoiraNodeTestMutator] => [
-      mutator.name,
-      mutator,
-    ]),
+    mutators.map(
+      (mutator): readonly [string, MuirMoiraMutatorsBabelMutator] => [
+        mutator.name,
+        mutator,
+      ],
+    ),
   )(
     '%s calls nothing new in its replacements but Error and Promise.reject',
     async (_name, mutator) => {
@@ -95,7 +97,7 @@ describe('safety', () => {
     [
       'a mutator that signals a process',
       'f();',
-      (t: Parameters<MuirMoiraNodeTestMutator['mutate']>[1]) =>
+      (t: Parameters<MuirMoiraMutatorsBabelMutator['mutate']>[1]) =>
         t.callExpression(
           t.memberExpression(t.identifier('process'), t.identifier('kill')),
           [
@@ -109,13 +111,13 @@ describe('safety', () => {
     [
       'a mutator that only throws an Error',
       'f();',
-      (t: Parameters<MuirMoiraNodeTestMutator['mutate']>[1]) =>
+      (t: Parameters<MuirMoiraMutatorsBabelMutator['mutate']>[1]) =>
         t.newExpression(t.identifier('Error'), []),
       (path: NodePath) => path.isCallExpression(),
       [[]],
     ],
   ])('reports %s', async (_title, source, replacement, where, expected) => {
-    const unsafe: MuirMoiraNodeTestMutator = {
+    const unsafe: MuirMoiraMutatorsBabelMutator = {
       name: 'Unsafe',
       sample: '',
       *mutate(path, t) {
@@ -131,7 +133,7 @@ describe('safety', () => {
   muirTestEach(
     mutators.flatMap((mutator) =>
       targets.map(
-        (source): readonly [string, string, MuirMoiraNodeTestMutator] => [
+        (source): readonly [string, string, MuirMoiraMutatorsBabelMutator] => [
           mutator.name,
           source,
           mutator,
