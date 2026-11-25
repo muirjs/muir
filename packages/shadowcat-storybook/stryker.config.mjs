@@ -1,3 +1,3 @@
-import { packageConfig } from '../../stryker.package.ts';
+import { packageConfig } from '../../stryker.base.mjs';
 
-export default packageConfig('shadowcat-storybook');
+export default await packageConfig('shadowcat-storybook');

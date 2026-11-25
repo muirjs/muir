@@ -58,7 +58,8 @@
           "...",
           "{workspaceRoot}/tsconfig.base.json"
         ]
-      }
+      },
+      "mutate-src": {}
     }
   },
   "scripts": {

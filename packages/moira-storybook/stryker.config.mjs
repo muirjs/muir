@@ -1,7 +1,7 @@
-import { packageConfig } from '../../stryker.package.ts';
+import { packageConfig } from '../../stryker.base.mjs';
 
 export default {
-  ...packageConfig(
+  ...(await packageConfig(
     'moira-storybook',
     ['*.test.ts'],
     [
@@ -9,7 +9,7 @@ export default {
       'packages/proteus-storybook/test/*.test.ts',
       'packages/proteus-storybook-test/test/*.test.ts',
     ],
-  ),
+  )),
   // The other packages' tests import this package through node_modules, which a sandbox links to the unmutated sources.
   inPlace: true,
 };

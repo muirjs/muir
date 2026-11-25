@@ -176,6 +176,72 @@ jobs:
             config: test-code
             mutated: '!packages/siryn-node-test/test/**/*.test.ts'
             timeout: 30
+          - project: '@muirjs/moira-mutators'
+            slug: moira-mutators
+            root: packages/moira-mutators
+            config: src
+            mutated: '!packages/moira-mutators/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/moira-storybook'
+            slug: moira-storybook
+            root: packages/moira-storybook
+            config: src
+            mutated: '!packages/moira-storybook/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/pixie-storybook'
+            slug: pixie-storybook
+            root: packages/pixie-storybook
+            config: src
+            mutated: '!packages/pixie-storybook/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/proteus-jsx'
+            slug: proteus-jsx
+            root: packages/proteus-jsx
+            config: src
+            mutated: '!packages/proteus-jsx/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/proteus-msw'
+            slug: proteus-msw
+            root: packages/proteus-msw
+            config: src
+            mutated: '!packages/proteus-msw/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/proteus-playwright'
+            slug: proteus-playwright
+            root: packages/proteus-playwright
+            config: src
+            mutated: '!packages/proteus-playwright/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/proteus-storybook'
+            slug: proteus-storybook
+            root: packages/proteus-storybook
+            config: src
+            mutated: '!packages/proteus-storybook/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/proteus-storybook-test'
+            slug: proteus-storybook-test
+            root: packages/proteus-storybook-test
+            config: src
+            mutated: '!packages/proteus-storybook-test/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/shadowcat-storybook'
+            slug: shadowcat-storybook
+            root: packages/shadowcat-storybook
+            config: src
+            mutated: '!packages/shadowcat-storybook/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/siryn-playwright'
+            slug: siryn-playwright
+            root: packages/siryn-playwright
+            config: src
+            mutated: '!packages/siryn-playwright/src/**/*.ts'
+            timeout: 60
+          - project: '@muirjs/test-util-mutator-packages'
+            slug: test-util-mutator-packages
+            root: packages/test-util-mutator-packages
+            config: src
+            mutated: '!packages/test-util-mutator-packages/src/**/*.ts'
+            timeout: 60
           - project: e2e
             slug: e2e
             root: e2e

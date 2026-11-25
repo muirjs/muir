@@ -1,3 +1,3 @@
-import { packageConfig } from '../../stryker.package.ts';
+import { packageConfig } from '../../stryker.base.mjs';
 
-export default packageConfig('proteus-storybook-test');
+export default await packageConfig('proteus-storybook-test');

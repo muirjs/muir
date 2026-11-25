@@ -43,18 +43,6 @@ const notWorkspaceConfigs = new Set([
   '.nx',
   'dist',
   'reports',
-  // The Playwright repository's packages, which keep its stryker.package.ts configs until they move to these.
-  'packages/moira-storybook',
-  'packages/pixie-storybook',
-  'packages/proteus-jsx',
-  'packages/proteus-msw',
-  'packages/moira-mutators',
-  'packages/proteus-playwright',
-  'packages/siryn-playwright',
-  'packages/shadowcat-storybook',
-  'packages/proteus-storybook',
-  'packages/proteus-storybook-test',
-  'packages/test-util-mutator-packages',
 ]);
 
 interface MatrixRow {

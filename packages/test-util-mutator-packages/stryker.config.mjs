@@ -1,3 +1,3 @@
-import { packageConfig } from '../../stryker.package.ts';
+import { packageConfig } from '../../stryker.base.mjs';
 
-export default packageConfig('test-util-mutator-packages');
+export default await packageConfig('test-util-mutator-packages');

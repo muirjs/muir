@@ -72,7 +72,7 @@ export async function testCode(config) {
 const ignoredEverywhere = ['/.claude', '/.nx', '/.scratch', '/reports'];
 
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
-export default {
+const base = {
   plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
   testRunner: 'muir-siryn-node-test',
   testRunnerNodeArgs: [source],
@@ -93,11 +93,41 @@ export default {
   concurrency: concurrency(baseGbPerUnit),
 };
 
+export default base;
+
 /**
  * The ignore patterns of the configs whose runs read e2e/: the e2e project mutates it, and the eslint-rules tests
  * load its Stryker configs. Its consumer fixtures stay out of the sandbox.
  */
 export const ignorePatternsKeepingE2e = [...ignoredEverywhere, '/e2e/fixtures'];
+
+/**
+ * The production-code config of `packages/<name>`, which mutates its src with the package's node:test files.
+ *
+ * @param {string} name the package folder
+ * @param {readonly string[]} [tests] the test files in `test/` that can run against Stryker's instrumented sources
+ * @param {readonly string[]} [otherTests] test files of other packages, as paths from the workspace root
+ */
+export async function packageConfig(
+  name,
+  tests = ['*.test.ts'],
+  otherTests = [],
+) {
+  const dir = `packages/${name}`;
+
+  return production({
+    ...base,
+    mutate: [`${dir}/src/**/*.ts`],
+    timeoutMS: 30000,
+    tsconfigFile: `${dir}/tsconfig.lib.json`,
+    incrementalFile: `reports/stryker-incremental/@muirjs/${name}.src.json`,
+    ...reportFiles(`@muirjs/${name}.src`),
+    muirSirynNodeTest: {
+      testFiles: [...tests.map((test) => `${dir}/test/${test}`), ...otherTests],
+      nodeArgs: [source],
+    },
+  });
+}
 
 /**
  * A config's HTML and JSON report files, so that the two configs of a project do not write the same file. The
