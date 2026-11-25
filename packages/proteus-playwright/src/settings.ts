@@ -25,7 +25,11 @@ function isIdentifierList(value: unknown): value is readonly string[] {
   );
 }
 
-let current = muirProteusPlaywrightParseSettings(undefined);
+const defaultSettings: MuirProteusPlaywrightResolvedSettings = {
+  navigationFixtures: ['navigate'],
+};
+
+let current = defaultSettings;
 
 /** The settings of the latest install call; every call replaces them. */
 export function muirProteusPlaywrightUseSettings(
@@ -61,7 +65,7 @@ export function muirProteusPlaywrightParseSettings(
   }
 
   const given = muirMoiraMutatorsFieldOf(settings, fixturesKey);
-  const list = given === undefined ? ['navigate'] : given;
+  const list = given === undefined ? defaultSettings.navigationFixtures : given;
 
   if (!isIdentifierList(list)) {
     throw new Error(
