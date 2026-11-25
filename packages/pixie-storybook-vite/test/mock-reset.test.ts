@@ -77,6 +77,16 @@ describe('mockResetConfig', () => {
     );
   });
 
+  it('allows the workspace root and the setup folder when the config sets server options but no fs', () => {
+    assert.deepEqual(
+      muirPixieStorybookViteMockResetConfig({
+        root: packageRoot,
+        server: { port: 6006 },
+      }).server,
+      { fs: { allow: [repositoryRoot, setupFolder] } },
+    );
+  });
+
   it("adds only the setup module's folder to an fs.allow the config sets, so that it widens nothing else", () => {
     assert.deepEqual(
       muirPixieStorybookViteMockResetConfig({
