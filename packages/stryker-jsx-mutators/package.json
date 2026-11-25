@@ -1,0 +1,84 @@
+{
+  "name": "@layzee/stryker-jsx-mutators",
+  "version": "0.0.0",
+  "private": true,
+  "description": "StrykerJS mutators for JSX that Playwright tests can kill",
+  "keywords": [
+    "stryker",
+    "playwright",
+    "mutation testing",
+    "jsx",
+    "accessibility"
+  ],
+  "homepage": "https://github.com/LayZeeDK/lz-playwright-test/tree/main/packages/stryker-jsx-mutators#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LayZeeDK/lz-playwright-test.git",
+    "directory": "packages/stryker-jsx-mutators"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@layzee/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@stryker-mutator/core": "~10.1.0"
+  },
+  "dependencies": {
+    "@layzee/stryker-mutator-install": "0.0.0",
+    "@stryker-mutator/api": "10.1.1"
+  },
+  "devDependencies": {
+    "@babel/core": "8.0.9",
+    "@layzee/test-util-mutator-packages": "0.0.0",
+    "aria-query": "5.3.0",
+    "playwright-core": "1.64.1"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@layzee/source --test test/*.test.ts"
+  }
+}

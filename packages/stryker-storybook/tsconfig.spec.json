@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "out-tsc/spec",
+    "tsBuildInfoFile": "out-tsc/spec/tsconfig.spec.tsbuildinfo",
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "test/**/*.ts",
+    "test/**/*.tsx",
+    "test/fixtures/*/.storybook/*.ts",
+    "test/fixtures/reporter/*.json"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.lib.json"
+    },
+    {
+      "path": "../stryker-storybook-test-mutators/tsconfig.lib.json"
+    }
+  ]
+}

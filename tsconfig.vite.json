@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "importHelpers": true,
+    "lib": ["es2022"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "es2022",
+    "allowUnreachableCode": null,
+    "allowUnusedLabels": null,
+    "erasableSyntaxOnly": false,
+    "exactOptionalPropertyTypes": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedSideEffectImports": false,
+    "noUnusedParameters": false,
+    "verbatimModuleSyntax": false
+  }
+}

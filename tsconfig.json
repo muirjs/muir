@@ -26,6 +26,45 @@
     },
     {
       "path": "./packages/stryker-js-mutators"
+    },
+    {
+      "path": "./apps/demo-app-e2e"
+    },
+    {
+      "path": "./apps/demo-app"
+    },
+    {
+      "path": "./packages/stryker-playwright-runner"
+    },
+    {
+      "path": "./packages/stryker-jsx-mutators"
+    },
+    {
+      "path": "./packages/stryker-mutator-install"
+    },
+    {
+      "path": "./packages/stryker-playwright-mutators"
+    },
+    {
+      "path": "./packages/stryker-storybook"
+    },
+    {
+      "path": "./packages/stryker-storybook-test-mutators"
+    },
+    {
+      "path": "./packages/stryker-storybook-mutators"
+    },
+    {
+      "path": "./packages/stryker-msw-mutators"
+    },
+    {
+      "path": "./packages/storybook-mock-transformer"
+    },
+    {
+      "path": "./packages/storybook-core"
+    },
+    {
+      "path": "./packages/test-util-mutator-packages"
     }
   ]
 }

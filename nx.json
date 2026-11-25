@@ -7,6 +7,7 @@
       "default",
       "!{projectRoot}/eslint.config.mjs",
       "!{projectRoot}/test/**/*",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json"
     ],
     "sharedGlobals": [],
@@ -21,7 +22,12 @@
           "eslint-node-test",
           "@eslint-community/eslint-plugin-eslint-comments",
           "eslint-config-prettier",
-          "jsonc-eslint-parser"
+          "jsonc-eslint-parser",
+          "eslint-plugin-playwright",
+          "eslint-plugin-jsx-a11y",
+          "eslint-plugin-react",
+          "eslint-plugin-react-hooks",
+          "eslint-plugin-import"
         ]
       }
     ],
@@ -35,7 +41,13 @@
       "{workspaceRoot}/tools/eslint-rules/runtime-errors.ts",
       "{workspaceRoot}/tools/eslint-rules/runtime-errors.cli.ts",
       "{workspaceRoot}/tools/eslint-rules/runtime-errors.json",
-      { "externalDependencies": ["@stryker-mutator/core", "@stryker-mutator/typescript-checker", "typescript"] }
+      {
+        "externalDependencies": [
+          "@stryker-mutator/core",
+          "@stryker-mutator/typescript-checker",
+          "typescript"
+        ]
+      }
     ]
   },
   "targetDefaults": {
@@ -127,6 +139,42 @@
       "options": {
         "targetName": "lint"
       }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "serveTargetName": "serve",
+        "devTargetName": "dev",
+        "previewTargetName": "preview",
+        "serveStaticTargetName": "serve-static",
+        "typecheckTargetName": "typecheck",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps"
+      }
+    },
+    {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e"
+      }
     }
-  ]
+  ],
+  "generators": {
+    "@nx/react": {
+      "application": {
+        "babel": true,
+        "style": "css",
+        "linter": "eslint",
+        "bundler": "vite"
+      },
+      "component": {
+        "style": "css"
+      },
+      "library": {
+        "style": "css",
+        "linter": "eslint"
+      }
+    }
+  }
 }

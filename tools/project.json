@@ -1,0 +1,31 @@
+{
+  "name": "tools",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "lint": {
+      "inputs": [
+        "...",
+        "{workspaceRoot}/tsconfig.tools.json",
+        "{workspaceRoot}/tsconfig.node.json",
+        "{workspaceRoot}/tsconfig.base.json"
+      ]
+    },
+    "typecheck": {
+      "command": "tsc -p tsconfig.tools.json",
+      "options": { "cwd": "{workspaceRoot}" },
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/tools/**/*.ts",
+        "{workspaceRoot}/oss/**/*.ts",
+        "{workspaceRoot}/stryker.*.ts",
+        "{workspaceRoot}/packages/stryker-playwright-runner/src/**/*.ts",
+        "{workspaceRoot}/packages/stryker-jsx-mutators/src/**/*.ts",
+        "{workspaceRoot}/packages/stryker-mutator-install/src/**/*.ts",
+        "{workspaceRoot}/tsconfig.tools.json",
+        "{workspaceRoot}/tsconfig.node.json",
+        "{workspaceRoot}/tsconfig.base.json"
+      ],
+      "outputs": []
+    }
+  }
+}

@@ -1,8 +1,120 @@
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
+import { fixupConfigRules } from '@eslint/compat';
 import nx from '@nx/eslint-plugin';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
 import n from 'eslint-plugin-n';
 import nodeTest from 'eslint-node-test';
+import playwright from 'eslint-plugin-playwright';
+import jsoncParser from 'jsonc-eslint-parser';
 import tseslint from 'typescript-eslint';
+
+// The workspace joins two rule sets: the node:test projects' and the Playwright and Storybook projects'. The
+// node:test projects lint through their own eslint.config.mjs, which spreads this one, so their globs are relative to
+// the project; every other project lints through this file, so the Playwright globs are relative to the root.
+const playwrightProjects = [
+  'apps/**',
+  'oss/**',
+  'tools/*.ts',
+  'tools/packed-demo/**',
+  'packages/storybook-core/**',
+  'packages/storybook-mock-transformer/**',
+  'packages/stryker-jsx-mutators/**',
+  'packages/stryker-msw-mutators/**',
+  'packages/stryker-mutator-install/**',
+  'packages/stryker-playwright-mutators/**',
+  'packages/stryker-playwright-runner/**',
+  'packages/stryker-storybook/**',
+  'packages/stryker-storybook-mutators/**',
+  'packages/stryker-storybook-test-mutators/**',
+  'packages/test-util-mutator-packages/**',
+];
+
+/** Limits configs to the Playwright projects: a file must match one project glob and the config's own files. */
+function inPlaywrightProjects(configs) {
+  return configs.map(({ files, ...config }) => ({
+    ...config,
+    files: playwrightProjects.flatMap((project) =>
+      files
+        ? files.map((pattern) => [
+            project,
+            ...(Array.isArray(pattern) ? pattern : [pattern]),
+          ])
+        : [project],
+    ),
+  }));
+}
+
+/** Keeps configs off the Playwright projects. */
+function outsidePlaywrightProjects(configs) {
+  return configs.map((config) => ({
+    ...config,
+    ignores: [...(config.ignores ?? []), ...playwrightProjects],
+  }));
+}
+
+function raiseWarning(level) {
+  if (level === 'warn' || level === 1) {
+    return 'error';
+  }
+
+  if (Array.isArray(level)) {
+    return [raiseWarning(level[0]), ...level.slice(1)];
+  }
+
+  return level;
+}
+
+/** Every enabled rule reports at error, including those a preset or plugin sets to warn. */
+export function withWarningsAsErrors(configs) {
+  return configs.map((config) =>
+    config.rules
+      ? {
+          ...config,
+          rules: Object.fromEntries(
+            Object.entries(config.rules).map(([rule, level]) => [
+              rule,
+              raiseWarning(level),
+            ]),
+          ),
+        }
+      : config,
+  );
+}
+
+/** A library's files may depend on libraries, and its test files on test-util projects too (docs/adr ADR-0008). */
+function moduleBoundaries(testUtilTags) {
+  return [
+    'error',
+    {
+      enforceBuildableLibDependency: true,
+      allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+      depConstraints: [
+        {
+          sourceTag: 'type:lib',
+          onlyDependOnLibsWithTags: ['type:lib', ...testUtilTags],
+        },
+        {
+          sourceTag: 'type:tool',
+          onlyDependOnLibsWithTags: ['type:lib'],
+        },
+        {
+          sourceTag: 'type:test-util',
+          onlyDependOnLibsWithTags: ['type:test-util', 'type:lib'],
+        },
+        {
+          sourceTag: 'type:app',
+          onlyDependOnLibsWithTags: ['type:lib'],
+        },
+        {
+          sourceTag: 'type:e2e',
+          onlyDependOnLibsWithTags: ['type:app', 'type:lib'],
+        },
+      ],
+    },
+  ];
+}
+
+// node:test projects
 
 // Relative to the config ESLint loads: the root one or a package's, which spreads this one.
 // The workspace's ESLint rules keep their tests beside them, outside src/ and test/.
@@ -16,7 +128,10 @@ const e2eFixtures = ['**/e2e/fixtures/**'];
 
 // The rules of typescript-eslint's strict-type-checked preset, spread into the src and test block; the nx configs
 // already set up its parser and plugin.
-const strictTypeChecked = Object.assign({}, ...tseslint.configs.strictTypeChecked.map(({ rules }) => rules ?? {}));
+const strictTypeChecked = Object.assign(
+  {},
+  ...tseslint.configs.strictTypeChecked.map(({ rules }) => rules ?? {}),
+);
 
 const declared = ':matches(TSInterfaceDeclaration, TSTypeAliasDeclaration)';
 // Every block that sets no-restricted-syntax spreads these: a later block replaces the rule's options.
@@ -56,7 +171,7 @@ const noPrivateModifier = [
 
 // A disable of one of these lets a cast, an any or an unchecked claim through; prove the type instead. The list holds
 // no-restricted-syntax for its `as` ban, so its other bans cannot be disabled either.
-const typeSafetyRules = [
+const undisableableRules = [
   '@typescript-eslint/no-explicit-any',
   '@typescript-eslint/no-unsafe-*',
   '@typescript-eslint/consistent-type-assertions',
@@ -66,13 +181,7 @@ const typeSafetyRules = [
   '@typescript-eslint/no-misused-promises',
 ];
 
-export default [
-  ...nx.configs['flat/base'],
-  ...nx.configs['flat/typescript'],
-  ...nx.configs['flat/javascript'],
-  {
-    ignores: ['**/dist', '**/out-tsc', '**/.stryker-tmp', ...synthetic, ...e2eFixtures],
-  },
+const nodeTestConfigs = [
   {
     linterOptions: { reportUnusedDisableDirectives: 'error' },
   },
@@ -83,8 +192,14 @@ export default [
       '@eslint-community/eslint-comments/require-description': 'error',
       '@eslint-community/eslint-comments/no-unlimited-disable': 'error',
       // A file-level disable at the top of a file needs no matching enable.
-      '@eslint-community/eslint-comments/disable-enable-pair': ['error', { allowWholeFile: true }],
-      '@eslint-community/eslint-comments/no-restricted-disable': ['error', ...typeSafetyRules],
+      '@eslint-community/eslint-comments/disable-enable-pair': [
+        'error',
+        { allowWholeFile: true },
+      ],
+      '@eslint-community/eslint-comments/no-restricted-disable': [
+        'error',
+        ...undisableableRules,
+      ],
     },
   },
   {
@@ -94,7 +209,9 @@ export default [
     rules: {
       '@eslint-community/eslint-comments/no-restricted-disable': [
         'error',
-        ...typeSafetyRules.filter((rule) => rule !== '@typescript-eslint/no-misused-promises'),
+        ...undisableableRules.filter(
+          (rule) => rule !== '@typescript-eslint/no-misused-promises',
+        ),
       ],
     },
   },
@@ -110,23 +227,7 @@ export default [
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     rules: {
-      '@nx/enforce-module-boundaries': [
-        'error',
-        {
-          enforceBuildableLibDependency: true,
-          allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
-          depConstraints: [
-            {
-              sourceTag: 'type:lib',
-              onlyDependOnLibsWithTags: ['type:lib'],
-            },
-            {
-              sourceTag: 'type:tool',
-              onlyDependOnLibsWithTags: ['type:lib'],
-            },
-          ],
-        },
-      ],
+      '@nx/enforce-module-boundaries': moduleBoundaries([]),
     },
   },
   {
@@ -136,11 +237,19 @@ export default [
   {
     files: [...src, ...test],
     plugins: { n },
-    languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname } },
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     settings: { n: { version: '^22.18.0 || >=24.0.0' } },
     rules: {
       'n/no-deprecated-api': 'error',
-      'n/no-unsupported-features/node-builtins': ['error', { ignores: ['module.registerHooks', 'util.getCallSites'] }],
+      'n/no-unsupported-features/node-builtins': [
+        'error',
+        { ignores: ['module.registerHooks', 'util.getCallSites'] },
+      ],
       'n/no-unsupported-features/es-builtins': 'error',
       'n/no-unsupported-features/es-syntax': 'error',
       'n/prefer-node-protocol': 'error',
@@ -152,13 +261,23 @@ export default [
       '@typescript-eslint/no-floating-promises': [
         'error',
         // Never add 'test': it also silences an un-awaited t.test() subtest.
-        { allowForKnownSafeCalls: [{ from: 'package', package: 'node:test', name: ['it', 'describe', 'suite'] }] },
+        {
+          allowForKnownSafeCalls: [
+            {
+              from: 'package',
+              package: 'node:test',
+              name: ['it', 'describe', 'suite'],
+            },
+          ],
+        },
       ],
       '@typescript-eslint/return-await': ['error', 'in-try-catch'],
       '@typescript-eslint/restrict-template-expressions': [
         'error',
         {
-          ...strictTypeChecked['@typescript-eslint/restrict-template-expressions'][1],
+          ...strictTypeChecked[
+            '@typescript-eslint/restrict-template-expressions'
+          ][1],
           // Looser than the preset: a number has one rendering in a template literal, so String() around it adds
           // noise and catches nothing. Nullish, boolean, object and any values are still reported.
           allowNumber: true,
@@ -166,13 +285,22 @@ export default [
       ],
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
       // src passes on a caught value, typed unknown, that may be no Error; tests reject with such values to cover it.
-      '@typescript-eslint/prefer-promise-reject-errors': ['error', { allowThrowingUnknown: true }],
-      '@typescript-eslint/only-throw-error': ['error', { allowThrowingUnknown: true }],
+      '@typescript-eslint/prefer-promise-reject-errors': [
+        'error',
+        { allowThrowingUnknown: true },
+      ],
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        { allowThrowingUnknown: true },
+      ],
       // The core rule rewrites a bracket access to an index signature, which noPropertyAccessFromIndexSignature
       // refuses; this one allows it under that flag.
       'dot-notation': 'off',
       '@typescript-eslint/dot-notation': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
       // Augmenting node:test's types takes a namespace inside `declare module`.
       '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
       '@nx/workspace-stryker-disable-comment': 'error',
@@ -187,8 +315,10 @@ export default [
       'no-restricted-syntax': [
         'error',
         {
-          selector: 'CallExpression[callee.name=/^set(Timeout|Interval)$/][arguments.length<2]',
-          message: 'Pass the delay explicitly, so LzNodeTimerDelay can mutate it.',
+          selector:
+            'CallExpression[callee.name=/^set(Timeout|Interval)$/][arguments.length<2]',
+          message:
+            'Pass the delay explicitly, so LzNodeTimerDelay can mutate it.',
         },
         ...noTypeAssertions,
         ...noPrivateModifier,
@@ -205,7 +335,8 @@ export default [
           paths: [
             ...['node:assert', 'assert', 'assert/strict'].map((name) => ({
               name,
-              message: "Import assert from 'node:assert/strict', whose equal and deepEqual are the strict methods.",
+              message:
+                "Import assert from 'node:assert/strict', whose equal and deepEqual are the strict methods.",
             })),
             {
               name: 'node:test',
@@ -242,10 +373,16 @@ export default [
         ...['lzTestEach', 'lzTestFor'].map((object) => ({
           object,
           property: 'only',
-          message: 'Remove .only before committing: it makes node:test --test-only skip every other test.',
+          message:
+            'Remove .only before committing: it makes node:test --test-only skip every other test.',
         })),
       ],
-      'no-restricted-syntax': ['error', ...noTypeAssertions, ...noPrivateModifier, ...readonlyMembers],
+      'no-restricted-syntax': [
+        'error',
+        ...noTypeAssertions,
+        ...noPrivateModifier,
+        ...readonlyMembers,
+      ],
     },
   },
   {
@@ -255,7 +392,10 @@ export default [
   {
     files: ['**/*.ts'],
     rules: {
-      '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
+      '@typescript-eslint/consistent-type-assertions': [
+        'error',
+        { assertionStyle: 'never' },
+      ],
       '@typescript-eslint/no-non-null-assertion': 'error',
       // It asks for `!` in place of `as NonNullable<T>`, both of which the two rules above report.
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',
@@ -286,3 +426,247 @@ export default [
     },
   },
 ];
+
+// Playwright and Storybook projects
+
+const playwrightRecommended = playwright.configs['flat/recommended'];
+
+function dependencyChecks(ignoredDependencies) {
+  return [
+    'error',
+    {
+      ignoredDependencies,
+      ignoredFiles: [
+        '{projectRoot}/test/**',
+        '{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}',
+      ],
+    },
+  ];
+}
+
+const declaredType = ':matches(TSInterfaceDeclaration, TSTypeAliasDeclaration)';
+
+const typeSafetyRules = {
+  '@typescript-eslint/no-explicit-any': 'error',
+  '@typescript-eslint/switch-exhaustiveness-check': 'error',
+  '@typescript-eslint/use-unknown-in-catch-callback-variable': 'error',
+  '@typescript-eslint/no-unsafe-assignment': 'error',
+  '@typescript-eslint/no-unsafe-member-access': 'error',
+  '@typescript-eslint/no-unsafe-call': 'error',
+  '@typescript-eslint/no-unsafe-return': 'error',
+  '@typescript-eslint/no-unsafe-argument': 'error',
+  '@typescript-eslint/consistent-type-assertions': [
+    'error',
+    { assertionStyle: 'never' },
+  ],
+  '@typescript-eslint/no-non-null-assertion': 'error',
+  '@typescript-eslint/ban-ts-comment': [
+    'error',
+    {
+      'ts-expect-error': true,
+      'ts-ignore': true,
+      'ts-nocheck': true,
+      'ts-check': false,
+    },
+  ],
+  'dot-notation': 'off',
+  '@typescript-eslint/dot-notation': 'error',
+  '@typescript-eslint/naming-convention': [
+    'error',
+    {
+      selector: 'variable',
+      format: ['camelCase', 'PascalCase'],
+      custom: { regex: '^[A-Z][A-Z0-9]+$', match: false },
+    },
+    { selector: 'variable', modifiers: ['destructured'], format: null },
+    {
+      selector: 'typeParameter',
+      format: ['PascalCase'],
+      custom: { regex: '^T([A-Z][A-Za-z0-9]*)?$', match: true },
+    },
+  ],
+  'no-restricted-syntax': [
+    'error',
+    {
+      selector: `${declaredType} TSPropertySignature:not([readonly=true])`,
+      message: 'Mark the member readonly.',
+    },
+    {
+      selector: `${declaredType} TSPropertySignature :not(TSTypeOperator[operator='readonly']) > TSArrayType`,
+      message: 'Use readonly T[] or ReadonlyArray<T>.',
+    },
+    {
+      selector: `${declaredType} TSPropertySignature TSTypeReference[typeName.name='Array']`,
+      message: 'Use readonly T[] or ReadonlyArray<T>.',
+    },
+    {
+      selector:
+        ':matches(PropertyDefinition, MethodDefinition, TSParameterProperty, AccessorProperty, TSAbstractPropertyDefinition, TSAbstractMethodDefinition)[accessibility="private"]',
+      message: 'Use a # member instead of the private modifier.',
+    },
+  ],
+};
+
+const playwrightConfigs = [
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'error',
+      reportUnusedInlineConfigs: 'error',
+    },
+  },
+  // The React, jsx-a11y and import plugins call context methods that ESLint 10 removed; fixupConfigRules restores them.
+  ...fixupConfigRules(nx.configs['flat/react']).map((config) => ({
+    ...config,
+    files: (config.files ?? ['**/*']).map((pattern) => [
+      'apps/demo-app/**',
+      pattern,
+    ]),
+  })),
+  {
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
+    rules: {
+      '@nx/enforce-module-boundaries': moduleBoundaries([]),
+    },
+  },
+  {
+    files: ['packages/*/test/**/*.ts'],
+    rules: {
+      '@nx/enforce-module-boundaries': moduleBoundaries(['type:test-util']),
+    },
+  },
+  {
+    files: [
+      '**/*.ts',
+      '**/*.tsx',
+      '**/*.cts',
+      '**/*.mts',
+      '**/*.js',
+      '**/*.jsx',
+      '**/*.cjs',
+      '**/*.mjs',
+    ],
+    rules: {
+      // Deprecated; their replacements, no-empty-object-type and no-global-assign, are on.
+      '@typescript-eslint/no-empty-interface': 'off',
+      'no-native-reassign': 'off',
+      // Object.assign({}, proven, ...) types as a Proven (T & U) without being one; a spread does not.
+      'prefer-object-spread': 'error',
+    },
+  },
+  {
+    files: ['packages/**/*.ts', 'packages/**/*.tsx'],
+    ignores: ['packages/stryker-jsx-mutators/test/corpus/**'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: typeSafetyRules,
+  },
+  {
+    files: ['tools/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        // The project service finds only the nearest tsconfig.json; the tools belong to tsconfig.tools.json.
+        project: ['tsconfig.tools.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: typeSafetyRules,
+  },
+  {
+    files: ['tools/bench-playwright-runs.ts'],
+    rules: {
+      // The benchmark reads internals of the runner that the package does not export.
+      '@nx/enforce-module-boundaries': 'off',
+    },
+  },
+  ...fixupConfigRules({
+    files: [
+      'apps/demo-app/**/*.ts',
+      'apps/demo-app/**/*.tsx',
+      'apps/demo-app/**/*.js',
+      'apps/demo-app/**/*.jsx',
+    ],
+    // Not flatConfigs.strict whole: its plugin object differs from the package export that flat/react
+    // registers, and ESLint refuses two objects under one plugin name.
+    plugins: { 'jsx-a11y': jsxA11y },
+    rules: jsxA11y.flatConfigs.strict.rules,
+  }),
+  {
+    files: ['**/*.spec.ts', '**/playwright*.config.{ts,mts}'],
+    ...playwrightRecommended,
+    rules: {
+      ...playwrightRecommended.rules,
+      'playwright/no-commented-out-tests': 'error',
+      'playwright/no-get-by-title': 'error',
+      'playwright/no-raw-locators': 'error',
+      'playwright/prefer-native-locators': 'error',
+      'playwright/no-nth-methods': 'error',
+      'playwright/no-action-timeout': 'error',
+      'playwright/no-slowed-test': 'error',
+      'playwright/require-to-pass-timeout': 'error',
+      'playwright/prefer-comparison-matcher': 'error',
+      'playwright/prefer-equality-matcher': 'error',
+      'playwright/prefer-to-be': 'error',
+      'playwright/prefer-to-contain': 'error',
+      'playwright/prefer-lowercase-title': 'error',
+      'playwright/no-template-literal-title': 'error',
+      'playwright/no-test-return-statement': 'error',
+      'playwright/no-export': 'error',
+      'playwright/require-annotation-reason': 'error',
+      'playwright/no-magic-timeouts': 'error',
+      'playwright/missing-playwright-await': [
+        'error',
+        { includePageLocatorMethods: true },
+      ],
+    },
+  },
+  {
+    files: ['packages/*/package.json'],
+    languageOptions: { parser: jsoncParser },
+    rules: {
+      // Core is the plugin host, resolved at run time rather than imported.
+      '@nx/dependency-checks': dependencyChecks(['@stryker-mutator/core']),
+    },
+  },
+  {
+    files: [
+      'packages/stryker-jsx-mutators/package.json',
+      'packages/stryker-storybook-test-mutators/package.json',
+      'packages/stryker-storybook-mutators/package.json',
+      'packages/stryker-msw-mutators/package.json',
+    ],
+    rules: {
+      // The mutators import Babel for types only.
+      '@nx/dependency-checks': dependencyChecks([
+        '@stryker-mutator/core',
+        '@babel/core',
+      ]),
+    },
+  },
+];
+
+export default withWarningsAsErrors([
+  ...nx.configs['flat/base'],
+  ...nx.configs['flat/typescript'],
+  ...nx.configs['flat/javascript'],
+  {
+    ignores: [
+      '**/dist',
+      '**/out-tsc',
+      '**/.stryker-tmp',
+      '**/vite.config.*.timestamp*',
+      '**/test-output',
+      '**/test-results',
+      ...synthetic,
+      ...e2eFixtures,
+      // Instrumented bundles that the browser tests write before each run.
+      'packages/stryker-playwright-runner/test/**/public/*.js',
+      'packages/stryker-playwright-runner/test/browser/load-fixture/pages/unused.js',
+    ],
+  },
+  ...outsidePlaywrightProjects(nodeTestConfigs),
+  ...inPlaywrightProjects(playwrightConfigs),
+]);

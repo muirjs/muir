@@ -10,16 +10,43 @@
 
 ## Domain language
 
-[GLOSSARY-MAP.md](GLOSSARY-MAP.md) lists the workspace's contexts and the `GLOSSARY.md` of each. Name things in code,
-tests, docs and commit messages with the term the context's glossary gives.
+Before you name a type, function, option, test or heading, read the glossary of the context you work in.
+[GLOSSARY-MAP.md](GLOSSARY-MAP.md) lists the contexts, links each one's `GLOSSARY.md`, and says how the contexts
+relate. Use each term as its glossary defines it; the words under _Avoid_ are rejected synonyms.
 
-Update the glossary in the same commit when a change adds, renames, splits or retires a domain concept, or moves one
-between contexts. How: [references/glossary.md](references/glossary.md).
+When a change adds or renames a concept that package users or maintainers name, changes what a term covers, or
+removes the last thing a term names, update that context's `GLOSSARY.md` in the same commit. When it adds, removes
+or merges a package or context, or changes what one context hands to another, update `GLOSSARY-MAP.md`. How:
+[references/glossaries-and-adrs.md](references/glossaries-and-adrs.md) and
+[references/glossary.md](references/glossary.md).
 
 ## Decisions
 
-Architecture decision records (ADRs) live in [docs/adr](docs/adr) for decisions that span the workspace and in
-`<project>/docs/adr` for one context. Read the ADRs of the context before changing what one decides.
+Before you change how something works, read the ADRs that cover it: [docs/adr](docs/adr) for decisions across
+contexts, and the `docs/adr/` next to a context's `GLOSSARY.md` for decisions inside that context. Work within them.
 
-Write or update an ADR in the same commit when a change makes a decision that is hard to reverse, surprising without
-context and the result of a real trade-off, or reverses an existing ADR. How: [references/adr.md](references/adr.md).
+When a change makes a decision that is hard to reverse, surprising without context and the result of a real
+trade-off, write an ADR in the same commit. When it reverses, narrows or widens a decision an ADR records,
+supersede that ADR. How: [references/glossaries-and-adrs.md](references/glossaries-and-adrs.md) and
+[references/adr.md](references/adr.md).
+
+## Mutant skips in the Storybook mutators
+
+A Storybook mutator leaves out a mutant for one of two reasons, and the two err in opposite directions. Before you
+add or change a skip, name its row.
+
+| Skip             | Means                                           | Unsure | Decided by                                             | A new kind                                        |
+| ---------------- | ----------------------------------------------- | ------ | ------------------------------------------------------ | ------------------------------------------------- |
+| Site rule        | no play or test runs it, or a function reads it | skip   | `playedStories`, `sitesOf`; the read keys in `args.ts` | a site rule, with a case for each direction       |
+| Equivalence skip | the file proves removing it changes nothing     | place  | a `Proven` minted in `@layzee/storybook-core`          | a new `ProofReason` there, never a mutator filter |
+
+- Site rules: `packages/stryker-storybook-mutators/docs/adr/0001-args-mutated-only-where-a-play-or-test-runs.md`;
+  at the meta's args they apply per key, decided by each meta run's `keyFrom` in `sitesOf`:
+  `packages/stryker-storybook-mutators/docs/adr/0002-the-meta-args-are-an-args-site-judged-per-key.md`.
+- Equivalence skips: `docs/adr/0006-place-a-mutant-unless-the-file-proves-it-changes-nothing.md`, and
+  `packages/stryker-storybook/docs/adr/0005-every-equivalence-skip-carries-a-proven.md` for how a `Proven` is made.
+- The interaction mutators skip only an interaction in a `beforeEach` or `afterEach` (a site rule, decided by
+  the interaction reader's `inHook`) and place every other one:
+  `packages/stryker-storybook-test-mutators/docs/adr/0002-place-every-interaction-outside-a-before-each-or-after-each.md`.
+- A default global (`LzStorybookStoryGlobals`) is an equivalence skip too: its `default-global` `Proven` rests on
+  Storybook 10.6.5's initial values, which `@layzee/storybook-core` holds, as well as on the file.

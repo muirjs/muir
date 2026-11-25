@@ -1,0 +1,67 @@
+{
+  "name": "@layzee/storybook-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reads Storybook story files and spy stubs for the @layzee Storybook packages",
+  "keywords": [
+    "storybook",
+    "csf",
+    "stories"
+  ],
+  "homepage": "https://github.com/LayZeeDK/lz-playwright-test/tree/main/packages/storybook-core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LayZeeDK/lz-playwright-test.git",
+    "directory": "packages/storybook-core"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@layzee/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@babel/parser": "7.29.11"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@layzee/source --test test/*.test.ts"
+  }
+}

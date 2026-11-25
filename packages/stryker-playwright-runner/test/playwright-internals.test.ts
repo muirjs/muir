@@ -1,0 +1,1060 @@
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { test } from 'node:test';
+
+import {
+  instrumentationOf,
+  isSerialSuite,
+  playwrightVersion,
+  probeInternals,
+  raiseRetries,
+  runningSlotOf,
+  supportsPlaywright,
+  testRunnerMethods,
+  workerEntry,
+} from '../src/playwright-internals.ts';
+import { moveWebServers } from '../src/server-ports.ts';
+
+const src = new URL('../src/', import.meta.url);
+const noServer = {
+  url: undefined,
+  port: undefined,
+  ignoreHTTPSErrors: false,
+  reuseExistingServer: false,
+  setsNodeOptions: false,
+};
+
+function fakeModules(
+  methods: readonly string[] = testRunnerMethods,
+  answers: Readonly<Record<string, unknown>> = {},
+  keepsOverrides = true,
+) {
+  class TestRunner {
+    readonly _configCLIOverrides: unknown;
+
+    constructor(_location: unknown, overrides: unknown) {
+      this._configCLIOverrides = keepsOverrides ? overrides : undefined;
+    }
+  }
+  Object.assign(
+    TestRunner.prototype,
+    Object.fromEntries(
+      methods.map((method) => [method, async () => answers[method]]),
+    ),
+  );
+
+  return {
+    runner: {
+      testRunner: { TestRunner },
+      projectUtils: {
+        filterProjects: () => [],
+        buildProjectsClosure: () => new Map(),
+      },
+    },
+    common: {
+      configLoader: { resolveConfigLocation: () => ({}) },
+    },
+    coreBundle: {
+      utils: { isURLAvailable: async () => true },
+    },
+  };
+}
+
+test('the runner supports Playwright 1.63 and later 1.x releases', () => {
+  assert.equal(supportsPlaywright('1.62.9'), false);
+  assert.equal(supportsPlaywright('1.63.0'), true);
+  assert.equal(supportsPlaywright('1.99.0'), true);
+  assert.equal(supportsPlaywright('2.0.0'), false);
+  assert.equal(supportsPlaywright('0.70.0'), false);
+  assert.equal(supportsPlaywright('1'), false);
+});
+
+test("Playwright's version is read from its package.json, and one that is no string fails loudly", () => {
+  const requireManifest =
+    (manifest: unknown) =>
+    (id: string): unknown => {
+      assert.equal(id, 'playwright/package.json');
+
+      return manifest;
+    };
+
+  assert.equal(
+    playwrightVersion(requireManifest({ version: '1.64.1' })),
+    '1.64.1',
+  );
+  [{ version: 1 }, {}, null].forEach((manifest) => {
+    assert.throws(() => playwrightVersion(requireManifest(manifest)), {
+      message:
+        'Playwright changed the internals this runner calls (playwright/package.json with a string version).',
+    });
+  });
+});
+
+test("the worker entry is Playwright's workerProcessEntry.js, by either path separator", () => {
+  assert.equal(
+    workerEntry.test(
+      '/app/node_modules/playwright/lib/worker/workerProcessEntry.js',
+    ),
+    true,
+  );
+  assert.equal(
+    workerEntry.test(
+      'C:\\app\\node_modules\\playwright\\lib\\worker\\workerProcessEntry.js',
+    ),
+    true,
+  );
+  assert.equal(
+    workerEntry.test(
+      '/app/node_modules/playwright/lib/worker/workerProcessEntry.js.map',
+    ),
+    false,
+  );
+});
+
+test('the probe accepts the internals the runner calls', () => {
+  const playwright = probeInternals('1.63.0', fakeModules());
+
+  assert.equal(playwright.version, '1.63.0');
+  assert.equal(typeof playwright.createTestRunner, 'function');
+});
+
+test('the probe names every internal when one is missing', () => {
+  const missingMethod = fakeModules(
+    testRunnerMethods.filter((method) => method !== 'stopTests'),
+  );
+  const missingLoader = { ...fakeModules(), common: {} };
+  const missingUtil = {
+    ...fakeModules(),
+    coreBundle: { utils: {} },
+  };
+  const missingRunner = { ...fakeModules(), runner: {} };
+  const missingProjectUtil = (name: string) => {
+    const modules = fakeModules();
+
+    return {
+      ...modules,
+      runner: {
+        ...modules.runner,
+        projectUtils: { ...modules.runner.projectUtils, [name]: undefined },
+      },
+    };
+  };
+
+  [
+    missingMethod,
+    missingLoader,
+    missingUtil,
+    missingRunner,
+    missingProjectUtil('filterProjects'),
+    missingProjectUtil('buildProjectsClosure'),
+  ].forEach((modules) => {
+    assert.throws(() => probeInternals('1.99.0', modules), {
+      message:
+        /^Playwright 1\.99\.0 changed the internals this runner calls \(playwright\/lib\/runner TestRunner with initialize, .*stopTests, and projectUtils filterProjects and buildProjectsClosure; playwright\/lib\/common configLoader; playwright-core coreBundle isURLAvailable\)\.$/,
+    });
+  });
+});
+
+test('the probe names every internal when a module or a step on the path to an internal is not an object', () => {
+  const arrowRunner = () => undefined;
+
+  [
+    { ...fakeModules(), runner: undefined },
+    { ...fakeModules(), common: undefined },
+    { ...fakeModules(), coreBundle: undefined },
+    { ...fakeModules(), coreBundle: {} },
+    { ...fakeModules(), runner: { testRunner: { TestRunner: arrowRunner } } },
+  ].forEach((modules) => {
+    assert.throws(() => probeInternals('1.99.0', modules), {
+      message:
+        /^Playwright 1\.99\.0 changed the internals this runner calls \(playwright\/lib\/runner TestRunner with initialize, /,
+    });
+  });
+});
+
+test("the probe's URL check passes the URL and the HTTPS flag on, and counts only true as available", async () => {
+  const calls: unknown[][] = [];
+  const answering = (answer: unknown) => ({
+    ...fakeModules(),
+    coreBundle: {
+      utils: {
+        isURLAvailable: async (...args: unknown[]) => {
+          calls.push(args);
+
+          return answer;
+        },
+      },
+    },
+  });
+  const url = new URL('http://localhost:3000');
+
+  assert.equal(
+    await probeInternals('1.63.0', answering(true)).isURLAvailable(url, true),
+    true,
+  );
+  assert.equal(
+    await probeInternals('1.63.0', answering('yes')).isURLAvailable(url, false),
+    false,
+  );
+  assert.deepEqual(calls, [
+    [url, true],
+    [url, false],
+  ]);
+});
+
+function testRunnerAnswering(answers: Readonly<Record<string, unknown>>) {
+  return probeInternals(
+    '1.99.0',
+    fakeModules(testRunnerMethods, answers),
+  ).createTestRunner(undefined, {});
+}
+
+function statusCalls(runner: Awaited<ReturnType<typeof testRunnerAnswering>>) {
+  return {
+    listTests: () => runner.listTests({}, {}),
+    runGlobalSetup: () => runner.runGlobalSetup([]),
+    runTests: () => runner.runTests({}, { locations: [] }),
+  };
+}
+
+test('the test runner resolves loadConfig to the project and web server fields the runner reads', async () => {
+  const runner = await testRunnerAnswering({
+    loadConfig: {
+      projects: [
+        {
+          default: true,
+          expect: { timeout: 5, toPass: {} },
+          project: { name: 'a', timeout: 1, retries: 2 },
+          deps: [],
+        },
+        {
+          default: false,
+          expect: {},
+          project: { name: 'b', timeout: 0, retries: 0 },
+        },
+        { default: true, project: { name: 'c', timeout: 2, retries: 0 } },
+      ],
+      webServers: [
+        {
+          url: 'http://localhost:3000',
+          port: 3000,
+          ignoreHTTPSErrors: true,
+          reuseExistingServer: true,
+          env: { NODE_OPTIONS: '--inspect' },
+          command: 'serve',
+        },
+        {},
+      ],
+      workers: 1,
+    },
+  });
+
+  assert.deepEqual(await runner.loadConfig(), {
+    projects: [
+      {
+        default: true,
+        expect: { timeout: 5 },
+        project: { name: 'a', timeout: 1, retries: 2 },
+      },
+      {
+        default: false,
+        expect: { timeout: undefined },
+        project: { name: 'b', timeout: 0, retries: 0 },
+      },
+      {
+        default: true,
+        expect: undefined,
+        project: { name: 'c', timeout: 2, retries: 0 },
+      },
+    ],
+    webServers: [
+      {
+        url: 'http://localhost:3000',
+        port: 3000,
+        ignoreHTTPSErrors: true,
+        reuseExistingServer: true,
+        setsNodeOptions: true,
+      },
+      { ...noServer, url: undefined, port: undefined },
+    ],
+  });
+});
+
+test("the test runner reads each project's use.baseURL", async () => {
+  const runner = await testRunnerAnswering({
+    loadConfig: {
+      projects: [
+        {
+          default: true,
+          project: {
+            name: 'a',
+            timeout: 1,
+            retries: 0,
+            use: { baseURL: 'http://localhost:3000', headless: true },
+          },
+        },
+        { default: true, project: { name: 'b', timeout: 1, retries: 0 } },
+      ],
+      webServers: [],
+    },
+  });
+
+  const { projects } = await runner.loadConfig();
+
+  assert.deepEqual(
+    projects.map(({ baseURL }) => baseURL),
+    ['http://localhost:3000', undefined],
+  );
+});
+
+test('a use.baseURL that is no string counts as unset', async () => {
+  const runner = await testRunnerAnswering({
+    loadConfig: {
+      projects: [
+        {
+          default: true,
+          project: {
+            name: 'a',
+            timeout: 1,
+            retries: 0,
+            use: { baseURL: null },
+          },
+        },
+      ],
+      webServers: [],
+    },
+  });
+
+  const { projects } = await runner.loadConfig();
+
+  assert.deepEqual(
+    projects.map(({ baseURL }) => baseURL),
+    [undefined],
+  );
+});
+
+test('the test runner reads loaded config values the way Playwright does: a numeric string port, and default and ignoreHTTPSErrors by truthiness', async () => {
+  const runner = await testRunnerAnswering({
+    loadConfig: {
+      projects: [
+        { default: 'yes', project: { name: 'a', timeout: 1, retries: 0 } },
+        { default: 0, project: { name: 'b', timeout: 1, retries: 0 } },
+      ],
+      webServers: [
+        {
+          port: '3000',
+          ignoreHTTPSErrors: 1,
+          reuseExistingServer: 'yes',
+          env: { PORT: '3000', NODE_OPTIONS: undefined },
+        },
+        { port: 4000, ignoreHTTPSErrors: '', reuseExistingServer: 0, env: 1 },
+      ],
+    },
+  });
+
+  assert.deepEqual(await runner.loadConfig(), {
+    projects: [
+      {
+        default: true,
+        expect: undefined,
+        project: { name: 'a', timeout: 1, retries: 0 },
+      },
+      {
+        default: false,
+        expect: undefined,
+        project: { name: 'b', timeout: 1, retries: 0 },
+      },
+    ],
+    webServers: [
+      {
+        ...noServer,
+        port: 3000,
+        ignoreHTTPSErrors: true,
+        reuseExistingServer: true,
+      },
+      { ...noServer, port: 4000 },
+    ],
+  });
+});
+
+test('the test runner reads what Playwright runs though its types refuse it: a falsy port or url as none, any port next to a url as the port of that url, a URL object as its string, a null expect.timeout as none', async () => {
+  const runner = await testRunnerAnswering({
+    loadConfig: {
+      projects: [
+        {
+          default: true,
+          expect: { timeout: null },
+          project: { name: 'a', timeout: 1, retries: 0 },
+        },
+      ],
+      webServers: [
+        { port: '' },
+        { port: null },
+        { port: false },
+        { port: 0 },
+        { url: null },
+        { url: new URL('http://127.0.0.1:41234/') },
+        { url: 'http://localhost:3000/health', port: null },
+        { url: 'http://localhost/health', port: false },
+      ],
+    },
+  });
+
+  assert.deepEqual(await runner.loadConfig(), {
+    projects: [
+      {
+        default: true,
+        expect: { timeout: undefined },
+        project: { name: 'a', timeout: 1, retries: 0 },
+      },
+    ],
+    webServers: [
+      noServer,
+      noServer,
+      noServer,
+      noServer,
+      noServer,
+      { ...noServer, url: 'http://127.0.0.1:41234/' },
+      { ...noServer, url: 'http://localhost:3000/health', port: 3000 },
+      { ...noServer, url: 'http://localhost/health', port: 0 },
+    ],
+  });
+});
+
+function testRunnerSelecting(
+  projectUtils: Readonly<Record<string, (...args: unknown[]) => unknown>>,
+  projects: readonly unknown[],
+) {
+  const modules = fakeModules(testRunnerMethods, {
+    loadConfig: { projects, webServers: [] },
+  });
+
+  return probeInternals('1.99.0', {
+    ...modules,
+    runner: { ...modules.runner, projectUtils },
+  }).createTestRunner(undefined, {});
+}
+
+test("the projects a run runs are the loaded projects in Playwright's closure of its filterProjects, given no names for an empty list as runTests gives it", async () => {
+  const projects = ['a', 'b', 'c'].map((name) => ({
+    default: true,
+    project: { name, timeout: 1, retries: 0 },
+  }));
+  const [a, , c] = projects;
+  const calls: unknown[][] = [];
+  const runner = await testRunnerSelecting(
+    {
+      filterProjects: (...args) => {
+        calls.push(['filterProjects', ...args]);
+
+        return ['selected'];
+      },
+      buildProjectsClosure: (...args) => {
+        calls.push(['buildProjectsClosure', ...args]);
+
+        return new Map([
+          [c, 'dependency'],
+          [a, 'top-level'],
+        ]);
+      },
+    },
+    projects,
+  );
+  await runner.loadConfig();
+
+  assert.deepEqual(
+    runner.projectsRun(['A*']).map(({ project }) => project.name),
+    ['a', 'c'],
+  );
+  runner.projectsRun([]);
+  runner.projectsRun(undefined);
+  assert.deepEqual(calls, [
+    ['filterProjects', projects, ['A*']],
+    ['buildProjectsClosure', ['selected']],
+    ['filterProjects', projects, undefined],
+    ['buildProjectsClosure', ['selected']],
+    ['filterProjects', projects, undefined],
+    ['buildProjectsClosure', ['selected']],
+  ]);
+});
+
+test('the projects a run runs fail loudly before a loaded config, and when buildProjectsClosure resolves to no Map', async () => {
+  const selected: unknown[] = [];
+  const runner = await testRunnerSelecting(
+    {
+      filterProjects: (...args) => {
+        selected.push(args);
+
+        return [];
+      },
+      buildProjectsClosure: () => [],
+    },
+    [],
+  );
+  const changed = {
+    message:
+      /^Playwright 1\.99\.0 changed the internals this runner calls \(playwright\/lib\/runner TestRunner with .*projectUtils filterProjects and buildProjectsClosure;/,
+  };
+
+  assert.throws(() => runner.projectsRun(undefined), {
+    message:
+      'The runner asked for the projects a run runs before it loaded the Playwright config.',
+  });
+  assert.deepEqual(selected, []);
+  await runner.loadConfig();
+  assert.throws(() => runner.projectsRun(undefined), changed);
+});
+
+const validProject = {
+  default: true,
+  expect: { timeout: 5 },
+  project: { name: 'a', timeout: 1, retries: 0 },
+};
+const validServer = {
+  url: 'http://localhost',
+  port: 1,
+  ignoreHTTPSErrors: true,
+};
+
+const refusedConfigs = [
+  ['is no object', null],
+  ['has no projects array', { projects: {}, webServers: [] }],
+  ['has no webServers array', { projects: [], webServers: {} }],
+  ['has a project that is no object', { projects: [null], webServers: [] }],
+  [
+    'has a project with no project object',
+    { projects: [{ ...validProject, project: null }], webServers: [] },
+  ],
+  [
+    'has a project with no string project.name',
+    {
+      projects: [
+        { ...validProject, project: { name: 1, timeout: 1, retries: 0 } },
+      ],
+      webServers: [],
+    },
+  ],
+  [
+    'has a project with no number project.timeout',
+    {
+      projects: [
+        { ...validProject, project: { name: 'a', timeout: '1', retries: 0 } },
+      ],
+      webServers: [],
+    },
+  ],
+  [
+    'has a project with no project.retries',
+    {
+      projects: [{ ...validProject, project: { name: 'a', timeout: 1 } }],
+      webServers: [],
+    },
+  ],
+  [
+    'has a project with a project.retries that is no number',
+    {
+      projects: [
+        { ...validProject, project: { name: 'a', timeout: 1, retries: '1' } },
+      ],
+      webServers: [],
+    },
+  ],
+  [
+    'has a project whose expect is no object',
+    { projects: [{ ...validProject, expect: 5 }], webServers: [] },
+  ],
+  [
+    'has a project with no number expect.timeout',
+    {
+      projects: [{ ...validProject, expect: { timeout: '5' } }],
+      webServers: [],
+    },
+  ],
+] as const;
+
+// Playwright passes webServer entries on unread, so these are mistakes in the consumer's config.
+const misconfiguredServers = [
+  [
+    'that is no object',
+    1,
+    "The Playwright config's webServer must be an object, got 1.",
+  ],
+  [
+    'with no string url',
+    { ...validServer, url: 1 },
+    "The Playwright config's webServer.url must be a string or a URL, got 1.",
+  ],
+  [
+    'whose port is a string of no digits',
+    { ...validServer, port: 'auto' },
+    "The Playwright config's webServer.port must be a number or a string of digits, got 'auto'.",
+  ],
+  [
+    'whose port is a string that only starts with digits',
+    { ...validServer, port: '3000x' },
+    "The Playwright config's webServer.port must be a number or a string of digits, got '3000x'.",
+  ],
+  [
+    'whose port is a string that only ends with digits',
+    { ...validServer, port: 'x3000' },
+    "The Playwright config's webServer.port must be a number or a string of digits, got 'x3000'.",
+  ],
+  [
+    'whose port is no number or string',
+    { ...validServer, port: [3000] },
+    "The Playwright config's webServer.port must be a number or a string of digits, got [ 3000 ].",
+  ],
+  [
+    'whose port is a bigint',
+    { ...validServer, port: 3000n },
+    "The Playwright config's webServer.port must be a number or a string of digits, got 3000n.",
+  ],
+] as const;
+
+misconfiguredServers.forEach(([title, server, message]) => {
+  test(`the test runner names the config's mistake for a web server ${title}`, async () => {
+    const runner = await testRunnerAnswering({
+      loadConfig: { projects: [], webServers: [server] },
+    });
+
+    await assert.rejects(runner.loadConfig(), { message });
+  });
+});
+
+refusedConfigs.forEach(([title, config]) => {
+  test(`the test runner refuses a loaded config that ${title}`, async () => {
+    const runner = await testRunnerAnswering({ loadConfig: config });
+
+    await assert.rejects(runner.loadConfig(), {
+      message:
+        'Playwright 1.99.0 changed the internals this runner calls (TestRunner.loadConfig() resolving to projects[].default, ' +
+        'project.name, project.timeout, project.retries and expect.timeout, and webServers[].url, port and ignoreHTTPSErrors).',
+    });
+  });
+});
+
+test('the test runner resolves listTests, runGlobalSetup and runTests to their status alone, and listTests also to undefined', async () => {
+  const runner = await testRunnerAnswering({
+    listTests: { status: 'passed', suite: {} },
+    runGlobalSetup: { status: 'failed' },
+    runTests: { status: 'timedout' },
+  });
+  const interrupted = await testRunnerAnswering({
+    runTests: { status: 'interrupted' },
+  });
+
+  const calls = statusCalls(runner);
+  const interruptedCalls = statusCalls(interrupted);
+
+  assert.deepEqual(
+    [
+      await calls.listTests(),
+      await calls.runGlobalSetup(),
+      await calls.runTests(),
+      await interruptedCalls.runTests(),
+      await interruptedCalls.listTests(),
+    ],
+    [
+      { status: 'passed' },
+      { status: 'failed' },
+      { status: 'timedout' },
+      { status: 'interrupted' },
+      undefined,
+    ],
+  );
+});
+
+(['listTests', 'runGlobalSetup', 'runTests'] as const).forEach((method) => {
+  [null, {}, { status: 'done' }].forEach((answer) => {
+    test(`the test runner refuses a ${method} that resolves to ${JSON.stringify(answer)}`, async () => {
+      const runner = await testRunnerAnswering({ [method]: answer });
+
+      await assert.rejects(statusCalls(runner)[method](), {
+        message: `Playwright 1.99.0 changed the internals this runner calls (TestRunner.${method}() resolving to a status of passed, failed, timedout or interrupted).`,
+      });
+    });
+  });
+});
+
+test('the test runner moves the webServer plugins the last load returned, by their order among the webServer plugins', async () => {
+  const gitCommitInfo = {
+    factory: { name: 'playwright:gitCommitInfo', _options: { port: 3001 } },
+  };
+  const first = {
+    name: 'playwright:webserver',
+    _options: { url: 'http://localhost:3000/', command: 'serve --port 3000' },
+  };
+  const second = {
+    name: 'playwright:webserver',
+    _options: { port: 3001, command: 'api', env: { PORT: '3001' } },
+  };
+  const runner = await testRunnerAnswering({
+    loadConfig: {
+      projects: [],
+      webServers: [],
+      plugins: [{ factory: first }, gitCommitInfo, { factory: second }],
+    },
+  });
+  await runner.loadConfig();
+
+  moveWebServers(
+    runner,
+    [
+      { index: 0, from: 3000, to: 50_010 },
+      { index: 1, from: 3001, to: 50_011 },
+    ],
+    undefined,
+  );
+
+  assert.deepEqual(first._options, {
+    url: 'http://localhost:50010/',
+    command: 'serve --port 50010',
+  });
+  assert.deepEqual(second._options, {
+    port: 3001,
+    command: 'api',
+    env: { PORT: '50011' },
+  });
+  assert.deepEqual(gitCommitInfo, {
+    factory: { name: 'playwright:gitCommitInfo', _options: { port: 3001 } },
+  });
+});
+
+const webServerPluginsChanged =
+  'Playwright 1.99.0 changed the internals this runner calls (TestRunner._configCLIOverrides and loadConfig() ' +
+  'resolving to plugins[].factory named playwright:webserver with _options).';
+
+test('a move with no webServer plugin at its index means Playwright changed', async () => {
+  const runner = await testRunnerAnswering({
+    loadConfig: {
+      projects: [],
+      webServers: [],
+      plugins: [
+        { factory: { name: 'playwright:webserver', _options: { port: 1 } } },
+      ],
+    },
+  });
+  await runner.loadConfig();
+
+  assert.throws(
+    () => moveWebServers(runner, [{ index: 1, from: 1, to: 2 }], undefined),
+    { message: webServerPluginsChanged },
+  );
+});
+
+test('a move before the first load, or after a load without plugins, means Playwright changed', async () => {
+  const unloaded = await testRunnerAnswering({});
+  const withoutPlugins = await testRunnerAnswering({
+    loadConfig: { projects: [], webServers: [] },
+  });
+  await withoutPlugins.loadConfig();
+
+  [unloaded, withoutPlugins].forEach((runner) => {
+    assert.throws(
+      () => moveWebServers(runner, [{ index: 0, from: 1, to: 2 }], undefined),
+      { message: webServerPluginsChanged },
+    );
+  });
+});
+
+test("the test runner moves every project to the baseURL through the CLI overrides Playwright merges over each project's use", async () => {
+  const overrides = { workers: 1, use: { trace: 'off' } };
+  const runner = await probeInternals(
+    '1.99.0',
+    fakeModules(testRunnerMethods, {
+      loadConfig: { projects: [], webServers: [], plugins: [] },
+    }),
+  ).createTestRunner(undefined, overrides);
+  await runner.loadConfig();
+
+  moveWebServers(runner, [], 'http://localhost:50030/');
+
+  assert.deepEqual(overrides, {
+    workers: 1,
+    use: { trace: 'off', baseURL: 'http://localhost:50030/' },
+  });
+});
+
+test('a move without a baseURL leaves the CLI overrides as they were', async () => {
+  const overrides = { workers: 1, use: { trace: 'off' } };
+  const runner = await probeInternals(
+    '1.99.0',
+    fakeModules(testRunnerMethods, {
+      loadConfig: { projects: [], webServers: [], plugins: [] },
+    }),
+  ).createTestRunner(undefined, overrides);
+  await runner.loadConfig();
+
+  moveWebServers(runner, [], undefined);
+
+  assert.deepEqual(overrides, { workers: 1, use: { trace: 'off' } });
+});
+
+test('a TestRunner that keeps no CLI overrides means Playwright changed', async () => {
+  const runner = await probeInternals(
+    '1.99.0',
+    fakeModules(
+      testRunnerMethods,
+      { loadConfig: { projects: [], webServers: [], plugins: [] } },
+      false,
+    ),
+  ).createTestRunner(undefined, {});
+  await runner.loadConfig();
+
+  assert.throws(() => moveWebServers(runner, [], 'http://localhost:50031/'), {
+    message: webServerPluginsChanged,
+  });
+});
+
+test('the test runner calls each method on the instance Playwright constructed, with the arguments it was given', async () => {
+  const seen: unknown[][] = [];
+
+  class TestRunner {
+    readonly args: unknown[];
+
+    constructor(...args: unknown[]) {
+      this.args = args;
+    }
+  }
+
+  testRunnerMethods.forEach((method) => {
+    Object.assign(TestRunner.prototype, {
+      async [method](this: unknown, ...args: unknown[]) {
+        seen.push([method, this, ...args]);
+
+        return method === 'loadConfig'
+          ? { projects: [], webServers: [] }
+          : { status: 'passed' };
+      },
+    });
+  });
+
+  const reporter = {};
+  const modules = fakeModules();
+  const runner = await probeInternals('1.99.0', {
+    ...modules,
+    common: { configLoader: { resolveConfigLocation: () => 'location' } },
+    runner: { ...modules.runner, testRunner: { TestRunner } },
+  }).createTestRunner('playwright.config.ts', { workers: 1 });
+  await runner.loadConfig();
+  await runner.listTests(reporter, { projects: ['a'] });
+  await runner.runGlobalSetup([reporter]);
+  await runner.runTests(reporter, { locations: [] });
+  await runner.stopTests();
+  await runner.runGlobalTeardown();
+
+  const [first] = seen;
+  assert.ok(first);
+  const [, instance] = first;
+  assert.ok(instance instanceof TestRunner);
+  assert.deepEqual(instance.args, ['location', { workers: 1 }]);
+  assert.deepEqual(seen, [
+    ['initialize', instance, {}],
+    ['loadConfig', instance],
+    ['listTests', instance, reporter, { projects: ['a'] }],
+    ['runGlobalSetup', instance, [reporter]],
+    ['runTests', instance, reporter, { locations: [] }],
+    ['stopTests', instance],
+    ['runGlobalTeardown', instance],
+  ]);
+});
+
+test('the test runner calls the methods the probe read, not ones put on the prototype later', async () => {
+  const modules = fakeModules();
+  const playwright = probeInternals('1.99.0', modules);
+  const { TestRunner } = modules.runner.testRunner;
+  const later: string[] = [];
+  testRunnerMethods.forEach((method) => {
+    Object.assign(TestRunner.prototype, {
+      [method]: async () => {
+        later.push(method);
+      },
+    });
+  });
+
+  const runner = await playwright.createTestRunner(undefined, {});
+  await runner.stopTests();
+
+  assert.deepEqual(later, []);
+});
+
+test('the instrumentation is the one playwright-core exports, and its absence fails loudly', () => {
+  const listeners: unknown[] = [];
+  const core = {
+    _instrumentation: {
+      listeners,
+      addListener(listener: unknown) {
+        this.listeners.push(listener);
+      },
+    },
+  };
+  const listener = {};
+
+  instrumentationOf(core, '1.99.0').addListener(listener);
+
+  assert.equal(listeners.length, 1);
+  assert.equal(listeners[0], listener);
+
+  [undefined, {}, { _instrumentation: {} }].forEach((core) => {
+    assert.throws(() => instrumentationOf(core, '1.99.0'), {
+      message:
+        /^Playwright 1\.99\.0 changed the internals this runner calls \(playwright-core _instrumentation\.addListener\)\.$/,
+    });
+  });
+});
+
+function rootSuite(projects: Readonly<Record<string, readonly unknown[]>>) {
+  return {
+    suites: Object.entries(projects).map(([title, tests]) => ({
+      title,
+      allTests: () => tests,
+    })),
+  };
+}
+
+test("the retries of each test that has none are raised to its project's", () => {
+  const plain = { retries: 0 };
+  const configured = { retries: 3 };
+  const other = { retries: 0 };
+
+  raiseRetries(
+    rootSuite({ chromium: [plain, configured], firefox: [other] }),
+    new Map([
+      ['chromium', 2],
+      ['firefox', 0],
+    ]),
+  );
+
+  assert.deepEqual(
+    [plain, configured, other],
+    [{ retries: 2 }, { retries: 3 }, { retries: 0 }],
+  );
+});
+
+test('a root suite without project suites titled by a config project, or without numeric retries, fails loudly', () => {
+  [
+    {},
+    { suites: [{ title: 'a' }] },
+    rootSuite({ b: [{ retries: 0 }] }),
+    rootSuite({ a: [{}] }),
+    { suites: [{ title: 'a', allTests: () => 'tests' }] },
+  ].forEach((suite) => {
+    assert.throws(() => raiseRetries(suite, new Map([['a', 1]])), {
+      message: /TestCase\.retries/,
+    });
+  });
+});
+
+test('the describe mode is read from the suite, and its absence fails loudly', () => {
+  assert.equal(isSerialSuite({ _parallelMode: 'serial' }, '1.99.0'), true);
+  assert.equal(isSerialSuite({ _parallelMode: 'none' }, '1.99.0'), false);
+  [{}, undefined].forEach((suite) => {
+    assert.throws(() => isSerialSuite(suite, '1.99.0'), {
+      message:
+        'Playwright 1.99.0 changed the internals this runner calls (Suite._parallelMode, which keeps describe.serial groups together).',
+    });
+  });
+});
+
+test("the running slot is read from the TestInfo's timeout manager", () => {
+  const info = (runnable: unknown) => ({
+    _timeoutManager: { _running: { runnable } },
+  });
+
+  assert.deepEqual(runningSlotOf(info({ type: 'beforeAll' }), '1.64.1'), {
+    type: 'beforeAll',
+    inFixture: false,
+  });
+  assert.deepEqual(
+    runningSlotOf(
+      info({ type: 'test', fixture: { title: 'server' } }),
+      '1.64.1',
+    ),
+    { type: 'test', inFixture: true },
+  );
+});
+
+test("every runnable type of Playwright's timeout manager is a slot", () => {
+  [
+    'test',
+    'beforeEach',
+    'afterEach',
+    'beforeAll',
+    'afterAll',
+    'teardown',
+    'skip',
+    'slow',
+    'fail',
+    'fixme',
+  ].forEach((type) => {
+    assert.deepEqual(
+      runningSlotOf(
+        { _timeoutManager: { _running: { runnable: { type } } } },
+        '1.64.1',
+      ),
+      { type, inFixture: false },
+    );
+  });
+});
+
+test('no TestInfo, or a timeout manager that runs nothing, has no running slot', () => {
+  [
+    undefined,
+    null,
+    { _timeoutManager: {} },
+    { _timeoutManager: { _running: null } },
+    { _timeoutManager: { _running: {} } },
+    { _timeoutManager: { _running: { runnable: null } } },
+  ].forEach((testInfo) => {
+    assert.equal(
+      runningSlotOf(testInfo, '1.64.1'),
+      undefined,
+      JSON.stringify(testInfo),
+    );
+  });
+});
+
+test('a TestInfo without an object timeout manager, or running an unknown slot type, fails loudly, naming the internal and the version', () => {
+  [
+    {},
+    { _timeoutManager: null },
+    { _timeoutManager: 'manager' },
+    { _timeoutManager: { _running: { runnable: {} } } },
+    { _timeoutManager: { _running: { runnable: { type: 1 } } } },
+    { _timeoutManager: { _running: { runnable: { type: 'beforeSome' } } } },
+  ].forEach((testInfo) => {
+    assert.throws(
+      () => runningSlotOf(testInfo, '1.99.0'),
+      {
+        message:
+          /^Playwright 1\.99\.0 changed the internals this runner calls \(TestInfo\._timeoutManager, /,
+      },
+      JSON.stringify(testInfo),
+    );
+  });
+});
+
+test('only playwright-internals.ts names a Playwright internal', () => {
+  const internals =
+    /lib\/runner|lib\/common|coreBundle|_instrumentation|_parallelMode|_timeoutManager|workerProcessEntry|PLAYWRIGHT_NO_COPY_PROMPT/;
+  const offenders = readdirSync(src)
+    .filter((file) => file !== 'playwright-internals.ts')
+    .filter((file) => internals.test(readFileSync(new URL(file, src), 'utf8')));
+
+  assert.deepEqual(offenders, []);
+});
+
+test('playwright-internals.ts imports no runner code at run time', () => {
+  const source = readFileSync(new URL('playwright-internals.ts', src), 'utf8');
+  const runtimeImports = [
+    ...source.matchAll(
+      /^(?:import|export) (?!type )(?:[^;]*? from )?'([^']+)'/gms,
+    ),
+  ].map(([, specifier]) => specifier);
+
+  assert.deepEqual(runtimeImports, [
+    'node:module',
+    'node:util',
+    './is-record.ts',
+  ]);
+});

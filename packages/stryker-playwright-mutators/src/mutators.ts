@@ -1,0 +1,115 @@
+import {
+  roleSite,
+  swapMutator,
+  type MutatorOptions,
+  type MutatorSets,
+  type SampledMutator,
+} from '@layzee/stryker-mutator-install';
+
+import type { BabelTypes } from './install.ts';
+import { fulfillMutator, outcomeMutator } from './route-mocks.ts';
+import { requestDataMutator } from './request-data.ts';
+import { requestUrlMutator } from './request-url.ts';
+import {
+  clickAction,
+  clock,
+  focusAction,
+  inputAction,
+  navigationAction,
+  networkWait,
+  removalMutator,
+  sleepWait,
+  stateWait,
+} from './statement-removal.ts';
+import {
+  isSameStory,
+  mountStorySite,
+  testIdSite,
+  textSite,
+} from './swap-sites.ts';
+
+export interface LzPlaywrightMutator extends SampledMutator {
+  mutate(path: unknown, t: BabelTypes): Iterable<unknown>;
+}
+
+function sampleOf(statement: string): string {
+  return `test('a', async ({ page }) => {\n  ${statement}\n});\n`;
+}
+
+// In place of `as const`: Stryker mutates nothing inside an `as` expression, which would leave the roster out of a
+// mutation run. The literal names are what the option type reads.
+function roster<const T extends MutatorSets<LzPlaywrightMutator>>(sets: T): T {
+  return sets;
+}
+
+export const mutatorSets = roster({
+  defaults: [
+    removalMutator(clickAction, sampleOf("await page.locator('#a').click();")),
+    removalMutator(
+      inputAction,
+      sampleOf("await page.locator('#a').fill('x');"),
+    ),
+    removalMutator(focusAction, sampleOf("await page.locator('#a').hover();")),
+    removalMutator(navigationAction, sampleOf("await page.goto('/');")),
+    swapMutator(
+      'LzPlaywrightTestIdLocator',
+      sampleOf("page.getByTestId('a');\n  page.getByTestId('b');"),
+      testIdSite,
+    ),
+    swapMutator(
+      'LzPlaywrightRoleLocator',
+      sampleOf(
+        "page.getByRole('button', { name: 'a' });\n  page.getByRole('button', { name: 'b' });",
+      ),
+      roleSite(['getByRole']),
+    ),
+    swapMutator(
+      'LzPlaywrightTextLocator',
+      sampleOf("page.getByText('a');\n  page.getByText('b');"),
+      textSite,
+    ),
+    fulfillMutator(
+      'LzPlaywrightFulfill',
+      sampleOf(
+        "await page.route('**/api', (route) => route.fulfill({ json: { a: 1 } }));",
+      ),
+    ),
+    outcomeMutator(
+      'LzPlaywrightRouteOutcome',
+      sampleOf("await page.route('**/api', (route) => route.abort());"),
+    ),
+  ],
+  optIn: [
+    removalMutator(sleepWait, sampleOf('await page.waitForTimeout(100);')),
+    removalMutator(stateWait, sampleOf('await page.waitForLoadState();')),
+    removalMutator(networkWait, sampleOf("await page.waitForResponse('/a');")),
+    removalMutator(clock, sampleOf('await page.clock.runFor(1000);')),
+    swapMutator(
+      'LzPlaywrightMountStory',
+      sampleOf("await mount('a');\n  await mount('b');"),
+      mountStorySite,
+      isSameStory,
+    ),
+  ],
+  experimental: [
+    requestDataMutator(
+      'LzPlaywrightRequestData',
+      sampleOf(
+        "const response = await page.request.post('/a', { data: { a: 'b' } });\n  expect(response.ok()).toBe(true);",
+      ),
+    ),
+    requestUrlMutator(
+      'LzPlaywrightRequestUrl',
+      sampleOf(
+        "const response = await page.request.get('/a');\n  expect(response.ok()).toBe(true);",
+      ),
+    ),
+  ],
+});
+
+type NamesIn<TTier extends readonly SampledMutator[]> = TTier[number]['name'];
+
+export type LzPlaywrightMutatorOptions = MutatorOptions<
+  NamesIn<(typeof mutatorSets)['optIn']>,
+  NamesIn<(typeof mutatorSets)['experimental']>
+>;

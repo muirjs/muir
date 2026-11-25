@@ -1,0 +1,87 @@
+{
+  "name": "@layzee/stryker-storybook-test-mutators",
+  "version": "0.0.0",
+  "private": true,
+  "description": "StrykerJS mutators for Storybook play functions that story tests can kill",
+  "keywords": [
+    "stryker",
+    "storybook",
+    "mutation testing",
+    "mutators",
+    "test code"
+  ],
+  "homepage": "https://github.com/LayZeeDK/lz-playwright-test/tree/main/packages/stryker-storybook-test-mutators#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LayZeeDK/lz-playwright-test.git",
+    "directory": "packages/stryker-storybook-test-mutators"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@layzee/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@stryker-mutator/core": "~10.1.0"
+  },
+  "dependencies": {
+    "@layzee/storybook-core": "0.0.0",
+    "@layzee/stryker-mutator-install": "0.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "8.0.9",
+    "@layzee/test-util-mutator-packages": "0.0.0",
+    "storybook": "10.6.5"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          "default",
+          "^default"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@layzee/source --test test/*.test.ts"
+  }
+}

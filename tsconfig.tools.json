@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "composite": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "noEmit": true,
+    "rootDir": ".",
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "tools/**/*.ts",
+    "stryker.*.config.ts",
+    "stryker.package.ts",
+    "oss/**/*.ts"
+  ],
+  "exclude": ["tools/eslint-rules/**"]
+}

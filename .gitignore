@@ -10,12 +10,10 @@ node_modules
 
 # Stryker sandboxes, at the root and in each package
 .stryker-tmp/
+.stryker-tmp-*
 
-# Stryker incremental results, one file per config
-/reports/stryker-incremental/
-
-# Stryker HTML and JSON reports, two files per config
-/reports/mutation/
+# Stryker incremental results and HTML and JSON reports
+/reports/
 
 # IDEs and editors
 /.idea
@@ -50,10 +48,20 @@ Thumbs.db
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
+.nx/polygraph
 .claude/worktrees
 .claude/settings.local.json
 
-.nx/polygraph
+vite.config.*.timestamp*
+test-output
+test-results
 
-# Local planning records and scratch output
+# Local planning records, working artifacts and scratch output
 /.scratch/
+decisions.tsv
+todo.md
+spikes/**/out
+.audit
+.playwright-cli
+# The API double's STATE_FILE holds its token secret and the users' passwords.
+oss/realworld-api/state.json

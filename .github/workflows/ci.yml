@@ -164,7 +164,8 @@ jobs:
             root: packages/stryker-node-test-runner
             config: src
             shard: c
-            mutate: "packages/stryker-node-test-runner/src/**/*.ts,!packages/stryker-node-test-runner/src/runner.ts,\
+            mutate:
+              "packages/stryker-node-test-runner/src/**/*.ts,!packages/stryker-node-test-runner/src/runner.ts,\
               !packages/stryker-node-test-runner/src/wrap.ts,!packages/stryker-node-test-runner/src/hook-core.ts,\
               !packages/stryker-node-test-runner/src/record.ts"
             mutated: '!packages/stryker-node-test-runner/src/**/*.ts'
@@ -189,7 +190,8 @@ jobs:
             timeout: 30
     env:
       RUN: ${{ matrix.project }}.${{ matrix.config }}${{ matrix.shard && format('.{0}', matrix.shard) || '' }}
-      INCREMENTAL_FILE: reports/stryker-incremental/${{ matrix.project }}.${{ matrix.config }}${{ matrix.shard &&
+      INCREMENTAL_FILE:
+        reports/stryker-incremental/${{ matrix.project }}.${{ matrix.config }}${{ matrix.shard &&
         format('.{0}', matrix.shard) || '' }}.json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
