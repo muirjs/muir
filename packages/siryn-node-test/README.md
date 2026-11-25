@@ -26,10 +26,12 @@ pnpm exec stryker run
 Answer the initializer's questions as follows:
 
 1. For the preset, pick `None/other`.
-2. For the test runner, pick `@muirjs/node`. The initializer names each runner after its package: it removes
+2. For the test runner, pick `@muirjs/siryn`. The initializer names each runner after its package: it removes
    `@stryker-mutator/` and the first `stryker-` from the package name, then keeps the text before the first hyphen.
-   The configuration that it writes still names the runner `muir-siryn-node-test` and loads this package through
-   `appendPlugins`.
+   `@muirjs/siryn-playwright` shows as `@muirjs/siryn` too, and the initializer takes the first package of that
+   name, so check the configuration it writes: it names the runner `muir-siryn-node-test` and loads
+   `@muirjs/siryn-node-test` through `appendPlugins`. When it names the Playwright runner instead, set both by hand, as
+   [Configure Stryker](#configure-stryker) shows.
 3. For the build command, keep the default, `none`, unless your tests need a build.
 
 The other questions ask for the reporters, the package manager, and the configuration file type. Answer them as you
@@ -38,7 +40,7 @@ files, add `muirSirynNodeTest.testFiles`, as [Configure Stryker](#configure-stry
 
 With pnpm, the initializer also lists this package in `plugins`. Keep both `plugins` and `appendPlugins`.
 
-If the initializer warns `Could not fetch additional initialization config`, it writes `testRunner: "@muirjs/node"`
+If the initializer warns `Could not fetch additional initialization config`, it writes `testRunner: "@muirjs/siryn"`
 and no `appendPlugins`, and Stryker then fails with `Cannot find TestRunner plugin`. Set
 `testRunner: 'muir-siryn-node-test'` and `appendPlugins: ['@muirjs/siryn-node-test']` by hand, as
 [Configure Stryker](#configure-stryker) shows.
