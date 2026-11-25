@@ -10,24 +10,26 @@ Storybook's Vitest addon. This package adds what those two lack for story files:
 - The `muir-shadowcat-storybook-csf` ignorer, the CSF ignorer, keeps the values that Storybook reads without running the file,
   such as `title` and `tags`, as written. It also splits a story file into story data, which a run of the components
   mutates, and story test code, which a run of its own mutates.
-- The `muir-shadowcat-storybook` reporter lists those stubs, the stubs no play checks, hints for surviving interaction mutants,
-  and the story mutants that run every test.
 - `muirShadowcatStorybookStrykerPlugin()`, the sandbox plugin, is a Vite plugin that lets the story tests run in Stryker's
   sandbox.
 
-The stub ignorer, which reports as Ignored the mutants of spy stubs that the mock reset erases, is in
-[`@muirjs/shadowcat-storybook-vitest`](../shadowcat-storybook-vitest/README.md).
+Two other packages hold the rest. The stub ignorer in
+[`@muirjs/shadowcat-storybook-vitest`](../shadowcat-storybook-vitest/README.md) reports as Ignored the mutants of
+spy stubs that the mock reset erases. The reporter in
+[`@muirjs/banshee-storybook-vitest`](../banshee-storybook-vitest/README.md) lists those stubs and the stubs no play
+checks. It also gives hints for surviving interaction mutants and lists the story mutants that run every test.
 
 The package is private and not on npm yet.
 
 ## The Storybook packages
 
-Six packages work together. This README describes the setup they share.
+Seven packages work together. This README describes the setup they share.
 
 | Package                              | What it adds                                                                | Where it goes                       |
 | ------------------------------------ | --------------------------------------------------------------------------- | ----------------------------------- |
-| `@muirjs/shadowcat-storybook`        | the CSF ignorer, the reporter and the sandbox plugin                        | both Stryker configurations; Vitest |
+| `@muirjs/shadowcat-storybook`        | the CSF ignorer and the sandbox plugin                                      | both Stryker configurations; Vitest |
 | `@muirjs/shadowcat-storybook-vitest` | the stub ignorer                                                            | both Stryker configurations         |
+| `@muirjs/banshee-storybook-vitest`   | the reporter                                                                | both Stryker configurations         |
 | `@muirjs/pixie-storybook-vite`       | the mock transformer and the mock reset plugin, two Vite plugins            | Storybook's `viteFinal`; Vitest     |
 | `@muirjs/proteus-storybook`          | `MuirProteusStorybookArgs`, which mutates story data                        | the components configuration        |
 | `@muirjs/proteus-storybook-test`     | the mutators for play functions, which turn Stryker's built-in mutators off | the story test code configuration   |
@@ -131,10 +133,10 @@ Both run the same Vitest configuration.
      testRunner: 'vitest',
      vitest: { configFile: 'vitest.config.ts' },
      mutate: ['src/**/*.tsx', '!src/**/*.test.tsx'],
-     appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest'],
+     appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest', '@muirjs/banshee-storybook-vitest'],
      ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook-vitest'],
      muirShadowcatStorybook: { configDir: '.storybook' },
-     reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
+     reporters: ['clear-text', 'html', 'muir-banshee-storybook-vitest'],
    };
    ```
 
@@ -152,11 +154,11 @@ Both run the same Vitest configuration.
      testRunner: 'vitest',
      vitest: { configFile: 'vitest.config.ts' },
      mutate: ['src/**/*.stories.tsx'],
-     appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest'],
+     appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest', '@muirjs/banshee-storybook-vitest'],
      ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook-vitest'],
      muirShadowcatStorybook: { configDir: '.storybook' },
      muirShadowcatStorybookCsf: { play: 'mutate' },
-     reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
+     reporters: ['clear-text', 'html', 'muir-banshee-storybook-vitest'],
    };
    ```
 
@@ -215,54 +217,8 @@ The ignorer reads only story files. Each Ignored mutant carries a reason that st
 
 The `muir-shadowcat-storybook-vitest` ignorer gives each spy stub that runs when the story file loads a verdict, and
 reports the mutants of the stubs the mock reset erases as Ignored. Its
-[README](../shadowcat-storybook-vitest/README.md) lists the verdicts and the fix. The report below lists the same
-stubs.
-
-## Read the muir-shadowcat-storybook report
-
-The `muir-shadowcat-storybook` reporter writes `reports/muir-shadowcat-storybook.json` and prints a block such as this one:
-
-```text
-@muirjs/shadowcat-storybook: 2 spy stub findings (1 erased, 1 unchecked)
-  erased  src/Note.stories.tsx:12 mockResolvedValue  the mock reset runs before the story renders, so this stub never takes effect; pass the implementation to fn(), as in fn(() => value), or return the value from the function fn() already takes, or set the stub in beforeEach
-  unchecked  src/Note.stories.tsx:30  no test fails without this stub, so no play checks what it changes; assert in the play what the stubbed value changes
-```
-
-It holds three lists:
-
-- Spy stub findings: each definition-time stub that is not kept, with its verdict; each stub whose
-  `MuirProteusStorybookTestSpyStub` mutant survived, as `unchecked`; and each stub whose `MuirProteusStorybookTestSpyStubOutcome` mutant
-  survived while its removal was killed or timed out, as `outcome-unchecked` (a play needs the stub, but no check
-  tells its success from its failure). The reporter reads the stubs of every story file, also the ones this run does
-  not mutate.
-- Interaction hints: surviving mutants of the interaction mutators at an interaction of a known shape
-  (`negative-only`, `click-before-type` or `cleared-later`), each with the reason, the fix and a ready
-  `// Stryker disable next-line` comment.
-- Static story mutants: mutants in story files that Stryker runs against every test, with their net time. They cost
-  run time on every test.
-
-### Silence a stub finding
-
-To silence one finding, put a Stryker disable comment that names `MuirProteusStorybookTestSpyStub`, or `all`, on the line before
-the stub:
-
-```ts
-args: {
-  // Stryker disable next-line MuirProteusStorybookTestSpyStub: the story only checks that the form renders
-  onSave: fn().mockResolvedValue(note),
-},
-```
-
-To silence every finding, list `MuirProteusStorybookTestSpyStub` in `mutator.excludedMutations`.
-
-### Warnings about the mock transformer
-
-The reporter compares what the main file's `viteFinal` says with what the mock transformer did during the dry run:
-
-- The transformer rewrote stubs, but `viteFinal` does not add it: the stub ignorer treated rewritten stubs as erased.
-  Add the plugin through `viteFinal`.
-- `viteFinal` adds the transformer, but it rewrote no stub: check that the test run uses the Storybook Vite
-  configuration, or ignore the warning when no story file stubs a spy outside a function.
+[README](../shadowcat-storybook-vitest/README.md) lists the verdicts and the fix. The reporter of
+[`@muirjs/banshee-storybook-vitest`](../banshee-storybook-vitest/README.md#read-the-report) lists the same stubs.
 
 ## Run the story tests in Stryker's sandbox
 

@@ -75,8 +75,8 @@ const config: StorybookConfig = {
 export default config;
 ```
 
-There, the Storybook UI and Storybook's Vitest addon both run the rewritten stories, and the `muir-shadowcat-storybook` ignorer
-of `@muirjs/shadowcat-storybook` learns that the transformer is on.
+There, the Storybook UI and Storybook's Vitest addon both run the rewritten stories, and the `muir-shadowcat-storybook-vitest`
+ignorer of `@muirjs/shadowcat-storybook-vitest` learns that the transformer is on.
 
 ### What the transformer leaves as written
 
@@ -88,7 +88,7 @@ mock reset still erases them:
 - A stub after the first of its chain, as in `fn().mockResolvedValueOnce(a).mockResolvedValue(b)`.
 - A stub on a spy call that takes arguments, as in `fn(impl).mockReturnValue(1)`. The rewrite would replace `impl`.
 
-The `muir-shadowcat-storybook` report lists each of these, with a fix: pass the implementation to `fn()`, as in
+The `muir-banshee-storybook-vitest` report of `@muirjs/banshee-storybook-vitest` lists each of these, with a fix: pass the implementation to `fn()`, as in
 `fn(() => value)`, return the value from the function `fn()` already takes, or set the stub in `beforeEach`.
 
 A later call in a rewritten chain that resets the implementation, such as `mockReset()`, then falls back to the

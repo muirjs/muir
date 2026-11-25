@@ -22,8 +22,10 @@ yet.
   `@muirjs/moira-storybook`, which it depends on, still asks for Storybook.
 - Stryker's Vitest runner, `@stryker-mutator/vitest-runner`, with Storybook's Vitest addon,
   `@storybook/addon-vitest`, running the story tests.
-- `@muirjs/shadowcat-storybook`, for its CSF ignorer and its `muir-shadowcat-storybook` ignorer and reporter. Its README describes
-  the Vitest and Storybook setup that both Stryker configurations share.
+- `@muirjs/shadowcat-storybook`, for its CSF ignorer. Its README describes the Vitest and Storybook setup that both
+  Stryker configurations share.
+- `@muirjs/shadowcat-storybook-vitest`, for its stub ignorer, and `@muirjs/banshee-storybook-vitest`, for its
+  reporter.
 - Node.js 22 or later.
 
 ## Turn the mutators on
@@ -47,9 +49,9 @@ await muirProteusStorybookMutators({
 export default {
   testRunner: 'vitest',
   mutate: ['src/**/*.tsx', '!src/**/*.test.tsx'],
-  appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest'],
+  appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest', '@muirjs/banshee-storybook-vitest'],
   ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook-vitest'],
-  reporters: ['clear-text', 'html', 'muir-shadowcat-storybook'],
+  reporters: ['clear-text', 'html', 'muir-banshee-storybook-vitest'],
 };
 ```
 

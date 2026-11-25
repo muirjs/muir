@@ -37,7 +37,8 @@ declares it as a regular dependency, so installing one of them installs this one
 - `muirMoiraStorybookDefinitionTimeStubs`, with the types `MuirMoiraStorybookDefinitionTimeStub`, `MuirMoiraStorybookSpan` and `MuirMoiraStorybookStubMethodCall`: the definition-time spy stubs in a
   program, with their positions.
 - `muirMoiraStorybookMockTransformerRewrite`, with the type `MuirMoiraStorybookStubRewrite`: the rule for which stubs the mock transformer rewrites,
-  shared by the transformer and the `muir-shadowcat-storybook` report: the first stub of a chain, not a `Once` stub, on a spy call
+  shared by the transformer, the `muir-shadowcat-storybook-vitest` ignorer and the `muir-banshee-storybook-vitest`
+  report: the first stub of a chain, not a `Once` stub, on a spy call
   that takes no arguments.
 - `muirMoiraStorybookChainUpTo`: the stubs of a chain up to one of them.
 - `muirMoiraStorybookStubMethodOf` and `muirMoiraStorybookWrittenMethodOf`, with the types `MuirMoiraStorybookStubMethod` and `MuirMoiraStorybookWrittenStubMethod`: a spy method name read

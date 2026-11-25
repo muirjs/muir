@@ -3,7 +3,7 @@
 Stryker plugins for Storybook story files, and three Vite plugins: one rewrites definition-time stubs so they survive
 the mock reset, one resets module mock spies before each test, and one lets Storybook's tests run in Stryker's
 sandbox. This context covers `@muirjs/shadowcat-storybook`, `@muirjs/shadowcat-storybook-vitest`,
-`@muirjs/pixie-storybook-vite` and `@muirjs/moira-storybook`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
+`@muirjs/banshee-storybook-vitest`, `@muirjs/pixie-storybook-vite` and `@muirjs/moira-storybook`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
 same spy stub shape from `@muirjs/moira-storybook`, which holds the code they share, the Storybook project reader and
 the stub verdict included.
 _Avoid_: `@layzee/storybook-csf` (the shared package's former name)
@@ -83,7 +83,7 @@ _Avoid_: test tags
 ### Interactions and checks
 
 `@muirjs/moira-storybook` reads these once per story file, for the Storybook test mutators on Stryker's tree and for
-the `muir-shadowcat-storybook` reporter on its own parse.
+the `muir-banshee-storybook-vitest` reporter on its own parse.
 
 **Interaction**:
 A call that acts on the rendered story: a user-event method such as `click` or `type`, or a computed key, on a
@@ -135,7 +135,7 @@ is a read and refuses nothing, and so is a write through a value the origin sear
 or object literal that holds the receiver, a function parameter, `arguments` in a method or `function` play, a local
 that holds the module object (`const t2 = t`, or an awaited `import()`), a local with two values, a local whose value
 nests a choice (`const u = a || (flag ? userEvent : x)`), or `(await userEvent).click = f`. `delete userEvent.click`
-is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the `muir-shadowcat-storybook`
+is no write and refuses nothing either. The Storybook test mutators make mutants for every origin; the `muir-banshee-storybook-vitest`
 reporter gives the `click-before-type` shape only for `userEvent14`.
 _Avoid_: user-event kind, user-event 14 check
 
@@ -240,7 +240,7 @@ returns `undefined` or the original implementation.
 _Avoid_: lost stub, reset stub
 
 **Unchecked stub**:
-A spy stub at whose line an `MuirProteusStorybookTestSpyStub` mutant, which removes a stub, survived; the `muir-shadowcat-storybook` report
+A spy stub at whose line an `MuirProteusStorybookTestSpyStub` mutant, which removes a stub, survived; the `muir-banshee-storybook-vitest` report
 lists it once as a stub finding, because no test fails without the stub. A surviving outcome mutant (the test
 mutators' term), which `MuirProteusStorybookTestSpyStubOutcome` makes, makes no unchecked stub: it shows that no check tells
 success from failure, not that none reads the stub. A later stub of a chain whose first stub the mock transformer
@@ -252,18 +252,18 @@ _Avoid_: unobserved stub, surviving stub
 **Outcome-unchecked stub**:
 A spy stub at whose line a surviving outcome mutant (the test mutators' term) shows that no check tells its success
 from its failure, while the `MuirProteusStorybookTestSpyStub` mutant that removes it was killed or timed out, so a play needs the
-stub; the `muir-shadowcat-storybook` report lists the line once as an `outcome-unchecked` stub finding. A stub whose own removal
+stub; the `muir-banshee-storybook-vitest` report lists the line once as an `outcome-unchecked` stub finding. A stub whose own removal
 survived is an unchecked stub instead; a line with two stubs can carry one of each.
 _Avoid_: unasserted outcome
 
 **Stub finding**:
-One entry in the `muir-shadowcat-storybook` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
+One entry in the `muir-banshee-storybook-vitest` report: a spy stub's file and line, its verdict, the reason, and the fix. A finding
 read from the story file also names the stub method as written (`mockResolvedValueOnce`); an `unchecked` or
 `outcome-unchecked` finding comes from surviving mutants and names none.
 _Avoid_: stub warning, diagnostic
 
 **Interaction hint**:
-One entry in the `muir-shadowcat-storybook` report for the surviving mutants of the interaction mutators (`MuirProteusStorybookTestInteraction`,
+One entry in the `muir-banshee-storybook-vitest` report for the surviving mutants of the interaction mutators (`MuirProteusStorybookTestInteraction`,
 `MuirProteusStorybookTestClickFocus`, `MuirProteusStorybookTestInteractionRepeat` and `MuirProteusStorybookTestInteractionTarget`, the Storybook test
 mutators' names) that start on one line and whose interaction has an interaction shape. The reporter reads
 `MuirProteusStorybookTestAssertionBefore` survivors the same way, but none has yet been seen at an interaction with a shape. A hint
@@ -291,7 +291,7 @@ shape:
 _Avoid_: skip reason, interaction pattern
 
 **Static story mutant**:
-A mutant in a story file that Stryker runs against every test, listed in the `muir-shadowcat-storybook` report with its net
+A mutant in a story file that Stryker runs against every test, listed in the `muir-banshee-storybook-vitest` report with its net
 time.
 _Avoid_: slow mutant
 
@@ -304,7 +304,7 @@ form, which survives the mock reset. It rewrites a stub only when it is the firs
 and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
 run before the arguments of a `mockName` call between them and the spy call. A later call in the chain that sets or
 resets the implementation (`mockReset`, `mockRestore`, `mockReturnThis`) then falls back to the stub's value after
-the reset, where the story as written gets none. The `muir-shadowcat-storybook` report gives an erased `Once`
+the reset, where the story as written gets none. The `muir-banshee-storybook-vitest` report gives an erased `Once`
 stub the verdict `once-not-rewritten`, an erased stub after the first of a chain that is not a `Once` stub the
 verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes arguments the verdict
 `spy-arguments-not-rewritten`.

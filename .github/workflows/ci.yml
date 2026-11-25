@@ -269,6 +269,12 @@ jobs:
             config: src
             mutated: '!packages/shadowcat-storybook-vitest/src/**/*.ts'
             timeout: 60
+          - project: '@muirjs/banshee-storybook-vitest'
+            slug: banshee-storybook-vitest
+            root: packages/banshee-storybook-vitest
+            config: src
+            mutated: '!packages/banshee-storybook-vitest/src/**/*.ts'
+            timeout: 60
           - project: '@muirjs/shadowcat-telemetry'
             slug: shadowcat-telemetry
             root: packages/shadowcat-telemetry

@@ -28,7 +28,8 @@
   support the mutator packages share (docs/adr ADR-0008).
 - [Storybook](./packages/shadowcat-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
-  Covers `packages/shadowcat-storybook`, `packages/shadowcat-storybook-vitest`, `packages/pixie-storybook-vite` and
+  Covers `packages/shadowcat-storybook`, `packages/shadowcat-storybook-vitest`,
+  `packages/banshee-storybook-vitest`, `packages/pixie-storybook-vite` and
   `packages/moira-storybook`, the internal package that holds the code the Storybook packages share.
 - [Storybook test mutators](./packages/proteus-storybook-test/GLOSSARY.md): mutate story test code, so
   a test-code run shows which steps of a play function no check depends on.
@@ -83,11 +84,11 @@
   Proven for each default global, whose table of Storybook's initial globals `@muirjs/moira-storybook` holds.
   `MuirProteusStorybookTestSpyStub` and `MuirProteusStorybookTestSpyStubOutcome` read definition-time stubs from
   the same `@muirjs/moira-storybook` reader as the stub ignorer, which reports their mutants at erased stubs as Ignored;
-  the `muir-shadowcat-storybook` reporter makes unchecked stubs of surviving `MuirProteusStorybookTestSpyStub` mutants, and outcome-unchecked
+  the `muir-banshee-storybook-vitest` reporter makes unchecked stubs of surviving `MuirProteusStorybookTestSpyStub` mutants, and outcome-unchecked
   stubs of surviving `MuirProteusStorybookTestSpyStubOutcome` mutants whose own stub's removal was killed or timed out;
-  the `muir-shadowcat-storybook` reporter reads the interaction statements with `interactionsOf` on its own parse of each story
+  the `muir-banshee-storybook-vitest` reporter reads the interaction statements with `interactionsOf` on its own parse of each story
   file, and gives interaction hints for surviving mutants of the five interaction mutators;
-  `@muirjs/shadowcat-storybook`'s tests (a devDependency only) check that each mutant carries its name, that
+  the tests of `@muirjs/shadowcat-storybook` and `@muirjs/banshee-storybook-vitest` (a devDependency only) check that each mutant carries its name, that
   `MuirProteusStorybookTestSpyStub` is an experimental mutator name of this package, and that each of the five interaction mutator
   names makes mutants.
 - **JSX mutators <-> Playwright mutators**: neither uses the other, but both install into one Stryker instance, so
@@ -103,7 +104,7 @@
   make such callbacks work in pages, but not in workers, service workers or Electron.
 - **Storybook**: shares no plugin with the other contexts, and no code apart from `@muirjs/moira-storybook`, which
   the Storybook mutators and the Storybook test mutators depend on. It works with Stryker's Vitest runner and Storybook's Vitest addon, not with the
-  Playwright runner. Inside it, the mock transformer writes the transformer record that the `muir-shadowcat-storybook` reporter
+  Playwright runner. Inside it, the mock transformer writes the transformer record that the `muir-banshee-storybook-vitest` reporter
   reads, and both take the stub shape and the rule for which stubs the transformer rewrites from
   `@muirjs/moira-storybook`, so the two agree on every stub. The reporter reads interactions with the same
   `@muirjs/moira-storybook` interaction reader as the Storybook test mutators, on its own parse of each story file in

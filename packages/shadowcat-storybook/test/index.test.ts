@@ -8,7 +8,6 @@ import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
 import * as entry from '../src/index.ts';
 import { strykerPlugins, strykerValidationSchema } from '../src/index.ts';
 import { muirShadowcatStorybookStrykerStorybookProject } from '../src/options.ts';
-import { muirShadowcatStorybookReporter } from '../src/reporter.ts';
 import { muirShadowcatStorybookStrykerPlugin } from '../src/stryker-vite-plugin.ts';
 
 describe('package entry', () => {
@@ -34,36 +33,21 @@ describe('package entry', () => {
     );
   });
 
-  it('declares the CSF ignorer and the reporter', () => {
+  it('declares the CSF ignorer, which Stryker passes the options and the logger', () => {
     assert.deepEqual(
       strykerPlugins.map(({ kind, name, factory }) => ({
         kind,
         name,
         factory,
+        inject: 'inject' in factory ? factory.inject : undefined,
       })),
       [
         {
           kind: 'Ignore',
           name: 'muir-shadowcat-storybook-csf',
           factory: muirShadowcatStorybookCsfIgnorer,
+          inject: [commonTokens.options, commonTokens.logger],
         },
-        {
-          kind: 'Reporter',
-          name: 'muir-shadowcat-storybook',
-          factory: muirShadowcatStorybookReporter,
-        },
-      ],
-    );
-  });
-
-  it('has Stryker pass each plugin the options and the logger', () => {
-    assert.deepEqual(
-      strykerPlugins.map(({ factory }) =>
-        'inject' in factory ? factory.inject : undefined,
-      ),
-      [
-        [commonTokens.options, commonTokens.logger],
-        [commonTokens.options, commonTokens.logger],
       ],
     );
   });

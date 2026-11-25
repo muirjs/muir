@@ -75,6 +75,12 @@
       "test": {
         "dependsOn": [
           "^build"
+        ],
+        "inputs": [
+          "default",
+          "^production",
+          "nodeVersion",
+          "{workspaceRoot}/packages/moira-storybook/test/fixtures/**/*"
         ]
       },
       "lint": {
@@ -83,7 +89,14 @@
           "{workspaceRoot}/tsconfig.base.json"
         ]
       },
-      "mutate-src": {}
+      "mutate-src": {
+        "inputs": [
+          "default",
+          "^production",
+          "mutation",
+          "{workspaceRoot}/packages/moira-storybook/test/fixtures/**/*"
+        ]
+      }
     }
   },
   "scripts": {

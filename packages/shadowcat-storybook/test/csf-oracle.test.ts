@@ -10,7 +10,10 @@ import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
 import { instrument } from './support/instrument.ts';
 
 const root = fileURLToPath(new URL('fixtures/csf-oracle/', import.meta.url));
-const noMain = fileURLToPath(new URL('fixtures/no-main/', import.meta.url));
+// A Storybook project of @muirjs/moira-storybook's tests; the test and mutate-src targets list them as inputs.
+const noMain = fileURLToPath(
+  new URL('../../moira-storybook/test/fixtures/no-main/', import.meta.url),
+);
 const configDir = `${noMain}.storybook`;
 const fileName = `${noMain}src/Button.stories.tsx`;
 const fixtures = [

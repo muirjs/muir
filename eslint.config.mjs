@@ -16,6 +16,7 @@ const playwrightProjects = [
   'oss/**',
   'tools/*.ts',
   'tools/packed-demo/**',
+  'packages/banshee-storybook-vitest/**',
   'packages/moira-storybook/**',
   'packages/pixie-storybook-vite/**',
   'packages/proteus-react/**',

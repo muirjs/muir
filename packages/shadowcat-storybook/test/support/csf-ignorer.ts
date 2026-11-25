@@ -4,7 +4,10 @@ import { muirShadowcatStorybookCsfIgnorer } from '../../src/csf-ignorer.ts';
 import { instrument } from './instrument.ts';
 
 const configDir = fileURLToPath(
-  new URL('../fixtures/no-main/.storybook', import.meta.url),
+  new URL(
+    '../../../moira-storybook/test/fixtures/no-main/.storybook',
+    import.meta.url,
+  ),
 );
 export const staticReason =
   'muir-shadowcat-storybook-csf: Storybook reads this CSF value without running the file, so it stays as written';

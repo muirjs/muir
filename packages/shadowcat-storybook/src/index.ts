@@ -5,8 +5,6 @@ import {
   muirShadowcatStorybookCsfIgnorerName,
 } from './csf-ignorer.ts';
 import { muirShadowcatStorybookPlayModes } from './options.ts';
-import { muirShadowcatStorybookPluginName } from './package-name.ts';
-import { muirShadowcatStorybookReporter } from './reporter.ts';
 
 export { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
 export { muirShadowcatStorybookStrykerPlugin } from './stryker-vite-plugin.ts';
@@ -14,7 +12,6 @@ export type {
   MuirShadowcatStorybookCsfOptions,
   MuirShadowcatStorybookOptions,
 } from './options.ts';
-export type { MuirShadowcatStorybookReport } from './reporter.ts';
 
 /**
  * Stryker reads one schema per plugin module, so it names the options of every plugin here. Core merges its
@@ -29,7 +26,7 @@ export const strykerValidationSchema = {
       additionalProperties: false,
       description:
         // Stryker disable next-line StringLiteral: documentation for readers of the exported strykerValidationSchema, which Stryker's messages never print
-        'Options of the muir-shadowcat-storybook, muir-shadowcat-storybook-csf and muir-shadowcat-storybook-vitest plugins.',
+        'Options of the muir-shadowcat-storybook-csf, muir-shadowcat-storybook-vitest and muir-banshee-storybook-vitest plugins.',
       properties: {
         configDir: {
           type: 'string',
@@ -64,10 +61,5 @@ export const strykerPlugins = [
     PluginKind.Ignore,
     muirShadowcatStorybookCsfIgnorerName,
     muirShadowcatStorybookCsfIgnorer,
-  ),
-  declareFactoryPlugin(
-    PluginKind.Reporter,
-    muirShadowcatStorybookPluginName,
-    muirShadowcatStorybookReporter,
   ),
 ];

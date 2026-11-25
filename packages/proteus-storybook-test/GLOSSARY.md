@@ -5,7 +5,7 @@ function that no check depends on. Story test code is the Storybook context's te
 reads it: the plays and hooks of the meta and the stories, including ones assigned as `Story.play = ...`, and the
 `.test()` bodies of exported stories that Storybook runs. Interaction, Composed play, Raw DOM interaction, User-event
 origin, Check, Failing query, Negative check and Following checks are the Storybook context's terms too, as the
-`@muirjs/moira-storybook` interaction reader reads them for this package and the `muir-shadowcat-storybook` reporter. Install,
+`@muirjs/moira-storybook` interaction reader reads them for this package and the `muir-banshee-storybook-vitest` reporter. Install,
 tier and built-in mutator terms belong to the Mutator install context.
 
 ## Language

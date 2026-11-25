@@ -150,6 +150,12 @@ export const configs: readonly StrykerConfigRow[] = [
     mutate: ['packages/shadowcat-storybook-vitest/src/**/*.ts'],
   },
   {
+    file: 'packages/banshee-storybook-vitest/stryker.config.mjs',
+    project: '@muirjs/banshee-storybook-vitest',
+    config: 'src',
+    mutate: ['packages/banshee-storybook-vitest/src/**/*.ts'],
+  },
+  {
     file: 'packages/shadowcat-telemetry/stryker.config.mjs',
     project: '@muirjs/shadowcat-telemetry',
     config: 'src',
