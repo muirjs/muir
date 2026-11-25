@@ -50,6 +50,13 @@ const tierLabels: Record<SelectableTier, string> = {
   experimental: 'experimental',
 };
 
+/** Every mutator of `sets`, defaults first. */
+export function muirMoiraMutatorsAllMutators<
+  TMutator extends MuirMoiraMutatorsNamedMutator,
+>(sets: MuirMoiraMutatorsMutatorSets<TMutator>): readonly TMutator[] {
+  return tiers.flatMap((tier) => sets[tier]);
+}
+
 /**
  * The defaults and the mutators that `options` turns on, in the order of `sets`. Throws, starting with `packageName`,
  * on options it does not take, as a config file in JavaScript has no type check. `installName` is the install
@@ -99,7 +106,8 @@ export function muirMoiraMutatorsSelectMutators<
   const onlyTrue = (key: string, value: unknown): void => {
     if (value !== true) {
       throw new Error(
-        `${packageName}: ${key} takes only true, not ${inspect(value)}; Stryker's mutator.excludedMutations ` +
+        `${packageName}: ${key} takes only true${key === 'experimental' ? ' or an object of names' : ''}, not ` +
+          `${inspect(value)}; Stryker's mutator.excludedMutations ` +
           'turns mutators off.',
       );
     }

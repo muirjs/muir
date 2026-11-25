@@ -1,3 +1,4 @@
+import { muirMoiraMutatorsResolveEachCore } from '@muirjs/moira-mutators';
 import { declareValuePlugin, PluginKind } from '@stryker-mutator/api/plugin';
 
 import {
@@ -34,7 +35,8 @@ export async function muirProteusPlaywrightMutators(
   await muirProteusPlaywrightInstall(
     muirProteusPlaywrightMutatorSets,
     options,
-    muirProteusPlaywrightResolveFromCore,
+    () =>
+      muirMoiraMutatorsResolveEachCore(muirProteusPlaywrightResolveFromCore),
   );
   muirProteusPlaywrightUseSettings(parsed);
 }

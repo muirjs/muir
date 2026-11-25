@@ -75,6 +75,11 @@ function setup({
         .map((mutator) => ({
           fileName: `${mutator.name}.self-check.tsx`,
           mutatorName: mutator.name,
+          replacement: '',
+          location: {
+            start: { line: 0, column: 0 },
+            end: { line: 0, column: 1 },
+          },
         }));
     },
   };
@@ -84,7 +89,7 @@ function setup({
   ) =>
     muirProteusJsxInstall(
       mutators,
-      async () => target,
+      async () => [target],
       (message) => warnings.push(message),
     );
   const names = () => allMutators.map(({ name }) => name);
@@ -153,7 +158,7 @@ describe('install', () => {
     const { canPlace } = expressionPlacer;
     await Reflect.apply(copyInstall, undefined, [
       [mutator('Alpha')],
-      async () => instrumenter,
+      async () => [instrumenter],
       (message: string) => warnings.push(message),
     ]);
 
@@ -393,7 +398,10 @@ describe('resolveFromCore against a fake instrumenter', () => {
       '@stryker-mutator/core/package.json':
         '{ "name": "@stryker-mutator/core", "version": "9.9.9" }',
       '@stryker-mutator/instrumenter/package.json':
-        '{ "name": "@stryker-mutator/instrumenter", "version": "9.9.8", "type": "module" }',
+        '{ "name": "@stryker-mutator/instrumenter", "version": "9.9.8", "type": "module", ' +
+        '"exports": { ".": "./dist/src/index.js", "./package.json": "./package.json" } }',
+      '@stryker-mutator/instrumenter/dist/src/transformers/babel-transformer.js':
+        'export function transformBabel() {}',
       [mutatorsPath]: 'export const allMutators = [];',
       [placersPath]: placersFile(
         placers.map(

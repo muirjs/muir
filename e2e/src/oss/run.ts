@@ -18,7 +18,7 @@ import timers from 'node:timers/promises';
 
 import { muirExec } from '../exec.ts';
 import {
-  muirMoiraNodeTestInstall,
+  muirInstallPacked,
   muirPack,
   muirRemoveDeadRunDirs,
   muirRemoveOnExit,
@@ -82,7 +82,7 @@ const settleMs = 2_000;
 /** The steps that pack, install, run Stryker and watch processes, which a test replaces. */
 export interface MuirRunSteps {
   readonly pack: typeof muirPack;
-  readonly install: typeof muirMoiraNodeTestInstall;
+  readonly install: typeof muirInstallPacked;
   readonly stryker: typeof muirStryker;
   readonly startSampler: typeof muirStartSampler;
   readonly snapshot: typeof muirSnapshot;
@@ -90,7 +90,7 @@ export interface MuirRunSteps {
 
 export const muirRunSteps: MuirRunSteps = {
   pack: muirPack,
-  install: muirMoiraNodeTestInstall,
+  install: muirInstallPacked,
   stryker: muirStryker,
   startSampler: muirStartSampler,
   snapshot: muirSnapshot,

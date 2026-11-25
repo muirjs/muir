@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { muirTestEach } from '@muirjs/madrox-node-test';
-import type { MuirMoiraNodeTestMutator } from '@muirjs/moira-node-test';
+import type { MuirMoiraMutatorsBabelMutator } from '@muirjs/moira-mutators';
 import { muirProteusJsAssignmentStatement } from '../../src/js-assignment-statement.ts';
 import { muirProteusJsNumericLiteral } from '../../src/js-numeric-literal.ts';
 import { mutantsOf, mutantsOfAll } from '../mutants-of.fixtures.ts';
@@ -11,7 +11,7 @@ import { mutantsOf, mutantsOfAll } from '../mutants-of.fixtures.ts';
  * Stands in for a mutator of a site that holds a number: the argument of a call, as MuirProteusNodeTimerDelay mutates a timer's
  * delay, or an assigned number, as MuirProteusNodeExitCode mutates `process.exitCode = 1`.
  */
-const site: MuirMoiraNodeTestMutator = {
+const site: MuirMoiraMutatorsBabelMutator = {
   name: 'Site',
   sample: '',
   *mutate(path, t) {

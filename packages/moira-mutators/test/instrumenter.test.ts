@@ -1,24 +1,32 @@
-// muirMoiraMutatorsCorePackageJson with injected realpath and resolve; resolveInstrumenter against a fake core and instrumenter
-// written to a temporary node_modules.
+// corePackageJsons with injected argv, realpath and resolve; resolveInstrumenter against the installed core, with one
+// module replaced, and against a fake core and instrumenter written to a temporary node_modules.
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
   muirTempRoot,
   muirWriteTree,
 } from '@muirjs/test-util-mutator-packages';
 
+import { muirMoiraMutatorsAssertBabelTypes } from '../src/babel-mutator.ts';
 import {
-  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsCoreInstrument,
+  muirMoiraMutatorsCorePackageJsons,
+  muirMoiraMutatorsResolveEachCore,
   muirMoiraMutatorsResolveExpressionPlacer,
   muirMoiraMutatorsResolveInstrumenter,
+  type MuirMoiraMutatorsListedMutator,
 } from '../src/instrumenter.ts';
 import { exported } from './support/exports.ts';
 
 const packageName = '@muirjs/test-mutators';
+const sampleLocation = {
+  start: { line: 0, column: 0 },
+  end: { line: 0, column: 1 },
+};
 
 function assertTypes(
   value: unknown,
@@ -45,9 +53,14 @@ async function resolveFromCore(corePackage: string) {
   };
 }
 
-describe('corePackageJson', () => {
-  const coreDir = join('/global', 'node_modules', '@stryker-mutator', 'core');
-  const hereDir = join(
+describe('corePackageJsons', () => {
+  const globalCore = join(
+    '/global',
+    'node_modules',
+    '@stryker-mutator',
+    'core',
+  );
+  const here = join(
     '/repo',
     'node_modules',
     '@stryker-mutator',
@@ -55,10 +68,10 @@ describe('corePackageJson', () => {
     'package.json',
   );
 
-  function coreFor(argv1: string, real: string | undefined): string {
+  function coreFor(real: string | undefined) {
     const realpaths: string[] = [];
-    const core = muirMoiraMutatorsCorePackageJson(
-      argv1,
+    const cores = muirMoiraMutatorsCorePackageJsons(
+      ['/usr/local/bin/node', '/usr/local/bin/stryker'],
       (path) => {
         realpaths.push(path);
 
@@ -73,86 +86,400 @@ describe('corePackageJson', () => {
       (specifier) => {
         assert.equal(specifier, '@stryker-mutator/core/package.json');
 
-        return hereDir;
+        return here;
       },
     );
 
-    assert.deepEqual(realpaths, [argv1]);
+    assert.deepEqual(realpaths, ['/usr/local/bin/stryker']);
 
-    return core;
+    return cores;
   }
 
   it("takes the core whose bin started the process, through the bin's links", () => {
-    assert.equal(
-      coreFor('/usr/local/bin/stryker', join(coreDir, 'bin', 'stryker.js')),
-      join(coreDir, 'package.json'),
-    );
+    assert.deepEqual(coreFor(join(globalCore, 'bin', 'stryker.js')), [
+      join(globalCore, 'package.json'),
+    ]);
   });
 
-  (
+  muirTestEach([
+    ['another script', join('/repo', 'tools', 'corpus-diff.ts')],
+    ['a file next to the bin', join(globalCore, 'bin', 'stryker.js.map')],
     [
-      [
-        'another script',
-        '/repo/tools/run.ts',
-        join('/repo', 'tools', 'run.ts'),
-      ],
-      [
-        'a file next to the bin',
-        '/usr/local/bin/stryker',
-        join(coreDir, 'bin', 'stryker.js.map'),
-      ],
-      [
-        "another package's bin",
-        '/usr/local/bin/stryker',
-        join(
-          '/global',
-          'node_modules',
-          '@stryker-mutator',
-          'other',
-          'bin',
-          'stryker.js',
-        ),
-      ],
-      ['a script path that does not resolve', '/missing', undefined],
-    ] as const
-  ).forEach(([title, argv1, real]) => {
-    it(`takes the core this module resolves when the process runs ${title}`, () => {
-      assert.equal(coreFor(argv1, real), hereDir);
-    });
-  });
+      "another package's bin",
+      join(
+        '/global',
+        'node_modules',
+        '@stryker-mutator',
+        'other',
+        'bin',
+        'stryker.js',
+      ),
+    ],
+    ['a script that is no file', undefined],
+  ])(
+    'takes the core this module resolves when the process runs %s',
+    (_title, real) => {
+      assert.deepEqual(coreFor(real), [here]);
+    },
+  );
 
-  // `undefined` passed in takes the default, process.argv[1], so only a process that runs no script has none.
-  it('takes the core this module resolves, without a realpath, under node --eval', () => {
-    const script =
-      `import { muirMoiraMutatorsCorePackageJson } from ${JSON.stringify(pathToFileURL(join(import.meta.dirname, '..', 'src', 'instrumenter.ts')).href)};\n` +
-      'const realpaths = [];\n' +
-      "const core = muirMoiraMutatorsCorePackageJson(undefined, (path) => { realpaths.push(path); return path; }, () => 'here');\n" +
-      'console.log(JSON.stringify({ core, realpaths }));\n';
+  const upperCore =
+    'D:\\repo\\node_modules\\@stryker-mutator\\core\\package.json';
+  const lowerCore =
+    'd:\\repo\\node_modules\\@stryker-mutator\\core\\package.json';
 
-    const child = spawnSync(
-      process.execPath,
-      ['--input-type=module', '--eval', script],
-      { encoding: 'utf8' },
+  muirTestEach([
+    [
+      'in lower case, and this module in upper case',
+      'd:\\repo\\tools\\stryker.mjs',
+      upperCore,
+      [lowerCore, upperCore],
+    ],
+    [
+      'in upper case, and this module in lower case',
+      'D:\\repo\\tools\\stryker.mjs',
+      lowerCore,
+      [upperCore, lowerCore],
+    ],
+    [
+      'in the case of this module',
+      'D:\\repo\\tools\\stryker.mjs',
+      upperCore,
+      [upperCore],
+    ],
+    ['of another drive', 'e:\\tools\\stryker.mjs', upperCore, [upperCore]],
+    ['of none', '/repo/tools/stryker.mjs', upperCore, [upperCore]],
+    [
+      'of none, though a later folder is a letter and a colon',
+      '/repo/d:/stryker.mjs',
+      upperCore,
+      [upperCore],
+    ],
+  ])(
+    "takes the core this module resolves in the drive-letter case of the script that started the process, and in its own, when the script's real path has a drive letter %s",
+    (_title, script, resolvedCore, expected) => {
+      const cores = muirMoiraMutatorsCorePackageJsons(
+        ['node', script],
+        (path) => path,
+        () => resolvedCore,
+      );
+
+      assert.deepEqual(cores, expected);
+    },
+  );
+
+  it('takes the core this module resolves, without a realpath, when the process runs no script, as `node --eval` does', () => {
+    const realpaths: string[] = [];
+    const cores = muirMoiraMutatorsCorePackageJsons(
+      ['/usr/local/bin/node'],
+      (path) => {
+        realpaths.push(path);
+
+        return join(globalCore, 'bin', 'stryker.js');
+      },
+      () => here,
     );
 
-    assert.equal(child.status, 0, child.stderr);
-    assert.deepEqual(JSON.parse(child.stdout), { core: 'here', realpaths: [] });
+    assert.deepEqual([cores, realpaths], [[here], []]);
   });
 });
 
-describe('resolveFromCore against a fake instrumenter', () => {
+describe('resolveEachCore', () => {
+  it('resolves the instrumenter of each core, in order', async () => {
+    const resolved = await muirMoiraMutatorsResolveEachCore(
+      async (corePackage) => `instrumenter of ${corePackage}`,
+      ['a', 'b'],
+    );
+
+    assert.deepEqual(resolved, ['instrumenter of a', 'instrumenter of b']);
+  });
+});
+
+describe('resolveInstrumenter against the installed core', () => {
+  const core = muirMoiraMutatorsCorePackageJsons()[0];
+
+  function loadingWith(file: string, replacement: unknown) {
+    const replaced: string[] = [];
+    const load = async (path: string): Promise<unknown> => {
+      if (path.endsWith(file)) {
+        replaced.push(path);
+
+        return replacement;
+      }
+
+      const module: unknown = await import(pathToFileURL(path).href);
+
+      return module;
+    };
+
+    return { load, replaced };
+  }
+
+  const resolveWith = (file: string, replacement: unknown) =>
+    muirMoiraMutatorsResolveInstrumenter(
+      packageName,
+      muirMoiraMutatorsAssertBabelTypes,
+      core,
+      loadingWith(file, replacement).load,
+    );
+
+  it("instruments with Stryker's mutators, or with the mutators given in their place", async () => {
+    const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
+      packageName,
+      muirMoiraMutatorsAssertBabelTypes,
+      core,
+    );
+    const files = [{ name: 'sample.ts', content: "f('x');" }];
+    const own: MuirMoiraMutatorsListedMutator = {
+      name: 'Own',
+      *mutate(path: unknown) {
+        if (
+          Reflect.get(Object(Reflect.get(Object(path), 'node')), 'type') ===
+          'StringLiteral'
+        ) {
+          yield instrumenter.types.stringLiteral('y');
+        }
+      },
+    };
+
+    const mutants = async (mutators?: MuirMoiraMutatorsListedMutator[]) =>
+      (await instrumenter.instrument(files, mutators)).map(
+        ({ fileName, mutatorName, replacement, location }) => [
+          fileName,
+          mutatorName,
+          replacement,
+          location,
+        ],
+      );
+    const at = { start: { line: 0, column: 2 }, end: { line: 0, column: 5 } };
+
+    assert.deepEqual(
+      [await mutants(), await mutants([own])],
+      [
+        [['sample.ts', 'StringLiteral', '""', at]],
+        [['sample.ts', 'Own', '"y"', at]],
+      ],
+    );
+  });
+
+  it('instruments a file whose directive names a mutator it does not apply, which Stryker warns about', async () => {
+    const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
+      packageName,
+      muirMoiraMutatorsAssertBabelTypes,
+      core,
+    );
+    const content =
+      "// Stryker disable next-line MuirProteusNodeTimerDelay: a directive for another catalogue\nf('x');";
+
+    const mutants = await instrumenter.instrument([
+      { name: 'sample.ts', content },
+    ]);
+
+    assert.deepEqual(
+      mutants.map(({ mutatorName }) => mutatorName),
+      ['StringLiteral'],
+    );
+  });
+
+  const mutateFile = join('mutators', 'mutate.js');
+  const babelFile = join('core', 'lib', 'index.js');
+  const indexFile = join('dist', 'src', 'index.js');
+  const transformerFile = join('transformers', 'babel-transformer.js');
+
+  muirTestEach([
+    [
+      'allMutators that is no array',
+      mutateFile,
+      { allMutators: {} },
+      'allMutators',
+    ],
+    [
+      'a listed mutator that is null',
+      mutateFile,
+      { allMutators: [null] },
+      'allMutators',
+    ],
+    [
+      'a listed mutator with no name',
+      mutateFile,
+      { allMutators: [{ mutate: () => [] }] },
+      'allMutators',
+    ],
+    [
+      'a listed mutator that is null after one it reads',
+      mutateFile,
+      { allMutators: [{ name: 'Own', mutate: () => [] }, null] },
+      'allMutators',
+    ],
+    [
+      'a listed mutator whose name is no string',
+      mutateFile,
+      { allMutators: [{ name: 1, mutate: () => [] }] },
+      'allMutators',
+    ],
+    [
+      'a listed mutator with no mutate function',
+      mutateFile,
+      { allMutators: [{ name: 'Own', mutate: 'no' }] },
+      'allMutators',
+    ],
+    [
+      'no transformBabel function',
+      transformerFile,
+      { transformBabel: {} },
+      'transformBabel',
+    ],
+    ['no Instrumenter class', indexFile, { Instrumenter: {} }, 'Instrumenter'],
+    [
+      'an Instrumenter with no instrument method',
+      indexFile,
+      {
+        Instrumenter: function Instrumenter() {
+          return undefined;
+        },
+      },
+      'Instrumenter',
+    ],
+    [
+      'no Babel types',
+      babelFile,
+      {},
+      'Babel types with arrowFunctionExpression',
+    ],
+  ])('refuses an instrumenter with %s', async (_title, file, module, name) => {
+    const { dir, version } = await muirMoiraMutatorsResolveInstrumenter(
+      packageName,
+      muirMoiraMutatorsAssertBabelTypes,
+      core,
+    );
+
+    await assert.rejects(resolveWith(file, module), (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.ok(
+        error.message.startsWith(
+          `${packageName}: the instrumenter ${version} in ${dir} has no ${name}`,
+        ),
+        error.message,
+      );
+
+      return true;
+    });
+  });
+
+  const resolvingTo = (result: unknown) =>
+    class {
+      instrument() {
+        return Promise.resolve(result);
+      }
+    };
+  const located = (mutant: object) => ({
+    mutants: [
+      {
+        fileName: 'sample.ts',
+        mutatorName: 'Own',
+        replacement: '""',
+        location: sampleLocation,
+        ...mutant,
+      },
+    ],
+  });
+
+  muirTestEach([
+    ['an instrument result of nothing', undefined],
+    ['an instrument result of null', null],
+    ['mutants that are no array', { mutants: {} }],
+    ['a mutant that is null', { mutants: [null] }],
+    ['a mutant with no file name', located({ fileName: 1 })],
+    ['a mutant with no mutator name', located({ mutatorName: undefined })],
+    ['a mutant whose replacement is no string', located({ replacement: 1 })],
+    [
+      'a mutant with no mutator name after a whole one',
+      {
+        mutants: [
+          ...located({}).mutants,
+          {
+            fileName: 'sample.ts',
+            replacement: '""',
+            location: sampleLocation,
+          },
+        ],
+      },
+    ],
+    ['a mutant with no location', located({ location: undefined })],
+    [
+      'a mutant with no start',
+      located({ location: { end: sampleLocation.end } }),
+    ],
+    [
+      'a mutant with no end',
+      located({ location: { start: sampleLocation.start } }),
+    ],
+    [
+      'a mutant with no start line',
+      located({ location: { ...sampleLocation, start: { column: 0 } } }),
+    ],
+    [
+      'a mutant with no end column',
+      located({ location: { ...sampleLocation, end: { line: 0 } } }),
+    ],
+  ])('refuses %s', async (_title, result) => {
+    const instrumenter = await resolveWith(indexFile, {
+      Instrumenter: resolvingTo(result),
+    });
+
+    await assert.rejects(
+      instrumenter.instrument([{ name: 'sample.ts', content: "f('x');" }]),
+      {
+        message:
+          `${packageName}: the instrumenter ${instrumenter.version} in ${instrumenter.dir} resolved ` +
+          'Instrumenter.instrument() to a value whose mutants are missing or lack a string fileName, mutatorName or ' +
+          'replacement, or a location.',
+      },
+    );
+  });
+
+  it('gives the file name, mutator name, replacement and location of each mutant, whatever else the result holds', async () => {
+    const mutant = {
+      fileName: 'sample.ts',
+      mutatorName: 'Own',
+      replacement: '""',
+      location: sampleLocation,
+    };
+    const instrumenter = await resolveWith(indexFile, {
+      Instrumenter: resolvingTo({
+        files: [],
+        mutants: [{ ...mutant, id: '1', status: 'Pending' }],
+      }),
+    });
+
+    assert.deepEqual(
+      await instrumenter.instrument([{ name: 'sample.ts', content: 'x' }]),
+      [mutant],
+    );
+  });
+});
+
+describe('resolveInstrumenter against a fake instrumenter', () => {
   const placersFile = (placers: readonly string[]) =>
     `export const allMutantPlacers = [${placers.join(', ')}];`;
-  const mutatorsFile = (mutators: readonly string[]) =>
-    `export const allMutators = [${mutators.join(', ')}];`;
-  const instrumenterFile = (result: unknown) =>
-    `export class Instrumenter { async instrument() { return ${JSON.stringify(result)}; } }`;
   const placersPath =
     '@stryker-mutator/instrumenter/dist/src/mutant-placers/index.js';
   const indexPath = '@stryker-mutator/instrumenter/dist/src/index.js';
+  const bundlePath = '@stryker-mutator/instrumenter/dist/bundle.js';
   const mutatorsPath =
     '@stryker-mutator/instrumenter/dist/src/mutators/mutate.js';
+  const transformerPath =
+    '@stryker-mutator/instrumenter/dist/src/transformers/babel-transformer.js';
   const babelPath = '@babel/core/index.js';
+  const recordingInstrumenter =
+    'export const calls = [];\n' +
+    'export class Instrumenter {\n' +
+    '  constructor(...args) { this.args = args; }\n' +
+    '  async instrument(files, options) {\n' +
+    '    calls.push({ args: this.args, files, options });\n' +
+    '    return { files: [], mutants: [] };\n' +
+    '  }\n' +
+    '}';
 
   async function callsOf(modules: string, path: string): Promise<unknown> {
     return exported(
@@ -174,24 +501,24 @@ describe('resolveFromCore against a fake instrumenter', () => {
     const files: Record<string, string> = {
       '@stryker-mutator/core/package.json':
         '{ "name": "@stryker-mutator/core", "version": "9.9.9" }',
-      '@stryker-mutator/instrumenter/package.json':
-        '{ "name": "@stryker-mutator/instrumenter", "version": "9.9.8", "type": "module" }',
+      '@stryker-mutator/instrumenter/package.json': JSON.stringify({
+        name: '@stryker-mutator/instrumenter',
+        version: '9.9.8',
+        type: 'module',
+        exports: {
+          '.': './dist/src/index.js',
+          './package.json': './package.json',
+        },
+      }),
       [mutatorsPath]: 'export const allMutators = [];',
+      [transformerPath]: 'export function transformBabel() {}',
       [placersPath]: placersFile(
         placers.map(
           (name) =>
             `{ name: ${JSON.stringify(name)}, canPlace() { return false; }, place() {} }`,
         ),
       ),
-      [indexPath]:
-        'export const calls = [];\n' +
-        'export class Instrumenter {\n' +
-        '  constructor(logger) { this.logger = logger; }\n' +
-        '  async instrument(files, options) {\n' +
-        '    calls.push({ logger: this.logger, files, options });\n' +
-        '    return { files: [], mutants: [] };\n' +
-        '  }\n' +
-        '}',
+      [indexPath]: recordingInstrumenter,
       '@babel/core/package.json':
         '{ "name": "@babel/core", "type": "module", "main": "index.js" }',
       [babelPath]: 'export const types = { fake: true };',
@@ -227,16 +554,21 @@ describe('resolveFromCore against a fake instrumenter', () => {
     });
   });
 
+  it('throws, naming the dir, when the instrumenter has no string version', async (t) => {
+    const { corePackage, dir } = fakeCore(t, ['expressionMutantPlacer'], {
+      '@stryker-mutator/instrumenter/package.json': JSON.stringify({
+        name: '@stryker-mutator/instrumenter',
+        version: 9,
+      }),
+    });
+
+    await assert.rejects(resolveFromCore(corePackage), {
+      message: `${packageName}: the instrumenter 9 in ${dir} has no version.`,
+    });
+  });
+
   (
     [
-      ['allMutators', mutatorsPath, 'export const allMutators = {};'],
-      ['allMutators', mutatorsPath, mutatorsFile(['null'])],
-      ['allMutators', mutatorsPath, mutatorsFile(['{ mutate() {} }'])],
-      [
-        'allMutators',
-        mutatorsPath,
-        mutatorsFile(["{ name: 'A', mutate() {} }", "{ name: 'B' }"]),
-      ],
       ['allMutantPlacers', placersPath, 'export const placers = [];'],
       [
         'expressionMutantPlacer',
@@ -248,8 +580,6 @@ describe('resolveFromCore against a fake instrumenter', () => {
         placersPath,
         placersFile(["{ name: 'expressionMutantPlacer', canPlace() {} }"]),
       ],
-      ['Instrumenter', indexPath, 'export const Instrumenter = {};'],
-      ['Instrumenter', indexPath, 'export class Instrumenter {}'],
       ['fake types', babelPath, 'export const types = {};'],
     ] as const
   ).forEach(([missing, file, content]) => {
@@ -347,51 +677,59 @@ describe('resolveFromCore against a fake instrumenter', () => {
     });
   });
 
-  const mutant = { fileName: 'a.tsx', mutatorName: 'StringLiteral' };
-
-  it('instruments to the file and mutator name of each mutant, whatever else the result holds', async (t) => {
-    const { corePackage } = fakeCore(t, ['expressionMutantPlacer'], {
-      [indexPath]: instrumenterFile({
-        mutants: [
-          { ...mutant, id: 1, status: 'Done', location: null },
-          { fileName: 'b.tsx', mutatorName: 'MuirProteusJsxTextLiteral' },
-        ],
+  it('constructs the Instrumenter of the entry that the package exports, as Stryker does', async (t) => {
+    const { corePackage, modules } = fakeCore(t, ['expressionMutantPlacer'], {
+      '@stryker-mutator/instrumenter/package.json': JSON.stringify({
+        name: '@stryker-mutator/instrumenter',
+        version: '9.9.8',
+        type: 'module',
+        exports: {
+          '.': './dist/bundle.js',
+          './package.json': './package.json',
+        },
       }),
+      [indexPath]: 'export class Instrumenter {}',
+      [bundlePath]: recordingInstrumenter,
     });
     const instrumenter = await resolveFromCore(corePackage);
 
-    assert.deepEqual(
-      await instrumenter.instrument([{ name: 'a.tsx', content: 'x' }]),
-      [mutant, { fileName: 'b.tsx', mutatorName: 'MuirProteusJsxTextLiteral' }],
-    );
+    await instrumenter.instrument([{ name: 'a.tsx', content: 'x' }]);
+
+    const calls = await callsOf(modules, bundlePath);
+    assert.ok(Array.isArray(calls));
+    assert.equal(calls.length, 1);
   });
 
-  (
-    [
-      null,
-      { files: [] },
-      { mutants: {} },
-      { mutants: [null] },
-      { mutants: [{ ...mutant, fileName: 1 }] },
-      { mutants: [{ ...mutant, mutatorName: undefined }] },
-    ] as const
-  ).forEach((result) => {
-    it(`throws, naming the version and dir, when the instrumenter resolves instrument() to mutants without names (${JSON.stringify(result)})`, async (t) => {
-      const { corePackage, dir } = fakeCore(t, ['expressionMutantPlacer'], {
-        [indexPath]: instrumenterFile(result),
-      });
-      const instrumenter = await resolveFromCore(corePackage);
-
-      await assert.rejects(
-        instrumenter.instrument([{ name: 'a.tsx', content: 'x' }]),
-        {
-          message: `${packageName}: the instrumenter 9.9.8 in ${dir} resolved Instrumenter.instrument() to a value whose mutants are missing or have no string fileName and mutatorName.`,
+  it('loads the entry of the instrumenter in its dir also when no node_modules holds that dir, as in a linked checkout', async (t) => {
+    const dir = join(muirTempRoot(t, 'mutator-linked-'), 'instrumenter');
+    muirWriteTree(dir, {
+      'package.json': JSON.stringify({
+        name: '@stryker-mutator/instrumenter',
+        version: '9.9.8',
+        type: 'module',
+        exports: {
+          '.': './dist/src/index.js',
+          './package.json': './package.json',
         },
-      );
+      }),
+      'dist/src/index.js': recordingInstrumenter,
+      'dist/src/transformers/babel-transformer.js':
+        'export function transformBabel() {}',
     });
+    const instrument = await muirMoiraMutatorsCoreInstrument({
+      packageName,
+      dir,
+      version: '9.9.8',
+    });
+
+    await instrument([{ name: 'a.tsx', content: 'x' }], [], []);
+
+    const calls = await callsOf(dir, 'dist/src/index.js');
+    assert.ok(Array.isArray(calls));
+    assert.equal(calls.length, 1);
   });
 
-  it('instruments every file with mutate set, no plugins, no ignorers and no exclusions, through a silent logger', async (t) => {
+  it('instruments every file with mutate set, no plugins, no ignorers and no exclusions, through a silent logger and the default transform', async (t) => {
     const { corePackage, modules } = fakeCore(t, ['expressionMutantPlacer']);
     const instrumenter = await resolveFromCore(corePackage);
 
@@ -404,8 +742,11 @@ describe('resolveFromCore against a fake instrumenter', () => {
     const {
       files,
       options,
-      logger,
-    }: { files?: unknown; options?: unknown; logger?: unknown } = call;
+      args,
+    }: { files?: unknown; options?: unknown; args?: unknown } = call;
+    assert.ok(Array.isArray(args));
+    const argList: readonly unknown[] = args;
+    const [logger, ...rest] = argList;
     assert.ok(typeof logger === 'object' && logger !== null);
 
     assert.deepEqual(files, [{ name: 'a.tsx', content: 'x', mutate: true }]);
@@ -414,6 +755,7 @@ describe('resolveFromCore against a fake instrumenter', () => {
       excludedMutations: [],
       ignorers: [],
     });
+    assert.deepEqual(rest, [undefined, undefined, undefined]);
     assert.deepEqual(
       Object.keys(logger).map((name) => {
         const method: unknown = Reflect.get(logger, name);
@@ -434,6 +776,40 @@ describe('resolveFromCore against a fake instrumenter', () => {
         ['isDebugEnabled', false],
         ['isTraceEnabled', false],
       ],
+    );
+  });
+
+  it('passes the mutators given to transformBabel, after the arguments of the transform', async (t) => {
+    const { corePackage, modules } = fakeCore(t, ['expressionMutantPlacer'], {
+      [transformerPath]:
+        'export const calls = [];\n' +
+        'export function transformBabel(...args) { calls.push(args); return "transformed"; }',
+      [indexPath]:
+        'export const results = [];\n' +
+        'export class Instrumenter {\n' +
+        '  constructor(logger, a, b, transform) { this.transform = transform; }\n' +
+        '  async instrument() {\n' +
+        "    results.push(this.transform('ast', 'collector', 'context'));\n" +
+        '    return { files: [], mutants: [] };\n' +
+        '  }\n' +
+        '}',
+    });
+    const instrumenter = await resolveFromCore(corePackage);
+    const mutators: MuirMoiraMutatorsListedMutator[] = [
+      { name: 'Own', mutate: () => undefined },
+    ];
+
+    await instrumenter.instrument([{ name: 'a.tsx', content: 'x' }], mutators);
+
+    assert.deepEqual(
+      [
+        await callsOf(modules, transformerPath),
+        exported(
+          await import(pathToFileURL(join(modules, indexPath)).href),
+          'results',
+        ),
+      ],
+      [[['ast', 'collector', 'context', mutators]], ['transformed']],
     );
   });
 });

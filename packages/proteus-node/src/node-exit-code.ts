@@ -1,16 +1,16 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeIsProcess } from './node-bindings.ts';
 
 /**
  * Flips the exit status that `process.exitCode = N` sets: a failure becomes a success and a success a failure. Stryker
  * mutates no number, so a CLI's exit status otherwise goes untested.
  */
-export const muirProteusNodeExitCode: MuirMoiraNodeTestMutator = {
+export const muirProteusNodeExitCode: MuirMoiraMutatorsBabelMutator = {
   name: 'MuirProteusNodeExitCode',
   sample: 'process.exitCode = 1;\n',
   *mutate(path, t) {
@@ -32,7 +32,7 @@ export const muirProteusNodeExitCode: MuirMoiraNodeTestMutator = {
 function isExitCode(path: NodePath, target: types.Node): boolean {
   return (
     target.type === 'MemberExpression' &&
-    muirMoiraNodeTestPropertyName(target) === 'exitCode' &&
+    muirMoiraMutatorsPropertyName(target) === 'exitCode' &&
     muirProteusNodeIsProcess(path, target.object)
   );
 }

@@ -7,15 +7,14 @@ To mutate production code, use [`@muirjs/proteus-node`](../proteus-node/README.m
 ## Install
 
 ```sh
-npm install --save-dev @stryker-mutator/core@^10.1.1 @muirjs/proteus-node-test
+npm install --save-dev @stryker-mutator/core@~10.1.1 @muirjs/proteus-node-test
 ```
 
-`@stryker-mutator/core` and `@babel/core` 8.0 (Stryker 10's Babel) are peer dependencies, and `@stryker-mutator/api` is a peer dependency of
-`@muirjs/moira-node-test`, the package it installs its mutators through. The package puts its mutators into the
-instrumenter of the Stryker that runs it. It accepts Stryker 10.1.1 or a later 10.x version and is tested with
-10.1.1. The install checks that the instrumenter makes a mutant of each mutator from a sample, and stops the run with
-an error if it does not. With a version of `@stryker-mutator/instrumenter` outside that range that passes the check,
-it logs a warning that mutants may be missing.
+`@stryker-mutator/core` 10.1 and `@babel/core` 8.0 (Stryker 10's Babel) are peer dependencies. The package installs its
+mutators through `@muirjs/moira-mutators`, which puts them into the instrumenter of each copy of Stryker core that may
+run the process. It is tested with 10.1.1. The install checks that the instrumenter makes a mutant of each mutator
+from a sample, and stops the run with an error if it does not. With a version of `@stryker-mutator/instrumenter`
+other than 10.1.1 that passes the check, it logs a warning that mutants may be missing.
 
 Stryker has no plugin kind for mutators, so this package is not a Stryker plugin; see
 [`@muirjs/proteus-node`](../proteus-node/README.md) for how the install changes the instrumenter's
@@ -24,7 +23,8 @@ list of mutators.
 ## Mutate test files
 
 To check that your tests' assertions can fail, mutate the test files in a configuration of their own. Call
-`muirProteusNodeTestMutators` at the top of it. It replaces Stryker's mutators with the default mutators below:
+`muirProteusNodeTestMutators` at the top of it. It removes Stryker's 17 built-in mutators by name and adds the default
+mutators below; a mutator another package installed stays on, and one without a Muir mark gets a warning:
 
 ```js
 import { muirProteusNodeTestMutators } from '@muirjs/proteus-node-test';
@@ -49,7 +49,7 @@ load, while a failed call stops the run.
 Experimental mutators run only when the options turn them on: all of them with `experimental: true`, or one by its
 name, as in `await muirProteusNodeTestMutators({ experimental: { MuirProteusNodeTestCatchAssert: true } })`. The options work as in
 [`@muirjs/proteus-node`](../proteus-node/README.md#opt-in-and-experimental-mutators); this package
-has no opt-in mutators yet, so `extended: true` turns on nothing.
+has no opt-in mutators yet, so `extended: true` throws an error.
 
 `MuirProteusNodeTestAssertCall` and `MuirProteusNodeTestAssertValidator` find `node:assert` and `node:test` through an ES module
 `import`, not a CommonJS `require`, so a CommonJS test file gets no mutant from them. `MuirProteusNodeTestCatchAssert` finds

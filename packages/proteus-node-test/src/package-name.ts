@@ -1,5 +1,5 @@
-/** The name that starts this package's messages. */
-export const muirProteusNodeTestPackageName = 'proteus-node-test';
+/** The name that starts this package's messages, and marks the mutators it installs. */
+export const muirProteusNodeTestPackageName = '@muirjs/proteus-node-test';
 
-/** The peer range of `@stryker-mutator/core` in this package's package.json, which a test keeps equal. */
-export const muirProteusNodeTestCorePeerRange = '^10.1.1';
+/** The @stryker-mutator/instrumenter version this package was tested with; the install warns on any other. */
+export const muirProteusNodeTestTestedVersion = '10.1.1';

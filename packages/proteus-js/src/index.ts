@@ -1,12 +1,11 @@
 import {
-  muirMoiraNodeTestInstall,
-  muirMoiraNodeTestSelectMutators,
-  type MuirMoiraNodeTestMutatorOptions,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsInstallBabelMutators,
+  type MuirMoiraMutatorsMutatorOptions,
+} from '@muirjs/moira-mutators';
 import { muirProteusJsMutatorSets } from './mutators.ts';
 import {
-  muirProteusJsCorePeerRange,
   muirProteusJsPackageName,
+  muirProteusJsTestedVersion,
 } from './package-name.ts';
 
 /** The mutators that run only when a config turns them on, by name or all with `extended`. */
@@ -17,7 +16,7 @@ export type MuirProteusJsOptInMutator =
 export type MuirProteusJsExperimentalMutator =
   (typeof muirProteusJsMutatorSets.experimental)[number]['name'];
 
-export type MuirProteusJsMutatorOptions = MuirMoiraNodeTestMutatorOptions<
+export type MuirProteusJsMutatorOptions = MuirMoiraMutatorsMutatorOptions<
   MuirProteusJsOptInMutator,
   MuirProteusJsExperimentalMutator
 >;
@@ -29,14 +28,12 @@ export type MuirProteusJsMutatorOptions = MuirMoiraNodeTestMutatorOptions<
 export async function muirProteusJsMutators(
   options?: MuirProteusJsMutatorOptions,
 ): Promise<void> {
-  await muirMoiraNodeTestInstall({
+  await muirMoiraMutatorsInstallBabelMutators({
     packageName: muirProteusJsPackageName,
-    corePeerRange: muirProteusJsCorePeerRange,
-    mode: 'add',
-    mutators: muirMoiraNodeTestSelectMutators(
-      muirProteusJsPackageName,
-      muirProteusJsMutatorSets,
-      options,
-    ),
+    // Stryker disable next-line StringLiteral: only the error for a tier without mutators names it, and this package has both tiers
+    installName: 'muirProteusJsMutators',
+    testedVersion: muirProteusJsTestedVersion,
+    sets: muirProteusJsMutatorSets,
+    options,
   });
 }

@@ -1,14 +1,9 @@
 import type { NodePath } from '@babel/core';
 import {
-  muirMoiraMutatorsCheckNames,
-  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsCorePackageJsons,
   muirMoiraMutatorsFieldOf,
-  muirMoiraMutatorsRegister,
+  muirMoiraMutatorsInstall,
   muirMoiraMutatorsResolveInstrumenter,
-  muirMoiraMutatorsSelectMutators,
-  muirMoiraMutatorsSelfCheck,
-  muirMoiraMutatorsUndoOnThrow,
-  muirMoiraMutatorsWarnUntested,
   type MuirMoiraMutatorsInstrumenter as CoreInstrumenter,
   type MuirMoiraMutatorsMutatorSets,
 } from '@muirjs/moira-mutators';
@@ -26,7 +21,7 @@ export type MuirProteusMswInstrumenter =
 export const muirProteusMswTestedVersion = '10.1.1';
 
 export function muirProteusMswResolveFromCore(
-  corePackage: string = muirMoiraMutatorsCorePackageJson(),
+  corePackage: string = muirMoiraMutatorsCorePackageJsons()[0],
 ): Promise<MuirProteusMswInstrumenter> {
   return muirMoiraMutatorsResolveInstrumenter(
     muirProteusMswPackageName,
@@ -51,45 +46,24 @@ function assertBabelTypes(
 export async function muirProteusMswInstall(
   sets: MuirMoiraMutatorsMutatorSets<MuirProteusMswMutator>,
   options: unknown,
-  resolve: () => Promise<MuirProteusMswInstrumenter>,
+  resolve: () => Promise<readonly MuirProteusMswInstrumenter[]>,
   warn: (message: string) => void = console.warn,
   info: (message: string) => void = console.info,
 ): Promise<void> {
-  const mutators = muirMoiraMutatorsSelectMutators(
-    muirProteusMswPackageName,
-    'muirProteusMswMutators',
+  const mutators = await muirMoiraMutatorsInstall({
+    packageName: muirProteusMswPackageName,
+    installName: 'muirProteusMswMutators',
+    testedVersion: muirProteusMswTestedVersion,
     sets,
     options,
-  );
-  const instrumenter = await resolve();
-
-  muirMoiraMutatorsCheckNames(
-    muirProteusMswPackageName,
-    mutators,
-    instrumenter.allMutators,
-  );
-  await muirMoiraMutatorsUndoOnThrow([instrumenter.allMutators], async () => {
-    muirMoiraMutatorsRegister(
-      muirProteusMswPackageName,
-      instrumenter.allMutators,
-      mutators.map(({ name, mutate }) => ({
-        name,
-        mutate: (path: NodePath) => mutate(path, instrumenter.types),
-      })),
-    );
-    await muirMoiraMutatorsSelfCheck(
-      muirProteusMswPackageName,
-      instrumenter,
-      mutators,
-    );
+    resolve,
+    toListed: ({ name, mutate }, { types }) => ({
+      name,
+      mutate: (path: NodePath) => mutate(path, types),
+    }),
+    warn,
   });
 
-  muirMoiraMutatorsWarnUntested(
-    muirProteusMswPackageName,
-    muirProteusMswTestedVersion,
-    instrumenter,
-    warn,
-  );
   info(startLine(sets, mutators));
 }
 

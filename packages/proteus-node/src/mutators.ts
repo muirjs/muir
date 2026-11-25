@@ -1,7 +1,8 @@
 import {
-  muirMoiraNodeTestAllMutators,
-  type MuirMoiraNodeTestMutatorSets,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsAllMutators,
+  type MuirMoiraMutatorsBabelMutator,
+  type MuirMoiraMutatorsMutatorSets,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeAssertStatement } from './node-assert-statement.ts';
 import { muirProteusNodeAwaitStatement } from './node-await-statement.ts';
 import { muirProteusNodeByteLength } from './node-byte-length.ts';
@@ -22,8 +23,9 @@ export const muirProteusNodeMutatorSets = {
   ],
   optIn: [muirProteusNodeAssertStatement, muirProteusNodeListenerOnce],
   experimental: [muirProteusNodeByteLength, muirProteusNodeCallbackError],
-} satisfies MuirMoiraNodeTestMutatorSets;
+} satisfies MuirMoiraMutatorsMutatorSets<MuirMoiraMutatorsBabelMutator>;
 
-export const muirProteusNodeMutators = muirMoiraNodeTestAllMutators(
-  muirProteusNodeMutatorSets,
-);
+export const muirProteusNodeMutators =
+  muirMoiraMutatorsAllMutators<MuirMoiraMutatorsBabelMutator>(
+    muirProteusNodeMutatorSets,
+  );

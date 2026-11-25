@@ -12,7 +12,7 @@ export default await production(
     incrementalFile:
       'reports/stryker-incremental/@muirjs/proteus-node.src.json',
     ...reportFiles('@muirjs/proteus-node.src'),
-    muirProteusNodeNodeTest: {
+    muirSirynNodeTest: {
       testFiles: ['packages/proteus-node/test/**/*.test.ts'],
       nodeArgs: [source],
     },

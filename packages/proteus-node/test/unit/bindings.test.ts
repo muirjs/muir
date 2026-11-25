@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
 import { muirTestEach } from '@muirjs/madrox-node-test';
-import type { MuirMoiraNodeTestMutator } from '@muirjs/moira-node-test';
+import type { MuirMoiraMutatorsBabelMutator } from '@muirjs/moira-mutators';
 import { muirProteusNodeAssertMethod } from '../../src/bindings.ts';
 import { mutantsOf } from '../mutants-of.fixtures.ts';
 
-const probe: MuirMoiraNodeTestMutator = {
+const probe: MuirMoiraMutatorsBabelMutator = {
   name: 'Probe',
   sample: '',
   *mutate(path, t) {

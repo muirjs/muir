@@ -24,5 +24,9 @@ any JavaScript or TypeScript.
   calls, without installing that package's mutators.
 - The core holds the install, the self-check and the peer range warning, so a new mutator package reuses them instead
   of copying them.
+- 2026-11-25: `@muirjs/moira-node-test` merged into `@muirjs/moira-mutators` (docs/adr ADR-0013), which is now the
+  install layer. The split of the mutator packages stands. Replace mode is gone: `@muirjs/proteus-node-test` removes
+  Stryker's built-ins by name and keeps a mutator installed some other way, with a warning. The peer range warning
+  became a warning for any version other than the tested one.
 
 Evidence: 72ee708, 80a3865, 825855f, 4de3e51, the package READMEs.

@@ -1,5 +1,6 @@
 import { muirMoiraMutatorsSelfCheckFile } from './install.ts';
 import type {
+  MuirMoiraMutatorsCheckedInstrumenter,
   MuirMoiraMutatorsInstrumenter,
   MuirMoiraMutatorsLocated,
 } from './instrumenter.ts';
@@ -47,8 +48,7 @@ export const muirMoiraMutatorsBuiltInSample = `export function sample(a: number,
 
 export async function muirMoiraMutatorsCheckBuiltInsRemoved(
   packageName: string,
-  instrumenter: Pick<MuirMoiraMutatorsLocated, 'dir' | 'version'> &
-    Pick<MuirMoiraMutatorsInstrumenter<unknown>, 'instrument'>,
+  instrumenter: MuirMoiraMutatorsCheckedInstrumenter,
 ): Promise<void> {
   const mutants = await instrumenter.instrument([
     {

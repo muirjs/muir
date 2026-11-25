@@ -95,18 +95,6 @@ jobs:
             config: test-code
             mutated: '!packages/madrox-node-test/test/**/*.test.ts'
             timeout: 30
-          - project: '@muirjs/moira-node-test'
-            slug: moira-node-test
-            root: packages/moira-node-test
-            config: src
-            mutated: '!packages/moira-node-test/src/**/*.ts'
-            timeout: 30
-          - project: '@muirjs/moira-node-test'
-            slug: moira-node-test
-            root: packages/moira-node-test
-            config: test-code
-            mutated: '!packages/moira-node-test/test/**/*.test.ts'
-            timeout: 30
           - project: '@muirjs/proteus-node'
             slug: proteus-node
             root: packages/proteus-node

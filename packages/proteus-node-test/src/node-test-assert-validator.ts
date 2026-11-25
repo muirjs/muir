@@ -1,10 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestImportOf,
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsImportOf,
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import {
   muirProteusNodeAssertMethod,
   muirProteusNodeNodeTest,
@@ -27,37 +27,38 @@ const matcherTypes: ReadonlySet<string> = new Set([
  * `expectFailure` names what the failure must match, throw an unrelated error, so a survivor is a validator that
  * accepts any error.
  */
-export const muirProteusNodeTestAssertValidator: MuirMoiraNodeTestMutator = {
-  name: 'MuirProteusNodeTestAssertValidator',
-  sample:
-    "import assert from 'node:assert/strict';\n\nassert.throws(() => {}, /x/);\n",
-  *mutate(path, t) {
-    const call = path.parent;
+export const muirProteusNodeTestAssertValidator: MuirMoiraMutatorsBabelMutator =
+  {
+    name: 'MuirProteusNodeTestAssertValidator',
+    sample:
+      "import assert from 'node:assert/strict';\n\nassert.throws(() => {}, /x/);\n",
+    *mutate(path, t) {
+      const call = path.parent;
 
-    if (!path.isExpression() || call.type !== 'CallExpression') {
-      return;
-    }
+      if (!path.isExpression() || call.type !== 'CallExpression') {
+        return;
+      }
 
-    const method = checkedBy(path, call);
-    const error = t.newExpression(t.identifier('Error'), [
-      t.stringLiteral(message),
-    ]);
+      const method = checkedBy(path, call);
+      const error = t.newExpression(t.identifier('Error'), [
+        t.stringLiteral(message),
+      ]);
 
-    if (method === 'throws') {
-      yield t.arrowFunctionExpression(
-        [],
-        t.blockStatement([t.throwStatement(error)]),
-      );
-    }
+      if (method === 'throws') {
+        yield t.arrowFunctionExpression(
+          [],
+          t.blockStatement([t.throwStatement(error)]),
+        );
+      }
 
-    if (method === 'rejects') {
-      yield t.callExpression(
-        t.memberExpression(t.identifier('Promise'), t.identifier('reject')),
-        [error],
-      );
-    }
-  },
-};
+      if (method === 'rejects') {
+        yield t.callExpression(
+          t.memberExpression(t.identifier('Promise'), t.identifier('reject')),
+          [error],
+        );
+      }
+    },
+  };
 
 /** How a validator expects the argument at `path` to fail: the assertion's method, or `throws` for a test function. */
 function checkedBy(
@@ -165,33 +166,33 @@ function keyOf(
 function isNodeTest(path: NodePath, callee: types.Node): boolean {
   const test =
     callee.type === 'MemberExpression' &&
-    muirMoiraNodeTestPropertyName(callee) === 'only'
+    muirMoiraMutatorsPropertyName(callee) === 'only'
       ? callee.object
       : callee;
 
   if (test.type === 'Identifier') {
-    return isTestImport(muirMoiraNodeTestImportOf(path, test.name));
+    return isTestImport(muirMoiraMutatorsImportOf(path, test.name));
   }
 
   if (
     test.type !== 'MemberExpression' ||
     test.object.type !== 'Identifier' ||
-    !testFunctions.has(muirMoiraNodeTestPropertyName(test))
+    !testFunctions.has(muirMoiraMutatorsPropertyName(test))
   ) {
     return false;
   }
 
-  const from = muirMoiraNodeTestImportOf(path, test.object.name);
+  const from = muirMoiraMutatorsImportOf(path, test.object.name);
 
   return from === undefined
-    ? muirMoiraNodeTestPropertyName(test) === 'test' &&
+    ? muirMoiraMutatorsPropertyName(test) === 'test' &&
         isTestContext(path, test.object)
     : isTestImport(from);
 }
 
 /** node:test's default or namespace import, or its `it` or `test`, which also carry the other test functions. */
 function isTestImport(
-  from: ReturnType<typeof muirMoiraNodeTestImportOf>,
+  from: ReturnType<typeof muirMoiraMutatorsImportOf>,
 ): boolean {
   return (
     from !== undefined &&

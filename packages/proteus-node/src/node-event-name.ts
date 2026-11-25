@@ -1,10 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestImportOf,
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsImportOf,
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeBuiltin } from './bindings.ts';
 import { muirProteusNodeIsProcess } from './node-bindings.ts';
 
@@ -31,7 +31,7 @@ const streamSwaps: ReadonlyMap<string, readonly string[]> = new Map([
  * Swaps a lifecycle event that a listener waits for with one that fires at another time, such as a child process's
  * `exit`, which can fire while its output is still open, and its `close`.
  */
-export const muirProteusNodeEventName: MuirMoiraNodeTestMutator = {
+export const muirProteusNodeEventName: MuirMoiraMutatorsBabelMutator = {
   name: 'MuirProteusNodeEventName',
   sample: "child.on('exit', () => {});\n",
   *mutate(path, t) {
@@ -69,14 +69,14 @@ function receiverOf(path: NodePath): types.Node | undefined {
   const { callee } = call;
   const listens =
     callee.type === 'MemberExpression' &&
-    listenMethods.has(muirMoiraNodeTestPropertyName(callee));
+    listenMethods.has(muirMoiraMutatorsPropertyName(callee));
 
   return listens && path.key === 0 ? callee.object : undefined;
 }
 
 function isEventsFunction(path: NodePath, callee: types.Node): boolean {
   if (callee.type === 'Identifier') {
-    const from = muirMoiraNodeTestImportOf(path, callee.name);
+    const from = muirMoiraMutatorsImportOf(path, callee.name);
 
     return (
       from !== undefined &&
@@ -92,13 +92,13 @@ function isEventsFunction(path: NodePath, callee: types.Node): boolean {
     return false;
   }
 
-  const from = muirMoiraNodeTestImportOf(path, callee.object.name);
+  const from = muirMoiraMutatorsImportOf(path, callee.object.name);
 
   return (
     from !== undefined &&
     nodeEvents.has(from.source) &&
     (from.imported === undefined || from.imported === 'EventEmitter') &&
-    isOnceOrOn(muirMoiraNodeTestPropertyName(callee))
+    isOnceOrOn(muirMoiraMutatorsPropertyName(callee))
   );
 }
 

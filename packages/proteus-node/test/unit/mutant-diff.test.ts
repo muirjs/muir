@@ -5,12 +5,12 @@ import { describe, it } from 'node:test';
 import { types } from '@babel/core';
 
 import type {
-  MuirMoiraNodeTestInstrumentedMutant,
-  MuirMoiraNodeTestInstrumenter,
-  MuirMoiraNodeTestMutatorLike,
-  MuirMoiraNodeTestMutator,
-  MuirMoiraNodeTestSourceFile,
-} from '@muirjs/moira-node-test';
+  MuirMoiraMutatorsMutant,
+  MuirMoiraMutatorsBabelInstrumenter,
+  MuirMoiraMutatorsStrykerMutator,
+  MuirMoiraMutatorsBabelMutator,
+  MuirMoiraMutatorsSourceFile,
+} from '@muirjs/moira-mutators';
 import {
   muirProteusNodeCorpusDiff,
   muirProteusNodeMutantDiff,
@@ -21,8 +21,9 @@ function mutant(
   line: number,
   column: number,
   replacement = ';',
-): MuirMoiraNodeTestInstrumentedMutant {
+): MuirMoiraMutatorsMutant {
   return {
+    fileName: 'a.ts',
     mutatorName,
     replacement,
     location: { start: { line, column }, end: { line, column: column + 1 } },
@@ -77,23 +78,22 @@ describe('mutantDiff', () => {
 describe('corpusDiff', () => {
   async function setup(names: string[]) {
     const read: string[] = [];
-    const instrumented: [MuirMoiraNodeTestSourceFile[], string[]][] = [];
-    const instrumenter: MuirMoiraNodeTestInstrumenter = {
+    const instrumented: [MuirMoiraMutatorsSourceFile[], string[]][] = [];
+    const instrumenter: MuirMoiraMutatorsBabelInstrumenter = {
       dir: '/stryker/instrumenter',
       version: '10.1.1',
       allMutators: [{ name: 'StringLiteral', *mutate() {} }],
-      setMutators() {},
       types,
       instrument(
         files,
-        mutators: readonly MuirMoiraNodeTestMutatorLike[] = [],
+        mutators: readonly MuirMoiraMutatorsStrykerMutator[] = [],
       ) {
         instrumented.push([[...files], mutators.map(({ name }) => name)]);
 
         return Promise.resolve(mutators.map(({ name }) => mutant(name, 0, 0)));
       },
     };
-    const own: MuirMoiraNodeTestMutator = {
+    const own: MuirMoiraMutatorsBabelMutator = {
       name: 'Own',
       sample: '',
       *mutate() {},
@@ -140,11 +140,10 @@ describe('corpusDiff', () => {
   });
 
   it('lists a mutant that a mutator removes', async () => {
-    const instrumenter: MuirMoiraNodeTestInstrumenter = {
+    const instrumenter: MuirMoiraMutatorsBabelInstrumenter = {
       dir: '/stryker/instrumenter',
       version: '10.1.1',
       allMutators: [],
-      setMutators() {},
       types,
       instrument(_files, mutators = []) {
         return Promise.resolve([

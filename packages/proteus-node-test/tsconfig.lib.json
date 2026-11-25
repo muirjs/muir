@@ -16,7 +16,7 @@
       "path": "../proteus-node/tsconfig.lib.json"
     },
     {
-      "path": "../moira-node-test/tsconfig.lib.json"
+      "path": "../moira-mutators/tsconfig.lib.json"
     },
     {
       "path": "../madrox-node-test/tsconfig.lib.json"

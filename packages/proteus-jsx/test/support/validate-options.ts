@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 import { strykerCoreSchema } from '@stryker-mutator/api/core';
 
-import { muirMoiraMutatorsCorePackageJson } from '../../src/install.ts';
+import { muirMoiraMutatorsCorePackageJsons } from '../../src/install.ts';
 import { exportedFunction } from './exports.ts';
 
 export async function validateOptions(
@@ -13,7 +13,7 @@ export async function validateOptions(
   const config: unknown = await import(
     pathToFileURL(
       join(
-        dirname(muirMoiraMutatorsCorePackageJson()),
+        dirname(muirMoiraMutatorsCorePackageJsons()[0]),
         'dist',
         'src',
         'config',

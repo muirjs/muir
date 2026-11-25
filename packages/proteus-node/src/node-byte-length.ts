@@ -1,9 +1,9 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 
 const bufferResults: ReadonlySet<string | undefined> = new Set([
   'from',
@@ -19,7 +19,7 @@ const utf8: ReadonlySet<string> = new Set(['utf8', 'utf-8']);
  * `'utf8'` encoding counts too. A Buffer's length is its byte length, so the result of a Buffer factory such as
  * `Buffer.from` is left out.
  */
-export const muirProteusNodeByteLength: MuirMoiraNodeTestMutator<'MuirProteusNodeByteLength'> =
+export const muirProteusNodeByteLength: MuirMoiraMutatorsBabelMutator<'MuirProteusNodeByteLength'> =
   {
     name: 'MuirProteusNodeByteLength',
     sample: 'export const size = Buffer.byteLength(text);\n',
@@ -59,5 +59,5 @@ function bufferMethod(
     return undefined;
   }
 
-  return muirMoiraNodeTestPropertyName(callee);
+  return muirMoiraMutatorsPropertyName(callee);
 }

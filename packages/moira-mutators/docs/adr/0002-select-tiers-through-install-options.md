@@ -23,6 +23,9 @@ new tier.
 - A configuration in JavaScript has no type check, so the install throws on values other than `true`, on unknown names
   and on names in the wrong tier.
 - `extended: true` on a package with no opt-in mutators selects nothing.
+- 2026-11-25: with the merge into `@muirjs/moira-mutators` (docs/adr ADR-0013), `extended: true` on a package with no
+  opt-in mutators, and `experimental` on one with no experimental mutators, throw with a message that names the
+  install function.
 
 Evidence: bc5495c, 50a9829, e4ce3b9 (a mutator moving from experimental to opt-in), the "Opt-in and experimental
 mutators" section of `packages/proteus-node/README.md`.

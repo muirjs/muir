@@ -2,10 +2,10 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestCalleeRoot,
-  muirMoiraNodeTestImportOf,
-  muirMoiraNodeTestPropertyName,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsCalleeRoot,
+  muirMoiraMutatorsImportOf,
+  muirMoiraMutatorsPropertyName,
+} from '@muirjs/moira-mutators';
 
 /** The module names that `node:<name>` and the bare `<name>` of each of `names` resolve to. */
 export function muirProteusNodeBuiltin(
@@ -33,17 +33,17 @@ export function muirProteusNodeAssertMethod(
   path: NodePath,
   callee: types.Node,
 ): string | undefined {
-  const root = muirMoiraNodeTestCalleeRoot(callee);
+  const root = muirMoiraMutatorsCalleeRoot(callee);
 
   if (root === undefined) {
     return undefined;
   }
 
-  const from = muirMoiraNodeTestImportOf(path, root.name);
+  const from = muirMoiraMutatorsImportOf(path, root.name);
 
   if (from === undefined) {
     return isTestContextAssert(path, callee, root)
-      ? muirMoiraNodeTestPropertyName(callee)
+      ? muirMoiraMutatorsPropertyName(callee)
       : undefined;
   }
 
@@ -53,7 +53,7 @@ export function muirProteusNodeAssertMethod(
 
   return callee === root
     ? (from.imported ?? 'ok')
-    : muirMoiraNodeTestPropertyName(callee);
+    : muirMoiraMutatorsPropertyName(callee);
 }
 
 function isTestContextAssert(
@@ -65,7 +65,7 @@ function isTestContextAssert(
     callee.type === 'MemberExpression' &&
     callee.object.type === 'MemberExpression' &&
     callee.object.object === root &&
-    muirMoiraNodeTestPropertyName(callee.object) === 'assert' &&
+    muirMoiraMutatorsPropertyName(callee.object) === 'assert' &&
     path.scope.getBinding(root.name)?.kind === 'param'
   );
 }

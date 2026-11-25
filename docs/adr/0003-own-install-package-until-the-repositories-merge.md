@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0013
+---
+
 # Keep this repository's own install package until it merges with lz-node-test
 
 The sibling repository lz-node-test (the StrykerJS runner and mutators for `node:test`) has a package for the same

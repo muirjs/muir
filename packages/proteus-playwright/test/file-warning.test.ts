@@ -22,7 +22,7 @@ describe('the warning for a file that is not Playwright test code, through the r
     await muirProteusPlaywrightInstall(
       muirProteusPlaywrightMutatorSets,
       undefined,
-      muirProteusPlaywrightResolveFromCore,
+      async () => [instrumenter],
       (message) => warnings.push(message),
       () => undefined,
     );

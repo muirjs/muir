@@ -1,9 +1,9 @@
 import type { NodePath, types } from '@babel/core';
 
 import type {
-  MuirMoiraNodeTestBabelTypes,
-  MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  MuirMoiraMutatorsBabelTypes,
+  MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 
 /**
  * Moves an integer literal by 1 each way, as an off-by-one in a limit, an index or a count does. A literal that another
@@ -12,7 +12,7 @@ import type {
  * a real process or run one as another user. The indentation of `JSON.stringify` is left alone too, as a mutant there
  * changes only whitespace.
  */
-export const muirProteusJsNumericLiteral: MuirMoiraNodeTestMutator<'MuirProteusJsNumericLiteral'> =
+export const muirProteusJsNumericLiteral: MuirMoiraMutatorsBabelMutator<'MuirProteusJsNumericLiteral'> =
   {
     name: 'MuirProteusJsNumericLiteral',
     sample: 'const limit = 40;\n',
@@ -152,7 +152,7 @@ function nameOf(node: types.Node): string | undefined {
 
 /** Babel's numericLiteral takes no negative number. */
 function numberNode(
-  t: MuirMoiraNodeTestBabelTypes,
+  t: MuirMoiraMutatorsBabelTypes,
   value: number,
 ): types.Expression {
   return value < 0

@@ -1,10 +1,10 @@
 import type { NodePath } from '@babel/core';
 
 import {
-  muirMoiraNodeTestImportOf,
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsImportOf,
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 import { muirProteusNodeNodeTest as nodeTest } from './bindings.ts';
 import { muirProteusNodeIsNodeAssertCall } from './node-bindings.ts';
 
@@ -19,7 +19,7 @@ const teardowns: ReadonlySet<string | undefined> = new Set([
  * this one is dropped when another mutant shares the statement, as in `await f('x');`. An awaited `node:assert` call is
  * left to MuirProteusNodeAssertStatement.
  */
-export const muirProteusNodeAwaitStatement: MuirMoiraNodeTestMutator = {
+export const muirProteusNodeAwaitStatement: MuirMoiraMutatorsBabelMutator = {
   name: 'MuirProteusNodeAwaitStatement',
   sample: 'await flush();\n',
   *mutate(path, t) {
@@ -75,7 +75,7 @@ function nodeTestCallee(
   const { callee } = call.node;
 
   if (callee.type === 'Identifier') {
-    const from = muirMoiraNodeTestImportOf(call, callee.name);
+    const from = muirMoiraMutatorsImportOf(call, callee.name);
 
     return from !== undefined && nodeTest.has(from.source)
       ? { name: from.imported }
@@ -89,13 +89,13 @@ function nodeTestCallee(
     return undefined;
   }
 
-  const from = muirMoiraNodeTestImportOf(call, callee.object.name);
+  const from = muirMoiraMutatorsImportOf(call, callee.object.name);
   const onNodeTest =
     from === undefined
       ? isTestContext(call, callee.object.name)
       : nodeTest.has(from.source);
 
   return onNodeTest
-    ? { name: muirMoiraNodeTestPropertyName(callee) }
+    ? { name: muirMoiraMutatorsPropertyName(callee) }
     : undefined;
 }

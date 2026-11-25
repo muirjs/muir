@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 
 import { muirMoiraMutatorsBuiltInNames } from '../src/built-ins.ts';
 import {
-  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsCorePackageJsons,
   muirMoiraMutatorsResolveInstrumenter,
 } from '../src/instrumenter.ts';
 
@@ -17,7 +17,7 @@ describe('builtInNames', () => {
     const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
       '@muirjs/moira-mutators',
       acceptTypes,
-      muirMoiraMutatorsCorePackageJson(),
+      muirMoiraMutatorsCorePackageJsons()[0],
     );
 
     assert.deepEqual(

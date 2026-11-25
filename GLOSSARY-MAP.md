@@ -4,8 +4,6 @@
 
 - [Stryker node:test runner](./packages/siryn-node-test/GLOSSARY.md): runs node:test test files for
   StrykerJS, one fresh process per test file, and reports which tests reach which mutants
-- [Mutators](./packages/moira-node-test/GLOSSARY.md): the install layer and the three mutator packages that add
-  mutators to StrykerJS
 - [Table tests](./packages/madrox-node-test/GLOSSARY.md): `muirTestEach` and `muirTestFor`, Vitest-style table tests
   for node:test
 - [OSS evaluation](./e2e/GLOSSARY.md): compares this runner with Stryker's command runner on pinned open-source
@@ -20,9 +18,10 @@
 - [JSX mutators](./packages/proteus-jsx/GLOSSARY.md): mutate the parts of JSX that Playwright tests look
   at, and ignore the mutants such tests cannot see.
 - [Mutator install](./packages/moira-mutators/GLOSSARY.md): puts a mutator package's mutators into
-  Stryker and checks them before a run starts, and holds the swap engine and the site readers that more than one
-  mutator package uses. Covers `packages/test-util-mutator-packages` too, the private test support the mutator
-  packages share (docs/adr ADR-0008).
+  Stryker and checks them before a run starts, and holds the Babel mutator model, the swap engine and the site
+  readers that more than one mutator package uses. Covers the three Node mutator packages, `packages/proteus-node`,
+  `packages/proteus-node-test` and `packages/proteus-js`, and `packages/test-util-mutator-packages`, the private test
+  support the mutator packages share (docs/adr ADR-0008).
 - [Storybook](./packages/shadowcat-storybook/GLOSSARY.md): ignores the mutants in story files that a story test
   cannot kill, reports the spy stubs the mock reset erases, and keeps definition-time stubs through the mock reset.
   Covers `packages/shadowcat-storybook`, `packages/pixie-storybook` and `packages/moira-storybook`, the
@@ -36,22 +35,19 @@
 
 ## Relationships
 
-- **Runner and Mutators**: neither imports the other. Both extend StrykerJS in the same run: the runner as a test
-  runner plugin, the mutators as installed mutators in Stryker's list.
-- **Mutators -> Mutators**: each mutator package depends on `moira-node-test` for the install; the own mark
-  tells replace mode which installed mutators belong to other mutator packages. `proteus-node-test` uses the
-  bindings of `proteus-node`.
-- **Workspace -> Runner and Mutators**: the production configuration and the test-code configuration choose the
+- **Runner and Mutator install**: neither imports the other. Both extend StrykerJS in the same run: the runner as a
+  test runner plugin, the mutators as installed mutators in Stryker's list.
+- **Node mutator packages -> Mutator install**: installed through Mutator install as Babel mutators. A production
+  configuration keeps Stryker's built-in mutators; `proteus-node-test`, for test code, makes a built-in removal.
+  `proteus-node-test` uses the bindings of `proteus-node`.
+- **Workspace -> Runner and Mutator install**: the production configuration and the test-code configuration choose the
   runner and install the mutator packages, loaded through the source condition.
-- **OSS evaluation -> Runner and Mutators**: installs them as packed packages; both sides install the default Node.js
-  mutators, so both mutate the same code into the same mutants.
+- **OSS evaluation -> Runner and Mutator install**: installs them as packed packages; both sides install the default
+  Node.js mutators, so both mutate the same code into the same mutants.
 - **OSS evaluation and Workspace -> StrykerJS reports**: the comparison, the checkpoint, the RuntimeError check and the
   baseline all read Stryker's JSON report; the mutant key follows how Stryker's incremental mode identifies a mutant.
 - **Every context -> Table tests**: the packages' own tests use `muirTestEach` and `muirTestFor`; nothing ships with a
   dependency on them.
-- **Mutators <-> Mutator install**: two install layers for the same job, one for the node:test mutator packages and
-  one for the Playwright, JSX, Storybook and msw mutator packages. Neither imports the other; each marks its own
-  mutators and checks names before a run, so packages of both kinds install into one Stryker run.
 - **JSX mutators -> Mutator install**: the JSX mutators are installed through Mutator install, which gives them
   the Muir mark, the self-check on samples and the name check.
 - **Playwright mutators -> Mutator install**: installed the same way, with opt-in and experimental tiers and

@@ -1,3 +1,5 @@
+import { muirMoiraMutatorsResolveEachCore } from '@muirjs/moira-mutators';
+
 import {
   muirProteusMswInstall,
   muirProteusMswResolveFromCore,
@@ -16,9 +18,7 @@ export type { MuirProteusMswMutatorOptions } from './mutators.ts';
 export async function muirProteusMswMutators(
   options?: MuirProteusMswMutatorOptions,
 ): Promise<void> {
-  await muirProteusMswInstall(
-    muirProteusMswMutatorSets,
-    options,
-    muirProteusMswResolveFromCore,
+  await muirProteusMswInstall(muirProteusMswMutatorSets, options, () =>
+    muirMoiraMutatorsResolveEachCore(muirProteusMswResolveFromCore),
   );
 }

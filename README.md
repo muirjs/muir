@@ -65,10 +65,8 @@ Extensions and utilities:
 
 Core, which the other packages use:
 
-- [`@muirjs/moira-mutators`](packages/moira-mutators/README.md): puts the mutator packages' mutators into
+- [`@muirjs/moira-mutators`](packages/moira-mutators/README.md): puts every mutator package's mutators into
   Stryker's instrumenter.
-- [`@muirjs/moira-node-test`](packages/moira-node-test/README.md): the same for the `node:test` mutator
-  packages.
 - [`@muirjs/moira-storybook`](packages/moira-storybook/README.md): reads Storybook story files and spy stubs.
 
 ## Workspace

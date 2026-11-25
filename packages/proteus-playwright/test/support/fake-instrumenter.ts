@@ -92,10 +92,20 @@ export function fakeInstrumenter({
           .map((listed) => ({
             fileName: muirMoiraMutatorsSelfCheckFile(listed.name),
             mutatorName: listed.name,
+            replacement: '',
+            location: {
+              start: { line: 0, column: 0 },
+              end: { line: 0, column: 1 },
+            },
           })),
         ...leaking.map((mutatorName) => ({
           fileName: muirMoiraMutatorsSelfCheckFile('built-ins'),
           mutatorName,
+          replacement: '',
+          location: {
+            start: { line: 0, column: 0 },
+            end: { line: 0, column: 1 },
+          },
         })),
       ];
     },

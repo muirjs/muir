@@ -1,7 +1,7 @@
 import {
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 
 /** Events that fire at most once, so `on` and `once` behave the same for them. */
 const oneShot: ReadonlySet<string> = new Set([
@@ -31,7 +31,7 @@ const swaps: ReadonlyMap<string | undefined, string> = new Map([
  * every event misses the ones after the first. It matches the method name on any receiver, and leaves events that fire
  * at most once and `once('error')`; `on('error')` still becomes `once('error')`.
  */
-export const muirProteusNodeListenerOnce: MuirMoiraNodeTestMutator<'MuirProteusNodeListenerOnce'> =
+export const muirProteusNodeListenerOnce: MuirMoiraMutatorsBabelMutator<'MuirProteusNodeListenerOnce'> =
   {
     name: 'MuirProteusNodeListenerOnce',
     sample: "emitter.on('data', () => {});\n",
@@ -52,7 +52,7 @@ export const muirProteusNodeListenerOnce: MuirMoiraNodeTestMutator<'MuirProteusN
       }
 
       const [event, listener] = call.node.arguments;
-      const method = muirMoiraNodeTestPropertyName(callee.node);
+      const method = muirMoiraMutatorsPropertyName(callee.node);
       const swap = swaps.get(method);
 
       if (

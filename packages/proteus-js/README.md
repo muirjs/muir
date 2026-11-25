@@ -8,14 +8,13 @@ and 24. It works with any Stryker test runner. For code that uses Node.js APIs, 
 ## Install
 
 ```sh
-npm install --save-dev @stryker-mutator/core@^10.1.1 @muirjs/proteus-js
+npm install --save-dev @stryker-mutator/core@~10.1.1 @muirjs/proteus-js
 ```
 
-`@stryker-mutator/core` and `@babel/core` 8.0 (Stryker 10's Babel) are peer dependencies, and `@stryker-mutator/api` is
-a peer dependency of `@muirjs/moira-node-test`, the package it installs its mutators through. The package adds
-its mutators to the instrumenter of the Stryker that runs it. It accepts Stryker 10.1.1 or a later 10.x version and is
-tested with 10.1.1. The install checks that the instrumenter makes a mutant of each added mutator from a sample, and
-stops the run with an error if it does not.
+`@stryker-mutator/core` 10.1 and `@babel/core` 8.0 (Stryker 10's Babel) are peer dependencies. The package installs its
+mutators through `@muirjs/moira-mutators`, which adds them to the instrumenter of each copy of Stryker core that may
+run the process. It is tested with 10.1.1. The install checks that the instrumenter makes a mutant of each added
+mutator from a sample, and stops the run with an error if it does not.
 
 Stryker has no plugin kind for mutators, so this package is not a Stryker plugin. It changes the instrumenter's list of
 mutators the way `@muirjs/proteus-node` does; its README explains the files involved and the warnings.

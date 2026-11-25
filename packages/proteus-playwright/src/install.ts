@@ -1,18 +1,11 @@
 import {
   muirMoiraMutatorsBuiltInNames,
-  muirMoiraMutatorsCheckBuiltInsRemoved,
-  muirMoiraMutatorsCheckNames,
-  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsCorePackageJsons,
   muirMoiraMutatorsFieldOf,
+  muirMoiraMutatorsInstall,
   muirMoiraMutatorsIsRecord,
   muirMoiraMutatorsIsSelfCheckFile,
-  muirMoiraMutatorsRegister,
-  muirMoiraMutatorsRemoveBuiltIns,
   muirMoiraMutatorsResolveInstrumenter,
-  muirMoiraMutatorsSelectMutators,
-  muirMoiraMutatorsSelfCheck,
-  muirMoiraMutatorsUndoOnThrow,
-  muirMoiraMutatorsWarnUntested,
   type MuirMoiraMutatorsInstrumenter as CoreInstrumenter,
   type MuirMoiraMutatorsMutatorSets,
 } from '@muirjs/moira-mutators';
@@ -55,7 +48,7 @@ export type MuirProteusPlaywrightInstrumenter =
 export const muirProteusPlaywrightTestedVersion = '10.1.1';
 
 export function muirProteusPlaywrightResolveFromCore(
-  corePackage: string = muirMoiraMutatorsCorePackageJson(),
+  corePackage: string = muirMoiraMutatorsCorePackageJsons()[0],
 ): Promise<MuirProteusPlaywrightInstrumenter> {
   return muirMoiraMutatorsResolveInstrumenter(
     muirProteusPlaywrightPackageName,
@@ -84,60 +77,29 @@ export function muirProteusPlaywrightAssertBabelTypes(
 export async function muirProteusPlaywrightInstall(
   sets: MuirMoiraMutatorsMutatorSets<MuirProteusPlaywrightMutator>,
   options: unknown,
-  resolve: () => Promise<MuirProteusPlaywrightInstrumenter>,
+  resolve: () => Promise<readonly MuirProteusPlaywrightInstrumenter[]>,
   warn: (message: string) => void = console.warn,
   info: (message: string) => void = console.info,
 ): Promise<void> {
-  const mutators = muirMoiraMutatorsSelectMutators(
-    muirProteusPlaywrightPackageName,
-    'muirProteusPlaywrightMutators',
+  const mutators = await muirMoiraMutatorsInstall({
+    packageName: muirProteusPlaywrightPackageName,
+    installName: 'muirProteusPlaywrightMutators',
+    testedVersion: muirProteusPlaywrightTestedVersion,
+    removeBuiltIns: true,
     sets,
     options,
-  );
-  const instrumenter = await resolve();
+    resolve,
+    toListed: ({ name, mutate }, { types }) => ({
+      name,
+      mutate: (path: unknown) => {
+        warnAboutProgram(path, warn);
 
-  const { allMutators } = instrumenter;
-
-  muirMoiraMutatorsCheckNames(
-    muirProteusPlaywrightPackageName,
-    mutators,
-    allMutators,
-  );
-  await muirMoiraMutatorsUndoOnThrow([allMutators], async () => {
-    muirMoiraMutatorsRemoveBuiltIns(
-      muirProteusPlaywrightPackageName,
-      instrumenter,
-      warn,
-    );
-    muirMoiraMutatorsRegister(
-      muirProteusPlaywrightPackageName,
-      allMutators,
-      mutators.map(({ name, mutate }) => ({
-        name,
-        mutate: (path: unknown) => {
-          warnAboutProgram(path, warn);
-
-          return mutate(path, instrumenter.types);
-        },
-      })),
-    );
-    await muirMoiraMutatorsSelfCheck(
-      muirProteusPlaywrightPackageName,
-      instrumenter,
-      mutators,
-    );
-    await muirMoiraMutatorsCheckBuiltInsRemoved(
-      muirProteusPlaywrightPackageName,
-      instrumenter,
-    );
+        return mutate(path, types);
+      },
+    }),
+    warn,
   });
 
-  muirMoiraMutatorsWarnUntested(
-    muirProteusPlaywrightPackageName,
-    muirProteusPlaywrightTestedVersion,
-    instrumenter,
-    warn,
-  );
   info(startLine(sets, mutators));
 }
 

@@ -1,10 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
 import {
-  muirMoiraNodeTestCalleeRoot,
-  muirMoiraNodeTestPropertyName,
-  type MuirMoiraNodeTestMutator,
-} from '@muirjs/moira-node-test';
+  muirMoiraMutatorsCalleeRoot,
+  muirMoiraMutatorsPropertyName,
+  type MuirMoiraMutatorsBabelMutator,
+} from '@muirjs/moira-mutators';
 
 /**
  * Empties the `try` block of a `try`/`catch` whose `catch` asserts and does not throw, so a survivor is a test that
@@ -13,7 +13,7 @@ import {
  * method other than `fail` of a callee rooted at `assert` or of an `assert` member, and a call of `assert` itself.
  * Functions inside the `catch` are not searched. A `try` block that ends in a `throw` or a `fail` is left alone.
  */
-export const muirProteusNodeTestCatchAssert: MuirMoiraNodeTestMutator<'MuirProteusNodeTestCatchAssert'> =
+export const muirProteusNodeTestCatchAssert: MuirMoiraMutatorsBabelMutator<'MuirProteusNodeTestCatchAssert'> =
   {
     name: 'MuirProteusNodeTestCatchAssert',
     sample:
@@ -87,11 +87,11 @@ function assertMethod(callee: types.Node): string | undefined {
     return callee.name === 'assert' ? callee.name : undefined;
   }
 
-  const method = muirMoiraNodeTestPropertyName(callee);
+  const method = muirMoiraMutatorsPropertyName(callee);
   const onAssert =
-    muirMoiraNodeTestCalleeRoot(callee)?.name === 'assert' ||
+    muirMoiraMutatorsCalleeRoot(callee)?.name === 'assert' ||
     (callee.type === 'MemberExpression' &&
-      muirMoiraNodeTestPropertyName(callee.object) === 'assert');
+      muirMoiraMutatorsPropertyName(callee.object) === 'assert');
 
   return onAssert ? method : undefined;
 }

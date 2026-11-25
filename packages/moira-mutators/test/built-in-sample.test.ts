@@ -7,7 +7,7 @@ import {
   muirMoiraMutatorsBuiltInSample,
 } from '../src/built-ins.ts';
 import {
-  muirMoiraMutatorsCorePackageJson,
+  muirMoiraMutatorsCorePackageJsons,
   muirMoiraMutatorsResolveInstrumenter,
 } from '../src/instrumenter.ts';
 
@@ -20,7 +20,7 @@ describe('builtInSample', () => {
     const instrumenter = await muirMoiraMutatorsResolveInstrumenter(
       '@muirjs/moira-mutators',
       acceptTypes,
-      muirMoiraMutatorsCorePackageJson(),
+      muirMoiraMutatorsCorePackageJsons()[0],
     );
 
     const mutants = await instrumenter.instrument([

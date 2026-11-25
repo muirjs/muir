@@ -77,7 +77,7 @@ async function installedMutate(warn: (message: string) => void) {
   await muirProteusPlaywrightInstall(
     sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
     undefined,
-    async () => instrumenter,
+    async () => [instrumenter],
     warn,
     () => undefined,
   );
@@ -184,7 +184,7 @@ describe('install', () => {
     await muirProteusPlaywrightInstall(
       sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       () => undefined,
       () => undefined,
     );
@@ -210,7 +210,7 @@ describe('install', () => {
     await muirProteusPlaywrightInstall(
       { defaults: [echo], optIn: [], experimental: [] },
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       () => undefined,
       () => undefined,
     );
@@ -234,7 +234,7 @@ describe('install', () => {
       muirProteusPlaywrightInstall(
         sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         () => undefined,
         () => undefined,
       ),
@@ -261,7 +261,7 @@ describe('install', () => {
       muirProteusPlaywrightInstall(
         sets(mutatorNames),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         () => undefined,
         () => undefined,
       );
@@ -284,7 +284,7 @@ describe('install', () => {
     await muirProteusPlaywrightInstall(
       sets(['MuirProteusPlaywrightOne', 'MuirProteusPlaywrightTwo']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       () => undefined,
       (message) => lines.push(message),
     );
@@ -306,7 +306,7 @@ describe('install', () => {
         ['MuirProteusPlaywrightFour'],
       ),
       { MuirProteusPlaywrightThree: true, experimental: true },
-      async () => instrumenter,
+      async () => [instrumenter],
       () => undefined,
       (message) => lines.push(message),
     );
@@ -329,7 +329,7 @@ describe('install', () => {
         muirProteusPlaywrightInstall(
           sets(['MuirProteusPlaywrightOne']),
           undefined,
-          async () => instrumenter,
+          async () => [instrumenter],
           () => undefined,
           () => undefined,
         ),
@@ -350,7 +350,7 @@ describe('install', () => {
       muirProteusPlaywrightInstall(
         sets(['MuirProteusPlaywrightOne']),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         () => undefined,
         (message) => lines.push(message),
       ),
@@ -370,7 +370,7 @@ describe('install', () => {
     await muirProteusPlaywrightInstall(
       sets(['MuirProteusPlaywrightOne']),
       undefined,
-      async () => instrumenter,
+      async () => [instrumenter],
       (message) => warnings.push(message),
       () => undefined,
     );
@@ -390,7 +390,7 @@ describe('install', () => {
       muirProteusPlaywrightInstall(
         sets(['MuirProteusPlaywrightOne']),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         () => undefined,
         () => undefined,
       ),
@@ -416,7 +416,7 @@ describe('install', () => {
           'MuirProteusPlaywrightThree',
         ]),
         undefined,
-        async () => instrumenter,
+        async () => [instrumenter],
         () => undefined,
         () => undefined,
       ),

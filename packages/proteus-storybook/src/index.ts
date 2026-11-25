@@ -1,3 +1,5 @@
+import { muirMoiraMutatorsResolveEachCore } from '@muirjs/moira-mutators';
+
 import {
   muirProteusStorybookInstall,
   muirProteusStorybookResolveFromCore,
@@ -19,6 +21,6 @@ export async function muirProteusStorybookMutators(
   await muirProteusStorybookInstall(
     muirProteusStorybookMutatorSets,
     options,
-    muirProteusStorybookResolveFromCore,
+    () => muirMoiraMutatorsResolveEachCore(muirProteusStorybookResolveFromCore),
   );
 }
