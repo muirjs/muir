@@ -34,7 +34,11 @@ describe('LzNodeListenerOnce', () => {
     ['a once of a request', "server.once('request', handler);", 'on'],
     ['the on of a member', "fastify.server.on('upgrade', f);", 'once'],
     ["the process's on", "process.on('SIGINT', f);", 'once'],
-    ['an on whose value is used', "const self = emitter.on('data', f);", 'once'],
+    [
+      'an on whose value is used',
+      "const self = emitter.on('data', f);",
+      'once',
+    ],
     ['an on with more arguments', "emitter.on('data', f, extra);", 'once'],
     ['an on with a type argument', "emitter.on<string>('data', f);", 'once'],
   ])('swaps %s', async (_title, source, expected) => {

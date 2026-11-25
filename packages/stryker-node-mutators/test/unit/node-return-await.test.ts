@@ -17,14 +17,22 @@ describe('LzNodeReturnAwait', () => {
       'an arrow function',
       'const read = async () => {\n  try {\n    return await load();\n  } finally {\n    done();\n  }\n};',
     ],
-    ['a block nested in the try block', guarded('if (ready) {\n      return await load();\n    }')],
+    [
+      'a block nested in the try block',
+      guarded('if (ready) {\n      return await load();\n    }'),
+    ],
     [
       'a function, through a catch block with no finally block',
-      guarded('try {\n      check();\n    } catch {\n      return await load();\n    }'),
+      guarded(
+        'try {\n      check();\n    } catch {\n      return await load();\n    }',
+      ),
     ],
-  ])('returns the promise unawaited from the try block of %s', async (_title, source) => {
-    assert.deepEqual(await mutantsOf(nodeReturnAwait, source), ['load()']);
-  });
+  ])(
+    'returns the promise unawaited from the try block of %s',
+    async (_title, source) => {
+      assert.deepEqual(await mutantsOf(nodeReturnAwait, source), ['load()']);
+    },
+  );
 
   it('returns the promise unawaited from a catch block that a finally block follows', async () => {
     const source =
@@ -34,7 +42,10 @@ describe('LzNodeReturnAwait', () => {
   });
 
   lzTestEach([
-    ['a return await outside a try', 'export async function read() {\n  return await load();\n}'],
+    [
+      'a return await outside a try',
+      'export async function read() {\n  return await load();\n}',
+    ],
     [
       'a return await in a catch block with no finally block',
       'export async function read() {\n  try {\n    return 1;\n  } catch {\n    return await load();\n  }\n}',
@@ -52,7 +63,10 @@ describe('LzNodeReturnAwait', () => {
       'export async function* read() {\n  try {\n    return await load();\n  } catch {\n    return 0;\n  }\n}',
     ],
     ['an await that is not returned', guarded('await load();\n    return 1;')],
-    ['an await that is part of the returned value', guarded('return (await load()).value;')],
+    [
+      'an await that is part of the returned value',
+      guarded('return (await load()).value;'),
+    ],
   ])('leaves %s alone', async (_title, source) => {
     assert.deepEqual(await mutantsOf(nodeReturnAwait, source), []);
   });

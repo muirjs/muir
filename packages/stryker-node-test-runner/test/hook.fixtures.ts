@@ -1,12 +1,25 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 
 import { hookUrl, reporterArg } from './runner.fixtures.ts';
-import { envNames, lzParseRecord, lzParseRecordName, type LzRecordName, type ProcessRecord } from '../src/record.ts';
+import {
+  envNames,
+  lzParseRecord,
+  lzParseRecordName,
+  type LzRecordName,
+  type ProcessRecord,
+} from '../src/record.ts';
 
 export function tempDir(t: TestContext): string {
   const dir = realpathSync.native(mkdtempSync(join(tmpdir(), 'hook-test-')));
@@ -19,8 +32,14 @@ export function tempDir(t: TestContext): string {
 
 /** It keeps Stryker's active mutant, so a mutant in hook.ts reaches the process that loads it. */
 export function hookedEnv(env: Record<string, string>): NodeJS.ProcessEnv {
-  const dropped: string[] = ['NODE_OPTIONS', 'NODE_TEST_CONTEXT', ...Object.values(envNames)];
-  const base = Object.fromEntries(Object.entries(process.env).filter(([key]) => !dropped.includes(key)));
+  const dropped: string[] = [
+    'NODE_OPTIONS',
+    'NODE_TEST_CONTEXT',
+    ...Object.values(envNames),
+  ];
+  const base = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !dropped.includes(key)),
+  );
 
   return { ...base, ...env };
 }
@@ -29,11 +48,15 @@ export async function runWithHook(
   args: string[],
   env: Record<string, string>,
 ): Promise<{ code: number | null; pid: number }> {
-  const child = spawn(process.execPath, ['--import', hookUrl, reporterArg, ...args], {
-    env: hookedEnv(env),
-    stdio: 'ignore',
-    windowsHide: true,
-  });
+  const child = spawn(
+    process.execPath,
+    ['--import', hookUrl, reporterArg, ...args],
+    {
+      env: hookedEnv(env),
+      stdio: 'ignore',
+      windowsHide: true,
+    },
+  );
 
   await once(child, 'close');
 
@@ -46,7 +69,10 @@ export async function runWithHook(
 
 export function readRecords(outDir: string): Record<string, ProcessRecord> {
   return Object.fromEntries(
-    readdirSync(outDir).map((name) => [name, lzParseRecord(readFileSync(join(outDir, name), 'utf8'))]),
+    readdirSync(outDir).map((name) => [
+      name,
+      lzParseRecord(readFileSync(join(outDir, name), 'utf8')),
+    ]),
   );
 }
 
@@ -71,7 +97,12 @@ export async function runTestFile(
     dir = tempDir(t),
     env = {},
     args = [],
-  }: { name?: string; dir?: string; env?: Record<string, string>; args?: string[] } = {},
+  }: {
+    name?: string;
+    dir?: string;
+    env?: Record<string, string>;
+    args?: string[];
+  } = {},
 ) {
   const outDir = tempDir(t);
   const testFile = join(dir, name);

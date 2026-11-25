@@ -15,12 +15,17 @@ const removeWaitMs = 2_000;
 export function ownDir(
   dir: string,
   owned: (path: string) => boolean = isOwn,
-  makeDir: (path: string, options: { recursive: true; mode: number }) => unknown = mkdirSync,
+  makeDir: (
+    path: string,
+    options: { recursive: true; mode: number },
+  ) => unknown = mkdirSync,
 ): void {
   makeDir(dir, { recursive: true, mode: 0o700 });
 
   if (!owned(dir)) {
-    throw new Error(`"${dir}" belongs to another user; remove it, or run Stryker as that user.`);
+    throw new Error(
+      `"${dir}" belongs to another user; remove it, or run Stryker as that user.`,
+    );
   }
 }
 
@@ -36,7 +41,8 @@ export async function removeDir(
   {
     waitMs = removeWaitMs,
     // Stryker disable next-line LzJsNumericLiteral: tuning values, not a contract a test should pin
-    remove = (path: string) => rm(path, { recursive: true, maxRetries: 10, retryDelay: 20 }),
+    remove = (path: string) =>
+      rm(path, { recursive: true, maxRetries: 10, retryDelay: 20 }),
   } = {},
 ): Promise<void> {
   const warning = await Promise.race([
@@ -60,14 +66,19 @@ export async function removeDir(
 /** Whether a process with this id runs; one that exists but may not be signalled runs too. */
 export function isRunning(
   pid: number,
-  kill: (pid: number, signal: 0) => void = (target, signal) => process.kill(target, signal),
+  kill: (pid: number, signal: 0) => void = (target, signal) =>
+    process.kill(target, signal),
 ): boolean {
   try {
     kill(pid, 0);
 
     return true;
   } catch (error) {
-    return !(error instanceof Error && 'code' in error && error.code === 'ESRCH');
+    return !(
+      error instanceof Error &&
+      'code' in error &&
+      error.code === 'ESRCH'
+    );
   }
 }
 
@@ -84,11 +95,21 @@ export function isOwn(
 }
 
 const lzDirBase = 'lz-node-test-';
-const lzDirKinds = { run: '', cache: 'cache-', dryRun: 'dry-run-', copy: 'copy-' };
-const lzDirPattern = new RegExp(`^${lzDirBase}(?:${Object.values(lzDirKinds).join('|')})(\\d+)-`);
+const lzDirKinds = {
+  run: '',
+  cache: 'cache-',
+  dryRun: 'dry-run-',
+  copy: 'copy-',
+};
+const lzDirPattern = new RegExp(
+  `^${lzDirBase}(?:${Object.values(lzDirKinds).join('|')})(\\d+)-`,
+);
 
 /** The start of the name of a directory that the runners of process `pid` make, which `removeLeftDirs` recognizes. */
-export function lzDirPrefix(kind: keyof typeof lzDirKinds, pid: number): string {
+export function lzDirPrefix(
+  kind: keyof typeof lzDirKinds,
+  pid: number,
+): string {
   return `${lzDirBase}${lzDirKinds[kind]}${pid}-`;
 }
 

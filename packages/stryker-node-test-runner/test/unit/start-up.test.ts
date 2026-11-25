@@ -12,7 +12,11 @@ import { lzOutsideMs, type RecordedTest } from '../../src/record.ts';
 import { lzToTestResults } from '../../src/runner.ts';
 import { lzDeadlineMs, lzStartUpOf, lzStartUps } from '../../src/start-up.ts';
 
-const passed = (id: string, timeSpentMs: number): RecordedTest => ({ id, status: 'passed', timeSpentMs });
+const passed = (id: string, timeSpentMs: number): RecordedTest => ({
+  id,
+  status: 'passed',
+  timeSpentMs,
+});
 
 function setup(t: TestContext) {
   const parent = mkdtempSync(join(tmpdir(), 'start-ups-'));
@@ -36,23 +40,40 @@ describe('lzStartUps', () => {
     dryRun.record('a.test.ts', { startUpMs: 401, tests: 5 });
     dryRun.record('b.test.ts', { startUpMs: 201, tests: 2 });
 
-    const filter = ['a.test.ts > x', 'a.test.ts > x > y', 'a.test.ts > z', 'b.test.ts > w'];
+    const filter = [
+      'a.test.ts > x',
+      'a.test.ts > x > y',
+      'a.test.ts > z',
+      'b.test.ts > w',
+    ];
 
-    assert.equal(runner().deadline(['a.test.ts', 'b.test.ts'], filter, 10_000), 10_000 - 1.5 * 2 * 400);
+    assert.equal(
+      runner().deadline(['a.test.ts', 'b.test.ts'], filter, 10_000),
+      10_000 - 1.5 * 2 * 400,
+    );
     assert.deepEqual(warnings, []);
   });
 
   lzTestFor<readonly [string, readonly string[] | undefined]>([
     ['no test filter', undefined],
-    ["a test filter of whole files, as Stryker's --testFiles gives a static mutant", ['a.test.ts', 'b.test.ts']],
-  ])("counts every test of a file's dry run as covering under %s", ([, filter], t) => {
-    const { runner } = setup(t);
-    const dryRun = runner();
-    dryRun.record('a.test.ts', { startUpMs: 401, tests: 5 });
-    dryRun.record('b.test.ts', { startUpMs: 201, tests: 2 });
+    [
+      "a test filter of whole files, as Stryker's --testFiles gives a static mutant",
+      ['a.test.ts', 'b.test.ts'],
+    ],
+  ])(
+    "counts every test of a file's dry run as covering under %s",
+    ([, filter], t) => {
+      const { runner } = setup(t);
+      const dryRun = runner();
+      dryRun.record('a.test.ts', { startUpMs: 401, tests: 5 });
+      dryRun.record('b.test.ts', { startUpMs: 201, tests: 2 });
 
-    assert.equal(runner().deadline(['a.test.ts', 'b.test.ts'], filter, 10_000), 10_000 - 1.5 * (4 * 400 + 200));
-  });
+      assert.equal(
+        runner().deadline(['a.test.ts', 'b.test.ts'], filter, 10_000),
+        10_000 - 1.5 * (4 * 400 + 200),
+      );
+    },
+  );
 
   it('takes a recorded start-up of 0 ms as a record, without warning', (t) => {
     const { warnings, runner } = setup(t);
@@ -60,7 +81,10 @@ describe('lzStartUps', () => {
     dryRun.record('a.test.ts', { startUpMs: 0, tests: 3 });
     dryRun.record('b.test.ts', { startUpMs: 201, tests: 2 });
 
-    assert.equal(runner().deadline(['a.test.ts', 'b.test.ts'], undefined, 10_000), 10_000 - 1.5 * 200);
+    assert.equal(
+      runner().deadline(['a.test.ts', 'b.test.ts'], undefined, 10_000),
+      10_000 - 1.5 * 200,
+    );
     assert.deepEqual(warnings, []);
   });
 
@@ -71,29 +95,37 @@ describe('lzStartUps', () => {
     ['a record with a negative start-up', '{"startUpMs":-401,"tests":5}'],
     ['a record with a test count of -1', '{"startUpMs":401,"tests":-1}'],
     ['a record with a fractional test count', '{"startUpMs":401,"tests":2.5}'],
-  ])("keeps Stryker's timeout for a file with %s, warning about it once", ([, stored], t) => {
-    const { dir, warnings, runner } = setup(t);
-    const dryRun = runner();
-    dryRun.record('b.test.ts', { startUpMs: 201, tests: 2 });
+  ])(
+    "keeps Stryker's timeout for a file with %s, warning about it once",
+    ([, stored], t) => {
+      const { dir, warnings, runner } = setup(t);
+      const dryRun = runner();
+      dryRun.record('b.test.ts', { startUpMs: 201, tests: 2 });
 
-    if (stored !== undefined) {
-      dryRun.record('a.test.ts', { startUpMs: 0, tests: 0 });
-      overwriteRecords(dir, 'a.test.ts', stored);
-    }
+      if (stored !== undefined) {
+        dryRun.record('a.test.ts', { startUpMs: 0, tests: 0 });
+        overwriteRecords(dir, 'a.test.ts', stored);
+      }
 
-    const mutantRuns = runner();
-    const filter = ['a.test.ts > x', 'a.test.ts > z', 'b.test.ts > w', 'b.test.ts > v'];
+      const mutantRuns = runner();
+      const filter = [
+        'a.test.ts > x',
+        'a.test.ts > z',
+        'b.test.ts > w',
+        'b.test.ts > v',
+      ];
 
-    assert.deepEqual(
-      [
-        mutantRuns.deadline(['a.test.ts', 'b.test.ts'], filter, 10_000),
-        mutantRuns.deadline(['a.test.ts'], filter, 10_000),
-      ],
-      [10_000 - 1.5 * 200, 10_000],
-    );
-    assert.equal(warnings.length, 1);
-    assert.match(warnings[0] ?? '', /"a\.test\.ts"/);
-  });
+      assert.deepEqual(
+        [
+          mutantRuns.deadline(['a.test.ts', 'b.test.ts'], filter, 10_000),
+          mutantRuns.deadline(['a.test.ts'], filter, 10_000),
+        ],
+        [10_000 - 1.5 * 200, 10_000],
+      );
+      assert.equal(warnings.length, 1);
+      assert.match(warnings[0] ?? '', /"a\.test\.ts"/);
+    },
+  );
 });
 
 function overwriteRecords(dir: string, file: string, content: string): void {
@@ -105,23 +137,36 @@ function overwriteRecords(dir: string, file: string, content: string): void {
 
 describe('lzStartUpOf', () => {
   it("keeps a file's run time outside its outermost tests, in whole milliseconds, and how many tests it has", () => {
-    const tests = [passed('a > x', 100), passed('a > x > y', 60), passed('a > z', 50)];
+    const tests = [
+      passed('a > x', 100),
+      passed('a > x > y', 60),
+      passed('a > z', 50),
+    ];
 
     assert.deepEqual(lzStartUpOf(tests, 560.9), { startUpMs: 410, tests: 3 });
   });
 
   it('keeps no start-up for a file whose outermost tests took longer than its run', () => {
-    assert.deepEqual(lzStartUpOf([passed('a > x', 100), passed('a > z', 50)], 120), { startUpMs: 0, tests: 2 });
+    assert.deepEqual(
+      lzStartUpOf([passed('a > x', 100), passed('a > z', 50)], 120),
+      { startUpMs: 0, tests: 2 },
+    );
   });
 });
 
 describe('lzDeadlineMs', () => {
   it("keeps Stryker's timeout for a file with one covering test", () => {
-    assert.equal(lzDeadlineMs(10_000, 1.5, [{ covering: 1, startUpMs: 400 }]), 10_000);
+    assert.equal(
+      lzDeadlineMs(10_000, 1.5, [{ covering: 1, startUpMs: 400 }]),
+      10_000,
+    );
   });
 
   it("takes timeoutFactor times the start-up, less a millisecond, off Stryker's timeout for each covering test after a file's first", () => {
-    assert.equal(lzDeadlineMs(10_000, 1.5, [{ covering: 3, startUpMs: 401 }]), 10_000 - 1.5 * 2 * 400);
+    assert.equal(
+      lzDeadlineMs(10_000, 1.5, [{ covering: 3, startUpMs: 401 }]),
+      10_000 - 1.5 * 2 * 400,
+    );
   });
 
   it('adds up what each file of the run takes off', () => {
@@ -145,12 +190,17 @@ describe('lzDeadlineMs', () => {
     const timeoutFactor = 1.5;
     const otherMs = 5_000;
     const file = (name: string) => {
-      const tests = Array.from({ length: 1 + Math.floor(random() * 40) }, (_, index) =>
-        passed(`${name} > ${index}`, random() * 3),
+      const tests = Array.from(
+        { length: 1 + Math.floor(random() * 40) },
+        (_, index) => passed(`${name} > ${index}`, random() * 3),
       );
-      const fileMs = tests.reduce((sum, test) => sum + test.timeSpentMs, 0) + random() * 900;
+      const fileMs =
+        tests.reduce((sum, test) => sum + test.timeSpentMs, 0) + random() * 900;
       const covering = tests.slice(0, 1 + Math.floor(random() * tests.length));
-      const reported = lzToTestResults(name, tests, fileMs).slice(0, covering.length);
+      const reported = lzToTestResults(name, tests, fileMs).slice(
+        0,
+        covering.length,
+      );
 
       return {
         startUp: lzStartUpOf(tests, fileMs),
@@ -163,24 +213,32 @@ describe('lzDeadlineMs', () => {
 
     const shortRuns = Array.from({ length: 2_000 }, (_, run) => {
       const files = [file('a'), file('b')];
-      const timeout = timeoutFactor * files.reduce((sum, { summedMs }) => sum + summedMs, 0) + otherMs;
+      const timeout =
+        timeoutFactor * files.reduce((sum, { summedMs }) => sum + summedMs, 0) +
+        otherMs;
       // Stryker rounds each test's time, which can leave its own share of a file below the exact need.
       const once =
         timeoutFactor *
           files.reduce(
-            (sum, { coveringMs, exactStartUpMs, summedMs }) => sum + Math.min(summedMs, coveringMs + exactStartUpMs),
+            (sum, { coveringMs, exactStartUpMs, summedMs }) =>
+              sum + Math.min(summedMs, coveringMs + exactStartUpMs),
             0,
           ) +
         otherMs;
       const deadline = lzDeadlineMs(
         timeout,
         timeoutFactor,
-        files.map(({ covering, startUp }) => ({ covering, startUpMs: startUp.startUpMs })),
+        files.map(({ covering, startUp }) => ({
+          covering,
+          startUpMs: startUp.startUpMs,
+        })),
       );
 
       return deadline >= once
         ? []
-        : [`run ${run}: ${deadline} ms < ${once} ms; ${JSON.stringify(files)}, timeout ${timeout}`];
+        : [
+            `run ${run}: ${deadline} ms < ${once} ms; ${JSON.stringify(files)}, timeout ${timeout}`,
+          ];
     }).flat();
 
     assert.deepEqual(shortRuns, []);
@@ -191,13 +249,19 @@ describe('lzDeadlineMs', () => {
   });
 
   it("keeps Stryker's timeout for a file without tests, which Stryker's timeout has no time for", () => {
-    assert.equal(lzDeadlineMs(10_000, 1.5, [{ covering: 0, startUpMs: 401 }]), 10_000);
+    assert.equal(
+      lzDeadlineMs(10_000, 1.5, [{ covering: 0, startUpMs: 401 }]),
+      10_000,
+    );
   });
 
   lzTestFor<readonly [number]>([[0], [1]])(
     'takes nothing off for a file whose start-up is %d ms, below the millisecond kept for rounding',
     ([startUpMs]) => {
-      assert.equal(lzDeadlineMs(10_000, 1.5, [{ covering: 3, startUpMs }]), 10_000);
+      assert.equal(
+        lzDeadlineMs(10_000, 1.5, [{ covering: 3, startUpMs }]),
+        10_000,
+      );
     },
   );
 });

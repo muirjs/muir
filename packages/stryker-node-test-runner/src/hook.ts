@@ -16,10 +16,12 @@ const watchdog = `Promise.all([
 
 // Exported so the tests can call them in their own process: those of the test files they start report no coverage.
 // process.exit(undefined) sets the exit code to undefined, so it would exit with 0.
-// eslint-disable-next-line n/no-process-exit -- the hook ends a test file's process once its tests are done, though something may hold it open
-export const exit: HookDependencies['exit'] = (code) => process.exit(code ?? process.exitCode);
+export const exit: HookDependencies['exit'] = (code) =>
+  // eslint-disable-next-line n/no-process-exit -- the hook ends a test file's process once its tests are done, though something may hold it open
+  process.exit(code ?? process.exitCode);
 
-export const activeResources: HookDependencies['activeResources'] = () => process.getActiveResourcesInfo();
+export const activeResources: HookDependencies['activeResources'] = () =>
+  process.getActiveResourcesInfo();
 
 export const later: HookDependencies['later'] = (callback, ms) => {
   setTimeout(callback, ms).unref();
@@ -29,7 +31,9 @@ export const lzEvery: HookDependencies['every'] = (callback, ms) => {
   setInterval(callback, ms).unref();
 };
 
-export function lzSignals(platform: NodeJS.Platform): HookDependencies['signals'] {
+export function lzSignals(
+  platform: NodeJS.Platform,
+): HookDependencies['signals'] {
   return platform === 'win32'
     ? undefined
     : {
@@ -37,8 +41,14 @@ export function lzSignals(platform: NodeJS.Platform): HookDependencies['signals'
         off: (signal, listener) => process.off(signal, listener),
         listenerCount: (signal) => process.listenerCount(signal),
         signalExitEmitters: () => {
-          const version4: unknown = Reflect.get(globalThis, Symbol.for('signal-exit emitter'));
-          const version3: unknown = Reflect.get(process, '__signal_exit_emitter__');
+          const version4: unknown = Reflect.get(
+            globalThis,
+            Symbol.for('signal-exit emitter'),
+          );
+          const version3: unknown = Reflect.get(
+            process,
+            '__signal_exit_emitter__',
+          );
 
           return [version4, version3];
         },
@@ -74,7 +84,11 @@ install({
   canWatchMemory: isMainThread && workersAllowed(process.permission),
   watchMemory: (options) => {
     // Stryker disable next-line ArrayDeclaration: equivalent, as hook-core always passes execArgv: []
-    const worker = new Worker(watchdog, { eval: true, ...options, execArgv: [...options.execArgv] });
+    const worker = new Worker(watchdog, {
+      eval: true,
+      ...options,
+      execArgv: [...options.execArgv],
+    });
     // Listening keeps a watchdog error from ending the process; the line reaches the runner's stderr tail.
     worker.on('error', (error: unknown) => {
       const message = error instanceof Error ? error.message : inspect(error);

@@ -8,7 +8,10 @@ import { lzPackageName } from '../src/package-name.ts';
 
 export const strict = "import assert from 'node:assert/strict';\n";
 
-export async function instrumentWith(mutator: LzMutator, source: string): Promise<readonly LzInstrumentedMutant[]> {
+export async function instrumentWith(
+  mutator: LzMutator,
+  source: string,
+): Promise<readonly LzInstrumentedMutant[]> {
   const instrumenter = await lzResolveFromCore();
 
   return instrumenter.instrument(
@@ -17,7 +20,10 @@ export async function instrumentWith(mutator: LzMutator, source: string): Promis
   );
 }
 
-export async function mutantsOf(mutator: LzMutator, source: string): Promise<string[]> {
+export async function mutantsOf(
+  mutator: LzMutator,
+  source: string,
+): Promise<string[]> {
   const mutants = await instrumentWith(mutator, source);
 
   return mutants.map(({ replacement }) => replacement.replace(/\s+/g, ' '));

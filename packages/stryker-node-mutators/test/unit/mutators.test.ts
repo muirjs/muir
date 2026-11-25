@@ -7,7 +7,13 @@ describe('nodeMutatorSets', () => {
   it('names the default mutators', () => {
     assert.deepEqual(
       nodeMutatorSets.defaults.map(({ name }) => name),
-      ['LzNodeTimerDelay', 'LzNodeEventName', 'LzNodeAwaitStatement', 'LzNodeReturnAwait', 'LzNodeExitCode'],
+      [
+        'LzNodeTimerDelay',
+        'LzNodeEventName',
+        'LzNodeAwaitStatement',
+        'LzNodeReturnAwait',
+        'LzNodeExitCode',
+      ],
     );
   });
 

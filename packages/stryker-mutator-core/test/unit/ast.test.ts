@@ -4,7 +4,12 @@ import { describe, it } from 'node:test';
 import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
-import { lzAwaited, lzCalleeRoot, lzImportOf, lzPropertyName } from '../../src/ast.ts';
+import {
+  lzAwaited,
+  lzCalleeRoot,
+  lzImportOf,
+  lzPropertyName,
+} from '../../src/ast.ts';
 
 /** The path of the first call in `source`, parsed as a TypeScript module. */
 function firstCall(source: string): NodePath<types.CallExpression> {
@@ -35,11 +40,36 @@ function calleeName(source: string): string | undefined {
 
 describe('lzImportOf', () => {
   lzTestEach([
-    ['a default import', "import f from 'm';\nf();", 'f', { source: 'm', imported: undefined }],
-    ['a namespace import', "import * as f from 'm';\nf();", 'f', { source: 'm', imported: undefined }],
-    ['a named import', "import { f } from 'm';\nf();", 'f', { source: 'm', imported: 'f' }],
-    ['a renamed import', "import { g as f } from 'm';\nf();", 'f', { source: 'm', imported: 'g' }],
-    ['an import named by a string', "import { 'g' as f } from 'm';\nf();", 'f', { source: 'm', imported: 'g' }],
+    [
+      'a default import',
+      "import f from 'm';\nf();",
+      'f',
+      { source: 'm', imported: undefined },
+    ],
+    [
+      'a namespace import',
+      "import * as f from 'm';\nf();",
+      'f',
+      { source: 'm', imported: undefined },
+    ],
+    [
+      'a named import',
+      "import { f } from 'm';\nf();",
+      'f',
+      { source: 'm', imported: 'f' },
+    ],
+    [
+      'a renamed import',
+      "import { g as f } from 'm';\nf();",
+      'f',
+      { source: 'm', imported: 'g' },
+    ],
+    [
+      'an import named by a string',
+      "import { 'g' as f } from 'm';\nf();",
+      'f',
+      { source: 'm', imported: 'g' },
+    ],
     ['a local function', 'function f() {}\nf();', 'f', undefined],
     ['a parameter', 'function g(f: () => void) {\n  f();\n}', 'f', undefined],
     ['a global', 'f();', 'f', undefined],
@@ -53,7 +83,11 @@ describe('lzPropertyName', () => {
   lzTestEach([
     ['a member', 'a.b();', 'b'],
     ['a computed member', "a['b']();", undefined],
-    ['a private member', 'class C {\n  #b() {}\n  c() {\n    this.#b();\n  }\n}', undefined],
+    [
+      'a private member',
+      'class C {\n  #b() {}\n  c() {\n    this.#b();\n  }\n}',
+      undefined,
+    ],
     ['an identifier', 'b();', undefined],
   ])('names the property of %s', (_title, source, expected) => {
     assert.equal(lzPropertyName(firstCall(source).node.callee), expected);

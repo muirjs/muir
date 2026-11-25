@@ -17,7 +17,10 @@ export const jsAssignmentStatement: LzMutator<'LzJsAssignmentStatement'> = {
 
     const assignment = path.get('expression');
 
-    if (assignment.isAssignmentExpression({ operator: '=' }) && !isEnvironmentVariable(assignment.get('left'))) {
+    if (
+      assignment.isAssignmentExpression({ operator: '=' }) &&
+      !isEnvironmentVariable(assignment.get('left'))
+    ) {
       yield t.emptyStatement();
     }
   },
@@ -27,6 +30,7 @@ export const jsAssignmentStatement: LzMutator<'LzJsAssignmentStatement'> = {
 function isEnvironmentVariable(target: NodePath): boolean {
   return (
     target.matchesPattern('process.env') ||
-    (target.isMemberExpression() && target.get('object').matchesPattern('process.env'))
+    (target.isMemberExpression() &&
+      target.get('object').matchesPattern('process.env'))
   );
 }

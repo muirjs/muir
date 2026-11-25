@@ -47,11 +47,16 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun({ ...dryRun, disableBail: true })));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun({ ...dryRun, disableBail: true })),
+    );
 
     assert.deepEqual(summary(tests), [
       passed(`${a} > meets its plan`),
-      failed(`${a} > misses its plan`, 'plan expected 2 assertions but received 1'),
+      failed(
+        `${a} > misses its plan`,
+        'plan expected 2 assertions but received 1',
+      ),
       passed(`${a} > plans its subtests > one`),
       passed(`${a} > plans its subtests > two`),
       passed(`${a} > plans its subtests`),
@@ -94,7 +99,9 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
 
     assert.deepEqual(summary(tests), [
       passed(`${a} > hooks > child`),
@@ -104,13 +111,25 @@ describe('LzNodeTestTestRunner with the test context', () => {
     assert.deepEqual(fixtureCoverage(mutantCoverage), {
       static: {},
       perTest: {
-        [`${a} > hooks`]: { 't.before': 1, body: 1, 't.after': 1, after: 1, 'test.after': 1 },
+        [`${a} > hooks`]: {
+          't.before': 1,
+          body: 1,
+          't.after': 1,
+          after: 1,
+          'test.after': 1,
+        },
         [`${a} > hooks > child`]: { child: 1, 'test.after': 1 },
         [`${a} > reads what the before hook set`]: { 'test.after': 1 },
       },
     });
     assert.deepEqual(
-      withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ testFilter: [`${a} > hooks > child`] })))),
+      withoutDuration(
+        await settle(
+          runner.mutantRun(
+            mutantRunOptions({ testFilter: [`${a} > hooks > child`] }),
+          ),
+        ),
+      ),
       { status: MutantRunStatus.Survived, nrOfTests: 2 },
     );
   });
@@ -146,7 +165,9 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const a = join(dir, 'a.test.mjs');
     const b = join(dir, 'b.test.mjs');
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
 
     assert.deepEqual(summary(tests), [
       passed(`${a} > put can be created`),
@@ -183,10 +204,15 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
 
     assert.deepEqual(summary(tests), [passed(`${a} > serves`)]);
-    assert.deepEqual(fixtureCoverage(mutantCoverage), { static: {}, perTest: { [`${a} > serves`]: { handled: 1 } } });
+    assert.deepEqual(fixtureCoverage(mutantCoverage), {
+      static: {},
+      perTest: { [`${a} > serves`]: { handled: 1 } },
+    });
   });
 
   it("counts the work of a test's mocked methods and timers as its own", async (t) => {
@@ -211,12 +237,20 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
 
-    assert.deepEqual(summary(tests), [passed(`${a} > mocks`), passed(`${a} > runs next`)]);
+    assert.deepEqual(summary(tests), [
+      passed(`${a} > mocks`),
+      passed(`${a} > runs next`),
+    ]);
     assert.deepEqual(fixtureCoverage(mutantCoverage), {
       static: {},
-      perTest: { [`${a} > mocks`]: { timer: 1 }, [`${a} > runs next`]: { next: 1 } },
+      perTest: {
+        [`${a} > mocks`]: { timer: 1 },
+        [`${a} > runs next`]: { next: 1 },
+      },
     });
   });
 
@@ -234,9 +268,14 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    const { tests } = complete(await settle(runner.dryRun({ ...dryRun, disableBail: true })));
+    const { tests } = complete(
+      await settle(runner.dryRun({ ...dryRun, disableBail: true })),
+    );
 
-    assert.deepEqual(summary(tests), [failed(`${a} > awaits`, 'thrown in a callback'), passed(`${a} > runs next`)]);
+    assert.deepEqual(summary(tests), [
+      failed(`${a} > awaits`, 'thrown in a callback'),
+      passed(`${a} > runs next`),
+    ]);
   });
 
   it("counts the work of the test file's own exit listeners as coverage of each of its tests", async (t) => {
@@ -251,12 +290,16 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
 
     assert.deepEqual(summary(tests), [passed(`${a} > listens`)]);
     assert.deepEqual(fixtureCoverage(mutantCoverage), {
       static: {},
-      perTest: { [`${a} > listens`]: { exit: 1, beforeExit: 1, 'exit in a test': 1 } },
+      perTest: {
+        [`${a} > listens`]: { exit: 1, beforeExit: 1, 'exit in a test': 1 },
+      },
     });
   });
 
@@ -271,8 +314,13 @@ describe('LzNodeTestTestRunner with the test context', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    const { tests } = complete(await settle(runner.dryRun({ ...dryRun, disableBail: true })));
+    const { tests } = complete(
+      await settle(runner.dryRun({ ...dryRun, disableBail: true })),
+    );
 
-    assert.deepEqual(summary(tests), [passed(`${a} > writes`), failed(`${a} > fails`, 'expected failure')]);
+    assert.deepEqual(summary(tests), [
+      passed(`${a} > writes`),
+      failed(`${a} > fails`, 'expected failure'),
+    ]);
   });
 });

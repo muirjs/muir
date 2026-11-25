@@ -7,14 +7,20 @@ import { it, type TestContext, type TestOptions } from 'node:test';
 import { formatName, formatTitle } from './title.ts';
 
 /** A test's name: a string, or a function or class, which names it by its own name and is never called. */
-export type LzTestName = string | ((...args: never) => unknown) | (abstract new (...args: never) => unknown);
+export type LzTestName =
+  | string
+  | ((...args: never) => unknown)
+  | (abstract new (...args: never) => unknown);
 
 /** node:test's options for each test of the table, and `fails`, which makes a test pass only when its body fails. */
 export interface LzTestTableOptions extends TestOptions {
   readonly fails?: boolean;
 }
 
-export type Flags = Pick<LzTestTableOptions, 'skip' | 'only' | 'todo' | 'fails'>;
+export type Flags = Pick<
+  LzTestTableOptions,
+  'skip' | 'only' | 'todo' | 'fails'
+>;
 export type EachCallback = (...args: never) => void | Promise<void>;
 type Body = (t: TestContext) => void | Promise<void>;
 
@@ -58,9 +64,17 @@ export function parseArguments<TCallback extends EachCallback>(
   }
 
   const options =
-    typeof fnOrTimeout === 'number' ? { timeout: fnOrTimeout } : typeof optionsOrFn === 'object' ? optionsOrFn : {};
+    typeof fnOrTimeout === 'number'
+      ? { timeout: fnOrTimeout }
+      : typeof optionsOrFn === 'object'
+        ? optionsOrFn
+        : {};
   const fn =
-    typeof optionsOrFn === 'function' ? optionsOrFn : typeof fnOrTimeout === 'function' ? fnOrTimeout : undefined;
+    typeof optionsOrFn === 'function'
+      ? optionsOrFn
+      : typeof fnOrTimeout === 'function'
+        ? fnOrTimeout
+        : undefined;
 
   return fn === undefined ? { options } : { options, fn };
 }
@@ -74,8 +88,13 @@ export function register<TCallback extends EachCallback>(
   return (name, optionsOrFn, fnOrTimeout) => {
     const template = formatName(name);
     const { options, fn } = parseArguments(optionsOrFn, fnOrTimeout);
-    const defined = Object.entries(options).filter(([, value]) => value !== undefined);
-    const { fails, ...testOptions }: LzTestTableOptions = { ...flags, ...Object.fromEntries(defined) };
+    const defined = Object.entries(options).filter(
+      ([, value]) => value !== undefined,
+    );
+    const { fails, ...testOptions }: LzTestTableOptions = {
+      ...flags,
+      ...Object.fromEntries(defined),
+    };
 
     if (!fn) {
       testOptions.todo ||= true;
@@ -85,7 +104,11 @@ export function register<TCallback extends EachCallback>(
       const { items, run } = caseOf(row);
       const body = fn && ((t: TestContext) => run(fn, t));
 
-      it(formatTitle(template, items, index), testOptions, fails ? body && failing(body) : body);
+      it(
+        formatTitle(template, items, index),
+        testOptions,
+        fails ? body && failing(body) : body,
+      );
     });
   };
 }

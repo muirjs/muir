@@ -42,7 +42,10 @@ export function lzParseProcSamples(text: string): LzProcessRow[][] {
   return parseSamples(rest.join('\n'), (line) => parseProcStat(line, pageSize));
 }
 
-function parseSamples(text: string, parse: (line: string) => LzProcessRow): LzProcessRow[][] {
+function parseSamples(
+  text: string,
+  parse: (line: string) => LzProcessRow,
+): LzProcessRow[][] {
   return text
     .split(/^--\r?$/m)
     .slice(0, -1)
@@ -63,14 +66,18 @@ function parseProcStat(line: string, pageSize: number): LzProcessRow {
   const tab = line.lastIndexOf('\t');
   const stat = tab === -1 ? line : line.slice(0, tab);
   const commandLine = tab === -1 ? '' : line.slice(tab).trim();
-  const match = /^(\d+) \((.*)\) \S+ (\d+)(?: \S+){17} (\d+) \d+ (\d+)(?: \S+)*$/.exec(stat);
+  const match =
+    /^(\d+) \((.*)\) \S+ (\d+)(?: \S+){17} (\d+) \d+ (\d+)(?: \S+)*$/.exec(
+      stat,
+    );
 
   if (match === null) {
     throw new Error(`Not a /proc/<pid>/stat line: "${line}"`);
   }
 
   // Stryker disable next-line StringLiteral: equivalent, as every group of the pattern takes part in each match, so no default applies
-  const [, pid = '', name = '', ppid = '', startTime = '', rssPages = ''] = match;
+  const [, pid = '', name = '', ppid = '', startTime = '', rssPages = ''] =
+    match;
 
   return {
     pid: Number(pid),
@@ -89,9 +96,16 @@ function parseRow(line: string): LzProcessRow {
   }
 
   // Stryker disable next-line StringLiteral: equivalent, as every group of the pattern takes part in each match, so no default applies
-  const [, pid = '', ppid = '', workingSet = '', created = '', name = ''] = match;
+  const [, pid = '', ppid = '', workingSet = '', created = '', name = ''] =
+    match;
 
-  return { pid: Number(pid), ppid: Number(ppid), workingSetBytes: Number(workingSet), created: BigInt(created), name };
+  return {
+    pid: Number(pid),
+    ppid: Number(ppid),
+    workingSetBytes: Number(workingSet),
+    created: BigInt(created),
+    name,
+  };
 }
 
 /**
@@ -104,7 +118,10 @@ export function lzDescendants(
   rootPid: number,
   excluded: ReadonlySet<number>,
 ): LzProcessRow[] {
-  const childrenOf = (parent: LzProcessRow | undefined, pid: number): LzProcessRow[] =>
+  const childrenOf = (
+    parent: LzProcessRow | undefined,
+    pid: number,
+  ): LzProcessRow[] =>
     rows
       .filter(
         (row) =>
@@ -121,13 +138,17 @@ export function lzDescendants(
   );
 }
 
-export function lzPeaks(samples: readonly (readonly LzProcessRow[])[]): LzProcessPeaks {
+export function lzPeaks(
+  samples: readonly (readonly LzProcessRow[])[],
+): LzProcessPeaks {
   return {
     samples: samples.length,
     peakCount: Math.max(0, ...samples.map((sample) => sample.length)),
     peakWorkingSetBytes: Math.max(
       0,
-      ...samples.map((sample) => sample.reduce((sum, { workingSetBytes }) => sum + workingSetBytes, 0)),
+      ...samples.map((sample) =>
+        sample.reduce((sum, { workingSetBytes }) => sum + workingSetBytes, 0),
+      ),
     ),
   };
 }
@@ -137,10 +158,18 @@ export function lzPeaks(samples: readonly (readonly LzProcessRow[])[]): LzProces
  * between two samples and that outlived it is missed: walking from an ended process to its id's children would also
  * reach the children of a later process that reused that id.
  */
-export function lzLeftovers(seen: readonly LzProcessRow[], now: readonly LzProcessRow[]): LzProcessRow[] {
-  return now.filter((row) => seen.some(({ pid, created }) => pid === row.pid && created === row.created));
+export function lzLeftovers(
+  seen: readonly LzProcessRow[],
+  now: readonly LzProcessRow[],
+): LzProcessRow[] {
+  return now.filter((row) =>
+    seen.some(({ pid, created }) => pid === row.pid && created === row.created),
+  );
 }
 
-export function lzNewEntries(before: readonly string[], after: readonly string[]): string[] {
+export function lzNewEntries(
+  before: readonly string[],
+  after: readonly string[],
+): string[] {
   return after.filter((entry) => !before.includes(entry)).sort();
 }

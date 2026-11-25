@@ -22,7 +22,10 @@ export function mutantDiff(
   const beforeLines = before.map(line);
   const afterLines = after.map(line);
 
-  return { added: without(afterLines, beforeLines), removed: without(beforeLines, afterLines) };
+  return {
+    added: without(afterLines, beforeLines),
+    removed: without(beforeLines, afterLines),
+  };
 }
 
 /**
@@ -43,10 +46,19 @@ export async function corpusDiff(
       lzToNodeMutator(mutator, instrumenter.types, lzPackageName),
     );
     const files = [{ name, content: read(name) }];
-    const before = await instrumenter.instrument(files, instrumenter.allMutators);
-    const after = await instrumenter.instrument(files, [...instrumenter.allMutators, ...nodeMutators]);
+    const before = await instrumenter.instrument(
+      files,
+      instrumenter.allMutators,
+    );
+    const after = await instrumenter.instrument(files, [
+      ...instrumenter.allMutators,
+      ...nodeMutators,
+    ]);
     const { added, removed } = mutantDiff(before, after);
-    const lines = [...added.map((mutant) => `    + ${mutant}`), ...removed.map((mutant) => `    - ${mutant}`)];
+    const lines = [
+      ...added.map((mutant) => `    + ${mutant}`),
+      ...removed.map((mutant) => `    - ${mutant}`),
+    ];
 
     sections.push(
       `### ${relative(process.cwd(), name).split(sep).join('/')}\n\n` +
@@ -58,7 +70,11 @@ export async function corpusDiff(
   return sections.join('\n');
 }
 
-function line({ mutatorName, location, replacement }: LzInstrumentedMutant): string {
+function line({
+  mutatorName,
+  location,
+  replacement,
+}: LzInstrumentedMutant): string {
   const { line: row, column } = location.start;
 
   return `${row + 1}:${column + 1} ${mutatorName} ${replacement.replace(/\s+/g, ' ')}`;

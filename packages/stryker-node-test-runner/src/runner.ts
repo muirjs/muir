@@ -12,7 +12,12 @@ import {
   type StrykerOptions,
 } from '@stryker-mutator/api/core';
 import type { Logger } from '@stryker-mutator/api/logging';
-import { commonTokens, declareClassPlugin, PluginKind, tokens } from '@stryker-mutator/api/plugin';
+import {
+  commonTokens,
+  declareClassPlugin,
+  PluginKind,
+  tokens,
+} from '@stryker-mutator/api/plugin';
 import {
   determineHitLimitReached,
   DryRunStatus,
@@ -28,12 +33,33 @@ import {
   type TestRunnerCapabilities,
 } from '@stryker-mutator/api/test-runner';
 
-import { lzMergeAsStatic, lzMergeCoverage, lzOutsideTests, lzOverlapCoverage } from './coverage.ts';
+import {
+  lzMergeAsStatic,
+  lzMergeCoverage,
+  lzOutsideTests,
+  lzOverlapCoverage,
+} from './coverage.ts';
 import { lzDirPrefix, removeDir, removeLeftDirs } from './dirs.ts';
-import { isBoolean, isNumber, isObject, isStrings, optional } from './guards.ts';
-import { lzDryRunDir, lzDryRunStore, lzOwnDryRun, type LzDryRunKind, type LzDryRunStore } from './dry-run-store.ts';
+import {
+  isBoolean,
+  isNumber,
+  isObject,
+  isStrings,
+  optional,
+} from './guards.ts';
+import {
+  lzDryRunDir,
+  lzDryRunStore,
+  lzOwnDryRun,
+  type LzDryRunKind,
+  type LzDryRunStore,
+} from './dry-run-store.ts';
 import { memoryLimits, type MemoryLimits } from './memory-limits.ts';
-import { lzConsumerNodeOptions, lzReporterArgs, withoutReporters } from './node-options.ts';
+import {
+  lzConsumerNodeOptions,
+  lzReporterArgs,
+  withoutReporters,
+} from './node-options.ts';
 import { groupOptions, lzStderrTailBytes, processEnd } from './process-end.ts';
 import {
   envNames,
@@ -48,7 +74,13 @@ import {
 } from './record.ts';
 import schema from './schema/node-test-runner-options.json' with { type: 'json' };
 import { lzStartUpOf, lzStartUps, type LzStartUps } from './start-up.ts';
-import { lzCopySandbox, lzRebase, lzRebaseRecord, lzRemoveCopy, type LzSandboxCopy } from './worker-copy.ts';
+import {
+  lzCopySandbox,
+  lzRebase,
+  lzRebaseRecord,
+  lzRemoveCopy,
+  type LzSandboxCopy,
+} from './worker-copy.ts';
 
 /** Options under `lzNodeTest` in the Stryker configuration, which `schema/node-test-runner-options.json` describes. */
 export interface LzNodeTestOptions {
@@ -61,7 +93,9 @@ export interface LzNodeTestOptions {
 const defaults = schema.properties.lzNodeTest.properties;
 
 /** The oldest Node.js the runner supports, as `engines` in package.json says, as major and minor version. */
-export const lzMinNodeVersion: readonly [major: number, minor: number] = [22, 18];
+export const lzMinNodeVersion: readonly [major: number, minor: number] = [
+  22, 18,
+];
 
 function supportsNode(version: string): boolean {
   // Stryker disable next-line LzJsNumericLiteral: equivalent, as a Node.js version always has a major and a minor part
@@ -117,7 +151,9 @@ interface LzFileRun {
 // .ts from the source, .js from the build.
 const ext = extname(import.meta.filename);
 const hookUrl = pathToFileURL(resolve(import.meta.dirname, `hook${ext}`)).href;
-const reporterUrl = pathToFileURL(resolve(import.meta.dirname, `reporter${ext}`)).href;
+const reporterUrl = pathToFileURL(
+  resolve(import.meta.dirname, `reporter${ext}`),
+).href;
 
 const dryRunOwner = lzOwnDryRun();
 
@@ -149,14 +185,23 @@ export function lzToTestResults(
       name: test.id.slice(prefix.length),
       fileName: testFile,
       timeSpentMs: Math.round(test.timeSpentMs + outside),
-      ...(positioned && test.startPosition && { startPosition: test.startPosition }),
+      ...(positioned &&
+        test.startPosition && { startPosition: test.startPosition }),
     };
 
     if (test.status === 'failed') {
-      return { ...base, status: TestStatus.Failed, failureMessage: test.failureMessage ?? 'Test failed' };
+      return {
+        ...base,
+        status: TestStatus.Failed,
+        failureMessage: test.failureMessage ?? 'Test failed',
+      };
     }
 
-    return { ...base, status: test.status === 'passed' ? TestStatus.Success : TestStatus.Skipped };
+    return {
+      ...base,
+      status:
+        test.status === 'passed' ? TestStatus.Success : TestStatus.Skipped,
+    };
   });
 }
 
@@ -168,11 +213,17 @@ function nodeCommand(args: readonly string[]): string {
  * Reports a test file that failed outside its tests as Stryker's tap runner does: command, diagnostics, and the tail of
  * stderr that `processEnd` keeps.
  */
-export function lzFileError(testFile: string, { records, exitCode, stderr, fileArgs, nodeOptions }: LzFileRun): string {
+export function lzFileError(
+  testFile: string,
+  { records, exitCode, stderr, fileArgs, nodeOptions }: LzFileRun,
+): string {
   const diagnostics = records.flatMap((record) => record.diagnostics ?? []);
   const heldOpen = records.flatMap((record) => record.heldOpen ?? []);
   const output = stderr.trim();
-  const withNodeOptions = nodeOptions.length > 0 ? ` with NODE_OPTIONS set to \`${nodeOptions.join(' ')}\`` : '';
+  const withNodeOptions =
+    nodeOptions.length > 0
+      ? ` with NODE_OPTIONS set to \`${nodeOptions.join(' ')}\``
+      : '';
 
   return [
     `Error running file "${testFile}": node exited with code ${String(exitCode)} outside any test.`,
@@ -185,7 +236,9 @@ export function lzFileError(testFile: string, { records, exitCode, stderr, fileA
         ]
       : []),
     ...(diagnostics.length > 0 ? ['Diagnostics:', ...diagnostics] : []),
-    ...(output ? [`Stderr, at most its last ${lzStderrTailBytes / 1024} KiB:`, output] : []),
+    ...(output
+      ? [`Stderr, at most its last ${lzStderrTailBytes / 1024} KiB:`, output]
+      : []),
   ].join('\n');
 }
 
@@ -211,7 +264,12 @@ function parseOptions(value: unknown): LzNodeTestOptions {
     ...optional('testFiles', testFiles, isStrings, notOptions),
     ...optional('nodeArgs', nodeArgs, isStrings, notOptions),
     ...optional('maxMemoryMB', maxMemoryMB, isNumber, notOptions),
-    ...optional('experimentalWorkerCopy', experimentalWorkerCopy, isBoolean, notOptions),
+    ...optional(
+      'experimentalWorkerCopy',
+      experimentalWorkerCopy,
+      isBoolean,
+      notOptions,
+    ),
   };
 }
 
@@ -264,14 +322,23 @@ export async function lzRunInPool<T, TResult>(
   return results.slice(0, end);
 }
 
-function fileOutcome(file: string, fileRun: LzFileRun, fileMs: number, run: LzRunOptions): FileOutcome {
+function fileOutcome(
+  file: string,
+  fileRun: LzFileRun,
+  fileMs: number,
+  run: LzRunOptions,
+): FileOutcome {
   const { records, exitCode, unreadable } = fileRun;
 
   if (fileRun.killedByDeadline !== undefined) {
-    return { end: { status: DryRunStatus.Timeout, reason: fileRun.killedByDeadline } };
+    return {
+      end: { status: DryRunStatus.Timeout, reason: fileRun.killedByDeadline },
+    };
   }
 
-  const memoryLimitReached = records.find((record) => record.memoryLimitReached)?.memoryLimitReached;
+  const memoryLimitReached = records.find(
+    (record) => record.memoryLimitReached,
+  )?.memoryLimitReached;
 
   if (memoryLimitReached) {
     const { rssMB, limitMB } = memoryLimitReached;
@@ -280,7 +347,11 @@ function fileOutcome(file: string, fileRun: LzFileRun, fileMs: number, run: LzRu
       "its mutant runs would time out. Raise lzNodeTest.maxMemoryMB, or leave it out to derive each file's limit from " +
       'the dry run.';
 
-    return dryRunErrorElseTimeout(run, errorMessage, `Memory limit reached (${rssMB}/${limitMB} MB)`);
+    return dryRunErrorElseTimeout(
+      run,
+      errorMessage,
+      `Memory limit reached (${rssMB}/${limitMB} MB)`,
+    );
   }
 
   if (unreadable !== undefined) {
@@ -339,7 +410,11 @@ function fileOutcome(file: string, fileRun: LzFileRun, fileMs: number, run: LzRu
       'lzNodeTest.nodeArgs, as for node --test (NODE_OPTIONS does not allow it); node:test then loses errors ' +
       'raised after the tests and root after hooks end.';
 
-    return dryRunErrorElseTimeout(run, errorMessage, `Test file "${file}" stayed alive, held open by ${heldBy}`);
+    return dryRunErrorElseTimeout(
+      run,
+      errorMessage,
+      `Test file "${file}" stayed alive, held open by ${heldBy}`,
+    );
   }
 
   // Stryker treats a test runner that exits during a run as crashed, whatever its exit code, and so do its runners
@@ -351,22 +426,39 @@ function fileOutcome(file: string, fileRun: LzFileRun, fileMs: number, run: LzRu
     );
   }
 
-  return { results, coverages: records.map((record) => lzOverlapCoverage(record, main.testSpans)), failed };
+  return {
+    results,
+    coverages: records.map((record) =>
+      lzOverlapCoverage(record, main.testSpans),
+    ),
+    failed,
+  };
 }
 
 function hasHits({ static: hits, perTest }: MutantCoverage): boolean {
-  return [hits, ...Object.values(perTest)].some((ofTest) => Object.keys(ofTest).length > 0);
+  return [hits, ...Object.values(perTest)].some(
+    (ofTest) => Object.keys(ofTest).length > 0,
+  );
 }
 
 function errorEnd(errorMessage: string): FileOutcome {
   return { end: { status: DryRunStatus.Error, errorMessage } };
 }
 
-function dryRunErrorElseTimeout(run: LzRunOptions, errorMessage: string, reason: string): FileOutcome {
-  return run.dryRun ? errorEnd(errorMessage) : { end: { status: DryRunStatus.Timeout, reason } };
+function dryRunErrorElseTimeout(
+  run: LzRunOptions,
+  errorMessage: string,
+  reason: string,
+): FileOutcome {
+  return run.dryRun
+    ? errorEnd(errorMessage)
+    : { end: { status: DryRunStatus.Timeout, reason } };
 }
 
-export type LzStoredStringsKind = Extract<LzDryRunKind, 'files' | 'outside-tests'>;
+export type LzStoredStringsKind = Extract<
+  LzDryRunKind,
+  'files' | 'outside-tests'
+>;
 
 export function lzStoredStrings(
   key: string,
@@ -393,7 +485,10 @@ export function lzStoredStrings(
   return strings;
 }
 
-export function lzFilesFor(testFiles: string[], testFilter: readonly string[] | undefined): string[] {
+export function lzFilesFor(
+  testFiles: string[],
+  testFilter: readonly string[] | undefined,
+): string[] {
   if (!testFilter) {
     return testFiles;
   }
@@ -421,7 +516,9 @@ export function lzTestRunnerConcurrency(
     total = concurrency;
   }
 
-  return checkers ? Math.max(Math.ceil(total / 2), 1) + Math.max(Math.floor(total / 2), 1) : total;
+  return checkers
+    ? Math.max(Math.ceil(total / 2), 1) + Math.max(Math.floor(total / 2), 1)
+    : total;
 }
 
 /** What a test file's environment is made from: the runner's own environment, the file, and the run. */
@@ -461,9 +558,13 @@ export function lzRunEnv({
     ...Object.values(envNames),
   ]);
   const env: NodeJS.ProcessEnv & { NODE_OPTIONS: string } = {
-    ...Object.fromEntries(Object.entries(base).filter(([key]) => !runState.has(key))),
+    ...Object.fromEntries(
+      Object.entries(base).filter(([key]) => !runState.has(key)),
+    ),
     // The hook comes first, so a copy of this runner under test takes precedence over the runner running it.
-    NODE_OPTIONS: [`--import ${JSON.stringify(hookUrl)}`, ...nodeOptions].join(' '),
+    NODE_OPTIONS: [`--import ${JSON.stringify(hookUrl)}`, ...nodeOptions].join(
+      ' ',
+    ),
     [envNames.out]: outDir,
     [envNames.file]: file,
     [envNames.dryRun]: String(run.dryRun),
@@ -483,8 +584,13 @@ export function lzRunEnv({
   // Stryker names whole test files in the filter only for a mutant that runs every test, as a static mutant under
   // --testFiles does, yet asks for runtime activation; such a mutant must be active from the start.
   if (run.activeMutant !== undefined) {
-    const runtime = run.mutantActivation === 'runtime' && !lzNamesFile(run.testFilter, file);
-    env[runtime ? envNames.activeMutant : INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE] = run.activeMutant;
+    const runtime =
+      run.mutantActivation === 'runtime' && !lzNamesFile(run.testFilter, file);
+    env[
+      runtime
+        ? envNames.activeMutant
+        : INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE
+    ] = run.activeMutant;
   }
 
   if (run.hitLimit !== undefined) {
@@ -502,7 +608,9 @@ export function lzRunEnv({
   // Linux refuses a variable longer than 128 KiB. The whole filter of a widely covered mutant can pass that, and so,
   // less often, can the ids of one file's many covering tests.
   if (run.testFilter) {
-    env[envNames.filter] = JSON.stringify(run.testFilter.filter((id) => within(id, file)));
+    env[envNames.filter] = JSON.stringify(
+      run.testFilter.filter((id) => within(id, file)),
+    );
   }
 
   // The dry run must run every test to collect each one's coverage.
@@ -520,14 +628,23 @@ export function lzRunEnv({
 const shortenedHeldOpen = new WeakMap<LzNodeTestTestRunner, number>();
 
 /** Shortens the time a test file of `runner` may stay alive after its tests to `ms`, for the runner's own tests. */
-export function lzShortenHeldOpen(runner: LzNodeTestTestRunner, ms: number): void {
+export function lzShortenHeldOpen(
+  runner: LzNodeTestTestRunner,
+  ms: number,
+): void {
   shortenedHeldOpen.set(runner, ms);
 }
 
 /** The Stryker options the runner reads, of all that Stryker passes it. */
 type RunnerStrykerOptions = Pick<
   StrykerOptions,
-  'allowEmpty' | 'checkers' | 'concurrency' | 'inPlace' | 'testFiles' | 'timeoutFactor' | 'timeoutMS'
+  | 'allowEmpty'
+  | 'checkers'
+  | 'concurrency'
+  | 'inPlace'
+  | 'testFiles'
+  | 'timeoutFactor'
+  | 'timeoutMS'
 > & {
   readonly lzNodeTest?: unknown;
 };
@@ -581,7 +698,11 @@ export class LzNodeTestTestRunner implements TestRunner {
       availableParallelism(),
     );
     this.#dryRunStore = lzDryRunStore(lzDryRunDir(dryRunOwner));
-    this.#memoryLimits = memoryLimits(lzNodeTest.maxMemoryMB, this.#dryRunStore, log);
+    this.#memoryLimits = memoryLimits(
+      lzNodeTest.maxMemoryMB,
+      this.#dryRunStore,
+      log,
+    );
     this.#startUps = lzStartUps(this.#dryRunStore, options.timeoutFactor, log);
     this.#allowEmpty = options.allowEmpty;
     this.#stallMs = options.timeoutMS;
@@ -617,7 +738,9 @@ export class LzNodeTestTestRunner implements TestRunner {
     // glob gives a file once per spelling, relative for a relative pattern and absolute for an absolute one.
     const files: string[] = [];
 
-    for await (const file of glob(this.#patterns, { exclude: (name) => name === 'node_modules' })) {
+    for await (const file of glob(this.#patterns, {
+      exclude: (name) => name === 'node_modules',
+    })) {
       files.push(resolve(file));
     }
 
@@ -636,7 +759,9 @@ export class LzNodeTestTestRunner implements TestRunner {
     removeLeftDirs(tmpdir());
 
     if (process.env['NODE_COMPILE_CACHE'] === undefined) {
-      this.#cacheDir = mkdtempSync(join(tmpdir(), lzDirPrefix('cache', process.pid)));
+      this.#cacheDir = mkdtempSync(
+        join(tmpdir(), lzDirPrefix('cache', process.pid)),
+      );
     }
 
     if (this.#workerCopy) {
@@ -654,13 +779,17 @@ export class LzNodeTestTestRunner implements TestRunner {
     await Promise.allSettled([this.#initialized]);
     // At once, as Stryker gives dispose 2 s and each removal may retry for that long.
     await Promise.all([
-      this.#cacheDir === undefined ? undefined : removeDir(this.#cacheDir, this.#log),
+      this.#cacheDir === undefined
+        ? undefined
+        : removeDir(this.#cacheDir, this.#log),
       this.#copy && lzRemoveCopy(this.#copy, this.#log),
     ]);
   }
 
   async dryRun(options: DryRunOptions): Promise<DryRunResult> {
-    const files = options.testFiles?.length ? options.testFiles.map((file) => resolve(file)) : this.#testFiles;
+    const files = options.testFiles?.length
+      ? options.testFiles.map((file) => resolve(file))
+      : this.#testFiles;
     const run = {
       dryRun: true,
       disableBail: options.disableBail,
@@ -704,7 +833,11 @@ export class LzNodeTestTestRunner implements TestRunner {
       },
     );
     this.#mutantsOutsideTests = new Set(mutantsOutsideTests.flat());
-    this.#dryRunStore.write(this.#dryRunKey, 'outside-tests', JSON.stringify([...this.#mutantsOutsideTests]));
+    this.#dryRunStore.write(
+      this.#dryRunKey,
+      'outside-tests',
+      JSON.stringify([...this.#mutantsOutsideTests]),
+    );
 
     if (
       result.status === DryRunStatus.Complete &&
@@ -723,7 +856,11 @@ export class LzNodeTestTestRunner implements TestRunner {
   }
 
   #stored(kind: LzStoredStringsKind): string[] | undefined {
-    return lzStoredStrings(this.#dryRunKey, kind, this.#dryRunStore.read(this.#dryRunKey, kind));
+    return lzStoredStrings(
+      this.#dryRunKey,
+      kind,
+      this.#dryRunStore.read(this.#dryRunKey, kind),
+    );
   }
 
   #outsideTests(): ReadonlySet<string> {
@@ -747,9 +884,14 @@ export class LzNodeTestTestRunner implements TestRunner {
     const started = performance.now();
     this.#dryRunFiles ??= this.#stored('files');
     const outsideTests = this.#outsideTests();
-    const files = lzFilesFor(this.#dryRunFiles ?? this.#testFiles, options.testFilter);
+    const files = lzFilesFor(
+      this.#dryRunFiles ?? this.#testFiles,
+      options.testFilter,
+    );
     // Stryker's own timer stays as the backstop, and a Timeout the runner reports keeps Stryker's worker.
-    const deadlineMs = Math.ceil(this.#startUps.deadline(files, options.testFilter, options.timeout));
+    const deadlineMs = Math.ceil(
+      this.#startUps.deadline(files, options.testFilter, options.timeout),
+    );
     const deadline = {
       signal: AbortSignal.timeout(deadlineMs),
       reason:
@@ -760,7 +902,9 @@ export class LzNodeTestTestRunner implements TestRunner {
       dryRun: false,
       disableBail: options.disableBail,
       activeMutant: options.activeMutant.id,
-      mutantActivation: outsideTests.has(options.activeMutant.id) ? 'static' : options.mutantActivation,
+      mutantActivation: outsideTests.has(options.activeMutant.id)
+        ? 'static'
+        : options.mutantActivation,
       hitLimit: options.hitLimit,
       testFilter: options.testFilter,
     } satisfies LzRunOptions;
@@ -787,7 +931,8 @@ export class LzNodeTestTestRunner implements TestRunner {
   ): Promise<DryRunResult> {
     const tests: TestResult[] = [];
     const coverages: (MutantCoverage | undefined)[] = [];
-    const ends = (outcome: FileOutcome) => 'end' in outcome || (!run.disableBail && outcome.failed);
+    const ends = (outcome: FileOutcome) =>
+      'end' in outcome || (!run.disableBail && outcome.failed);
     const outcomes = await lzRunInPool(
       files,
       limit,
@@ -826,13 +971,20 @@ export class LzNodeTestTestRunner implements TestRunner {
       status: DryRunStatus.Complete,
       tests,
       ...(run.coverageAnalysis !== 'off' && {
-        mutantCoverage: (run.coverageAnalysis === 'all' ? lzMergeAsStatic : lzMergeCoverage)(coverages),
+        mutantCoverage: (run.coverageAnalysis === 'all'
+          ? lzMergeAsStatic
+          : lzMergeCoverage)(coverages),
       }),
     };
   }
 
   /** Ends the file's process, and what processEnd ends with it, once `deadline` aborts, also when it already has. */
-  async runFile(file: string, run: LzRunOptions, memoryLimitMB?: number, deadline?: LzDeadline): Promise<LzFileRun> {
+  async runFile(
+    file: string,
+    run: LzRunOptions,
+    memoryLimitMB?: number,
+    deadline?: LzDeadline,
+  ): Promise<LzFileRun> {
     const runDir = mkdtempSync(join(tmpdir(), lzDirPrefix('run', process.pid)));
     const outDir = join(runDir, 'out');
     const tmpDir = join(runDir, 'tmp');
@@ -850,7 +1002,12 @@ export class LzNodeTestTestRunner implements TestRunner {
         tmpDir,
         run:
           copy && !run.dryRun
-            ? { ...run, testFilter: run.testFilter?.map((id) => lzRebase(id, copy.sandbox, copy.dir)) }
+            ? {
+                ...run,
+                testFilter: run.testFilter?.map((id) =>
+                  lzRebase(id, copy.sandbox, copy.dir),
+                ),
+              }
             : run,
         cacheDir: this.#cacheDir,
         nodeOptions,
@@ -892,7 +1049,10 @@ export class LzNodeTestTestRunner implements TestRunner {
       }
 
       deadline?.signal.addEventListener('abort', end);
-      const { exitCode, stderr } = await processEnd(child, process.platform).finally(() => {
+      const { exitCode, stderr } = await processEnd(
+        child,
+        process.platform,
+      ).finally(() => {
         deadline?.signal.removeEventListener('abort', end);
       });
       let unreadable: string | undefined;
@@ -900,9 +1060,13 @@ export class LzNodeTestTestRunner implements TestRunner {
         .filter(lzIsRecordName)
         .flatMap((name) => {
           try {
-            const record = lzParseRecord(readFileSync(join(outDir, name), 'utf8'));
+            const record = lzParseRecord(
+              readFileSync(join(outDir, name), 'utf8'),
+            );
 
-            return [copy ? lzRebaseRecord(record, copy.dir, copy.sandbox) : record];
+            return [
+              copy ? lzRebaseRecord(record, copy.dir, copy.sandbox) : record,
+            ];
           } catch (error) {
             // lzWriteRecord leaves a whole record or none, so this is a file that something else wrote at a record's
             // name, or one that cannot be read.
@@ -927,6 +1091,12 @@ export class LzNodeTestTestRunner implements TestRunner {
   }
 }
 
-export const strykerPlugins = [declareClassPlugin(PluginKind.TestRunner, 'lz-node-test', LzNodeTestTestRunner)];
+export const strykerPlugins = [
+  declareClassPlugin(
+    PluginKind.TestRunner,
+    'lz-node-test',
+    LzNodeTestTestRunner,
+  ),
+];
 
 export const strykerValidationSchema = schema;

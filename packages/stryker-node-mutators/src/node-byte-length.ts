@@ -30,7 +30,8 @@ export const nodeByteLength: LzMutator<'LzNodeByteLength'> = {
       text === undefined ||
       !text.isExpression() ||
       (text.isCallExpression() && bufferResults.has(bufferMethod(text))) ||
-      (encoding !== undefined && !(encoding.isStringLiteral() && utf8.has(encoding.node.value)))
+      (encoding !== undefined &&
+        !(encoding.isStringLiteral() && utf8.has(encoding.node.value)))
     ) {
       return;
     }
@@ -40,7 +41,9 @@ export const nodeByteLength: LzMutator<'LzNodeByteLength'> = {
 };
 
 /** The method of the global `Buffer` that `call` calls, if any. */
-function bufferMethod(call: NodePath<types.CallExpression>): string | undefined {
+function bufferMethod(
+  call: NodePath<types.CallExpression>,
+): string | undefined {
   const { callee } = call.node;
 
   if (

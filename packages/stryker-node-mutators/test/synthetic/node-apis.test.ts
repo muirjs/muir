@@ -7,12 +7,28 @@ import timers from 'node:timers';
 import timersPromises from 'node:timers/promises';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
-import { closed, idle, later, onEnd, onFinish, onIdle, onSent, pause, poll, share, total, wait } from './node-apis.ts';
+import {
+  closed,
+  idle,
+  later,
+  onEnd,
+  onFinish,
+  onIdle,
+  onSent,
+  pause,
+  poll,
+  share,
+  total,
+  wait,
+} from './node-apis.ts';
 
 const ms = 10;
 
 interface TimerMock {
-  mock: { readonly calls: readonly { readonly arguments: unknown }[]; restore(): void };
+  mock: {
+    readonly calls: readonly { readonly arguments: unknown }[];
+    restore(): void;
+  };
 }
 
 function settle(): Promise<void> {
@@ -21,7 +37,10 @@ function settle(): Promise<void> {
 
 const timer = () => ({ unref() {} });
 
-async function callsOf(mockTimer: () => TimerMock, run: () => unknown): Promise<unknown[]> {
+async function callsOf(
+  mockTimer: () => TimerMock,
+  run: () => unknown,
+): Promise<unknown[]> {
   const fake = mockTimer();
   syncBuiltinESMExports();
 
@@ -39,14 +58,42 @@ describe('the timers', () => {
   const callback = () => {};
 
   lzTestEach([
-    ['pause', () => mock.method(timersPromises, 'setTimeout', timer), () => pause(ms), [ms]],
-    ['wait', () => mock.method(timersPromises.scheduler, 'wait', timer), () => wait(ms), [ms]],
-    ['later', () => mock.method(timers, 'setTimeout', timer), () => later(callback, ms), [callback, ms]],
-    ['idle', () => mock.method(globalThis, 'setTimeout', timer), () => idle(callback, ms), [callback, ms]],
-    ['poll', () => mock.method(globalThis, 'setInterval', timer), () => poll(callback), [callback, 100]],
-  ])('%s gives the timer its milliseconds', async (_name, mockTimer, run, args) => {
-    assert.deepEqual(await callsOf(mockTimer, run), [args]);
-  });
+    [
+      'pause',
+      () => mock.method(timersPromises, 'setTimeout', timer),
+      () => pause(ms),
+      [ms],
+    ],
+    [
+      'wait',
+      () => mock.method(timersPromises.scheduler, 'wait', timer),
+      () => wait(ms),
+      [ms],
+    ],
+    [
+      'later',
+      () => mock.method(timers, 'setTimeout', timer),
+      () => later(callback, ms),
+      [callback, ms],
+    ],
+    [
+      'idle',
+      () => mock.method(globalThis, 'setTimeout', timer),
+      () => idle(callback, ms),
+      [callback, ms],
+    ],
+    [
+      'poll',
+      () => mock.method(globalThis, 'setInterval', timer),
+      () => poll(callback),
+      [callback, 100],
+    ],
+  ])(
+    '%s gives the timer its milliseconds',
+    async (_name, mockTimer, run, args) => {
+      assert.deepEqual(await callsOf(mockTimer, run), [args]);
+    },
+  );
 });
 
 describe('closed', () => {
@@ -70,7 +117,9 @@ describe('closed', () => {
 describe('the stream listeners', () => {
   it('onFinish calls back when the stream finishes, before it closes', async () => {
     const events: string[] = [];
-    const stream = new Writable({ write: (_chunk, _encoding, callback) => callback() });
+    const stream = new Writable({
+      write: (_chunk, _encoding, callback) => callback(),
+    });
     onFinish(stream, () => events.push('done'));
     stream.on('finish', () => events.push('finish'));
     stream.on('close', () => events.push('close'));
@@ -83,7 +132,9 @@ describe('the stream listeners', () => {
 
   it('onSent calls back when the raw stream of a reply finishes, before it closes', async () => {
     const events: string[] = [];
-    const stream = new Writable({ write: (_chunk, _encoding, callback) => callback() });
+    const stream = new Writable({
+      write: (_chunk, _encoding, callback) => callback(),
+    });
     onSent({ raw: stream }, () => events.push('done'));
     stream.on('finish', () => events.push('finish'));
     stream.on('close', () => events.push('close'));
@@ -115,7 +166,10 @@ describe('onIdle', () => {
 
     try {
       assert.deepEqual(
-        [process.listeners('beforeExit').includes(listener), process.listeners('exit').includes(listener)],
+        [
+          process.listeners('beforeExit').includes(listener),
+          process.listeners('exit').includes(listener),
+        ],
         [true, false],
       );
     } finally {

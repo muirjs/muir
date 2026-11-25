@@ -53,11 +53,24 @@ export function lzParseReport(json: string): LzReport {
     notAReport('files');
   }
 
-  return new Map(Object.entries(files).map(([file, entry]) => [file, parseFile(entry, `files["${file}"]`)]));
+  return new Map(
+    Object.entries(files).map(([file, entry]) => [
+      file,
+      parseFile(entry, `files["${file}"]`),
+    ]),
+  );
 }
 
-export function lzMutantLine({ line, column, mutator, replacement, status }: LzMutantDetail): string {
-  return [`${line}:${column}`, mutator, lzOneLine(replacement), status].filter((part) => part !== '').join(' ');
+export function lzMutantLine({
+  line,
+  column,
+  mutator,
+  replacement,
+  status,
+}: LzMutantDetail): string {
+  return [`${line}:${column}`, mutator, lzOneLine(replacement), status]
+    .filter((part) => part !== '')
+    .join(' ');
 }
 
 /** As Stryker's incremental mode keys a mutant: file, location, mutator and the raw replacement. */
@@ -70,7 +83,11 @@ export function lzMutantLabel(file: string, mutant: LzMutantDetail): string {
   return mutantAt(file, mutant, lzOneLine(mutant.replacement));
 }
 
-function mutantAt(file: string, { line, column, endLine, endColumn, mutator }: LzMutantDetail, text: string): string {
+function mutantAt(
+  file: string,
+  { line, column, endLine, endColumn, mutator }: LzMutantDetail,
+  text: string,
+): string {
   return `${file}:${line}:${column}-${endLine}:${endColumn} ${mutator} ${text}`;
 }
 
@@ -82,16 +99,22 @@ export interface LzKeyedMutant {
 /** Each mutant by its key, refusing two at one key, which a comparison would drop. */
 export function lzMutantsByKey(report: LzReport): Map<string, LzKeyedMutant> {
   const entries = [...report].flatMap(([file, mutants]) =>
-    mutants.map((mutant): [string, LzKeyedMutant] => [lzMutantKey(file, mutant), { file, mutant }]),
+    mutants.map((mutant): [string, LzKeyedMutant] => [
+      lzMutantKey(file, mutant),
+      { file, mutant },
+    ]),
   );
   const byKey = new Map(entries);
 
   if (byKey.size !== entries.length) {
     const keys = entries.map(([key]) => key);
     // Stryker disable next-line StringLiteral: equivalent, as a map smaller than its entries always has a key that find returns
-    const duplicate = keys.find((key, index) => keys.indexOf(key) !== index) ?? '';
+    const duplicate =
+      keys.find((key, index) => keys.indexOf(key) !== index) ?? '';
 
-    throw new Error(`Two mutants share the key "${duplicate}"; the comparison would drop one.`);
+    throw new Error(
+      `Two mutants share the key "${duplicate}"; the comparison would drop one.`,
+    );
   }
 
   return byKey;
@@ -113,7 +136,9 @@ function parseFile(entry: unknown, path: string): LzMutantDetail[] {
 
   const mutants: unknown[] = entry['mutants'];
 
-  return mutants.map((mutant, index) => parseMutant(mutant, `${path}.mutants[${index}]`)).sort(byPosition);
+  return mutants
+    .map((mutant, index) => parseMutant(mutant, `${path}.mutants[${index}]`))
+    .sort(byPosition);
 }
 
 function parseMutant(mutant: unknown, path: string): LzMutantDetail {
@@ -134,11 +159,19 @@ function parseMutant(mutant: unknown, path: string): LzMutantDetail {
   const start = lzIsRecord(location) ? location['start'] : undefined;
   const end = lzIsRecord(location) ? location['end'] : undefined;
 
-  if (!lzIsRecord(start) || typeof start['line'] !== 'number' || typeof start['column'] !== 'number') {
+  if (
+    !lzIsRecord(start) ||
+    typeof start['line'] !== 'number' ||
+    typeof start['column'] !== 'number'
+  ) {
     notAReport(`${path}.location.start`);
   }
 
-  if (!lzIsRecord(end) || typeof end['line'] !== 'number' || typeof end['column'] !== 'number') {
+  if (
+    !lzIsRecord(end) ||
+    typeof end['line'] !== 'number' ||
+    typeof end['column'] !== 'number'
+  ) {
     notAReport(`${path}.location.end`);
   }
 
@@ -205,7 +238,9 @@ function isStatus(value: unknown): value is LzMutantStatus {
 }
 
 export function lzIsStrings(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === 'string')
+  );
 }
 
 function notAReport(field?: string): never {

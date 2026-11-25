@@ -2,7 +2,11 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
 import { lzExec } from '../exec.ts';
-import { lzParseProcSamples, lzParseSamples, type LzProcessRow } from './processes.ts';
+import {
+  lzParseProcSamples,
+  lzParseSamples,
+  type LzProcessRow,
+} from './processes.ts';
 
 export interface LzSamples {
   /** Every complete sample, each a list of every process on the machine. */
@@ -54,9 +58,14 @@ const linuxReader: LzProcessReader = {
 };
 
 /** Samples every process once a second, in one shell process, until `stop`. */
-export async function lzStartSampler({ command, args, loop, parse } = lzProcessReader()): Promise<LzSampler> {
+export async function lzStartSampler(
+  { command, args, loop, parse } = lzProcessReader(),
+): Promise<LzSampler> {
   // Stryker disable next-line BooleanLiteral: equivalent to a test, as a console window shown or hidden changes no output it can read
-  const child = spawn(command, [...args, loop], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+  const child = spawn(command, [...args, loop], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
 
   await once(child, 'spawn');
 
@@ -64,8 +73,12 @@ export async function lzStartSampler({ command, args, loop, parse } = lzProcessR
   const errors: string[] = [];
   const closed = once(child, 'close');
 
-  child.stdout.setEncoding('utf8').on('data', (chunk: string) => chunks.push(chunk));
-  child.stderr.setEncoding('utf8').on('data', (chunk: string) => errors.push(chunk));
+  child.stdout
+    .setEncoding('utf8')
+    .on('data', (chunk: string) => chunks.push(chunk));
+  child.stderr
+    .setEncoding('utf8')
+    .on('data', (chunk: string) => errors.push(chunk));
 
   if (child.pid === undefined) {
     // Stryker disable next-line StringLiteral: unreachable, as a child that emitted spawn has a pid
@@ -96,18 +109,26 @@ export async function lzStartSampler({ command, args, loop, parse } = lzProcessR
 export async function lzSnapshot(
   { command, args, sample: script, parse } = lzProcessReader(),
 ): Promise<LzProcessRow[]> {
-  const { exitCode, stdout, stderr } = await lzExec(command, [...args, script], { cwd: process.cwd() });
+  const { exitCode, stdout, stderr } = await lzExec(
+    command,
+    [...args, script],
+    { cwd: process.cwd() },
+  );
   const [sample] = parse(stdout);
 
   if (exitCode !== 0 || stderr !== '' || sample === undefined) {
-    throw new Error(`The process snapshot failed with exit code ${exitCode}:\n${stderr}`);
+    throw new Error(
+      `The process snapshot failed with exit code ${exitCode}:\n${stderr}`,
+    );
   }
 
   return sample;
 }
 
 /** The reader for `platform`, this one by default. */
-export function lzProcessReader(platform: NodeJS.Platform = process.platform): LzProcessReader {
+export function lzProcessReader(
+  platform: NodeJS.Platform = process.platform,
+): LzProcessReader {
   if (platform === 'win32') {
     return windowsReader;
   }
@@ -116,5 +137,7 @@ export function lzProcessReader(platform: NodeJS.Platform = process.platform): L
     return linuxReader;
   }
 
-  throw new Error(`The process sampler reads Win32_Process or /proc; ${platform} has neither.`);
+  throw new Error(
+    `The process sampler reads Win32_Process or /proc; ${platform} has neither.`,
+  );
 }

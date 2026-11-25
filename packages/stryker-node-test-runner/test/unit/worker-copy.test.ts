@@ -17,7 +17,12 @@ import { describe, it, type TestContext } from 'node:test';
 
 import type { ProcessRecord } from '../../src/record.ts';
 import { logger } from '../runner.fixtures.ts';
-import { lzCopySandbox, lzRebase, lzRebaseRecord, lzRemoveCopy } from '../../src/worker-copy.ts';
+import {
+  lzCopySandbox,
+  lzRebase,
+  lzRebaseRecord,
+  lzRemoveCopy,
+} from '../../src/worker-copy.ts';
 
 describe('lzRebase', () => {
   it("gives a test id under the sandbox the copy's path instead", () => {
@@ -42,13 +47,20 @@ describe('lzRebase', () => {
     const copy = join('work', 'copy');
 
     assert.equal(
-      lzRebase(`${join(sandbox, 'a.test.js')} > writes ${join(sandbox, 'out')}`, sandbox, copy),
+      lzRebase(
+        `${join(sandbox, 'a.test.js')} > writes ${join(sandbox, 'out')}`,
+        sandbox,
+        copy,
+      ),
       `${join(copy, 'a.test.js')} > writes ${join(copy, 'out')}`,
     );
   });
 });
 
-function sandboxDir(t: TestContext, files: Readonly<Record<string, string>>): string {
+function sandboxDir(
+  t: TestContext,
+  files: Readonly<Record<string, string>>,
+): string {
   const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'worker-copy-')));
   const sandbox = join(root, 'sandbox');
 
@@ -57,7 +69,12 @@ function sandboxDir(t: TestContext, files: Readonly<Record<string, string>>): st
     writeFileSync(join(sandbox, name), content);
   });
   t.after(async () => {
-    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await rm(root, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100,
+    });
   });
 
   return sandbox;
@@ -78,7 +95,10 @@ describe('lzCopySandbox', () => {
 
     assert.equal(dirname(copy), dirname(sandbox));
     assert.ok(basename(copy).startsWith('lz-node-test-copy-123-'), copy);
-    assert.equal(readFileSync(join(copy, 'test', 'a.test.js'), 'utf8'), 'content');
+    assert.equal(
+      readFileSync(join(copy, 'test', 'a.test.js'), 'utf8'),
+      'content',
+    );
   });
 
   it("links to what the sandbox's directory links point at, as Stryker links node_modules, without copying it", (t) => {
@@ -100,7 +120,10 @@ describe('lzCopySandbox', () => {
 
     const { dir: copy } = lzCopySandbox(sandbox, 123);
 
-    assert.equal(readlinkSync(join(copy, 'dangling')), readlinkSync(join(sandbox, 'dangling')));
+    assert.equal(
+      readlinkSync(join(copy, 'dangling')),
+      readlinkSync(join(sandbox, 'dangling')),
+    );
   });
 
   it('lists the links it made in the copy, so a caller can remove them before the folder', (t) => {
@@ -120,7 +143,10 @@ describe('lzCopySandbox', () => {
 
     const { dir: copy } = lzCopySandbox(sandbox, 123);
 
-    assert.equal(realpathSync.native(join(copy, 'relative')), join(copy, 'sub'));
+    assert.equal(
+      realpathSync.native(join(copy, 'relative')),
+      join(copy, 'sub'),
+    );
   });
 
   it('links a link whose target is missing as a directory link, so it works once the target folder exists', (t) => {
@@ -172,7 +198,10 @@ describe('lzRemoveCopy', () => {
 
     await run();
 
-    assert.deepEqual(calls, [...copy.links.map((link) => `unlink ${link}`), `remove ${copy.dir}`]);
+    assert.deepEqual(calls, [
+      ...copy.links.map((link) => `unlink ${link}`),
+      `remove ${copy.dir}`,
+    ]);
   });
 
   it('leaves the folder for a later runner and warns when a link cannot be removed', async () => {
@@ -183,7 +212,10 @@ describe('lzRemoveCopy', () => {
 
     assert.deepEqual(calls, [`unlink ${failingLink}`]);
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0] ?? '', /Left .*copy.* for a later runner to remove: EPERM/);
+    assert.match(
+      warnings[0] ?? '',
+      /Left .*copy.* for a later runner to remove: EPERM/,
+    );
   });
 });
 
@@ -194,17 +226,35 @@ describe('lzRebaseRecord', () => {
     const span = [{ start: 1, end: 2 }];
     const record: ProcessRecord = {
       main: true,
-      tests: [{ id: `${join(copy, 'a.test.js')} > adds`, status: 'passed', timeSpentMs: 3 }],
+      tests: [
+        {
+          id: `${join(copy, 'a.test.js')} > adds`,
+          status: 'passed',
+          timeSpentMs: 3,
+        },
+      ],
       hitCount: 4,
-      mutantCoverage: { static: { '1': 1 }, perTest: { [`${join(copy, 'a.test.js')} > adds`]: { '2': 1 } } },
+      mutantCoverage: {
+        static: { '1': 1 },
+        perTest: { [`${join(copy, 'a.test.js')} > adds`]: { '2': 1 } },
+      },
       testSpans: { [`${join(copy, 'a.test.js')} > adds`]: span },
     };
 
     assert.deepEqual(lzRebaseRecord(record, copy, sandbox), {
       main: true,
-      tests: [{ id: `${join(sandbox, 'a.test.js')} > adds`, status: 'passed', timeSpentMs: 3 }],
+      tests: [
+        {
+          id: `${join(sandbox, 'a.test.js')} > adds`,
+          status: 'passed',
+          timeSpentMs: 3,
+        },
+      ],
       hitCount: 4,
-      mutantCoverage: { static: { '1': 1 }, perTest: { [`${join(sandbox, 'a.test.js')} > adds`]: { '2': 1 } } },
+      mutantCoverage: {
+        static: { '1': 1 },
+        perTest: { [`${join(sandbox, 'a.test.js')} > adds`]: { '2': 1 } },
+      },
       testSpans: { [`${join(sandbox, 'a.test.js')} > adds`]: span },
     });
   });

@@ -24,9 +24,12 @@ it.only('reads what a before hook computed', () => {
   assert.equal(tripled, 9);
 });
 
-lzTestFor.only([{ n: 2, negated: -2 }])('negates $n to $negated', ({ n, negated }, t) => {
-  t.assert.equal(negate(n), negated);
-});
+lzTestFor.only([{ n: 2, negated: -2 }])(
+  'negates $n to $negated',
+  ({ n, negated }, t) => {
+    t.assert.equal(negate(n), negated);
+  },
+);
 
 // nodeArgs passes --test-only, so this test never runs.
 it('halves', () => {

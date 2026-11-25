@@ -1,10 +1,17 @@
 import type { NodePath } from '@babel/core';
 
-import { lzImportOf, lzPropertyName, type LzMutator } from '@layzee/stryker-mutator-core';
+import {
+  lzImportOf,
+  lzPropertyName,
+  type LzMutator,
+} from '@layzee/stryker-mutator-core';
 import { lzNodeTest as nodeTest } from './bindings.ts';
 import { isNodeAssertCall } from './node-bindings.ts';
 
-const teardowns: ReadonlySet<string | undefined> = new Set(['after', 'afterEach']);
+const teardowns: ReadonlySet<string | undefined> = new Set([
+  'after',
+  'afterEach',
+]);
 
 /**
  * StatementRemoval for `await f();`: Stryker's CallExpression mutator removes `f();` but not an awaited call, so a
@@ -35,21 +42,30 @@ export const nodeAwaitStatement: LzMutator = {
 };
 
 function isInsideTeardown(path: NodePath): boolean {
-  return path.findParent((parent) => parent.isFunction() && teardowns.has(nodeTestCallee(parent)?.name)) !== null;
+  return (
+    path.findParent(
+      (parent) =>
+        parent.isFunction() && teardowns.has(nodeTestCallee(parent)?.name),
+    ) !== null
+  );
 }
 
 /** Narrower than any parameter, as bindings.ts takes for `t.assert`: a fastify plugin's `app` parameter has `after` too. */
 function isTestContext(path: NodePath, name: string): boolean {
   const callback = path.scope.getBinding(name)?.path.parentPath;
 
-  return callback?.isFunction() === true && nodeTestCallee(callback) !== undefined;
+  return (
+    callback?.isFunction() === true && nodeTestCallee(callback) !== undefined
+  );
 }
 
 /**
  * The node:test function that `callback` is passed to: an import, by its imported name (undefined for the default
  * export), or a method of a node:test import or of a test context.
  */
-function nodeTestCallee(callback: NodePath): { readonly name: string | undefined } | undefined {
+function nodeTestCallee(
+  callback: NodePath,
+): { readonly name: string | undefined } | undefined {
   const call = callback.parentPath;
 
   if (call.node.type !== 'CallExpression') {
@@ -61,15 +77,23 @@ function nodeTestCallee(callback: NodePath): { readonly name: string | undefined
   if (callee.type === 'Identifier') {
     const from = lzImportOf(call, callee.name);
 
-    return from !== undefined && nodeTest.has(from.source) ? { name: from.imported } : undefined;
+    return from !== undefined && nodeTest.has(from.source)
+      ? { name: from.imported }
+      : undefined;
   }
 
-  if (callee.type !== 'MemberExpression' || callee.object.type !== 'Identifier') {
+  if (
+    callee.type !== 'MemberExpression' ||
+    callee.object.type !== 'Identifier'
+  ) {
     return undefined;
   }
 
   const from = lzImportOf(call, callee.object.name);
-  const onNodeTest = from === undefined ? isTestContext(call, callee.object.name) : nodeTest.has(from.source);
+  const onNodeTest =
+    from === undefined
+      ? isTestContext(call, callee.object.name)
+      : nodeTest.has(from.source);
 
   return onNodeTest ? { name: lzPropertyName(callee) } : undefined;
 }

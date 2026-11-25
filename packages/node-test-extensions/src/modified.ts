@@ -14,7 +14,10 @@ export type LzTestModified<TFunction> = TFunction & {
   runIf(condition: unknown): LzTestModified<TFunction>;
 };
 
-type Table<TCallback> = (cases: readonly unknown[], ...values: unknown[]) => Register<TCallback>;
+type Table<TCallback> = (
+  cases: readonly unknown[],
+  ...values: unknown[]
+) => Register<TCallback>;
 
 /** The table function for `cases`, which turns a table into its tests' `Register`, with `flags` and the modifiers. */
 export function modified<TCallback>(
@@ -23,8 +26,10 @@ export function modified<TCallback>(
 ): LzTestModified<Table<TCallback>> {
   const table: Table<TCallback> = (rows, ...values) =>
     cases(flags, values.length > 0 ? templateRows(rows, values) : rows);
-  const flag = (key: keyof Flags) => () => modified(cases, { ...flags, [key]: true });
-  const skipWhen = (skip: boolean) => modified(cases, skip ? { ...flags, skip } : flags);
+  const flag = (key: keyof Flags) => () =>
+    modified(cases, { ...flags, [key]: true });
+  const skipWhen = (skip: boolean) =>
+    modified(cases, skip ? { ...flags, skip } : flags);
   const withConditions = Object.assign(table, {
     skipIf: (condition: unknown) => skipWhen(Boolean(condition)),
     runIf: (condition: unknown) => skipWhen(!condition),
@@ -40,7 +45,10 @@ export function modified<TCallback>(
 }
 
 /** The rows of a template literal table: one object per row, keyed by the column names of its first line. */
-export function templateRows(strings: readonly unknown[], values: readonly unknown[]): Record<string, unknown>[] {
+export function templateRows(
+  strings: readonly unknown[],
+  values: readonly unknown[],
+): Record<string, unknown>[] {
   const columns = strings
     .join('')
     .trim()
@@ -50,7 +58,9 @@ export function templateRows(strings: readonly unknown[], values: readonly unkno
 
   // Array.from rounds the length down, which drops the values of an incomplete last row.
   return Array.from({ length: values.length / columns.length }, (_, row) =>
-    Object.fromEntries(columns.map((column, i) => [column, values[row * columns.length + i]])),
+    Object.fromEntries(
+      columns.map((column, i) => [column, values[row * columns.length + i]]),
+    ),
   );
 }
 

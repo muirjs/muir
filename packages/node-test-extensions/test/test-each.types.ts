@@ -53,7 +53,11 @@ lzTestEach([1])(Math.max, () => {});
 // @ts-expect-error A name is a string, a function or a class.
 lzTestEach([1])({ name: 'x' }, () => {});
 lzTestEach([1])('timeout', () => {}, 100);
-lzTestEach([1])('options', { timeout: 100, fails: true, skip: 'reason' }, () => {});
+lzTestEach([1])(
+  'options',
+  { timeout: 100, fails: true, skip: 'reason' },
+  () => {},
+);
 lzTestEach([1])('todo');
 // @ts-expect-error The options go before the function.
 lzTestEach([1])('options last', () => {}, { timeout: 100 });

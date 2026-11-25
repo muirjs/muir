@@ -54,7 +54,10 @@ export const configs: readonly StrykerConfigRow[] = [
     file: 'packages/stryker-js-mutators/stryker.config.mjs',
     project: '@layzee/stryker-js-mutators',
     config: 'src',
-    mutate: ['packages/stryker-js-mutators/src/**/*.ts', 'packages/stryker-js-mutators/test/synthetic/js-shapes.ts'],
+    mutate: [
+      'packages/stryker-js-mutators/src/**/*.ts',
+      'packages/stryker-js-mutators/test/synthetic/js-shapes.ts',
+    ],
   },
   {
     file: 'packages/stryker-js-mutators/stryker.test-code.config.mjs',
@@ -86,7 +89,12 @@ export const configs: readonly StrykerConfigRow[] = [
     config: 'test-code',
     mutate: ['packages/stryker-node-test-runner/test/**/*.test.ts'],
   },
-  { file: 'e2e/stryker.config.mjs', project: 'e2e', config: 'src', mutate: ['e2e/src/**/*.ts'] },
+  {
+    file: 'e2e/stryker.config.mjs',
+    project: 'e2e',
+    config: 'src',
+    mutate: ['e2e/src/**/*.ts'],
+  },
   {
     file: 'e2e/stryker.test-code.config.mjs',
     project: 'e2e',
@@ -97,7 +105,11 @@ export const configs: readonly StrykerConfigRow[] = [
     file: 'tools/eslint-rules/stryker.config.mjs',
     project: '@layzee/eslint-rules',
     config: 'src',
-    mutate: ['tools/eslint-rules/*.ts', '!tools/eslint-rules/*.test.ts', '!tools/eslint-rules/*.fixtures.ts'],
+    mutate: [
+      'tools/eslint-rules/*.ts',
+      '!tools/eslint-rules/*.test.ts',
+      '!tools/eslint-rules/*.fixtures.ts',
+    ],
   },
   {
     file: 'tools/eslint-rules/stryker.test-code.config.mjs',
@@ -109,10 +121,18 @@ export const configs: readonly StrykerConfigRow[] = [
 
 export function expandGlobs(patterns: readonly string[]): string[] {
   const glob = (globs: readonly string[]): string[] =>
-    globSync(globs, { cwd: workspaceRoot }).map((file) => file.replaceAll('\\', '/'));
+    globSync(globs, { cwd: workspaceRoot }).map((file) =>
+      file.replaceAll('\\', '/'),
+    );
   const excluded = new Set(
-    glob(patterns.filter((pattern) => pattern.startsWith('!')).map((pattern) => pattern.slice(1))),
+    glob(
+      patterns
+        .filter((pattern) => pattern.startsWith('!'))
+        .map((pattern) => pattern.slice(1)),
+    ),
   );
 
-  return glob(patterns.filter((pattern) => !pattern.startsWith('!'))).filter((file) => !excluded.has(file));
+  return glob(patterns.filter((pattern) => !pattern.startsWith('!'))).filter(
+    (file) => !excluded.has(file),
+  );
 }

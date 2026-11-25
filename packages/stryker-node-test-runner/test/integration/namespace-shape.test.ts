@@ -26,10 +26,14 @@ const child = [
 
 describe("Stryker's namespace", () => {
   it('keeps fast properties when a test ends and when the hook attributes the process to no test', () => {
-    const run = spawnSync(process.execPath, ['--allow-natives-syntax', '--input-type=module', '-e', child], {
-      encoding: 'utf8',
-      windowsHide: true,
-    });
+    const run = spawnSync(
+      process.execPath,
+      ['--allow-natives-syntax', '--input-type=module', '-e', child],
+      {
+        encoding: 'utf8',
+        windowsHide: true,
+      },
+    );
 
     assert.equal(run.status, 0, run.stderr);
     const shapes: unknown = JSON.parse(run.stdout);

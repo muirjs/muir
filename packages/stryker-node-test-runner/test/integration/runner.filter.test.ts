@@ -42,10 +42,15 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     const runner = await initRunner(['a.test.mjs']);
     const testFilter = [`${join(dir, 'a.test.mjs')} > selected`];
 
-    assert.deepEqual(withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ testFilter })))), {
-      status: MutantRunStatus.Survived,
-      nrOfTests: 1,
-    });
+    assert.deepEqual(
+      withoutDuration(
+        await settle(runner.mutantRun(mutantRunOptions({ testFilter }))),
+      ),
+      {
+        status: MutantRunStatus.Survived,
+        nrOfTests: 1,
+      },
+    );
   });
 
   it('runs the subtests of a filtered test, so a subtest kills a mutant that only its parent covers', async (t) => {
@@ -60,26 +65,48 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     });
     const runner = await initRunner(['a.test.mjs']);
     const parent = `${join(dir, 'a.test.mjs')} > parent`;
-    const result = await settle(runner.mutantRun(mutantRunOptions({ testFilter: [parent] })));
+    const result = await settle(
+      runner.mutantRun(mutantRunOptions({ testFilter: [parent] })),
+    );
 
     assert.strictEqual(result.status, MutantRunStatus.Killed);
-    assert.ok(result.killedBy.includes(`${parent} > child`), result.killedBy.join(', '));
+    assert.ok(
+      result.killedBy.includes(`${parent} > child`),
+      result.killedBy.join(', '),
+    );
   });
 
   it("runs the dry run's test files in another runner's mutant runs, though Stryker's testFiles name them by absolute path", async (t) => {
-    const kills = fixture(`it('kills', () => { assert.equal(process.env.${activeMutant}, undefined); });`);
+    const kills = fixture(
+      `it('kills', () => { assert.equal(process.env.${activeMutant}, undefined); });`,
+    );
     // Stryker hands the dry run the sandbox copies of its absolute testFiles, and every runner the original paths.
-    const dir = project(t, { 'a.test.mjs': kills, 'original/a.test.mjs': kills });
+    const dir = project(t, {
+      'a.test.mjs': kills,
+      'original/a.test.mjs': kills,
+    });
     const options = { testFiles: [join(dir, 'original', 'a.test.mjs')] };
     const dryRunner = await initRunner(['none.test.mjs'], undefined, options);
     const a = join(dir, 'a.test.mjs');
 
-    assert.deepEqual(summary(complete(await settle(dryRunner.dryRun({ ...dryRun, testFiles: [a] }))).tests), [
-      passed(`${a} > kills`),
-    ]);
+    assert.deepEqual(
+      summary(
+        complete(await settle(dryRunner.dryRun({ ...dryRun, testFiles: [a] })))
+          .tests,
+      ),
+      [passed(`${a} > kills`)],
+    );
 
-    const mutantRunner = await initRunner(['none.test.mjs'], undefined, options);
-    const result = await settle(mutantRunner.mutantRun(mutantRunOptions({ testFilter: [`${a} > kills`] })));
+    const mutantRunner = await initRunner(
+      ['none.test.mjs'],
+      undefined,
+      options,
+    );
+    const result = await settle(
+      mutantRunner.mutantRun(
+        mutantRunOptions({ testFilter: [`${a} > kills`] }),
+      ),
+    );
 
     assert.equal(result.status, MutantRunStatus.Killed);
   });
@@ -117,7 +144,13 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     const a = join(dir, 'a.test.mjs');
 
     assert.deepEqual(
-      withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ testFilter: [`${a} > selected > runs`] })))),
+      withoutDuration(
+        await settle(
+          runner.mutantRun(
+            mutantRunOptions({ testFilter: [`${a} > selected > runs`] }),
+          ),
+        ),
+      ),
       {
         status: MutantRunStatus.Survived,
         nrOfTests: 1,
@@ -147,19 +180,33 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     ];
     const passedB = passed(`${join(dir, 'b.test.mjs')} > passes`);
 
-    assert.deepEqual(summary(complete(await settle(runner.dryRun(dryRun))).tests), [passedA, failedA, ...laterA]);
-    const { tests } = complete(await settle(runner.dryRun({ ...dryRun, disableBail: true })));
+    assert.deepEqual(
+      summary(complete(await settle(runner.dryRun(dryRun))).tests),
+      [passedA, failedA, ...laterA],
+    );
+    const { tests } = complete(
+      await settle(runner.dryRun({ ...dryRun, disableBail: true })),
+    );
     assert.deepEqual(summary(tests), [passedA, failedA, ...laterA, passedB]);
     const timeout = timeoutFromDryRun(tests, mutantRunOptions().timeout);
 
-    assert.deepEqual(withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ timeout })))), {
-      status: MutantRunStatus.Killed,
-      killedBy: [failedA.id],
-      failureMessage: 'expected failure',
-      nrOfTests: 2,
-    });
     assert.deepEqual(
-      withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ timeout, disableBail: true })))),
+      withoutDuration(
+        await settle(runner.mutantRun(mutantRunOptions({ timeout }))),
+      ),
+      {
+        status: MutantRunStatus.Killed,
+        killedBy: [failedA.id],
+        failureMessage: 'expected failure',
+        nrOfTests: 2,
+      },
+    );
+    assert.deepEqual(
+      withoutDuration(
+        await settle(
+          runner.mutantRun(mutantRunOptions({ timeout, disableBail: true })),
+        ),
+      ),
       {
         status: MutantRunStatus.Killed,
         killedBy: [failedA.id, ...laterA.map((test) => test.id)],
@@ -183,30 +230,47 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     const runner = await initRunner(['*.test.mjs']);
     const testFilter = [`${join(dir, 'a.test.mjs')} > sees the mutant`];
 
-    assert.deepEqual(withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ testFilter })))), {
-      status: MutantRunStatus.Survived,
-      nrOfTests: 1,
-    });
+    assert.deepEqual(
+      withoutDuration(
+        await settle(runner.mutantRun(mutantRunOptions({ testFilter }))),
+      ),
+      {
+        status: MutantRunStatus.Survived,
+        nrOfTests: 1,
+      },
+    );
   });
 
   it("runs every test of a file that a mutant run's filter names, as Stryker does with --testFiles", async (t) => {
     const dir = project(t, {
-      'a.test.mjs': fixture("it('passes', () => {});", "it('fails', () => { throw new Error('expected failure'); });"),
+      'a.test.mjs': fixture(
+        "it('passes', () => {});",
+        "it('fails', () => { throw new Error('expected failure'); });",
+      ),
       'b.test.mjs': failing,
     });
     const runner = await initRunner(['*.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    assert.deepEqual(withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ testFilter: [a] })))), {
-      status: MutantRunStatus.Killed,
-      killedBy: [`${a} > fails`],
-      failureMessage: 'expected failure',
-      nrOfTests: 2,
-    });
+    assert.deepEqual(
+      withoutDuration(
+        await settle(runner.mutantRun(mutantRunOptions({ testFilter: [a] }))),
+      ),
+      {
+        status: MutantRunStatus.Killed,
+        killedBy: [`${a} > fails`],
+        failureMessage: 'expected failure',
+        nrOfTests: 2,
+      },
+    );
   });
 
   it("runs only the files of Stryker's --testFiles in the dry run and every runner's mutant runs, also outside lzNodeTest.testFiles", async (t) => {
-    const dir = project(t, { 'a.test.mjs': passing, 'b.test.mjs': failing, 'c.spec.mjs': failing });
+    const dir = project(t, {
+      'a.test.mjs': passing,
+      'b.test.mjs': failing,
+      'c.spec.mjs': failing,
+    });
     const options = { testFiles: ['c.spec.mjs'] };
     const runner = await initRunner(['*.test.mjs'], {}, options);
     const c = join(dir, 'c.spec.mjs');
@@ -217,17 +281,29 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
       nrOfTests: 1,
     };
 
-    assert.deepEqual(summary(complete(await settle(runner.dryRun({ ...dryRun, testFiles: ['c.spec.mjs'] }))).tests), [
-      failed(`${c} > fails`, 'expected failure'),
-    ]);
+    assert.deepEqual(
+      summary(
+        complete(
+          await settle(runner.dryRun({ ...dryRun, testFiles: ['c.spec.mjs'] })),
+        ).tests,
+      ),
+      [failed(`${c} > fails`, 'expected failure')],
+    );
 
     const other = await initRunner(['*.test.mjs'], {}, options);
 
     assert.deepEqual(
-      withoutDuration(await settle(other.mutantRun(mutantRunOptions({ testFilter: [`${c} > fails`] })))),
+      withoutDuration(
+        await settle(
+          other.mutantRun(mutantRunOptions({ testFilter: [`${c} > fails`] })),
+        ),
+      ),
       killedByC,
     );
-    assert.deepEqual(withoutDuration(await settle(other.mutantRun(mutantRunOptions()))), killedByC);
+    assert.deepEqual(
+      withoutDuration(await settle(other.mutantRun(mutantRunOptions()))),
+      killedByC,
+    );
   });
 
   it('reports a statically activated mutant that breaks loading the test file as a runtime error', async (t) => {
@@ -240,8 +316,13 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     const runner = await initRunner(['a.test.mjs']);
     const a = join(dir, 'a.test.mjs');
 
-    assert.deepEqual(summary(complete(await settle(runner.dryRun(dryRun))).tests), [passed(`${a} > passes`)]);
-    const result = await settle(runner.mutantRun(mutantRunOptions({ mutantActivation: 'static' })));
+    assert.deepEqual(
+      summary(complete(await settle(runner.dryRun(dryRun))).tests),
+      [passed(`${a} > passes`)],
+    );
+    const result = await settle(
+      runner.mutantRun(mutantRunOptions({ mutantActivation: 'static' })),
+    );
     assert.strictEqual(result.status, MutantRunStatus.Error);
     assert.match(result.errorMessage, /Error: module-level mutant/);
   });
@@ -253,11 +334,19 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
         "it('greets', () => { assert.equal(greeting, 'original'); });",
       ),
     });
-    const runner = await initRunner(['a.test.mjs'], undefined, { testFiles: ['a.test.mjs'] });
+    const runner = await initRunner(['a.test.mjs'], undefined, {
+      testFiles: ['a.test.mjs'],
+    });
     const a = join(dir, 'a.test.mjs');
     // How Stryker 10.1 plans a static mutant when --testFiles is set: the test files as the filter, runtime activation.
     const result = await settle(
-      runner.mutantRun(mutantRunOptions({ testFilter: [a], mutantActivation: 'runtime', reloadEnvironment: true })),
+      runner.mutantRun(
+        mutantRunOptions({
+          testFilter: [a],
+          mutantActivation: 'runtime',
+          reloadEnvironment: true,
+        }),
+      ),
     );
 
     assert.strictEqual(result.status, MutantRunStatus.Killed);
@@ -277,10 +366,16 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
       const runner = await initRunner(['a.test.mjs']);
       const greets = `${join(dir, 'a.test.mjs')} > greets`;
       complete(await settle(runner.dryRun(dryRun)));
-      const mutantRunner = worker === 'the dry run' ? runner : await initRunner(['a.test.mjs']);
+      const mutantRunner =
+        worker === 'the dry run' ? runner : await initRunner(['a.test.mjs']);
 
       const result = await settle(
-        mutantRunner.mutantRun(mutantRunOptions({ testFilter: [greets], mutantActivation: 'runtime' })),
+        mutantRunner.mutantRun(
+          mutantRunOptions({
+            testFilter: [greets],
+            mutantActivation: 'runtime',
+          }),
+        ),
       );
 
       assert.strictEqual(result.status, MutantRunStatus.Killed);
@@ -303,7 +398,13 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     complete(await settle(runner.dryRun(dryRun)));
 
     assert.deepEqual(
-      withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ mutantActivation: 'runtime', testFilter })))),
+      withoutDuration(
+        await settle(
+          runner.mutantRun(
+            mutantRunOptions({ mutantActivation: 'runtime', testFilter }),
+          ),
+        ),
+      ),
       { status: MutantRunStatus.Survived, nrOfTests: 1 },
     );
   });
@@ -325,7 +426,13 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     const testFilter = [`${join(dir, 'a.test.mjs')} > sees the mutant`];
 
     assert.deepEqual(
-      withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ mutantActivation: 'runtime', testFilter })))),
+      withoutDuration(
+        await settle(
+          runner.mutantRun(
+            mutantRunOptions({ mutantActivation: 'runtime', testFilter }),
+          ),
+        ),
+      ),
       {
         status: MutantRunStatus.Survived,
         nrOfTests: 1,
@@ -334,7 +441,11 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
   });
 
   lzTestFor([
-    { hooks: 'the before hooks of suites', file: 'a.test.mjs', test: 'suite > runs' },
+    {
+      hooks: 'the before hooks of suites',
+      file: 'a.test.mjs',
+      test: 'suite > runs',
+    },
     { hooks: 'beforeEach hooks', file: 'b.test.mjs', test: 'runs' },
   ])('activates a runtime mutant before $hooks', async ({ file, test }, t) => {
     const active = `const active = () => process.env.${activeMutant} || globalThis.__stryker__.activeMutant;`;
@@ -359,7 +470,13 @@ describe('LzNodeTestTestRunner filter, bail and mutant activation', () => {
     const testFilter = [`${join(dir, file)} > ${test}`];
 
     assert.deepEqual(
-      withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ mutantActivation: 'runtime', testFilter })))),
+      withoutDuration(
+        await settle(
+          runner.mutantRun(
+            mutantRunOptions({ mutantActivation: 'runtime', testFilter }),
+          ),
+        ),
+      ),
       {
         status: MutantRunStatus.Survived,
         nrOfTests: 1,

@@ -20,9 +20,14 @@ function strykerDefaultConcurrency(cores) {
  * @param {number} gbPerUnit the memory one checker or test runner process takes
  */
 export function concurrency(gbPerUnit) {
-  const byMemory = Math.floor((process.availableMemory() / 2 ** 30 - reservedGb) / gbPerUnit);
+  const byMemory = Math.floor(
+    (process.availableMemory() / 2 ** 30 - reservedGb) / gbPerUnit,
+  );
 
-  return Math.max(2, Math.min(strykerDefaultConcurrency(availableParallelism()), byMemory));
+  return Math.max(
+    2,
+    Math.min(strykerDefaultConcurrency(availableParallelism()), byMemory),
+  );
 }
 
 // The packages import each other and load the runner and the mutators from their TypeScript source.
@@ -56,7 +61,9 @@ export async function production(config, jsMutators) {
  * @param {import('@stryker-mutator/api/core').PartialStrykerOptions} config
  */
 export async function testCode(config) {
-  const { lzNodeTestMutators } = await import('@layzee/stryker-node-test-mutators');
+  const { lzNodeTestMutators } = await import(
+    '@layzee/stryker-node-test-mutators'
+  );
   await lzNodeTestMutators();
 
   return config;
@@ -75,7 +82,12 @@ export default {
   // run.
   typescriptChecker: { prioritizePerformanceOverAccuracy: false },
   // The progress reporter prints nothing without a terminal, as in CI.
-  reporters: ['clear-text', process.env.CI ? 'progress-append-only' : 'progress', 'html', 'json'],
+  reporters: [
+    'clear-text',
+    process.env.CI ? 'progress-append-only' : 'progress',
+    'html',
+    'json',
+  ],
   thresholds: { high: 100, low: 100, break: 100 },
   ignorePatterns: [...ignoredEverywhere, '/e2e'],
   concurrency: concurrency(baseGbPerUnit),

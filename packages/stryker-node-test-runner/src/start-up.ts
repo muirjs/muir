@@ -2,7 +2,12 @@ import type { Logger } from '@stryker-mutator/api/logging';
 
 import type { LzDryRunStore } from './dry-run-store.ts';
 import { isObject } from './guards.ts';
-import { lzNamesFile, lzOutsideMs, within, type RecordedTest } from './record.ts';
+import {
+  lzNamesFile,
+  lzOutsideMs,
+  within,
+  type RecordedTest,
+} from './record.ts';
 
 /** What a mutant run's deadline needs to know of a test file from the dry run. */
 export interface LzStartUp {
@@ -10,8 +15,14 @@ export interface LzStartUp {
   readonly tests: number;
 }
 
-export function lzStartUpOf(tests: readonly RecordedTest[], fileMs: number): LzStartUp {
-  return { startUpMs: Math.max(0, Math.floor(lzOutsideMs(tests, fileMs))), tests: tests.length };
+export function lzStartUpOf(
+  tests: readonly RecordedTest[],
+  fileMs: number,
+): LzStartUp {
+  return {
+    startUpMs: Math.max(0, Math.floor(lzOutsideMs(tests, fileMs))),
+    tests: tests.length,
+  };
 }
 
 /**
@@ -21,10 +32,18 @@ export function lzStartUpOf(tests: readonly RecordedTest[], fileMs: number): LzS
  */
 export interface LzStartUps {
   record(file: string, startUp: LzStartUp): void;
-  deadline(files: readonly string[], testFilter: readonly string[] | undefined, timeout: number): number;
+  deadline(
+    files: readonly string[],
+    testFilter: readonly string[] | undefined,
+    timeout: number,
+  ): number;
 }
 
-export function lzStartUps(store: LzDryRunStore, timeoutFactor: number, log: Logger): LzStartUps {
+export function lzStartUps(
+  store: LzDryRunStore,
+  timeoutFactor: number,
+  log: Logger,
+): LzStartUps {
   const unmeasured = new Set<string>();
   const read = (file: string) => {
     const startUp = storedStartUp(store.read(file, 'start-up'));
@@ -58,11 +77,14 @@ export function lzStartUps(store: LzDryRunStore, timeoutFactor: number, log: Log
 
           // Stryker runs every test of a file for a static mutant, or without coverage, and then sums the time of
           // every test of the dry run.
-          const wholeFile = testFilter === undefined || lzNamesFile(testFilter, file);
+          const wholeFile =
+            testFilter === undefined || lzNamesFile(testFilter, file);
 
           return [
             {
-              covering: wholeFile ? startUp.tests : testFilter.filter((id) => within(id, file)).length,
+              covering: wholeFile
+                ? startUp.tests
+                : testFilter.filter((id) => within(id, file)).length,
               startUpMs: startUp.startUpMs,
             },
           ];
@@ -109,9 +131,14 @@ export interface LzDeadlineFile {
  * the file once. A millisecond of each start-up stays counted, so that what is left never falls below the tests' time
  * and each start-up once, however Stryker rounded each test's time.
  */
-export function lzDeadlineMs(timeout: number, timeoutFactor: number, files: readonly LzDeadlineFile[]): number {
+export function lzDeadlineMs(
+  timeout: number,
+  timeoutFactor: number,
+  files: readonly LzDeadlineFile[],
+): number {
   const extraStartUpMs = files.reduce(
-    (sum, { covering, startUpMs }) => sum + Math.max(0, covering - 1) * Math.max(0, startUpMs - 1),
+    (sum, { covering, startUpMs }) =>
+      sum + Math.max(0, covering - 1) * Math.max(0, startUpMs - 1),
     0,
   );
 

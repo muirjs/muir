@@ -7,13 +7,21 @@ import ajvModule from 'ajv';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
 import * as entry from '../../src/index.ts';
-import { LzNodeTestTestRunner, strykerPlugins, strykerValidationSchema } from '../../src/index.ts';
+import {
+  LzNodeTestTestRunner,
+  strykerPlugins,
+  strykerValidationSchema,
+} from '../../src/index.ts';
 import { lzMinNodeVersion } from '../../src/runner.ts';
 import pkg from '../../package.json' with { type: 'json' };
 
 /** Stryker validates its options with these settings, and merges the properties of each plugin's schema into its own. */
 function validator() {
-  return new ajvModule.default({ useDefaults: true, allErrors: true, strict: false }).compile({
+  return new ajvModule.default({
+    useDefaults: true,
+    allErrors: true,
+    strict: false,
+  }).compile({
     type: 'object',
     properties: strykerValidationSchema.properties,
   });
@@ -21,12 +29,20 @@ function validator() {
 
 describe('plugin declaration', () => {
   it('exports only the plugin, its schema and the runner class from the package entry', () => {
-    assert.deepEqual(Object.keys(entry).sort(), ['LzNodeTestTestRunner', 'strykerPlugins', 'strykerValidationSchema']);
+    assert.deepEqual(Object.keys(entry).sort(), [
+      'LzNodeTestTestRunner',
+      'strykerPlugins',
+      'strykerValidationSchema',
+    ]);
   });
 
   it('declares the lz-node-test test runner', () => {
     assert.deepEqual(strykerPlugins, [
-      { kind: PluginKind.TestRunner, name: 'lz-node-test', injectableClass: LzNodeTestTestRunner },
+      {
+        kind: PluginKind.TestRunner,
+        name: 'lz-node-test',
+        injectableClass: LzNodeTestTestRunner,
+      },
     ]);
   });
 
@@ -59,10 +75,16 @@ describe('plugin declaration', () => {
     const initConfig: Partial<StrykerOptions> = pkg.initStrykerConfig;
 
     assert.ok(pkg.keywords.includes('@stryker-mutator/test-runner-plugin'));
-    assert.match(pkg.homepage, /^https:\/\/github\.com\/.+\/packages\/stryker-node-test-runner#readme$/);
+    assert.match(
+      pkg.homepage,
+      /^https:\/\/github\.com\/.+\/packages\/stryker-node-test-runner#readme$/,
+    );
     assert.deepEqual(
       [initConfig],
-      strykerPlugins.map((plugin) => ({ testRunner: plugin.name, appendPlugins: [pkg.name] })),
+      strykerPlugins.map((plugin) => ({
+        testRunner: plugin.name,
+        appendPlugins: [pkg.name],
+      })),
     );
   });
 
@@ -71,14 +93,38 @@ describe('plugin declaration', () => {
   });
 
   lzTestEach([
-    [{}, { lzNodeTest: { testFiles: ['**/?(*.)+(spec|test).[jt]s?(x)'], nodeArgs: [] } }],
     [
-      { lzNodeTest: { maxMemoryMB: 1500 } },
-      { lzNodeTest: { testFiles: ['**/?(*.)+(spec|test).[jt]s?(x)'], nodeArgs: [], maxMemoryMB: 1500 } },
+      {},
+      {
+        lzNodeTest: {
+          testFiles: ['**/?(*.)+(spec|test).[jt]s?(x)'],
+          nodeArgs: [],
+        },
+      },
     ],
     [
-      { lzNodeTest: { testFiles: ['a.test.ts'], nodeArgs: ['--enable-source-maps'] } },
-      { lzNodeTest: { testFiles: ['a.test.ts'], nodeArgs: ['--enable-source-maps'] } },
+      { lzNodeTest: { maxMemoryMB: 1500 } },
+      {
+        lzNodeTest: {
+          testFiles: ['**/?(*.)+(spec|test).[jt]s?(x)'],
+          nodeArgs: [],
+          maxMemoryMB: 1500,
+        },
+      },
+    ],
+    [
+      {
+        lzNodeTest: {
+          testFiles: ['a.test.ts'],
+          nodeArgs: ['--enable-source-maps'],
+        },
+      },
+      {
+        lzNodeTest: {
+          testFiles: ['a.test.ts'],
+          nodeArgs: ['--enable-source-maps'],
+        },
+      },
     ],
   ])('fills in the defaults of %j', (options, filled) => {
     assert.ok(validator()(options));

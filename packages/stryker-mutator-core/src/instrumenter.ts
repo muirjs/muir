@@ -7,19 +7,35 @@ import { pathToFileURL } from 'node:url';
 
 import type { Location, Mutant, Position } from '@stryker-mutator/api/core';
 
-import { hasMember, isFunction, isNumber, isObject, isString, member } from './guards.ts';
+import {
+  hasMember,
+  isFunction,
+  isNumber,
+  isObject,
+  isString,
+  member,
+} from './guards.ts';
 import { mutatorBuilders, type LzBabelTypes } from './mutator.ts';
 
-const coreBinPattern = /[\\/]@stryker-mutator[\\/]core[\\/]bin[\\/]stryker\.js$/;
+const coreBinPattern =
+  /[\\/]@stryker-mutator[\\/]core[\\/]bin[\\/]stryker\.js$/;
 const nothing = () => undefined;
-const silent = { debug: nothing, info: nothing, warn: nothing, isDebugEnabled: nothing };
+const silent = {
+  debug: nothing,
+  info: nothing,
+  warn: nothing,
+  isDebugEnabled: nothing,
+};
 
 export interface LzSourceFile {
   readonly name: string;
   readonly content: string;
 }
 
-export type LzInstrumentedMutant = Pick<Mutant, 'mutatorName' | 'replacement' | 'location'>;
+export type LzInstrumentedMutant = Pick<
+  Mutant,
+  'mutatorName' | 'replacement' | 'location'
+>;
 
 /** A mutator of the instrumenter's list, Stryker's or this module's, as far as this module checks it. */
 export interface LzListedMutator {
@@ -43,7 +59,9 @@ export interface LzInstrumenter {
 }
 
 export function resolveEachCore(): Promise<readonly LzInstrumenter[]> {
-  return Promise.all(corePackageJsons().map((corePackage) => lzResolveFromCore(corePackage)));
+  return Promise.all(
+    corePackageJsons().map((corePackage) => lzResolveFromCore(corePackage)),
+  );
 }
 
 /**
@@ -54,7 +72,8 @@ export function resolveEachCore(): Promise<readonly LzInstrumenter[]> {
 export function corePackageJsons(
   argv: readonly string[] = process.argv,
   realpath: (path: string) => string = realpathSync,
-  resolveHere: (specifier: string) => string = createRequire(import.meta.url).resolve,
+  resolveHere: (specifier: string) => string = createRequire(import.meta.url)
+    .resolve,
 ): readonly [string, ...string[]] {
   const [, script] = argv;
   const real = realScript(script, realpath);
@@ -69,7 +88,10 @@ export function corePackageJsons(
   return scriptCase === here ? [here] : [scriptCase, here];
 }
 
-function realScript(script: string | undefined, realpath: (path: string) => string): string | undefined {
+function realScript(
+  script: string | undefined,
+  realpath: (path: string) => string,
+): string | undefined {
   // `node --eval` and the REPL run no script file.
   if (script === undefined) {
     return undefined;
@@ -92,7 +114,10 @@ function realScript(script: string | undefined, realpath: (path: string) => stri
 function withDriveLetterOf(script: string, path: string): string {
   const drive = /^[A-Za-z]:/.exec(script)?.[0];
 
-  return drive !== undefined && path.slice(0, 2).toLowerCase() === drive.toLowerCase() ? drive + path.slice(2) : path;
+  return drive !== undefined &&
+    path.slice(0, 2).toLowerCase() === drive.toLowerCase()
+    ? drive + path.slice(2)
+    : path;
 }
 
 /**
@@ -104,17 +129,35 @@ export async function lzResolveFromCore(
   load: (path: string) => Promise<unknown> = importFile,
 ): Promise<LzInstrumenter> {
   const fromCore = createRequire(corePackage);
-  const packageJson = fromCore.resolve('@stryker-mutator/instrumenter/package.json');
+  const packageJson = fromCore.resolve(
+    '@stryker-mutator/instrumenter/package.json',
+  );
   const dir = dirname(packageJson);
   const mutateFile = join(dir, 'dist', 'src', 'mutators', 'mutate.js');
-  const transformerFile = join(dir, 'dist', 'src', 'transformers', 'babel-transformer.js');
+  const transformerFile = join(
+    dir,
+    'dist',
+    'src',
+    'transformers',
+    'babel-transformer.js',
+  );
   const indexFile = fromCore.resolve('@stryker-mutator/instrumenter');
   const babelFile = createRequire(packageJson).resolve('@babel/core');
   const [mutate, transformer, index, babel] = await Promise.all(
     [mutateFile, transformerFile, indexFile, babelFile].map(load),
   );
-  const transformBabel = member(transformer, 'transformBabel', isFunction, transformerFile);
-  const instrumenterClass = member(index, 'Instrumenter', isFunction, indexFile);
+  const transformBabel = member(
+    transformer,
+    'transformBabel',
+    isFunction,
+    transformerFile,
+  );
+  const instrumenterClass = member(
+    index,
+    'Instrumenter',
+    isFunction,
+    indexFile,
+  );
   const allMutators = member(mutate, 'allMutators', isMutatorList, mutateFile);
 
   return {
@@ -130,9 +173,24 @@ export async function lzResolveFromCore(
       const transform =
         mutators &&
         ((ast: unknown, collector: unknown, context: unknown): unknown =>
-          Reflect.apply(transformBabel, undefined, [ast, collector, context, mutators]));
-      const instance: unknown = Reflect.construct(instrumenterClass, [silent, undefined, undefined, transform]);
-      const instrument = member(instance, 'instrument', isFunction, `the Instrumenter of ${indexFile}`);
+          Reflect.apply(transformBabel, undefined, [
+            ast,
+            collector,
+            context,
+            mutators,
+          ]));
+      const instance: unknown = Reflect.construct(instrumenterClass, [
+        silent,
+        undefined,
+        undefined,
+        transform,
+      ]);
+      const instrument = member(
+        instance,
+        'instrument',
+        isFunction,
+        `the Instrumenter of ${indexFile}`,
+      );
       const result: unknown = await Reflect.apply(instrument, instance, [
         files.map((file) => ({ ...file, mutate: true })),
         {
@@ -143,7 +201,12 @@ export async function lzResolveFromCore(
         },
       ]);
 
-      return member(result, 'mutants', isMutantList, `the instrument() result of the Instrumenter of ${indexFile}`);
+      return member(
+        result,
+        'mutants',
+        isMutantList,
+        `the instrument() result of the Instrumenter of ${indexFile}`,
+      );
     },
   };
 }
@@ -157,7 +220,9 @@ function isMutatorList(value: unknown): value is LzListedMutator[] {
 }
 
 function isListedMutator(value: unknown): value is LzListedMutator {
-  return hasMember(value, 'name', isString) && hasMember(value, 'mutate', isFunction);
+  return (
+    hasMember(value, 'name', isString) && hasMember(value, 'mutate', isFunction)
+  );
 }
 
 /**
@@ -165,7 +230,10 @@ function isListedMutator(value: unknown): value is LzListedMutator {
  * the consumer's @babel/core is a newer patch than the instrumenter's.
  */
 function isBabelTypes(value: unknown): value is LzBabelTypes {
-  return isObject(value) && mutatorBuilders.every((key) => isFunction(Reflect.get(value, key)));
+  return (
+    isObject(value) &&
+    mutatorBuilders.every((key) => isFunction(Reflect.get(value, key)))
+  );
 }
 
 function isMutantList(value: unknown): value is LzInstrumentedMutant[] {
@@ -181,9 +249,13 @@ function isMutant(value: unknown): value is LzInstrumentedMutant {
 }
 
 function isLocation(value: unknown): value is Location {
-  return hasMember(value, 'start', isPosition) && hasMember(value, 'end', isPosition);
+  return (
+    hasMember(value, 'start', isPosition) && hasMember(value, 'end', isPosition)
+  );
 }
 
 function isPosition(value: unknown): value is Position {
-  return hasMember(value, 'line', isNumber) && hasMember(value, 'column', isNumber);
+  return (
+    hasMember(value, 'line', isNumber) && hasMember(value, 'column', isNumber)
+  );
 }

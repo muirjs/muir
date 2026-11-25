@@ -3,7 +3,9 @@
 // square of the lines it compares (nodejs/node#62792). node-assert-diff.test.ts fails once a Node.js release fixes it.
 import { lzWriteRecord, type ProcessRecord } from './record.ts';
 
-export function workersAllowed(permission: { has(scope: string): boolean } | undefined): boolean {
+export function workersAllowed(
+  permission: { has(scope: string): boolean } | undefined,
+): boolean {
   return permission?.has('worker') !== false;
 }
 
@@ -19,12 +21,16 @@ export function checkMemory(
   { limitMB, recordPath }: WatchdogData,
   rssBytes: number,
   write: (path: string, record: ProcessRecord) => void = lzWriteRecord,
-  kill: (pid: number, signal: NodeJS.Signals) => void = (pid, signal) => process.kill(pid, signal),
+  kill: (pid: number, signal: NodeJS.Signals) => void = (pid, signal) =>
+    process.kill(pid, signal),
 ): void {
   const rssMB = Math.round(rssBytes / 1048576);
 
   if (rssMB > limitMB) {
-    const record = { tests: [], memoryLimitReached: { rssMB, limitMB } } satisfies ProcessRecord;
+    const record = {
+      tests: [],
+      memoryLimitReached: { rssMB, limitMB },
+    } satisfies ProcessRecord;
 
     try {
       write(recordPath, record);
@@ -34,7 +40,10 @@ export function checkMemory(
   }
 }
 
-export function watch(data: WatchdogData, rss: () => number = () => process.memoryUsage.rss()): void {
+export function watch(
+  data: WatchdogData,
+  rss: () => number = () => process.memoryUsage.rss(),
+): void {
   setInterval(() => {
     checkMemory(data, rss());
   }, 50);

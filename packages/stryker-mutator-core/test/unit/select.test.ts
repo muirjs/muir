@@ -3,7 +3,11 @@ import { describe, it } from 'node:test';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
 import type { LzMutator } from '../../src/mutator.ts';
-import { lzAllMutators, lzSelectMutators, type LzMutatorSets } from '../../src/select.ts';
+import {
+  lzAllMutators,
+  lzSelectMutators,
+  type LzMutatorSets,
+} from '../../src/select.ts';
 
 const packageName = 'lz-sample-mutators';
 
@@ -25,8 +29,16 @@ describe('lzSelectMutators', () => {
   lzTestEach([
     ['no options', undefined, ['LzDefaultA', 'LzDefaultB']],
     ['empty options', {}, ['LzDefaultA', 'LzDefaultB']],
-    ['every opt-in mutator', { extended: true }, ['LzDefaultA', 'LzDefaultB', 'LzOptInA', 'LzOptInB']],
-    ['an opt-in mutator by name', { LzOptInB: true }, ['LzDefaultA', 'LzDefaultB', 'LzOptInB']],
+    [
+      'every opt-in mutator',
+      { extended: true },
+      ['LzDefaultA', 'LzDefaultB', 'LzOptInA', 'LzOptInB'],
+    ],
+    [
+      'an opt-in mutator by name',
+      { LzOptInB: true },
+      ['LzDefaultA', 'LzDefaultB', 'LzOptInB'],
+    ],
     [
       'every opt-in mutator and one by name',
       { LzOptInB: true, extended: true },
@@ -42,10 +54,18 @@ describe('lzSelectMutators', () => {
       { experimental: { LzExperimentalB: true } },
       ['LzDefaultA', 'LzDefaultB', 'LzExperimentalB'],
     ],
-    ['no experimental mutator by name', { experimental: {} }, ['LzDefaultA', 'LzDefaultB']],
+    [
+      'no experimental mutator by name',
+      { experimental: {} },
+      ['LzDefaultA', 'LzDefaultB'],
+    ],
     [
       'no mutator for options left undefined',
-      { LzOptInA: undefined, extended: undefined, experimental: { LzExperimentalA: undefined } },
+      {
+        LzOptInA: undefined,
+        extended: undefined,
+        experimental: { LzExperimentalA: undefined },
+      },
       ['LzDefaultA', 'LzDefaultB'],
     ],
     [
@@ -55,7 +75,11 @@ describe('lzSelectMutators', () => {
     ],
     [
       'opt-in and experimental mutators, in the order of the sets',
-      { experimental: { LzExperimentalB: true }, LzOptInB: true, extended: true },
+      {
+        experimental: { LzExperimentalB: true },
+        LzOptInB: true,
+        extended: true,
+      },
       ['LzDefaultA', 'LzDefaultB', 'LzOptInA', 'LzOptInB', 'LzExperimentalB'],
     ],
   ])('installs the defaults and %s', (_title, options, expected) => {
@@ -144,13 +168,29 @@ describe('lzSelectMutators', () => {
   it('lists every mutator, the defaults first', () => {
     assert.deepEqual(
       lzAllMutators(sets).map(({ name }) => name),
-      ['LzDefaultA', 'LzDefaultB', 'LzOptInA', 'LzOptInB', 'LzExperimentalA', 'LzExperimentalB'],
+      [
+        'LzDefaultA',
+        'LzDefaultB',
+        'LzOptInA',
+        'LzOptInB',
+        'LzExperimentalA',
+        'LzExperimentalB',
+      ],
     );
   });
 
   it('names no mutators when a set is empty', () => {
-    assert.throws(() => lzSelectMutators(packageName, { ...sets, experimental: [] }, { experimental: { LzX: true } }), {
-      message: 'lz-sample-mutators: no experimental mutator is named LzX; the names are none.',
-    });
+    assert.throws(
+      () =>
+        lzSelectMutators(
+          packageName,
+          { ...sets, experimental: [] },
+          { experimental: { LzX: true } },
+        ),
+      {
+        message:
+          'lz-sample-mutators: no experimental mutator is named LzX; the names are none.',
+      },
+    );
   });
 });

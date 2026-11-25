@@ -5,7 +5,13 @@ import { setImmediate } from 'node:timers/promises';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
 import { activeMutantEnv, envNames } from '../../src/record.ts';
-import { bodyOf, callable, rawBodyOf, testFile, testContext } from '../hook-core.fixtures.ts';
+import {
+  bodyOf,
+  callable,
+  rawBodyOf,
+  testFile,
+  testContext,
+} from '../hook-core.fixtures.ts';
 import { callMember, member } from '../reflect.fixtures.ts';
 import { runBodies, wrapped, type Subtests } from '../wrap.fixtures.ts';
 
@@ -55,10 +61,19 @@ describe('wrapNodeTest', () => {
       module.it('works', see);
     });
 
-    const run = (kind: string, name: string, nth: number, context = testContext()) => {
-      const registration = registrations.filter((candidate) => candidate.kind === kind && candidate.name === name)[nth];
+    const run = (
+      kind: string,
+      name: string,
+      nth: number,
+      context = testContext(),
+    ) => {
+      const registration = registrations.filter(
+        (candidate) => candidate.kind === kind && candidate.name === name,
+      )[nth];
 
-      return callable(registration?.rest.find((arg) => typeof arg === 'function'))(context);
+      return callable(
+        registration?.rest.find((arg) => typeof arg === 'function'),
+      )(context);
     };
 
     await run('test', 'works', 0);
@@ -118,29 +133,62 @@ describe('wrapNodeTest', () => {
         return 'suite body result';
       },
     );
-    const testReturn = module.it.call('it this', 'case', options, function (this: unknown, ...args: unknown[]) {
-      testCall = { self: this, args };
+    const testReturn = module.it.call(
+      'it this',
+      'case',
+      options,
+      function (this: unknown, ...args: unknown[]) {
+        testCall = { self: this, args };
 
-      return 'test body result';
-    });
+        return 'test body result';
+      },
+    );
 
     assert.equal(suiteReturn, 'describe suite');
     assert.equal(testReturn, 'test case');
     const serial = { ...options, concurrency: false };
     assert.deepEqual(
-      registrations.map(({ kind, name, rest, self }) => ({ kind, name, options: rest[0], self, count: rest.length })),
+      registrations.map(({ kind, name, rest, self }) => ({
+        kind,
+        name,
+        options: rest[0],
+        self,
+        count: rest.length,
+      })),
       [
-        { kind: 'describe', name: 'suite', options: serial, self: 'describe this', count: 2 },
-        { kind: 'test', name: 'case', options: serial, self: 'it this', count: 2 },
+        {
+          kind: 'describe',
+          name: 'suite',
+          options: serial,
+          self: 'describe this',
+          count: 2,
+        },
+        {
+          kind: 'test',
+          name: 'case',
+          options: serial,
+          self: 'it this',
+          count: 2,
+        },
       ],
     );
-    assert.deepEqual(suiteCall, { self: 'suite this', args: ['suite argument'] });
+    assert.deepEqual(suiteCall, {
+      self: 'suite this',
+      args: ['suite argument'],
+    });
     assert.equal(suiteResults[0], 'suite body result');
 
     const context = testContext();
-    const result = await bodyOf(registrations, 'case').call('test this', context, 'second argument');
+    const result = await bodyOf(registrations, 'case').call(
+      'test this',
+      context,
+      'second argument',
+    );
 
-    assert.deepEqual(testCall, { self: 'test this', args: [context, 'second argument'] });
+    assert.deepEqual(testCall, {
+      self: 'test this',
+      args: [context, 'second argument'],
+    });
     assert.equal(result, 'test body result');
     assert.deepEqual(options, { timeout: 1000, concurrency: true });
   });
@@ -161,7 +209,8 @@ describe('wrapNodeTest', () => {
 
   it('names suites and tests without a name, or with options first, after their bodies, like node:test', async () => {
     const { module, registrations, seen, see } = wrapped();
-    const call = (register: unknown, ...args: unknown[]) => callable(register)(...args);
+    const call = (register: unknown, ...args: unknown[]) =>
+      callable(register)(...args);
     call(module.describe, '', () => {
       call(module.it, () => see());
     });
@@ -172,8 +221,12 @@ describe('wrapNodeTest', () => {
       see();
     });
 
-    for (const registration of registrations.filter(({ kind }) => kind !== 'describe')) {
-      await callable(registration.rest.find((arg) => typeof arg === 'function'))(testContext());
+    for (const registration of registrations.filter(
+      ({ kind }) => kind !== 'describe',
+    )) {
+      await callable(
+        registration.rest.find((arg) => typeof arg === 'function'),
+      )(testContext());
     }
 
     assert.deepEqual(
@@ -215,7 +268,10 @@ describe('wrapNodeTest', () => {
 
     await runBodies(registrations, ['default export', 'default export only']);
 
-    assert.deepEqual(seen, [`${testFile} > default export`, `${testFile} > default export only`]);
+    assert.deepEqual(seen, [
+      `${testFile} > default export`,
+      `${testFile} > default export only`,
+    ]);
     assert.equal(module.test, module);
     assert.notEqual(module, original);
     assert.deepEqual(Object.entries(original), unwrapped);
@@ -237,7 +293,13 @@ describe('wrapNodeTest', () => {
       module.test.todo('test.todo', see);
     });
 
-    await runBodies(registrations, ['first', 'it.only', 'test.only', 'it.todo', 'test.todo']);
+    await runBodies(registrations, [
+      'first',
+      'it.only',
+      'test.only',
+      'it.todo',
+      'test.todo',
+    ]);
 
     assert.deepEqual(seen, [
       `${testFile} > describe.only > first`,
@@ -294,9 +356,12 @@ describe('wrapNodeTest', () => {
         calls.push(args);
       },
     });
-    module.it('runs only', (t: { readonly runOnly: (only: boolean) => void }) => {
-      t.runOnly(true);
-    });
+    module.it(
+      'runs only',
+      (t: { readonly runOnly: (only: boolean) => void }) => {
+        t.runOnly(true);
+      },
+    );
 
     await bodyOf(registrations, 'runs only')(context);
 
@@ -336,7 +401,9 @@ describe('wrapNodeTest', () => {
       `${testFile} > calls back > callback child`,
     ]);
     assert.deepEqual(
-      registrations.filter(({ kind }) => kind === 't.test').map(({ name, self }) => [name, self]),
+      registrations
+        .filter(({ kind }) => kind === 't.test')
+        .map(({ name, self }) => [name, self]),
       [
         ['child', context],
         ['grandchild', childContext],
@@ -349,7 +416,8 @@ describe('wrapNodeTest', () => {
 
   it('keeps a subtest that its parent does not await current until it ends, after its parent ends', async () => {
     const { module, registrations, ns, env, seen, see, testSpans } = wrapped();
-    const { promise: gate, resolve: release }: PromiseWithResolvers<void> = Promise.withResolvers();
+    const { promise: gate, resolve: release }: PromiseWithResolvers<void> =
+      Promise.withResolvers();
     let child: Promise<unknown> | undefined;
     module.it('parent', (t: Subtests) => {
       t.test('child', async () => {
@@ -397,7 +465,12 @@ describe('wrapNodeTest', () => {
 
     await bodyOf(registrations, 'parent')(testContext(registrations));
 
-    await runBodies(registrations, ['inner', 'in suite', 'while a subtest runs', 'after an await']);
+    await runBodies(registrations, [
+      'inner',
+      'in suite',
+      'while a subtest runs',
+      'after an await',
+    ]);
 
     assert.deepEqual(seen, [
       `${testFile} > parent > inner`,
@@ -408,7 +481,9 @@ describe('wrapNodeTest', () => {
   });
 
   it('runs a test whose subtest the filter selects, and skips the subtests it does not select', async () => {
-    const { module, registrations, seen, see } = wrapped({ filter: [`${testFile} > parent > wanted`] });
+    const { module, registrations, seen, see } = wrapped({
+      filter: [`${testFile} > parent > wanted`],
+    });
     module.it('parent', async (t: Subtests) => {
       see();
       t.test('wanted', see);
@@ -428,11 +503,16 @@ describe('wrapNodeTest', () => {
         ['unwanted', true],
       ],
     );
-    assert.deepEqual(seen, [`${testFile} > parent`, `${testFile} > parent > wanted`]);
+    assert.deepEqual(seen, [
+      `${testFile} > parent`,
+      `${testFile} > parent > wanted`,
+    ]);
   });
 
   it('runs the subtests of a test the filter selects', async () => {
-    const { module, registrations, seen, see } = wrapped({ filter: [`${testFile} > parent`] });
+    const { module, registrations, seen, see } = wrapped({
+      filter: [`${testFile} > parent`],
+    });
     module.it('parent', async (t: Subtests) => {
       see();
       t.test('child', see);
@@ -450,11 +530,16 @@ describe('wrapNodeTest', () => {
         ['child', undefined],
       ],
     );
-    assert.deepEqual(seen, [`${testFile} > parent`, `${testFile} > parent > child`]);
+    assert.deepEqual(seen, [
+      `${testFile} > parent`,
+      `${testFile} > parent > child`,
+    ]);
   });
 
   it('tells before each suite, test and hook goes to node:test', async () => {
-    const { module, registrations, registering } = wrapped({ filter: [`${testFile} > runs`] });
+    const { module, registrations, registering } = wrapped({
+      filter: [`${testFile} > runs`],
+    });
     module.after(() => {});
     module.describe('suite', () => {
       module.it('nested', () => {});
@@ -483,7 +568,9 @@ describe('wrapNodeTest', () => {
 
     assert.equal(rootAfters.length, 1);
     assert.deepEqual(
-      registrations.filter(({ kind }) => kind === 'after').map(({ rest }) => rest[0] === rootAfters[0]),
+      registrations
+        .filter(({ kind }) => kind === 'after')
+        .map(({ rest }) => rest[0] === rootAfters[0]),
       [true, false, false],
     );
   });
@@ -495,23 +582,34 @@ describe('wrapNodeTest', () => {
 
     await runBodies(registrations, ['it.expectFailure', 'test.expectFailure']);
 
-    assert.deepEqual(seen, [`${testFile} > it.expectFailure`, `${testFile} > test.expectFailure`]);
+    assert.deepEqual(seen, [
+      `${testFile} > it.expectFailure`,
+      `${testFile} > test.expectFailure`,
+    ]);
     assert.equal(module.describe.expectFailure, undefined);
 
     const { module: node22 } = wrapped({ expectFailure: false });
 
-    assert.deepEqual([node22.it.expectFailure, node22.expectFailure], [undefined, undefined]);
+    assert.deepEqual(
+      [node22.it.expectFailure, node22.expectFailure],
+      [undefined, undefined],
+    );
   });
 
   it('notes where the test file declares each suite and test, 0-based, from the innermost call in the test file', () => {
     const { module, positions, sites, registrations } = wrapped();
     const helper = join('/repo', 'helper.ts');
-    sites.push({ file: helper, line: 2, column: 3 }, { file: testFile, line: 8, column: 5 });
+    sites.push(
+      { file: helper, line: 2, column: 3 },
+      { file: testFile, line: 8, column: 5 },
+    );
     sites.push({ file: testFile, line: 20, column: 1 });
     module.it('through a helper', () => {});
     sites.splice(0, Infinity, { file: testFile, line: 1, column: 1 });
     module.describe('suite', () => {
-      module.test('directly', (t: { test: (name: string) => unknown }) => t.test('subtest'));
+      module.test('directly', (t: { test: (name: string) => unknown }) =>
+        t.test('subtest'),
+      );
     });
     void bodyOf(registrations, 'directly')(testContext());
     sites.splice(0, Infinity, { file: helper, line: 4, column: 1 });
@@ -545,10 +643,25 @@ describe('wrapNodeTest', () => {
       [`${testFile} > skipped suite`]: { line: 2, column: 3 },
     });
     assert.deepEqual(registrations.slice(1), [
-      { kind: 'test.skip', name: 'nested', rest: [options, body], self: module.it },
+      {
+        kind: 'test.skip',
+        name: 'nested',
+        rest: [options, body],
+        self: module.it,
+      },
       { kind: 'test.skip', name: 'test', rest: [body], self: module.test },
-      { kind: 'describe.skip', name: 'describe', rest: [body], self: module.describe },
-      { kind: 'suite.skip', name: 'skipped suite', rest: [body], self: 'suite this' },
+      {
+        kind: 'describe.skip',
+        name: 'describe',
+        rest: [body],
+        self: module.describe,
+      },
+      {
+        kind: 'suite.skip',
+        name: 'skipped suite',
+        rest: [body],
+        self: 'suite this',
+      },
     ]);
   });
 
@@ -560,13 +673,22 @@ describe('wrapNodeTest', () => {
     });
     module.it('rejects with 0', () => Promise.reject(notAnError));
 
-    await assert.rejects(bodyOf(registrations, 'fails')(testContext()), (error) => error === failure);
-    await assert.rejects(bodyOf(registrations, 'rejects with 0')(testContext()), (error) => error === notAnError);
+    await assert.rejects(
+      bodyOf(registrations, 'fails')(testContext()),
+      (error) => error === failure,
+    );
+    await assert.rejects(
+      bodyOf(registrations, 'rejects with 0')(testContext()),
+      (error) => error === notAnError,
+    );
   });
 
   lzTestEach([
     ['without a test context', {}],
-    ['with a context that lacks a function the wrapper calls', { ...testContext(), skip: undefined }],
+    [
+      'with a context that lacks a function the wrapper calls',
+      { ...testContext(), skip: undefined },
+    ],
   ])('fails a test body that node:test runs %s', (_title, context) => {
     const { module, registrations } = wrapped();
     module.it('runs', () => {});
@@ -596,10 +718,13 @@ describe('wrapNodeTest', () => {
       const context = testContext();
       const seen: unknown[] = [];
       let finish: ((error?: unknown) => void) | undefined;
-      module.it('calls back', function (this: unknown, t: unknown, done: (error?: unknown) => void) {
-        seen.push(this, t);
-        finish = done;
-      });
+      module.it(
+        'calls back',
+        function (this: unknown, t: unknown, done: (error?: unknown) => void) {
+          seen.push(this, t);
+          finish = done;
+        },
+      );
       const body = rawBodyOf(registrations, 'calls back');
       const receiver = {};
       const calls: unknown[][] = [];
@@ -635,7 +760,9 @@ describe('wrapNodeTest', () => {
       });
       const calls: unknown[][] = [];
 
-      rawBodyOf(registrations, 'fails')(testContext(), (...args: unknown[]) => calls.push(args));
+      rawBodyOf(registrations, 'fails')(testContext(), (...args: unknown[]) =>
+        calls.push(args),
+      );
 
       assert.deepEqual(calls, [[failure]]);
     });
@@ -699,7 +826,10 @@ describe('wrapNodeTest', () => {
 
     await bodyOf(registrations, 'observes')(testContext());
 
-    assert.deepEqual(seen, [`${testFile} > observes`, `${testFile} > observes`]);
+    assert.deepEqual(seen, [
+      `${testFile} > observes`,
+      `${testFile} > observes`,
+    ]);
   });
 
   it('notes the spans during which each test is current, one span across a pause in which no other test is', async () => {
@@ -746,7 +876,10 @@ describe('wrapNodeTest', () => {
       done();
     });
 
-    assert.deepEqual([ns.activeMutant, env[activeMutantEnv]], [undefined, undefined]);
+    assert.deepEqual(
+      [ns.activeMutant, env[activeMutantEnv]],
+      [undefined, undefined],
+    );
 
     await bodyOf(registrations, 'first')(testContext());
 
@@ -774,10 +907,16 @@ describe('wrapNodeTest', () => {
     module.describe('suite', () => {
       module.before(observe);
     });
-    const hooks = registrations.filter(({ kind }) => kind !== 'describe').map(({ kind, rest }) => ({ kind, rest }));
+    const hooks = registrations
+      .filter(({ kind }) => kind !== 'describe')
+      .map(({ kind, rest }) => ({ kind, rest }));
 
     assert.deepEqual(
-      hooks.map(({ kind, rest }) => [kind, rest.slice(1), member(rest[0], 'length')]),
+      hooks.map(({ kind, rest }) => [
+        kind,
+        rest.slice(1),
+        member(rest[0], 'length'),
+      ]),
       [
         ['before', [{ timeout: 5 }], 0],
         ['beforeEach', [{ timeout: 6 }], 0],
@@ -786,17 +925,31 @@ describe('wrapNodeTest', () => {
       ],
     );
     assert.equal(hooks[0]?.rest[0], topLevelBefore);
-    assert.deepEqual([ns.activeMutant, env[activeMutantEnv]], [undefined, undefined]);
+    assert.deepEqual(
+      [ns.activeMutant, env[activeMutantEnv]],
+      [undefined, undefined],
+    );
 
     const results = [];
 
     for (const index of [1, 3]) {
-      results.push(callable(hooks[index]?.rest[0]).call('hook this', 'context'));
+      results.push(
+        callable(hooks[index]?.rest[0]).call('hook this', 'context'),
+      );
       delete ns.activeMutant;
     }
 
     assert.deepEqual(results, ['hook result', 'hook result']);
-    assert.deepEqual(seen, ['7', '7', 'hook this', ['context'], '7', '7', 'hook this', ['context']]);
+    assert.deepEqual(seen, [
+      '7',
+      '7',
+      'hook this',
+      ['context'],
+      '7',
+      '7',
+      'hook this',
+      ['context'],
+    ]);
   });
 
   it('leaves a statically activated mutant alone', async () => {
@@ -822,7 +975,9 @@ describe('wrapNodeTest', () => {
     assert.equal(ns.currentTestId, '');
     assert.ok(!(envNames.current in env));
 
-    await assert.rejects(bodyOf(registrations, 'fails')(testContext()), { message: 'no' });
+    await assert.rejects(bodyOf(registrations, 'fails')(testContext()), {
+      message: 'no',
+    });
 
     assert.equal(ns.currentTestId, '');
     assert.ok(!(envNames.current in env));
@@ -866,7 +1021,9 @@ describe('wrapNodeTest', () => {
     });
 
     assert.deepEqual(
-      registrations.filter(({ kind }) => kind !== 'describe').map(({ kind, rest }) => [kind, rest]),
+      registrations
+        .filter(({ kind }) => kind !== 'describe')
+        .map(({ kind, rest }) => [kind, rest]),
       [
         ['before', [undefined]],
         ['after', [undefined]],
@@ -879,7 +1036,9 @@ describe('wrapNodeTest', () => {
   });
 
   it('wraps the functions that `it` carries, as `it` is `test` in node:test', async () => {
-    const { module, registrations, seen, see } = wrapped({ filter: [`${testFile} > selected > wanted`] });
+    const { module, registrations, seen, see } = wrapped({
+      filter: [`${testFile} > selected > wanted`],
+    });
     const { it } = module;
     callMember(it, 'describe', 'unselected', () => {
       callMember(it, 'after', () => {});
@@ -899,17 +1058,19 @@ describe('wrapNodeTest', () => {
   });
 
   it('runs the bodies of the suites outside the filter, but registers none of their hooks', () => {
-    const { module, registrations, positions, sites } = wrapped({ filter: [`${testFile} > selected > wanted`] });
+    const { module, registrations, positions, sites } = wrapped({
+      filter: [`${testFile} > selected > wanted`],
+    });
     sites.push({ file: testFile, line: 2, column: 3 });
     const ran: string[] = [];
     const hook = () => {};
     const hooks = () => {
-      const kinds: readonly ('before' | 'beforeEach' | 'after' | 'afterEach')[] = [
-        'before',
-        'beforeEach',
-        'after',
-        'afterEach',
-      ];
+      const kinds: readonly (
+        | 'before'
+        | 'beforeEach'
+        | 'after'
+        | 'afterEach'
+      )[] = ['before', 'beforeEach', 'after', 'afterEach'];
 
       for (const kind of kinds) {
         module[kind](hook, { timeout: 5 });
@@ -934,7 +1095,9 @@ describe('wrapNodeTest', () => {
     assert.deepEqual(ran, ['selected', 'unselected', 'nested']);
     assert.deepEqual(
       registrations
-        .filter(({ kind }) => kind.startsWith('before') || kind.startsWith('after'))
+        .filter(
+          ({ kind }) => kind.startsWith('before') || kind.startsWith('after'),
+        )
         .map(({ kind, rest }) => [kind, rest[0] === hook, rest[1]]),
       [
         ['after', false, undefined],
@@ -944,11 +1107,16 @@ describe('wrapNodeTest', () => {
         ['afterEach', true, { timeout: 5 }],
       ],
     );
-    assert.deepEqual(positions.get(`${testFile} > "after" hook`), { line: 1, column: 2 });
+    assert.deepEqual(positions.get(`${testFile} > "after" hook`), {
+      line: 1,
+      column: 2,
+    });
   });
 
   it('runs every test of the file when the filter names the file itself', async () => {
-    const { module, registrations, seen, see } = wrapped({ filter: [testFile] });
+    const { module, registrations, seen, see } = wrapped({
+      filter: [testFile],
+    });
     module.describe('group', () => {
       module.it('first', see);
     });
@@ -956,37 +1124,67 @@ describe('wrapNodeTest', () => {
 
     await runBodies(registrations, ['first', 'second']);
 
-    assert.deepEqual(seen, [`${testFile} > group > first`, `${testFile} > second`]);
+    assert.deepEqual(seen, [
+      `${testFile} > group > first`,
+      `${testFile} > second`,
+    ]);
   });
 
-  const bails = [true, false].map((bail) => ({ bail, verb: bail ? 'skips' : 'runs', mode: bail ? 'on' : 'off' }));
+  const bails = [true, false].map((bail) => ({
+    bail,
+    verb: bail ? 'skips' : 'runs',
+    mode: bail ? 'on' : 'off',
+  }));
 
-  lzTestEach(bails)('$verb the tests after a reported failure with bail $mode', async ({ bail }) => {
-    const { module, registrations, tests } = wrapped({ bail });
-    const ran: string[] = [];
-    module.it('before the failure', () => {
-      ran.push('before the failure');
-    });
-    module.it('later', () => {
-      ran.push('later');
-    });
-    module.it('calls back later', (_t: unknown, done: () => void) => {
-      ran.push('calls back later');
-      done();
-    });
-    const calls: unknown[][] = [];
+  lzTestEach(bails)(
+    '$verb the tests after a reported failure with bail $mode',
+    async ({ bail }) => {
+      const { module, registrations, tests } = wrapped({ bail });
+      const ran: string[] = [];
+      module.it('before the failure', () => {
+        ran.push('before the failure');
+      });
+      module.it('later', () => {
+        ran.push('later');
+      });
+      module.it('calls back later', (_t: unknown, done: () => void) => {
+        ran.push('calls back later');
+        done();
+      });
+      const calls: unknown[][] = [];
 
-    tests.push({ id: `${testFile} > passed`, status: 'passed', timeSpentMs: 1 });
-    tests.push({ id: `${testFile} > skipped`, status: 'skipped', timeSpentMs: 1 });
-    await bodyOf(registrations, 'before the failure')(testContext());
-    tests.push({ id: `${testFile} > failed`, status: 'failed', timeSpentMs: 1 });
-    const later = testContext();
-    await bodyOf(registrations, 'later')(later);
-    const callsBackLater = testContext();
-    await bodyOf(registrations, 'calls back later')(callsBackLater, (...args: unknown[]) => calls.push(args));
+      tests.push({
+        id: `${testFile} > passed`,
+        status: 'passed',
+        timeSpentMs: 1,
+      });
+      tests.push({
+        id: `${testFile} > skipped`,
+        status: 'skipped',
+        timeSpentMs: 1,
+      });
+      await bodyOf(registrations, 'before the failure')(testContext());
+      tests.push({
+        id: `${testFile} > failed`,
+        status: 'failed',
+        timeSpentMs: 1,
+      });
+      const later = testContext();
+      await bodyOf(registrations, 'later')(later);
+      const callsBackLater = testContext();
+      await bodyOf(registrations, 'calls back later')(
+        callsBackLater,
+        (...args: unknown[]) => calls.push(args),
+      );
 
-    assert.deepEqual(ran, bail ? ['before the failure'] : ['before the failure', 'later', 'calls back later']);
-    assert.deepEqual([later.skipped, callsBackLater.skipped], [bail, bail]);
-    assert.deepEqual(calls, bail ? [[]] : [[undefined]]);
-  });
+      assert.deepEqual(
+        ran,
+        bail
+          ? ['before the failure']
+          : ['before the failure', 'later', 'calls back later'],
+      );
+      assert.deepEqual([later.skipped, callsBackLater.skipped], [bail, bail]);
+      assert.deepEqual(calls, bail ? [[]] : [[undefined]]);
+    },
+  );
 });

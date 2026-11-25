@@ -15,7 +15,10 @@ export interface LzMutatorSets {
  * experimental mutator with `experimental`, or one by its name inside it. Only `true` turns one on; Stryker's
  * `mutator.excludedMutations` turns mutators off.
  */
-export type LzMutatorOptions<TOptIn extends string, TExperimental extends string> = {
+export type LzMutatorOptions<
+  TOptIn extends string,
+  TExperimental extends string,
+> = {
   readonly [TName in TOptIn]?: true;
 } & {
   readonly extended?: true;
@@ -27,7 +30,10 @@ type LzTier = keyof LzMutatorSets;
 const tiers: readonly LzTier[] = ['defaults', 'optIn', 'experimental'];
 type LzSelectableTier = Exclude<LzTier, 'defaults'>;
 
-const tierNames: Record<LzSelectableTier, string> = { optIn: 'opt-in', experimental: 'experimental' };
+const tierNames: Record<LzSelectableTier, string> = {
+  optIn: 'opt-in',
+  experimental: 'experimental',
+};
 const whereTiersGo: Record<LzTier, string> = {
   defaults: 'it runs by default',
   optIn: 'it is opt-in, so it goes outside experimental',
@@ -43,9 +49,20 @@ export function lzAllMutators(sets: LzMutatorSets): readonly LzMutator[] {
  * The defaults and the mutators that `options` turns on, in the order of `sets`. Throws, starting with
  * `packageName`, on options it does not take, as a config file in JavaScript has no type check.
  */
-export function lzSelectMutators(packageName: string, sets: LzMutatorSets, options: unknown): readonly LzMutator[] {
-  const tierOf = new Map(tiers.flatMap((tier) => sets[tier].map(({ name }): [string, LzTier] => [name, tier])));
-  const named = (tier: LzSelectableTier, name: string): readonly LzMutator[] => {
+export function lzSelectMutators(
+  packageName: string,
+  sets: LzMutatorSets,
+  options: unknown,
+): readonly LzMutator[] {
+  const tierOf = new Map(
+    tiers.flatMap((tier) =>
+      sets[tier].map(({ name }): [string, LzTier] => [name, tier]),
+    ),
+  );
+  const named = (
+    tier: LzSelectableTier,
+    name: string,
+  ): readonly LzMutator[] => {
     const found = tierOf.get(name);
 
     if (found === tier) {
@@ -53,38 +70,53 @@ export function lzSelectMutators(packageName: string, sets: LzMutatorSets, optio
     }
 
     const names = sets[tier].map((mutator) => mutator.name).join(', ');
-    const hint = found === undefined ? `the names are ${names || 'none'}` : whereTiersGo[found];
+    const hint =
+      found === undefined
+        ? `the names are ${names || 'none'}`
+        : whereTiersGo[found];
 
-    throw new Error(`${packageName}: no ${tierNames[tier]} mutator is named ${name}; ${hint}.`);
+    throw new Error(
+      `${packageName}: no ${tierNames[tier]} mutator is named ${name}; ${hint}.`,
+    );
   };
-  const selected = entriesOf(packageName, 'the options', options ?? {}).flatMap(([key, value]) => {
-    if (key === 'experimental' && isRecord(value)) {
-      return entriesOf(packageName, key, value).flatMap(([name, member]) => {
-        onlyTrue(packageName, `experimental.${name}`, member);
+  const selected = entriesOf(packageName, 'the options', options ?? {}).flatMap(
+    ([key, value]) => {
+      if (key === 'experimental' && isRecord(value)) {
+        return entriesOf(packageName, key, value).flatMap(([name, member]) => {
+          onlyTrue(packageName, `experimental.${name}`, member);
 
-        return named('experimental', name);
-      });
-    }
+          return named('experimental', name);
+        });
+      }
 
-    onlyTrue(packageName, key, value);
+      onlyTrue(packageName, key, value);
 
-    if (key === 'experimental') {
-      return sets.experimental;
-    }
+      if (key === 'experimental') {
+        return sets.experimental;
+      }
 
-    return key === 'extended' ? sets.optIn : named('optIn', key);
-  });
+      return key === 'extended' ? sets.optIn : named('optIn', key);
+    },
+  );
 
-  return lzAllMutators(sets).filter((mutator) => sets.defaults.includes(mutator) || selected.includes(mutator));
+  return lzAllMutators(sets).filter(
+    (mutator) => sets.defaults.includes(mutator) || selected.includes(mutator),
+  );
 }
 
 function isRecord(value: unknown): value is object {
   return isObject(value) && !Array.isArray(value);
 }
 
-function entriesOf(packageName: string, what: string, value: unknown): [string, unknown][] {
+function entriesOf(
+  packageName: string,
+  what: string,
+  value: unknown,
+): [string, unknown][] {
   if (!isRecord(value)) {
-    throw new Error(`${packageName}: ${what} must be an object, not ${inspect(value)}.`);
+    throw new Error(
+      `${packageName}: ${what} must be an object, not ${inspect(value)}.`,
+    );
   }
 
   return Object.keys(value).flatMap((key): [string, unknown][] => {

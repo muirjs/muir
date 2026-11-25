@@ -9,11 +9,19 @@ import { lzTestEach } from '@layzee/node-test-extensions';
 import { lzMutationSummary } from './mutation-summary.ts';
 
 function mutant(status: string): object {
-  return { id: '1', mutatorName: 'BlockStatement', status, location: { start: { line: 1, column: 1 } } };
+  return {
+    id: '1',
+    mutatorName: 'BlockStatement',
+    status,
+    location: { start: { line: 1, column: 1 } },
+  };
 }
 
 function reportOf(...statuses: readonly string[]): object {
-  return { schemaVersion: '1.0', files: { 'src/a.ts': { mutants: statuses.map(mutant) } } };
+  return {
+    schemaVersion: '1.0',
+    files: { 'src/a.ts': { mutants: statuses.map(mutant) } },
+  };
 }
 
 const header = [
@@ -30,12 +38,34 @@ describe('lzMutationSummary', () => {
     const report = {
       files: {
         'src/a.ts': {
-          mutants: ['Killed', 'Survived', 'Timeout', 'NoCoverage', 'RuntimeError', 'CompileError'].map(mutant),
+          mutants: [
+            'Killed',
+            'Survived',
+            'Timeout',
+            'NoCoverage',
+            'RuntimeError',
+            'CompileError',
+          ].map(mutant),
         },
         'src/b.ts': {
-          mutants: ['Killed', 'Killed', 'Timeout', 'NoCoverage', 'NoCoverage', 'NoCoverage'].map(mutant),
+          mutants: [
+            'Killed',
+            'Killed',
+            'Timeout',
+            'NoCoverage',
+            'NoCoverage',
+            'NoCoverage',
+          ].map(mutant),
         },
-        'src/c.ts': { mutants: ['CompileError', 'CompileError', 'RuntimeError', 'Ignored', 'Ignored'].map(mutant) },
+        'src/c.ts': {
+          mutants: [
+            'CompileError',
+            'CompileError',
+            'RuntimeError',
+            'Ignored',
+            'Ignored',
+          ].map(mutant),
+        },
       },
     };
 
@@ -46,9 +76,21 @@ describe('lzMutationSummary', () => {
   });
 
   lzTestEach([
-    ['every mutant is killed', ['Killed', 'Killed'], '| 100.00 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |'],
-    ['a Timeout mutant counts as detected', ['Timeout'], '| 100.00 | 0 | 0 | 1 | 0 | 0 | 0 | 0 |'],
-    ['a Survived mutant counts as undetected', ['Killed', 'Survived'], '| 50.00 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |'],
+    [
+      'every mutant is killed',
+      ['Killed', 'Killed'],
+      '| 100.00 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |',
+    ],
+    [
+      'a Timeout mutant counts as detected',
+      ['Timeout'],
+      '| 100.00 | 0 | 0 | 1 | 0 | 0 | 0 | 0 |',
+    ],
+    [
+      'a Survived mutant counts as undetected',
+      ['Killed', 'Survived'],
+      '| 50.00 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |',
+    ],
     [
       'a NoCoverage mutant counts as undetected',
       ['NoCoverage', 'Timeout', 'Killed'],
@@ -59,11 +101,22 @@ describe('lzMutationSummary', () => {
       ['Killed', 'RuntimeError', 'CompileError', 'Ignored'],
       '| 100.00 | 1 | 0 | 0 | 0 | 1 | 1 | 1 |',
     ],
-    ['only one mutant survives', ['Survived'], '| 0.00 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |'],
-    ['no mutant has a score', ['RuntimeError', 'Ignored'], '| n/a | 0 | 0 | 0 | 0 | 1 | 0 | 1 |'],
+    [
+      'only one mutant survives',
+      ['Survived'],
+      '| 0.00 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |',
+    ],
+    [
+      'no mutant has a score',
+      ['RuntimeError', 'Ignored'],
+      '| n/a | 0 | 0 | 0 | 0 | 1 | 0 | 1 |',
+    ],
     ['the report has no mutants', [], '| n/a | 0 | 0 | 0 | 0 | 0 | 0 | 0 |'],
   ])('writes the score Stryker reports when %s', (_, statuses, row) => {
-    assert.equal(lzMutationSummary('t', reportOf(...statuses)), summaryOf('t', row));
+    assert.equal(
+      lzMutationSummary('t', reportOf(...statuses)),
+      summaryOf('t', row),
+    );
   });
 
   lzTestEach([
@@ -71,13 +124,23 @@ describe('lzMutationSummary', () => {
     ['no files object', {}],
     ['an array for files', { files: [] }],
     ['a file that is no object', { files: { 'src/a.ts': [] } }],
-    ['a file without a mutants array', { files: { 'src/a.ts': { mutants: {} } } }],
-    ['a mutant that is no object', { files: { 'src/a.ts': { mutants: ['Killed'] } } }],
+    [
+      'a file without a mutants array',
+      { files: { 'src/a.ts': { mutants: {} } } },
+    ],
+    [
+      'a mutant that is no object',
+      { files: { 'src/a.ts': { mutants: ['Killed'] } } },
+    ],
     ['a mutant without a status', { files: { 'src/a.ts': { mutants: [{}] } } }],
-    ['a mutant with a status that is no string', { files: { 'src/a.ts': { mutants: [{ status: 1 }] } } }],
+    [
+      'a mutant with a status that is no string',
+      { files: { 'src/a.ts': { mutants: [{ status: 1 }] } } },
+    ],
   ])('rejects a report with %s', (_, report) => {
     assert.throws(() => lzMutationSummary('t', report), {
-      message: "The mutation report does not match Stryker's JSON report schema.",
+      message:
+        "The mutation report does not match Stryker's JSON report schema.",
     });
   });
 });
@@ -89,10 +152,14 @@ function runSummary(args: readonly string[]): {
   readonly stdout: string;
   readonly stderr: string;
 } {
-  const { status, stdout, stderr } = spawnSync(process.execPath, [script, ...args], {
-    encoding: 'utf8',
-    windowsHide: true,
-  });
+  const { status, stdout, stderr } = spawnSync(
+    process.execPath,
+    [script, ...args],
+    {
+      encoding: 'utf8',
+      windowsHide: true,
+    },
+  );
 
   return { code: status, stdout, stderr };
 }
@@ -112,7 +179,10 @@ describe('mutation-summary.cli.ts', () => {
 
     assert.deepEqual(runSummary([reportFile, 'p:mutate-test-code']), {
       code: 0,
-      stdout: summaryOf('p:mutate-test-code', '| 50.00 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |'),
+      stdout: summaryOf(
+        'p:mutate-test-code',
+        '| 50.00 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |',
+      ),
       stderr: '',
     });
   });
@@ -127,9 +197,10 @@ describe('mutation-summary.cli.ts', () => {
       {
         code,
         stdout,
-        usage: /^Error: Usage: node tools\/eslint-rules\/mutation-summary\.cli\.ts <report\.json> <title>$/m.test(
-          stderr,
-        ),
+        usage:
+          /^Error: Usage: node tools\/eslint-rules\/mutation-summary\.cli\.ts <report\.json> <title>$/m.test(
+            stderr,
+          ),
       },
       { code: 1, stdout: '', usage: true },
     );

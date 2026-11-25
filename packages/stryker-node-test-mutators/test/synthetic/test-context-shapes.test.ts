@@ -8,12 +8,21 @@ import { describe, it, type TestContext } from 'node:test';
 import { onSent, share, total } from './sample.ts';
 
 // env-schema/test/make-test.js:6
-function checkShare(t: TestContext, part: number, whole: number, expected: number): void {
+function checkShare(
+  t: TestContext,
+  part: number,
+  whole: number,
+  expected: number,
+): void {
   t.assert.equal(share(part, whole), expected);
 }
 
 // fastify/test/register.test.js:122
-function thenableRejects(t: TestContext, promise: Promise<unknown>, error: object) {
+function thenableRejects(
+  t: TestContext,
+  promise: Promise<unknown>,
+  error: object,
+) {
   return t.assert.rejects(async () => {
     await promise;
   }, error);
@@ -50,7 +59,15 @@ describe('assertions of the test context', () => {
 
   // fast-json-stringify/test/integer.test.js:78
   it('checks in a function of its own', (t) => {
-    function check({ count, size, product }: { count: number; size: number; product: number }): void {
+    function check({
+      count,
+      size,
+      product,
+    }: {
+      count: number;
+      size: number;
+      product: number;
+    }): void {
       t.assert.equal(total(count, size), product);
     }
 
@@ -59,7 +76,9 @@ describe('assertions of the test context', () => {
 
   // fastify/test/decorator.test.js:772
   it('checks in a promise callback', async (t) => {
-    await Promise.resolve(share(1, 4)).then((value) => t.assert.equal(value, 0.25));
+    await Promise.resolve(share(1, 4)).then((value) =>
+      t.assert.equal(value, 0.25),
+    );
   });
 
   // pino-pretty/test/boolean-options.test.js:50, pino-pretty/test/error-objects.test.js:265
@@ -93,7 +112,10 @@ describe('assertions of the test context', () => {
       share(1, 0);
       t.assert.fail('should throw');
     } catch (error) {
-      t.assert.equal(error instanceof AssertionError ? error.operator : error, '==');
+      t.assert.equal(
+        error instanceof AssertionError ? error.operator : error,
+        '==',
+      );
     }
   });
 
@@ -109,7 +131,9 @@ describe('assertions of the test context', () => {
 
   // pino-pretty/test/basic.test.js:1139
   it('checks in a listener before it calls back', (t, done) => {
-    const stream = new Writable({ write: (_chunk, _encoding, callback) => callback() });
+    const stream = new Writable({
+      write: (_chunk, _encoding, callback) => callback(),
+    });
     onSent({ raw: stream }, () => {
       t.assert.equal(total(1, 2), 2);
       done();

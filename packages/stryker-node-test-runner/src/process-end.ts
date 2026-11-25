@@ -3,7 +3,10 @@
  * processes its tests leave running. On Windows libuv's job object ends the processes that the test file's process
  * started directly with it; one started through a shell (`shell: true`, a `.cmd` file) or with `detached: true` stays.
  */
-export function groupOptions(platform: NodeJS.Platform): { detached: boolean; windowsHide: true } {
+export function groupOptions(platform: NodeJS.Platform): {
+  detached: boolean;
+  windowsHide: true;
+} {
   return { detached: platform !== 'win32', windowsHide: true };
 }
 
@@ -32,7 +35,11 @@ function wholeCharacters(tail: Buffer): string {
 type Kill = (pid: number, signal: NodeJS.Signals | 0) => void;
 
 /** Sends `signal` to the group, where 0 only asks whether it is there; false when no process of the group is left. */
-function signalGroup(pid: number, signal: NodeJS.Signals | 0, kill: Kill): boolean {
+function signalGroup(
+  pid: number,
+  signal: NodeJS.Signals | 0,
+  kill: Kill,
+): boolean {
   try {
     kill(-pid, signal);
 
@@ -50,7 +57,11 @@ function signalGroup(pid: number, signal: NodeJS.Signals | 0, kill: Kill): boole
  * Sends the group SIGTERM and, when any of it is left `termGraceMs` later, SIGKILL, so a process that listens for
  * SIGTERM gets to run its listener. A process that detached itself has a group of its own and stays.
  */
-export async function endGroup(pid: number, platform: NodeJS.Platform, kill: Kill): Promise<void> {
+export async function endGroup(
+  pid: number,
+  platform: NodeJS.Platform,
+  kill: Kill,
+): Promise<void> {
   if (!groupOptions(platform).detached || !signalGroup(pid, 'SIGTERM', kill)) {
     return;
   }
@@ -106,7 +117,10 @@ export function processEnd(
 
       ended = true;
       // A process that failed to start has no pid, and no group to end.
-      const grouped = child.pid === undefined ? Promise.resolve() : endGroup(child.pid, platform, kill);
+      const grouped =
+        child.pid === undefined
+          ? Promise.resolve()
+          : endGroup(child.pid, platform, kill);
       grouped.then(() => {
         done({ exitCode: code, stderr: wholeCharacters(errors) });
       }, fail);

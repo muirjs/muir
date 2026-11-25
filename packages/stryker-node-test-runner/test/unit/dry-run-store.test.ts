@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
@@ -31,7 +37,11 @@ describe('lzDryRunStore', () => {
     lzDryRunStore(dir).start();
 
     assert.deepEqual(
-      [readdirSync(dir), store.read('a.test.ts', 'peak'), store.read('a.test.ts', 'start-up')],
+      [
+        readdirSync(dir),
+        store.read('a.test.ts', 'peak'),
+        store.read('a.test.ts', 'start-up'),
+      ],
       [[], undefined, undefined],
     );
   });
@@ -43,7 +53,11 @@ describe('lzDryRunStore', () => {
     store.write('b.test.ts', 'peak', '120');
 
     assert.deepEqual(
-      [store.read('a.test.ts', 'peak'), store.read('a.test.ts', 'start-up'), store.read('b.test.ts', 'peak')],
+      [
+        store.read('a.test.ts', 'peak'),
+        store.read('a.test.ts', 'start-up'),
+        store.read('b.test.ts', 'peak'),
+      ],
       ['370', '{"startUpMs":401,"tests":5}', '120'],
     );
   });
@@ -52,7 +66,10 @@ describe('lzDryRunStore', () => {
     const { store } = setup(t);
     store.write('a.test.ts', 'peak', '370');
 
-    assert.deepEqual([store.read('a.test.ts', 'start-up'), store.read('b.test.ts', 'peak')], [undefined, undefined]);
+    assert.deepEqual(
+      [store.read('a.test.ts', 'start-up'), store.read('b.test.ts', 'peak')],
+      [undefined, undefined],
+    );
   });
 });
 
@@ -84,10 +101,13 @@ describe('lzOwnDryRun', () => {
     ['42.5'],
     ['1e999'],
     [String(process.ppid + 1)],
-  ])('owns the dry run itself when the owner passed on reads %j', ([owner], t) => {
-    inherit(t, owner);
+  ])(
+    'owns the dry run itself when the owner passed on reads %j',
+    ([owner], t) => {
+      inherit(t, owner);
 
-    assert.equal(lzOwnDryRun(), process.pid);
-    assert.equal(process.env[envNames.dryRunOwner], String(process.pid));
-  });
+      assert.equal(lzOwnDryRun(), process.pid);
+      assert.equal(process.env[envNames.dryRunOwner], String(process.pid));
+    },
+  );
 });

@@ -27,5 +27,9 @@ export const nodeExitCode: LzMutator = {
 };
 
 function isExitCode(path: NodePath, target: types.Node): boolean {
-  return target.type === 'MemberExpression' && lzPropertyName(target) === 'exitCode' && isProcess(path, target.object);
+  return (
+    target.type === 'MemberExpression' &&
+    lzPropertyName(target) === 'exitCode' &&
+    isProcess(path, target.object)
+  );
 }

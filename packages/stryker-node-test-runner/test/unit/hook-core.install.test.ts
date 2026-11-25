@@ -64,12 +64,17 @@ describe('install', () => {
     assert.equal(deps.global[installed], true);
     assert.equal(installed, Symbol.for('stryker-node-test-runner.hook'));
     assert.equal(reporting, Symbol.for('stryker-node-test-runner.reporting'));
-    assert.equal(wrappedNodeTest, Symbol.for('stryker-node-test-runner.node-test'));
+    assert.equal(
+      wrappedNodeTest,
+      Symbol.for('stryker-node-test-runner.node-test'),
+    );
     assert.equal(watchdog, Symbol.for('stryker-node-test-runner.watchdog'));
   });
 
   it('keeps an existing Stryker namespace', () => {
-    const ns: InstrumenterContext = { mutantCoverage: { static: { 1: 1 }, perTest: {} } };
+    const ns: InstrumenterContext = {
+      mutantCoverage: { static: { 1: 1 }, perTest: {} },
+    };
     const { deps } = harness({ [envNames.out]: out });
     deps.global.__stryker__ = ns;
     install(deps);
@@ -78,22 +83,37 @@ describe('install', () => {
     assert.deepEqual(ns.mutantCoverage, { static: { 1: 1 }, perTest: {} });
   });
 
-  lzTestEach([1, 25])('sets the hit limit %d and starts counting', (hitLimit) => {
-    const { deps } = installedHarness({ [envNames.out]: out, [envNames.hitLimit]: String(hitLimit) });
+  lzTestEach([1, 25])(
+    'sets the hit limit %d and starts counting',
+    (hitLimit) => {
+      const { deps } = installedHarness({
+        [envNames.out]: out,
+        [envNames.hitLimit]: String(hitLimit),
+      });
 
-    assert.equal(deps.global.__stryker__?.hitLimit, hitLimit);
-    assert.equal(deps.global.__stryker__.hitCount, 0);
-  });
+      assert.equal(deps.global.__stryker__?.hitLimit, hitLimit);
+      assert.equal(deps.global.__stryker__.hitCount, 0);
+    },
+  );
 
   it("watches the process's memory when the memory limit is positive, with a record of its own in the out directory", () => {
-    const { deps, calls } = installedHarness({ [envNames.out]: out, [envNames.memoryLimit]: '1500' });
+    const { deps, calls } = installedHarness({
+      [envNames.out]: out,
+      [envNames.memoryLimit]: '1500',
+    });
 
     const options = {
-      workerData: { limitMB: 1500, recordPath: join(out, `4321.${deps.nonce}.memory.json`) },
+      workerData: {
+        limitMB: 1500,
+        recordPath: join(out, `4321.${deps.nonce}.memory.json`),
+      },
       execArgv: [],
       env: {},
     };
-    assert.deepEqual(calls, [`watchMemory ${JSON.stringify(options)}`, 'onExit']);
+    assert.deepEqual(calls, [
+      `watchMemory ${JSON.stringify(options)}`,
+      'onExit',
+    ]);
     assert.equal(deps.global[watchdog], 'the watchdog');
   });
 
@@ -104,15 +124,23 @@ describe('install', () => {
       { NODE_COMPILE_CACHE: 'cache' },
       { NODE_COMPILE_CACHE: 'cache' },
     ],
-  ])("starts the memory watchdog without the process's environment%s", ([, env, expected]) => {
-    const started: unknown[] = [];
-    installedHarness(
-      { [envNames.out]: out, [envNames.memoryLimit]: '1500', NODE_OPTIONS: '--require x.cjs', ...env },
-      { watchMemory: (options) => started.push(options.env) },
-    );
+  ])(
+    "starts the memory watchdog without the process's environment%s",
+    ([, env, expected]) => {
+      const started: unknown[] = [];
+      installedHarness(
+        {
+          [envNames.out]: out,
+          [envNames.memoryLimit]: '1500',
+          NODE_OPTIONS: '--require x.cjs',
+          ...env,
+        },
+        { watchMemory: (options) => started.push(options.env) },
+      );
 
-    assert.deepEqual(started, [expected]);
-  });
+      assert.deepEqual(started, [expected]);
+    },
+  );
 
   it('watches the memory with the smallest limit, 1 MB', () => {
     const started: unknown[] = [];
@@ -134,23 +162,35 @@ describe('install', () => {
     assert.equal(deps.global[watchdog], undefined);
   });
 
-  lzTestEach([undefined, '0', 'none'])('watches no memory with the memory limit %s', (memoryLimit) => {
-    const { calls } = installedHarness({ [envNames.out]: out, [envNames.memoryLimit]: memoryLimit });
+  lzTestEach([undefined, '0', 'none'])(
+    'watches no memory with the memory limit %s',
+    (memoryLimit) => {
+      const { calls } = installedHarness({
+        [envNames.out]: out,
+        [envNames.memoryLimit]: memoryLimit,
+      });
 
-    assert.deepEqual(calls, ['onExit']);
-  });
+      assert.deepEqual(calls, ['onExit']);
+    },
+  );
 
-  lzTestEach([undefined, '0', 'none'])('counts no hits with the hit limit %s', (hitLimit) => {
-    const { deps, records, exit } = installedHarness({ [envNames.out]: out, [envNames.hitLimit]: hitLimit });
-    exit();
+  lzTestEach([undefined, '0', 'none'])(
+    'counts no hits with the hit limit %s',
+    (hitLimit) => {
+      const { deps, records, exit } = installedHarness({
+        [envNames.out]: out,
+        [envNames.hitLimit]: hitLimit,
+      });
+      exit();
 
-    assert.equal(deps.global.__stryker__?.hitLimit, undefined);
-    assert.equal(deps.global.__stryker__?.hitCount, undefined);
-    assert.deepEqual(
-      records.map(({ record }) => 'hitCount' in record),
-      [false],
-    );
-  });
+      assert.equal(deps.global.__stryker__?.hitLimit, undefined);
+      assert.equal(deps.global.__stryker__?.hitCount, undefined);
+      assert.deepEqual(
+        records.map(({ record }) => 'hitCount' in record),
+        [false],
+      );
+    },
+  );
 
   it('attributes the process to the test that started it', () => {
     const { deps } = installedHarness(
@@ -158,34 +198,62 @@ describe('install', () => {
       { mainFile: '/other.mjs' },
     );
 
-    assert.equal(deps.global.__stryker__?.currentTestId, `${testFile} > spawns`);
+    assert.equal(
+      deps.global.__stryker__?.currentTestId,
+      `${testFile} > spawns`,
+    );
   });
 
   it('credits the hits that preloads made before the hook to the test that started the process', () => {
     const spawns = `${testFile} > spawns`;
-    const { deps } = harness({ [envNames.out]: out, [envNames.current]: spawns }, { mainFile: '/other.mjs' });
-    deps.global.__stryker__ = { mutantCoverage: { static: { 1: 2 }, perTest: {} } };
+    const { deps } = harness(
+      { [envNames.out]: out, [envNames.current]: spawns },
+      { mainFile: '/other.mjs' },
+    );
+    deps.global.__stryker__ = {
+      mutantCoverage: { static: { 1: 2 }, perTest: {} },
+    };
     install(deps);
 
-    assert.deepEqual(deps.global.__stryker__.mutantCoverage, { static: {}, perTest: { [spawns]: { 1: 2 } } });
+    assert.deepEqual(deps.global.__stryker__.mutantCoverage, {
+      static: {},
+      perTest: { [spawns]: { 1: 2 } },
+    });
   });
 
   it('adds the hits that preloads made before the hook to those the test already has in the process', () => {
     const spawns = `${testFile} > spawns`;
-    const { deps } = harness({ [envNames.out]: out, [envNames.current]: spawns }, { mainFile: '/other.mjs' });
-    deps.global.__stryker__ = { mutantCoverage: { static: { 1: 2, 3: 1 }, perTest: { [spawns]: { 1: 1 } } } };
+    const { deps } = harness(
+      { [envNames.out]: out, [envNames.current]: spawns },
+      { mainFile: '/other.mjs' },
+    );
+    deps.global.__stryker__ = {
+      mutantCoverage: {
+        static: { 1: 2, 3: 1 },
+        perTest: { [spawns]: { 1: 1 } },
+      },
+    };
     install(deps);
 
-    assert.deepEqual(deps.global.__stryker__.mutantCoverage, { static: {}, perTest: { [spawns]: { 1: 3, 3: 1 } } });
+    assert.deepEqual(deps.global.__stryker__.mutantCoverage, {
+      static: {},
+      perTest: { [spawns]: { 1: 3, 3: 1 } },
+    });
   });
 
-  lzTestEach([undefined, ''])('attributes the process to no test when the current test is %j', (current) => {
-    const { deps } = harness({ [envNames.out]: out, [envNames.current]: current });
-    deps.global.__stryker__ = { currentTestId: 'stale' };
-    install(deps);
+  lzTestEach([undefined, ''])(
+    'attributes the process to no test when the current test is %j',
+    (current) => {
+      const { deps } = harness({
+        [envNames.out]: out,
+        [envNames.current]: current,
+      });
+      deps.global.__stryker__ = { currentTestId: 'stale' };
+      install(deps);
 
-    assert.equal(deps.global.__stryker__.currentTestId, '');
-  });
+      assert.equal(deps.global.__stryker__.currentTestId, '');
+    },
+  );
 
   it('wraps node:test in the process that runs the test file, and makes imports of node:test give it', async () => {
     const { deps, fake, calls, hooks, wrapped } = installedHarness(fileEnv());
@@ -195,7 +263,10 @@ describe('install', () => {
     assert.ok(hook);
     assert.deepEqual(more, []);
     const names = Object.keys((await importRedirected(hook, wrapped())).module);
-    assert.deepEqual(names.sort(), ['default', ...Object.keys(fake.module)].sort());
+    assert.deepEqual(
+      names.sort(),
+      ['default', ...Object.keys(fake.module)].sort(),
+    );
 
     const seen: unknown[] = [];
     wrapped().it('runs', () => {
@@ -207,12 +278,19 @@ describe('install', () => {
   });
 
   lzTestFor<readonly [string, Record<string, string>, string | undefined]>([
-    ['a process the tests spawned', { [envNames.file]: testFile }, '/repo/child.mjs'],
+    [
+      'a process the tests spawned',
+      { [envNames.file]: testFile },
+      '/repo/child.mjs',
+    ],
     ['a process without a main file', { [envNames.file]: testFile }, undefined],
     ['a run without a test file', {}, undefined],
     ['a run without a test file, from a main file', {}, testFile],
   ])('leaves node:test and its reporter alone in %s', ([, env, mainFile]) => {
-    const { deps, calls } = harness({ [envNames.out]: out, ...env }, { mainFile });
+    const { deps, calls } = harness(
+      { [envNames.out]: out, ...env },
+      { mainFile },
+    );
 
     assert.equal(install(deps), true);
     assert.deepEqual(calls, ['onExit']);
@@ -221,7 +299,10 @@ describe('install', () => {
   });
 
   it("records the tests node:test reports in a file named after the process, marked as the test file's", () => {
-    const { deps, records, exit } = installedHarness({ ...fileEnv(), [envNames.dryRun]: 'false' });
+    const { deps, records, exit } = installedHarness({
+      ...fileEnv(),
+      [envNames.dryRun]: 'false',
+    });
     report(deps, 'passes', 'pass');
     report(deps, 'fails', 'fail');
 
@@ -234,7 +315,12 @@ describe('install', () => {
           main: true,
           tests: [
             { id: `${testFile} > passes`, status: 'passed', timeSpentMs: 2 },
-            { id: `${testFile} > fails`, status: 'failed', failureMessage: 'fails failed', timeSpentMs: 2 },
+            {
+              id: `${testFile} > fails`,
+              status: 'failed',
+              failureMessage: 'fails failed',
+              timeSpentMs: 2,
+            },
           ],
           lifetime,
           testSpans: spans(),
@@ -244,7 +330,9 @@ describe('install', () => {
   });
 
   it("writes a worker thread's record to a file of its own, never as the test file's", () => {
-    const { deps, records, exit } = installedHarness(fileEnv(), { threadId: 3 });
+    const { deps, records, exit } = installedHarness(fileEnv(), {
+      threadId: 3,
+    });
 
     exit();
 
@@ -256,7 +344,10 @@ describe('install', () => {
 
   it('writes the records of two processes the test file starts to different files, though they have the same pid', () => {
     const paths = [0, 1].flatMap(() => {
-      const { records, exit } = installedHarness({ [envNames.out]: out }, { mainFile: '/repo/child.mjs' });
+      const { records, exit } = installedHarness(
+        { [envNames.out]: out },
+        { mainFile: '/repo/child.mjs' },
+      );
       exit();
 
       return records.map(({ path }) => path);
@@ -267,7 +358,10 @@ describe('install', () => {
 
   it('gives the memory records of two processes with the same pid different files', () => {
     const paths = [0, 1].map(() => {
-      const { calls } = installedHarness({ [envNames.out]: out, [envNames.memoryLimit]: '1500' });
+      const { calls } = installedHarness({
+        [envNames.out]: out,
+        [envNames.memoryLimit]: '1500',
+      });
 
       return calls[0];
     });
@@ -292,7 +386,9 @@ describe('install', () => {
   });
 
   it('writes no record in a process that may not write one', () => {
-    const { deps, records, exit } = installedHarness(fileEnv(), { canWriteRecords: false });
+    const { deps, records, exit } = installedHarness(fileEnv(), {
+      canWriteRecords: false,
+    });
     report(deps, 'passes', 'pass');
 
     exit();
@@ -301,10 +397,21 @@ describe('install', () => {
   });
 
   lzTestFor<readonly [string, boolean, Record<string, number>]>([
-    ['after the exit listeners of the tests, when it ends by itself', true, { exit: 1 }],
-    ['before the exit listeners of the tests, when it ends through process.exit()', false, {}],
+    [
+      'after the exit listeners of the tests, when it ends by itself',
+      true,
+      { exit: 1 },
+    ],
+    [
+      'before the exit listeners of the tests, when it ends through process.exit()',
+      false,
+      {},
+    ],
   ])('writes the record once, %s', ([, natural, exitHits]) => {
-    const { deps, records, calls, exit, onExit } = installedHarness({ [envNames.out]: out, [envNames.dryRun]: 'true' });
+    const { deps, records, calls, exit, onExit } = installedHarness({
+      [envNames.out]: out,
+      [envNames.dryRun]: 'true',
+    });
     const coverage = { static: {}, perTest: {} };
     const ns = deps.global.__stryker__;
     assert.ok(ns);
@@ -320,13 +427,20 @@ describe('install', () => {
       records.map(({ record }) => record.mutantCoverage),
       [{ static: exitHits, perTest: {} }],
     );
-    assert.deepEqual(calls.slice(installCalls), natural ? ['offExit', 'onExit'] : []);
+    assert.deepEqual(
+      calls.slice(installCalls),
+      natural ? ['offExit', 'onExit'] : [],
+    );
   });
 
   it('writes the diagnostics of errors raised after a test ended', () => {
     const { deps, records, exit } = installedHarness(fileEnv());
-    const message = 'Error: Test "t" at a.test.mjs:1:1 generated asynchronous activity after the test ended.';
-    send(deps, { type: 'test:diagnostic', data: { name: '', nesting: 0, message } });
+    const message =
+      'Error: Test "t" at a.test.mjs:1:1 generated asynchronous activity after the test ended.';
+    send(deps, {
+      type: 'test:diagnostic',
+      data: { name: '', nesting: 0, message },
+    });
 
     exit();
 
@@ -339,11 +453,26 @@ describe('install', () => {
     });
   });
 
-  const summary: TestEvent = { type: 'test:summary', data: { name: '', nesting: 0 } };
+  const summary: TestEvent = {
+    type: 'test:summary',
+    data: { name: '', nesting: 0 },
+  };
 
-  lzTestFor<readonly [string, boolean, readonly TestEvent[], Record<string, boolean>]>([
-    ['marks the record unfinished when it ends through process.exit() before', false, [], { unfinished: true }],
-    ['leaves the record as it is when it ends through process.exit() after', false, [summary], {}],
+  lzTestFor<
+    readonly [string, boolean, readonly TestEvent[], Record<string, boolean>]
+  >([
+    [
+      'marks the record unfinished when it ends through process.exit() before',
+      false,
+      [],
+      { unfinished: true },
+    ],
+    [
+      'leaves the record as it is when it ends through process.exit() after',
+      false,
+      [summary],
+      {},
+    ],
     ['leaves the record as it is when it ends by itself without', true, [], {}],
   ])("%s node:test's summary", ([, natural, last, unfinished]) => {
     const { deps, records, exit, wrapped } = installedHarness(fileEnv());
@@ -366,23 +495,44 @@ describe('install', () => {
   it('records where the test file declares a test, named by URL as an ES module or by path as CommonJS', () => {
     const file = resolve(testFile);
     const other = pathToFileURL(resolve('/repo', 'other.ts')).href;
-    const startPositions = [pathToFileURL(file).href, file, other].map((scriptName) => {
-      const { deps, records, exit, wrapped } = installedHarness(
-        { [envNames.out]: out, [envNames.file]: file },
-        { mainFile: file, callSites: () => [{ scriptName, lineNumber: 3, columnNumber: 5 }] },
-      );
-      wrapped().it('declared', () => {});
-      report(deps, 'declared', 'pass');
-      exit();
+    const startPositions = [pathToFileURL(file).href, file, other].map(
+      (scriptName) => {
+        const { deps, records, exit, wrapped } = installedHarness(
+          { [envNames.out]: out, [envNames.file]: file },
+          {
+            mainFile: file,
+            callSites: () => [{ scriptName, lineNumber: 3, columnNumber: 5 }],
+          },
+        );
+        wrapped().it('declared', () => {});
+        report(deps, 'declared', 'pass');
+        exit();
 
-      return records[0]?.record.tests[0]?.startPosition;
-    });
+        return records[0]?.record.tests[0]?.startPosition;
+      },
+    );
 
-    assert.deepEqual(startPositions, [{ line: 2, column: 4 }, { line: 2, column: 4 }, undefined]);
+    assert.deepEqual(startPositions, [
+      { line: 2, column: 4 },
+      { line: 2, column: 4 },
+      undefined,
+    ]);
   });
 
-  lzTestFor<readonly [string, string, readonly boolean[], { line: number; column: number }]>([
-    ['the source-mapped call sites, when one is in the test file', testFile, [true], { line: 6, column: 6 }],
+  lzTestFor<
+    readonly [
+      string,
+      string,
+      readonly boolean[],
+      { line: number; column: number },
+    ]
+  >([
+    [
+      'the source-mapped call sites, when one is in the test file',
+      testFile,
+      [true],
+      { line: 6, column: 6 },
+    ],
     [
       'the call sites as they are, when no source-mapped one is',
       join('/repo', 'src', 'a.ts'),
@@ -398,7 +548,11 @@ describe('install', () => {
 
         return sourceMap
           ? [
-              { scriptName: join('/repo', 'helper.ts'), lineNumber: 1, columnNumber: 1 },
+              {
+                scriptName: join('/repo', 'helper.ts'),
+                lineNumber: 1,
+                columnNumber: 1,
+              },
               { scriptName: mappedFile, lineNumber: 7, columnNumber: 7 },
             ]
           : [{ scriptName: testFile, lineNumber: 3, columnNumber: 5 }];
@@ -413,7 +567,10 @@ describe('install', () => {
   });
 
   it('activates the mutant the runner names for runtime activation once a test starts', async () => {
-    const { deps, fake, wrapped } = installedHarness({ ...fileEnv(), [envNames.activeMutant]: '5' });
+    const { deps, fake, wrapped } = installedHarness({
+      ...fileEnv(),
+      [envNames.activeMutant]: '5',
+    });
 
     assert.equal(deps.global.__stryker__?.activeMutant, undefined);
 
@@ -425,16 +582,41 @@ describe('install', () => {
 
   lzTestFor<readonly [string, readonly string[], string | undefined, string]>([
     ['without --test-only', ['--no-deprecation'], '--no-warnings', 'test'],
-    ['with --test-only in its options', ['--test-only'], undefined, 'test.only'],
-    ['with --test-only in NODE_OPTIONS', [], '--import x  --test-only', 'test.only'],
-    ['with --test-only=true in NODE_OPTIONS', [], '--test-only=true', 'test.only'],
-    ['with --test-only in NODE_OPTIONS and --no-test-only in its options', ['--no-test-only'], '--test-only', 'test'],
+    [
+      'with --test-only in its options',
+      ['--test-only'],
+      undefined,
+      'test.only',
+    ],
+    [
+      'with --test-only in NODE_OPTIONS',
+      [],
+      '--import x  --test-only',
+      'test.only',
+    ],
+    [
+      'with --test-only=true in NODE_OPTIONS',
+      [],
+      '--test-only=true',
+      'test.only',
+    ],
+    [
+      'with --test-only in NODE_OPTIONS and --no-test-only in its options',
+      ['--no-test-only'],
+      '--test-only',
+      'test',
+    ],
   ])('registers an only test as one %s', ([, execArgv, nodeOptions, kind]) => {
-    const { fake, wrapped } = installedHarness({ ...fileEnv(), NODE_OPTIONS: nodeOptions }, { execArgv });
+    const { fake, wrapped } = installedHarness(
+      { ...fileEnv(), NODE_OPTIONS: nodeOptions },
+      { execArgv },
+    );
     wrapped().it.only('only', () => {});
 
     assert.deepEqual(
-      fake.registrations.map((registration) => registration.kind).filter((registered) => registered !== 'after'),
+      fake.registrations
+        .map((registration) => registration.kind)
+        .filter((registered) => registered !== 'after'),
       [kind],
     );
   });
@@ -448,7 +630,9 @@ describe('install', () => {
     wrapped().it('unwanted', () => {});
 
     assert.deepEqual(
-      fake.registrations.filter(({ kind }) => kind === 'test').map(({ name, rest }) => [name, member(rest[0], 'skip')]),
+      fake.registrations
+        .filter(({ kind }) => kind === 'test')
+        .map(({ name, rest }) => [name, member(rest[0], 'skip')]),
       [
         ['wanted', undefined],
         ['unwanted', true],
@@ -461,25 +645,33 @@ describe('install', () => {
     (filter) => {
       const { deps } = harness({ ...fileEnv(), [envNames.filter]: filter });
 
-      assert.throws(() => install(deps), { message: `${envNames.filter} is no JSON array of test ids: ${filter}` });
+      assert.throws(() => install(deps), {
+        message: `${envNames.filter} is no JSON array of test ids: ${filter}`,
+      });
     },
   );
 
-  const bails = ['true', 'false', undefined].map((bail) => ({ bail, verb: bail === 'true' ? 'skips' : 'runs' }));
+  const bails = ['true', 'false', undefined].map((bail) => ({
+    bail,
+    verb: bail === 'true' ? 'skips' : 'runs',
+  }));
 
-  lzTestEach(bails)('$verb later tests with bail $bail; children never bail', async ({ bail }) => {
-    const env = { ...fileEnv(), [envNames.bail]: bail };
-    const { deps, fake, wrapped } = installedHarness(env);
-    const ran: string[] = [];
-    wrapped().it('later', () => {
-      ran.push('later');
-    });
-    report(deps, 'fails', 'fail');
-    await bodyOf(fake.registrations, 'later')(testContext());
+  lzTestEach(bails)(
+    '$verb later tests with bail $bail; children never bail',
+    async ({ bail }) => {
+      const env = { ...fileEnv(), [envNames.bail]: bail };
+      const { deps, fake, wrapped } = installedHarness(env);
+      const ran: string[] = [];
+      wrapped().it('later', () => {
+        ran.push('later');
+      });
+      report(deps, 'fails', 'fail');
+      await bodyOf(fake.registrations, 'later')(testContext());
 
-    assert.deepEqual(ran, bail === 'true' ? [] : ['later']);
-    assert.ok(!(envNames.bail in env));
-  });
+      assert.deepEqual(ran, bail === 'true' ? [] : ['later']);
+      assert.ok(!(envNames.bail in env));
+    },
+  );
 
   it('hides the test file from the processes that the test file starts', () => {
     const env = fileEnv();
@@ -500,9 +692,15 @@ describe('install', () => {
     descendant.exit();
 
     assert.deepEqual(
-      [main, descendant].map(({ records }) => [records[0]?.record.lifetime, records[0]?.record.testSpans]),
+      [main, descendant].map(({ records }) => [
+        records[0]?.record.lifetime,
+        records[0]?.record.testSpans,
+      ]),
       [
-        [{ start: 12, end: 15 }, { [`${testFile} > runs`]: [{ start: 13, end: 14 }] }],
+        [
+          { start: 12, end: 15 },
+          { [`${testFile} > runs`]: [{ start: 13, end: 14 }] },
+        ],
         [{ start: 11, end: 16 }, undefined],
       ],
     );
@@ -519,12 +717,18 @@ describe('install', () => {
 
     assert.deepEqual(
       [main.records[0]?.record.lifetime, main.records[0]?.record.testSpans],
-      [{ start: 11, end: 13 }, { [`${testFile} > exits`]: [{ start: 12, end: 13 }] }],
+      [
+        { start: 11, end: 13 },
+        { [`${testFile} > exits`]: [{ start: 12, end: 13 }] },
+      ],
     );
   });
 
   it('writes the hit count and, only in the dry run, the mutant coverage and the peak memory', () => {
-    const coverage = { static: { 1: 2 }, perTest: { [`${testFile} > t`]: { 3: 1 } } };
+    const coverage = {
+      static: { 1: 2 },
+      perTest: { [`${testFile} > t`]: { 3: 1 } },
+    };
     const written = ['true', 'false', undefined].map((dryRun) => {
       const { deps, records, exit } = installedHarness({
         [envNames.out]: out,
@@ -545,7 +749,13 @@ describe('install', () => {
     });
 
     assert.deepEqual(written, [
-      { tests: [], hitCount: 7, mutantCoverage: coverage, peakMemoryMB: 123, lifetime },
+      {
+        tests: [],
+        hitCount: 7,
+        mutantCoverage: coverage,
+        peakMemoryMB: 123,
+        lifetime,
+      },
       { tests: [], hitCount: 7, lifetime },
       { tests: [], hitCount: 7, lifetime },
     ]);
@@ -635,12 +845,23 @@ describe('a test file whose parent process is gone', () => {
     assert.deepEqual(watched('linux', {}, { env: fileEnv() }).polls, []);
   });
 
-  lzTestEach(['', '0', 'runner'])("watches no parent when the runner's pid is %j, which names no process", (pid) => {
-    assert.deepEqual(watched('linux', {}, { env: { ...fileEnv(), [envNames.runner]: pid } }).polls, []);
-  });
+  lzTestEach(['', '0', 'runner'])(
+    "watches no parent when the runner's pid is %j, which names no process",
+    (pid) => {
+      assert.deepEqual(
+        watched('linux', {}, { env: { ...fileEnv(), [envNames.runner]: pid } })
+          .polls,
+        [],
+      );
+    },
+  );
 
   it('watches its parent when the runner is pid 1, as in a container, and leaves the group alone while it lasts', () => {
-    const { killed, poll } = watched('linux', {}, { env: { ...fileEnv(), [envNames.runner]: '1' }, ppid: 1 });
+    const { killed, poll } = watched(
+      'linux',
+      {},
+      { env: { ...fileEnv(), [envNames.runner]: '1' }, ppid: 1 },
+    );
     poll();
 
     assert.deepEqual(killed, []);
@@ -651,7 +872,10 @@ describe('a test file whose parent process is gone', () => {
   });
 
   it('watches no parent in a process that the test file started, which leads no group', () => {
-    assert.deepEqual(watched('linux', { mainFile: '/repo/child.mjs' }).polls, []);
+    assert.deepEqual(
+      watched('linux', { mainFile: '/repo/child.mjs' }).polls,
+      [],
+    );
   });
 });
 
@@ -662,9 +886,11 @@ describe('passing `done` as node:test does', () => {
 
     return fn.length === 2 ? fn(context, () => {}) : fn(context);
   };
-  const threeParameters = (seen: unknown[]) => (_context: unknown, done: unknown, _extra: unknown) => {
-    seen.push(done);
-  };
+  const threeParameters =
+    (seen: unknown[]) =>
+    (_context: unknown, done: unknown, _extra: unknown) => {
+      seen.push(done);
+    };
 
   it('passes no `done` to a root `after` hook with three parameters', async () => {
     const h = installedHarness(fileEnv());
@@ -693,7 +919,10 @@ describe('passing `done` as node:test does', () => {
     const seen: unknown[] = [];
     h.wrapped().it('three', threeParameters(seen));
 
-    await callAsNodeTest(rawBodyOf(h.fake.registrations, 'three'), testContext());
+    await callAsNodeTest(
+      rawBodyOf(h.fake.registrations, 'three'),
+      testContext(),
+    );
 
     assert.deepEqual(seen, [undefined]);
   });

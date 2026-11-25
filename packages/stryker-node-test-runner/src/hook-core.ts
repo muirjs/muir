@@ -18,7 +18,14 @@ import { lzTestOnly } from './node-options.ts';
 import { groupOptions } from './process-end.ts';
 import { lzPersistRecord, type LzRecordDependencies } from './record-writer.ts';
 import type { WatchdogData } from './watchdog.ts';
-import { lzCurrentTests, settling, wrapNodeTest, type Body, type NodeTestModule, type NodeTestTarget } from './wrap.ts';
+import {
+  lzCurrentTests,
+  settling,
+  wrapNodeTest,
+  type Body,
+  type NodeTestModule,
+  type NodeTestTarget,
+} from './wrap.ts';
 
 export interface TestEvent {
   readonly type: string;
@@ -34,15 +41,21 @@ export interface TestEvent {
       /** Absent when the test file itself fails. */
       readonly type?: 'suite' | 'test';
       readonly duration_ms: number;
-      readonly error?: { readonly failureType?: string; readonly message: string; readonly cause?: unknown };
+      readonly error?: {
+        readonly failureType?: string;
+        readonly message: string;
+        readonly cause?: unknown;
+      };
     };
   };
 }
 
-const isResult = (type: string): boolean => type === 'test:pass' || type === 'test:fail';
+const isResult = (type: string): boolean =>
+  type === 'test:pass' || type === 'test:fail';
 
 /** node:test reports a failing `after` hook of the test file as a failure of the file itself, which has no type. */
-const fileLevel = (details: TestEvent['data']['details']): boolean => details?.type === undefined;
+const fileLevel = (details: TestEvent['data']['details']): boolean =>
+  details?.type === undefined;
 
 /** The global object's slots, which the hook sets for the modules it loads and for Stryker's instrumented code. */
 export interface GlobalSlots {
@@ -93,7 +106,11 @@ export interface HookDependencies extends LzRecordDependencies {
   readonly callSites: (
     frameCount: number,
     options: { readonly sourceMap: boolean },
-  ) => readonly { readonly scriptName: string; readonly lineNumber: number; readonly columnNumber: number }[];
+  ) => readonly {
+    readonly scriptName: string;
+    readonly lineNumber: number;
+    readonly columnNumber: number;
+  }[];
   readonly global: { -readonly [TKey in keyof GlobalSlots]: GlobalSlots[TKey] };
   /** The clock of every `LzTimeWindow`. */
   readonly now: () => number;
@@ -130,7 +147,10 @@ export function writesAllowed(
 function parseFilter(json: string): Set<string> {
   const ids: unknown = JSON.parse(json);
 
-  if (!Array.isArray(ids) || !ids.every((id): id is string => typeof id === 'string')) {
+  if (
+    !Array.isArray(ids) ||
+    !ids.every((id): id is string => typeof id === 'string')
+  ) {
     throw new Error(`${envNames.filter} is no JSON array of test ids: ${json}`);
   }
 
@@ -166,13 +186,17 @@ export function install(deps: HookDependencies): boolean {
   if (memoryLimit > 0 && deps.canWatchMemory) {
     const { NODE_COMPILE_CACHE: compileCache } = deps.env;
     deps.global[watchdog] = deps.watchMemory({
-      workerData: { limitMB: memoryLimit, recordPath: join(outDir, memoryRecordName(deps.pid, deps.nonce)) },
+      workerData: {
+        limitMB: memoryLimit,
+        recordPath: join(outDir, memoryRecordName(deps.pid, deps.nonce)),
+      },
       // Without the process's options, such as --require ts-node/register, which would load in the thread again, and
       // without its environment, whose NODE_OPTIONS Node.js would read for the thread: its --require preloads would
       // run there too, and --input-type=module would make the thread an ES module, which also loads the --import
       // preloads, the hook among them. Only the compile cache comes along, so the thread compiles watchdog.ts once.
       execArgv: [],
-      env: compileCache === undefined ? {} : { NODE_COMPILE_CACHE: compileCache },
+      env:
+        compileCache === undefined ? {} : { NODE_COMPILE_CACHE: compileCache },
     });
   }
 
@@ -203,7 +227,8 @@ export function install(deps: HookDependencies): boolean {
   const tests: RecordedTest[] = [];
   const currentTests = lzCurrentTests({ ns, env: deps.env, now: deps.now });
   const diagnostics: string[] = [];
-  const main = testFile !== undefined && deps.threadId === 0 && deps.mainFile === testFile;
+  const main =
+    testFile !== undefined && deps.threadId === 0 && deps.mainFile === testFile;
   let end: Ending | undefined;
 
   if (main) {
@@ -221,11 +246,15 @@ export function install(deps: HookDependencies): boolean {
     end = ends;
     // ES modules are named by their URL, CommonJS modules by their path.
     const callSites = (sourceMap: boolean) =>
-      deps.callSites(callSiteFrames, { sourceMap }).map(({ scriptName, lineNumber, columnNumber }) => ({
-        file: scriptName.startsWith('file:') ? fileURLToPath(scriptName) : scriptName,
-        line: lineNumber,
-        column: columnNumber,
-      }));
+      deps
+        .callSites(callSiteFrames, { sourceMap })
+        .map(({ scriptName, lineNumber, columnNumber }) => ({
+          file: scriptName.startsWith('file:')
+            ? fileURLToPath(scriptName)
+            : scriptName,
+          line: lineNumber,
+          column: columnNumber,
+        }));
     const recordEvent = recordEvents(testFile, tests, positions, diagnostics);
     deps.global[reporting] = (event) => {
       recordEvent(event);
@@ -248,7 +277,9 @@ export function install(deps: HookDependencies): boolean {
       callSites: () => {
         const mapped = callSites(true);
 
-        return mapped.some(({ file }) => file === testFile) ? mapped : callSites(false);
+        return mapped.some(({ file }) => file === testFile)
+          ? mapped
+          : callSites(false);
       },
       nodeTest,
       registering: ends.registering,
@@ -284,13 +315,21 @@ export function install(deps: HookDependencies): boolean {
       mutantCoverage: dryRun ? ns.mutantCoverage : undefined,
       peakMemoryMB: dryRun ? Math.round(deps.maxRssKiB() / 1024) : undefined,
       ...(diagnostics.length > 0 && { diagnostics }),
-      ...(main && !outcome?.summarized && !natural && !outcome?.complete && { unfinished: true }),
+      ...(main &&
+        !outcome?.summarized &&
+        !natural &&
+        !outcome?.complete && { unfinished: true }),
       ...outcome?.why,
       lifetime: { start: started, end: written },
       ...(main && { testSpans: currentTests.spansAt(written) }),
     };
   };
-  lzPersistRecord(deps, join(outDir, recordName(deps.pid, deps.threadId, deps.nonce)), record, { main, dryRun });
+  lzPersistRecord(
+    deps,
+    join(outDir, recordName(deps.pid, deps.threadId, deps.nonce)),
+    record,
+    { main, dryRun },
+  );
 
   return true;
 }
@@ -334,7 +373,10 @@ interface LzEnded {
  * when no test result follows within `stallMs`.
  */
 export function ending(
-  deps: Pick<HookDependencies, 'exit' | 'activeResources' | 'later' | 'onBeforeExit'>,
+  deps: Pick<
+    HookDependencies,
+    'exit' | 'activeResources' | 'later' | 'onBeforeExit'
+  >,
   tests: RecordedTest[],
   rootAfter: (hook: () => void) => void,
   graceMs: number,
@@ -375,7 +417,11 @@ export function ending(
     deps.exit(code);
   };
   const check = () => {
-    if (armed && allReported() && tests.some((test) => test.status === 'failed')) {
+    if (
+      armed &&
+      allReported() &&
+      tests.some((test) => test.status === 'failed')
+    ) {
       end(1);
     }
   };
@@ -443,7 +489,12 @@ export function ending(
 
       // Also a root `after` hook that node:test ended by its timeout, whose function never settles; node:test runs none
       // after it.
-      if (finished && type === 'test:fail' && data.nesting === 0 && fileLevel(data.details)) {
+      if (
+        finished &&
+        type === 'test:fail' &&
+        data.nesting === 0 &&
+        fileLevel(data.details)
+      ) {
         threw = true;
         armOnceSettled();
       }
@@ -473,7 +524,10 @@ export function recordEvents(
 
   return ({ type, data }) => {
     if (type === 'test:start') {
-      ids.set(data.nesting, idOf(ids.get(data.nesting - 1) ?? testFile, data.name));
+      ids.set(
+        data.nesting,
+        idOf(ids.get(data.nesting - 1) ?? testFile, data.name),
+      );
 
       return;
     }
@@ -520,7 +574,8 @@ export function recordEvents(
     tests.push({
       ...base,
       status: 'failed',
-      failureMessage: error.cause instanceof Error ? error.cause.message : error.message,
+      failureMessage:
+        error.cause instanceof Error ? error.cause.message : error.message,
     });
   };
 }
@@ -550,7 +605,9 @@ export function redirectNodeTest(names: string[]): ModuleHooks {
         return nextResolve(specifier, context);
       }
 
-      const format = context.conditions.includes('require') ? 'commonjs' : 'module';
+      const format = context.conditions.includes('require')
+        ? 'commonjs'
+        : 'module';
 
       return { url: `${wrappedUrl}${format}`, format, shortCircuit: true };
     },

@@ -4,7 +4,12 @@ import { describe, it } from 'node:test';
 import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
-import { lzIsOwn, lzToNodeMutator, own, type LzMutator } from '../../src/mutator.ts';
+import {
+  lzIsOwn,
+  lzToNodeMutator,
+  own,
+  type LzMutator,
+} from '../../src/mutator.ts';
 
 const node = types.emptyStatement();
 
@@ -41,12 +46,18 @@ describe('lzToNodeMutator', () => {
   lzTestEach([
     [false, [node]],
     [true, []],
-  ])('gives, where isExpressionContext is %s, %j', (isExpressionContext, nodes) => {
-    const nodeMutator = lzToNodeMutator(mutator, types, 'lz-sample-mutators');
+  ])(
+    'gives, where isExpressionContext is %s, %j',
+    (isExpressionContext, nodes) => {
+      const nodeMutator = lzToNodeMutator(mutator, types, 'lz-sample-mutators');
 
-    assert.deepEqual([...nodeMutator.mutate(programPath(), { isExpressionContext })], nodes);
-    assert.equal(lzIsOwn(nodeMutator), true);
-  });
+      assert.deepEqual(
+        [...nodeMutator.mutate(programPath(), { isExpressionContext })],
+        nodes,
+      );
+      assert.equal(lzIsOwn(nodeMutator), true);
+    },
+  );
 
   it("names the package that installs it under the core's mark", () => {
     const nodeMutator = lzToNodeMutator(mutator, types, 'lz-sample-mutators');
@@ -57,8 +68,16 @@ describe('lzToNodeMutator', () => {
 
 describe('lzIsOwn', () => {
   lzTestEach([
-    ["a mutator with the core's mark", { name: 'Alpha', [Symbol.for('@layzee/stryker-mutator-core')]: true }, true],
-    ["a mutator with a package's own mark", { name: 'Alpha', [Symbol.for('stryker-node-test-mutators')]: true }, false],
+    [
+      "a mutator with the core's mark",
+      { name: 'Alpha', [Symbol.for('@layzee/stryker-mutator-core')]: true },
+      true,
+    ],
+    [
+      "a mutator with a package's own mark",
+      { name: 'Alpha', [Symbol.for('stryker-node-test-mutators')]: true },
+      false,
+    ],
     ["one of Stryker's mutators", { name: 'StringLiteral' }, false],
   ])('takes %s as %s', (_title, mutator, expected) => {
     assert.equal(lzIsOwn(mutator), expected);

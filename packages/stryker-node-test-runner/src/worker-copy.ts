@@ -1,4 +1,13 @@
-import { cpSync, lstatSync, mkdtempSync, readlinkSync, rmSync, statSync, symlinkSync, unlinkSync } from 'node:fs';
+import {
+  cpSync,
+  lstatSync,
+  mkdtempSync,
+  readlinkSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  unlinkSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import type { Logger } from '@stryker-mutator/api/logging';
@@ -8,7 +17,11 @@ import type { ProcessRecord } from './record.ts';
 
 /** Moves every path under `from` in `text` to `to`; a test's name can hold the folder its process works in. */
 export function lzRebase(text: string, from: string, to: string): string {
-  return text.split(from).reduce((rebased, rest) => rebased + (/^[\w.-]/.test(rest) ? from : to) + rest);
+  return text
+    .split(from)
+    .reduce(
+      (rebased, rest) => rebased + (/^[\w.-]/.test(rest) ? from : to) + rest,
+    );
 }
 
 /** The copy's folder and every link made in it, which a removal takes apart before the folder (see `lzRemoveCopy`). */
@@ -32,9 +45,14 @@ export function lzCopySandbox(sandbox: string, pid: number): LzSandboxCopy {
         // A junction, as Stryker links node_modules, needs no symlink privilege on Windows, so a link whose target is
         // missing becomes one too; POSIX ignores the type.
         // Stryker disable next-line LogicalOperator,BooleanLiteral: Windows only, as POSIX ignores the link type; the Windows run kills it
-        const isDirectory = statSync(source, { throwIfNoEntry: false })?.isDirectory() ?? true;
+        const isDirectory =
+          statSync(source, { throwIfNoEntry: false })?.isDirectory() ?? true;
         const link = lzRebase(source, sandbox, copy);
-        symlinkSync(readlinkSync(source), link, isDirectory ? 'junction' : 'file');
+        symlinkSync(
+          readlinkSync(source),
+          link,
+          isDirectory ? 'junction' : 'file',
+        );
         links.push(link);
 
         return false;
@@ -58,7 +76,10 @@ export async function lzRemoveCopy(
   {
     unlink = unlinkSync,
     remove = removeDir,
-  }: { unlink?: (link: string) => void; remove?: (dir: string, log: Logger) => Promise<void> } = {},
+  }: {
+    unlink?: (link: string) => void;
+    remove?: (dir: string, log: Logger) => Promise<void>;
+  } = {},
 ): Promise<void> {
   try {
     copy.links.forEach((link) => {
@@ -75,15 +96,34 @@ export async function lzRemoveCopy(
   await remove(copy.dir, log);
 }
 
-export function lzRebaseRecord(record: ProcessRecord, from: string, to: string): ProcessRecord {
-  const rebaseKeys = <T>(byTest: Readonly<Record<string, T>>): Record<string, T> =>
-    Object.fromEntries(Object.entries(byTest).map(([id, value]) => [lzRebase(id, from, to), value]));
+export function lzRebaseRecord(
+  record: ProcessRecord,
+  from: string,
+  to: string,
+): ProcessRecord {
+  const rebaseKeys = <T>(
+    byTest: Readonly<Record<string, T>>,
+  ): Record<string, T> =>
+    Object.fromEntries(
+      Object.entries(byTest).map(([id, value]) => [
+        lzRebase(id, from, to),
+        value,
+      ]),
+    );
   const { mutantCoverage, testSpans } = record;
 
   return {
     ...record,
-    tests: record.tests.map((test) => ({ ...test, id: lzRebase(test.id, from, to) })),
-    ...(mutantCoverage && { mutantCoverage: { ...mutantCoverage, perTest: rebaseKeys(mutantCoverage.perTest) } }),
+    tests: record.tests.map((test) => ({
+      ...test,
+      id: lzRebase(test.id, from, to),
+    })),
+    ...(mutantCoverage && {
+      mutantCoverage: {
+        ...mutantCoverage,
+        perTest: rebaseKeys(mutantCoverage.perTest),
+      },
+    }),
     ...(testSpans && { testSpans: rebaseKeys(testSpans) }),
   };
 }

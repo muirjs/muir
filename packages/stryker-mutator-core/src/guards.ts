@@ -26,11 +26,18 @@ export function hasMember<TKey extends string, T>(
 }
 
 /** The member of `value` under `key` that passes `check`; throws, naming `source`, when there is none. */
-export function member<T>(value: unknown, key: string, check: (member: unknown) => member is T, source: string): T {
+export function member<T>(
+  value: unknown,
+  key: string,
+  check: (member: unknown) => member is T,
+  source: string,
+): T {
   const found: unknown = isObject(value) ? Reflect.get(value, key) : undefined;
 
   if (!check(found)) {
-    throw new Error(`stryker-mutator-core: ${source} has no ${key} of the shape this module reads.`);
+    throw new Error(
+      `stryker-mutator-core: ${source} has no ${key} of the shape this module reads.`,
+    );
   }
 
   return found;

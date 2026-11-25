@@ -46,7 +46,9 @@ const corpus = [
 ];
 
 function callees(code: string): Set<string> {
-  const names = [...code.matchAll(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?=\s*\()/g)].map(([name]) => name);
+  const names = [
+    ...code.matchAll(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?=\s*\()/g),
+  ].map(([name]) => name);
 
   return new Set(names.filter((name) => !keywords.has(name)));
 }
@@ -56,29 +58,47 @@ function textAt(source: string, { start, end }: Location): string {
     .split('\n')
     .slice(start.line, end.line + 1)
     .map((line, index, lines) =>
-      line.slice(index === 0 ? start.column : 0, index === lines.length - 1 ? end.column : line.length),
+      line.slice(
+        index === 0 ? start.column : 0,
+        index === lines.length - 1 ? end.column : line.length,
+      ),
     )
     .join('\n');
 }
 
-async function newCallees(mutator: LzMutator, source: string): Promise<string[][]> {
+async function newCallees(
+  mutator: LzMutator,
+  source: string,
+): Promise<string[][]> {
   const mutants = await instrumentWith(mutator, source);
 
   return mutants.map(({ location, replacement }) => {
     const before = callees(textAt(source, location));
 
-    return [...callees(replacement)].filter((name) => !before.has(name) && !allowed.has(name));
+    return [...callees(replacement)].filter(
+      (name) => !before.has(name) && !allowed.has(name),
+    );
   });
 }
 
 describe('safety', () => {
-  lzTestEach(mutators.map((mutator): readonly [string, LzMutator] => [mutator.name, mutator]))(
+  lzTestEach(
+    mutators.map((mutator): readonly [string, LzMutator] => [
+      mutator.name,
+      mutator,
+    ]),
+  )(
     '%s calls nothing new in its replacements but Error and Promise.reject',
     async (_name, mutator) => {
-      const found = await Promise.all(corpus.map((source) => newCallees(mutator, source)));
+      const found = await Promise.all(
+        corpus.map((source) => newCallees(mutator, source)),
+      );
 
       assert.deepEqual(found.flat().flat(), []);
-      assert.ok(found.flat().length > 0, `${mutator.name} made no mutant in the corpus`);
+      assert.ok(
+        found.flat().length > 0,
+        `${mutator.name} made no mutant in the corpus`,
+      );
     },
   );
 
@@ -87,17 +107,21 @@ describe('safety', () => {
       'a mutator that signals a process',
       'f();',
       (t: Parameters<LzMutator['mutate']>[1]) =>
-        t.callExpression(t.memberExpression(t.identifier('process'), t.identifier('kill')), [
-          t.memberExpression(t.identifier('process'), t.identifier('pid')),
-          t.stringLiteral('SIGKILL'),
-        ]),
+        t.callExpression(
+          t.memberExpression(t.identifier('process'), t.identifier('kill')),
+          [
+            t.memberExpression(t.identifier('process'), t.identifier('pid')),
+            t.stringLiteral('SIGKILL'),
+          ],
+        ),
       (path: NodePath) => path.isCallExpression(),
       [['process.kill']],
     ],
     [
       'a mutator that only throws an Error',
       'f();',
-      (t: Parameters<LzMutator['mutate']>[1]) => t.newExpression(t.identifier('Error'), []),
+      (t: Parameters<LzMutator['mutate']>[1]) =>
+        t.newExpression(t.identifier('Error'), []),
       (path: NodePath) => path.isCallExpression(),
       [[]],
     ],
@@ -117,7 +141,11 @@ describe('safety', () => {
 
   lzTestEach(
     mutators.flatMap((mutator) =>
-      targets.map((source): readonly [string, string, LzMutator] => [mutator.name, source, mutator]),
+      targets.map((source): readonly [string, string, LzMutator] => [
+        mutator.name,
+        source,
+        mutator,
+      ]),
     ),
   )('%s leaves %j alone', async (_name, source, mutator) => {
     assert.deepEqual(await mutantsOf(mutator, source), []);

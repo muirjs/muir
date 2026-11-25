@@ -1,15 +1,26 @@
 import { lzParseReport } from './stryker-report.ts';
 
 // Pending has no column: it does not appear in a finished report.
-const statuses = ['Killed', 'Survived', 'Timeout', 'NoCoverage', 'RuntimeError', 'CompileError', 'Ignored'];
+const statuses = [
+  'Killed',
+  'Survived',
+  'Timeout',
+  'NoCoverage',
+  'RuntimeError',
+  'CompileError',
+  'Ignored',
+];
 
 /**
  * A Markdown section for a GitHub job summary: the mutation score of Stryker's JSON report and its mutants per status.
  * The score is Stryker's: Killed and Timeout mutants out of those plus Survived and NoCoverage ones.
  */
 export function lzMutationSummary(title: string, report: unknown): string {
-  const found = lzParseReport(report).flatMap(([, mutants]) => mutants.map(({ status }) => status));
-  const count = (status: string): number => found.filter((each) => each === status).length;
+  const found = lzParseReport(report).flatMap(([, mutants]) =>
+    mutants.map(({ status }) => status),
+  );
+  const count = (status: string): number =>
+    found.filter((each) => each === status).length;
   const detected = count('Killed') + count('Timeout');
   const valid = detected + count('Survived') + count('NoCoverage');
   const score = valid === 0 ? 'n/a' : ((detected / valid) * 100).toFixed(2);

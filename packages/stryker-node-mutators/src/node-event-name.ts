@@ -1,6 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
-import { lzImportOf, lzPropertyName, type LzMutator } from '@layzee/stryker-mutator-core';
+import {
+  lzImportOf,
+  lzPropertyName,
+  type LzMutator,
+} from '@layzee/stryker-mutator-core';
 import { lzBuiltin } from './bindings.ts';
 import { isProcess } from './node-bindings.ts';
 
@@ -61,7 +65,9 @@ function receiverOf(path: NodePath): types.Node | undefined {
   }
 
   const { callee } = call;
-  const listens = callee.type === 'MemberExpression' && listenMethods.has(lzPropertyName(callee));
+  const listens =
+    callee.type === 'MemberExpression' &&
+    listenMethods.has(lzPropertyName(callee));
 
   return listens && path.key === 0 ? callee.object : undefined;
 }
@@ -70,10 +76,17 @@ function isEventsFunction(path: NodePath, callee: types.Node): boolean {
   if (callee.type === 'Identifier') {
     const from = lzImportOf(path, callee.name);
 
-    return from !== undefined && nodeEvents.has(from.source) && isOnceOrOn(from.imported);
+    return (
+      from !== undefined &&
+      nodeEvents.has(from.source) &&
+      isOnceOrOn(from.imported)
+    );
   }
 
-  if (callee.type !== 'MemberExpression' || callee.object.type !== 'Identifier') {
+  if (
+    callee.type !== 'MemberExpression' ||
+    callee.object.type !== 'Identifier'
+  ) {
     return false;
   }
 

@@ -6,7 +6,10 @@ export interface LzImportOf {
 }
 
 /** Only ES module `import` declarations count: the mutators do not read CommonJS `require`. */
-export function lzImportOf(path: NodePath, name: string): LzImportOf | undefined {
+export function lzImportOf(
+  path: NodePath,
+  name: string,
+): LzImportOf | undefined {
   const bound = path.scope.getBinding(name)?.path;
 
   if (bound?.parent.type !== 'ImportDeclaration') {
@@ -17,22 +20,31 @@ export function lzImportOf(path: NodePath, name: string): LzImportOf | undefined
 
   return {
     source: declaration.source.value,
-    imported: specifier.type === 'ImportSpecifier' ? exportedName(specifier.imported) : undefined,
+    imported:
+      specifier.type === 'ImportSpecifier'
+        ? exportedName(specifier.imported)
+        : undefined,
   };
 }
 
-function exportedName(imported: types.Identifier | types.StringLiteral): string {
+function exportedName(
+  imported: types.Identifier | types.StringLiteral,
+): string {
   return imported.type === 'Identifier' ? imported.name : imported.value;
 }
 
 export function lzPropertyName(member: types.Node): string | undefined {
-  return member.type === 'MemberExpression' && !member.computed && member.property.type === 'Identifier'
+  return member.type === 'MemberExpression' &&
+    !member.computed &&
+    member.property.type === 'Identifier'
     ? member.property.name
     : undefined;
 }
 
 export function lzAwaited(expression: types.Expression): types.Expression {
-  return expression.type === 'AwaitExpression' ? expression.argument : expression;
+  return expression.type === 'AwaitExpression'
+    ? expression.argument
+    : expression;
 }
 
 export function lzCalleeRoot(callee: types.Node): types.Identifier | undefined {

@@ -12,16 +12,26 @@ export const nodeReturnAwait: LzMutator = {
   sample:
     'export async function read(load: () => Promise<number>) {\n  try {\n    return await load();\n  } catch {\n    return 0;\n  }\n}\n',
   *mutate(path, t) {
-    if (path.isAwaitExpression() && path.parent.type === 'ReturnStatement' && isWaitedFor(path)) {
+    if (
+      path.isAwaitExpression() &&
+      path.parent.type === 'ReturnStatement' &&
+      isWaitedFor(path)
+    ) {
       yield t.cloneNode(path.node.argument);
     }
   },
 };
 
 function isWaitedFor(path: NodePath): boolean {
-  const boundary = path.findParent((parent) => parent.isFunction() || isWaitedForBlock(parent));
+  const boundary = path.findParent(
+    (parent) => parent.isFunction() || isWaitedForBlock(parent),
+  );
 
-  return boundary !== null && !boundary.isFunction() && boundary.getFunctionParent()?.node.generator !== true;
+  return (
+    boundary !== null &&
+    !boundary.isFunction() &&
+    boundary.getFunctionParent()?.node.generator !== true
+  );
 }
 
 /** A `try` block, which its `catch` and `finally` wait for, or a `catch` clause, which a `finally` waits for. */
@@ -38,5 +48,8 @@ function isWaitedForBlock(path: NodePath): boolean {
     return false;
   }
 
-  return path.key === 'block' || (path.key === 'handler' && Boolean(parentPath.node.finalizer));
+  return (
+    path.key === 'block' ||
+    (path.key === 'handler' && Boolean(parentPath.node.finalizer))
+  );
 }

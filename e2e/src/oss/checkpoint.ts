@@ -1,9 +1,27 @@
-import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { extname, relative, sep } from 'node:path';
 
-import type { MutantResult, schema, StrykerOptions } from '@stryker-mutator/api/core';
-import { commonTokens, declareClassPlugin, PluginKind, tokens } from '@stryker-mutator/api/plugin';
-import type { DryRunCompletedEvent, Reporter } from '@stryker-mutator/api/report';
+import type {
+  MutantResult,
+  schema,
+  StrykerOptions,
+} from '@stryker-mutator/api/core';
+import {
+  commonTokens,
+  declareClassPlugin,
+  PluginKind,
+  tokens,
+} from '@stryker-mutator/api/plugin';
+import type {
+  DryRunCompletedEvent,
+  Reporter,
+} from '@stryker-mutator/api/report';
 import type { TestResult } from '@stryker-mutator/api/test-runner';
 
 import { lzIsRecord, lzParseReport } from '../report.ts';
@@ -76,12 +94,23 @@ export class LzCheckpointReporter implements Reporter {
     const { cwd, readSource } = this.#deps;
     const temporary = `${this.#file}.tmp`;
 
-    writeFileSync(temporary, JSON.stringify(lzCheckpointReport(this.#mutants, this.#tests, cwd, readSource)));
+    writeFileSync(
+      temporary,
+      JSON.stringify(
+        lzCheckpointReport(this.#mutants, this.#tests, cwd, readSource),
+      ),
+    );
     renameSync(temporary, this.#file);
   }
 }
 
-export const strykerPlugins = [declareClassPlugin(PluginKind.Reporter, lzCheckpointReporterName, LzCheckpointReporter)];
+export const strykerPlugins = [
+  declareClassPlugin(
+    PluginKind.Reporter,
+    lzCheckpointReporterName,
+    LzCheckpointReporter,
+  ),
+];
 
 /** A mutation report of `mutants` and the dry run's `tests`, in the form Stryker reads with `--incremental`. */
 export function lzCheckpointReport(
@@ -103,21 +132,32 @@ export function lzCheckpointReport(
     file.mutants.push(mutant);
   });
   tests.forEach(({ id, name, fileName, startPosition }) => {
-    const file = (testFiles[fileName === undefined ? '' : reportName(cwd, fileName)] ??= testFile(
-      fileName,
-      readSource,
-    ));
+    const file = (testFiles[
+      fileName === undefined ? '' : reportName(cwd, fileName)
+    ] ??= testFile(fileName, readSource));
 
     file.tests.push({
       id,
       name,
       ...(startPosition === undefined
         ? {}
-        : { location: { start: { line: startPosition.line + 1, column: startPosition.column + 1 } } }),
+        : {
+            location: {
+              start: {
+                line: startPosition.line + 1,
+                column: startPosition.column + 1,
+              },
+            },
+          }),
     });
   });
 
-  return { schemaVersion: '1.0', thresholds: { high: 80, low: 60 }, files, testFiles };
+  return {
+    schemaVersion: '1.0',
+    thresholds: { high: 80, low: 60 },
+    files,
+    testFiles,
+  };
 }
 
 /** What decides a side's mutant results beyond the code Stryker diffs itself, so a run that differs starts afresh. */
@@ -128,7 +168,11 @@ export interface LzCheckpointKeyInputs extends LzDecidingFields {
 
 /** Of the named fields only, so a header passed whole adds none of its others, such as its start time. */
 export function lzCheckpointKey(inputs: LzCheckpointKeyInputs): string {
-  return JSON.stringify([...lzDecidingFields.map((field) => inputs[field]), inputs.mutate, inputs.strykerConfig]);
+  return JSON.stringify([
+    ...lzDecidingFields.map((field) => inputs[field]),
+    inputs.mutate,
+    inputs.strykerConfig,
+  ]);
 }
 
 export function lzInstalledVersions(hiddenLockfile: string): string[] {
@@ -136,19 +180,28 @@ export function lzInstalledVersions(hiddenLockfile: string): string[] {
   const packages = lzIsRecord(lockfile) ? lockfile['packages'] : undefined;
 
   if (!lzIsRecord(packages)) {
-    throw new Error('npm\'s node_modules/.package-lock.json lists no "packages".');
+    throw new Error(
+      'npm\'s node_modules/.package-lock.json lists no "packages".',
+    );
   }
 
   return Object.entries(packages)
     .map(
-      ([path, entry]) => `${path}@${lzIsRecord(entry) && typeof entry['version'] === 'string' ? entry['version'] : ''}`,
+      ([path, entry]) =>
+        `${path}@${lzIsRecord(entry) && typeof entry['version'] === 'string' ? entry['version'] : ''}`,
     )
     .sort();
 }
 
 /** The arguments that have Stryker resume from `file`, keep it up to date through this module, and overwrite it at the end. */
 export function lzCheckpointArgs(file: string): string[] {
-  return ['--incremental', '--incrementalFile', file, '--appendPlugins', import.meta.filename];
+  return [
+    '--incremental',
+    '--incrementalFile',
+    file,
+    '--appendPlugins',
+    import.meta.filename,
+  ];
 }
 
 /**
@@ -160,7 +213,9 @@ export function lzStartCheckpoint(file: string, key: string): number {
 
   if (!existsSync(keyFile) || readFileSync(keyFile, 'utf8') !== key) {
     if (existsSync(file)) {
-      process.stdout.write(`Discarded ${file}: it was written by a run with other options, tarballs or project.\n`);
+      process.stdout.write(
+        `Discarded ${file}: it was written by a run with other options, tarballs or project.\n`,
+      );
     }
 
     rmSync(file, { force: true });
@@ -179,17 +234,25 @@ export function lzEndCheckpoint(file: string): void {
 
 /** How many mutants the checkpoint at `file` holds. */
 export function lzCheckpointMutants(file: string): number {
-  return [...lzParseReport(readFileSync(file, 'utf8')).values()].reduce((count, mutants) => count + mutants.length, 0);
+  return [...lzParseReport(readFileSync(file, 'utf8')).values()].reduce(
+    (count, mutants) => count + mutants.length,
+    0,
+  );
 }
 
-function testFile(fileName: string | undefined, readSource: (file: string) => string | undefined): schema.TestFile {
+function testFile(
+  fileName: string | undefined,
+  readSource: (file: string) => string | undefined,
+): schema.TestFile {
   const source = fileName === undefined ? undefined : readSource(fileName);
 
   return source === undefined ? { tests: [] } : { source, tests: [] };
 }
 
 function languageOf(fileName: string): string {
-  return ['.ts', '.tsx', '.mts', '.cts'].includes(extname(fileName)) ? 'typescript' : 'javascript';
+  return ['.ts', '.tsx', '.mts', '.cts'].includes(extname(fileName))
+    ? 'typescript'
+    : 'javascript';
 }
 
 /** Stryker's report file name: relative to the folder it runs in, with forward slashes. */

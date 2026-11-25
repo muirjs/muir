@@ -25,15 +25,27 @@ describe('the options of lzTestEach and lzTestFor', () => {
 
   it('applies a timeout given as a number or in the options, and passes node:test options through', async (t) => {
     await t.assert.reports(() => {
-      lzTestEach([1])('number %s', () => new Promise((resolve) => setTimeout(resolve, 300)), 10);
-      lzTestFor([1])('options %s', { timeout: 10 }, () => new Promise((resolve) => setTimeout(resolve, 300)));
+      lzTestEach([1])(
+        'number %s',
+        () => new Promise((resolve) => setTimeout(resolve, 300)),
+        10,
+      );
+      lzTestFor([1])(
+        'options %s',
+        { timeout: 10 },
+        () => new Promise((resolve) => setTimeout(resolve, 300)),
+      );
       lzTestFor([1])('plan %s', { plan: 1 }, (n, t) => {
         // Stryker disable next-line LzNodeTestAssertCall: t.assert.reports allows only the names its cases list, so its callback may hold no Stryker code
         t.assert.equal(n, 1);
       });
     }, [
       { name: 'number 1', outcome: 'fail', error: 'test timed out after 10ms' },
-      { name: 'options 1', outcome: 'fail', error: 'test timed out after 10ms' },
+      {
+        name: 'options 1',
+        outcome: 'fail',
+        error: 'test timed out after 10ms',
+      },
       { name: 'plan 1', outcome: 'pass' },
     ]);
   });
@@ -80,7 +92,10 @@ describe('t.assert.reports', () => {
       t.assert.reports(() => {
         lzTestEach([captured])('captured %s', report);
       }, []),
-      { message: 't.assert.reports cases can use only lzTestEach, lzTestFor, report and globals, not captured.' },
+      {
+        message:
+          't.assert.reports cases can use only lzTestEach, lzTestFor, report and globals, not captured.',
+      },
     );
   });
 });

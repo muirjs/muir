@@ -4,7 +4,10 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { DryRunStatus, MutantRunStatus } from '@stryker-mutator/api/test-runner';
+import {
+  DryRunStatus,
+  MutantRunStatus,
+} from '@stryker-mutator/api/test-runner';
 
 import { lzTestFor } from '@layzee/node-test-extensions';
 import {
@@ -33,7 +36,10 @@ describe('LzNodeTestTestRunner endings', () => {
     let pidFile = '';
     // Before project()'s cleanup, which after hooks run in order: a child left running would hold the directory.
     t.after(() => {
-      if (existsSync(pidFile) && isRunning(Number(readFileSync(pidFile, 'utf8')))) {
+      if (
+        existsSync(pidFile) &&
+        isRunning(Number(readFileSync(pidFile, 'utf8')))
+      ) {
         process.kill(Number(readFileSync(pidFile, 'utf8')));
       }
     });
@@ -54,7 +60,10 @@ describe('LzNodeTestTestRunner endings', () => {
     pidFile = join(dir, 'child.pid');
     const runner = await initRunner(['a.test.mjs']);
 
-    assert.equal((await settle(runner.mutantRun(mutantRunOptions()))).status, MutantRunStatus.Survived);
+    assert.equal(
+      (await settle(runner.mutantRun(mutantRunOptions()))).status,
+      MutantRunStatus.Survived,
+    );
 
     // SIGKILL returns before the kernel is done: on Linux the orphaned child stays a zombie, which kill(pid, 0) still
     // finds, until its new parent reaps it. The child would otherwise run for 20 seconds.
@@ -72,38 +81,62 @@ describe('LzNodeTestTestRunner endings', () => {
     project(t, { 'a.test.mjs': fixture("cover('s');") });
     const runner = await initRunner(['a.test.mjs']);
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
 
     assert.deepEqual(tests, []);
-    assert.deepEqual(fixtureCoverage(mutantCoverage), { static: { s: 1 }, perTest: {} });
+    assert.deepEqual(fixtureCoverage(mutantCoverage), {
+      static: { s: 1 },
+      perTest: {},
+    });
   });
 
-  const passes = "it('passes', async () => { await new Promise((resolve) => setImmediate(resolve)); });";
-  const neverEnds = "it('never ends', async () => { await new Promise((resolve) => setTimeout(resolve, 1_000)); });";
+  const passes =
+    "it('passes', async () => { await new Promise((resolve) => setImmediate(resolve)); });";
+  const neverEnds =
+    "it('never ends', async () => { await new Promise((resolve) => setTimeout(resolve, 1_000)); });";
 
   lzTestFor<readonly [string, readonly string[]]>([
-    ['while it loads, before it declares a test', ['process.exit(0);', "it('never runs', () => {});"]],
-    ['before node:test reports any test', [passes, "it('exits', () => { process.exit(0); });", neverEnds]],
+    [
+      'while it loads, before it declares a test',
+      ['process.exit(0);', "it('never runs', () => {});"],
+    ],
+    [
+      'before node:test reports any test',
+      [passes, "it('exits', () => { process.exit(0); });", neverEnds],
+    ],
     // fastify/test/als.test.js:9
     [
       'from a test that skips itself',
-      [passes, "it('skips, then exits', (t) => { t.skip('no AsyncLocalStorage'); process.exit(0); });", neverEnds],
+      [
+        passes,
+        "it('skips, then exits', (t) => { t.skip('no AsyncLocalStorage'); process.exit(0); });",
+        neverEnds,
+      ],
     ],
     [
       'after node:test reports a test',
-      [passes, "it('exits later', () => { setTimeout(() => process.exit(0), 10); });", neverEnds],
+      [
+        passes,
+        "it('exits later', () => { setTimeout(() => process.exit(0), 10); });",
+        neverEnds,
+      ],
     ],
-  ])('reports a test file that exits with code 0 %s as an error', async ([, lines], t) => {
-    const dir = project(t, { 'a.test.mjs': fixture(...lines) });
-    const runner = await initRunner(['a.test.mjs']);
+  ])(
+    'reports a test file that exits with code 0 %s as an error',
+    async ([, lines], t) => {
+      const dir = project(t, { 'a.test.mjs': fixture(...lines) });
+      const runner = await initRunner(['a.test.mjs']);
 
-    assert.deepEqual(await settle(runner.dryRun(dryRun)), {
-      status: DryRunStatus.Error,
-      errorMessage:
-        `Unfinished test results for "${join(dir, 'a.test.mjs')}": its process exited before node:test reported ` +
-        'every test, as when a test calls process.exit().',
-    });
-  });
+      assert.deepEqual(await settle(runner.dryRun(dryRun)), {
+        status: DryRunStatus.Error,
+        errorMessage:
+          `Unfinished test results for "${join(dir, 'a.test.mjs')}": its process exited before node:test reported ` +
+          'every test, as when a test calls process.exit().',
+      });
+    },
+  );
 
   it('reports a test that failed before its test file exited with code 0 as failed', async (t) => {
     const dir = project(t, {
@@ -115,7 +148,9 @@ describe('LzNodeTestTestRunner endings', () => {
     });
     const runner = await initRunner(['a.test.mjs']);
 
-    const { tests } = complete(await settle(runner.dryRun({ ...dryRun, disableBail: true })));
+    const { tests } = complete(
+      await settle(runner.dryRun({ ...dryRun, disableBail: true })),
+    );
 
     assert.deepEqual(summary(tests), [
       failed(`${join(dir, 'a.test.mjs')} > fails`, 'x'),
@@ -124,7 +159,10 @@ describe('LzNodeTestTestRunner endings', () => {
   });
 
   it('reports a test file whose process exits without the record of its results as an error', async (t) => {
-    const dir = project(t, { 'a.test.mjs': passing, 'b.test.mjs': fixture('process.reallyExit(0);') });
+    const dir = project(t, {
+      'a.test.mjs': passing,
+      'b.test.mjs': fixture('process.reallyExit(0);'),
+    });
     const runner = await initRunner(['*.test.mjs']);
 
     assert.deepEqual(await settle(runner.dryRun(dryRun)), {
@@ -178,18 +216,27 @@ describe('LzNodeTestTestRunner endings', () => {
         process.env['NODE_OPTIONS'] = nodeOptions;
       }
     });
-    process.env['NODE_OPTIONS'] = `${nodeOptions ?? ''} --max-old-space-size=4096 --test-reporter=spec`;
-    const runner = await initRunner(['*.test.mjs'], { nodeArgs: ['--no-deprecation'] });
+    process.env['NODE_OPTIONS'] =
+      `${nodeOptions ?? ''} --max-old-space-size=4096 --test-reporter=spec`;
+    const runner = await initRunner(['*.test.mjs'], {
+      nodeArgs: ['--no-deprecation'],
+    });
     const b = join(dir, 'b.test.mjs');
     const errorMessage = lzFileError(b, {
       records: [],
       exitCode: 3,
       stderr: 'first\nsecond\n',
       fileArgs: ['--no-deprecation', b],
-      nodeOptions: [...lzConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }), '--max-old-space-size=4096'],
+      nodeOptions: [
+        ...lzConsumerNodeOptions({ NODE_OPTIONS: nodeOptions }),
+        '--max-old-space-size=4096',
+      ],
     });
 
-    assert.deepEqual(await settle(runner.dryRun(dryRun)), { status: DryRunStatus.Error, errorMessage });
+    assert.deepEqual(await settle(runner.dryRun(dryRun)), {
+      status: DryRunStatus.Error,
+      errorMessage,
+    });
     assert.deepEqual(await settle(runner.mutantRun(mutantRunOptions())), {
       status: MutantRunStatus.Error,
       errorMessage,
@@ -210,7 +257,10 @@ describe('LzNodeTestTestRunner endings', () => {
 
     assert.strictEqual(result.status, DryRunStatus.Error);
     const [first, , ...rest] = result.errorMessage.split('\n');
-    assert.equal(first, `Error running file "${a}": node exited with code 1 outside any test.`);
+    assert.equal(
+      first,
+      `Error running file "${a}": node exited with code 1 outside any test.`,
+    );
     // node:test gives the position of the wrapper that registered the test.
     assert.match(
       rest.join('\n'),

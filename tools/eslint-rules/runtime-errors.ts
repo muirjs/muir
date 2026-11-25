@@ -28,11 +28,19 @@ function parseRecorded(entry: unknown): Recorded {
     throw new Error(malformedList);
   }
 
-  return { file: entry['file'], mutator: entry['mutator'], line: entry['line'], column: entry['column'] };
+  return {
+    file: entry['file'],
+    mutator: entry['mutator'],
+    line: entry['line'],
+    column: entry['column'],
+  };
 }
 
 /** One line per RuntimeError mutant of the JSON report that no entry of the list records. */
-export function lzUnrecordedRuntimeErrors(report: unknown, recorded: unknown): readonly string[] {
+export function lzUnrecordedRuntimeErrors(
+  report: unknown,
+  recorded: unknown,
+): readonly string[] {
   if (!Array.isArray(recorded)) {
     throw new Error(malformedList);
   }
@@ -64,12 +72,20 @@ const scoredStatuses = new Set(['Killed', 'Timeout', 'Survived', 'NoCoverage']);
 
 /** Whether the JSON report holds a mutant that counts toward the mutation score; Stryker passes a run with none. */
 export function lzScoresAnyMutant(report: unknown): boolean {
-  return lzParseReport(report).some(([, mutants]) => mutants.some(({ status }) => scoredStatuses.has(status)));
+  return lzParseReport(report).some(([, mutants]) =>
+    mutants.some(({ status }) => scoredStatuses.has(status)),
+  );
 }
 
-export async function lzCheckRuntimeErrors(reportFile: string, recordedFile: string): Promise<readonly string[]> {
+export async function lzCheckRuntimeErrors(
+  reportFile: string,
+  recordedFile: string,
+): Promise<readonly string[]> {
   const [report, recorded] = await Promise.all(
-    [reportFile, recordedFile].map(async (path): Promise<unknown> => JSON.parse(await readFile(path, 'utf8'))),
+    [reportFile, recordedFile].map(
+      async (path): Promise<unknown> =>
+        JSON.parse(await readFile(path, 'utf8')),
+    ),
   );
 
   return lzUnrecordedRuntimeErrors(report, recorded);

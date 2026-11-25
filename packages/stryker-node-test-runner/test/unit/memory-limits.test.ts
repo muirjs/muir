@@ -31,7 +31,10 @@ describe('memoryLimits', () => {
     assert.equal(dryRun.forDryRun(), 1500);
     dryRun.record('a.test.ts', [{ tests: [], peakMemoryMB: 2000 }]);
 
-    assert.deepEqual([dryRun.forMutantRun('a.test.ts'), limits().forMutantRun('b.test.ts')], [1500, 1500]);
+    assert.deepEqual(
+      [dryRun.forMutantRun('a.test.ts'), limits().forMutantRun('b.test.ts')],
+      [1500, 1500],
+    );
     assert.deepEqual(readdirSync(dir), []);
     assert.deepEqual(warnings, []);
   });
@@ -52,10 +55,16 @@ describe('memoryLimits', () => {
       assert.equal(dryRun.forDryRun(), undefined);
       dryRun.record(
         'a.test.ts',
-        peaks.map((peakMemoryMB) => ({ tests: [], ...(peakMemoryMB !== undefined && { peakMemoryMB }) })),
+        peaks.map((peakMemoryMB) => ({
+          tests: [],
+          ...(peakMemoryMB !== undefined && { peakMemoryMB }),
+        })),
       );
 
-      assert.deepEqual([dryRun.forMutantRun('a.test.ts'), limits().forMutantRun('a.test.ts')], [limitMB, limitMB]);
+      assert.deepEqual(
+        [dryRun.forMutantRun('a.test.ts'), limits().forMutantRun('a.test.ts')],
+        [limitMB, limitMB],
+      );
       assert.deepEqual(warnings, []);
     },
   );
@@ -82,7 +91,13 @@ describe('memoryLimits', () => {
     store.start();
     const mutantRuns = limits();
 
-    assert.deepEqual([mutantRuns.forMutantRun('a.test.ts'), mutantRuns.forMutantRun('a.test.ts')], [1024, 1024]);
+    assert.deepEqual(
+      [
+        mutantRuns.forMutantRun('a.test.ts'),
+        mutantRuns.forMutantRun('a.test.ts'),
+      ],
+      [1024, 1024],
+    );
     assert.deepEqual(warnings, [
       'The dry run left no readable memory peak for "a.test.ts", ' +
         'so each process of its mutant runs may hold 1024 MB. Set lzNodeTest.maxMemoryMB to choose the limit.',

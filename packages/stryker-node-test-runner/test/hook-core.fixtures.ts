@@ -12,7 +12,12 @@ import {
   type ModuleHooks,
   type TestEvent,
 } from '../src/hook-core.ts';
-import { envNames, lzParseRecord, lzRecordNonce, type ProcessRecord } from '../src/record.ts';
+import {
+  envNames,
+  lzParseRecord,
+  lzRecordNonce,
+  type ProcessRecord,
+} from '../src/record.ts';
 import type { NodeTestModule } from '../src/wrap.ts';
 
 export type Fn = (this: unknown, ...args: unknown[]) => unknown;
@@ -50,9 +55,14 @@ export function fakeNodeTest(expectFailure = true) {
       registrations.push({ kind, name, rest, self: this });
       const body = rest.find((arg) => typeof arg === 'function');
 
-      if (/^(describe|suite)(\.only|\.todo)?$/.test(kind) && typeof body === 'function') {
+      if (
+        /^(describe|suite)(\.only|\.todo)?$/.test(kind) &&
+        typeof body === 'function'
+      ) {
         try {
-          suiteResults.push(Reflect.apply(body, 'suite this', ['suite argument']));
+          suiteResults.push(
+            Reflect.apply(body, 'suite this', ['suite argument']),
+          );
         } catch (error) {
           suiteResults.push(error);
         }
@@ -71,7 +81,8 @@ export function fakeNodeTest(expectFailure = true) {
       skip: register(`${kind}.skip`),
       todo: register(`${kind}.todo`),
       only: register(`${kind}.only`),
-      ...(tests && expectFailure && { expectFailure: register(`${kind}.expectFailure`) }),
+      ...(tests &&
+        expectFailure && { expectFailure: register(`${kind}.expectFailure`) }),
       mock: `${kind}.mock`,
     });
   const test = withShorthands('test');
@@ -91,7 +102,10 @@ export function fakeNodeTest(expectFailure = true) {
 }
 
 /** Runs its `after` hooks on `end()`, as node:test does once a test's body ends, after its afterEach hooks. */
-export function testContext(registrations: Registration[] = [], fullName?: string) {
+export function testContext(
+  registrations: Registration[] = [],
+  fullName?: string,
+) {
   const afterHooks: Fn[] = [];
   const context = {
     fullName,
@@ -109,7 +123,12 @@ export function testContext(registrations: Registration[] = [], fullName?: strin
       afterHooks.push(hook);
     },
     beforeEach: function (this: unknown, ...rest: unknown[]) {
-      registrations.push({ kind: 't.beforeEach', name: 't.beforeEach', rest, self: this });
+      registrations.push({
+        kind: 't.beforeEach',
+        name: 't.beforeEach',
+        rest,
+        self: this,
+      });
     },
     end: async () => {
       for (const hook of afterHooks.splice(0)) {
@@ -122,14 +141,21 @@ export function testContext(registrations: Registration[] = [], fullName?: strin
 }
 
 export function rawBodyOf(registrations: Registration[], name: string): Fn {
-  const registration = registrations.find((candidate) => candidate.name === name);
+  const registration = registrations.find(
+    (candidate) => candidate.name === name,
+  );
   assert.ok(registration, `${name} was not registered`);
 
   return callable(registration.rest.find((arg) => typeof arg === 'function'));
 }
 
-export function hooksOf(registrations: { kind: string; rest: readonly unknown[] }[], kind: string): Fn[] {
-  return registrations.filter((registration) => registration.kind === kind).map(({ rest }) => callable(rest[0]));
+export function hooksOf(
+  registrations: { kind: string; rest: readonly unknown[] }[],
+  kind: string,
+): Fn[] {
+  return registrations
+    .filter((registration) => registration.kind === kind)
+    .map(({ rest }) => callable(rest[0]));
 }
 
 export function bodyOf(
@@ -144,7 +170,12 @@ export function bodyOf(
     } finally {
       const [context] = args;
 
-      if (typeof context === 'object' && context !== null && 'end' in context && typeof context.end === 'function') {
+      if (
+        typeof context === 'object' &&
+        context !== null &&
+        'end' in context &&
+        typeof context.end === 'function'
+      ) {
         await Reflect.apply(context.end, context, []);
       }
     }
@@ -179,7 +210,10 @@ export function loadContext(conditions: string[]): LoadHookContext {
 export interface Harness {
   readonly deps: HookDependencies;
   readonly fake: ReturnType<typeof fakeNodeTest>;
-  readonly records: readonly { readonly path: string; readonly record: ProcessRecord }[];
+  readonly records: readonly {
+    readonly path: string;
+    readonly record: ProcessRecord;
+  }[];
   readonly calls: readonly string[];
   readonly hooks: readonly ModuleHooks[];
   readonly wrapped: () => NodeTestModule;
@@ -192,12 +226,18 @@ export interface Harness {
   /** The codes the hook ended the process with, `undefined` for node:test's own. */
   readonly exits: readonly (number | undefined)[];
   /** The timers the hook set, by delay, which a test fires by calling them. */
-  readonly timers: readonly { readonly ms: number; readonly fire: () => void }[];
+  readonly timers: readonly {
+    readonly ms: number;
+    readonly fire: () => void;
+  }[];
   /** Sets what `process.getActiveResourcesInfo()` lists from then on, as the tests open or close things; at first `PipeWrap`. */
   readonly listResources: (resources: readonly string[]) => void;
 }
 
-export function harness(env: Record<string, string | undefined>, overrides: Partial<HookDependencies> = {}): Harness {
+export function harness(
+  env: Record<string, string | undefined>,
+  overrides: Partial<HookDependencies> = {},
+): Harness {
   const fake = fakeNodeTest();
   const records: Harness['records'][number][] = [];
   const calls: string[] = [];
@@ -226,7 +266,11 @@ export function harness(env: Record<string, string | undefined>, overrides: Part
       return fake.module;
     },
     registerHooks: (registered) => {
-      calls.push(deps.global[wrappedNodeTest] ? 'registerHooks' : 'registerHooks before publishing');
+      calls.push(
+        deps.global[wrappedNodeTest]
+          ? 'registerHooks'
+          : 'registerHooks before publishing',
+      );
       hooks.push(registered);
     },
     onExit: (listener) => {
@@ -305,10 +349,14 @@ export function harness(env: Record<string, string | undefined>, overrides: Part
 
 /** The harness's clock stays at 0. */
 export const lifetime = { start: 0, end: 0 };
-export const spans = (...ran: string[]) => Object.fromEntries(ran.map((name) => [`${testFile} > ${name}`, [lifetime]]));
+export const spans = (...ran: string[]) =>
+  Object.fromEntries(ran.map((name) => [`${testFile} > ${name}`, [lifetime]]));
 
 /** The environment of the process that runs the test file, new each time as the hook changes it. */
-export const fileEnv = () => ({ [envNames.out]: out, [envNames.file]: testFile });
+export const fileEnv = () => ({
+  [envNames.out]: out,
+  [envNames.file]: testFile,
+});
 
 export function installedHarness(
   env: Record<string, string | undefined>,
@@ -326,7 +374,11 @@ export async function importRedirected(hooks: ModuleHooks, wrapped: unknown) {
   const previous = slots[wrappedNodeTest];
   const passOn = () => assert.fail('passed node:test on');
   const sourceFor = (conditions: string[]) => {
-    const { url } = hooks.resolve('node:test', resolveContext(conditions), passOn);
+    const { url } = hooks.resolve(
+      'node:test',
+      resolveContext(conditions),
+      passOn,
+    );
     const { source } = hooks.load(url, loadContext(conditions), passOn);
 
     if (typeof source !== 'string') {
@@ -340,14 +392,20 @@ export async function importRedirected(hooks: ModuleHooks, wrapped: unknown) {
     slots[wrappedNodeTest] = wrapped;
     // A comment of its own keeps the import from coming from the module cache.
     const source = `${sourceFor(['node', 'import'])}\n// ${randomUUID()}`;
-    const module: unknown = await import(`data:text/javascript,${encodeURIComponent(source)}`);
+    const module: unknown = await import(
+      `data:text/javascript,${encodeURIComponent(source)}`
+    );
 
     if (typeof module !== 'object' || module === null) {
       throw new TypeError('The redirected import gave no module.');
     }
 
     const commonjs: { exports: unknown } = { exports: undefined };
-    Reflect.apply(compileFunction(sourceFor(['node', 'require']), ['module']), undefined, [commonjs]);
+    Reflect.apply(
+      compileFunction(sourceFor(['node', 'require']), ['module']),
+      undefined,
+      [commonjs],
+    );
 
     return { module, commonjs: commonjs.exports };
   } finally {
@@ -359,20 +417,32 @@ export async function importRedirected(hooks: ModuleHooks, wrapped: unknown) {
  * The `after` hook registered with node:test at `index`, in order, which `callable` proves is there; the hook's own
  * comes first.
  */
-export function afterHook(fake: ReturnType<typeof fakeNodeTest>, index: number): Fn {
-  const [hook] = fake.registrations.filter(({ kind }) => kind === 'after')[index]?.rest ?? [];
+export function afterHook(
+  fake: ReturnType<typeof fakeNodeTest>,
+  index: number,
+): Fn {
+  const [hook] =
+    fake.registrations.filter(({ kind }) => kind === 'after')[index]?.rest ??
+    [];
 
   return callable(hook);
 }
 
 /** A test file whose test, `name`, has run its body and been reported. */
-export async function ranAndReported(h: Harness, name: string, outcome: 'pass' | 'fail'): Promise<void> {
+export async function ranAndReported(
+  h: Harness,
+  name: string,
+  outcome: 'pass' | 'fail',
+): Promise<void> {
   h.wrapped().it(name, () => {});
   await bodyOf(h.fake.registrations, name)(testContext());
   report(h.deps, name, outcome);
 }
 
-export function send(deps: HookDependencies, ...events: readonly TestEvent[]): void {
+export function send(
+  deps: HookDependencies,
+  ...events: readonly TestEvent[]
+): void {
   const recordEvent = deps.global[reporting];
   assert.ok(recordEvent, 'the hook installed no reporting function');
 
@@ -381,10 +451,18 @@ export function send(deps: HookDependencies, ...events: readonly TestEvent[]): v
   }
 }
 
-export function report(deps: HookDependencies, name: string, outcome: 'pass' | 'fail'): void {
+export function report(
+  deps: HookDependencies,
+  name: string,
+  outcome: 'pass' | 'fail',
+): void {
   const error = { message: `${name} failed` };
 
-  const details: TestDetails = { type: 'test', duration_ms: 2, ...(outcome === 'fail' && { error }) };
+  const details: TestDetails = {
+    type: 'test',
+    duration_ms: 2,
+    ...(outcome === 'fail' && { error }),
+  };
 
   send(deps, ...reported(name, 0, outcome, details));
 }

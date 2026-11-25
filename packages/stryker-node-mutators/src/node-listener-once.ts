@@ -39,7 +39,11 @@ export const nodeListenerOnce: LzMutator<'LzNodeListenerOnce'> = {
     const callee = path.parentPath;
     const call = callee.parentPath;
 
-    if (!callee.isMemberExpression() || callee.key !== 'callee' || !call.isCallExpression()) {
+    if (
+      !callee.isMemberExpression() ||
+      callee.key !== 'callee' ||
+      !call.isCallExpression()
+    ) {
       return;
     }
 

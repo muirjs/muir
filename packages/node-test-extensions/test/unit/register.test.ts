@@ -10,19 +10,33 @@ describe('parseArguments', () => {
 
   const cases: readonly (readonly [
     string,
-    readonly [(() => void) | LzTestTableOptions | undefined, (() => void) | number | undefined],
+    readonly [
+      (() => void) | LzTestTableOptions | undefined,
+      (() => void) | number | undefined,
+    ],
     unknown,
   ])[] = [
     ['(name, fn)', [fn, undefined], { options: {}, fn }],
     ['(name, fn, timeout)', [fn, 50], { options: { timeout: 50 }, fn }],
-    ['(name, options, fn)', [{ skip: true }, fn], { options: { skip: true }, fn }],
-    ['(name, options, timeout)', [{ skip: true }, 50], { options: { timeout: 50 } }],
+    [
+      '(name, options, fn)',
+      [{ skip: true }, fn],
+      { options: { skip: true }, fn },
+    ],
+    [
+      '(name, options, timeout)',
+      [{ skip: true }, 50],
+      { options: { timeout: 50 } },
+    ],
     ['(name)', [undefined, undefined], { options: {} }],
   ];
 
-  lzTestEach(cases)('reads %s', (_shape, [optionsOrFn, fnOrTimeout], expected) => {
-    assert.deepEqual(parseArguments(optionsOrFn, fnOrTimeout), expected);
-  });
+  lzTestEach(cases)(
+    'reads %s',
+    (_shape, [optionsOrFn, fnOrTimeout], expected) => {
+      assert.deepEqual(parseArguments(optionsOrFn, fnOrTimeout), expected);
+    },
+  );
 
   lzTestEach([
     { shape: 'options after a function', args: [fn, {}] },

@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
@@ -25,7 +31,10 @@ describe('lzApplyPatches', () => {
     writeFileSync(join(dir, 'test', 'once.js'), "const a = 'x'\n");
     lzApplyPatches(dir, [{ file: 'test/once.js', from: "'x'", to: "'$&y'" }]);
 
-    assert.equal(readFileSync(join(dir, 'test', 'once.js'), 'utf8'), "const a = '$&y'\n");
+    assert.equal(
+      readFileSync(join(dir, 'test', 'once.js'), 'utf8'),
+      "const a = '$&y'\n",
+    );
   });
 
   it('refuses a patch whose text is missing or repeated, naming the file and the count', (t) => {
@@ -37,13 +46,19 @@ describe('lzApplyPatches', () => {
       () => {
         lzApplyPatches(dir, [{ file: 'test/twice.js', from: 'x', to: 'y' }]);
       },
-      { message: 'The patch of test/twice.js expects "x" once and found it 2 times.' },
+      {
+        message:
+          'The patch of test/twice.js expects "x" once and found it 2 times.',
+      },
     );
     assert.throws(
       () => {
         lzApplyPatches(dir, [{ file: 'test/twice.js', from: 'z', to: 'y' }]);
       },
-      { message: 'The patch of test/twice.js expects "z" once and found it 0 times.' },
+      {
+        message:
+          'The patch of test/twice.js expects "z" once and found it 0 times.',
+      },
     );
   });
 });
@@ -80,8 +95,14 @@ describe('lzFileWriters', () => {
   it('leaves out the files the driver patched, whose writes are already dealt with', (t) => {
     const dir = project(t);
 
-    writeFileSync(join(dir, 'test', 'patched.test.js'), 'fs.writeFileSync(p, c)\n');
-    writeFileSync(join(dir, 'test', 'other.test.js'), 'fs.writeFileSync(p, c)\n');
+    writeFileSync(
+      join(dir, 'test', 'patched.test.js'),
+      'fs.writeFileSync(p, c)\n',
+    );
+    writeFileSync(
+      join(dir, 'test', 'other.test.js'),
+      'fs.writeFileSync(p, c)\n',
+    );
 
     assert.deepEqual(
       lzFileWriters(dir, ['test/*.test.js'], ['test/patched.test.js']),

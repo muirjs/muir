@@ -1,5 +1,11 @@
 import { modified, type LzTestModified } from './modified.ts';
-import { register, type EachCallback, type Flags, type LzTestTableReturn, type Register } from './register.ts';
+import {
+  register,
+  type EachCallback,
+  type Flags,
+  type LzTestTableReturn,
+  type Register,
+} from './register.ts';
 
 /** The arguments of a `lzTestEach` callback for a readonly tuple row of up to 10 values, as in Vitest and Jest. */
 export type LzTestEachCallbackArgs<T extends ReadonlyArray<unknown>> = {
@@ -13,7 +19,9 @@ export type LzTestEachCallbackArgs<T extends ReadonlyArray<unknown>> = {
   readonly 8: [T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7]];
   readonly 9: [T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8]];
   readonly 10: [T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9]];
-  readonly fallback: ReadonlyArray<T extends ReadonlyArray<infer U> ? U : unknown>;
+  readonly fallback: ReadonlyArray<
+    T extends ReadonlyArray<infer U> ? U : unknown
+  >;
 }[T extends Readonly<[unknown]>
   ? 1
   : T extends Readonly<[unknown, unknown]>
@@ -24,28 +32,77 @@ export type LzTestEachCallbackArgs<T extends ReadonlyArray<unknown>> = {
         ? 4
         : T extends Readonly<[unknown, unknown, unknown, unknown, unknown]>
           ? 5
-          : T extends Readonly<[unknown, unknown, unknown, unknown, unknown, unknown]>
+          : T extends Readonly<
+                [unknown, unknown, unknown, unknown, unknown, unknown]
+              >
             ? 6
-            : T extends Readonly<[unknown, unknown, unknown, unknown, unknown, unknown, unknown]>
+            : T extends Readonly<
+                  [
+                    unknown,
+                    unknown,
+                    unknown,
+                    unknown,
+                    unknown,
+                    unknown,
+                    unknown,
+                  ]
+                >
               ? 7
-              : T extends Readonly<[unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown]>
+              : T extends Readonly<
+                    [
+                      unknown,
+                      unknown,
+                      unknown,
+                      unknown,
+                      unknown,
+                      unknown,
+                      unknown,
+                      unknown,
+                    ]
+                  >
                 ? 8
-                : T extends Readonly<[unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown]>
+                : T extends Readonly<
+                      [
+                        unknown,
+                        unknown,
+                        unknown,
+                        unknown,
+                        unknown,
+                        unknown,
+                        unknown,
+                        unknown,
+                        unknown,
+                      ]
+                    >
                   ? 9
                   : T extends Readonly<
-                        [unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown]
+                        [
+                          unknown,
+                          unknown,
+                          unknown,
+                          unknown,
+                          unknown,
+                          unknown,
+                          unknown,
+                          unknown,
+                          unknown,
+                          unknown,
+                        ]
                       >
                     ? 10
                     : 'fallback'];
 
 /** Registers the tests of a `lzTestEach` table. Without `fn`, each test is a todo test. */
-export type LzTestEachFunctionReturn<T extends readonly unknown[]> = LzTestTableReturn<
-  (...args: T) => void | Promise<void>
->;
+export type LzTestEachFunctionReturn<T extends readonly unknown[]> =
+  LzTestTableReturn<(...args: T) => void | Promise<void>>;
 
 export interface LzTestEachFunction {
-  <T extends unknown[] | [unknown]>(cases: ReadonlyArray<T>): LzTestEachFunctionReturn<T>;
-  <T extends ReadonlyArray<unknown>>(cases: ReadonlyArray<T>): LzTestEachFunctionReturn<LzTestEachCallbackArgs<T>>;
+  <T extends unknown[] | [unknown]>(
+    cases: ReadonlyArray<T>,
+  ): LzTestEachFunctionReturn<T>;
+  <T extends ReadonlyArray<unknown>>(
+    cases: ReadonlyArray<T>,
+  ): LzTestEachFunctionReturn<LzTestEachCallbackArgs<T>>;
   <T>(cases: ReadonlyArray<T>): LzTestEachFunctionReturn<T[]>;
   (
     strings: TemplateStringsArray,
@@ -60,9 +117,15 @@ export interface LzTestEachFunction {
  * `unknown`. The name formats the case as in Vitest's `test.each`: `%s %d %i %f %j %o %O %c`, `%#`, `%$`, `%%` and `$`
  * paths.
  */
-export const lzTestEach: LzTestModified<LzTestEachFunction> = modified(eachCases, {});
+export const lzTestEach: LzTestModified<LzTestEachFunction> = modified(
+  eachCases,
+  {},
+);
 
-function eachCases(flags: Flags, cases: readonly unknown[]): Register<EachCallback> {
+function eachCases(
+  flags: Flags,
+  cases: readonly unknown[],
+): Register<EachCallback> {
   const spread = cases.every(Array.isArray);
 
   return register<EachCallback>(flags, cases, (row) => {
@@ -71,7 +134,11 @@ function eachCases(flags: Flags, cases: readonly unknown[]): Register<EachCallba
     return {
       items,
       run: async (fn) => {
-        const result: unknown = Reflect.apply(fn, undefined, spread ? items : [row]);
+        const result: unknown = Reflect.apply(
+          fn,
+          undefined,
+          spread ? items : [row],
+        );
         await result;
       },
     };

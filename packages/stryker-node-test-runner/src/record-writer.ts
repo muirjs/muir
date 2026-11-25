@@ -6,7 +6,11 @@ import type { ProcessRecord } from './record.ts';
 export type LzEndingSignal = 'SIGTERM' | 'SIGINT' | 'SIGHUP';
 
 /** The signals that end a process that does not listen for them; `kill()` sends SIGTERM by default. */
-export const lzEndingSignals: readonly LzEndingSignal[] = ['SIGTERM', 'SIGINT', 'SIGHUP'];
+export const lzEndingSignals: readonly LzEndingSignal[] = [
+  'SIGTERM',
+  'SIGINT',
+  'SIGHUP',
+];
 
 export interface LzProcessSignals {
   readonly on: (signal: LzEndingSignal, listener: () => void) => void;
@@ -144,8 +148,11 @@ function writeOnNewHits(
  * removal can surface as EPERM, and a rename that `lzWriteRecord` gave up retrying fails with EPERM or EBUSY.
  */
 function throwUnlessRunOver(error: unknown, platform: NodeJS.Platform): void {
-  const code = error instanceof Error && 'code' in error ? error.code : undefined;
-  const runOver = code === 'ENOENT' || (platform === 'win32' && (code === 'EPERM' || code === 'EBUSY'));
+  const code =
+    error instanceof Error && 'code' in error ? error.code : undefined;
+  const runOver =
+    code === 'ENOENT' ||
+    (platform === 'win32' && (code === 'EPERM' || code === 'EBUSY'));
 
   if (!runOver) {
     throw error;
@@ -157,7 +164,11 @@ function signalExitListeners(signals: LzProcessSignals): number {
   return signals
     .signalExitEmitters()
     .reduce<number>(
-      (sum, emitter) => sum + (isObject(emitter) && isNumber(emitter['count']) ? emitter['count'] : 0),
+      (sum, emitter) =>
+        sum +
+        (isObject(emitter) && isNumber(emitter['count'])
+          ? emitter['count']
+          : 0),
       0,
     );
 }
@@ -170,7 +181,10 @@ const ownListener = 1;
  * decides how the process ends, the hook stops listening and raises the signal again, so the process ends by it as it
  * would without the hook, as signal-exit does.
  */
-function writeOnEndingSignals(signals: LzProcessSignals, write: () => void): void {
+function writeOnEndingSignals(
+  signals: LzProcessSignals,
+  write: () => void,
+): void {
   const listeners = lzEndingSignals.map((signal) => ({
     signal,
     listener: () => {
@@ -180,7 +194,9 @@ function writeOnEndingSignals(signals: LzProcessSignals, write: () => void): voi
         // The process still ends by the signal: a process that swallows uncaught errors would otherwise outlive it.
       }
 
-      const othersDecide = signals.listenerCount(signal) - ownListener > signalExitListeners(signals);
+      const othersDecide =
+        signals.listenerCount(signal) - ownListener >
+        signalExitListeners(signals);
 
       if (othersDecide) {
         return;

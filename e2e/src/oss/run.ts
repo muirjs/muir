@@ -44,12 +44,30 @@ import {
   type LzSide,
 } from './options.ts';
 import { lzApplyPatches, lzFileWriters } from './prepare.ts';
-import { lzDescendants, lzLeftovers, lzNewEntries, lzPeaks } from './processes.ts';
-import type { LzOssHeader, LzOssResult, LzSideResult, LzStrykerResult } from './result.ts';
+import {
+  lzDescendants,
+  lzLeftovers,
+  lzNewEntries,
+  lzPeaks,
+} from './processes.ts';
+import type {
+  LzOssHeader,
+  LzOssResult,
+  LzSideResult,
+  LzStrykerResult,
+} from './result.ts';
 import { lzSnapshot, lzStartSampler } from './sampler.ts';
-import { lzBySide, lzComparison, lzMessageOf, lzReportScore, type LzSideReport } from './verdicts.ts';
+import {
+  lzBySide,
+  lzComparison,
+  lzMessageOf,
+  lzReportScore,
+  type LzSideReport,
+} from './verdicts.ts';
 
-type LzSettled<T> = { readonly ok: true; readonly value: T } | { readonly ok: false };
+type LzSettled<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false };
 
 interface LzSideRun {
   readonly side: LzSide;
@@ -87,17 +105,31 @@ interface LzRunContext {
   readonly runTmp: string;
 }
 
-export async function lzRunDriver(options: LzOssOptions, steps = lzRunSteps): Promise<void> {
+export async function lzRunDriver(
+  options: LzOssOptions,
+  steps = lzRunSteps,
+): Promise<void> {
   const out = resolve(options.out);
 
   mkdirSync(out, { recursive: true });
   lzClearResult(out);
   lzRemoveDeadRunDirs(tmpdir(), lzOssRunPrefix);
   const root = realpathSync.native(
-    mkdtempSync(join(tmpdir(), `${options.prepareOnly ? lzOssPreparedPrefix : lzOssRunPrefix}${process.pid}-`)),
+    mkdtempSync(
+      join(
+        tmpdir(),
+        `${options.prepareOnly ? lzOssPreparedPrefix : lzOssRunPrefix}${process.pid}-`,
+      ),
+    ),
   );
   // Beside the copy, not in it, so that no folder of the project can collide with them.
-  const context: LzRunContext = { options, steps, out, dir: join(root, 'project'), runTmp: join(root, 'tmp') };
+  const context: LzRunContext = {
+    options,
+    steps,
+    out,
+    dir: join(root, 'project'),
+    runTmp: join(root, 'tmp'),
+  };
   const { dir, runTmp } = context;
 
   if (!options.prepareOnly) {
@@ -125,11 +157,17 @@ export async function lzRunDriver(options: LzOssOptions, steps = lzRunSteps): Pr
     );
   });
   mkdirSync(runTmp);
-  const tarballs = options.tarballs === undefined ? await steps.pack(join(root, 'tarballs')) : given(options.tarballs);
+  const tarballs =
+    options.tarballs === undefined
+      ? await steps.pack(join(root, 'tarballs'))
+      : given(options.tarballs);
 
   await steps.install(dir, tarballs, options.npmBefore);
   lzSides.forEach((side) => {
-    writeFileSync(join(dir, configFile(side)), lzStrykerConfig(side, options.project));
+    writeFileSync(
+      join(dir, configFile(side)),
+      lzStrykerConfig(side, options.project),
+    );
   });
 
   const header: LzOssHeader = {
@@ -143,8 +181,12 @@ export async function lzRunDriver(options: LzOssOptions, steps = lzRunSteps): Pr
     concurrency: options.concurrency,
     timeLimitMinutes: options.timeLimitMinutes,
     mutantTimeoutMs: options.mutantTimeoutMs ?? null,
-    installedVersions: lzInstalledVersions(readFileSync(join(dir, 'node_modules', '.package-lock.json'), 'utf8')),
-    tarballDigests: tarballs.map((tarball) => sha256(readFileSync(tarball))).sort(),
+    installedVersions: lzInstalledVersions(
+      readFileSync(join(dir, 'node_modules', '.package-lock.json'), 'utf8'),
+    ),
+    tarballDigests: tarballs
+      .map((tarball) => sha256(readFileSync(tarball)))
+      .sort(),
     projectSetup: { mutate: options.project.mutate, testFiles, patches },
     mutate: options.mutate,
     tarballs: tarballs.map((tarball) => basename(tarball)),
@@ -154,16 +196,24 @@ export async function lzRunDriver(options: LzOssOptions, steps = lzRunSteps): Pr
 
   if (options.prepareOnly) {
     writeResult(out, { ...header, preparedIn: dir });
-    process.stdout.write(`Prepared ${dir}, with ${runTmp} for TMP; both stay for manual runs.\n`);
+    process.stdout.write(
+      `Prepared ${dir}, with ${runTmp} for TMP; both stay for manual runs.\n`,
+    );
 
     return;
   }
 
   const checkpointKey = (side: LzSide): string =>
-    lzCheckpointKey({ ...header, strykerConfig: lzStrykerConfig(side, options.project) });
+    lzCheckpointKey({
+      ...header,
+      strykerConfig: lzStrykerConfig(side, options.project),
+    });
   // One side after the other, so that the two never share the machine.
   const runs = await options.sides.reduce<Promise<readonly LzSideRun[]>>(
-    async (earlier, side) => [...(await earlier), await runSide(side, context, checkpointKey(side))],
+    async (earlier, side) => [
+      ...(await earlier),
+      await runSide(side, context, checkpointKey(side)),
+    ],
     Promise.resolve([]),
   );
 
@@ -204,16 +254,22 @@ async function runSide(
   });
   // A checkpoint that cannot be read, such as one Stryker's own final write left cut short, would fail every rerun:
   // it goes, and the run starts a new one.
-  const firstStart = await settled('Checkpoint', () => lzStartCheckpoint(checkpoint, checkpointKey));
+  const firstStart = await settled('Checkpoint', () =>
+    lzStartCheckpoint(checkpoint, checkpointKey),
+  );
   const resumed = firstStart.ok
     ? firstStart
     : await settled('Checkpoint after removing the unreadable one', () => {
         lzEndCheckpoint(checkpoint);
-        process.stdout.write(`Removed ${checkpoint}, which could not be read; ${side} starts afresh.\n`);
+        process.stdout.write(
+          `Removed ${checkpoint}, which could not be read; ${side} starts afresh.\n`,
+        );
 
         return lzStartCheckpoint(checkpoint, checkpointKey);
       });
-  const osTmpBefore = await settled('TMP listing before the run', () => readdirSync(tmpdir()));
+  const osTmpBefore = await settled('TMP listing before the run', () =>
+    readdirSync(tmpdir()),
+  );
   const sampler = await settled('Sampler start', () => steps.startSampler());
   const excluded = new Set(sampler.ok ? [sampler.value.pid] : []);
   const started = performance.now();
@@ -221,15 +277,22 @@ async function runSide(
     steps.stryker(dir, configFile(side), options.concurrency, {
       tmp: runTmp,
       timeoutMs: options.timeLimitMinutes * 60_000,
-      args: [...lzStrykerArgs(options), ...(resumed.ok ? lzCheckpointArgs(checkpoint) : [])],
+      args: [
+        ...lzStrykerArgs(options),
+        ...(resumed.ok ? lzCheckpointArgs(checkpoint) : []),
+      ],
       logFile: join(out, `${side}.log`),
       reporters: resumed.ok ? [lzCheckpointReporterName] : [],
     }),
   );
   const wallMs = Math.round(performance.now() - started);
-  const stopped = sampler.ok ? await settled('Sampler', () => sampler.value.stop()) : undefined;
+  const stopped = sampler.ok
+    ? await settled('Sampler', () => sampler.value.stop())
+    : undefined;
   const samples = stopped?.ok
-    ? stopped.value.samples.map((sample) => lzDescendants(sample, process.pid, excluded))
+    ? stopped.value.samples.map((sample) =>
+        lzDescendants(sample, process.pid, excluded),
+      )
     : [];
 
   if (stopped?.ok && stopped.value.error !== null) {
@@ -240,7 +303,9 @@ async function runSide(
   await timers.setTimeout(settleMs);
   // One fresh snapshot just before the endings, so a pair that ended or whose id was reused meanwhile is skipped.
   // Ended once recorded, so that one side's leftovers cannot load the next side's run.
-  const found = await settled('Leftover snapshot', async () => lzLeftovers(samples.flat(), await steps.snapshot()));
+  const found = await settled('Leftover snapshot', async () =>
+    lzLeftovers(samples.flat(), await steps.snapshot()),
+  );
   const ended = await Promise.all(
     (found.ok ? found.value : []).map(async (leftover) => ({
       leftover,
@@ -253,7 +318,9 @@ async function runSide(
       lzEndCheckpoint(checkpoint);
     }
   });
-  const osTmpAfter = await settled('TMP listing after the run', () => readdirSync(tmpdir()));
+  const osTmpAfter = await settled('TMP listing after the run', () =>
+    readdirSync(tmpdir()),
+  );
   const strykerTmp = join(dir, '.stryker-tmp');
   const strykerTmpEntries = await settled('.stryker-tmp listing', () =>
     existsSync(strykerTmp) ? readdirSync(strykerTmp) : [],
@@ -276,7 +343,10 @@ async function runSide(
           endedByDriver: ending.ok && ending.value,
         })),
       },
-      newInOsTmp: osTmpBefore.ok && osTmpAfter.ok ? lzNewEntries(osTmpBefore.value, osTmpAfter.value) : [],
+      newInOsTmp:
+        osTmpBefore.ok && osTmpAfter.ok
+          ? lzNewEntries(osTmpBefore.value, osTmpAfter.value)
+          : [],
       leftoverStrykerTmp: strykerTmpEntries.ok ? strykerTmpEntries.value : [],
     },
   };
@@ -294,7 +364,10 @@ function strykerResult(run: LzStrykerRun): LzStrykerResult {
 
 /** Settles each step, recording a step that throws in `errors`, so no failed step goes unreported. */
 function settledInto(errors: string[]) {
-  return async <T>(step: string, run: () => T | Promise<T>): Promise<LzSettled<T>> => {
+  return async <T>(
+    step: string,
+    run: () => T | Promise<T>,
+  ): Promise<LzSettled<T>> => {
     try {
       return { ok: true, value: await run() };
     } catch (error) {
@@ -341,10 +414,16 @@ function sha256(data: string | Buffer): string {
 }
 
 async function commitOf(cwd: string): Promise<string> {
-  const { exitCode, stdout, stderr } = await lzExec('git', ['rev-parse', 'HEAD'], { cwd });
+  const { exitCode, stdout, stderr } = await lzExec(
+    'git',
+    ['rev-parse', 'HEAD'],
+    { cwd },
+  );
 
   if (exitCode !== 0) {
-    throw new Error(`git rev-parse HEAD in ${cwd} ended with exit code ${exitCode}:\n${stderr}`);
+    throw new Error(
+      `git rev-parse HEAD in ${cwd} ended with exit code ${exitCode}:\n${stderr}`,
+    );
   }
 
   return stdout.trim();

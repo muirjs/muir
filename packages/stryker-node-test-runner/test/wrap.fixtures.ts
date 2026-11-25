@@ -2,9 +2,19 @@ import type { InstrumenterContext, Position } from '@stryker-mutator/api/core';
 
 import type { RecordedTest } from '../src/record.ts';
 import { lzCurrentTests, wrapNodeTest, type CallSite } from '../src/wrap.ts';
-import { bodyOf, fakeNodeTest, testContext, testFile, type Fn, type Registration } from './hook-core.fixtures.ts';
+import {
+  bodyOf,
+  fakeNodeTest,
+  testContext,
+  testFile,
+  type Fn,
+  type Registration,
+} from './hook-core.fixtures.ts';
 
-export async function runBodies(registrations: Registration[], names: string[]): Promise<void> {
+export async function runBodies(
+  registrations: Registration[],
+  names: string[],
+): Promise<void> {
   for (const name of names) {
     await bodyOf(registrations, name)(testContext());
   }
@@ -22,7 +32,13 @@ interface WrappedOptions {
   readonly expectFailure?: boolean;
 }
 
-export function wrapped({ filter, bail = false, testOnly = true, activeMutant, expectFailure }: WrappedOptions = {}) {
+export function wrapped({
+  filter,
+  bail = false,
+  testOnly = true,
+  activeMutant,
+  expectFailure,
+}: WrappedOptions = {}) {
   const fake = fakeNodeTest(expectFailure);
   const ns: InstrumenterContext = {};
   const env: Record<string, string | undefined> = {};

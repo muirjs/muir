@@ -1,9 +1,24 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 
 import { lzExec } from './exec.ts';
-import { lzIsRecord, lzMutantLine, lzParseReport, type LzMutantDetail, type LzReport } from './report.ts';
+import {
+  lzIsRecord,
+  lzMutantLine,
+  lzParseReport,
+  type LzMutantDetail,
+  type LzReport,
+} from './report.ts';
 
 const workspaceDir = join(import.meta.dirname, '..', '..');
 const packagesDir = join(workspaceDir, 'packages');
@@ -14,7 +29,13 @@ const pinnedNames: readonly string[] = [
   'typescript',
   '@types/node',
 ];
-const strykerBin = join('node_modules', '@stryker-mutator', 'core', 'bin', 'stryker.js');
+const strykerBin = join(
+  'node_modules',
+  '@stryker-mutator',
+  'core',
+  'bin',
+  'stryker.js',
+);
 /** Where `lzStryker` has Stryker write its JSON report, relative to the run's folder. */
 export const lzReportFile = join('reports', 'mutation', 'mutation.json');
 export const lzStrykerTimeoutMs = 15 * 60_000;
@@ -40,18 +61,27 @@ export async function lzFixture(name: string): Promise<LzFixture> {
   const concurrency = lzConcurrency(process.env);
 
   lzRemoveDeadRunDirs(tmpdir(), dirPrefix);
-  const dir = realpathSync.native(mkdtempSync(join(tmpdir(), `${dirPrefix}${process.pid}-`)));
+  const dir = realpathSync.native(
+    mkdtempSync(join(tmpdir(), `${dirPrefix}${process.pid}-`)),
+  );
 
   lzRemoveOnExit(dir);
   cpSync(join(fixturesDir, name), dir, { recursive: true });
   mkdirSync(join(dir, 'tmp'));
   await lzInstall(dir, await lzPack(join(dir, 'tarballs')));
 
-  return { stryker: (configFile = 'stryker.config.mjs') => lzStryker(dir, configFile, concurrency) };
+  return {
+    stryker: (configFile = 'stryker.config.mjs') =>
+      lzStryker(dir, configFile, concurrency),
+  };
 }
 
 /** Installs the packed packages and the workspace's pinned Stryker, TypeScript and Node.js types into `dir`. */
-export async function lzInstall(dir: string, tarballs: readonly string[], before?: string): Promise<void> {
+export async function lzInstall(
+  dir: string,
+  tarballs: readonly string[],
+  before?: string,
+): Promise<void> {
   // npx and npm exec hand npm_config_prefix and npm_config_local_prefix (the workspace) on to this process.
   await npm(dir, [
     'install',
@@ -63,7 +93,9 @@ export async function lzInstall(dir: string, tarballs: readonly string[], before
     '--no-fund',
     ...(before === undefined ? [] : ['--before', before]),
     ...tarballs,
-    ...lzPinned(JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8'))),
+    ...lzPinned(
+      JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8')),
+    ),
   ]);
 }
 
@@ -86,7 +118,9 @@ export function lzMutants(run: LzStrykerRun, file: string): string[] {
   const mutants = report.get(file);
 
   if (mutants === undefined) {
-    throw new Error(`The report has no file "${file}"; it has ${[...report.keys()].join(', ')}.`);
+    throw new Error(
+      `The report has no file "${file}"; it has ${[...report.keys()].join(', ')}.`,
+    );
   }
 
   return mutants.map(lzMutantLine);
@@ -96,14 +130,23 @@ export function lzLeftover(run: LzStrykerRun): string[] {
   return run.leftover.map((name) => name.replace(/-\d+-/, '-<pid>-'));
 }
 
-export function lzMutant(run: LzStrykerRun, { at, replacement }: { at: string; replacement: string }): LzMutantDetail {
+export function lzMutant(
+  run: LzStrykerRun,
+  { at, replacement }: { at: string; replacement: string },
+): LzMutantDetail {
   const matches = [...reportOf(run)].flatMap(([file, mutants]) =>
-    mutants.filter((mutant) => `${file}:${mutant.line}:${mutant.column}` === at && mutant.replacement === replacement),
+    mutants.filter(
+      (mutant) =>
+        `${file}:${mutant.line}:${mutant.column}` === at &&
+        mutant.replacement === replacement,
+    ),
   );
   const [mutant] = matches;
 
   if (mutant === undefined || matches.length > 1) {
-    throw new Error(`Expected one mutant at ${at} with replacement "${replacement}", found ${matches.length}.`);
+    throw new Error(
+      `Expected one mutant at ${at} with replacement "${replacement}", found ${matches.length}.`,
+    );
   }
 
   return mutant;
@@ -118,7 +161,9 @@ function reportOf(run: LzStrykerRun): LzReport {
   }
 
   if (run.exitCode !== 0) {
-    throw new Error(`Stryker wrote a report, then failed (exit code ${run.exitCode}):\n${run.output}`);
+    throw new Error(
+      `Stryker wrote a report, then failed (exit code ${run.exitCode}):\n${run.output}`,
+    );
   }
 
   return run.report;
@@ -191,7 +236,11 @@ export async function lzStryker(
   };
 
   return existsSync(report)
-    ? { ...outcome, reported: true, report: lzParseReport(readFileSync(report, 'utf8')) }
+    ? {
+        ...outcome,
+        reported: true,
+        report: lzParseReport(readFileSync(report, 'utf8')),
+      }
     : { ...outcome, reported: false };
 }
 
@@ -199,13 +248,25 @@ export async function lzStryker(
  * Drops what the suite's own `node --test` sets and a consumer's Stryker runs without, and puts this Node.js first on
  * PATH, so the `node` that Stryker's command runner finds is the one that runs Stryker.
  */
-export function lzConsumerEnv(tmp: string, env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const inherited = Object.entries(env).filter(([key]) => key !== 'NODE_OPTIONS' && key !== 'NODE_TEST_CONTEXT');
+export function lzConsumerEnv(
+  tmp: string,
+  env: NodeJS.ProcessEnv,
+): NodeJS.ProcessEnv {
+  const inherited = Object.entries(env).filter(
+    ([key]) => key !== 'NODE_OPTIONS' && key !== 'NODE_TEST_CONTEXT',
+  );
   // Windows spells it Path.
-  const pathKey = Object.keys(env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH';
+  const pathKey =
+    Object.keys(env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH';
   const path = [dirname(process.execPath), env[pathKey] ?? ''].join(delimiter);
 
-  return { ...Object.fromEntries(inherited), [pathKey]: path, TMPDIR: tmp, TEMP: tmp, TMP: tmp };
+  return {
+    ...Object.fromEntries(inherited),
+    [pathKey]: path,
+    TMPDIR: tmp,
+    TEMP: tmp,
+    TMP: tmp,
+  };
 }
 
 /** Packs each workspace package from its built `dist` into `into`, and returns the tarballs' paths. */
@@ -214,7 +275,13 @@ export async function lzPack(into: string): Promise<string[]> {
   const tarballs: string[] = [];
 
   for (const name of readdirSync(packagesDir)) {
-    const stdout = await npm(workspaceDir, ['pack', '--json', '--pack-destination', into, join(packagesDir, name)]);
+    const stdout = await npm(workspaceDir, [
+      'pack',
+      '--json',
+      '--pack-destination',
+      into,
+      join(packagesDir, name),
+    ]);
 
     tarballs.push(join(into, lzPackedFile(stdout)));
   }
@@ -226,7 +293,11 @@ export async function lzPack(into: string): Promise<string[]> {
 export function lzPackedFile(stdout: string): string {
   const packed: unknown = JSON.parse(stdout);
   // Stryker disable next-line ArrayDeclaration: a non-empty fallback holds only strings, which the record check below refuses with the same error as an empty one
-  const entries: readonly unknown[] = Array.isArray(packed) ? packed : lzIsRecord(packed) ? Object.values(packed) : [];
+  const entries: readonly unknown[] = Array.isArray(packed)
+    ? packed
+    : lzIsRecord(packed)
+      ? Object.values(packed)
+      : [];
   const [entry] = entries;
 
   if (!lzIsRecord(entry) || typeof entry['filename'] !== 'string') {
@@ -238,13 +309,19 @@ export function lzPackedFile(stdout: string): string {
 
 /** The `name@version` of each pinned package in the workspace's `package.json` `manifest`. */
 export function lzPinned(manifest: unknown): string[] {
-  const devDependencies = lzIsRecord(manifest) ? manifest['devDependencies'] : undefined;
+  const devDependencies = lzIsRecord(manifest)
+    ? manifest['devDependencies']
+    : undefined;
 
   return pinnedNames.map((name) => {
-    const version = lzIsRecord(devDependencies) ? devDependencies[name] : undefined;
+    const version = lzIsRecord(devDependencies)
+      ? devDependencies[name]
+      : undefined;
 
     if (typeof version !== 'string') {
-      throw new Error(`The workspace package.json pins no ${name} in devDependencies.`);
+      throw new Error(
+        `The workspace package.json pins no ${name} in devDependencies.`,
+      );
     }
 
     return `${name}@${version}`;
@@ -262,7 +339,9 @@ async function npm(cwd: string, args: readonly string[]): Promise<string> {
   );
 
   if (exitCode !== 0) {
-    throw new Error(`npm ${args.join(' ')} ended with exit code ${exitCode}:\n${stdout}${stderr}`);
+    throw new Error(
+      `npm ${args.join(' ')} ended with exit code ${exitCode}:\n${stdout}${stderr}`,
+    );
   }
 
   return stdout;
@@ -312,7 +391,11 @@ function isRunning(pid: number): boolean {
 
     return true;
   } catch (error) {
-    return !(error instanceof Error && 'code' in error && error.code === 'ESRCH');
+    return !(
+      error instanceof Error &&
+      'code' in error &&
+      error.code === 'ESRCH'
+    );
   }
 }
 
@@ -325,9 +408,16 @@ export function lzRemoveOnExit(dir: string): void {
   process.on('exit', () => {
     try {
       // Stryker disable next-line LzJsNumericLiteral: tuning values, not a contract a test should pin
-      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+      rmSync(dir, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 100,
+      });
     } catch (error) {
-      process.stderr.write(`Left behind ${dir}: ${error instanceof Error ? error.message : String(error)}\n`);
+      process.stderr.write(
+        `Left behind ${dir}: ${error instanceof Error ? error.message : String(error)}\n`,
+      );
     }
   });
 }

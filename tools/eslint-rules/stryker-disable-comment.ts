@@ -26,7 +26,8 @@ const rule: Rule.RuleModule = {
     schema: [],
     messages: {
       all: 'Name the mutators instead of all; all also hides the mutants that nobody has looked at.',
-      reason: 'Give a reason after the mutator list: // Stryker disable next-line <Mutator>: <reason>.',
+      reason:
+        'Give a reason after the mutator list: // Stryker disable next-line <Mutator>: <reason>.',
       unrestored:
         'Restore the same mutators later in the file with // Stryker restore <Mutator>, or disable them for the next line only.',
       form: 'Use // Stryker disable next-line <Mutator>: <reason>, or a // Stryker restore of the same mutators after a file-wide disable.',
@@ -41,10 +42,12 @@ const rule: Rule.RuleModule = {
 
     return {
       Program() {
-        const open: { readonly comment: Comment; readonly mutators: string }[] = [];
+        const open: { readonly comment: Comment; readonly mutators: string }[] =
+          [];
 
         for (const comment of context.sourceCode.getAllComments()) {
-          const { type, scope, mutators, reason } = directive.exec(comment.value)?.groups ?? {};
+          const { type, scope, mutators, reason } =
+            directive.exec(comment.value)?.groups ?? {};
 
           if (mutators === undefined) {
             continue;
@@ -72,7 +75,9 @@ const rule: Rule.RuleModule = {
             continue;
           }
 
-          const disable = open.findLastIndex((candidate) => candidate.mutators === set);
+          const disable = open.findLastIndex(
+            (candidate) => candidate.mutators === set,
+          );
 
           if (scope === undefined && disable !== -1) {
             open.splice(disable, 1);

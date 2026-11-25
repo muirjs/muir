@@ -17,12 +17,20 @@ export interface MemoryLimits {
  * Without lzNodeTest.maxMemoryMB, a mutant run gives a file its dry-run peak times 1.5 plus 1024 MB, as Stryker scales
  * and pads its timeouts.
  */
-export function memoryLimits(maxMemoryMB: number | undefined, store: LzDryRunStore, log: Logger): MemoryLimits {
+export function memoryLimits(
+  maxMemoryMB: number | undefined,
+  store: LzDryRunStore,
+  log: Logger,
+): MemoryLimits {
   if (maxMemoryMB === undefined) {
     return dryRunPeaks(store, log);
   }
 
-  return { forDryRun: () => maxMemoryMB, record: () => undefined, forMutantRun: () => maxMemoryMB };
+  return {
+    forDryRun: () => maxMemoryMB,
+    record: () => undefined,
+    forMutantRun: () => maxMemoryMB,
+  };
 }
 
 function dryRunPeaks(store: LzDryRunStore, log: Logger): MemoryLimits {
@@ -32,7 +40,10 @@ function dryRunPeaks(store: LzDryRunStore, log: Logger): MemoryLimits {
     forDryRun: () => undefined,
 
     record(file, records) {
-      const peakMB = Math.max(0, ...records.flatMap((record) => record.peakMemoryMB ?? []));
+      const peakMB = Math.max(
+        0,
+        ...records.flatMap((record) => record.peakMemoryMB ?? []),
+      );
       store.write(file, 'peak', String(peakMB));
     },
 
@@ -56,5 +67,7 @@ function dryRunPeaks(store: LzDryRunStore, log: Logger): MemoryLimits {
 }
 
 function storedPeak(stored: string | undefined): number | undefined {
-  return stored !== undefined && /^\d+$/.test(stored) ? Number(stored) : undefined;
+  return stored !== undefined && /^\d+$/.test(stored)
+    ? Number(stored)
+    : undefined;
 }

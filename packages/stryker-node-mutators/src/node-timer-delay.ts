@@ -1,9 +1,16 @@
 import type { NodePath, types } from '@babel/core';
 
-import { lzImportOf, lzPropertyName, type LzMutator } from '@layzee/stryker-mutator-core';
+import {
+  lzImportOf,
+  lzPropertyName,
+  type LzMutator,
+} from '@layzee/stryker-mutator-core';
 import { lzBuiltin } from './bindings.ts';
 
-const timers: ReadonlySet<string | undefined> = new Set(['setTimeout', 'setInterval']);
+const timers: ReadonlySet<string | undefined> = new Set([
+  'setTimeout',
+  'setInterval',
+]);
 const nodeTimers = lzBuiltin('timers');
 const nodeTimersPromises = lzBuiltin('timers/promises');
 
@@ -21,7 +28,8 @@ export const nodeTimerDelay: LzMutator = {
       path.isIdentifier({ name: 'undefined' }) ||
       path.isStringLiteral() ||
       path.isTemplateLiteral() ||
-      (path.isUnaryExpression({ operator: '-' }) && path.get('argument').isNumericLiteral()) ||
+      (path.isUnaryExpression({ operator: '-' }) &&
+        path.get('argument').isNumericLiteral()) ||
       !isDelay(path)
     ) {
       return;
@@ -30,11 +38,19 @@ export const nodeTimerDelay: LzMutator = {
     const literal = path.isNumericLiteral() ? path.node.value : undefined;
 
     if (literal !== 0) {
-      yield t.binaryExpression('+', t.cloneNode(path.node), t.numericLiteral(1));
+      yield t.binaryExpression(
+        '+',
+        t.cloneNode(path.node),
+        t.numericLiteral(1),
+      );
     }
 
     if (literal !== 0 && literal !== 1) {
-      yield t.binaryExpression('-', t.cloneNode(path.node), t.numericLiteral(1));
+      yield t.binaryExpression(
+        '-',
+        t.cloneNode(path.node),
+        t.numericLiteral(1),
+      );
     }
   },
 };
@@ -42,7 +58,9 @@ export const nodeTimerDelay: LzMutator = {
 function isDelay(path: NodePath): boolean {
   const call = path.parent;
 
-  return call.type === 'CallExpression' && delayIndex(path, call.callee) === path.key;
+  return (
+    call.type === 'CallExpression' && delayIndex(path, call.callee) === path.key
+  );
 }
 
 function delayIndex(path: NodePath, callee: types.Node): number | undefined {
@@ -50,13 +68,20 @@ function delayIndex(path: NodePath, callee: types.Node): number | undefined {
     const from = lzImportOf(path, callee.name);
 
     if (from === undefined) {
-      return timers.has(callee.name) && !path.scope.hasBinding(callee.name) ? 1 : undefined;
+      return timers.has(callee.name) && !path.scope.hasBinding(callee.name)
+        ? 1
+        : undefined;
     }
 
-    return timers.has(from.imported) ? timersDelayIndex(from.source) : undefined;
+    return timers.has(from.imported)
+      ? timersDelayIndex(from.source)
+      : undefined;
   }
 
-  if (callee.type !== 'MemberExpression' || callee.object.type !== 'Identifier') {
+  if (
+    callee.type !== 'MemberExpression' ||
+    callee.object.type !== 'Identifier'
+  ) {
     return undefined;
   }
 
@@ -71,9 +96,17 @@ function delayIndex(path: NodePath, callee: types.Node): number | undefined {
     return timers.has(method) ? timersDelayIndex(from.source) : undefined;
   }
 
-  return from.imported === 'scheduler' && method === 'wait' && nodeTimersPromises.has(from.source) ? 0 : undefined;
+  return from.imported === 'scheduler' &&
+    method === 'wait' &&
+    nodeTimersPromises.has(from.source)
+    ? 0
+    : undefined;
 }
 
 function timersDelayIndex(source: string): number | undefined {
-  return nodeTimers.has(source) ? 1 : nodeTimersPromises.has(source) ? 0 : undefined;
+  return nodeTimers.has(source)
+    ? 1
+    : nodeTimersPromises.has(source)
+      ? 0
+      : undefined;
 }

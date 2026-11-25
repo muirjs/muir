@@ -40,9 +40,10 @@ const decidingFieldSet: Readonly<Record<keyof LzDecidingFields, null>> = {
   projectSetup: null,
 };
 
-export const lzDecidingFields: readonly (keyof LzDecidingFields)[] = Object.keys(decidingFieldSet).filter(
-  (field): field is keyof LzDecidingFields => field in decidingFieldSet,
-);
+export const lzDecidingFields: readonly (keyof LzDecidingFields)[] =
+  Object.keys(decidingFieldSet).filter(
+    (field): field is keyof LzDecidingFields => field in decidingFieldSet,
+  );
 
 export interface LzOssHeader extends LzDecidingFields {
   readonly source: string;
@@ -83,14 +84,19 @@ export interface LzSideResult {
   readonly resumedMutants: number;
   /** lzStrykerConfig of the side, which a merge matches across its batches of the side. */
   readonly strykerConfig: string;
-  readonly processes: LzProcessPeaks & { readonly leftover: readonly LzLeftover[] };
+  readonly processes: LzProcessPeaks & {
+    readonly leftover: readonly LzLeftover[];
+  };
   readonly newInOsTmp: readonly string[];
   readonly leftoverStrykerTmp: readonly string[];
 }
 
 /** The result.json of a run, with each side's `<side>.mutation.json` beside it. */
 export type LzOssResult = LzOssHeader &
-  ({ readonly preparedIn: string } | ({ readonly sides: LzBySide<LzSideResult> } & LzComparison));
+  (
+    | { readonly preparedIn: string }
+    | ({ readonly sides: LzBySide<LzSideResult> } & LzComparison)
+  );
 
 /** What a merge needs of a run's result.json: the deciding fields as written, and each side's entry as written. */
 export interface LzParsedOssResult {
@@ -100,7 +106,10 @@ export interface LzParsedOssResult {
 }
 
 /** Reads the parsed JSON of a driver run's result.json, refusing a merge's result and anything that is not a run's. */
-export function lzParseOssResult(file: string, value: unknown): LzParsedOssResult {
+export function lzParseOssResult(
+  file: string,
+  value: unknown,
+): LzParsedOssResult {
   if (lzIsRecord(value) && 'mergedFrom' in value) {
     throw new Error(
       `${file} is the result of a merge; merges do not compose, so merge the runs it lists in mergedFrom.`,
@@ -111,13 +120,21 @@ export function lzParseOssResult(file: string, value: unknown): LzParsedOssResul
     const missing = lzDecidingFields.find((field) => !(field in value));
 
     if (missing !== undefined) {
-      throw new Error(`${file} is not the result.json of a driver run that a merge can read: it lacks ${missing}.`);
+      throw new Error(
+        `${file} is not the result.json of a driver run that a merge can read: it lacks ${missing}.`,
+      );
     }
 
     const { project, sides } = value;
 
     if (typeof project === 'string' && lzIsRecord(sides)) {
-      return { project, deciding: new Map(lzDecidingFields.map((field) => [field, value[field]])), sides };
+      return {
+        project,
+        deciding: new Map(
+          lzDecidingFields.map((field) => [field, value[field]]),
+        ),
+        sides,
+      };
     }
   }
 

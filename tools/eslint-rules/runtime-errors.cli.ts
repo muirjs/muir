@@ -6,7 +6,9 @@ import { lzCheckRuntimeErrors, lzScoresAnyMutant } from './runtime-errors.ts';
 const [reportFile] = process.argv.slice(2);
 
 if (reportFile === undefined) {
-  throw new Error('Usage: node tools/eslint-rules/runtime-errors.cli.ts <report.json>');
+  throw new Error(
+    'Usage: node tools/eslint-rules/runtime-errors.cli.ts <report.json>',
+  );
 }
 
 if (!lzScoresAnyMutant(JSON.parse(await readFile(reportFile, 'utf8')))) {
@@ -17,7 +19,10 @@ if (!lzScoresAnyMutant(JSON.parse(await readFile(reportFile, 'utf8')))) {
   process.exitCode = 1;
 }
 
-const unrecorded = await lzCheckRuntimeErrors(reportFile, join(import.meta.dirname, 'runtime-errors.json'));
+const unrecorded = await lzCheckRuntimeErrors(
+  reportFile,
+  join(import.meta.dirname, 'runtime-errors.json'),
+);
 
 if (unrecorded.length > 0) {
   process.stderr.write(

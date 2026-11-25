@@ -46,7 +46,12 @@ describe('workersAllowed', () => {
 describe('checkMemory', () => {
   it("writes the watchdog's record and ends the process once it holds more than the limit", () => {
     assert.deepEqual(check(200.6 * mb), {
-      writes: [[data.recordPath, { tests: [], memoryLimitReached: { rssMB: 201, limitMB: 200 } }]],
+      writes: [
+        [
+          data.recordPath,
+          { tests: [], memoryLimitReached: { rssMB: 201, limitMB: 200 } },
+        ],
+      ],
       kills: [[process.pid, 'SIGKILL']],
     });
   });
@@ -81,14 +86,20 @@ describe('checkMemory', () => {
   lzTestFor<readonly [string, number]>([
     ['at the limit', 200 * mb],
     ['just below the limit after rounding', 200.4 * mb],
-    ['one byte short of half a MB over the limit, which rounds down', 200.5 * mb - 1],
+    [
+      'one byte short of half a MB over the limit, which rounds down',
+      200.5 * mb - 1,
+    ],
   ])('leaves the process alone %s', ([, rssBytes]) => {
     assert.deepEqual(check(rssBytes), { writes: [], kills: [] });
   });
 
   it('counts half a MB over the limit as the next MB, which is over it', () => {
     assert.deepEqual(check(200.5 * mb).writes, [
-      [data.recordPath, { tests: [], memoryLimitReached: { rssMB: 201, limitMB: 200 } }],
+      [
+        data.recordPath,
+        { tests: [], memoryLimitReached: { rssMB: 201, limitMB: 200 } },
+      ],
     ]);
   });
 });

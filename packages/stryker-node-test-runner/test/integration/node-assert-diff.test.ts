@@ -22,7 +22,10 @@ process.stdout.write(execFileSync(process.execPath, ['-e', script, ...args], { e
 
 function growthMB(lines: number): number {
   return Number(
-    execFileSync(process.execPath, ['-e', starter, child, String(lines)], { encoding: 'utf8', windowsHide: true }),
+    execFileSync(process.execPath, ['-e', starter, child, String(lines)], {
+      encoding: 'utf8',
+      windowsHide: true,
+    }),
   );
 }
 

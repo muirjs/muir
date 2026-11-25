@@ -11,7 +11,8 @@ import { isNodeAssertCall } from './node-bindings.ts';
  */
 export const nodeAssertStatement: LzMutator<'LzNodeAssertStatement'> = {
   name: 'LzNodeAssertStatement',
-  sample: "import assert from 'node:assert/strict';\n\nassert.fail('unreachable');\n",
+  sample:
+    "import assert from 'node:assert/strict';\n\nassert.fail('unreachable');\n",
   *mutate(path, t) {
     if (!path.isExpressionStatement()) {
       return;

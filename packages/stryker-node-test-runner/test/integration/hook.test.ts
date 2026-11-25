@@ -15,15 +15,32 @@ import {
   type TestEvent,
   watchdog,
 } from '../../src/hook-core.ts';
-import { readRecords, recordOf, runTestFile, runWithHook, tempDir } from '../hook.fixtures.ts';
-import { fixture, grows, hookUrl, shareCompileCache } from '../runner.fixtures.ts';
-import { envNames, lzParseRecordName, type ProcessRecord } from '../../src/record.ts';
+import {
+  readRecords,
+  recordOf,
+  runTestFile,
+  runWithHook,
+  tempDir,
+} from '../hook.fixtures.ts';
+import {
+  fixture,
+  grows,
+  hookUrl,
+  shareCompileCache,
+} from '../runner.fixtures.ts';
+import {
+  envNames,
+  lzParseRecordName,
+  type ProcessRecord,
+} from '../../src/record.ts';
 import { lzEndingSignals } from '../../src/record-writer.ts';
 import reporter from '../../src/reporter.ts';
 
 // Loaded here, outside any test, the hook stays inactive (the runner did not start this process, or its own hook is
 // installed), and Stryker counts the hook's mutants as covered by every test, including those that run it in a child.
-const { activeResources, exit, later, lzEvery, lzSignals, now } = await import('../../src/hook.ts');
+const { activeResources, exit, later, lzEvery, lzSignals, now } = await import(
+  '../../src/hook.ts'
+);
 
 shareCompileCache();
 
@@ -31,19 +48,28 @@ shareCompileCache();
 async function loadRunnerStartedHook(
   outDir: string,
   env: Record<string, string> = {},
-): Promise<Record<'exit' | 'beforeExit', ((code: number) => void)[]> & { signals: Record<string, number> }> {
+): Promise<
+  Record<'exit' | 'beforeExit', ((code: number) => void)[]> & {
+    signals: Record<string, number>;
+  }
+> {
   const global: HookDependencies['global'] = globalThis;
   const previousMark = global[installed];
   // Without a current test, the hook leaves this process's hits outside its tests in place, where the runner credits
   // them to every test of this file, instead of moving them under the current test as it does a started process's.
   const ns = global.__stryker__;
   const currentTestId = ns?.currentTestId;
-  const previousEnv = Object.values(envNames).map((key): readonly [string, string | undefined] => [
-    key,
-    process.env[key],
-  ]);
-  const listeners = { exit: process.listeners('exit'), beforeExit: process.listeners('beforeExit') };
-  const signalListeners = lzEndingSignals.map((signal) => ({ signal, before: process.listeners(signal) }));
+  const previousEnv = Object.values(envNames).map(
+    (key): readonly [string, string | undefined] => [key, process.env[key]],
+  );
+  const listeners = {
+    exit: process.listeners('exit'),
+    beforeExit: process.listeners('beforeExit'),
+  };
+  const signalListeners = lzEndingSignals.map((signal) => ({
+    signal,
+    before: process.listeners(signal),
+  }));
 
   for (const [key] of previousEnv) {
     Reflect.deleteProperty(process.env, key);
@@ -80,7 +106,9 @@ async function loadRunnerStartedHook(
     beforeExit: takeAddedListeners('beforeExit', listeners.beforeExit),
     signals: Object.fromEntries(
       signalListeners.map(({ signal, before }) => {
-        const added = process.listeners(signal).filter((listener) => !before.includes(listener));
+        const added = process
+          .listeners(signal)
+          .filter((listener) => !before.includes(listener));
         added.forEach((listener) => process.removeListener(signal, listener));
 
         return [signal, added.length];
@@ -93,7 +121,10 @@ function takeAddedListeners(
   event: 'exit' | 'beforeExit',
   before: readonly ((code: number) => void)[],
 ): ((code: number) => void)[] {
-  const current = event === 'exit' ? process.listeners('exit') : process.listeners('beforeExit');
+  const current =
+    event === 'exit'
+      ? process.listeners('exit')
+      : process.listeners('beforeExit');
   const added = current.filter((listener) => !before.includes(listener));
 
   for (const listener of added) {
@@ -104,7 +135,9 @@ function takeAddedListeners(
 }
 
 /** The record without its lifetime, once that runs from when the hook ran up to now on the clock this process reads. */
-function untimed(record: ProcessRecord | undefined): Omit<ProcessRecord, 'lifetime'> | undefined {
+function untimed(
+  record: ProcessRecord | undefined,
+): Omit<ProcessRecord, 'lifetime'> | undefined {
   if (record === undefined) {
     return undefined;
   }
@@ -131,7 +164,10 @@ describe('hook', () => {
         process.env[envNames.bail] = bail;
       }
     });
-    const hookEnv = () => Object.fromEntries(Object.values(envNames).map((key) => [key, process.env[key]]));
+    const hookEnv = () =>
+      Object.fromEntries(
+        Object.values(envNames).map((key) => [key, process.env[key]]),
+      );
     const before = hookEnv();
     const added = await loadRunnerStartedHook(outDir);
 
@@ -139,7 +175,11 @@ describe('hook', () => {
     assert.deepEqual([added.exit.length, added.beforeExit.length], [1, 1]);
     // Windows has no signals to catch: every kill there is TerminateProcess.
     const signalListeners = process.platform === 'win32' ? 0 : 1;
-    assert.deepEqual(added.signals, { SIGTERM: signalListeners, SIGINT: signalListeners, SIGHUP: signalListeners });
+    assert.deepEqual(added.signals, {
+      SIGTERM: signalListeners,
+      SIGINT: signalListeners,
+      SIGHUP: signalListeners,
+    });
 
     added.exit[0]?.(0);
 
@@ -175,7 +215,10 @@ describe('hook', () => {
     const global: GlobalSlots = globalThis;
     const unref = t.mock.method(Worker.prototype, 'unref');
 
-    const added = await loadRunnerStartedHook(outDir, { [envNames.dryRun]: 'true', [envNames.memoryLimit]: '1000000' });
+    const added = await loadRunnerStartedHook(outDir, {
+      [envNames.dryRun]: 'true',
+      [envNames.memoryLimit]: '1000000',
+    });
 
     const watching = global[watchdog];
     assert.ok(watching instanceof Worker, String(watching));
@@ -192,8 +235,12 @@ describe('hook', () => {
     assert.deepEqual(
       stderr.mock.calls.map((call) => call.arguments),
       [
-        ['lz-node-test: the memory watchdog failed, so no memory limit guards this process: preload failed\n'],
-        ["lz-node-test: the memory watchdog failed, so no memory limit guards this process: 'thrown string'\n"],
+        [
+          'lz-node-test: the memory watchdog failed, so no memory limit guards this process: preload failed\n',
+        ],
+        [
+          "lz-node-test: the memory watchdog failed, so no memory limit guards this process: 'thrown string'\n",
+        ],
       ],
     );
 
@@ -209,7 +256,10 @@ describe('hook', () => {
 
   it("keeps a worker thread's record apart from the test file's, as a worker started from a file loads the hook too", async (t) => {
     const dir = tempDir(t);
-    writeFileSync(join(dir, 'worker.mjs'), 'globalThis.__stryker__.hitCount = 999;\n');
+    writeFileSync(
+      join(dir, 'worker.mjs'),
+      'globalThis.__stryker__.hitCount = 999;\n',
+    );
 
     const { code, pid, records, record } = await runTestFile(
       t,
@@ -224,13 +274,19 @@ describe('hook', () => {
     );
 
     assert.equal(code, 0);
-    const workers = Object.entries(records).filter(([, other]) => other !== record);
+    const workers = Object.entries(records).filter(
+      ([, other]) => other !== record,
+    );
     assert.equal(record?.main, true);
     assert.deepEqual(
       workers.map(([name, worker]) => {
         const parsed = lzParseRecordName(name);
 
-        return [parsed?.pid === pid && parsed.thread !== 0, worker.main, worker.hitCount];
+        return [
+          parsed?.pid === pid && parsed.thread !== 0,
+          worker.main,
+          worker.hitCount,
+        ];
       }),
       [[true, undefined, 999]],
     );
@@ -256,11 +312,15 @@ describe('hook', () => {
   it('calls back after the delay without keeping the process alive', (t) => {
     const timers: unknown[] = [];
     let unrefs = 0;
-    t.mock.method(globalThis, 'setTimeout', (callback: () => void, ms: number) => {
-      timers.push([callback, ms]);
+    t.mock.method(
+      globalThis,
+      'setTimeout',
+      (callback: () => void, ms: number) => {
+        timers.push([callback, ms]);
 
-      return { unref: () => unrefs++ };
-    });
+        return { unref: () => unrefs++ };
+      },
+    );
     const callback = () => {};
 
     later(callback, 250);
@@ -271,11 +331,15 @@ describe('hook', () => {
   it('calls back every period without keeping the process alive', (t) => {
     const timers: unknown[] = [];
     let unrefs = 0;
-    t.mock.method(globalThis, 'setInterval', (callback: () => void, ms: number) => {
-      timers.push([callback, ms]);
+    t.mock.method(
+      globalThis,
+      'setInterval',
+      (callback: () => void, ms: number) => {
+        timers.push([callback, ms]);
 
-      return { unref: () => unrefs++ };
-    });
+        return { unref: () => unrefs++ };
+      },
+    );
     const callback = () => {};
 
     lzEvery(callback, 250);
@@ -297,10 +361,16 @@ describe('hook', () => {
     });
 
     signals.on('SIGHUP', listener);
-    const added = [process.listeners('SIGHUP').includes(listener), signals.listenerCount('SIGHUP')];
+    const added = [
+      process.listeners('SIGHUP').includes(listener),
+      signals.listenerCount('SIGHUP'),
+    ];
     signals.off('SIGHUP', listener);
 
-    assert.deepEqual([added, process.listeners('SIGHUP').includes(listener)], [[true, before + 1], false]);
+    assert.deepEqual(
+      [added, process.listeners('SIGHUP').includes(listener)],
+      [[true, before + 1], false],
+    );
   });
 
   it("finds the emitters of signal-exit's versions 4 and 3 on POSIX", (t) => {
@@ -308,7 +378,10 @@ describe('hook', () => {
     assert.ok(signals);
     const version4Key = Symbol.for('signal-exit emitter');
     const version3Key = '__signal_exit_emitter__';
-    const previous = [Reflect.get(globalThis, version4Key), Reflect.get(process, version3Key)];
+    const previous = [
+      Reflect.get(globalThis, version4Key),
+      Reflect.get(process, version3Key),
+    ];
     t.after(() => {
       Reflect.set(globalThis, version4Key, previous[0]);
       Reflect.set(process, version3Key, previous[1]);
@@ -342,13 +415,18 @@ describe('hook', () => {
     let read: number;
 
     try {
-      process.hrtime = Object.assign((): [number, number] => [0, 5], { bigint: () => 5n });
+      process.hrtime = Object.assign((): [number, number] => [0, 5], {
+        bigint: () => 5n,
+      });
       read = now();
     } finally {
       process.hrtime = real;
     }
 
-    assert.ok(read >= before, `${read} ms, before the ${before} ms read ahead of it`);
+    assert.ok(
+      read >= before,
+      `${read} ms, before the ${before} ms read ahead of it`,
+    );
   });
 
   it("lists the process's active resources", () => {
@@ -373,7 +451,14 @@ describe('hook', () => {
   >([
     [
       'with exit code 1 at once, when a test failed',
-      { name: 'fails', then: 'assert.fail();', heldOpenMs: '60000', exitCode: 1, status: 'failed', marks: {} },
+      {
+        name: 'fails',
+        then: 'assert.fail();',
+        heldOpenMs: '60000',
+        exitCode: 1,
+        status: 'failed',
+        marks: {},
+      },
     ],
     [
       "with node:test's exit code once the held-open time ends, naming the server, when its tests passed",
@@ -392,15 +477,29 @@ describe('hook', () => {
     async ([, { name, then, heldOpenMs, exitCode, status, marks }], t) => {
       const { code, record } = await runTestFile(
         t,
-        fixture("import { createServer } from 'node:http';", leavesServer(name, then)),
+        fixture(
+          "import { createServer } from 'node:http';",
+          leavesServer(name, then),
+        ),
         { env: { [envNames.heldOpen]: heldOpenMs } },
       );
 
       assert.equal(code, exitCode);
       const { main, tests, unfinished, heldOpen } = record ?? {};
       assert.deepEqual(
-        { main, statuses: tests?.map((test) => test.status), unfinished, heldOpen },
-        { main: true, statuses: [status], unfinished: undefined, heldOpen: undefined, ...marks },
+        {
+          main,
+          statuses: tests?.map((test) => test.status),
+          unfinished,
+          heldOpen,
+        },
+        {
+          main: true,
+          statuses: [status],
+          unfinished: undefined,
+          heldOpen: undefined,
+          ...marks,
+        },
       );
     },
   );
@@ -409,9 +508,13 @@ describe('hook', () => {
     'lets a test file whose tests leave nothing open end by itself, long before the held-open time',
     { timeout: 20_000 },
     async (t) => {
-      const { code, record } = await runTestFile(t, fixture("it('passes', () => {});"), {
-        env: { [envNames.heldOpen]: '60000' },
-      });
+      const { code, record } = await runTestFile(
+        t,
+        fixture("it('passes', () => {});"),
+        {
+          env: { [envNames.heldOpen]: '60000' },
+        },
+      );
 
       assert.equal(code, 0);
       assert.equal(record?.heldOpen, undefined);
@@ -460,7 +563,12 @@ describe('hook', () => {
     );
 
     assert.equal(code, 0);
-    const ids = ['default export', 'suite > nested', 'required', 'required it'].map((name) => `${testFile} > ${name}`);
+    const ids = [
+      'default export',
+      'suite > nested',
+      'required',
+      'required it',
+    ].map((name) => `${testFile} > ${name}`);
     assert.deepEqual(
       record?.tests.map(({ id, startPosition }) => ({ id, startPosition })),
       [
@@ -476,12 +584,23 @@ describe('hook', () => {
   lzTestFor<readonly [string, string, Record<string, unknown>]>([
     ['ends by itself', '', {}],
     ['ends through process.exit()', 'process.exit(0);\n', { unfinished: true }],
-  ])('marks the record of a test file that %s without tests as unfinished or not', async ([, exits, unfinished], t) => {
-    const { code, record } = await runTestFile(t, `import 'node:test';\n${exits}`);
+  ])(
+    'marks the record of a test file that %s without tests as unfinished or not',
+    async ([, exits, unfinished], t) => {
+      const { code, record } = await runTestFile(
+        t,
+        `import 'node:test';\n${exits}`,
+      );
 
-    assert.equal(code, 0);
-    assert.deepEqual(untimed(record), { main: true, tests: [], testSpans: {}, ...unfinished });
-  });
+      assert.equal(code, 0);
+      assert.deepEqual(untimed(record), {
+        main: true,
+        tests: [],
+        testSpans: {},
+        ...unfinished,
+      });
+    },
+  );
 
   it('records where a CommonJS test file declares its tests', async (t) => {
     const { code, record } = await runTestFile(
@@ -496,7 +615,12 @@ describe('hook', () => {
 
   /** A test file whose source map sends line 2, the `it` call, to line 41, column 3 of `source`. */
   const mapped = (source: string) => {
-    const map = { version: 3, sources: [source], names: [], mappings: ';AAwCE' };
+    const map = {
+      version: 3,
+      sources: [source],
+      names: [],
+      mappings: ';AAwCE',
+    };
 
     return (
       "import { it } from 'node:test';\nit('mapped', () => {});\n" +
@@ -504,7 +628,9 @@ describe('hook', () => {
     );
   };
 
-  lzTestFor<readonly [string, string, string, { line: number; column: number }]>([
+  lzTestFor<
+    readonly [string, string, string, { line: number; column: number }]
+  >([
     [
       'a loader transpiled, through its source map',
       'fixture.test.mjs',
@@ -523,33 +649,46 @@ describe('hook', () => {
       "import { it } from 'node:test';\nconst typed: number = 1; it('stripped', () => {});\n",
       { line: 1, column: 25 },
     ],
-  ])('records where the source declares a test that %s', async ([, name, source, position], t) => {
-    const dir = tempDir(t);
-    // A loader such as tsx turns source maps on this way, so stack traces are mapped and raw call sites are not.
-    const maps = join(dir, 'maps.mjs');
-    writeFileSync(maps, 'process.setSourceMapsEnabled(true);\n');
+  ])(
+    'records where the source declares a test that %s',
+    async ([, name, source, position], t) => {
+      const dir = tempDir(t);
+      // A loader such as tsx turns source maps on this way, so stack traces are mapped and raw call sites are not.
+      const maps = join(dir, 'maps.mjs');
+      writeFileSync(maps, 'process.setSourceMapsEnabled(true);\n');
 
-    const { code, record } = await runTestFile(t, source, {
-      name,
-      dir,
-      args: ['--import', pathToFileURL(maps).href],
-    });
+      const { code, record } = await runTestFile(t, source, {
+        name,
+        dir,
+        args: ['--import', pathToFileURL(maps).href],
+      });
 
-    assert.equal(code, 0);
-    assert.deepEqual(record?.tests[0]?.startPosition, position);
-  });
+      assert.equal(code, 0);
+      assert.deepEqual(record?.tests[0]?.startPosition, position);
+    },
+  );
 
   it('records where the test file declares a test through helpers many calls deep', async (t) => {
     const dir = tempDir(t);
-    const levels = Array.from({ length: 12 }, (_, level) => `export const level${level} = () => level${level + 1}();`);
+    const levels = Array.from(
+      { length: 12 },
+      (_, level) => `export const level${level} = () => level${level + 1}();`,
+    );
     writeFileSync(
       join(dir, 'helper.mjs'),
-      ["import { it } from 'node:test';", ...levels, "export const level12 = () => it('deep', () => {});", ''].join(
-        '\n',
-      ),
+      [
+        "import { it } from 'node:test';",
+        ...levels,
+        "export const level12 = () => it('deep', () => {});",
+        '',
+      ].join('\n'),
     );
 
-    const { code, record } = await runTestFile(t, "import { level0 } from './helper.mjs';\n\n  level0();\n", { dir });
+    const { code, record } = await runTestFile(
+      t,
+      "import { level0 } from './helper.mjs';\n\n  level0();\n",
+      { dir },
+    );
 
     assert.equal(code, 0);
     assert.deepEqual(record?.tests[0]?.startPosition, { line: 2, column: 2 });
@@ -583,8 +722,16 @@ describe('hook', () => {
           status: 'failed',
           failureMessage: 'afterEach failure',
         },
-        { id: `${testFile} > skips itself`, status: 'skipped', failureMessage: undefined },
-        { id: `${testFile} > is todo`, status: 'skipped', failureMessage: undefined },
+        {
+          id: `${testFile} > skips itself`,
+          status: 'skipped',
+          failureMessage: undefined,
+        },
+        {
+          id: `${testFile} > is todo`,
+          status: 'skipped',
+          failureMessage: undefined,
+        },
       ],
     );
   });
@@ -627,8 +774,14 @@ describe('hook', () => {
       const { tests, memoryLimitReached } = record;
       assert.deepEqual(tests, []);
       assert.equal(memoryLimitReached?.limitMB, 200);
-      assert.ok(memoryLimitReached.rssMB > 200, String(memoryLimitReached.rssMB));
-      assert.ok(memoryLimitReached.rssMB < 400, String(memoryLimitReached.rssMB));
+      assert.ok(
+        memoryLimitReached.rssMB > 200,
+        String(memoryLimitReached.rssMB),
+      );
+      assert.ok(
+        memoryLimitReached.rssMB < 400,
+        String(memoryLimitReached.rssMB),
+      );
     },
   );
 
@@ -682,22 +835,33 @@ describe('hook', () => {
   lzTestFor([
     ['the arguments', true],
     ['NODE_OPTIONS', false],
-  ])('loads a --require preload given in %s once, not again in the memory watchdog', async ([, inArgs], t) => {
-    const dir = tempDir(t);
-    const outDir = tempDir(t);
-    const preload = join(dir, 'count.cjs');
-    writeFileSync(preload, "require('node:fs').appendFileSync(__dirname + '/loads.txt', 'load\\n');\n");
-    const script = ['-e', 'setTimeout(() => {}, 500);'];
+  ])(
+    'loads a --require preload given in %s once, not again in the memory watchdog',
+    async ([, inArgs], t) => {
+      const dir = tempDir(t);
+      const outDir = tempDir(t);
+      const preload = join(dir, 'count.cjs');
+      writeFileSync(
+        preload,
+        "require('node:fs').appendFileSync(__dirname + '/loads.txt', 'load\\n');\n",
+      );
+      const script = ['-e', 'setTimeout(() => {}, 500);'];
 
-    const { code } = await runWithHook(inArgs ? ['--require', preload, ...script] : script, {
-      [envNames.out]: outDir,
-      [envNames.memoryLimit]: '1500',
-      ...(!inArgs && { NODE_OPTIONS: `--require ${JSON.stringify(preload)}` }),
-    });
+      const { code } = await runWithHook(
+        inArgs ? ['--require', preload, ...script] : script,
+        {
+          [envNames.out]: outDir,
+          [envNames.memoryLimit]: '1500',
+          ...(!inArgs && {
+            NODE_OPTIONS: `--require ${JSON.stringify(preload)}`,
+          }),
+        },
+      );
 
-    assert.equal(code, 0);
-    assert.equal(readFileSync(join(dir, 'loads.txt'), 'utf8'), 'load\n');
-  });
+      assert.equal(code, 0);
+      assert.equal(readFileSync(join(dir, 'loads.txt'), 'utf8'), 'load\n');
+    },
+  );
 
   it('ends a process whose NODE_OPTIONS preload cannot run in a worker once it holds more than the memory limit', async (t) => {
     const dir = tempDir(t);
@@ -713,14 +877,26 @@ describe('hook', () => {
     });
 
     assert.notEqual(code, 0);
-    assert.equal(recordOf(readRecords(outDir), pid, 'memory')?.memoryLimitReached?.limitMB, 200);
+    assert.equal(
+      recordOf(readRecords(outDir), pid, 'memory')?.memoryLimitReached?.limitMB,
+      200,
+    );
   });
 
   it('runs a process under the permission model without workers with a memory limit as it would without one', async (t) => {
     const outDir = tempDir(t);
-    const args = ['--permission', '--allow-fs-read=*', '--allow-fs-write=*', '-e', 'setTimeout(() => {}, 500);'];
+    const args = [
+      '--permission',
+      '--allow-fs-read=*',
+      '--allow-fs-write=*',
+      '-e',
+      'setTimeout(() => {}, 500);',
+    ];
 
-    const { code, pid } = await runWithHook(args, { [envNames.out]: outDir, [envNames.memoryLimit]: '1500' });
+    const { code, pid } = await runWithHook(args, {
+      [envNames.out]: outDir,
+      [envNames.memoryLimit]: '1500',
+    });
     const records = readRecords(outDir);
 
     assert.equal(code, 0);
@@ -759,7 +935,10 @@ describe('reporter', () => {
     const previous = global[reporting];
     const events: TestEvent[] = [];
     const errors: unknown[] = [];
-    const event = (name: string): TestEvent => ({ type: 'test:start', data: { name, nesting: 0 } });
+    const event = (name: string): TestEvent => ({
+      type: 'test:start',
+      data: { name, nesting: 0 },
+    });
     reporter.on('error', (error) => errors.push(error));
 
     try {

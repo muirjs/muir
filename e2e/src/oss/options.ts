@@ -62,7 +62,13 @@ export const lzOssRunPrefix = 'lz-oss-driver-';
 export const lzOssPreparedPrefix = 'lz-oss-prepared-';
 
 const projects: readonly LzOssProject[] = [
-  { name: 'env-schema', mutate: ['index.js'], testFiles: ['test/**/*.test.js'], nodeTestFlags: [], patches: [] },
+  {
+    name: 'env-schema',
+    mutate: ['index.js'],
+    testFiles: ['test/**/*.test.js'],
+    nodeTestFlags: [],
+    patches: [],
+  },
   {
     name: 'fastify-cookie',
     mutate: ['index.js', 'signer.js'],
@@ -89,7 +95,12 @@ const projects: readonly LzOssProject[] = [
   },
   {
     name: 'fastify',
-    mutate: ['fastify.js', 'lib/**/*.js', '!lib/error-serializer.js', '!lib/config-validator.js'],
+    mutate: [
+      'fastify.js',
+      'lib/**/*.js',
+      '!lib/error-serializer.js',
+      '!lib/config-validator.js',
+    ],
     testFiles: ['test/**/*.test.js', 'test/**/*.test.mjs'],
     nodeTestFlags: [],
     patches: [],
@@ -133,7 +144,13 @@ const projects: readonly LzOssProject[] = [
     nodeTestFlags: ['--test-concurrency=1'],
     patches: [],
   },
-  { name: 'borp', mutate: ['borp.js', 'lib/**/*.js'], testFiles: ['test/*.test.js'], nodeTestFlags: [], patches: [] },
+  {
+    name: 'borp',
+    mutate: ['borp.js', 'lib/**/*.js'],
+    testFiles: ['test/*.test.js'],
+    nodeTestFlags: [],
+    patches: [],
+  },
   {
     name: 'execa',
     mutate: ['index.js', 'lib/**/*.js'],
@@ -217,7 +234,10 @@ const positiveInteger = /^[1-9]\d*$/;
 export function lzParseMergeOptions(args: readonly string[]): LzMergeOptions {
   const { values } = parseArgs({
     args: [...args],
-    options: { merge: { type: 'string', multiple: true, default: [] }, out: { type: 'string' } },
+    options: {
+      merge: { type: 'string', multiple: true, default: [] },
+      out: { type: 'string' },
+    },
     strict: true,
     allowPositionals: false,
   });
@@ -230,10 +250,15 @@ export function lzParseMergeOptions(args: readonly string[]): LzMergeOptions {
 }
 
 /** The arguments `stryker run` gets beside its config file, concurrency and reporters. */
-export function lzStrykerArgs({ mutate, mutantTimeoutMs }: Pick<LzOssOptions, 'mutate' | 'mutantTimeoutMs'>): string[] {
+export function lzStrykerArgs({
+  mutate,
+  mutantTimeoutMs,
+}: Pick<LzOssOptions, 'mutate' | 'mutantTimeoutMs'>): string[] {
   return [
     ...(mutate.length === 0 ? [] : ['--mutate', mutate.join(',')]),
-    ...(mutantTimeoutMs === undefined ? [] : ['--timeoutMS', String(mutantTimeoutMs)]),
+    ...(mutantTimeoutMs === undefined
+      ? []
+      : ['--timeoutMS', String(mutantTimeoutMs)]),
   ];
 }
 
@@ -244,9 +269,15 @@ export type LzOssCommand =
 
 /** Help wins over everything; `--merge` picks the merge, whose strict parse refuses the options of a run. */
 export function lzParseCommand(args: readonly string[]): LzOssCommand {
-  const { tokens } = parseArgs({ args: [...args], strict: false, tokens: true });
+  const { tokens } = parseArgs({
+    args: [...args],
+    strict: false,
+    tokens: true,
+  });
   // Stryker disable next-line ArrayDeclaration: the name it adds is never help, h or merge, the only names read
-  const names = new Set(tokens.flatMap((token) => (token.kind === 'option' ? [token.name] : [])));
+  const names = new Set(
+    tokens.flatMap((token) => (token.kind === 'option' ? [token.name] : [])),
+  );
 
   if (names.has('help') || names.has('h')) {
     return { kind: 'help' };
@@ -288,7 +319,9 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
   const project = projects.find(({ name }) => name === values.project);
 
   if (project === undefined) {
-    throw new Error(`${lzOssUsage}\n--project is one of ${projects.map(({ name }) => name).join(', ')}.`);
+    throw new Error(
+      `${lzOssUsage}\n--project is one of ${projects.map(({ name }) => name).join(', ')}.`,
+    );
   }
 
   if (source === undefined || out === undefined) {
@@ -296,15 +329,21 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
   }
 
   if (concurrency === undefined || !positiveInteger.test(concurrency)) {
-    throw new Error(`${lzOssUsage}\n--concurrency is a positive integer; size it to the machine's current load.`);
+    throw new Error(
+      `${lzOssUsage}\n--concurrency is a positive integer; size it to the machine's current load.`,
+    );
   }
 
   if (!positiveInteger.test(timeLimitMinutes)) {
-    throw new Error(`${lzOssUsage}\n--time-limit-minutes is a positive integer.`);
+    throw new Error(
+      `${lzOssUsage}\n--time-limit-minutes is a positive integer.`,
+    );
   }
 
   if (mutantTimeoutMs !== undefined && !positiveInteger.test(mutantTimeoutMs)) {
-    throw new Error(`${lzOssUsage}\n--mutant-timeout-ms is a positive integer.`);
+    throw new Error(
+      `${lzOssUsage}\n--mutant-timeout-ms is a positive integer.`,
+    );
   }
 
   if (npmBefore === undefined) {
@@ -313,11 +352,18 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
     );
   }
 
-  const before = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z)?$/.test(npmBefore)
+  const before = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z)?$/.test(
+    npmBefore,
+  )
     ? Date.parse(npmBefore)
     : Number.NaN;
 
-  if (Number.isNaN(before) || !new Date(before).toISOString().startsWith(npmBefore.slice(0, 'yyyy-mm-dd'.length))) {
+  if (
+    Number.isNaN(before) ||
+    !new Date(before)
+      .toISOString()
+      .startsWith(npmBefore.slice(0, 'yyyy-mm-dd'.length))
+  ) {
     throw new Error(
       `${lzOssUsage}\n--npm-before is a date such as 2026-11-04 or a UTC time such as 2026-11-04T12:00:00Z.`,
     );
@@ -336,7 +382,9 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
   }
 
   if (values.mutate.some((pattern) => pattern.includes(','))) {
-    throw new Error(`${lzOssUsage}\n--mutate takes one pattern without a comma; repeat it for more.`);
+    throw new Error(
+      `${lzOssUsage}\n--mutate takes one pattern without a comma; repeat it for more.`,
+    );
   }
 
   return {
@@ -349,7 +397,8 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
     tarballs,
     prepareOnly: values['prepare-only'],
     timeLimitMinutes: Number(timeLimitMinutes),
-    mutantTimeoutMs: mutantTimeoutMs === undefined ? undefined : Number(mutantTimeoutMs),
+    mutantTimeoutMs:
+      mutantTimeoutMs === undefined ? undefined : Number(mutantTimeoutMs),
     npmBefore: new Date(before).toISOString(),
   };
 }
@@ -358,15 +407,25 @@ export function lzParseOptions(args: readonly string[]): LzOssOptions {
  * The command side's `node --test` with the test files named, not discovered: discovery would also run a file a
  * test writes under `test/`, such as another worker's fixture.
  */
-export function lzNodeTestCommand({ testFiles, nodeTestFlags }: LzOssProject): string {
-  return ['node --test', ...nodeTestFlags, ...testFiles.map((pattern) => `"${pattern}"`)].join(' ');
+export function lzNodeTestCommand({
+  testFiles,
+  nodeTestFlags,
+}: LzOssProject): string {
+  return [
+    'node --test',
+    ...nodeTestFlags,
+    ...testFiles.map((pattern) => `"${pattern}"`),
+  ].join(' ');
 }
 
 /**
  * Both sides install the default node mutators, so they mutate the same code into the same mutants. The command side runs
  * lzNodeTestCommand's `node --test`, with coverage analysis off as that runner reports no coverage.
  */
-export function lzStrykerOptions(side: LzSide, project: LzOssProject): LzStrykerOptions {
+export function lzStrykerOptions(
+  side: LzSide,
+  project: LzOssProject,
+): LzStrykerOptions {
   const { mutate, testFiles } = project;
   const command = lzNodeTestCommand(project);
 
@@ -377,7 +436,12 @@ export function lzStrykerOptions(side: LzSide, project: LzOssProject): LzStryker
         testRunner: 'lz-node-test',
         lzNodeTest: { testFiles },
       }
-    : { mutate, testRunner: 'command', commandRunner: { command }, coverageAnalysis: 'off' };
+    : {
+        mutate,
+        testRunner: 'command',
+        commandRunner: { command },
+        coverageAnalysis: 'off',
+      };
 }
 
 export function lzStrykerConfig(side: LzSide, project: LzOssProject): string {

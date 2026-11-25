@@ -1,9 +1,20 @@
 import type { Rule } from 'eslint';
 import type { Node } from 'estree';
 
-const loops = new Set(['ForStatement', 'ForInStatement', 'ForOfStatement', 'WhileStatement', 'DoWhileStatement']);
+const loops = new Set([
+  'ForStatement',
+  'ForInStatement',
+  'ForOfStatement',
+  'WhileStatement',
+  'DoWhileStatement',
+]);
 const functions = new Set(['ArrowFunctionExpression', 'FunctionExpression']);
-const assertModules = new Set(['assert', 'assert/strict', 'node:assert', 'node:assert/strict']);
+const assertModules = new Set([
+  'assert',
+  'assert/strict',
+  'node:assert',
+  'node:assert/strict',
+]);
 const iterationMethods = new Set([
   'forEach',
   'map',
@@ -35,7 +46,9 @@ function isAssertion(callee: Node, imported: ReadonlySet<string>): boolean {
 
   return object.type === 'Identifier'
     ? imported.has(object.name)
-    : object.type === 'MemberExpression' && object.property.type === 'Identifier' && object.property.name === 'assert';
+    : object.type === 'MemberExpression' &&
+        object.property.type === 'Identifier' &&
+        object.property.name === 'assert';
 }
 
 function isIterationCallback(node: Node, callback: Node): boolean {
@@ -49,11 +62,18 @@ function isIterationCallback(node: Node, callback: Node): boolean {
 
   const { object, property } = node.callee;
 
-  if (object.type === 'Identifier' && object.name === 'Array' && arrayFactories.has(property.name)) {
+  if (
+    object.type === 'Identifier' &&
+    object.name === 'Array' &&
+    arrayFactories.has(property.name)
+  ) {
     return node.arguments[1] === callback;
   }
 
-  return iterationMethods.has(property.name) && node.arguments.some((argument) => argument === callback);
+  return (
+    iterationMethods.has(property.name) &&
+    node.arguments.some((argument) => argument === callback)
+  );
 }
 
 const rule: Rule.RuleModule = {
@@ -83,7 +103,10 @@ const rule: Rule.RuleModule = {
         }
 
         const ancestors = context.sourceCode.getAncestors(node);
-        const boundary = ancestors.findLast((ancestor) => loops.has(ancestor.type) || functions.has(ancestor.type));
+        const boundary = ancestors.findLast(
+          (ancestor) =>
+            loops.has(ancestor.type) || functions.has(ancestor.type),
+        );
 
         if (boundary === undefined) {
           return;
@@ -91,7 +114,9 @@ const rule: Rule.RuleModule = {
 
         if (loops.has(boundary.type)) {
           context.report({ node, messageId: 'loop' });
-        } else if (ancestors.some((ancestor) => isIterationCallback(ancestor, boundary))) {
+        } else if (
+          ancestors.some((ancestor) => isIterationCallback(ancestor, boundary))
+        ) {
           context.report({ node, messageId: 'callback' });
         }
       },

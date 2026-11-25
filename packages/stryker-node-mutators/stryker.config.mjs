@@ -9,9 +9,13 @@ export default await production(
       'packages/stryker-node-mutators/test/synthetic/node-apis.ts',
     ],
     tsconfigFile: 'packages/stryker-node-mutators/tsconfig.stryker.json',
-    incrementalFile: 'reports/stryker-incremental/@layzee/stryker-node-mutators.src.json',
+    incrementalFile:
+      'reports/stryker-incremental/@layzee/stryker-node-mutators.src.json',
     ...reportFiles('@layzee/stryker-node-mutators.src'),
-    lzNodeTest: { testFiles: ['packages/stryker-node-mutators/test/**/*.test.ts'], nodeArgs: [source] },
+    lzNodeTest: {
+      testFiles: ['packages/stryker-node-mutators/test/**/*.test.ts'],
+      nodeArgs: [source],
+    },
   },
   { LzJsNumericLiteral: true },
 );

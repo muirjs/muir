@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
@@ -21,7 +27,11 @@ const header = {
   mutantTimeoutMs: 30000,
   installedVersions: ['node_modules/a@1.0.0', 'node_modules/b@2.0.0'],
   tarballDigests: ['d1', 'd2'],
-  projectSetup: { mutate: ['index.js'], testFiles: ['test/*.test.js'], patches: [] },
+  projectSetup: {
+    mutate: ['index.js'],
+    testFiles: ['test/*.test.js'],
+    patches: [],
+  },
   tarballs: ['a-1.0.0.tgz', 'b-1.0.0.tgz'],
 };
 
@@ -53,13 +63,19 @@ function setup(t: TestContext) {
                 mutatorName: 'StringLiteral',
                 replacement: '""',
                 status,
-                location: { start: { line, column: 3 }, end: { line, column: 9 } },
+                location: {
+                  start: { line, column: 3 },
+                  end: { line, column: 9 },
+                },
               })),
             },
           },
         };
 
-        writeFileSync(join(runDir, `${side}.mutation.json`), JSON.stringify(report));
+        writeFileSync(
+          join(runDir, `${side}.mutation.json`),
+          JSON.stringify(report),
+        );
       });
       writeFileSync(
         join(runDir, 'result.json'),
@@ -70,7 +86,13 @@ function setup(t: TestContext) {
           sides: Object.fromEntries(
             lzSides
               .filter((side) => side in mutantsBySide)
-              .map((side) => [side, { stryker: { reported: true }, strykerConfig: configs[side] ?? `${side} config` }]),
+              .map((side) => [
+                side,
+                {
+                  stryker: { reported: true },
+                  strykerConfig: configs[side] ?? `${side} config`,
+                },
+              ]),
           ),
         }),
       );
@@ -98,7 +120,9 @@ describe('lzMerge', () => {
 
     lzMerge([lz, command], out);
 
-    const result: unknown = JSON.parse(readFileSync(join(out, 'result.json'), 'utf8'));
+    const result: unknown = JSON.parse(
+      readFileSync(join(out, 'result.json'), 'utf8'),
+    );
 
     assert.deepEqual(result, {
       project: 'p',
@@ -108,10 +132,24 @@ describe('lzMerge', () => {
         command: { counts: { Killed: 2 }, score: 100, mutants: 2 },
       },
       compared: true,
-      disagreements: [{ mutant: 'index.js:2:3-2:9 StringLiteral ""', lz: 'Survived', command: 'Killed' }],
+      disagreements: [
+        {
+          mutant: 'index.js:2:3-2:9 StringLiteral ""',
+          lz: 'Survived',
+          command: 'Killed',
+        },
+      ],
       verdicts: [
-        { mutant: 'index.js:1:3-1:9 StringLiteral ""', lz: 'Killed', command: 'Killed' },
-        { mutant: 'index.js:2:3-2:9 StringLiteral ""', lz: 'Survived', command: 'Killed' },
+        {
+          mutant: 'index.js:1:3-1:9 StringLiteral ""',
+          lz: 'Killed',
+          command: 'Killed',
+        },
+        {
+          mutant: 'index.js:2:3-2:9 StringLiteral ""',
+          lz: 'Survived',
+          command: 'Killed',
+        },
       ],
     });
   });
@@ -123,14 +161,17 @@ describe('lzMerge', () => {
 
     lzMerge([lz], out);
 
-    const result: unknown = JSON.parse(readFileSync(join(out, 'result.json'), 'utf8'));
+    const result: unknown = JSON.parse(
+      readFileSync(join(out, 'result.json'), 'utf8'),
+    );
 
     assert.deepEqual(result, {
       project: 'p',
       mergedFrom: [lz],
       scores: { lz: { counts: { Killed: 1 }, score: 100, mutants: 1 } },
       compared: false,
-      reason: 'Only the lz side ran; merge its result.json with a command run with --merge.',
+      reason:
+        'Only the lz side ran; merge its result.json with a command run with --merge.',
     });
   });
 
@@ -138,20 +179,35 @@ describe('lzMerge', () => {
     const { run, out } = setup(t);
     const deep = join(out, 'a', 'b');
 
-    assert.equal(lzMerge([run('lz', 'p', { lz: [] })], deep), join(deep, 'result.json'));
+    assert.equal(
+      lzMerge([run('lz', 'p', { lz: [] })], deep),
+      join(deep, 'result.json'),
+    );
   });
 
   it('refuses to merge no result.json at all', (t) => {
     const { out } = setup(t);
 
-    assert.throws(() => lzMerge([], out), { message: '--merge takes at least one result.json.' });
+    assert.throws(() => lzMerge([], out), {
+      message: '--merge takes at least one result.json.',
+    });
   });
 
   it('names entries not every run has in sorted order, whatever order the runs list them in', (t) => {
     const { run, out } = setup(t);
     const runs = [
-      run('a', 'p', { lz: [] }, { installedVersions: ['node_modules/z@1.0.0'] }),
-      run('b', 'p', { command: [] }, { installedVersions: ['node_modules/a@1.0.0'] }),
+      run(
+        'a',
+        'p',
+        { lz: [] },
+        { installedVersions: ['node_modules/z@1.0.0'] },
+      ),
+      run(
+        'b',
+        'p',
+        { command: [] },
+        { installedVersions: ['node_modules/a@1.0.0'] },
+      ),
     ];
 
     assert.throws(() => lzMerge(runs, out), {
@@ -169,7 +225,8 @@ describe('lzMerge', () => {
     ];
 
     assert.throws(() => lzMerge(runs, out), {
-      message: '--merge takes runs of one tarballDigests; found ["d1"] and ["d2"] and d3.',
+      message:
+        '--merge takes runs of one tarballDigests; found ["d1"] and ["d2"] and d3.',
     });
   });
 
@@ -183,7 +240,9 @@ describe('lzMerge', () => {
       command: [{ line: 1, status: 'Killed' }],
     });
 
-    const result: unknown = JSON.parse(readFileSync(lzMerge([file], out), 'utf8'));
+    const result: unknown = JSON.parse(
+      readFileSync(lzMerge([file], out), 'utf8'),
+    );
 
     assert.deepEqual(result, {
       project: 'p',
@@ -193,7 +252,8 @@ describe('lzMerge', () => {
         command: { counts: { Killed: 1 }, score: 100, mutants: 1 },
       },
       compared: false,
-      reason: 'Two mutants share the key "index.js:1:3-1:9 StringLiteral """; the comparison would drop one.',
+      reason:
+        'Two mutants share the key "index.js:1:3-1:9 StringLiteral """; the comparison would drop one.',
     });
   });
 
@@ -203,41 +263,70 @@ describe('lzMerge', () => {
 
     writeFileSync(file, '[]');
 
-    assert.throws(() => lzMerge([file], out), { message: `${file} is not the result.json of a driver run.` });
+    assert.throws(() => lzMerge([file], out), {
+      message: `${file} is not the result.json of a driver run.`,
+    });
   });
 
   it('refuses runs of two projects', (t) => {
     const { run, out } = setup(t);
 
-    assert.throws(() => lzMerge([run('a', 'p', { lz: [] }), run('b', 'q', { command: [] })], out), {
-      message: /^--merge takes runs of one project; found p and q\.$/,
-    });
+    assert.throws(
+      () =>
+        lzMerge(
+          [run('a', 'p', { lz: [] }), run('b', 'q', { command: [] })],
+          out,
+        ),
+      {
+        message: /^--merge takes runs of one project; found p and q\.$/,
+      },
+    );
   });
 
   it('merges runs of two workspace commits whose sides ran the same Stryker configuration', (t) => {
     const { run, out } = setup(t);
     const runs = [
       run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] }),
-      run('b', 'p', { lz: [{ line: 2, status: 'Killed' }] }, { workspaceCommit: 'def456' }),
+      run(
+        'b',
+        'p',
+        { lz: [{ line: 2, status: 'Killed' }] },
+        { workspaceCommit: 'def456' },
+      ),
     ];
 
     lzMerge(runs, out);
 
-    const result: unknown = JSON.parse(readFileSync(join(out, 'result.json'), 'utf8'));
+    const result: unknown = JSON.parse(
+      readFileSync(join(out, 'result.json'), 'utf8'),
+    );
 
     assert.deepEqual(result, {
       project: 'p',
       mergedFrom: runs,
       scores: { lz: { counts: { Killed: 2 }, score: 100, mutants: 2 } },
       compared: false,
-      reason: 'Only the lz side ran; merge its result.json with a command run with --merge.',
+      reason:
+        'Only the lz side ran; merge its result.json with a command run with --merge.',
     });
   });
 
   it('refuses runs of one side with two Stryker configurations, and names both', (t) => {
     const { run, out } = setup(t);
-    const first = run('a', 'p', { command: [] }, {}, { command: 'node --test --test-concurrency=1' });
-    const second = run('b', 'p', { command: [] }, {}, { command: 'node --test --test-isolation=none' });
+    const first = run(
+      'a',
+      'p',
+      { command: [] },
+      {},
+      { command: 'node --test --test-concurrency=1' },
+    );
+    const second = run(
+      'b',
+      'p',
+      { command: [] },
+      {},
+      { command: 'node --test --test-isolation=none' },
+    );
 
     assert.throws(() => lzMerge([first, second], out), {
       message: `--merge takes runs of one Stryker configuration per side; the command sides of ${first} and ${second} ran different ones.`,
@@ -248,7 +337,14 @@ describe('lzMerge', () => {
     const { run, out } = setup(t);
     const file = run('a', 'p', { lz: [] });
 
-    writeFileSync(file, JSON.stringify({ project: 'p', ...header, sides: { lz: { stryker: { reported: true } } } }));
+    writeFileSync(
+      file,
+      JSON.stringify({
+        project: 'p',
+        ...header,
+        sides: { lz: { stryker: { reported: true } } },
+      }),
+    );
 
     assert.throws(() => lzMerge([file], out), {
       message: `The lz side of ${file} records no strykerConfig, so a merge cannot tell what it ran.`,
@@ -257,29 +353,44 @@ describe('lzMerge', () => {
 
   it('refuses an lz run and a command run whose shared project setup differs, such as their patches', (t) => {
     const { run, out } = setup(t);
-    const patched = { ...header.projectSetup, patches: [{ file: 'test/a.test.js', from: 'a', to: 'b' }] };
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { projectSetup: patched })];
+    const patched = {
+      ...header.projectSetup,
+      patches: [{ file: 'test/a.test.js', from: 'a', to: 'b' }],
+    };
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { projectSetup: patched }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
-      message: /^--merge takes runs of one projectSetup; found \{"mutate".+ and \{"mutate".+"from":"a".+\.$/,
+      message:
+        /^--merge takes runs of one projectSetup; found \{"mutate".+ and \{"mutate".+"from":"a".+\.$/,
     });
   });
 
   it('names the one entry that not every run has', (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { tarballDigests: ['d1'] })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { tarballDigests: ['d1'] }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
-      message: '--merge takes runs of one tarballDigests; some runs only have d2.',
+      message:
+        '--merge takes runs of one tarballDigests; some runs only have d2.',
     });
   });
 
   it('refuses runs whose tarballs differ in content under the same names', (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { tarballDigests: ['d1', 'd3'] })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { tarballDigests: ['d1', 'd3'] }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
-      message: '--merge takes runs of one tarballDigests; some runs only have d2, d3.',
+      message:
+        '--merge takes runs of one tarballDigests; some runs only have d2, d3.',
     });
   });
 
@@ -291,7 +402,13 @@ describe('lzMerge', () => {
         'b',
         'p',
         { command: [] },
-        { installedVersions: ['node_modules/a@1.0.0', 'node_modules/b@2.1.0', 'node_modules/c@3.0.0'] },
+        {
+          installedVersions: [
+            'node_modules/a@1.0.0',
+            'node_modules/b@2.1.0',
+            'node_modules/c@3.0.0',
+          ],
+        },
       ),
     ];
 
@@ -304,19 +421,32 @@ describe('lzMerge', () => {
 
   it('shows both lists when they hold the same entries in another order', (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { tarballDigests: ['d2', 'd1'] })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { tarballDigests: ['d2', 'd1'] }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
-      message: '--merge takes runs of one tarballDigests; found ["d1","d2"] and ["d2","d1"].',
+      message:
+        '--merge takes runs of one tarballDigests; found ["d1","d2"] and ["d2","d1"].',
     });
   });
 
   it('refuses the result.json of an older driver, naming the field it lacks', (t) => {
     const { run, out } = setup(t);
     const file = run('a', 'p', { lz: [] });
-    const older = Object.fromEntries(Object.entries(header).filter(([field]) => field !== 'installedVersions'));
+    const older = Object.fromEntries(
+      Object.entries(header).filter(([field]) => field !== 'installedVersions'),
+    );
 
-    writeFileSync(file, JSON.stringify({ project: 'p', ...older, sides: { lz: { stryker: { reported: true } } } }));
+    writeFileSync(
+      file,
+      JSON.stringify({
+        project: 'p',
+        ...older,
+        sides: { lz: { stryker: { reported: true } } },
+      }),
+    );
 
     assert.throws(() => lzMerge([file], out), {
       message: `${file} is not the result.json of a driver run that a merge can read: it lacks installedVersions.`,
@@ -325,7 +455,10 @@ describe('lzMerge', () => {
 
   it('refuses runs of two source commits', (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { sourceCommit: 'beef' })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { sourceCommit: 'beef' }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
       message: '--merge takes runs of one sourceCommit; found f00d and beef.',
@@ -334,32 +467,48 @@ describe('lzMerge', () => {
 
   it('refuses runs of two platforms', (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { platform: 'linux-arm64' })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { platform: 'linux-arm64' }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
-      message: '--merge takes runs of one platform; found win32-arm64 and linux-arm64.',
+      message:
+        '--merge takes runs of one platform; found win32-arm64 and linux-arm64.',
     });
   });
 
   it("refuses runs of two mutant timeouts, Stryker's default among them", (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { mutantTimeoutMs: null })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { mutantTimeoutMs: null }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
-      message: '--merge takes runs of one mutantTimeoutMs; found 30000 and null.',
+      message:
+        '--merge takes runs of one mutantTimeoutMs; found 30000 and null.',
     });
   });
 
   it('refuses a field written as a string in one run and a number in another', (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { mutantTimeoutMs: '30000' })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { mutantTimeoutMs: '30000' }),
+    ];
 
-    assert.throws(() => lzMerge(runs, out), { message: /^--merge takes runs of one mutantTimeoutMs; / });
+    assert.throws(() => lzMerge(runs, out), {
+      message: /^--merge takes runs of one mutantTimeoutMs; /,
+    });
   });
 
   it('refuses runs of two Node.js versions', (t) => {
     const { run, out } = setup(t);
-    const runs = [run('a', 'p', { lz: [] }), run('b', 'p', { command: [] }, { node: 'v22.23.1' })];
+    const runs = [
+      run('a', 'p', { lz: [] }),
+      run('b', 'p', { command: [] }, { node: 'v22.23.1' }),
+    ];
 
     assert.throws(() => lzMerge(runs, out), {
       message: '--merge takes runs of one node; found v24.18.1 and v22.23.1.',
@@ -402,7 +551,9 @@ describe('lzMerge', () => {
 
     lzMerge(batches, out);
 
-    const result: unknown = JSON.parse(readFileSync(join(out, 'result.json'), 'utf8'));
+    const result: unknown = JSON.parse(
+      readFileSync(join(out, 'result.json'), 'utf8'),
+    );
 
     assert.deepEqual(result, {
       project: 'p',
@@ -412,10 +563,24 @@ describe('lzMerge', () => {
         command: { counts: { Killed: 2 }, score: 100, mutants: 2 },
       },
       compared: true,
-      disagreements: [{ mutant: 'index.js:2:3-2:9 StringLiteral ""', lz: 'Survived', command: 'Killed' }],
+      disagreements: [
+        {
+          mutant: 'index.js:2:3-2:9 StringLiteral ""',
+          lz: 'Survived',
+          command: 'Killed',
+        },
+      ],
       verdicts: [
-        { mutant: 'index.js:1:3-1:9 StringLiteral ""', lz: 'Killed', command: 'Killed' },
-        { mutant: 'index.js:2:3-2:9 StringLiteral ""', lz: 'Survived', command: 'Killed' },
+        {
+          mutant: 'index.js:1:3-1:9 StringLiteral ""',
+          lz: 'Killed',
+          command: 'Killed',
+        },
+        {
+          mutant: 'index.js:2:3-2:9 StringLiteral ""',
+          lz: 'Survived',
+          command: 'Killed',
+        },
       ],
     });
   });
@@ -434,7 +599,9 @@ describe('lzMerge', () => {
     const { run, out } = setup(t);
     const file = run('a', 'p', {});
 
-    assert.throws(() => lzMerge([file], out), { message: `${file} holds no side's results.` });
+    assert.throws(() => lzMerge([file], out), {
+      message: `${file} holds no side's results.`,
+    });
   });
 
   it('refuses a merged result.json, as merges do not compose', (t) => {
@@ -452,7 +619,14 @@ describe('lzMerge', () => {
     const { run, out } = setup(t);
     const file = run('a', 'p', { lz: [{ line: 1, status: 'Killed' }] });
 
-    writeFileSync(file, JSON.stringify({ project: 'p', ...header, sides: { lz: { stryker: { reported: false } } } }));
+    writeFileSync(
+      file,
+      JSON.stringify({
+        project: 'p',
+        ...header,
+        sides: { lz: { stryker: { reported: false } } },
+      }),
+    );
 
     assert.throws(() => lzMerge([file], out), {
       message: `The lz side of ${file} wrote no report, so its lz.mutation.json is not this run's.`,
@@ -474,7 +648,14 @@ describe('lzMerge', () => {
     const { run, out } = setup(t);
     const file = run('a', 'p', { command: [] });
 
-    writeFileSync(file, JSON.stringify({ project: 'p', ...header, sides: { command: { stryker: null } } }));
+    writeFileSync(
+      file,
+      JSON.stringify({
+        project: 'p',
+        ...header,
+        sides: { command: { stryker: null } },
+      }),
+    );
 
     assert.throws(() => lzMerge([file], out), {
       message: `The command side of ${file} wrote no report, so its command.mutation.json is not this run's.`,

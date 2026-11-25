@@ -8,8 +8,18 @@ import timers from 'node:timers/promises';
 
 import { lzTestFor } from '@layzee/node-test-extensions';
 import { isRunning } from '../../src/dirs.ts';
-import { hookedEnv, readRecords, runTestFile, tempDir } from '../hook.fixtures.ts';
-import { fixture, hookUrl, reporterArg, shareCompileCache } from '../runner.fixtures.ts';
+import {
+  hookedEnv,
+  readRecords,
+  runTestFile,
+  tempDir,
+} from '../hook.fixtures.ts';
+import {
+  fixture,
+  hookUrl,
+  reporterArg,
+  shareCompileCache,
+} from '../runner.fixtures.ts';
 import { envNames } from '../../src/record.ts';
 
 // Loaded here, outside any test, the hook stays inactive (the runner did not start this process, or its own hook is
@@ -19,15 +29,26 @@ await import('../../src/hook.ts');
 shareCompileCache();
 
 describe('hook, in a process that a signal ends', () => {
-  const noSignals = process.platform === 'win32' && 'Windows has no signals to catch: every kill is TerminateProcess';
+  const noSignals =
+    process.platform === 'win32' &&
+    'Windows has no signals to catch: every kill is TerminateProcess';
 
   /** Starts a process the runner's test file started, running `script` once it says it is ready, and sends `signal`. */
-  async function signalled(t: TestContext, script: string, signal: NodeJS.Signals, outDir = tempDir(t)) {
-    const child = spawn(process.execPath, ['--import', hookUrl, '-e', `${script} process.send('ready');`], {
-      env: hookedEnv({ [envNames.out]: outDir }),
-      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
-      windowsHide: true,
-    });
+  async function signalled(
+    t: TestContext,
+    script: string,
+    signal: NodeJS.Signals,
+    outDir = tempDir(t),
+  ) {
+    const child = spawn(
+      process.execPath,
+      ['--import', hookUrl, '-e', `${script} process.send('ready');`],
+      {
+        env: hookedEnv({ [envNames.out]: outDir }),
+        stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+        windowsHide: true,
+      },
+    );
     t.after(() => child.kill('SIGKILL'));
     const exited = once(child, 'exit');
     await once(child, 'message');
@@ -48,7 +69,9 @@ describe('hook, in a process that a signal ends', () => {
     async (t) => {
       const { code } = await runTestFile(
         t,
-        fixture("it('counts', () => { assert.equal(process.listenerCount('SIGTERM'), 0); });"),
+        fixture(
+          "it('counts', () => { assert.equal(process.listenerCount('SIGTERM'), 0); });",
+        ),
       );
 
       // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
@@ -60,7 +83,11 @@ describe('hook, in a process that a signal ends', () => {
     'writes the record of a process that %s ends, which ends by that signal as it would without the hook',
     { skip: noSignals },
     async ([signal], t) => {
-      const { code, signalCode, records } = await signalled(t, 'setInterval(() => {}, 1_000);', signal);
+      const { code, signalCode, records } = await signalled(
+        t,
+        'setInterval(() => {}, 1_000);',
+        signal,
+      );
 
       // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.deepEqual([code, signalCode], [null, signal]);
@@ -74,9 +101,14 @@ describe('hook, in a process that a signal ends', () => {
     // eslint-disable-next-line node-test/no-skip-test -- POSIX only, with the reason as its value
     { skip: noSignals },
     async (t) => {
-      const script = "process.on('SIGTERM', () => process.exit(7)); setInterval(() => {}, 1_000);";
+      const script =
+        "process.on('SIGTERM', () => process.exit(7)); setInterval(() => {}, 1_000);";
 
-      const { code, signalCode, records } = await signalled(t, script, 'SIGTERM');
+      const { code, signalCode, records } = await signalled(
+        t,
+        script,
+        'SIGTERM',
+      );
 
       // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.deepEqual([code, signalCode], [7, null]);
@@ -90,9 +122,15 @@ describe('hook, in a process that a signal ends', () => {
     // eslint-disable-next-line node-test/no-skip-test -- POSIX only, with the reason as its value
     { skip: noSignals, timeout: 10_000 },
     async (t) => {
-      const script = "process.on('uncaughtException', () => {}); setInterval(() => {}, 1_000);";
+      const script =
+        "process.on('uncaughtException', () => {}); setInterval(() => {}, 1_000);";
 
-      const { code, signalCode } = await signalled(t, script, 'SIGTERM', join(tempDir(t), 'removed'));
+      const { code, signalCode } = await signalled(
+        t,
+        script,
+        'SIGTERM',
+        join(tempDir(t), 'removed'),
+      );
 
       // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
       assert.deepEqual([code, signalCode], [null, 'SIGTERM']);
@@ -101,7 +139,9 @@ describe('hook, in a process that a signal ends', () => {
 });
 
 describe('hook, in a test file whose runner is gone', () => {
-  const noGroups = process.platform === 'win32' && 'Windows has no process groups; a job object ends the test file';
+  const noGroups =
+    process.platform === 'win32' &&
+    'Windows has no process groups; a job object ends the test file';
 
   it(
     "ends the test file's process group once the process that started it is gone",
@@ -128,7 +168,10 @@ describe('hook, in a test file whose runner is gone', () => {
       ].join(' ');
       const runner = spawn(process.execPath, ['-e', script], {
         cwd: dir,
-        env: hookedEnv({ [envNames.out]: tempDir(t), [envNames.file]: testFile }),
+        env: hookedEnv({
+          [envNames.out]: tempDir(t),
+          [envNames.file]: testFile,
+        }),
         stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
         windowsHide: true,
       });
@@ -151,7 +194,10 @@ describe('hook, in a test file whose runner is gone', () => {
       }
 
       // Stryker disable next-line LzNodeTestAssertCall: runs on POSIX only, where the Linux run of this test checks it
-      assert.ok(existsSync(join(dir, 'started')), 'the test file started its test');
+      assert.ok(
+        existsSync(join(dir, 'started')),
+        'the test file started its test',
+      );
       const exited = once(runner, 'exit');
       runner.kill('SIGKILL');
       await exited;

@@ -8,7 +8,8 @@ export interface LzMutant {
   readonly column: number;
 }
 
-const malformedReport = "The mutation report does not match Stryker's JSON report schema.";
+const malformedReport =
+  "The mutation report does not match Stryker's JSON report schema.";
 
 export function lzIsRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -33,14 +34,19 @@ function parseMutant(value: unknown): LzMutant {
   return {
     mutatorName: value['mutatorName'],
     status: value['status'],
-    statusReason: typeof value['statusReason'] === 'string' ? value['statusReason'] : undefined,
+    statusReason:
+      typeof value['statusReason'] === 'string'
+        ? value['statusReason']
+        : undefined,
     line: start['line'],
     column: start['column'],
   };
 }
 
 /** The mutants of Stryker's JSON report per file; throws when the report does not match its schema. */
-export function lzParseReport(report: unknown): readonly (readonly [file: string, mutants: readonly LzMutant[]])[] {
+export function lzParseReport(
+  report: unknown,
+): readonly (readonly [file: string, mutants: readonly LzMutant[]])[] {
   const files = lzIsRecord(report) ? report['files'] : undefined;
 
   if (!lzIsRecord(files)) {

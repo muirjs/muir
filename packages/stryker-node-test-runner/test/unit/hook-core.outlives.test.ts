@@ -29,7 +29,13 @@ function fireOnlyTimer(h: Harness): void {
 
 /** node:test enqueues a top-level suite or test as it registers it, unless one of its filters leaves it out. */
 function enqueue(deps: HookDependencies, ...names: readonly string[]): void {
-  send(deps, ...names.map((name) => ({ type: 'test:enqueue', data: { name, nesting: 0 } })));
+  send(
+    deps,
+    ...names.map((name) => ({
+      type: 'test:enqueue',
+      data: { name, nesting: 0 },
+    })),
+  );
 }
 
 describe('install', () => {
@@ -43,7 +49,10 @@ describe('install', () => {
       h.wrapped().it('passes', () => {});
 
       assert.deepEqual(
-        h.fake.registrations.map(({ kind, self }) => [kind, self === h.fake.module]),
+        h.fake.registrations.map(({ kind, self }) => [
+          kind,
+          self === h.fake.module,
+        ]),
         [
           ['after', true],
           ['after', false],
@@ -67,7 +76,12 @@ describe('install', () => {
         main: true,
         tests: [
           { id: `${testFile} > passes`, status: 'passed', timeSpentMs: 2 },
-          { id: `${testFile} > fails`, status: 'failed', failureMessage: 'fails failed', timeSpentMs: 2 },
+          {
+            id: `${testFile} > fails`,
+            status: 'failed',
+            failureMessage: 'fails failed',
+            timeSpentMs: 2,
+          },
         ],
         lifetime,
         testSpans: spans('passes', 'fails'),
@@ -82,29 +96,48 @@ describe('install', () => {
       });
       enqueue(h.deps, 'fails', 'suite');
       // node:test enqueues a suite's tests too, one level down.
-      send(h.deps, { type: 'test:enqueue', data: { name: 'inner', nesting: 1 } });
+      send(h.deps, {
+        type: 'test:enqueue',
+        data: { name: 'inner', nesting: 1 },
+      });
       afterHook(h.fake, 0)();
       report(h.deps, 'fails', 'fail');
       send(h.deps, {
         type: 'test:pass',
-        data: { name: 'inner', nesting: 1, details: { type: 'test', duration_ms: 1 } },
+        data: {
+          name: 'inner',
+          nesting: 1,
+          details: { type: 'test', duration_ms: 1 },
+        },
       });
       // A failing root hook, reported as a failure of the file itself.
       send(h.deps, {
         type: 'test:fail',
-        data: { name: testFile, nesting: 0, details: { duration_ms: 1, error: { message: 'hook failed' } } },
+        data: {
+          name: testFile,
+          nesting: 0,
+          details: { duration_ms: 1, error: { message: 'hook failed' } },
+        },
       });
       // node:test reports that a suite completed before it reports its result.
       send(h.deps, {
         type: 'test:complete',
-        data: { name: 'suite', nesting: 0, details: { type: 'suite', duration_ms: 1 } },
+        data: {
+          name: 'suite',
+          nesting: 0,
+          details: { type: 'suite', duration_ms: 1 },
+        },
       });
 
       assert.deepEqual(h.exits, []);
 
       send(h.deps, {
         type: 'test:pass',
-        data: { name: 'suite', nesting: 0, details: { type: 'suite', duration_ms: 1 } },
+        data: {
+          name: 'suite',
+          nesting: 0,
+          details: { type: 'suite', duration_ms: 1 },
+        },
       });
 
       assert.deepEqual(h.exits, [1]);
@@ -139,7 +172,10 @@ describe('install', () => {
       ['the default of, for 0,', '0', 30_000],
       ['250 ms, as set in', '250', 250],
     ])('waits %s the held-open variable', ([, heldOpen, ms]) => {
-      const h = installedHarness({ ...fileEnv(), [envNames.heldOpen]: heldOpen });
+      const h = installedHarness({
+        ...fileEnv(),
+        [envNames.heldOpen]: heldOpen,
+      });
       h.wrapped().it('passes', () => {});
       afterHook(h.fake, 0)();
 
@@ -150,8 +186,16 @@ describe('install', () => {
     });
 
     lzTestFor<readonly [string, boolean, Record<string, unknown>]>([
-      ['node:test reported every top-level test', true, { heldOpen: ['TCPServerWrap', 'PipeWrap'] }],
-      ['a top-level test was not reported', false, { unfinished: true, heldOpen: ['TCPServerWrap', 'PipeWrap'] }],
+      [
+        'node:test reported every top-level test',
+        true,
+        { heldOpen: ['TCPServerWrap', 'PipeWrap'] },
+      ],
+      [
+        'a top-level test was not reported',
+        false,
+        { unfinished: true, heldOpen: ['TCPServerWrap', 'PipeWrap'] },
+      ],
     ])(
       "ends a file still alive when the grace ends with node:test's exit code, naming what its tests opened, when %s",
       async ([, reported, marks]) => {
@@ -172,7 +216,9 @@ describe('install', () => {
         assert.deepEqual(h.exits, [undefined]);
         assert.deepEqual(h.records[0]?.record, {
           main: true,
-          tests: reported ? [{ id: `${testFile} > passes`, status: 'passed', timeSpentMs: 2 }] : [],
+          tests: reported
+            ? [{ id: `${testFile} > passes`, status: 'passed', timeSpentMs: 2 }]
+            : [],
           ...marks,
           lifetime,
           testSpans: spans('passes'),
@@ -182,7 +228,10 @@ describe('install', () => {
 
     /** A file with one test that has started and not ended, whose event loop has emptied; `stall` sets its stall time. */
     function stalling(stall: number | undefined): Harness {
-      const h = installedHarness({ ...fileEnv(), [envNames.stall]: stall === undefined ? undefined : String(stall) });
+      const h = installedHarness({
+        ...fileEnv(),
+        [envNames.stall]: stall === undefined ? undefined : String(stall),
+      });
       h.wrapped().it('waits', () => {});
       enqueue(h.deps, 'waits');
       void bodyOf(h.fake.registrations, 'waits')(testContext());
@@ -216,7 +265,10 @@ describe('install', () => {
       [
         'node:test reports its summary',
         (h) => {
-          send(h.deps, { type: 'test:summary', data: { name: '', nesting: 0 } });
+          send(h.deps, {
+            type: 'test:summary',
+            data: { name: '', nesting: 0 },
+          });
         },
       ],
     ])('keeps a file running when %s within the stall time', ([, then]) => {
@@ -247,15 +299,18 @@ describe('install', () => {
       assert.deepEqual(h.timers, []);
     });
 
-    lzTestFor([1, 2 ** 31 - 1])('waits a stall time of %s ms, which a timer can hold', (stall) => {
-      const h = stalling(stall);
-      h.emptied();
+    lzTestFor([1, 2 ** 31 - 1])(
+      'waits a stall time of %s ms, which a timer can hold',
+      (stall) => {
+        const h = stalling(stall);
+        h.emptied();
 
-      assert.deepEqual(
-        h.timers.map(({ ms }) => ms),
-        [stall],
-      );
-    });
+        assert.deepEqual(
+          h.timers.map(({ ms }) => ms),
+          [stall],
+        );
+      },
+    );
 
     it('takes the stall variable out of the environment that the tests and the processes they start see', () => {
       const h = stalling(300);
@@ -271,12 +326,18 @@ describe('install', () => {
       fireOnlyTimer(h);
       h.exit({ natural: false });
 
-      assert.deepEqual(h.records[0]?.record.heldOpen, ['TCPServerWrap', 'Timeout']);
+      assert.deepEqual(h.records[0]?.record.heldOpen, [
+        'TCPServerWrap',
+        'Timeout',
+      ]);
     });
 
     it("starts the grace once the test file's root `after` hooks have settled, also one added while they run", async () => {
       const h = installedHarness(fileEnv());
-      const { promise: firstSettles, resolve: resolveFirst }: PromiseWithResolvers<void> = Promise.withResolvers();
+      const {
+        promise: firstSettles,
+        resolve: resolveFirst,
+      }: PromiseWithResolvers<void> = Promise.withResolvers();
       h.wrapped().after(() => firstSettles);
       h.wrapped().after(() => {});
       const finished = afterHook(h.fake, 0);
@@ -299,7 +360,9 @@ describe('install', () => {
       assert.deepEqual([h.timers.length, h.exits], [1, [1]]);
     });
 
-    lzTestFor<readonly [string, (context?: unknown, done?: unknown) => unknown]>([
+    lzTestFor<
+      readonly [string, (context?: unknown, done?: unknown) => unknown]
+    >([
       [
         'throws',
         (): unknown => {
@@ -313,23 +376,26 @@ describe('install', () => {
         },
       ],
       ['rejects', (): unknown => Promise.reject(new Error('after failed'))],
-    ])('stops waiting at a root `after` hook that %s, as node:test runs none after it', async ([, hook]) => {
-      const h = installedHarness(fileEnv());
-      h.wrapped().after(hook);
-      h.wrapped().after(() => {});
-      const finished = afterHook(h.fake, 0);
-      const failing = afterHook(h.fake, 1);
+    ])(
+      'stops waiting at a root `after` hook that %s, as node:test runs none after it',
+      async ([, hook]) => {
+        const h = installedHarness(fileEnv());
+        h.wrapped().after(hook);
+        h.wrapped().after(() => {});
+        const finished = afterHook(h.fake, 0);
+        const failing = afterHook(h.fake, 1);
 
-      finished();
-      await assert.rejects(
-        async () => {
-          await failing();
-        },
-        { message: 'after failed' },
-      );
+        finished();
+        await assert.rejects(
+          async () => {
+            await failing();
+          },
+          { message: 'after failed' },
+        );
 
-      assert.equal(h.timers.length, 1);
-    });
+        assert.equal(h.timers.length, 1);
+      },
+    );
 
     lzTestFor([
       ['with no error, once it calls back', undefined],
@@ -338,11 +404,13 @@ describe('install', () => {
       const h = installedHarness(fileEnv());
       const passed: unknown[] = [];
       let callBack = () => {};
-      h.wrapped().after((_context: unknown, done: (error?: unknown) => void) => {
-        callBack = () => {
-          done(error);
-        };
-      });
+      h.wrapped().after(
+        (_context: unknown, done: (error?: unknown) => void) => {
+          callBack = () => {
+            done(error);
+          };
+        },
+      );
       h.wrapped().after(() => {});
       const finished = afterHook(h.fake, 0);
       const callbackHook = afterHook(h.fake, 1);
@@ -378,18 +446,34 @@ describe('install', () => {
     };
 
     lzTestFor<readonly [string, string, TestEvent, number]>([
-      ['starts', 'node:test reports the file failed once the tests finished', fileFailure, 1],
+      [
+        'starts',
+        'node:test reports the file failed once the tests finished',
+        fileFailure,
+        1,
+      ],
       [
         'does not start',
         'a nested failure has no type',
         { ...fileFailure, data: { ...fileFailure.data, nesting: 1 } },
         0,
       ],
-      ['does not start', 'the file passed', { ...fileFailure, type: 'test:pass' }, 0],
+      [
+        'does not start',
+        'the file passed',
+        { ...fileFailure, type: 'test:pass' },
+        0,
+      ],
       [
         'does not start',
         'a top-level test failed',
-        { ...fileFailure, data: { ...fileFailure.data, details: { type: 'test', duration_ms: 1 } } },
+        {
+          ...fileFailure,
+          data: {
+            ...fileFailure.data,
+            details: { type: 'test', duration_ms: 1 },
+          },
+        },
         0,
       ],
     ])(

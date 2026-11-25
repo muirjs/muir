@@ -27,7 +27,11 @@ export interface CallSite {
  */
 export type Body = (this: unknown, ...args: never[]) => unknown;
 type Registrar = (this: unknown, name: string, ...rest: unknown[]) => unknown;
-type HookRegistrar = (this: unknown, hook?: Body, ...rest: unknown[]) => unknown;
+type HookRegistrar = (
+  this: unknown,
+  hook?: Body,
+  ...rest: unknown[]
+) => unknown;
 /**
  * A node:test function with its shorthands, which do not call the function itself. Tests have `expectFailure` from
  * Node.js 24.
@@ -64,7 +68,10 @@ interface LzTestContext {
 }
 
 /** The functions the wrapper replaces on node:test's test context for the test body. */
-type LzTestContextOverrides = Pick<LzTestContext, 'test' | 'after' | 'beforeEach'>;
+type LzTestContextOverrides = Pick<
+  LzTestContext,
+  'test' | 'after' | 'beforeEach'
+>;
 
 const lzTestContextKeys: { readonly [TKey in keyof LzTestContext]: TKey } = {
   test: 'test',
@@ -74,7 +81,12 @@ const lzTestContextKeys: { readonly [TKey in keyof LzTestContext]: TKey } = {
 };
 
 function isLzTestContext(context: unknown): context is LzTestContext {
-  return isObject(context) && Object.values(lzTestContextKeys).every((key) => typeof context[key] === 'function');
+  return (
+    isObject(context) &&
+    Object.values(lzTestContextKeys).every(
+      (key) => typeof context[key] === 'function',
+    )
+  );
 }
 
 /**
@@ -96,7 +108,8 @@ export function settling(
   begin: (context: unknown) => LzBegun,
   run: (call: () => unknown) => unknown = (call) => call(),
 ): Body {
-  const call = (self: unknown, args: unknown[]): unknown => run(() => Reflect.apply(fn, self, args));
+  const call = (self: unknown, args: unknown[]): unknown =>
+    run(() => Reflect.apply(fn, self, args));
   const callingBack: HookFn = function (this: unknown, context, done) {
     const begun = begin(context);
 
@@ -129,7 +142,11 @@ export function settling(
       }
     }
   };
-  const callPromising = async (self: unknown, args: unknown[], settle: (failed: boolean) => void) => {
+  const callPromising = async (
+    self: unknown,
+    args: unknown[],
+    settle: (failed: boolean) => void,
+  ) => {
     let value: unknown;
 
     try {
@@ -186,7 +203,10 @@ interface WrapOptions {
 }
 
 /** `hook` calling `first` with its context before it runs. */
-function lzPreceded(hook: Body | undefined, first: (context: unknown) => void): Body | undefined {
+function lzPreceded(
+  hook: Body | undefined,
+  first: (context: unknown) => void,
+): Body | undefined {
   // node:test registers a hook without a function, as one that does nothing.
   if (typeof hook !== 'function') {
     return hook;
@@ -209,7 +229,8 @@ function lzPreceded(hook: Body | undefined, first: (context: unknown) => void): 
  * `t.runOnly(true)` test, and skips one whose `only` is false.
  */
 function lzOnlyRules(testOnly: boolean) {
-  const ignoringOnly = <T>(withOnly: T, without: T): T => (testOnly ? withOnly : without);
+  const ignoringOnly = <T>(withOnly: T, without: T): T =>
+    testOnly ? withOnly : without;
   /** Makes `t.runOnly` do nothing on a context node:test passes to a test body or hook, without --test-only. */
   const turnOffRunOnly = ignoringOnly(
     (_context: unknown) => undefined,
@@ -222,11 +243,18 @@ function lzOnlyRules(testOnly: boolean) {
 
   return {
     /** The register function for `only`: node:test's own, or its plain one without --test-only. */
-    only: (register: WithShorthands<Body>): Body => ignoringOnly(register.only, register),
+    only: (register: WithShorthands<Body>): Body =>
+      ignoringOnly(register.only, register),
     withoutOnly: (options: object | null | undefined): object =>
-      ignoringOnly(options ?? {}, Object.fromEntries(Object.entries(options ?? {}).filter(([key]) => key !== 'only'))),
+      ignoringOnly(
+        options ?? {},
+        Object.fromEntries(
+          Object.entries(options ?? {}).filter(([key]) => key !== 'only'),
+        ),
+      ),
     turnOffRunOnly,
-    ignoringRunOnly: (hook: Body | undefined) => ignoringOnly(hook, lzPreceded(hook, turnOffRunOnly)),
+    ignoringRunOnly: (hook: Body | undefined) =>
+      ignoringOnly(hook, lzPreceded(hook, turnOffRunOnly)),
   };
 }
 
@@ -252,7 +280,11 @@ export function lzCurrentTests({
   /** The test whose span is open, and the test of the span opened last. */
   let spanning: string | undefined;
   let latest: string | undefined;
-  const closeSpan = (spans: Map<string, readonly LzTimeWindow[]>, id: string, time: number) => {
+  const closeSpan = (
+    spans: Map<string, readonly LzTimeWindow[]>,
+    id: string,
+    time: number,
+  ) => {
     const own = spans.get(id) ?? [];
     const open = own.at(-1);
 
@@ -272,7 +304,10 @@ export function lzCurrentTests({
     }
 
     if (id !== undefined && id !== latest) {
-      testSpans.set(id, [...(testSpans.get(id) ?? []), { start: time, end: time }]);
+      testSpans.set(id, [
+        ...(testSpans.get(id) ?? []),
+        { start: time, end: time },
+      ]);
       latest = id;
     }
 
@@ -302,7 +337,9 @@ export function lzCurrentTests({
     };
   };
 
-  const spansAt = (time: number): Readonly<Record<string, readonly LzTimeWindow[]>> => {
+  const spansAt = (
+    time: number,
+  ): Readonly<Record<string, readonly LzTimeWindow[]>> => {
     const spans = new Map(testSpans);
 
     if (spanning !== undefined) {
@@ -345,14 +382,16 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
   const running = new AsyncLocalStorage<string>();
   const parentId = () => running.getStore() ?? testFile;
   const bailed = () => bail && tests.some((test) => test.status === 'failed');
-  const { only, withoutOnly, turnOffRunOnly, ignoringRunOnly } = lzOnlyRules(testOnly);
+  const { only, withoutOnly, turnOffRunOnly, ignoringRunOnly } =
+    lzOnlyRules(testOnly);
   const { makeCurrent, isActive } = currentTests;
   /**
    * Whether the filter selects the test, a test it lies inside, or a subtest of it, which the test must run to
    * register. A selected test runs whole, subtests included, as Stryker covers a subtest's assertions with its parent.
    * A test file in the filter selects all its tests.
    */
-  const selected = (id: string) => !filter || [...filter].some((test) => within(test, id) || within(id, test));
+  const selected = (id: string) =>
+    !filter || [...filter].some((test) => within(test, id) || within(id, test));
   const activate = () => {
     if (activeMutant !== undefined) {
       ns.activeMutant = activeMutant;
@@ -362,7 +401,10 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
   /** Like node:test's own filters, a suite without a selected test runs its body and registers none of its hooks. */
   const wrapHook = (
     register: Body,
-    prepare: (hook: Body | undefined, suite: string | undefined) => Body | undefined = (hook) => hook,
+    prepare: (
+      hook: Body | undefined,
+      suite: string | undefined,
+    ) => Body | undefined = (hook) => hook,
   ): HookRegistrar =>
     function (this: unknown, hook?: Body, ...rest: unknown[]): unknown {
       const suite = running.getStore();
@@ -373,7 +415,10 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
 
       registering();
 
-      return Reflect.apply(register, this, [ignoringRunOnly(prepare(hook, suite)), ...rest]);
+      return Reflect.apply(register, this, [
+        ignoringRunOnly(prepare(hook, suite)),
+        ...rest,
+      ]);
     };
   /**
    * node:test's `fullName` of each suite and test, by id, and the test each `fullName` names, or none for a suite or
@@ -382,11 +427,17 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
   const fullNames = new Map<string, string>();
   const testsByFullName = new Map<string, string | undefined>();
   const testOf = (context: unknown) =>
-    typeof context === 'object' && context !== null && 'fullName' in context && typeof context.fullName === 'string'
+    typeof context === 'object' &&
+    context !== null &&
+    'fullName' in context &&
+    typeof context.fullName === 'string'
       ? testsByFullName.get(context.fullName)
       : undefined;
   /** Makes the test that `find` names current while the hook runs, unless that test is running already. */
-  const attributing = (hook: Body | undefined, find: (context: unknown) => string | undefined): Body | undefined => {
+  const attributing = (
+    hook: Body | undefined,
+    find: (context: unknown) => string | undefined,
+  ): Body | undefined => {
     if (typeof hook !== 'function') {
       return hook;
     }
@@ -418,9 +469,13 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
     const id = idOf(parent, name);
     // Only suites and tests have a full name, so a parent without one is the test file.
     const parentName = fullNames.get(parent);
-    const fullName = parentName === undefined ? name : `${parentName} > ${name}`;
+    const fullName =
+      parentName === undefined ? name : `${parentName} > ${name}`;
     fullNames.set(id, fullName);
-    testsByFullName.set(fullName, test && !testsByFullName.has(fullName) ? id : undefined);
+    testsByFullName.set(
+      fullName,
+      test && !testsByFullName.has(fullName) ? id : undefined,
+    );
     declare(id);
 
     return id;
@@ -433,8 +488,13 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
    */
   const parse = (args: unknown[]) => {
     const body = args.find((arg): arg is Body => typeof arg === 'function');
-    const options = args.find((arg): arg is object | null => typeof arg === 'object');
-    const name = typeof args[0] === 'string' && args[0] !== '' ? args[0] : body?.name || '<anonymous>';
+    const options = args.find(
+      (arg): arg is object | null => typeof arg === 'object',
+    );
+    const name =
+      typeof args[0] === 'string' && args[0] !== ''
+        ? args[0]
+        : body?.name || '<anonymous>';
 
     return { name, options, body };
   };
@@ -446,9 +506,21 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
   const registerWith = (
     register: Body,
     self: unknown,
-    { name, options, body }: { name: string; options: object | null | undefined; body: Body | undefined },
+    {
+      name,
+      options,
+      body,
+    }: {
+      name: string;
+      options: object | null | undefined;
+      body: Body | undefined;
+    },
   ): unknown =>
-    Reflect.apply(register, self, [name, { ...withoutOnly(options), concurrency: false }, ...(body ? [body] : [])]);
+    Reflect.apply(register, self, [
+      name,
+      { ...withoutOnly(options), concurrency: false },
+      ...(body ? [body] : []),
+    ]);
 
   const wrapSuite = (register: Body): Registrar =>
     function (this: unknown, ...args: unknown[]) {
@@ -456,10 +528,15 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
       const id = named(parentId(), parsed.name, false);
       const wrap = (suiteBody: Body) =>
         function (this: unknown, ...bodyArgs: unknown[]) {
-          return running.run(id, (): unknown => Reflect.apply(suiteBody, this, bodyArgs));
+          return running.run(id, (): unknown =>
+            Reflect.apply(suiteBody, this, bodyArgs),
+          );
         };
 
-      return registerWith(register, this, { ...parsed, body: parsed.body && wrap(parsed.body) });
+      return registerWith(register, this, {
+        ...parsed,
+        body: parsed.body && wrap(parsed.body),
+      });
     };
 
   const wrapTest = (register: Body, parent = parentId): Registrar =>
@@ -485,9 +562,15 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
           // `t.test` registers a subtest of `t`'s test, wherever it is called.
           test: wrapTest(context.test, () => id),
           after: (hook?: Body, ...rest: unknown[]): unknown =>
-            Reflect.apply(after, context, [attributing(hook, () => id), ...rest]),
+            Reflect.apply(after, context, [
+              attributing(hook, () => id),
+              ...rest,
+            ]),
           beforeEach: (hook?: Body, ...rest: unknown[]): unknown =>
-            Reflect.apply(beforeEach, context, [attributing(ignoringRunOnly(hook), testOf), ...rest]),
+            Reflect.apply(beforeEach, context, [
+              attributing(ignoringRunOnly(hook), testOf),
+              ...rest,
+            ]),
         };
         // The test body gets node:test's own context, not a copy, as the context's members read its private fields.
         Object.assign(context, overrides);
@@ -509,12 +592,17 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
 
         return { kind: 'settle', settle: enter(context) };
       };
-      const wrap = (body: Body) => settling(body, begin, (call) => running.run(id, call));
+      const wrap = (body: Body) =>
+        settling(body, begin, (call) => running.run(id, call));
 
       // A test registered as skipped runs neither its body nor its beforeEach and afterEach hooks.
       const skip = !selected(id) && { skip: true };
 
-      return registerWith(register, this, { ...parsed, options: { ...options, ...skip }, body: body && wrap(body) });
+      return registerWith(register, this, {
+        ...parsed,
+        options: { ...options, ...skip },
+        body: body && wrap(body),
+      });
     };
 
   // The bodies of skipped suites and tests never run, so `skip` only notes where they are declared.
@@ -530,12 +618,17 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
         args.map((arg) => (arg === options ? withoutOnly(options) : arg)),
       );
     };
-  const withShorthands = (original: WithShorthands<Body>, wrap: (register: Body) => Registrar): Register =>
+  const withShorthands = (
+    original: WithShorthands<Body>,
+    wrap: (register: Body) => Registrar,
+  ): Register =>
     Object.assign(wrap(original), original, {
       skip: declareSkipped(original.skip),
       todo: wrap(original.todo),
       only: wrap(only(original)),
-      ...(original.expectFailure && { expectFailure: wrap(original.expectFailure) }),
+      ...(original.expectFailure && {
+        expectFailure: wrap(original.expectFailure),
+      }),
     });
   // The module is node:test's `test` function, which also carries the other functions; `it` is the same function.
   const test = withShorthands(nodeTest, wrapTest);
@@ -547,8 +640,12 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
     test,
     // A `before` hook outside any suite runs as soon as it is registered, while the file loads, like the rest of the
     // file's top level; it runs before the mutant is active.
-    before: wrapHook(nodeTest.before, (hook, suite) => (suite === undefined ? hook : activating(hook))),
-    beforeEach: wrapHook(nodeTest.beforeEach, (hook) => attributing(activating(hook), testOf)),
+    before: wrapHook(nodeTest.before, (hook, suite) =>
+      suite === undefined ? hook : activating(hook),
+    ),
+    beforeEach: wrapHook(nodeTest.beforeEach, (hook) =>
+      attributing(activating(hook), testOf),
+    ),
     after: wrapHook(nodeTest.after, (hook, suite) => {
       // node:test reports a failing `after` hook outside any suite as a failure of the test file, at the position it
       // takes from its caller, which is this wrapper.
@@ -560,7 +657,9 @@ export function wrapNodeTest(options: WrapOptions): NodeTestModule {
 
       declare(afterHookId(testFile));
 
-      return typeof attributed === 'function' ? rootAfter(attributed) : attributed;
+      return typeof attributed === 'function'
+        ? rootAfter(attributed)
+        : attributed;
     }),
     afterEach: wrapHook(nodeTest.afterEach),
   });

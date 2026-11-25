@@ -9,18 +9,29 @@ export function lzNodeOptionArgs(nodeOptions: string | undefined): string[] {
  * as `-`.
  */
 function optionRest(arg: string, name: string): string | undefined {
-  const option = arg.replaceAll('"', '').replace(/[^=]*/, (optionName) => optionName.replaceAll('_', '-'));
+  const option = arg
+    .replaceAll('"', '')
+    .replace(/[^=]*/, (optionName) => optionName.replaceAll('_', '-'));
 
-  return option === name || option.startsWith(`${name}=`) ? option.slice(name.length) : undefined;
+  return option === name || option.startsWith(`${name}=`)
+    ? option.slice(name.length)
+    : undefined;
 }
 
 // Stryker disable next-line StringLiteral: equivalent, as any default but a bare reporter option keeps the first argument
 const reporterOption = (arg = '') =>
-  optionRest(arg, '--test-reporter') ?? optionRest(arg, '--test-reporter-destination');
+  optionRest(arg, '--test-reporter') ??
+  optionRest(arg, '--test-reporter-destination');
 
 /** Whether `arg` adds a node:test reporter or a reporter destination, or is the value that follows a bare one. */
-function isReporterArg(arg: string, index: number, args: readonly string[]): boolean {
-  return reporterOption(arg) !== undefined || reporterOption(args[index - 1]) === '';
+function isReporterArg(
+  arg: string,
+  index: number,
+  args: readonly string[],
+): boolean {
+  return (
+    reporterOption(arg) !== undefined || reporterOption(args[index - 1]) === ''
+  );
 }
 
 /**
@@ -45,7 +56,10 @@ export function lzConsumerNodeOptions(base: NodeJS.ProcessEnv): string[] {
  * Whether node runs with --test-only, from its NODE_OPTIONS and then `execArgv`, which takes precedence. The last of
  * `--test-only`, `--test-only=<value>` and `--no-test-only` wins; node reads any value as on, `false` too.
  */
-export function lzTestOnly(execArgv: readonly string[], nodeOptions: string | undefined): boolean {
+export function lzTestOnly(
+  execArgv: readonly string[],
+  nodeOptions: string | undefined,
+): boolean {
   let testOnly = false;
 
   for (const arg of [...lzNodeOptionArgs(nodeOptions), ...execArgv]) {

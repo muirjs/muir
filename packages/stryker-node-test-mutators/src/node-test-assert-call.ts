@@ -1,6 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
-import { lzAwaited, type LzBabelTypes, type LzMutator } from '@layzee/stryker-mutator-core';
+import {
+  lzAwaited,
+  type LzBabelTypes,
+  type LzMutator,
+} from '@layzee/stryker-mutator-core';
 import { lzAssertMethod } from '@layzee/stryker-node-mutators/bindings';
 
 const message = 'Stryker: assertion reached';
@@ -19,8 +23,14 @@ export const nodeTestAssertCall: LzMutator = {
   name: 'LzNodeTestAssertCall',
   sample: 'export function check(t: any) {\n  t.assert.ok(true);\n}\n',
   *mutate(path, t) {
-    if (path.isExpressionStatement() && assertionMethod(path, lzAwaited(path.node.expression)) !== undefined) {
-      yield t.blockStatement([t.cloneNode(path.node), t.throwStatement(error(t))]);
+    if (
+      path.isExpressionStatement() &&
+      assertionMethod(path, lzAwaited(path.node.expression)) !== undefined
+    ) {
+      yield t.blockStatement([
+        t.cloneNode(path.node),
+        t.throwStatement(error(t)),
+      ]);
     }
 
     if (path.isCallExpression() && isTail(path)) {
@@ -28,7 +38,11 @@ export const nodeTestAssertCall: LzMutator = {
 
       if (method !== undefined) {
         yield t.parenthesizedExpression(
-          t.conditionalExpression(t.booleanLiteral(true), failure(t, method), t.cloneNode(path.node)),
+          t.conditionalExpression(
+            t.booleanLiteral(true),
+            failure(t, method),
+            t.cloneNode(path.node),
+          ),
         );
       }
     }
@@ -41,19 +55,34 @@ function error(t: LzBabelTypes): types.NewExpression {
 
 function failure(t: LzBabelTypes, method: string): types.CallExpression {
   if (asyncMethods.has(method)) {
-    return t.callExpression(t.memberExpression(t.identifier('Promise'), t.identifier('reject')), [error(t)]);
+    return t.callExpression(
+      t.memberExpression(t.identifier('Promise'), t.identifier('reject')),
+      [error(t)],
+    );
   }
 
-  return t.callExpression(t.arrowFunctionExpression([], t.blockStatement([t.throwStatement(error(t))])), []);
+  return t.callExpression(
+    t.arrowFunctionExpression(
+      [],
+      t.blockStatement([t.throwStatement(error(t))]),
+    ),
+    [],
+  );
 }
 
 function isTail(path: NodePath): boolean {
   const value = path.parent.type === 'AwaitExpression' ? path.parentPath : path;
 
-  return value.parent.type === 'ArrowFunctionExpression' || value.parent.type === 'ReturnStatement';
+  return (
+    value.parent.type === 'ArrowFunctionExpression' ||
+    value.parent.type === 'ReturnStatement'
+  );
 }
 
-function assertionMethod(path: NodePath, node: types.Expression): string | undefined {
+function assertionMethod(
+  path: NodePath,
+  node: types.Expression,
+): string | undefined {
   if (node.type !== 'CallExpression') {
     return undefined;
   }

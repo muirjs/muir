@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { DryRunStatus, MutantRunStatus } from '@stryker-mutator/api/test-runner';
+import {
+  DryRunStatus,
+  MutantRunStatus,
+} from '@stryker-mutator/api/test-runner';
 
 import {
   dryRun,
@@ -17,12 +20,16 @@ import {
 shareCompileCache();
 
 const server = "import { createServer } from 'node:http';";
-const listen = 'await new Promise((resolve) => createServer().listen(0, resolve));';
+const listen =
+  'await new Promise((resolve) => createServer().listen(0, resolve));';
 
 describe('LzNodeTestTestRunner with a test file that its tests keep alive', () => {
   it('reports a mutant killed at once when a failed test leaves a server listening', async (t) => {
     const dir = project(t, {
-      'a.test.mjs': fixture(server, `it('fails', async () => { ${listen} assert.fail('expected failure'); });`),
+      'a.test.mjs': fixture(
+        server,
+        `it('fails', async () => { ${listen} assert.fail('expected failure'); });`,
+      ),
     });
     const runner = await initRunner(['a.test.mjs']);
 
@@ -40,7 +47,11 @@ describe('LzNodeTestTestRunner with a test file that its tests keep alive', () =
         "it('filtered out', () => {});",
       ),
     });
-    const runner = await initRunner(['a.test.mjs'], { nodeArgs: ['--test-name-pattern=fails'] }, { heldOpenMs: 5000 });
+    const runner = await initRunner(
+      ['a.test.mjs'],
+      { nodeArgs: ['--test-name-pattern=fails'] },
+      { heldOpenMs: 5000 },
+    );
     const started = Date.now();
 
     const result = await settle(runner.mutantRun(mutantRunOptions()));
@@ -51,8 +62,12 @@ describe('LzNodeTestTestRunner with a test file that its tests keep alive', () =
   });
 
   it('ends the dry run of a test file whose passing test leaves a server listening as an error that says what to do', async (t) => {
-    const dir = project(t, { 'a.test.mjs': fixture(server, `it('passes', async () => { ${listen} });`) });
-    const runner = await initRunner(['a.test.mjs'], undefined, { heldOpenMs: 200 });
+    const dir = project(t, {
+      'a.test.mjs': fixture(server, `it('passes', async () => { ${listen} });`),
+    });
+    const runner = await initRunner(['a.test.mjs'], undefined, {
+      heldOpenMs: 200,
+    });
 
     assert.deepEqual(await settle(runner.dryRun(dryRun)), {
       status: DryRunStatus.Error,
@@ -66,19 +81,37 @@ describe('LzNodeTestTestRunner with a test file that its tests keep alive', () =
 
   it('ends the dry run of a held-open file as held open also when node:test filters out a top-level test', async (t) => {
     project(t, {
-      'a.test.mjs': fixture(server, `it('passes', async () => { ${listen} });`, "it('filtered out', () => {});"),
+      'a.test.mjs': fixture(
+        server,
+        `it('passes', async () => { ${listen} });`,
+        "it('filtered out', () => {});",
+      ),
     });
-    const runner = await initRunner(['a.test.mjs'], { nodeArgs: ['--test-name-pattern=passes'] }, { heldOpenMs: 200 });
+    const runner = await initRunner(
+      ['a.test.mjs'],
+      { nodeArgs: ['--test-name-pattern=passes'] },
+      { heldOpenMs: 200 },
+    );
 
     const result = await settle(runner.dryRun(dryRun));
 
     assert.equal(result.status, DryRunStatus.Error);
-    assert.match(result.errorMessage, /stayed alive .* held open by TCPServerWrap,/);
+    assert.match(
+      result.errorMessage,
+      /stayed alive .* held open by TCPServerWrap,/,
+    );
   });
 
   it('reports a mutant whose passing test leaves servers listening as timed out, naming them', async (t) => {
-    const dir = project(t, { 'a.test.mjs': fixture(server, `it('passes', async () => { ${listen} ${listen} });`) });
-    const runner = await initRunner(['a.test.mjs'], undefined, { heldOpenMs: 200 });
+    const dir = project(t, {
+      'a.test.mjs': fixture(
+        server,
+        `it('passes', async () => { ${listen} ${listen} });`,
+      ),
+    });
+    const runner = await initRunner(['a.test.mjs'], undefined, {
+      heldOpenMs: 200,
+    });
 
     assert.deepEqual(await settle(runner.mutantRun(mutantRunOptions())), {
       status: MutantRunStatus.Timeout,
@@ -93,7 +126,9 @@ describe('LzNodeTestTestRunner with a test file that its tests keep alive', () =
         `it('passes', async () => { ${listen} setTimeout(() => { throw new Error('late'); }, 10); });`,
       ),
     });
-    const runner = await initRunner(['a.test.mjs'], undefined, { heldOpenMs: 500 });
+    const runner = await initRunner(['a.test.mjs'], undefined, {
+      heldOpenMs: 500,
+    });
 
     const result = await settle(runner.mutantRun(mutantRunOptions()));
 
@@ -117,9 +152,14 @@ describe('LzNodeTestTestRunner with a test file that its tests keep alive', () =
         "it('passes', async () => { await new Promise((resolve) => server.listen(0, resolve)); });",
       ),
     });
-    const runner = await initRunner(['a.test.mjs'], undefined, { heldOpenMs: 200 });
+    const runner = await initRunner(['a.test.mjs'], undefined, {
+      heldOpenMs: 200,
+    });
 
-    assert.equal((await settle(runner.mutantRun(mutantRunOptions()))).status, MutantRunStatus.Survived);
+    assert.equal(
+      (await settle(runner.mutantRun(mutantRunOptions()))).status,
+      MutantRunStatus.Survived,
+    );
   });
 
   it('reports a mutant killed at once when node:test times out a root after hook of a file whose test failed', async (t) => {
@@ -150,8 +190,13 @@ describe('LzNodeTestTestRunner with a test file that its tests keep alive', () =
         "it('passes slowly', async () => { await new Promise((resolve) => setTimeout(resolve, 600)); });",
       ),
     });
-    const runner = await initRunner(['a.test.mjs'], undefined, { heldOpenMs: 200 });
+    const runner = await initRunner(['a.test.mjs'], undefined, {
+      heldOpenMs: 200,
+    });
 
-    assert.equal((await settle(runner.mutantRun(mutantRunOptions()))).status, MutantRunStatus.Survived);
+    assert.equal(
+      (await settle(runner.mutantRun(mutantRunOptions()))).status,
+      MutantRunStatus.Survived,
+    );
   });
 });

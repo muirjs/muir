@@ -40,7 +40,10 @@ export function within(id: string, scope: string): boolean {
  * Whether `testFilter` names the test file itself. Stryker does that only for a mutant that runs every test of the
  * file, as a static mutant under --testFiles does.
  */
-export function lzNamesFile(testFilter: readonly string[] | undefined, file: string): boolean {
+export function lzNamesFile(
+  testFilter: readonly string[] | undefined,
+  file: string,
+): boolean {
   return testFilter?.includes(file) === true;
 }
 
@@ -51,12 +54,21 @@ export type RecordedTest = {
 } & (
   | { readonly status: 'failed'; readonly failureMessage?: string }
   /** Skipped tests include todo tests, which run but whose outcome node:test ignores. */
-  | { readonly status: 'passed' | 'skipped'; readonly failureMessage?: undefined }
+  | {
+      readonly status: 'passed' | 'skipped';
+      readonly failureMessage?: undefined;
+    }
 );
 
 /** The time a file's run, `fileMs`, spent outside its outermost tests, whose time includes their subtests'. */
-export function lzOutsideMs(tests: readonly RecordedTest[], fileMs: number): number {
-  const outermost = tests.filter((test) => !tests.some((other) => other !== test && within(test.id, other.id)));
+export function lzOutsideMs(
+  tests: readonly RecordedTest[],
+  fileMs: number,
+): number {
+  const outermost = tests.filter(
+    (test) =>
+      !tests.some((other) => other !== test && within(test.id, other.id)),
+  );
 
   return fileMs - outermost.reduce((sum, test) => sum + test.timeSpentMs, 0);
 }
@@ -139,7 +151,11 @@ export function lzRecordNonce(): string {
   return randomUUID();
 }
 
-export function recordName(pid: number, threadId: number, nonce: string): string {
+export function recordName(
+  pid: number,
+  threadId: number,
+  nonce: string,
+): string {
   return `${pid}.${threadId}.${nonce}.json`;
 }
 
@@ -180,14 +196,22 @@ const renameAttempts = 5;
 const renameRetryMs = 10;
 
 function isBusy(error: unknown): boolean {
-  return error instanceof Error && 'code' in error && (error.code === 'EPERM' || error.code === 'EBUSY');
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    (error.code === 'EPERM' || error.code === 'EBUSY')
+  );
 }
 
 /**
  * Writes `record` to `lzTempRecordPath(path)` and renames that over `path`, so that a reader finds the record whole, and
  * a kill during the write leaves the one before.
  */
-export function lzWriteRecord(path: string, record: ProcessRecord, files: LzRecordFiles = lzNodeRecordFiles): void {
+export function lzWriteRecord(
+  path: string,
+  record: ProcessRecord,
+  files: LzRecordFiles = lzNodeRecordFiles,
+): void {
   const temp = lzTempRecordPath(path);
   files.write(temp, JSON.stringify(record));
 
@@ -197,7 +221,11 @@ export function lzWriteRecord(path: string, record: ProcessRecord, files: LzReco
 
       return;
     } catch (error) {
-      if (files.platform !== 'win32' || attempt === renameAttempts || !isBusy(error)) {
+      if (
+        files.platform !== 'win32' ||
+        attempt === renameAttempts ||
+        !isBusy(error)
+      ) {
         throw error;
       }
     }
@@ -214,7 +242,8 @@ export interface LzRecordName {
   readonly nonce: string;
 }
 
-const threadRecordPattern = /^(?<pid>\d+)\.(?<thread>\d+)\.(?<nonce>[\da-f-]+)\.json$/;
+const threadRecordPattern =
+  /^(?<pid>\d+)\.(?<thread>\d+)\.(?<nonce>[\da-f-]+)\.json$/;
 const memoryRecordPattern = /^(?<pid>\d+)\.(?<nonce>[\da-f-]+)\.memory\.json$/;
 
 /** The parts of a record's name, as `recordName` and `memoryRecordName` put them together; undefined for another name. */
@@ -225,9 +254,12 @@ export function lzParseRecordName(name: string): LzRecordName | undefined {
     return { pid: Number(pid), thread: Number(thread), nonce };
   }
 
-  const { pid: memoryPid, nonce: memoryNonce } = memoryRecordPattern.exec(name)?.groups ?? {};
+  const { pid: memoryPid, nonce: memoryNonce } =
+    memoryRecordPattern.exec(name)?.groups ?? {};
 
-  return memoryNonce === undefined ? undefined : { pid: Number(memoryPid), thread: 'memory', nonce: memoryNonce };
+  return memoryNonce === undefined
+    ? undefined
+    : { pid: Number(memoryPid), thread: 'memory', nonce: memoryNonce };
 }
 
 /** Whether `name` is the name of a record, which a record's temporary file is not. */
@@ -242,7 +274,8 @@ function notARecord(field?: string): never {
 }
 
 const isTrue = (value: unknown) => value === true;
-const isCounts = (value: unknown) => isObject(value) && Object.values(value).every(isNumber);
+const isCounts = (value: unknown) =>
+  isObject(value) && Object.values(value).every(isNumber);
 const isPosition = (value: unknown): value is Position =>
   isObject(value) && isNumber(value['line']) && isNumber(value['column']);
 const isMemoryLimit = (value: unknown): value is MemoryLimitReached =>
@@ -250,7 +283,10 @@ const isMemoryLimit = (value: unknown): value is MemoryLimitReached =>
 const isWindow = (value: unknown): value is LzTimeWindow =>
   isObject(value) && isNumber(value['start']) && isNumber(value['end']);
 const isSpans = (value: unknown): value is Record<string, LzTimeWindow[]> =>
-  isObject(value) && Object.values(value).every((spans) => Array.isArray(spans) && spans.every(isWindow));
+  isObject(value) &&
+  Object.values(value).every(
+    (spans) => Array.isArray(spans) && spans.every(isWindow),
+  );
 const isCoverage = (value: unknown): value is MutantCoverage =>
   isObject(value) &&
   isCounts(value['static']) &&
@@ -279,14 +315,26 @@ function parseTest(value: unknown, path: string): RecordedTest {
   const base = {
     id,
     timeSpentMs,
-    ...optional('startPosition', startPosition, isPosition, notARecord, `${path}.startPosition`),
+    ...optional(
+      'startPosition',
+      startPosition,
+      isPosition,
+      notARecord,
+      `${path}.startPosition`,
+    ),
   };
 
   if (status === 'failed') {
     return {
       ...base,
       status,
-      ...optional('failureMessage', failureMessage, isString, notARecord, `${path}.failureMessage`),
+      ...optional(
+        'failureMessage',
+        failureMessage,
+        isString,
+        notARecord,
+        `${path}.failureMessage`,
+      ),
     };
   }
 
@@ -329,7 +377,12 @@ export function lzParseRecord(json: string): ProcessRecord {
     ...optional('hitCount', hitCount, isNumber, notARecord),
     ...optional('mutantCoverage', mutantCoverage, isCoverage, notARecord),
     ...optional('peakMemoryMB', peakMemoryMB, isNumber, notARecord),
-    ...optional('memoryLimitReached', memoryLimitReached, isMemoryLimit, notARecord),
+    ...optional(
+      'memoryLimitReached',
+      memoryLimitReached,
+      isMemoryLimit,
+      notARecord,
+    ),
     ...optional('diagnostics', diagnostics, isStrings, notARecord),
     ...optional('unfinished', unfinished, isTrue, notARecord),
     ...optional('heldOpen', heldOpen, isStrings, notARecord),

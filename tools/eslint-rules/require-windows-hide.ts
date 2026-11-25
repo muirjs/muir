@@ -1,6 +1,12 @@
 import { AST_NODE_TYPES, type TSESTree } from '@typescript-eslint/types';
 import type { Rule } from 'eslint';
-import type { Literal, Node, ObjectExpression, Property, TemplateLiteral } from 'estree';
+import type {
+  Literal,
+  Node,
+  ObjectExpression,
+  Property,
+  TemplateLiteral,
+} from 'estree';
 
 const detachedInText = /detached['"]?\s*:\s*true/;
 const windowsHideInText = /windowsHide['"]?\s*:\s*true/;
@@ -9,14 +15,17 @@ function isNamed(key: Node, computed: boolean, name: string): boolean {
   return (
     (key.type === 'Identifier' && !computed && key.name === name) ||
     (key.type === 'Literal' && key.value === name) ||
-    (key.type === 'TemplateLiteral' && key.expressions.length === 0 && key.quasis[0]?.value.cooked === name)
+    (key.type === 'TemplateLiteral' &&
+      key.expressions.length === 0 &&
+      key.quasis[0]?.value.cooked === name)
   );
 }
 
 function property(node: ObjectExpression, name: string): Property | undefined {
   return node.properties.findLast(
     (candidate): candidate is Property =>
-      candidate.type === 'Property' && isNamed(candidate.key, candidate.computed, name),
+      candidate.type === 'Property' &&
+      isNamed(candidate.key, candidate.computed, name),
   );
 }
 
@@ -56,7 +65,8 @@ const rule: Rule.RuleModule = {
     type: 'problem',
     schema: [],
     messages: {
-      missing: 'Pass windowsHide: true with detached: true; on Windows a detached child opens a console window.',
+      missing:
+        'Pass windowsHide: true with detached: true; on Windows a detached child opens a console window.',
       assignment:
         'Set windowsHide: true on the same options object as detached; on Windows a detached child opens a console window.',
     },

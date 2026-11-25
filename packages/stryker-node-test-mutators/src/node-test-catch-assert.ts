@@ -1,6 +1,10 @@
 import type { NodePath, types } from '@babel/core';
 
-import { lzCalleeRoot, lzPropertyName, type LzMutator } from '@layzee/stryker-mutator-core';
+import {
+  lzCalleeRoot,
+  lzPropertyName,
+  type LzMutator,
+} from '@layzee/stryker-mutator-core';
 
 /**
  * Empties the `try` block of a `try`/`catch` whose `catch` asserts and does not throw, so a survivor is a test that
@@ -11,9 +15,14 @@ import { lzCalleeRoot, lzPropertyName, type LzMutator } from '@layzee/stryker-mu
  */
 export const nodeTestCatchAssert: LzMutator<'LzNodeTestCatchAssert'> = {
   name: 'LzNodeTestCatchAssert',
-  sample: "try {\n  JSON.parse('');\n} catch (error) {\n  assert.ok(error);\n}\n",
+  sample:
+    "try {\n  JSON.parse('');\n} catch (error) {\n  assert.ok(error);\n}\n",
   *mutate(path, t) {
-    if (!path.isBlockStatement() || path.node.body.length === 0 || endsInFailure(path.node.body)) {
+    if (
+      !path.isBlockStatement() ||
+      path.node.body.length === 0 ||
+      endsInFailure(path.node.body)
+    ) {
       return;
     }
 
@@ -80,7 +89,8 @@ function assertMethod(callee: types.Node): string | undefined {
   const method = lzPropertyName(callee);
   const onAssert =
     lzCalleeRoot(callee)?.name === 'assert' ||
-    (callee.type === 'MemberExpression' && lzPropertyName(callee.object) === 'assert');
+    (callee.type === 'MemberExpression' &&
+      lzPropertyName(callee.object) === 'assert');
 
   return onAssert ? method : undefined;
 }

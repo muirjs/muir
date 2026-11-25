@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { DryRunStatus, MutantRunStatus } from '@stryker-mutator/api/test-runner';
+import {
+  DryRunStatus,
+  MutantRunStatus,
+} from '@stryker-mutator/api/test-runner';
 
 import { lzDirPrefix } from '../../src/dirs.ts';
 import {
@@ -34,9 +43,13 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
       ),
     });
     const file = join(dir, 'a.test.mjs');
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const runner = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
     await runner.dispose();
 
     assert.equal(existsSync(join(dir, 'written.txt')), false);
@@ -53,9 +66,13 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
       ),
     });
     const selected = `${join(dir, 'a.test.mjs')} > selected`;
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const runner = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
 
-    const result = await settle(runner.mutantRun(mutantRunOptions({ testFilter: [selected] })));
+    const result = await settle(
+      runner.mutantRun(mutantRunOptions({ testFilter: [selected] })),
+    );
     await runner.dispose();
 
     assert.equal(result.status, MutantRunStatus.Killed, JSON.stringify(result));
@@ -69,9 +86,13 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
       ),
     });
     const selected = `${join(dir, 'a.test.mjs')} > kills in ${dir}`;
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const runner = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
 
-    const result = await settle(runner.mutantRun(mutantRunOptions({ testFilter: [selected] })));
+    const result = await settle(
+      runner.mutantRun(mutantRunOptions({ testFilter: [selected] })),
+    );
     await runner.dispose();
 
     assert.equal(result.status, MutantRunStatus.Killed, JSON.stringify(result));
@@ -79,16 +100,25 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
   });
 
   it("names the sandbox's file in the command that reproduces a failed test file, as the copy is gone by then", async (t) => {
-    const dir = project(t, { 'a.test.mjs': "throw new Error('fails to load');" });
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const dir = project(t, {
+      'a.test.mjs': "throw new Error('fails to load');",
+    });
+    const runner = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
 
     const result = await settle(runner.dryRun(dryRun));
     await runner.dispose();
 
     assert.equal(result.status, DryRunStatus.Error, JSON.stringify(result));
-    const reproduce = result.errorMessage.split('\n').find((line) => line.startsWith('To reproduce'));
+    const reproduce = result.errorMessage
+      .split('\n')
+      .find((line) => line.startsWith('To reproduce'));
     assert.ok(reproduce, result.errorMessage);
-    assert.ok(reproduce.includes(`"${join(dir, 'a.test.mjs')}"\` in ${dir}`), reproduce);
+    assert.ok(
+      reproduce.includes(`"${join(dir, 'a.test.mjs')}"\` in ${dir}`),
+      reproduce,
+    );
     assert.doesNotMatch(reproduce, /lz-node-test-copy-/);
   });
 
@@ -96,16 +126,25 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
     project(t, { 'a.test.mjs': passing });
 
     await assert.rejects(
-      initRunner(['*.test.mjs'], { experimentalWorkerCopy: true }, { inPlace: true }),
+      initRunner(
+        ['*.test.mjs'],
+        { experimentalWorkerCopy: true },
+        { inPlace: true },
+      ),
       /experimentalWorkerCopy cannot run with inPlace/,
     );
   });
 
   it('removes its copy when it is disposed', async (t) => {
     const dir = project(t, { 'a.test.mjs': passing });
-    const copies = () => readdirSync(dirname(dir)).filter((name) => name.startsWith(lzDirPrefix('copy', process.pid)));
+    const copies = () =>
+      readdirSync(dirname(dir)).filter((name) =>
+        name.startsWith(lzDirPrefix('copy', process.pid)),
+      );
     const before = copies();
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const runner = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
     const made = copies().filter((name) => !before.includes(name));
 
     await runner.dispose();
@@ -118,26 +157,45 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
     project(t, { 'a.test.mjs': passing });
     const debug: string[] = [];
     const started = performance.now();
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true }, { log: logger({ debug }) });
+    const runner = await initRunner(
+      ['*.test.mjs'],
+      { experimentalWorkerCopy: true },
+      { log: logger({ debug }) },
+    );
     const initMs = performance.now() - started;
 
     await runner.dispose();
 
-    const copiedMs = Number(/ in (\d+) ms \(experimentalWorkerCopy\)/.exec(debug.join('\n'))?.[1]);
-    assert.match(debug.join('\n'), /Copied the sandbox to .*lz-node-test-copy-\d+-\S+ in \d+ ms/);
-    assert.ok(copiedMs <= Math.ceil(initMs), `copied in ${copiedMs} ms, init took ${initMs} ms`);
+    const copiedMs = Number(
+      / in (\d+) ms \(experimentalWorkerCopy\)/.exec(debug.join('\n'))?.[1],
+    );
+    assert.match(
+      debug.join('\n'),
+      /Copied the sandbox to .*lz-node-test-copy-\d+-\S+ in \d+ ms/,
+    );
+    assert.ok(
+      copiedMs <= Math.ceil(initMs),
+      `copied in ${copiedMs} ms, init took ${initMs} ms`,
+    );
   });
 
   it('gives a runner that starts after another in the same process a fresh copy of the sandbox', async (t) => {
     const dir = project(t, { 'a.test.mjs': fixture("it('first', () => {});") });
     const file = join(dir, 'a.test.mjs');
-    const copies = () => readdirSync(dirname(dir)).filter((name) => name.startsWith(lzDirPrefix('copy', process.pid)));
+    const copies = () =>
+      readdirSync(dirname(dir)).filter((name) =>
+        name.startsWith(lzDirPrefix('copy', process.pid)),
+      );
     const before = copies();
-    const first = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const first = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
     await first.dispose();
     writeFileSync(file, fixture("it('second', () => {});"));
 
-    const second = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const second = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
     const { tests } = complete(await settle(second.dryRun(dryRun)));
     await second.dispose();
 
@@ -148,13 +206,25 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
   it('removes its copy on dispose, but not what the links in the copy point at', async (t) => {
     const dir = project(
       t,
-      { [join('sandbox', 'a.test.mjs')]: passing, [join('kept', 'file.txt')]: '' },
+      {
+        [join('sandbox', 'a.test.mjs')]: passing,
+        [join('kept', 'file.txt')]: '',
+      },
       { cwd: 'sandbox' },
     );
-    symlinkSync(join(dir, 'kept'), join(dir, 'sandbox', 'node_modules'), 'junction');
-    const copies = () => readdirSync(dir).filter((name) => name.startsWith(lzDirPrefix('copy', process.pid)));
+    symlinkSync(
+      join(dir, 'kept'),
+      join(dir, 'sandbox', 'node_modules'),
+      'junction',
+    );
+    const copies = () =>
+      readdirSync(dir).filter((name) =>
+        name.startsWith(lzDirPrefix('copy', process.pid)),
+      );
 
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const runner = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
     const during = copies();
     await runner.dispose();
 
@@ -166,14 +236,19 @@ describe('LzNodeTestTestRunner experimentalWorkerCopy', () => {
   it('removes the copy that a killed runner left beside the sandbox, but not what its links point at', async (t) => {
     const dir = project(
       t,
-      { [join('sandbox', 'a.test.mjs')]: passing, [join('kept', 'file.txt')]: '' },
+      {
+        [join('sandbox', 'a.test.mjs')]: passing,
+        [join('kept', 'file.txt')]: '',
+      },
       { cwd: 'sandbox' },
     );
     const left = join(dir, `${lzDirPrefix('copy', noProcess)}left`);
     mkdirSync(left);
     symlinkSync(join(dir, 'kept'), join(left, 'node_modules'), 'junction');
 
-    const runner = await initRunner(['*.test.mjs'], { experimentalWorkerCopy: true });
+    const runner = await initRunner(['*.test.mjs'], {
+      experimentalWorkerCopy: true,
+    });
     await runner.dispose();
 
     assert.equal(existsSync(left), false);

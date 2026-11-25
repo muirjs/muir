@@ -24,7 +24,12 @@ shareCompileCache();
 
 describe('LzNodeTestTestRunner timing', () => {
   it("times each test with the time its file's run spent outside the tests, such as starting node", async (t) => {
-    project(t, { 'a.test.mjs': fixture("it('first', () => {});", "it('second', () => {});") });
+    project(t, {
+      'a.test.mjs': fixture(
+        "it('first', () => {});",
+        "it('second', () => {});",
+      ),
+    });
     const runner = await initRunner(['*.test.mjs']);
     const started = performance.now();
 
@@ -41,7 +46,11 @@ describe('LzNodeTestTestRunner timing', () => {
     );
   });
 
-  async function meetingFiles(t: TestContext, concurrency: number, checkers: string[] = []) {
+  async function meetingFiles(
+    t: TestContext,
+    concurrency: number,
+    checkers: string[] = [],
+  ) {
     const meets = (self: string, other: string) =>
       fixture(
         "const { existsSync, writeFileSync } = await import('node:fs');",
@@ -55,47 +64,81 @@ describe('LzNodeTestTestRunner timing', () => {
         '  }',
         '});',
       );
-    const dir = project(t, { 'a.test.mjs': meets('a', 'b'), 'b.test.mjs': meets('b', 'a') });
-    const runner = await initRunner(['*.test.mjs'], {}, { concurrency, checkers });
+    const dir = project(t, {
+      'a.test.mjs': meets('a', 'b'),
+      'b.test.mjs': meets('b', 'a'),
+    });
+    const runner = await initRunner(
+      ['*.test.mjs'],
+      {},
+      { concurrency, checkers },
+    );
 
-    return { dir, runner, a: `${join(dir, 'a.test.mjs')} > meets b`, b: `${join(dir, 'b.test.mjs')} > meets a` };
+    return {
+      dir,
+      runner,
+      a: `${join(dir, 'a.test.mjs')} > meets b`,
+      b: `${join(dir, 'b.test.mjs')} > meets a`,
+    };
   }
 
   it("runs as many of the dry run's test files at once as Stryker runs test runners, and a mutant run's one at a time", async (t) => {
     const { dir, runner, a, b } = await meetingFiles(t, 2);
 
-    assert.deepEqual(summary(complete(await settle(runner.dryRun(dryRun))).tests), [passed(a), passed(b)]);
+    assert.deepEqual(
+      summary(complete(await settle(runner.dryRun(dryRun))).tests),
+      [passed(a), passed(b)],
+    );
 
     for (const marker of ['a.started', 'b.started']) {
       rmSync(join(dir, marker));
     }
 
-    assert.deepEqual(withoutDuration(await settle(runner.mutantRun(mutantRunOptions({ disableBail: true })))), {
-      status: MutantRunStatus.Killed,
-      killedBy: [a],
-      failureMessage: 'b never started',
-      nrOfTests: 2,
-    });
+    assert.deepEqual(
+      withoutDuration(
+        await settle(runner.mutantRun(mutantRunOptions({ disableBail: true }))),
+      ),
+      {
+        status: MutantRunStatus.Killed,
+        killedBy: [a],
+        failureMessage: 'b never started',
+        nrOfTests: 2,
+      },
+    );
   });
 
   it("runs the dry run's test files two at once beside checkers at a concurrency of 1, as Stryker does", async (t) => {
     const { runner, a, b } = await meetingFiles(t, 1, ['typescript']);
 
-    assert.deepEqual(summary(complete(await settle(runner.dryRun(dryRun))).tests), [passed(a), passed(b)]);
+    assert.deepEqual(
+      summary(complete(await settle(runner.dryRun(dryRun))).tests),
+      [passed(a), passed(b)],
+    );
   });
 
   it("runs the dry run's test files one at a time when Stryker runs one test runner", async (t) => {
     const { runner, a, b } = await meetingFiles(t, 1);
 
-    assert.deepEqual(summary(complete(await settle(runner.dryRun({ ...dryRun, disableBail: true }))).tests), [
-      failed(a, 'b never started'),
-      passed(b),
-    ]);
+    assert.deepEqual(
+      summary(
+        complete(await settle(runner.dryRun({ ...dryRun, disableBail: true })))
+          .tests,
+      ),
+      [failed(a, 'b never started'), passed(b)],
+    );
   });
 
   it("reports a mutant run's duration as the time of its file processes, once per file", async (t) => {
-    const tests = Array.from({ length: 10 }, (_, index) => `it('passes ${index}', () => {});`);
-    project(t, { 'a.test.mjs': fixture('await new Promise((resolve) => setTimeout(resolve, 300));', ...tests) });
+    const tests = Array.from(
+      { length: 10 },
+      (_, index) => `it('passes ${index}', () => {});`,
+    );
+    project(t, {
+      'a.test.mjs': fixture(
+        'await new Promise((resolve) => setTimeout(resolve, 300));',
+        ...tests,
+      ),
+    });
     const runner = await initRunner(['a.test.mjs']);
 
     const started = performance.now();
@@ -109,6 +152,9 @@ describe('LzNodeTestTestRunner timing', () => {
     );
     assert.ok(result.duration, 'expected a duration');
     assert.ok(result.duration >= 300, `${result.duration} ms of ${elapsed} ms`);
-    assert.ok(result.duration <= Math.ceil(elapsed), `${result.duration} ms of ${elapsed} ms`);
+    assert.ok(
+      result.duration <= Math.ceil(elapsed),
+      `${result.duration} ms of ${elapsed} ms`,
+    );
   });
 });

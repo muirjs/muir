@@ -3,7 +3,15 @@ import { describe, it } from 'node:test';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
 import { envNames } from '../../src/record.ts';
-import { bodyOf, callable, hooksOf, rawBodyOf, testFile, testContext, type Fn } from '../hook-core.fixtures.ts';
+import {
+  bodyOf,
+  callable,
+  hooksOf,
+  rawBodyOf,
+  testFile,
+  testContext,
+  type Fn,
+} from '../hook-core.fixtures.ts';
 import { wrapped, type Subtests } from '../wrap.fixtures.ts';
 
 describe('wrapNodeTest', () => {
@@ -35,7 +43,10 @@ describe('wrapNodeTest', () => {
       module.describe('suite', () => {
         module.it('second', see);
       });
-      const [promised, callback, throwing] = hooksOf(registrations, 'beforeEach');
+      const [promised, callback, throwing] = hooksOf(
+        registrations,
+        'beforeEach',
+      );
       assert.ok(promised);
       assert.ok(callback);
       assert.ok(throwing);
@@ -49,7 +60,9 @@ describe('wrapNodeTest', () => {
       assert.equal(await settled, 'promised');
       assert.equal(ns.currentTestId, '');
       assert.equal(
-        callback(testContext([], 'first'), (...args: unknown[]) => calls.push(args)),
+        callback(testContext([], 'first'), (...args: unknown[]) =>
+          calls.push(args),
+        ),
         'called back',
       );
       assert.equal(ns.currentTestId, `${testFile} > first`);
@@ -88,7 +101,10 @@ describe('wrapNodeTest', () => {
 
       const results = [];
 
-      for (const registered of [...hooksOf(registrations, 'beforeEach'), ...hooksOf(registrations, 'after')]) {
+      for (const registered of [
+        ...hooksOf(registrations, 'beforeEach'),
+        ...hooksOf(registrations, 'after'),
+      ]) {
         for (const context of [
           testContext([], 'suite'),
           testContext([], 'same'),
@@ -112,7 +128,8 @@ describe('wrapNodeTest', () => {
 
     it('keeps a test current after its body until its after hooks run, and through them while its body runs', async () => {
       const { module, registrations, ns, seen, see } = wrapped();
-      const { promise: gate, resolve: release }: PromiseWithResolvers<void> = Promise.withResolvers();
+      const { promise: gate, resolve: release }: PromiseWithResolvers<void> =
+        Promise.withResolvers();
       module.it('waits', async (t: { after: (hook: Fn) => void }) => {
         t.after(see);
         await gate;
@@ -144,24 +161,40 @@ describe('wrapNodeTest', () => {
     it("makes a test current while the hooks it registers run: after hooks, and subtests' beforeEach hooks", async () => {
       const { module, registrations, ns, seen, see } = wrapped();
       let context: unknown;
-      module.it('parent', (t: Subtests & { after: (hook: Fn) => void; beforeEach: (...args: unknown[]) => void }) => {
-        context = t;
-        t.after(async () => {
-          see();
-          await Promise.resolve();
-          see();
-        });
-        module.after(see);
-        t.beforeEach(see, { timeout: 5 });
-        t.test('child', () => {});
-      });
+      module.it(
+        'parent',
+        (
+          t: Subtests & {
+            after: (hook: Fn) => void;
+            beforeEach: (...args: unknown[]) => void;
+          },
+        ) => {
+          context = t;
+          t.after(async () => {
+            see();
+            await Promise.resolve();
+            see();
+          });
+          module.after(see);
+          t.beforeEach(see, { timeout: 5 });
+          t.test('child', () => {});
+        },
+      );
 
-      await bodyOf(registrations, 'parent')(testContext(registrations, 'parent'));
-      const [beforeEach] = registrations.filter(({ kind }) => kind === 't.beforeEach');
+      await bodyOf(
+        registrations,
+        'parent',
+      )(testContext(registrations, 'parent'));
+      const [beforeEach] = registrations.filter(
+        ({ kind }) => kind === 't.beforeEach',
+      );
       await callable(beforeEach?.rest[0])(testContext([], 'parent > child'));
       await hooksOf(registrations, 'after')[0]?.(testContext([], 'parent'));
 
-      assert.deepEqual([beforeEach?.self, beforeEach?.rest[1]], [context, { timeout: 5 }]);
+      assert.deepEqual(
+        [beforeEach?.self, beforeEach?.rest[1]],
+        [context, { timeout: 5 }],
+      );
       assert.equal(ns.currentTestId, '');
       assert.deepEqual(seen, [
         `${testFile} > parent`,
@@ -172,8 +205,16 @@ describe('wrapNodeTest', () => {
     });
 
     lzTestEach([
-      ['makes t.runOnly do nothing in every hook without --test-only', false, []],
-      ['leaves t.runOnly in every hook to node:test under --test-only', true, [[true], [true], [true], [true], [true]]],
+      [
+        'makes t.runOnly do nothing in every hook without --test-only',
+        false,
+        [],
+      ],
+      [
+        'leaves t.runOnly in every hook to node:test under --test-only',
+        true,
+        [[true], [true], [true], [true], [true]],
+      ],
     ])('%s', async (_title, testOnly, expected) => {
       const { module, registrations } = wrapped({ testOnly });
       const calls: unknown[][] = [];
@@ -184,14 +225,24 @@ describe('wrapNodeTest', () => {
       module.beforeEach(runOnly);
       module.afterEach(runOnly);
       module.after(runOnly);
-      module.it('parent', (t: { readonly beforeEach: (hook: typeof runOnly) => void }) => {
-        t.beforeEach(runOnly);
-      });
-
-      await bodyOf(registrations, 'parent')(testContext(registrations, 'parent'));
-      const hooks = ['before', 'beforeEach', 'afterEach', 'after', 't.beforeEach'].flatMap((kind) =>
-        hooksOf(registrations, kind),
+      module.it(
+        'parent',
+        (t: { readonly beforeEach: (hook: typeof runOnly) => void }) => {
+          t.beforeEach(runOnly);
+        },
       );
+
+      await bodyOf(
+        registrations,
+        'parent',
+      )(testContext(registrations, 'parent'));
+      const hooks = [
+        'before',
+        'beforeEach',
+        'afterEach',
+        'after',
+        't.beforeEach',
+      ].flatMap((kind) => hooksOf(registrations, kind));
       const contextWithRunOnly = () =>
         Object.assign(testContext(), {
           runOnly: (...args: unknown[]) => {

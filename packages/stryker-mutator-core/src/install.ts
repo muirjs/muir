@@ -1,5 +1,14 @@
-import { resolveEachCore, type LzInstrumenter, type LzListedMutator } from './instrumenter.ts';
-import { lzIsOwn, lzToNodeMutator, ownerOf, type LzMutator } from './mutator.ts';
+import {
+  resolveEachCore,
+  type LzInstrumenter,
+  type LzListedMutator,
+} from './instrumenter.ts';
+import {
+  lzIsOwn,
+  lzToNodeMutator,
+  ownerOf,
+  type LzMutator,
+} from './mutator.ts';
 import { lzWarnOutsidePeerRange, parseCaretFloor } from './peer-range.ts';
 
 /** Stryker's `// Stryker disable` directives match mutator names with letters only. */
@@ -34,7 +43,11 @@ export async function lzInstall(
   instrumenters.forEach((instrumenter) => {
     putInto(packageName, instrumenter, mode, mutators);
   });
-  await Promise.all(instrumenters.map((instrumenter) => selfCheck(packageName, instrumenter, mutators)));
+  await Promise.all(
+    instrumenters.map((instrumenter) =>
+      selfCheck(packageName, instrumenter, mutators),
+    ),
+  );
   lzWarnOutsidePeerRange(
     packageName,
     floor,
@@ -51,22 +64,32 @@ function putInto(
   mutators: readonly LzMutator[],
 ): void {
   const { allMutators } = instrumenter;
-  const nodeMutators = mutators.map((mutator) => lzToNodeMutator(mutator, instrumenter.types, packageName));
+  const nodeMutators = mutators.map((mutator) =>
+    lzToNodeMutator(mutator, instrumenter.types, packageName),
+  );
 
   if (mode === 'replace') {
     instrumenter.setMutators([
-      ...allMutators.filter((mutator) => lzIsOwn(mutator) && ownerOf(mutator) !== packageName),
+      ...allMutators.filter(
+        (mutator) => lzIsOwn(mutator) && ownerOf(mutator) !== packageName,
+      ),
       ...nodeMutators,
     ]);
   } else {
     instrumenter.setMutators([
       ...allMutators,
-      ...nodeMutators.filter((mutator) => !allMutators.some(({ name }) => name === mutator.name)),
+      ...nodeMutators.filter(
+        (mutator) => !allMutators.some(({ name }) => name === mutator.name),
+      ),
     ]);
   }
 }
 
-function checkNames(packageName: string, mutators: readonly LzMutator[], present: readonly LzListedMutator[]): void {
+function checkNames(
+  packageName: string,
+  mutators: readonly LzMutator[],
+  present: readonly LzListedMutator[],
+): void {
   const names = mutators.map(({ name }) => name);
   const invalid = names.filter((name) => !namePattern.test(name));
 
@@ -84,12 +107,18 @@ function checkNames(packageName: string, mutators: readonly LzMutator[], present
 
     return (
       keys.indexOf(key) !== index ||
-      present.some((mutator) => mutator.name.toLowerCase() === key && ownerOf(mutator) !== packageName)
+      present.some(
+        (mutator) =>
+          mutator.name.toLowerCase() === key &&
+          ownerOf(mutator) !== packageName,
+      )
     );
   });
 
   if (taken.length > 0) {
-    throw new Error(`${packageName}: another mutator already has the name ${taken.join(', ')}.`);
+    throw new Error(
+      `${packageName}: another mutator already has the name ${taken.join(', ')}.`,
+    );
   }
 }
 
@@ -99,10 +128,15 @@ async function selfCheck(
   mutators: readonly LzMutator[],
 ): Promise<void> {
   const mutants = await instrumenter.instrument(
-    mutators.map(({ name, sample }) => ({ name: `${name}.self-check.ts`, content: sample })),
+    mutators.map(({ name, sample }) => ({
+      name: `${name}.self-check.ts`,
+      content: sample,
+    })),
   );
   const made = new Set(mutants.map(({ mutatorName }) => mutatorName));
-  const missing = mutators.map(({ name }) => name).filter((name) => !made.has(name));
+  const missing = mutators
+    .map(({ name }) => name)
+    .filter((name) => !made.has(name));
 
   if (missing.length > 0) {
     throw new Error(

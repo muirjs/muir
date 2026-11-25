@@ -25,7 +25,11 @@ export function formatName(name: unknown): string {
  * the next value, `%#` and `%$` give the 0-based and 1-based index, `%%` gives `%`, and the text between
  * placeholders reads `$` paths from the case.
  */
-export function formatTitle(template: string, items: readonly unknown[], index: number): string {
+export function formatTitle(
+  template: string,
+  items: readonly unknown[],
+  index: number,
+): string {
   let next = 0;
 
   return template
@@ -59,10 +63,16 @@ function format(placeholder: string, value: unknown): string {
       return string(value);
     }
     case '%d': {
-      return typeof value === 'bigint' ? `${value}n` : typeof value === 'symbol' ? 'NaN' : String(Number(value));
+      return typeof value === 'bigint'
+        ? `${value}n`
+        : typeof value === 'symbol'
+          ? 'NaN'
+          : String(Number(value));
     }
     case '%i': {
-      return typeof value === 'bigint' ? `${value}n` : String(Number.parseInt(String(value)));
+      return typeof value === 'bigint'
+        ? `${value}n`
+        : String(Number.parseInt(String(value)));
     }
     case '%f': {
       return `${negative(value) ? '-' : ''}${Number.parseFloat(String(value))}`;
@@ -91,7 +101,8 @@ function string(value: unknown): string {
   if (typeof value === 'object' && value !== null) {
     const toString: unknown = Reflect.get(value, 'toString');
 
-    return typeof toString === 'function' && toString !== Object.prototype.toString
+    return typeof toString === 'function' &&
+      toString !== Object.prototype.toString
       ? String(toString.call(value))
       : render(value);
   }
@@ -104,7 +115,8 @@ function negative(value: unknown): boolean {
   return (
     typeof value === 'number' &&
     (value === 0 || Number.isNaN(value)) &&
-    new DataView(new Float64Array([value]).buffer).getUint32(4, true) >>> 31 === 1
+    new DataView(new Float64Array([value]).buffer).getUint32(4, true) >>> 31 ===
+      1
   );
 }
 
@@ -115,7 +127,10 @@ function json(value: unknown): string {
 
     return typeof text === 'string' ? text : 'undefined';
   } catch (error) {
-    if (error instanceof Error && error.message.includes('circular structure')) {
+    if (
+      error instanceof Error &&
+      error.message.includes('circular structure')
+    ) {
       return '[Circular]';
     }
 
@@ -128,7 +143,9 @@ function render(value: unknown): string {
   const text = inspect(value, { breakLength: Infinity, compact: true });
   const cut = truncate(text);
 
-  return typeof value === 'string' && cut !== text ? `${cut}${text.slice(-1)}` : cut;
+  return typeof value === 'string' && cut !== text
+    ? `${cut}${text.slice(-1)}`
+    : cut;
 }
 
 /** Cuts `text` short past the limit, before a character that the cut would split in two, as Vitest does. */
@@ -150,7 +167,8 @@ function truncate(text: string): string {
  */
 function interpolate(text: string, items: readonly unknown[]): string {
   const first = items[0];
-  const fromObject = typeof first === 'object' && first !== null && !Array.isArray(first);
+  const fromObject =
+    typeof first === 'object' && first !== null && !Array.isArray(first);
 
   return text.replace(attributePattern, (match, path: string) => {
     const index = /^\d+$/.test(path);

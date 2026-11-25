@@ -1,4 +1,7 @@
-import { lzAllMutators, type LzMutatorSets } from '@layzee/stryker-mutator-core';
+import {
+  lzAllMutators,
+  type LzMutatorSets,
+} from '@layzee/stryker-mutator-core';
 import { nodeAssertStatement } from './node-assert-statement.ts';
 import { nodeAwaitStatement } from './node-await-statement.ts';
 import { nodeByteLength } from './node-byte-length.ts';
@@ -10,7 +13,13 @@ import { nodeReturnAwait } from './node-return-await.ts';
 import { nodeTimerDelay } from './node-timer-delay.ts';
 
 export const nodeMutatorSets = {
-  defaults: [nodeTimerDelay, nodeEventName, nodeAwaitStatement, nodeReturnAwait, nodeExitCode],
+  defaults: [
+    nodeTimerDelay,
+    nodeEventName,
+    nodeAwaitStatement,
+    nodeReturnAwait,
+    nodeExitCode,
+  ],
   optIn: [nodeAssertStatement, nodeListenerOnce],
   experimental: [nodeByteLength, nodeCallbackError],
 } satisfies LzMutatorSets;

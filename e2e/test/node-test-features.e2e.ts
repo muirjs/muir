@@ -20,7 +20,10 @@ it('kills the mutants only a before hook reaches, through the test that reads it
 });
 
 it('kills the mutants an lzTestFor.only case reaches under --test-only', () => {
-  assert.deepEqual(lzMutants(run, 'src/negate.js'), ['1:27 BlockStatement {} Killed', '2:10 UnaryOperator +n Killed']);
+  assert.deepEqual(lzMutants(run, 'src/negate.js'), [
+    '1:27 BlockStatement {} Killed',
+    '2:10 UnaryOperator +n Killed',
+  ]);
 });
 
 it('reports the mutants only a test that --test-only skips reaches as not covered', () => {

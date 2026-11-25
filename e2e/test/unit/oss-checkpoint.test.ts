@@ -1,12 +1,23 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import type { MutantResult } from '@stryker-mutator/api/core';
 import { PluginKind } from '@stryker-mutator/api/plugin';
-import { DryRunStatus, TestStatus, type TestResult } from '@stryker-mutator/api/test-runner';
+import {
+  DryRunStatus,
+  TestStatus,
+  type TestResult,
+} from '@stryker-mutator/api/test-runner';
 
 import {
   lzCheckpointArgs,
@@ -24,7 +35,11 @@ import {
 
 const root = join(tmpdir(), 'project');
 
-function mutant(file: string, id: string, overrides: Partial<MutantResult> = {}): MutantResult {
+function mutant(
+  file: string,
+  id: string,
+  overrides: Partial<MutantResult> = {},
+): MutantResult {
   return {
     id,
     fileName: join(root, file),
@@ -44,7 +59,12 @@ function testResult(id: string, fileName: string | undefined): TestResult {
     name: `test ${id}`,
     timeSpentMs: 1,
     status: TestStatus.Success,
-    ...(fileName === undefined ? {} : { fileName: join(root, fileName), startPosition: { line: 3, column: 0 } }),
+    ...(fileName === undefined
+      ? {}
+      : {
+          fileName: join(root, fileName),
+          startPosition: { line: 3, column: 0 },
+        }),
   };
 }
 
@@ -55,7 +75,11 @@ function sources(file: string): string {
 describe('lzCheckpointReport', () => {
   it('groups the tested mutants by their file relative to the root, with its source and no fileName', () => {
     const report = lzCheckpointReport(
-      [mutant('lib/a.js', '1'), mutant('index.js', '2'), mutant('lib/a.js', '3', { status: 'Survived' })],
+      [
+        mutant('lib/a.js', '1'),
+        mutant('index.js', '2'),
+        mutant('lib/a.js', '3', { status: 'Survived' }),
+      ],
       [],
       root,
       sources,
@@ -85,7 +109,13 @@ describe('lzCheckpointReport', () => {
     assert.deepEqual(report.testFiles, {
       'test/a.test.js': {
         source: 'source of test/a.test.js',
-        tests: [{ id: 't1', name: 'test t1', location: { start: { line: 4, column: 1 } } }],
+        tests: [
+          {
+            id: 't1',
+            name: 'test t1',
+            location: { start: { line: 4, column: 1 } },
+          },
+        ],
       },
       '': { tests: [{ id: 't2', name: 'test t2' }] },
     });
@@ -101,7 +131,13 @@ describe('lzCheckpointReport', () => {
 
     assert.equal(report.files['index.js']?.source, '');
     assert.deepEqual(report.testFiles?.['test/a.test.js'], {
-      tests: [{ id: 't1', name: 'test t1', location: { start: { line: 4, column: 1 } } }],
+      tests: [
+        {
+          id: 't1',
+          name: 'test t1',
+          location: { start: { line: 4, column: 1 } },
+        },
+      ],
     });
   });
 
@@ -121,17 +157,35 @@ describe('lzCheckpointReport', () => {
   });
 
   it("is a report of schema version 1.0 with Stryker's default thresholds, which Stryker reads", () => {
-    const { schemaVersion, thresholds } = lzCheckpointReport([], [], root, sources);
+    const { schemaVersion, thresholds } = lzCheckpointReport(
+      [],
+      [],
+      root,
+      sources,
+    );
 
-    assert.deepEqual({ schemaVersion, thresholds }, { schemaVersion: '1.0', thresholds: { high: 80, low: 60 } });
+    assert.deepEqual(
+      { schemaVersion, thresholds },
+      { schemaVersion: '1.0', thresholds: { high: 80, low: 60 } },
+    );
   });
 });
 
 describe('strykerPlugins', () => {
   it('declares the reporter under the name lz-checkpoint, which the driver passes in --reporters', () => {
     assert.deepEqual(
-      strykerPlugins.map(({ kind, name, injectableClass }) => ({ kind, name, injectableClass })),
-      [{ kind: PluginKind.Reporter, name: 'lz-checkpoint', injectableClass: LzCheckpointReporter }],
+      strykerPlugins.map(({ kind, name, injectableClass }) => ({
+        kind,
+        name,
+        injectableClass,
+      })),
+      [
+        {
+          kind: PluginKind.Reporter,
+          name: 'lz-checkpoint',
+          injectableClass: LzCheckpointReporter,
+        },
+      ],
     );
     assert.equal(lzCheckpointReporterName, 'lz-checkpoint');
   });
@@ -149,7 +203,10 @@ function setup(t: TestContext): string {
 
 function dryRun(reporter: LzCheckpointReporter): void {
   reporter.onDryRunCompleted({
-    result: { status: DryRunStatus.Complete, tests: [testResult('t1', 'test/a.test.js')] },
+    result: {
+      status: DryRunStatus.Complete,
+      tests: [testResult('t1', 'test/a.test.js')],
+    },
     timing: { net: 0, overhead: 0 },
     capabilities: { reloadEnvironment: true },
   });
@@ -206,14 +263,23 @@ describe('LzCheckpointReporter', () => {
     const source = join(dir, 'index.js');
 
     writeFileSync(source, 'export const a = 1;\n');
-    const reporter = new LzCheckpointReporter({ incrementalFile: file }, undefined, 0);
+    const reporter = new LzCheckpointReporter(
+      { incrementalFile: file },
+      undefined,
+      0,
+    );
 
     reporter.onMutantTested(mutant('index.js', '1', { fileName: source }));
-    reporter.onMutantTested(mutant('index.js', '2', { fileName: join(dir, 'gone.js') }));
+    reporter.onMutantTested(
+      mutant('index.js', '2', { fileName: join(dir, 'gone.js') }),
+    );
 
     const written = readFileSync(file, 'utf8');
 
-    assert.match(written, /\/index\.js":\{"language":"javascript","source":"export const a = 1;\\n"/);
+    assert.match(
+      written,
+      /\/index\.js":\{"language":"javascript","source":"export const a = 1;\\n"/,
+    );
     assert.match(written, /\/gone\.js":\{"language":"javascript","source":""/);
   });
 });
@@ -222,7 +288,12 @@ describe('lzStartCheckpoint', () => {
   function checkpoint(dir: string): string {
     const file = join(dir, 'lz.checkpoint.json');
 
-    writeFileSync(file, JSON.stringify(lzCheckpointReport([mutant('a.js', '1')], [], root, sources)));
+    writeFileSync(
+      file,
+      JSON.stringify(
+        lzCheckpointReport([mutant('a.js', '1')], [], root, sources),
+      ),
+    );
 
     return file;
   }
@@ -264,7 +335,9 @@ describe('lzStartCheckpoint', () => {
 
     assert.deepEqual(
       write.mock.calls.map(({ arguments: [text] }) => text),
-      [`Discarded ${file}: it was written by a run with other options, tarballs or project.\n`],
+      [
+        `Discarded ${file}: it was written by a run with other options, tarballs or project.\n`,
+      ],
     );
   });
 
@@ -302,11 +375,18 @@ describe('lzEndCheckpoint', () => {
 
 describe('lzCheckpointArgs', () => {
   it("has Stryker read and write the checkpoint as its incremental file, and load this module's reporter", () => {
-    const [incremental, fileFlag, file, pluginsFlag, plugin] = lzCheckpointArgs('out/lz.checkpoint.json');
+    const [incremental, fileFlag, file, pluginsFlag, plugin] = lzCheckpointArgs(
+      'out/lz.checkpoint.json',
+    );
 
     assert.deepEqual(
       [incremental, fileFlag, file, pluginsFlag],
-      ['--incremental', '--incrementalFile', 'out/lz.checkpoint.json', '--appendPlugins'],
+      [
+        '--incremental',
+        '--incrementalFile',
+        'out/lz.checkpoint.json',
+        '--appendPlugins',
+      ],
     );
     assert.match(plugin ?? '', /checkpoint\.ts$/);
   });
@@ -318,7 +398,14 @@ describe('lzCheckpointMutants', () => {
 
     writeFileSync(
       file,
-      JSON.stringify(lzCheckpointReport([mutant('a.js', '1'), mutant('b.js', '2')], [], root, sources)),
+      JSON.stringify(
+        lzCheckpointReport(
+          [mutant('a.js', '1'), mutant('b.js', '2')],
+          [],
+          root,
+          sources,
+        ),
+      ),
     );
     assert.equal(lzCheckpointMutants(file), 2);
   });
@@ -336,20 +423,31 @@ describe('lzInstalledVersions', () => {
   it("lists each installed package's path and version, sorted, whatever the order npm wrote them in", () => {
     const lockfile = JSON.stringify({
       name: 'p',
-      packages: { 'node_modules/b': { version: '2.0.0' }, 'node_modules/a': { version: '1.0.0', dev: true } },
+      packages: {
+        'node_modules/b': { version: '2.0.0' },
+        'node_modules/a': { version: '1.0.0', dev: true },
+      },
     });
 
-    assert.deepEqual(lzInstalledVersions(lockfile), ['node_modules/a@1.0.0', 'node_modules/b@2.0.0']);
+    assert.deepEqual(lzInstalledVersions(lockfile), [
+      'node_modules/a@1.0.0',
+      'node_modules/b@2.0.0',
+    ]);
   });
 
   it('lists a package with no version, such as the root, with an empty one', () => {
-    const lockfile = JSON.stringify({ packages: { '': { name: 'p' }, 'node_modules/a': true } });
+    const lockfile = JSON.stringify({
+      packages: { '': { name: 'p' }, 'node_modules/a': true },
+    });
 
     assert.deepEqual(lzInstalledVersions(lockfile), ['@', 'node_modules/a@']);
   });
 
   it('refuses a file that lists no packages', () => {
-    assert.throws(() => lzInstalledVersions('{"name": "p"}'), /lists no "packages"/);
+    assert.throws(
+      () => lzInstalledVersions('{"name": "p"}'),
+      /lists no "packages"/,
+    );
   });
 });
 
@@ -362,7 +460,11 @@ describe('lzCheckpointKey', () => {
     mutantTimeoutMs: 30_000,
     installedVersions: ['node_modules/a@1.0.0'],
     tarballDigests: ['a', 'b'],
-    projectSetup: { mutate: ['index.js'], testFiles: ['test/*.js'], patches: [] },
+    projectSetup: {
+      mutate: ['index.js'],
+      testFiles: ['test/*.js'],
+      patches: [],
+    },
     mutate: ['index.js:1-10'],
     strykerConfig: 'export default {};\n',
   };
@@ -376,13 +478,21 @@ describe('lzCheckpointKey', () => {
       { ...inputs, mutantTimeoutMs: null },
       { ...inputs, installedVersions: ['node_modules/a@1.1.0'] },
       { ...inputs, tarballDigests: ['a', 'c'] },
-      { ...inputs, projectSetup: { ...inputs.projectSetup, patches: [{ file: 'a.js', from: 'a', to: 'b' }] } },
+      {
+        ...inputs,
+        projectSetup: {
+          ...inputs.projectSetup,
+          patches: [{ file: 'a.js', from: 'a', to: 'b' }],
+        },
+      },
       { ...inputs, mutate: ['index.js:1-11'] },
       { ...inputs, strykerConfig: 'export default { a: 1 };\n' },
     ];
 
     assert.deepEqual(
-      changed.map((other) => lzCheckpointKey(other) === lzCheckpointKey(inputs)),
+      changed.map(
+        (other) => lzCheckpointKey(other) === lzCheckpointKey(inputs),
+      ),
       changed.map(() => false),
     );
   });

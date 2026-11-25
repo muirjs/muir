@@ -67,11 +67,19 @@ function isKillArgument(path: NodePath): boolean {
   const argument = path.find((current) => isCall(current.parent));
   const call = argument?.parent;
 
-  return argument?.listKey === 'arguments' && isCall(call) && nameOf(call.callee) === 'kill';
+  return (
+    argument?.listKey === 'arguments' &&
+    isCall(call) &&
+    nameOf(call.callee) === 'kill'
+  );
 }
 
-function isCall(node: types.Node | null | undefined): node is types.CallExpression | types.OptionalCallExpression {
-  return node?.type === 'CallExpression' || node?.type === 'OptionalCallExpression';
+function isCall(
+  node: types.Node | null | undefined,
+): node is types.CallExpression | types.OptionalCallExpression {
+  return (
+    node?.type === 'CallExpression' || node?.type === 'OptionalCallExpression'
+  );
 }
 
 /** The `uid` or `gid` of a spawn option, such as `{ uid: 1000 }`: 1 more or less runs the child as another user. */
@@ -82,7 +90,10 @@ function isUserOrGroupId(path: NodePath): boolean {
     return false;
   }
 
-  const name = property.key.type === 'StringLiteral' ? property.key.value : nameOf(property.key);
+  const name =
+    property.key.type === 'StringLiteral'
+      ? property.key.value
+      : nameOf(property.key);
 
   return name === 'uid' || name === 'gid';
 }
@@ -97,11 +108,19 @@ function isJsonIndentation(path: NodePath): boolean {
 
   const { callee } = call;
 
-  return isMember(callee) && nameOf(callee.object) === 'JSON' && nameOf(callee) === 'stringify';
+  return (
+    isMember(callee) &&
+    nameOf(callee.object) === 'JSON' &&
+    nameOf(callee) === 'stringify'
+  );
 }
 
-function isMember(node: types.Node): node is types.MemberExpression | types.OptionalMemberExpression {
-  return node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression';
+function isMember(
+  node: types.Node,
+): node is types.MemberExpression | types.OptionalMemberExpression {
+  return (
+    node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression'
+  );
 }
 
 /** The name a callee or a property key stands for, such as `kill` in `process.kill` or `process['kill']`. */
@@ -129,5 +148,7 @@ function nameOf(node: types.Node): string | undefined {
 
 /** Babel's numericLiteral takes no negative number. */
 function numberNode(t: LzBabelTypes, value: number): types.Expression {
-  return value < 0 ? t.unaryExpression('-', t.numericLiteral(-value)) : t.numericLiteral(value);
+  return value < 0
+    ? t.unaryExpression('-', t.numericLiteral(-value))
+    : t.numericLiteral(value);
 }

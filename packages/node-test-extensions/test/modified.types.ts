@@ -5,9 +5,12 @@ import type { TestContext } from 'node:test';
 import { lzTestEach } from '../src/test-each.ts';
 import { lzTestFor } from '../src/test-for.ts';
 
-lzTestEach.skip.only.todo.fails.skipIf(true).runIf(false)([1])('modifiers', (n) => {
-  n satisfies number;
-});
+lzTestEach.skip.only.todo.fails.skipIf(true).runIf(false)([1])(
+  'modifiers',
+  (n) => {
+    n satisfies number;
+  },
+);
 lzTestFor.fails.skipIf(1)([1])('modifiers', (n, t) => {
   n satisfies number;
   t satisfies TestContext;

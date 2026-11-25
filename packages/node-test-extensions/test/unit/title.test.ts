@@ -8,10 +8,13 @@ type Case = [template: string, items: readonly unknown[], expected: string];
 
 const circular: { self?: unknown } = {};
 circular.self = circular;
-const digits = (length: number) => Array.from({ length }, (_, i) => i % 10).join('');
+const digits = (length: number) =>
+  Array.from({ length }, (_, i) => i % 10).join('');
 // V8 may drop a NaN's sign bit where it stores numbers unboxed, as in an array that holds only numbers, so the NaN is
 // built from its bits and its case holds a string beside it.
-const negativeNaN = new DataView(new BigUint64Array([0xfff8000000000000n]).buffer).getFloat64(0, true);
+const negativeNaN = new DataView(
+  new BigUint64Array([0xfff8000000000000n]).buffer,
+).getFloat64(0, true);
 
 /**
  * Titles come from node:util rather than from lzTestEach, which formats them with formatTitle: a mutant of formatTitle
@@ -95,7 +98,10 @@ describe('formatTitle', () => {
   }
 
   it('throws what JSON.stringify throws for %j, unless the value is circular', () => {
-    assert.throws(() => formatTitle('%j', [10n], 0), { name: 'TypeError', message: /BigInt/ });
+    assert.throws(() => formatTitle('%j', [10n], 0), {
+      name: 'TypeError',
+      message: /BigInt/,
+    });
   });
 
   it('throws what a toJSON method throws for %j, also when it is no Error', () => {
@@ -116,7 +122,11 @@ describe('formatTitle', () => {
     ['%o', [digits(40)], `'${digits(38)}…'`],
     ['%o', [`'${digits(49)}`], `"'${digits(37)}…"`],
     ['%o', [digits(37)], `'${digits(37)}'`],
-    ['%o', [Array.from({ length: 20 }, (_, i) => i)], '[ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,…'],
+    [
+      '%o',
+      [Array.from({ length: 20 }, (_, i) => i)],
+      '[ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,…',
+    ],
     ['%o', [{ a: digits(30) }], `{ a: '${digits(30)}' }`],
     ['$a', [{ a: digits(40) }], digits(40)],
     ['$a', [{ a: digits(41) }], `${digits(39)}…`],
@@ -151,8 +161,16 @@ describe('formatTitle', () => {
     ['$0', [{ 0: 'own' }], 'own'],
     ['$a %o', [{ a: '%o' }], "%o { a: '%o' }"],
     ['%o', [{ a: '$b', b: 'yay' }], "{ a: '$b', b: 'yay' }"],
-    ['$0, $1, $k1, $k2', [{ k1: 'v1' }, { k2: 'v2' }], "{ k1: 'v1' }, { k2: 'v2' }, v1, undefined"],
-    ['$0, $1, $10, $k, $k1, $1a', ['foo', 'bar'], 'foo, bar, undefined, $k, $k1, $1a'],
+    [
+      '$0, $1, $k1, $k2',
+      [{ k1: 'v1' }, { k2: 'v2' }],
+      "{ k1: 'v1' }, { k2: 'v2' }, v1, undefined",
+    ],
+    [
+      '$0, $1, $10, $k, $k1, $1a',
+      ['foo', 'bar'],
+      'foo, bar, undefined, $k, $k1, $1a',
+    ],
     ['$a', [[1, 2]], '$a'],
     ['$a', [null], '$a'],
     ['$ a', [{ a: 1 }], '$ a'],

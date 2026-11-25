@@ -44,8 +44,13 @@ function isWarn(entry: unknown): boolean {
   return warnSeverities.has(severity);
 }
 
-async function rulesAtWarn(file: string, eslint = new ESLint({ cwd: workspaceRoot })): Promise<readonly string[]> {
-  const config: unknown = await eslint.calculateConfigForFile(join(workspaceRoot, file));
+async function rulesAtWarn(
+  file: string,
+  eslint = new ESLint({ cwd: workspaceRoot }),
+): Promise<readonly string[]> {
+  const config: unknown = await eslint.calculateConfigForFile(
+    join(workspaceRoot, file),
+  );
   assert.ok(lzIsRecord(config), `ESLint computed no config for ${file}`);
   const rules = config['rules'];
   assert.ok(lzIsRecord(rules), `${file} has no rules`);
@@ -63,7 +68,10 @@ describe('ESLint severity', () => {
   });
 
   lzTestEach(warnSettings)('reports a rule set to %s', async (severity) => {
-    const eslint = new ESLint({ cwd: workspaceRoot, overrideConfig: { rules: { 'no-debugger': severity } } });
+    const eslint = new ESLint({
+      cwd: workspaceRoot,
+      overrideConfig: { rules: { 'no-debugger': severity } },
+    });
 
     const warn = await rulesAtWarn('stryker.base.mjs', eslint);
 

@@ -8,7 +8,10 @@ const strict = await fixture.stryker();
 const forced = await fixture.stryker('stryker.force-exit.config.mjs');
 
 it('fails the dry run without a report when a passing test leaves a server listening', () => {
-  assert.deepEqual({ exitCode: strict.exitCode, reported: strict.reported }, { exitCode: 1, reported: false });
+  assert.deepEqual(
+    { exitCode: strict.exitCode, reported: strict.reported },
+    { exitCode: 1, reported: false },
+  );
 });
 
 it('names the test file, what held it open and the fix in the dry run error', () => {

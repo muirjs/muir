@@ -38,11 +38,13 @@ export function lzPartRanges(
 
   for (let part = 1; part < parts; part++) {
     const target = (total * part) / parts;
-    const distance = (line: number): number => Math.abs(sumBefore(line) - target);
+    const distance = (line: number): number =>
+      Math.abs(sumBefore(line) - target);
     const nearest = candidates
       .filter((line) => cuts.every((cut) => line > cut))
       .reduce(
-        (best: number | undefined, line) => (best === undefined || distance(line) < distance(best) ? line : best),
+        (best: number | undefined, line) =>
+          best === undefined || distance(line) < distance(best) ? line : best,
         undefined,
       );
 
@@ -55,12 +57,23 @@ export function lzPartRanges(
 
   const starts = [1, ...cuts];
 
-  return starts.map((start, index) => `${file}:${start}-${(starts[index + 1] ?? lineCount + 1) - 1}`);
+  return starts.map(
+    (start, index) =>
+      `${file}:${start}-${(starts[index + 1] ?? lineCount + 1) - 1}`,
+  );
 }
 
 /** Line numbers as Babel counts them, which Stryker's locations use: U+2028 and a lone CR end a line too. */
-function statementStarts(file: string, source: string): { lineCount: number; candidates: number[] } {
-  const ast = parseSync(source, { filename: file, configFile: false, babelrc: false, sourceType: 'unambiguous' });
+function statementStarts(
+  file: string,
+  source: string,
+): { lineCount: number; candidates: number[] } {
+  const ast = parseSync(source, {
+    filename: file,
+    configFile: false,
+    babelrc: false,
+    sourceType: 'unambiguous',
+  });
   const lineCount = ast?.program.loc?.end.line;
 
   if (ast === null || lineCount === undefined) {
@@ -74,13 +87,19 @@ function statementStarts(file: string, source: string): { lineCount: number; can
     const start = statement.loc?.start.line;
     const previousEnd = previous?.loc?.end.line;
 
-    return start !== undefined && previousEnd !== undefined && previousEnd < start ? [start] : [];
+    return start !== undefined &&
+      previousEnd !== undefined &&
+      previousEnd < start
+      ? [start]
+      : [];
   });
 
   return { lineCount, candidates };
 }
 
-function lineWeights(counts: ReadonlyMap<number, number> | undefined): (line: number) => number {
+function lineWeights(
+  counts: ReadonlyMap<number, number> | undefined,
+): (line: number) => number {
   if (counts === undefined) {
     // Stryker disable next-line LzJsNumericLiteral: the 2 is equivalent, as a weight every line shares scales every target and distance alike; the 0 is killed by the even-share test but cannot be enabled alone
     return () => 1;
@@ -89,12 +108,17 @@ function lineWeights(counts: ReadonlyMap<number, number> | undefined): (line: nu
   return (line) => counts.get(line) ?? 0;
 }
 
-export function lzMutantsByLine(reportFile: string, file: string): Map<number, number> {
+export function lzMutantsByLine(
+  reportFile: string,
+  file: string,
+): Map<number, number> {
   const report = lzParseReport(readFileSync(reportFile, 'utf8'));
   const mutants = report.get(file);
 
   if (mutants === undefined) {
-    throw new Error(`${reportFile} has no file "${file}"; it has ${[...report.keys()].join(', ')}.`);
+    throw new Error(
+      `${reportFile} has no file "${file}"; it has ${[...report.keys()].join(', ')}.`,
+    );
   }
 
   const counts = new Map<number, number>();

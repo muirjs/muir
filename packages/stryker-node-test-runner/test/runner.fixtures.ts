@@ -1,12 +1,22 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import type { TestContext } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { INSTRUMENTER_CONSTANTS, type MutantCoverage } from '@stryker-mutator/api/core';
+import {
+  INSTRUMENTER_CONSTANTS,
+  type MutantCoverage,
+} from '@stryker-mutator/api/core';
 import type { Logger } from '@stryker-mutator/api/logging';
 import {
   DryRunStatus,
@@ -21,10 +31,16 @@ import {
 } from '@stryker-mutator/api/test-runner';
 
 import { lzDirPrefix } from '../src/dirs.ts';
-import { lzShortenHeldOpen, LzNodeTestTestRunner, type LzNodeTestOptions } from '../src/runner.ts';
+import {
+  lzShortenHeldOpen,
+  LzNodeTestTestRunner,
+  type LzNodeTestOptions,
+} from '../src/runner.ts';
 
 export const activeMutant = INSTRUMENTER_CONSTANTS.ACTIVE_MUTANT_ENV_VARIABLE;
-export const hookUrl = pathToFileURL(join(import.meta.dirname, '..', 'src', 'hook.ts')).href;
+export const hookUrl = pathToFileURL(
+  join(import.meta.dirname, '..', 'src', 'hook.ts'),
+).href;
 export const reporterArg = `--test-reporter=${pathToFileURL(join(import.meta.dirname, '..', 'src', 'reporter.ts')).href}`;
 
 /**
@@ -66,10 +82,18 @@ export const grows =
   'const held = []; const end = Date.now() + 5_000; while (Date.now() < end) { ' +
   'if (process.memoryUsage.rss() < 264 * 2 ** 20) held.push(new Int32Array(4e6).fill(1)); ' +
   'const pause = Date.now() + 10; while (Date.now() < pause); }';
-export const failing = fixture("it('fails', () => { throw new Error('expected failure'); });");
+export const failing = fixture(
+  "it('fails', () => { throw new Error('expected failure'); });",
+);
 
-export function project(t: TestContext, files: Record<string, string>, { cwd = '.' } = {}): string {
-  const dir = realpathSync.native(mkdtempSync(join(tmpdir(), 'node-test-runner-')));
+export function project(
+  t: TestContext,
+  files: Record<string, string>,
+  { cwd = '.' } = {},
+): string {
+  const dir = realpathSync.native(
+    mkdtempSync(join(tmpdir(), 'node-test-runner-')),
+  );
   const previous = process.cwd();
 
   for (const [name, content] of Object.entries(files)) {
@@ -82,7 +106,12 @@ export function project(t: TestContext, files: Record<string, string>, { cwd = '
     process.chdir(previous);
     // Windows refuses to remove a directory that a process the test just ended still works in. rm, not rmSync: from
     // Node.js 24, rmSync on Windows retries neither that refusal nor any error with a pause.
-    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await rm(dir, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100,
+    });
   });
 
   return dir;
@@ -92,7 +121,11 @@ export function logger({
   debug = [],
   debugEnabled = true,
   warnings = [],
-}: { readonly debug?: string[]; readonly debugEnabled?: boolean; readonly warnings?: string[] } = {}): Logger {
+}: {
+  readonly debug?: string[];
+  readonly debugEnabled?: boolean;
+  readonly warnings?: string[];
+} = {}): Logger {
   const no = () => false;
   const ignore = () => {};
 
@@ -151,12 +184,18 @@ export async function initRunner(
     log = logger(),
     heldOpenMs,
     ...options
-  }: Omit<RunnerOptions, 'lzNodeTest'> & { readonly log?: Logger; readonly heldOpenMs?: number } = {},
+  }: Omit<RunnerOptions, 'lzNodeTest'> & {
+    readonly log?: Logger;
+    readonly heldOpenMs?: number;
+  } = {},
 ): Promise<LzNodeTestTestRunner> {
   const lzOptions = (testFiles ?? lzNodeTest) && {
     lzNodeTest: { ...lzNodeTest, ...(testFiles && { testFiles }) },
   };
-  const runner = new LzNodeTestTestRunner(strykerOptions({ ...options, ...lzOptions }), log);
+  const runner = new LzNodeTestTestRunner(
+    strykerOptions({ ...options, ...lzOptions }),
+    log,
+  );
 
   if (heldOpenMs !== undefined) {
     lzShortenHeldOpen(runner, heldOpenMs);
@@ -167,9 +206,15 @@ export async function initRunner(
   return runner;
 }
 
-export const dryRun: DryRunOptions = { timeout: 10_000, disableBail: false, coverageAnalysis: 'perTest' };
+export const dryRun: DryRunOptions = {
+  timeout: 10_000,
+  disableBail: false,
+  coverageAnalysis: 'perTest',
+};
 
-export function mutantRunOptions(options: Partial<MutantRunOptions> = {}): MutantRunOptions {
+export function mutantRunOptions(
+  options: Partial<MutantRunOptions> = {},
+): MutantRunOptions {
   return {
     timeout: 10_000,
     disableBail: false,
@@ -188,23 +233,43 @@ export function mutantRunOptions(options: Partial<MutantRunOptions> = {}): Mutan
   };
 }
 
-export function timeoutFromDryRun(tests: readonly TestResult[], timeoutMs: number): number {
-  return timeoutFactor * tests.reduce((sum, test) => sum + test.timeSpentMs, 0) + timeoutMs;
+export function timeoutFromDryRun(
+  tests: readonly TestResult[],
+  timeoutMs: number,
+): number {
+  return (
+    timeoutFactor * tests.reduce((sum, test) => sum + test.timeSpentMs, 0) +
+    timeoutMs
+  );
 }
 
 export function complete(result: DryRunResult): CompleteDryRunResult {
-  assert.strictEqual(result.status, DryRunStatus.Complete, `expected a complete run, got ${JSON.stringify(result)}`);
+  assert.strictEqual(
+    result.status,
+    DryRunStatus.Complete,
+    `expected a complete run, got ${JSON.stringify(result)}`,
+  );
 
   return result;
 }
 
 export function withoutDuration(
   result: MutantRunResult,
-): MutantRunResult extends infer R ? (R extends unknown ? Omit<R, 'duration'> : never) : never {
-  if (result.status === MutantRunStatus.Killed || result.status === MutantRunStatus.Survived) {
+): MutantRunResult extends infer R
+  ? R extends unknown
+    ? Omit<R, 'duration'>
+    : never
+  : never {
+  if (
+    result.status === MutantRunStatus.Killed ||
+    result.status === MutantRunStatus.Survived
+  ) {
     const { duration, ...rest } = result;
 
-    assert.ok((duration ?? -1) >= 0, `expected a duration, got ${JSON.stringify(result)}`);
+    assert.ok(
+      (duration ?? -1) >= 0,
+      `expected a duration, got ${JSON.stringify(result)}`,
+    );
 
     return rest;
   }
@@ -216,16 +281,23 @@ export function withoutDuration(
  * The fixture's own coverage. Under Stryker the runner under test is instrumented too, so its numeric mutant ids
  * reach the coverage that the fixture's processes report.
  */
-export function fixtureCoverage(coverage: MutantCoverage | undefined): MutantCoverage | undefined {
+export function fixtureCoverage(
+  coverage: MutantCoverage | undefined,
+): MutantCoverage | undefined {
   const own = (hits: Record<string, number>) =>
-    Object.fromEntries(Object.entries(hits).filter(([id]) => !/^\d+$/.test(id)));
+    Object.fromEntries(
+      Object.entries(hits).filter(([id]) => !/^\d+$/.test(id)),
+    );
 
   return (
     coverage && {
       static: own(coverage.static),
       perTest: Object.fromEntries(
         Object.entries(coverage.perTest)
-          .map(([test, hits]): [string, Record<string, number>] => [test, own(hits)])
+          .map(([test, hits]): [string, Record<string, number>] => [
+            test,
+            own(hits),
+          ])
           .filter(([, hits]) => Object.keys(hits).length > 0),
       ),
     }
@@ -274,7 +346,10 @@ export function shareCompileCache(): string {
   // Removed on exit, so a process that dies early (which happens under mutation testing) leaves nothing. The runners
   // the tests never dispose (a mutant of the runner can give each one a directory) are swept here too.
   process.prependListener('exit', () => {
-    for (const dir of [cacheDir, ...ownCacheDirs().map((name) => join(tmpdir(), name))]) {
+    for (const dir of [
+      cacheDir,
+      ...ownCacheDirs().map((name) => join(tmpdir(), name)),
+    ]) {
       try {
         rmSync(dir, { recursive: true, force: true });
       } catch {
@@ -290,7 +365,8 @@ export function summary(tests: TestResult[]) {
   return tests.map((test) => ({
     id: test.id,
     status: test.status,
-    failureMessage: test.status === TestStatus.Failed ? test.failureMessage : undefined,
+    failureMessage:
+      test.status === TestStatus.Failed ? test.failureMessage : undefined,
   }));
 }
 

@@ -24,7 +24,8 @@ const groupEnded = [
 ];
 
 /** The signals sent, without the signal 0 that only asks whether the group is still there. */
-const sent = (calls: readonly unknown[][]) => calls.filter(([, signal]) => signal !== 0);
+const sent = (calls: readonly unknown[][]) =>
+  calls.filter(([, signal]) => signal !== 0);
 
 describe('endGroup', () => {
   const gone = Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' });
@@ -127,26 +128,51 @@ describe('endGroup', () => {
   });
 
   lzTestFor<readonly [string, NodeJS.Signals | 0, unknown]>([
-    ['an Error with another code', 'SIGTERM', Object.assign(new Error('kill EPERM'), { code: 'EPERM' })],
+    [
+      'an Error with another code',
+      'SIGTERM',
+      Object.assign(new Error('kill EPERM'), { code: 'EPERM' }),
+    ],
     ['an Error without a code', 'SIGTERM', new Error('kill failed')],
-    ['an object with the code ESRCH that is no Error', 'SIGTERM', { code: 'ESRCH' }],
+    [
+      'an object with the code ESRCH that is no Error',
+      'SIGTERM',
+      { code: 'ESRCH' },
+    ],
     ['a string', 'SIGTERM', 'ESRCH'],
-    ['an Error with another code', 0, Object.assign(new Error('kill EPERM'), { code: 'EPERM' })],
-    ['an Error with another code', 'SIGKILL', Object.assign(new Error('kill EPERM'), { code: 'EPERM' })],
-  ])('rejects with %s that sending %s throws', async ([, failing, thrown], t) => {
-    t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
-    const ended = setup('linux', { error: thrown, signal: failing }).end();
-    t.mock.timers.tick(200);
+    [
+      'an Error with another code',
+      0,
+      Object.assign(new Error('kill EPERM'), { code: 'EPERM' }),
+    ],
+    [
+      'an Error with another code',
+      'SIGKILL',
+      Object.assign(new Error('kill EPERM'), { code: 'EPERM' }),
+    ],
+  ])(
+    'rejects with %s that sending %s throws',
+    async ([, failing, thrown], t) => {
+      t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+      const ended = setup('linux', { error: thrown, signal: failing }).end();
+      t.mock.timers.tick(200);
 
-    await assert.rejects(ended, (error) => error === thrown);
-  });
+      await assert.rejects(ended, (error) => error === thrown);
+    },
+  );
 });
 
 describe('processEnd', () => {
-  function ending(platform: NodeJS.Platform = 'win32', options: { pid?: number | undefined; killError?: Error } = {}) {
+  function ending(
+    platform: NodeJS.Platform = 'win32',
+    options: { pid?: number | undefined; killError?: Error } = {},
+  ) {
     const { killError } = options;
     const pid = 'pid' in options ? options.pid : 123;
-    const child = Object.assign(new EventEmitter(), { pid, stderr: new PassThrough() });
+    const child = Object.assign(new EventEmitter(), {
+      pid,
+      stderr: new PassThrough(),
+    });
     const kills: unknown[][] = [];
     const end = processEnd(child, platform, (target, signal) => {
       kills.push([target, signal]);
@@ -204,7 +230,10 @@ describe('processEnd', () => {
     const kill = t.mock.method(process, 'kill', () => {
       throw Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' });
     });
-    const child = Object.assign(new EventEmitter(), { pid: 123, stderr: new PassThrough() });
+    const child = Object.assign(new EventEmitter(), {
+      pid: 123,
+      stderr: new PassThrough(),
+    });
     const end = processEnd(child, 'linux');
     child.emit('exit', 0);
     child.emit('close', 0);
@@ -249,10 +278,26 @@ describe('processEnd', () => {
   });
 
   lzTestFor<readonly [string, readonly (string | Buffer)[], string]>([
-    ['the last 8 KiB of stderr', ['dropped', 'x'.repeat(8191), 'y'], `${'x'.repeat(8191)}y`],
-    ['whole characters of the last 8 KiB of stderr', ['€'.repeat(3000)], '€'.repeat(2730)],
-    ['nothing of a stderr that holds only the end of a character', [Buffer.from('€').subarray(1)], ''],
-    ['nothing of the end of a character whose last byte is odd, as 0xa3 of £ is', [Buffer.from('£').subarray(1)], ''],
+    [
+      'the last 8 KiB of stderr',
+      ['dropped', 'x'.repeat(8191), 'y'],
+      `${'x'.repeat(8191)}y`,
+    ],
+    [
+      'whole characters of the last 8 KiB of stderr',
+      ['€'.repeat(3000)],
+      '€'.repeat(2730),
+    ],
+    [
+      'nothing of a stderr that holds only the end of a character',
+      [Buffer.from('€').subarray(1)],
+      '',
+    ],
+    [
+      'nothing of the end of a character whose last byte is odd, as 0xa3 of £ is',
+      [Buffer.from('£').subarray(1)],
+      '',
+    ],
   ])('keeps %s', async ([, writes, kept]) => {
     const { child, settled } = ending();
     writes.forEach((chunk) => child.stderr.write(chunk));

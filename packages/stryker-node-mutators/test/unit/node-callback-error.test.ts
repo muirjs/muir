@@ -11,8 +11,16 @@ describe('LzNodeCallbackError', () => {
     ['callback(error)', 'callback(error);', ['callback()']],
     ['done(e)', 'done(e);', ['done()']],
     ['next(er)', 'next(er);', ['next()']],
-    ['a callback returned', 'function end(err: Error, cb: (error?: Error) => void) {\n  return cb(err);\n}', ['cb()']],
-    ['a callback in a catch block', 'try {\n  run();\n} catch (e) {\n  done(e);\n}', ['done()']],
+    [
+      'a callback returned',
+      'function end(err: Error, cb: (error?: Error) => void) {\n  return cb(err);\n}',
+      ['cb()'],
+    ],
+    [
+      'a callback in a catch block',
+      'try {\n  run();\n} catch (e) {\n  done(e);\n}',
+      ['done()'],
+    ],
     ['stream.destroy(err)', 'stream.destroy(err);', ['stream.destroy()']],
     [
       'this.destroy(error)',

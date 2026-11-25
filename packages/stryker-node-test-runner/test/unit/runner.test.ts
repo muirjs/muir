@@ -4,15 +4,30 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { setImmediate } from 'node:timers/promises';
 
-import type { CoverageAnalysis, MutantCoverage } from '@stryker-mutator/api/core';
+import type {
+  CoverageAnalysis,
+  MutantCoverage,
+} from '@stryker-mutator/api/core';
 import type { Logger } from '@stryker-mutator/api/logging';
 import { TestStatus } from '@stryker-mutator/api/test-runner';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
 import { lzTestFor } from '@layzee/node-test-extensions';
-import { activeMutantEnv, envNames, type ProcessRecord, type RecordedTest } from '../../src/record.ts';
+import {
+  activeMutantEnv,
+  envNames,
+  type ProcessRecord,
+  type RecordedTest,
+} from '../../src/record.ts';
 import { callMember, construct, member } from '../reflect.fixtures.ts';
-import { activeMutant, dryRun, hookUrl, logger, mutantRunOptions, strykerOptions } from '../runner.fixtures.ts';
+import {
+  activeMutant,
+  dryRun,
+  hookUrl,
+  logger,
+  mutantRunOptions,
+  strykerOptions,
+} from '../runner.fixtures.ts';
 import {
   LzNodeTestTestRunner,
   lzFileError,
@@ -29,7 +44,11 @@ import {
 const file = join('/repo', 'a.test.mjs');
 
 describe('lzToTestResults', () => {
-  const base = (id: string) => ({ id, name: id.slice(`${file} > `.length), fileName: file });
+  const base = (id: string) => ({
+    id,
+    name: id.slice(`${file} > `.length),
+    fileName: file,
+  });
 
   it('reports each recorded test with its status, failure message, and rounded time plus the time the file spent outside its tests', () => {
     assert.deepEqual(
@@ -37,22 +56,40 @@ describe('lzToTestResults', () => {
         file,
         [
           { id: `${file} > passes`, status: 'passed', timeSpentMs: 1.6 },
-          { id: `${file} > fails`, status: 'failed', failureMessage: 'boom', timeSpentMs: 2.4 },
+          {
+            id: `${file} > fails`,
+            status: 'failed',
+            failureMessage: 'boom',
+            timeSpentMs: 2.4,
+          },
           { id: `${file} > fails silently`, status: 'failed', timeSpentMs: 0 },
           { id: `${file} > skipped`, status: 'skipped', timeSpentMs: 0.4 },
         ],
         10.4,
       ),
       [
-        { ...base(`${file} > passes`), timeSpentMs: 8, status: TestStatus.Success },
-        { ...base(`${file} > fails`), timeSpentMs: 8, status: TestStatus.Failed, failureMessage: 'boom' },
+        {
+          ...base(`${file} > passes`),
+          timeSpentMs: 8,
+          status: TestStatus.Success,
+        },
+        {
+          ...base(`${file} > fails`),
+          timeSpentMs: 8,
+          status: TestStatus.Failed,
+          failureMessage: 'boom',
+        },
         {
           ...base(`${file} > fails silently`),
           timeSpentMs: 6,
           status: TestStatus.Failed,
           failureMessage: 'Test failed',
         },
-        { ...base(`${file} > skipped`), timeSpentMs: 6, status: TestStatus.Skipped },
+        {
+          ...base(`${file} > skipped`),
+          timeSpentMs: 6,
+          status: TestStatus.Skipped,
+        },
       ],
     );
   });
@@ -63,7 +100,11 @@ describe('lzToTestResults', () => {
         file,
         [
           { id: `${file} > parent > first`, status: 'passed', timeSpentMs: 1 },
-          { id: `${file} > parent > second > third`, status: 'passed', timeSpentMs: 2 },
+          {
+            id: `${file} > parent > second > third`,
+            status: 'passed',
+            timeSpentMs: 2,
+          },
           { id: `${file} > parent > second`, status: 'passed', timeSpentMs: 3 },
           { id: `${file} > parent`, status: 'passed', timeSpentMs: 5 },
           { id: `${file} > parenthood`, status: 'passed', timeSpentMs: 1 },
@@ -78,8 +119,26 @@ describe('lzToTestResults', () => {
     const startPosition = { line: 4, column: 2 };
 
     assert.deepEqual(
-      lzToTestResults(file, [{ id: `${file} > passes`, status: 'passed', timeSpentMs: 1, startPosition }], 1),
-      [{ ...base(`${file} > passes`), timeSpentMs: 1, status: TestStatus.Success, startPosition }],
+      lzToTestResults(
+        file,
+        [
+          {
+            id: `${file} > passes`,
+            status: 'passed',
+            timeSpentMs: 1,
+            startPosition,
+          },
+        ],
+        1,
+      ),
+      [
+        {
+          ...base(`${file} > passes`),
+          timeSpentMs: 1,
+          status: TestStatus.Success,
+          startPosition,
+        },
+      ],
     );
   });
 });
@@ -94,11 +153,20 @@ describe('lzFileError', () => {
       string,
       number | null,
       string,
-      readonly { readonly diagnostics?: readonly string[]; readonly heldOpen?: readonly string[] }[],
+      readonly {
+        readonly diagnostics?: readonly string[];
+        readonly heldOpen?: readonly string[];
+      }[],
       readonly string[],
     ]
   >([
-    ['trimmed stderr', 1, '  \nline 1\nline 2 \n', [], ['Stderr, at most its last 8 KiB:', 'line 1', 'line 2']],
+    [
+      'trimmed stderr',
+      1,
+      '  \nline 1\nline 2 \n',
+      [],
+      ['Stderr, at most its last 8 KiB:', 'line 1', 'line 2'],
+    ],
     ['no stderr', 3, ' \n', [], []],
     ['the missing exit code of a killed process', null, '', [], []],
     [
@@ -106,7 +174,13 @@ describe('lzFileError', () => {
       1,
       'out',
       [{ diagnostics: ['late 1'] }, {}, { diagnostics: ['late 2'] }],
-      ['Diagnostics:', 'late 1', 'late 2', 'Stderr, at most its last 8 KiB:', 'out'],
+      [
+        'Diagnostics:',
+        'late 1',
+        'late 2',
+        'Stderr, at most its last 8 KiB:',
+        'out',
+      ],
     ],
     [
       'what held it open, which hid an error raised after a test ended',
@@ -118,28 +192,31 @@ describe('lzFileError', () => {
           'reports an error raised after a test ended only when its process ends by itself.',
       ],
     ],
-  ])('names the file, the exit code and the command, with %s', ([, exitCode, stderr, records, end]) => {
-    const run = {
-      records: records.map((record) => ({
-        tests: [],
-        ...(record.diagnostics && { diagnostics: [...record.diagnostics] }),
-        ...(record.heldOpen && { heldOpen: [...record.heldOpen] }),
-      })),
-      exitCode,
-      stderr,
-      fileArgs: ['--no-deprecation', file],
-      nodeOptions: [],
-    };
+  ])(
+    'names the file, the exit code and the command, with %s',
+    ([, exitCode, stderr, records, end]) => {
+      const run = {
+        records: records.map((record) => ({
+          tests: [],
+          ...(record.diagnostics && { diagnostics: [...record.diagnostics] }),
+          ...(record.heldOpen && { heldOpen: [...record.heldOpen] }),
+        })),
+        exitCode,
+        stderr,
+        fileArgs: ['--no-deprecation', file],
+        nodeOptions: [],
+      };
 
-    assert.equal(
-      lzFileError(file, run),
-      [
-        `Error running file "${file}": node exited with code ${String(exitCode)} outside any test.`,
-        command,
-        ...end,
-      ].join('\n'),
-    );
-  });
+      assert.equal(
+        lzFileError(file, run),
+        [
+          `Error running file "${file}": node exited with code ${String(exitCode)} outside any test.`,
+          command,
+          ...end,
+        ].join('\n'),
+      );
+    },
+  );
 
   it("names the test file's NODE_OPTIONS without the runner's hook and reporters", () => {
     const run = {
@@ -158,14 +235,24 @@ describe('lzFileError', () => {
   });
 
   it('names a NODE_OPTIONS of one option', () => {
-    const run = { records: [], exitCode: 1, stderr: '', fileArgs: [file], nodeOptions: ['--import tsx'] };
+    const run = {
+      records: [],
+      exitCode: 1,
+      stderr: '',
+      fileArgs: [file],
+      nodeOptions: ['--import tsx'],
+    };
 
-    assert.match(lzFileError(file, run), / with NODE_OPTIONS set to `--import tsx`, /);
+    assert.match(
+      lzFileError(file, run),
+      / with NODE_OPTIONS set to `--import tsx`, /,
+    );
   });
 });
 
 describe('LzNodeTestTestRunner options', () => {
-  const runner = (lzNodeTest: unknown) => new LzNodeTestTestRunner({ ...strykerOptions(), lzNodeTest }, logger());
+  const runner = (lzNodeTest: unknown) =>
+    new LzNodeTestTestRunner({ ...strykerOptions(), lzNodeTest }, logger());
   /** What the runner's constructor throws for `lzNodeTest`, or undefined when it takes them. */
   const refusal = (lzNodeTest: unknown): unknown => {
     try {
@@ -184,14 +271,26 @@ describe('LzNodeTestTestRunner options', () => {
   lzTestEach([
     ['no options', undefined],
     ['empty options', {}],
-    ['every option', { testFiles: ['a.test.ts'], nodeArgs: ['--enable-source-maps'], maxMemoryMB: 512 }],
+    [
+      'every option',
+      {
+        testFiles: ['a.test.ts'],
+        nodeArgs: ['--enable-source-maps'],
+        maxMemoryMB: 512,
+      },
+    ],
   ])('takes %s', (_title, options) => {
     assert.equal(refusal(options), undefined);
   });
 
-  lzTestFor([null, [], 'options'])('refuses %j, which is no options object', (options) => {
-    assert.throws(() => runner(options), { message: 'not valid lzNodeTest options' });
-  });
+  lzTestFor([null, [], 'options'])(
+    'refuses %j, which is no options object',
+    (options) => {
+      assert.throws(() => runner(options), {
+        message: 'not valid lzNodeTest options',
+      });
+    },
+  );
 
   lzTestEach([
     [{ testFiles: 'a.test.ts' }, 'testFiles'],
@@ -200,7 +299,9 @@ describe('LzNodeTestTestRunner options', () => {
     [{ nodeArgs: [null] }, 'nodeArgs'],
     [{ maxMemoryMB: '512' }, 'maxMemoryMB'],
   ])('refuses %j, naming %s', (options, field) => {
-    assert.throws(() => runner(options), { message: `not valid lzNodeTest options: ${field}` });
+    assert.throws(() => runner(options), {
+      message: `not valid lzNodeTest options: ${field}`,
+    });
   });
 });
 
@@ -212,14 +313,28 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
     constructor(
       record: ProcessRecord,
       log: Logger,
-      lzNodeTest: { readonly nodeArgs?: readonly string[]; readonly testFiles?: readonly string[] } = {},
+      lzNodeTest: {
+        readonly nodeArgs?: readonly string[];
+        readonly testFiles?: readonly string[];
+      } = {},
     ) {
-      super(strykerOptions({ lzNodeTest: { maxMemoryMB: 512, nodeArgs: [], ...lzNodeTest } }), log);
+      super(
+        strykerOptions({
+          lzNodeTest: { maxMemoryMB: 512, nodeArgs: [], ...lzNodeTest },
+        }),
+        log,
+      );
       this.#record = record;
     }
 
     override runFile() {
-      return Promise.resolve({ records: [this.#record], exitCode: 0, stderr: '', fileArgs: [], nodeOptions: [] });
+      return Promise.resolve({
+        records: [this.#record],
+        exitCode: 0,
+        stderr: '',
+        fileArgs: [],
+        nodeOptions: [],
+      });
     }
   }
 
@@ -234,7 +349,11 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
     const tests = [{ id: test, status, timeSpentMs: 1 }, ...others];
     const record: ProcessRecord = { main: true, tests, mutantCoverage };
 
-    await new RecordingRunner(record, logger({ warnings })).dryRun({ ...dryRun, coverageAnalysis, testFiles: [file] });
+    await new RecordingRunner(record, logger({ warnings })).dryRun({
+      ...dryRun,
+      coverageAnalysis,
+      testFiles: [file],
+    });
 
     return warnings;
   };
@@ -242,7 +361,10 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
   lzTestFor<CoverageAnalysis>(['perTest', 'all'])(
     'warns once, naming the likely causes, when the tests reach no instrumented code with coverage analysis %s',
     async (coverageAnalysis) => {
-      const warnings = await dryRunWarnings(coverageAnalysis, { static: {}, perTest: { [test]: {} } });
+      const warnings = await dryRunWarnings(coverageAnalysis, {
+        static: {},
+        perTest: { [test]: {} },
+      });
       const [warning = ''] = warnings;
 
       assert.equal(warnings.length, 1);
@@ -253,47 +375,99 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
   );
 
   it('warns when the tests reach no instrumented code and only some of them are skipped', async () => {
-    const passes: RecordedTest = { id: `${file} > also passes`, status: 'passed', timeSpentMs: 1 };
+    const passes: RecordedTest = {
+      id: `${file} > also passes`,
+      status: 'passed',
+      timeSpentMs: 1,
+    };
 
-    assert.equal((await dryRunWarnings('perTest', { static: {}, perTest: {} }, 'skipped', [passes])).length, 1);
+    assert.equal(
+      (
+        await dryRunWarnings(
+          'perTest',
+          { static: {}, perTest: {} },
+          'skipped',
+          [passes],
+        )
+      ).length,
+      1,
+    );
   });
 
-  lzTestEach<[string, CoverageAnalysis, MutantCoverage, RecordedTest['status']]>([
+  lzTestEach<
+    [string, CoverageAnalysis, MutantCoverage, RecordedTest['status']]
+  >([
     ['a static hit', 'perTest', { static: { 1: 1 }, perTest: {} }, 'passed'],
-    ['a hit in a test', 'perTest', { static: {}, perTest: { [test]: { 1: 1 } } }, 'passed'],
-    ['a hit with coverage analysis all', 'all', { static: {}, perTest: { [test]: { 1: 1 } } }, 'passed'],
+    [
+      'a hit in a test',
+      'perTest',
+      { static: {}, perTest: { [test]: { 1: 1 } } },
+      'passed',
+    ],
+    [
+      'a hit with coverage analysis all',
+      'all',
+      { static: {}, perTest: { [test]: { 1: 1 } } },
+      'passed',
+    ],
     ['coverage analysis off', 'off', { static: {}, perTest: {} }, 'passed'],
     ['only skipped tests', 'perTest', { static: {}, perTest: {} }, 'skipped'],
-  ])('does not warn about coverage with %s', async (_title, coverageAnalysis, mutantCoverage, status) => {
-    assert.deepEqual(await dryRunWarnings(coverageAnalysis, mutantCoverage, status), []);
-  });
+  ])(
+    'does not warn about coverage with %s',
+    async (_title, coverageAnalysis, mutantCoverage, status) => {
+      assert.deepEqual(
+        await dryRunWarnings(coverageAnalysis, mutantCoverage, status),
+        [],
+      );
+    },
+  );
 
   lzTestEach([
-    ['one reporter', ['--test-reporter=tap', '--enable-source-maps'], '--test-reporter=tap'],
-    ['a destination with its value', ['--test-reporter-destination', 'stdout'], '--test-reporter-destination stdout'],
-  ])('warns once about %s it leaves out of nodeArgs, naming it', async (_title, nodeArgs, named) => {
+    [
+      'one reporter',
+      ['--test-reporter=tap', '--enable-source-maps'],
+      '--test-reporter=tap',
+    ],
+    [
+      'a destination with its value',
+      ['--test-reporter-destination', 'stdout'],
+      '--test-reporter-destination stdout',
+    ],
+  ])(
+    'warns once about %s it leaves out of nodeArgs, naming it',
+    async (_title, nodeArgs, named) => {
+      const warnings: string[] = [];
+      const record: ProcessRecord = {
+        main: true,
+        tests: [{ id: test, status: 'passed', timeSpentMs: 1 }],
+        mutantCoverage: { static: {}, perTest: { [test]: { 1: 1 } } },
+      };
+
+      const runner = new RecordingRunner(record, logger({ warnings }), {
+        nodeArgs,
+      });
+
+      await runner.dryRun({ ...dryRun, testFiles: [file] });
+      await runner.mutantRun(mutantRunOptions({ testFilter: [test] }));
+
+      assert.deepEqual(
+        warnings.filter((warning) => warning.startsWith('Left out')),
+        [
+          `Left out \`${named}\` of lzNodeTest.nodeArgs, because the runner uses its own node:test reporter.`,
+        ],
+      );
+    },
+  );
+
+  it('warns once when no dry run left a list of the mutants it reached outside every test', async () => {
     const warnings: string[] = [];
     const record: ProcessRecord = {
       main: true,
       tests: [{ id: test, status: 'passed', timeSpentMs: 1 }],
-      mutantCoverage: { static: {}, perTest: { [test]: { 1: 1 } } },
     };
-
-    const runner = new RecordingRunner(record, logger({ warnings }), { nodeArgs });
-
-    await runner.dryRun({ ...dryRun, testFiles: [file] });
-    await runner.mutantRun(mutantRunOptions({ testFilter: [test] }));
-
-    assert.deepEqual(
-      warnings.filter((warning) => warning.startsWith('Left out')),
-      [`Left out \`${named}\` of lzNodeTest.nodeArgs, because the runner uses its own node:test reporter.`],
-    );
-  });
-
-  it('warns once when no dry run left a list of the mutants it reached outside every test', async () => {
-    const warnings: string[] = [];
-    const record: ProcessRecord = { main: true, tests: [{ id: test, status: 'passed', timeSpentMs: 1 }] };
-    const runner = new RecordingRunner(record, logger({ warnings }), { testFiles: ['never-dry-run/*.test.mjs'] });
+    const runner = new RecordingRunner(record, logger({ warnings }), {
+      testFiles: ['never-dry-run/*.test.mjs'],
+    });
 
     await runner.mutantRun(mutantRunOptions({ testFilter: [test] }));
     await runner.mutantRun(mutantRunOptions({ testFilter: [test] }));
@@ -315,8 +489,13 @@ describe('LzNodeTestTestRunner dry run coverage', () => {
       mutantCoverage: { static: { 1: 1 }, perTest: {} },
     };
 
-    await new RecordingRunner(record, logger()).dryRun({ ...dryRun, testFiles: [file] });
-    await new RecordingRunner(record, logger({ warnings })).mutantRun(mutantRunOptions({ testFilter: [test] }));
+    await new RecordingRunner(record, logger()).dryRun({
+      ...dryRun,
+      testFiles: [file],
+    });
+    await new RecordingRunner(record, logger({ warnings })).mutantRun(
+      mutantRunOptions({ testFilter: [test] }),
+    );
 
     assert.deepEqual(
       warnings.filter((warning) => warning.includes('outside every test')),
@@ -333,21 +512,29 @@ describe('lzStoredStrings', () => {
   });
 
   it('returns the strings the dry run stored', () => {
-    assert.deepEqual(lzStoredStrings(key, 'files', JSON.stringify([file])), [file]);
+    assert.deepEqual(lzStoredStrings(key, 'files', JSON.stringify([file])), [
+      file,
+    ]);
   });
 
-  lzTestFor(['', '[', '{}', '[1]', 'null'])('throws, naming the store entry, for content %j', (content) => {
-    assert.throws(() => lzStoredStrings(key, 'outside-tests', content), {
-      message: `The dry-run store's outside-tests entry ${key} is no JSON array of strings: ${content}`,
-    });
-  });
+  lzTestFor(['', '[', '{}', '[1]', 'null'])(
+    'throws, naming the store entry, for content %j',
+    (content) => {
+      assert.throws(() => lzStoredStrings(key, 'outside-tests', content), {
+        message: `The dry-run store's outside-tests entry ${key} is no JSON array of strings: ${content}`,
+      });
+    },
+  );
 
-  lzTestFor(['', '['])('keeps the parse error of content %j as the cause', (content) => {
-    assert.throws(
-      () => lzStoredStrings(key, 'files', content),
-      (error) => error instanceof Error && error.cause instanceof SyntaxError,
-    );
-  });
+  lzTestFor(['', '['])(
+    'keeps the parse error of content %j as the cause',
+    (content) => {
+      assert.throws(
+        () => lzStoredStrings(key, 'files', content),
+        (error) => error instanceof Error && error.cause instanceof SyntaxError,
+      );
+    },
+  );
 });
 
 describe('lzFilesFor', () => {
@@ -372,7 +559,11 @@ describe('lzFilesFor', () => {
 });
 
 describe('lzRunInPool', () => {
-  function setup(count: number, limit: number, stops: (result: number) => boolean = () => false) {
+  function setup(
+    count: number,
+    limit: number,
+    stops: (result: number) => boolean = () => false,
+  ) {
     const started: number[] = [];
     const settle: ((result: number) => void)[] = [];
     const fail: ((error: Error) => void)[] = [];
@@ -416,7 +607,11 @@ describe('lzRunInPool', () => {
   });
 
   it('starts no more items once a result stops the run, and returns the results of those it started', async () => {
-    const { started, settle, pool, turn } = setup(5, 2, (result) => result === 1);
+    const { started, settle, pool, turn } = setup(
+      5,
+      2,
+      (result) => result === 1,
+    );
 
     await turn();
     settle[1]?.(1);
@@ -429,7 +624,11 @@ describe('lzRunInPool', () => {
   });
 
   it('returns no results after the first item whose result stops the run, though a later one finished', async () => {
-    const { started, settle, pool, turn } = setup(5, 2, (result) => result === 0);
+    const { started, settle, pool, turn } = setup(
+      5,
+      2,
+      (result) => result === 0,
+    );
 
     await turn();
     settle[0]?.(0);
@@ -504,7 +703,10 @@ describe('lzTestRunnerConcurrency', () => {
   ])(
     'gives concurrency %j, with checkers %j, on %d cores %d test runners, as Stryker does',
     (concurrency, checkers, cores, runners) => {
-      assert.equal(lzTestRunnerConcurrency(concurrency, checkers, cores), runners);
+      assert.equal(
+        lzTestRunnerConcurrency(concurrency, checkers, cores),
+        runners,
+      );
     },
   );
 
@@ -527,16 +729,27 @@ describe('lzTestRunnerConcurrency', () => {
         import.meta.resolve('@stryker-mutator/core'),
       );
       const providerModule: unknown = await import(providerUrl.href);
-      const provider = construct(member(providerModule, 'ConcurrencyTokenProvider'), [
-        { checkers: [...checkers], concurrency },
-        logger(),
-      ]);
+      const provider = construct(
+        member(providerModule, 'ConcurrencyTokenProvider'),
+        [{ checkers: [...checkers], concurrency }, logger()],
+      );
       const tokens: unknown[] = [];
-      callMember(member(provider, 'testRunnerToken$'), 'subscribe', (token: unknown) => tokens.push(token));
+      callMember(
+        member(provider, 'testRunnerToken$'),
+        'subscribe',
+        (token: unknown) => tokens.push(token),
+      );
       callMember(provider, 'freeCheckers');
       callMember(provider, 'dispose');
 
-      assert.equal(lzTestRunnerConcurrency(concurrency, checkers.length > 0, availableParallelism()), tokens.length);
+      assert.equal(
+        lzTestRunnerConcurrency(
+          concurrency,
+          checkers.length > 0,
+          availableParallelism(),
+        ),
+        tokens.length,
+      );
     },
   );
 });
@@ -577,31 +790,44 @@ describe('lzRunEnv', () => {
     };
     const before = { ...base };
 
-    assert.deepEqual(envOf({ base, nodeOptions: ['--max-old-space-size=100'] }), {
-      PATH: 'path',
-      NODE_OPTIONS: `--import ${JSON.stringify(hookUrl)} --max-old-space-size=100`,
-      [envNames.out]: out,
-      [envNames.file]: file,
-      [envNames.dryRun]: 'false',
-      [envNames.runner]: String(process.pid),
-      TMPDIR: tmp,
-      TEMP: tmp,
-      TMP: tmp,
-    });
+    assert.deepEqual(
+      envOf({ base, nodeOptions: ['--max-old-space-size=100'] }),
+      {
+        PATH: 'path',
+        NODE_OPTIONS: `--import ${JSON.stringify(hookUrl)} --max-old-space-size=100`,
+        [envNames.out]: out,
+        [envNames.file]: file,
+        [envNames.dryRun]: 'false',
+        [envNames.runner]: String(process.pid),
+        TMPDIR: tmp,
+        TEMP: tmp,
+        TMP: tmp,
+      },
+    );
     assert.deepEqual(base, before);
   });
 
   it("leaves the test file the hook's own held-open time whatever the parent's environment sets", () => {
-    assert.equal(envOf({ base: { [envNames.heldOpen]: '200' } })[envNames.heldOpen], undefined);
+    assert.equal(
+      envOf({ base: { [envNames.heldOpen]: '200' } })[envNames.heldOpen],
+      undefined,
+    );
   });
 
   it("passes Stryker's timeoutMS on as the stall time of a mutant run only, whatever the parent's environment sets", () => {
     const base = { [envNames.stall]: '100' };
 
     assert.equal(envOf({ base, stallMs: 300 })[envNames.stall], '300');
-    const dryRunOptions = { dryRun: true, disableBail: true, coverageAnalysis: 'perTest' } satisfies LzRunOptions;
+    const dryRunOptions = {
+      dryRun: true,
+      disableBail: true,
+      coverageAnalysis: 'perTest',
+    } satisfies LzRunOptions;
 
-    assert.equal(envOf({ base, stallMs: 300, run: dryRunOptions })[envNames.stall], undefined);
+    assert.equal(
+      envOf({ base, stallMs: 300, run: dryRunOptions })[envNames.stall],
+      undefined,
+    );
     assert.equal(envOf({ base })[envNames.stall], undefined);
   });
 
@@ -609,7 +835,10 @@ describe('lzRunEnv', () => {
     const inherited = { NODE_COMPILE_CACHE: 'inherited' };
 
     assert.equal(envOf({ cacheDir: 'own' })['NODE_COMPILE_CACHE'], 'own');
-    assert.equal(envOf({ base: inherited, cacheDir: 'own' })['NODE_COMPILE_CACHE'], 'inherited');
+    assert.equal(
+      envOf({ base: inherited, cacheDir: 'own' })['NODE_COMPILE_CACHE'],
+      'inherited',
+    );
     assert.equal(envOf({ base: inherited })['NODE_COMPILE_CACHE'], 'inherited');
   });
 
@@ -645,22 +874,45 @@ describe('lzRunEnv', () => {
   });
 
   it("passes on only the filter's ids within the test file", () => {
-    const testFilter = [`${file} > test`, `${file}x > test`, `${file}-other > test`, file];
-    const env = envOf({ run: { dryRun: false, disableBail: true, testFilter } });
+    const testFilter = [
+      `${file} > test`,
+      `${file}x > test`,
+      `${file}-other > test`,
+      file,
+    ];
+    const env = envOf({
+      run: { dryRun: false, disableBail: true, testFilter },
+    });
 
-    assert.equal(env[envNames.filter], JSON.stringify([`${file} > test`, file]));
+    assert.equal(
+      env[envNames.filter],
+      JSON.stringify([`${file} > test`, file]),
+    );
   });
 
   it('activates the mutant from the start of the process, or for the hook to activate once the tests start', () => {
-    const run = { dryRun: false, disableBail: false, activeMutant: '12' } satisfies LzRunOptions;
+    const run = {
+      dryRun: false,
+      disableBail: false,
+      activeMutant: '12',
+    } satisfies LzRunOptions;
     const active = (mutantActivation: 'runtime' | 'static') => {
       const env = envOf({ run: { ...run, mutantActivation } });
 
-      return { atStart: env[activeMutant], onceTestsStart: env[envNames.activeMutant] };
+      return {
+        atStart: env[activeMutant],
+        onceTestsStart: env[envNames.activeMutant],
+      };
     };
 
-    assert.deepEqual(active('static'), { atStart: '12', onceTestsStart: undefined });
-    assert.deepEqual(active('runtime'), { atStart: undefined, onceTestsStart: '12' });
+    assert.deepEqual(active('static'), {
+      atStart: '12',
+      onceTestsStart: undefined,
+    });
+    assert.deepEqual(active('runtime'), {
+      atStart: undefined,
+      onceTestsStart: '12',
+    });
   });
 
   it('asks the test file to bail only in a mutant run with bail enabled', () => {

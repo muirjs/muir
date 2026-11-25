@@ -5,7 +5,8 @@ export function isObject(value: unknown): value is Record<string, unknown> {
 export const isBoolean = (value: unknown) => typeof value === 'boolean';
 export const isNumber = (value: unknown) => typeof value === 'number';
 export const isString = (value: unknown) => typeof value === 'string';
-export const isStrings = (value: unknown) => Array.isArray(value) && value.every(isString);
+export const isStrings = (value: unknown) =>
+  Array.isArray(value) && value.every(isString);
 
 /** `value` under `key` when it is there and passes `check`; nothing when it is not there. `fail` names `field`. */
 export function optional<TKey extends string, T>(

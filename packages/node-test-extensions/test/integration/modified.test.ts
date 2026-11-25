@@ -14,17 +14,33 @@ describe('the modifiers of lzTestEach and lzTestFor', () => {
           throw new Error('one');
         }
       });
-      lzTestFor.fails([1])('fails async %s', () => Promise.reject(new Error('rejects')));
+      lzTestFor.fails([1])('fails async %s', () =>
+        Promise.reject(new Error('rejects')),
+      );
       lzTestEach.todo.fails([1])('todo fails %s', () => {});
       lzTestEach.fails.todo([1])('fails todo %s', () => {});
     }, [
       { name: 'skip 1', outcome: 'pass', skip: true },
       { name: 'todo 1', outcome: 'pass', todo: true },
       { name: 'fails 1', outcome: 'pass' },
-      { name: 'fails 2', outcome: 'fail', error: 'The test passed, but it is marked to fail.' },
+      {
+        name: 'fails 2',
+        outcome: 'fail',
+        error: 'The test passed, but it is marked to fail.',
+      },
       { name: 'fails async 1', outcome: 'pass' },
-      { name: 'todo fails 1', outcome: 'fail', todo: true, error: 'The test passed, but it is marked to fail.' },
-      { name: 'fails todo 1', outcome: 'fail', todo: true, error: 'The test passed, but it is marked to fail.' },
+      {
+        name: 'todo fails 1',
+        outcome: 'fail',
+        todo: true,
+        error: 'The test passed, but it is marked to fail.',
+      },
+      {
+        name: 'fails todo 1',
+        outcome: 'fail',
+        todo: true,
+        error: 'The test passed, but it is marked to fail.',
+      },
     ]);
   });
 

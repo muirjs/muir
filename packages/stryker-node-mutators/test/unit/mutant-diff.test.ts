@@ -13,8 +13,17 @@ import type {
 } from '@layzee/stryker-mutator-core';
 import { corpusDiff, mutantDiff } from '../../src/mutant-diff.ts';
 
-function mutant(mutatorName: string, line: number, column: number, replacement = ';'): LzInstrumentedMutant {
-  return { mutatorName, replacement, location: { start: { line, column }, end: { line, column: column + 1 } } };
+function mutant(
+  mutatorName: string,
+  line: number,
+  column: number,
+  replacement = ';',
+): LzInstrumentedMutant {
+  return {
+    mutatorName,
+    replacement,
+    location: { start: { line, column }, end: { line, column: column + 1 } },
+  };
 }
 
 describe('mutantDiff', () => {
@@ -31,15 +40,24 @@ describe('mutantDiff', () => {
     ];
 
     assert.deepEqual(mutantDiff(before, after), {
-      added: ['1:5 LzNodeTestAssertCall throw new Error( "x" );', '1:5 LzNodeTestAssertCall throw new Error( "x" );'],
+      added: [
+        '1:5 LzNodeTestAssertCall throw new Error( "x" );',
+        '1:5 LzNodeTestAssertCall throw new Error( "x" );',
+      ],
       removed: ['1:5 CallExpression ;', '3:1 StringLiteral ""'],
     });
   });
 
   it('lists nothing when both sides have the same mutants', () => {
-    const mutants = [mutant('CallExpression', 0, 4), mutant('StringLiteral', 2, 0, '""')];
+    const mutants = [
+      mutant('CallExpression', 0, 4),
+      mutant('StringLiteral', 2, 0, '""'),
+    ];
 
-    assert.deepEqual(mutantDiff(mutants, [...mutants]), { added: [], removed: [] });
+    assert.deepEqual(mutantDiff(mutants, [...mutants]), {
+      added: [],
+      removed: [],
+    });
   });
 });
 
@@ -86,9 +104,18 @@ describe('corpusDiff', () => {
     assert.deepEqual(read, [owned, 'plain.ts']);
     assert.deepEqual(instrumented, [
       [[{ name: owned, content: `content of ${owned}` }], ['StringLiteral']],
-      [[{ name: owned, content: `content of ${owned}` }], ['StringLiteral', 'Own']],
-      [[{ name: 'plain.ts', content: 'content of plain.ts' }], ['StringLiteral']],
-      [[{ name: 'plain.ts', content: 'content of plain.ts' }], ['StringLiteral']],
+      [
+        [{ name: owned, content: `content of ${owned}` }],
+        ['StringLiteral', 'Own'],
+      ],
+      [
+        [{ name: 'plain.ts', content: 'content of plain.ts' }],
+        ['StringLiteral'],
+      ],
+      [
+        [{ name: 'plain.ts', content: 'content of plain.ts' }],
+        ['StringLiteral'],
+      ],
     ]);
   });
 
@@ -100,7 +127,11 @@ describe('corpusDiff', () => {
       setMutators() {},
       types,
       instrument(_files, mutators = []) {
-        return Promise.resolve([mutators.length > 0 ? mutant('Own', 0, 0) : mutant('CallExpression', 0, 0)]);
+        return Promise.resolve([
+          mutators.length > 0
+            ? mutant('Own', 0, 0)
+            : mutant('CallExpression', 0, 0),
+        ]);
       },
     };
 

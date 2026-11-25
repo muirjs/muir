@@ -6,7 +6,13 @@
 //   npm run bench -- --runner path/to/baseline/index.ts --runner packages/stryker-node-test-runner/src/index.ts
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -22,7 +28,14 @@ import {
 import { Bench } from 'tinybench';
 
 import { callMember, construct, member } from './reflect.fixtures.ts';
-import { cover, dryRun, fixture, logger, mutantRunOptions, strykerOptions } from './runner.fixtures.ts';
+import {
+  cover,
+  dryRun,
+  fixture,
+  logger,
+  mutantRunOptions,
+  strykerOptions,
+} from './runner.fixtures.ts';
 
 /**
  * A runner loaded from any path, this package's source or a baseline build of it, so the bench checks what its methods
@@ -39,7 +52,10 @@ interface Scenario {
   readonly run: (runner: BenchRunner) => Promise<number>;
 }
 
-function method(target: unknown, name: string): (...args: unknown[]) => Promise<unknown> {
+function method(
+  target: unknown,
+  name: string,
+): (...args: unknown[]) => Promise<unknown> {
   return async (...args) => {
     const result: unknown = await callMember(target, name, ...args);
 
@@ -82,7 +98,10 @@ const { values: args } = parseArgs({
 });
 const runs = Number(args.runs);
 const mutateRuns = Number(args['mutate-runs']);
-const runnerPaths = args.runner.length > 0 ? args.runner : [join(import.meta.dirname, '..', 'src', 'index.ts')];
+const runnerPaths =
+  args.runner.length > 0
+    ? args.runner
+    : [join(import.meta.dirname, '..', 'src', 'index.ts')];
 assert.ok(runs >= 1, 'runs must be >= 1');
 assert.ok(mutateRuns >= 0, 'mutate-runs must be >= 0');
 
@@ -95,10 +114,17 @@ function fixtureFile(index: number): string {
       spawns && test === 0
         ? `const child = spawnSync(process.execPath, ['-e', ${JSON.stringify(`${cover} cover('child-${index}');`)}]); assert.equal(child.status, 0, String(child.stderr));`
         : `assert.equal([${test}].length, 1);`;
-    tests.push(`  it('test ${test}', () => { cover('m-${index}-${test}'); ${body} });`);
+    tests.push(
+      `  it('test ${test}', () => { cover('m-${index}-${test}'); ${body} });`,
+    );
   }
 
-  return fixture(`cover('static-${index}');`, `describe('suite ${index}', () => {`, ...tests, '});');
+  return fixture(
+    `cover('static-${index}');`,
+    `describe('suite ${index}', () => {`,
+    ...tests,
+    '});',
+  );
 }
 
 function scenarios(files: string[]): Scenario[] {
@@ -121,7 +147,9 @@ function scenarios(files: string[]): Scenario[] {
         const perTest = member(member(result, 'mutantCoverage'), 'perTest');
         assert.equal(member(result, 'status'), DryRunStatus.Complete);
         assert.ok(Array.isArray(tests));
-        assert.ok(tests.every((test) => member(test, 'status') === TestStatus.Success));
+        assert.ok(
+          tests.every((test) => member(test, 'status') === TestStatus.Success),
+        );
         assert.equal(Object.keys(new Object(perTest)).length, testCount);
         assert.equal(member(member(perTest, testId(0, 0)), 'child-0'), 1);
 
@@ -131,7 +159,9 @@ function scenarios(files: string[]): Scenario[] {
     {
       name: 'mutant run, no filter (every file)',
       run: async (runner) => {
-        const result = await runner.mutantRun(mutantRunOptions({ timeout: 60_000 }));
+        const result = await runner.mutantRun(
+          mutantRunOptions({ timeout: 60_000 }),
+        );
         assert.equal(member(result, 'status'), MutantRunStatus.Survived);
         assert.equal(member(result, 'nrOfTests'), testCount);
 
@@ -142,7 +172,10 @@ function scenarios(files: string[]): Scenario[] {
       name: 'mutant run, filter covering 3 files',
       run: async (runner) => {
         const result = await runner.mutantRun(
-          mutantRunOptions({ timeout: 60_000, testFilter: [testId(0, 1), testId(2, 1), testId(4, 1)] }),
+          mutantRunOptions({
+            timeout: 60_000,
+            testFilter: [testId(0, 1), testId(2, 1), testId(4, 1)],
+          }),
         );
         assert.equal(member(result, 'status'), MutantRunStatus.Survived);
         assert.equal(member(result, 'nrOfTests'), 3);
@@ -153,7 +186,9 @@ function scenarios(files: string[]): Scenario[] {
     {
       name: 'mutant run, filter covering 1 file',
       run: async (runner) => {
-        const result = await runner.mutantRun(mutantRunOptions({ timeout: 60_000, testFilter: [testId(3, 2)] }));
+        const result = await runner.mutantRun(
+          mutantRunOptions({ timeout: 60_000, testFilter: [testId(3, 2)] }),
+        );
         assert.equal(member(result, 'status'), MutantRunStatus.Survived);
         assert.equal(member(result, 'nrOfTests'), 1);
 
@@ -166,21 +201,38 @@ function scenarios(files: string[]): Scenario[] {
 function stat(ms: number[]): Stat {
   const sorted = [...ms].sort((a, b) => a - b);
   // One middle value for an odd count, two for an even one.
-  const middle = sorted.slice(Math.floor((sorted.length - 1) / 2), Math.floor(sorted.length / 2) + 1);
-  const medianMs = middle.reduce((sum, value) => sum + value, 0) / middle.length;
+  const middle = sorted.slice(
+    Math.floor((sorted.length - 1) / 2),
+    Math.floor(sorted.length / 2) + 1,
+  );
+  const medianMs =
+    middle.reduce((sum, value) => sum + value, 0) / middle.length;
   const minMs = Math.min(...sorted);
   const maxMs = Math.max(...sorted);
 
-  return { runs: sorted.length, medianMs, minMs, maxMs, spread: (maxMs - minMs) / medianMs };
+  return {
+    runs: sorted.length,
+    medianMs,
+    minMs,
+    maxMs,
+    spread: (maxMs - minMs) / medianMs,
+  };
 }
 
-function format(name: string, { runs, medianMs, minMs, maxMs, spread }: Stat, unit = 'ms'): string {
-  const fixed = (value: number) => (unit === 'ms' ? value.toFixed(0) : value.toFixed(3)).padStart(7);
+function format(
+  name: string,
+  { runs, medianMs, minMs, maxMs, spread }: Stat,
+  unit = 'ms',
+): string {
+  const fixed = (value: number) =>
+    (unit === 'ms' ? value.toFixed(0) : value.toFixed(3)).padStart(7);
 
   return `${name.padEnd(44)} median ${fixed(medianMs)} ${unit}  min ${fixed(minMs)}  max ${fixed(maxMs)}  spread ${(spread * 100).toFixed(0).padStart(3)}%  runs ${runs}`;
 }
 
-async function round(tasks: [name: string, fn: () => unknown][]): Promise<Map<string, number>> {
+async function round(
+  tasks: [name: string, fn: () => unknown][],
+): Promise<Map<string, number>> {
   const bench = new Bench({
     iterations: 1,
     time: 0,
@@ -203,14 +255,18 @@ async function round(tasks: [name: string, fn: () => unknown][]): Promise<Map<st
   return new Map(
     results.map((task) => [
       task.name,
-      (task.result.state === 'completed' ? task.result.latency.samples?.[0] : undefined) ?? NaN,
+      (task.result.state === 'completed'
+        ? task.result.latency.samples?.[0]
+        : undefined) ?? NaN,
     ]),
   );
 }
 
 async function loadRunner(path: string, dir: string): Promise<BenchRunner> {
   const module: unknown = await import(pathToFileURL(resolve(path)).href);
-  const options = { lzNodeTest: { testFiles: [join(dir, '*.test.mjs').replaceAll('\\', '/')] } };
+  const options = {
+    lzNodeTest: { testFiles: [join(dir, '*.test.mjs').replaceAll('\\', '/')] },
+  };
   const runner = construct(member(module, 'LzNodeTestTestRunner'), [
     strykerOptions(options),
     logger({ debugEnabled: false }),
@@ -225,20 +281,31 @@ async function loadRunner(path: string, dir: string): Promise<BenchRunner> {
 }
 
 function mutateSuites(): string[] {
-  const nx: unknown = JSON.parse(readFileSync(join(workspaceRoot, 'nx.json'), 'utf8'));
+  const nx: unknown = JSON.parse(
+    readFileSync(join(workspaceRoot, 'nx.json'), 'utf8'),
+  );
   const targetDefaults = field(nx, 'targetDefaults');
   const targets = field(field(targetDefaults, 'mutate'), 'dependsOn');
   const commands: unknown[] = Array.isArray(targets)
     ? targets.map((target: unknown) =>
-        typeof target === 'string' ? field(field(field(targetDefaults, target), 'options'), 'command') : undefined,
+        typeof target === 'string'
+          ? field(field(field(targetDefaults, target), 'options'), 'command')
+          : undefined,
       )
     : [];
 
-  if (commands.length === 0 || !commands.every((command) => typeof command === 'string')) {
-    throw new Error('nx.json has no mutate target commands whose Stryker suites the bench could time');
+  if (
+    commands.length === 0 ||
+    !commands.every((command) => typeof command === 'string')
+  ) {
+    throw new Error(
+      'nx.json has no mutate target commands whose Stryker suites the bench could time',
+    );
   }
 
-  return commands.map((command: string) => command.replaceAll('{projectRoot}', projectRoot));
+  return commands.map((command: string) =>
+    command.replaceAll('{projectRoot}', projectRoot),
+  );
 }
 
 function field(value: unknown, key: string): unknown {
@@ -254,13 +321,23 @@ function mutate(suite: string): void {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',
   });
-  assert.equal(result.status, 0, `${suite} failed:\n${result.stdout}\n${result.stderr}`);
+  assert.equal(
+    result.status,
+    0,
+    `${suite} failed:\n${result.stdout}\n${result.stderr}`,
+  );
   const summary = result.stdout.match(/All files\s*\|\s*([\d.]+)/);
-  assert.equal(summary?.[1], '100.00', `${suite} did not reach 100%:\n${result.stdout}`);
+  assert.equal(
+    summary?.[1],
+    '100.00',
+    `${suite} did not reach 100%:\n${result.stdout}`,
+  );
 }
 
 async function main(): Promise<void> {
-  const dir = realpathSync.native(mkdtempSync(join(tmpdir(), 'node-test-runner-bench-')));
+  const dir = realpathSync.native(
+    mkdtempSync(join(tmpdir(), 'node-test-runner-bench-')),
+  );
   const files: string[] = [];
   const runners: BenchRunner[] = [];
 
@@ -279,18 +356,25 @@ async function main(): Promise<void> {
     );
     runners.push(...labeled.map(({ runner }) => runner));
     const samples = new Map<string, number[]>();
-    const add = (label: string, ms: number) => samples.set(label, [...(samples.get(label) ?? []), ms]);
+    const add = (label: string, ms: number) =>
+      samples.set(label, [...(samples.get(label) ?? []), ms]);
 
-    console.log(`node ${process.version} on ${process.platform} ${process.arch}, ${availableParallelism()} cores`);
-    console.log(`fixtures: ${fileCount} files x ${testsPerFile} tests, ${spawningFiles} files spawn a child process`);
+    console.log(
+      `node ${process.version} on ${process.platform} ${process.arch}, ${availableParallelism()} cores`,
+    );
+    console.log(
+      `fixtures: ${fileCount} files x ${testsPerFile} tests, ${spawningFiles} files spawn a child process`,
+    );
 
     for (const scenario of scenarios(files)) {
-      const sides = labeled.map(({ runner, label }): [string, () => Promise<void>] => [
-        `${label}${scenario.name}`,
-        async () => {
-          assert.ok((await scenario.run(runner)) > 0);
-        },
-      ]);
+      const sides = labeled.map(
+        ({ runner, label }): [string, () => Promise<void>] => [
+          `${label}${scenario.name}`,
+          async () => {
+            assert.ok((await scenario.run(runner)) > 0);
+          },
+        ],
+      );
       await round(sides);
       const [first] = sides;
 
@@ -307,7 +391,10 @@ async function main(): Promise<void> {
           add(label, timeOf(times, label));
 
           if (label !== firstLabel) {
-            add(`${label} / first runner`, timeOf(times, label) / timeOf(times, firstLabel));
+            add(
+              `${label} / first runner`,
+              timeOf(times, label) / timeOf(times, firstLabel),
+            );
           }
         }
       }
@@ -323,10 +410,14 @@ async function main(): Promise<void> {
       }
     }
 
-    const stats = Object.fromEntries([...samples].map(([label, values]) => [label, stat(values)]));
+    const stats = Object.fromEntries(
+      [...samples].map(([label, values]) => [label, stat(values)]),
+    );
 
     for (const [label, value] of Object.entries(stats)) {
-      console.log(format(label, value, label.endsWith(' / first runner') ? 'x' : 'ms'));
+      console.log(
+        format(label, value, label.endsWith(' / first runner') ? 'x' : 'ms'),
+      );
     }
 
     if (args.json) {

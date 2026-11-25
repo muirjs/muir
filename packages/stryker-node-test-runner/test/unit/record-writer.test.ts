@@ -24,7 +24,10 @@ const path = join('/tmp', 'out', '4321.0.json');
 /** The process's events, record writes and timers, which a test drives as Node.js would. */
 function fakeProcess(overrides: Partial<LzRecordDependencies>) {
   const exitListeners: (() => void)[] = [];
-  const signalListeners: { readonly signal: LzEndingSignal; readonly listener: () => void }[] = [];
+  const signalListeners: {
+    readonly signal: LzEndingSignal;
+    readonly listener: () => void;
+  }[] = [];
   let signalExitEmitters: readonly unknown[] = [];
   const raised: LzEndingSignal[] = [];
   const records: Written[] = [];
@@ -49,10 +52,13 @@ function fakeProcess(overrides: Partial<LzRecordDependencies>) {
         signalListeners.push({ signal, listener });
       },
       off: (signal, listener) => {
-        const index = signalListeners.findIndex((entry) => entry.signal === signal && entry.listener === listener);
+        const index = signalListeners.findIndex(
+          (entry) => entry.signal === signal && entry.listener === listener,
+        );
         signalListeners.splice(index, 1);
       },
-      listenerCount: (signal) => signalListeners.filter((entry) => entry.signal === signal).length,
+      listenerCount: (signal) =>
+        signalListeners.filter((entry) => entry.signal === signal).length,
       signalExitEmitters: () => signalExitEmitters,
       raise: (signal) => {
         raised.push(signal);
@@ -88,18 +94,31 @@ function fakeProcess(overrides: Partial<LzRecordDependencies>) {
         });
     },
     listenerCounts: () =>
-      Object.fromEntries(lzEndingSignals.map((signal) => [signal, deps.signals?.listenerCount(signal)])),
+      Object.fromEntries(
+        lzEndingSignals.map((signal) => [
+          signal,
+          deps.signals?.listenerCount(signal),
+        ]),
+      ),
   };
 }
 
 /** A process whose record carries its coverage as it is at each write; `hit` counts a hit as instrumented code does. */
 function persisted(
-  options: { readonly main: boolean; readonly dryRun: boolean } = { main: false, dryRun: false },
+  options: { readonly main: boolean; readonly dryRun: boolean } = {
+    main: false,
+    dryRun: false,
+  },
   overrides: Partial<LzRecordDependencies> = {},
 ) {
   const fake = fakeProcess(overrides);
   const coverage: MutantCoverage = { static: {}, perTest: {} };
-  lzPersistRecord(fake.deps, path, () => ({ tests: [], mutantCoverage: structuredClone(coverage) }), options);
+  lzPersistRecord(
+    fake.deps,
+    path,
+    () => ({ tests: [], mutantCoverage: structuredClone(coverage) }),
+    options,
+  );
 
   return {
     ...fake,
@@ -132,7 +151,9 @@ describe('lzPersistRecord, for a process that a signal ends', () => {
     assert.equal(windows.records.length, 1);
   });
 
-  lzTestFor<readonly [LzEndingSignal]>(lzEndingSignals.map((signal) => [signal]))(
+  lzTestFor<readonly [LzEndingSignal]>(
+    lzEndingSignals.map((signal) => [signal]),
+  )(
     'writes the record on %s, stops listening and raises the signal again, as no other listener decides how the process ends',
     ([signal]) => {
       const { records, raised, signal: send, listenerCounts } = persisted();
@@ -172,23 +193,34 @@ describe('lzPersistRecord, for a process that a signal ends', () => {
   });
 
   lzTestFor<readonly [string, readonly unknown[], readonly LzEndingSignal[]]>([
-    ["raises the signal when every other listener is signal-exit's", [{ count: 1 }, { count: 1 }], ['SIGTERM']],
+    [
+      "raises the signal when every other listener is signal-exit's",
+      [{ count: 1 }, { count: 1 }],
+      ['SIGTERM'],
+    ],
     [
       'raises the signal when one signal-exit counts every other listener and one counts none',
       [{ count: 2 }, undefined],
       ['SIGTERM'],
     ],
-    ['leaves the signal to the other listeners when no signal-exit counts them', [undefined, { count: '2' }], []],
-  ])('%s, which leaves how the process ends to any other listener', ([, emitters, expected]) => {
-    const { raised, signal, listen, useSignalExit } = persisted();
-    useSignalExit(emitters);
-    listen('SIGTERM', () => {});
-    listen('SIGTERM', () => {});
+    [
+      'leaves the signal to the other listeners when no signal-exit counts them',
+      [undefined, { count: '2' }],
+      [],
+    ],
+  ])(
+    '%s, which leaves how the process ends to any other listener',
+    ([, emitters, expected]) => {
+      const { raised, signal, listen, useSignalExit } = persisted();
+      useSignalExit(emitters);
+      listen('SIGTERM', () => {});
+      listen('SIGTERM', () => {});
 
-    signal('SIGTERM');
+      signal('SIGTERM');
 
-    assert.deepEqual(raised, expected);
-  });
+      assert.deepEqual(raised, expected);
+    },
+  );
 });
 
 /**
@@ -221,7 +253,11 @@ describe('lzPersistRecord, at exit', () => {
   lzTestFor(['EPERM', 'EBUSY'])(
     'exits without an error on Windows when the record of a process the tests started fails with %s, as the run is over',
     (code) => {
-      const { exit, writes } = failingWrites({ main: false, dryRun: false }, code, 'win32');
+      const { exit, writes } = failingWrites(
+        { main: false, dryRun: false },
+        code,
+        'win32',
+      );
 
       exit();
 
@@ -230,19 +266,30 @@ describe('lzPersistRecord, at exit', () => {
   );
 
   it('lets any other error through on Windows when the record of a process the tests started cannot be written', () => {
-    const { exit } = failingWrites({ main: false, dryRun: false }, 'EACCES', 'win32');
+    const { exit } = failingWrites(
+      { main: false, dryRun: false },
+      'EACCES',
+      'win32',
+    );
 
     assert.throws(exit, /EACCES/);
   });
 
   it("lets the error through on Windows when the test file's own record fails with EPERM", () => {
-    const { exit } = failingWrites({ main: true, dryRun: false }, 'EPERM', 'win32');
+    const { exit } = failingWrites(
+      { main: true, dryRun: false },
+      'EPERM',
+      'win32',
+    );
 
     assert.throws(exit, /EPERM/);
   });
 
   it('exits without an error when the record of a process the tests started can no longer be written, as the run is over', () => {
-    const { exit, writes } = failingWrites({ main: false, dryRun: false }, 'ENOENT');
+    const { exit, writes } = failingWrites(
+      { main: false, dryRun: false },
+      'ENOENT',
+    );
 
     exit();
 
@@ -278,7 +325,13 @@ describe('lzHits', () => {
   });
 
   it('counts the hits of every mutant, static and per test', () => {
-    assert.equal(lzHits({ static: { 1: 2, 2: 1 }, perTest: { a: { 1: 3 }, b: { 3: 1, 4: 5 } } }), 12);
+    assert.equal(
+      lzHits({
+        static: { 1: 2, 2: 1 },
+        perTest: { a: { 1: 3 }, b: { 3: 1, 4: 5 } },
+      }),
+      12,
+    );
   });
 });
 
@@ -314,9 +367,14 @@ describe('lzPersistRecord, in the dry run, for a process that ends without runni
     );
   });
 
-  lzTestFor<readonly [string, { readonly main: boolean; readonly dryRun: boolean }]>([
+  lzTestFor<
+    readonly [string, { readonly main: boolean; readonly dryRun: boolean }]
+  >([
     ['outside the dry run', { main: false, dryRun: false }],
-    ["in the test file's own process, whose record the runner ends it to write", { main: true, dryRun: true }],
+    [
+      "in the test file's own process, whose record the runner ends it to write",
+      { main: true, dryRun: true },
+    ],
   ])('writes no record while the process runs %s', ([, options]) => {
     const { intervals } = persisted(options);
 
@@ -327,7 +385,10 @@ describe('lzPersistRecord, in the dry run, for a process that ends without runni
    * A process whose record writes fail with `code`. `write` makes the one write it makes while it runs once a hit has
    * grown its coverage; `attempts` counts the writes.
    */
-  function writeWhileRunning(code: string, platform: NodeJS.Platform = 'linux') {
+  function writeWhileRunning(
+    code: string,
+    platform: NodeJS.Platform = 'linux',
+  ) {
     let attempts = 0;
     const p = persisted(descendant, {
       platform,
@@ -364,14 +425,17 @@ describe('lzPersistRecord, in the dry run, for a process that ends without runni
     assert.throws(write, /EPERM/);
   });
 
-  lzTestFor(['EPERM', 'EBUSY'])('keeps the process running on Windows when its record write fails with %s', (code) => {
-    const { write, attempts } = writeWhileRunning(code, 'win32');
+  lzTestFor(['EPERM', 'EBUSY'])(
+    'keeps the process running on Windows when its record write fails with %s',
+    (code) => {
+      const { write, attempts } = writeWhileRunning(code, 'win32');
 
-    write();
-    write();
+      write();
+      write();
 
-    assert.equal(attempts(), 2);
-  });
+      assert.equal(attempts(), 2);
+    },
+  );
 
   it('writes the record again on Windows after a write that failed with EPERM, though the coverage has not grown since', () => {
     const written: number[] = [];

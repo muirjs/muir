@@ -28,7 +28,12 @@ export async function lzExec(
   { cwd, env = process.env, timeoutMs, logFile }: LzExecOptions,
 ): Promise<LzExecResult> {
   // Stryker disable next-line BooleanLiteral: equivalent for tests, as windowsHide only hides a console window that no test can see
-  const child = spawn(file, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+  const child = spawn(file, args, {
+    cwd,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
   const closed = once(child, 'close');
   let timedOut = false;
   const timer =

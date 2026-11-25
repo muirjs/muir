@@ -28,6 +28,10 @@ describe('jsMutatorSets', () => {
 
 describe('jsMutators', () => {
   it('lists every mutator of the sets', () => {
-    assert.deepEqual(jsMutators, [...jsMutatorSets.defaults, ...jsMutatorSets.optIn, ...jsMutatorSets.experimental]);
+    assert.deepEqual(jsMutators, [
+      ...jsMutatorSets.defaults,
+      ...jsMutatorSets.optIn,
+      ...jsMutatorSets.experimental,
+    ]);
   });
 });

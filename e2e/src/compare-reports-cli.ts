@@ -6,7 +6,9 @@ import { lzParseReport } from './report.ts';
 const [firstFile, secondFile, ...extra] = process.argv.slice(2);
 
 if (firstFile === undefined || secondFile === undefined || extra.length > 0) {
-  throw new Error('Usage: node e2e/src/compare-reports-cli.ts <first mutation.json> <second mutation.json>');
+  throw new Error(
+    'Usage: node e2e/src/compare-reports-cli.ts <first mutation.json> <second mutation.json>',
+  );
 }
 
 const differences = lzCompareReports(

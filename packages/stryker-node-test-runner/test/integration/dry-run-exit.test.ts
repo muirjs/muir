@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
@@ -13,7 +20,10 @@ import { lzOwnDryRun } from '../../src/dry-run-store.ts';
 // runner's variables and report no coverage, so the runner credits the exit listener's mutants to this file's tests.
 lzOwnDryRun();
 
-const src = (file: string) => JSON.stringify(pathToFileURL(join(import.meta.dirname, '../../src', file)).href);
+const src = (file: string) =>
+  JSON.stringify(
+    pathToFileURL(join(import.meta.dirname, '../../src', file)).href,
+  );
 
 /**
  * Stands in for Stryker's main process: it imports the plugin entry, as Stryker's plugin loader does, and holds the
@@ -73,13 +83,17 @@ const strykerMainWithWorker = [
 ].join('\n');
 
 function ownEnv(tmp: string): NodeJS.ProcessEnv {
-  const inherited = Object.entries(process.env).filter(([key]) => !key.startsWith('LZ_STRYKER_NODE_TEST_'));
+  const inherited = Object.entries(process.env).filter(
+    ([key]) => !key.startsWith('LZ_STRYKER_NODE_TEST_'),
+  );
 
   return { ...Object.fromEntries(inherited), TMP: tmp, TEMP: tmp, TMPDIR: tmp };
 }
 
 function storesIn(dir: string): string[] {
-  return readdirSync(dir).filter((name) => name.startsWith('lz-node-test-dry-run-'));
+  return readdirSync(dir).filter((name) =>
+    name.startsWith('lz-node-test-dry-run-'),
+  );
 }
 
 /** A temporary directory with a project of one passing test file, for a process to run in with that TEMP. */
@@ -90,7 +104,10 @@ function projectIn(t: TestContext): { tmp: string; project: string } {
   });
   const project = join(tmp, 'project');
   mkdirSync(project);
-  writeFileSync(join(project, 'a.test.mjs'), "import { it } from 'node:test';\nit('passes', () => {});\n");
+  writeFileSync(
+    join(project, 'a.test.mjs'),
+    "import { it } from 'node:test';\nit('passes', () => {});\n",
+  );
 
   return { tmp, project };
 }
@@ -101,7 +118,12 @@ describe('the runner module in a process whose parent never loads it', () => {
 
     const child = spawnSync(
       process.execPath,
-      ['--conditions=@layzee/source', '--input-type=module', '--eval', dryRunInOwnProcess],
+      [
+        '--conditions=@layzee/source',
+        '--input-type=module',
+        '--eval',
+        dryRunInOwnProcess,
+      ],
       { cwd: project, env: ownEnv(tmp), encoding: 'utf8', windowsHide: true },
     );
 
@@ -116,7 +138,12 @@ describe("the runner module in Stryker's main process", () => {
 
     const child = spawnSync(
       process.execPath,
-      ['--conditions=@layzee/source', '--input-type=module', '--eval', strykerMainWithWorker],
+      [
+        '--conditions=@layzee/source',
+        '--input-type=module',
+        '--eval',
+        strykerMainWithWorker,
+      ],
       { cwd: project, env: ownEnv(tmp), encoding: 'utf8', windowsHide: true },
     );
     assert.equal(
@@ -138,12 +165,20 @@ describe("the runner module in Stryker's main process", () => {
 
     const child = spawnSync(
       process.execPath,
-      ['--conditions=@layzee/source', '--input-type=module', '--eval', strykerMain(end)],
+      [
+        '--conditions=@layzee/source',
+        '--input-type=module',
+        '--eval',
+        strykerMain(end),
+      ],
       { env: ownEnv(tmp), encoding: 'utf8', windowsHide: true },
     );
     const dir = child.stdout;
 
-    assert.ok(dir.startsWith(tmp), `the child made no dry-run store: ${child.stderr}`);
+    assert.ok(
+      dir.startsWith(tmp),
+      `the child made no dry-run store: ${child.stderr}`,
+    );
     assert.equal(existsSync(dir), false);
   });
 });

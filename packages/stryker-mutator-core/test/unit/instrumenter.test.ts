@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -8,14 +14,32 @@ import { pathToFileURL } from 'node:url';
 import { types } from '@babel/core';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
-import { corePackageJsons, lzResolveFromCore, type LzListedMutator } from '../../src/instrumenter.ts';
+import {
+  corePackageJsons,
+  lzResolveFromCore,
+  type LzListedMutator,
+} from '../../src/instrumenter.ts';
 import type { LzNodeMutatorLike } from '../../src/mutator.ts';
 
-const sampleLocation = { start: { line: 0, column: 0 }, end: { line: 0, column: 1 } };
+const sampleLocation = {
+  start: { line: 0, column: 0 },
+  end: { line: 0, column: 1 },
+};
 
 describe('corePackageJsons', () => {
-  const globalCore = join('/global', 'node_modules', '@stryker-mutator', 'core');
-  const here = join('/repo', 'node_modules', '@stryker-mutator', 'core', 'package.json');
+  const globalCore = join(
+    '/global',
+    'node_modules',
+    '@stryker-mutator',
+    'core',
+  );
+  const here = join(
+    '/repo',
+    'node_modules',
+    '@stryker-mutator',
+    'core',
+    'package.json',
+  );
 
   function coreFor(real: string | undefined) {
     return corePackageJsons(
@@ -24,7 +48,9 @@ describe('corePackageJsons', () => {
         assert.equal(path, '/usr/local/bin/stryker');
 
         if (real === undefined) {
-          throw new Error(`ENOENT: no such file or directory, realpath '${path}'`);
+          throw new Error(
+            `ENOENT: no such file or directory, realpath '${path}'`,
+          );
         }
 
         return real;
@@ -38,28 +64,65 @@ describe('corePackageJsons', () => {
   }
 
   it("takes the core whose bin started the process, through the bin's links", () => {
-    assert.deepEqual(coreFor(join(globalCore, 'bin', 'stryker.js')), [join(globalCore, 'package.json')]);
+    assert.deepEqual(coreFor(join(globalCore, 'bin', 'stryker.js')), [
+      join(globalCore, 'package.json'),
+    ]);
   });
 
   lzTestEach([
     ['another script', join('/repo', 'tools', 'corpus-diff.ts')],
     ['a file next to the bin', join(globalCore, 'bin', 'stryker.js.map')],
-    ["another package's bin", join('/global', 'node_modules', '@stryker-mutator', 'other', 'bin', 'stryker.js')],
+    [
+      "another package's bin",
+      join(
+        '/global',
+        'node_modules',
+        '@stryker-mutator',
+        'other',
+        'bin',
+        'stryker.js',
+      ),
+    ],
     ['a script that is no file', undefined],
-  ])('takes the core this module resolves when the process runs %s', (_title, real) => {
-    assert.deepEqual(coreFor(real), [here]);
-  });
+  ])(
+    'takes the core this module resolves when the process runs %s',
+    (_title, real) => {
+      assert.deepEqual(coreFor(real), [here]);
+    },
+  );
 
-  const upperCore = 'D:\\repo\\node_modules\\@stryker-mutator\\core\\package.json';
-  const lowerCore = 'd:\\repo\\node_modules\\@stryker-mutator\\core\\package.json';
+  const upperCore =
+    'D:\\repo\\node_modules\\@stryker-mutator\\core\\package.json';
+  const lowerCore =
+    'd:\\repo\\node_modules\\@stryker-mutator\\core\\package.json';
 
   lzTestEach([
-    ['in lower case, and this module in upper case', 'd:\\repo\\tools\\stryker.mjs', upperCore, [lowerCore, upperCore]],
-    ['in upper case, and this module in lower case', 'D:\\repo\\tools\\stryker.mjs', lowerCore, [upperCore, lowerCore]],
-    ['in the case of this module', 'D:\\repo\\tools\\stryker.mjs', upperCore, [upperCore]],
+    [
+      'in lower case, and this module in upper case',
+      'd:\\repo\\tools\\stryker.mjs',
+      upperCore,
+      [lowerCore, upperCore],
+    ],
+    [
+      'in upper case, and this module in lower case',
+      'D:\\repo\\tools\\stryker.mjs',
+      lowerCore,
+      [upperCore, lowerCore],
+    ],
+    [
+      'in the case of this module',
+      'D:\\repo\\tools\\stryker.mjs',
+      upperCore,
+      [upperCore],
+    ],
     ['of another drive', 'e:\\tools\\stryker.mjs', upperCore, [upperCore]],
     ['of none', '/repo/tools/stryker.mjs', upperCore, [upperCore]],
-    ['of none, though a later folder is a letter and a colon', '/repo/d:/stryker.mjs', upperCore, [upperCore]],
+    [
+      'of none, though a later folder is a letter and a colon',
+      '/repo/d:/stryker.mjs',
+      upperCore,
+      [upperCore],
+    ],
   ])(
     "takes the core this module resolves in the drive-letter case of the script that started the process, and in its own, when the script's real path has a drive letter %s",
     (_title, script, resolvedCore, expected) => {
@@ -98,13 +161,17 @@ describe('lzResolveFromCore', () => {
     };
 
     const mutants = async (mutators?: LzNodeMutatorLike[]) =>
-      (await instrumenter.instrument(files, mutators)).map(({ mutatorName, replacement }) => [
-        mutatorName,
-        replacement,
-      ]);
+      (await instrumenter.instrument(files, mutators)).map(
+        ({ mutatorName, replacement }) => [mutatorName, replacement],
+      );
 
-    assert.deepEqual([await mutants(), await mutants([own])], [[['StringLiteral', '""']], [['Own', '"y"']]]);
-    assert.ok(instrumenter.allMutators.some(({ name }) => name === 'StringLiteral'));
+    assert.deepEqual(
+      [await mutants(), await mutants([own])],
+      [[['StringLiteral', '""']], [['Own', '"y"']]],
+    );
+    assert.ok(
+      instrumenter.allMutators.some(({ name }) => name === 'StringLiteral'),
+    );
   });
 
   function loadingWith(file: string, replacement: unknown) {
@@ -131,9 +198,24 @@ describe('lzResolveFromCore', () => {
   const indexFile = join('dist', 'src', 'index.js');
 
   lzTestEach([
-    ['allMutators that is no array', mutateFile, { allMutators: {} }, 'allMutators'],
-    ['a listed mutator that is null', mutateFile, { allMutators: [null] }, 'allMutators'],
-    ['a listed mutator with no name', mutateFile, { allMutators: [{ mutate() {} }] }, 'allMutators'],
+    [
+      'allMutators that is no array',
+      mutateFile,
+      { allMutators: {} },
+      'allMutators',
+    ],
+    [
+      'a listed mutator that is null',
+      mutateFile,
+      { allMutators: [null] },
+      'allMutators',
+    ],
+    [
+      'a listed mutator with no name',
+      mutateFile,
+      { allMutators: [{ mutate() {} }] },
+      'allMutators',
+    ],
     [
       'a listed mutator that is null after one it reads',
       mutateFile,
@@ -161,8 +243,18 @@ describe('lzResolveFromCore', () => {
     ['no Instrumenter class', indexFile, { Instrumenter: {} }, 'Instrumenter'],
     ['no Babel types', babelFile, {}, 'types'],
     ['Babel types that are null', babelFile, { types: null }, 'types'],
-    ['Babel types without a builder', babelFile, { types: { ...types, stringLiteral: undefined } }, 'types'],
-    ['Babel types without unaryExpression', babelFile, { types: { ...types, unaryExpression: undefined } }, 'types'],
+    [
+      'Babel types without a builder',
+      babelFile,
+      { types: { ...types, stringLiteral: undefined } },
+      'types',
+    ],
+    [
+      'Babel types without unaryExpression',
+      babelFile,
+      { types: { ...types, unaryExpression: undefined } },
+      'types',
+    ],
   ])('refuses an instrumenter with %s', async (_title, file, module, key) => {
     const { load, replaced } = loadingWith(file, module);
     const resolving = lzResolveFromCore(corePackageJsons()[0], load);
@@ -171,7 +263,9 @@ describe('lzResolveFromCore', () => {
   });
 
   it("takes the instrumenter's Babel types when they lack a member the mutators do not call", async () => {
-    const older = Object.fromEntries(Object.entries(types).filter(([key]) => key !== 'tsTypeAnnotation'));
+    const older = Object.fromEntries(
+      Object.entries(types).filter(([key]) => key !== 'tsTypeAnnotation'),
+    );
     const { load } = loadingWith(babelFile, { types: older });
 
     const instrumenter = await lzResolveFromCore(corePackageJsons()[0], load);
@@ -194,19 +288,29 @@ describe('lzResolveFromCore', () => {
   });
 
   it('constructs the Instrumenter from the entry that core resolves for the package', async (t) => {
-    const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'lz-mutators-entry-')));
+    const root = realpathSync.native(
+      mkdtempSync(join(tmpdir(), 'lz-mutators-entry-')),
+    );
 
     t.after(() => {
       rmSync(root, { recursive: true, force: true });
     });
     const packageFiles: Readonly<Record<string, string>> = {
-      'node_modules/@stryker-mutator/instrumenter/package.json': JSON.stringify({
-        name: '@stryker-mutator/instrumenter',
-        version: '10.1.1',
-        exports: { '.': './dist/bundle.js', './package.json': './package.json' },
-      }),
+      'node_modules/@stryker-mutator/instrumenter/package.json': JSON.stringify(
+        {
+          name: '@stryker-mutator/instrumenter',
+          version: '10.1.1',
+          exports: {
+            '.': './dist/bundle.js',
+            './package.json': './package.json',
+          },
+        },
+      ),
       'node_modules/@stryker-mutator/instrumenter/dist/bundle.js': '',
-      'node_modules/@babel/core/package.json': JSON.stringify({ name: '@babel/core', main: 'index.js' }),
+      'node_modules/@babel/core/package.json': JSON.stringify({
+        name: '@babel/core',
+        main: 'index.js',
+      }),
       'node_modules/@babel/core/index.js': '',
     };
 
@@ -218,12 +322,22 @@ describe('lzResolveFromCore', () => {
     const load = (path: string): Promise<unknown> => {
       loaded.push(path);
 
-      return Promise.resolve({ allMutators: [], transformBabel() {}, Instrumenter() {}, types });
+      return Promise.resolve({
+        allMutators: [],
+        transformBabel() {},
+        Instrumenter() {},
+        types,
+      });
     };
 
     await lzResolveFromCore(join(root, 'package.json'), load);
 
-    const instrumenter = join(root, 'node_modules', '@stryker-mutator', 'instrumenter');
+    const instrumenter = join(
+      root,
+      'node_modules',
+      '@stryker-mutator',
+      'instrumenter',
+    );
 
     assert.deepEqual(loaded, [
       join(instrumenter, 'dist', 'src', 'mutators', 'mutate.js'),
@@ -240,9 +354,20 @@ describe('lzResolveFromCore', () => {
       }
     };
   const located = (mutant: object) => ({
-    mutants: [{ mutatorName: 'Own', replacement: '""', location: sampleLocation, ...mutant }],
+    mutants: [
+      {
+        mutatorName: 'Own',
+        replacement: '""',
+        location: sampleLocation,
+        ...mutant,
+      },
+    ],
   });
-  const noMutants = (index: string) => refusal(`the instrument() result of the Instrumenter of ${index}`, 'mutants');
+  const noMutants = (index: string) =>
+    refusal(
+      `the instrument() result of the Instrumenter of ${index}`,
+      'mutants',
+    );
 
   lzTestEach([
     [
@@ -253,8 +378,16 @@ describe('lzResolveFromCore', () => {
     ['an instrument result of nothing', resolvingTo(undefined), noMutants],
     ['an instrument result of null', resolvingTo(null), noMutants],
     ['mutants that are no array', resolvingTo({ mutants: {} }), noMutants],
-    ['a mutant with no mutator name', resolvingTo(located({ mutatorName: undefined })), noMutants],
-    ['a mutant whose replacement is no string', resolvingTo(located({ replacement: 1 })), noMutants],
+    [
+      'a mutant with no mutator name',
+      resolvingTo(located({ mutatorName: undefined })),
+      noMutants,
+    ],
+    [
+      'a mutant whose replacement is no string',
+      resolvingTo(located({ replacement: 1 })),
+      noMutants,
+    ],
     [
       'a mutant with no mutator name after a whole one',
       resolvingTo({
@@ -265,33 +398,57 @@ describe('lzResolveFromCore', () => {
       }),
       noMutants,
     ],
-    ['a mutant with no location', resolvingTo(located({ location: undefined })), noMutants],
-    ['a mutant with no start', resolvingTo(located({ location: { end: sampleLocation.end } })), noMutants],
-    ['a mutant with no end', resolvingTo(located({ location: { start: sampleLocation.start } })), noMutants],
+    [
+      'a mutant with no location',
+      resolvingTo(located({ location: undefined })),
+      noMutants,
+    ],
+    [
+      'a mutant with no start',
+      resolvingTo(located({ location: { end: sampleLocation.end } })),
+      noMutants,
+    ],
+    [
+      'a mutant with no end',
+      resolvingTo(located({ location: { start: sampleLocation.start } })),
+      noMutants,
+    ],
     [
       'a mutant with no start line',
-      resolvingTo(located({ location: { ...sampleLocation, start: { column: 0 } } })),
+      resolvingTo(
+        located({ location: { ...sampleLocation, start: { column: 0 } } }),
+      ),
       noMutants,
     ],
     [
       'a mutant with no end column',
-      resolvingTo(located({ location: { ...sampleLocation, end: { line: 0 } } })),
+      resolvingTo(
+        located({ location: { ...sampleLocation, end: { line: 0 } } }),
+      ),
       noMutants,
     ],
   ])('refuses %s', async (_title, instrumenterClass, message) => {
-    const { load, replaced } = loadingWith(indexFile, { Instrumenter: instrumenterClass });
+    const { load, replaced } = loadingWith(indexFile, {
+      Instrumenter: instrumenterClass,
+    });
     const instrumenter = await lzResolveFromCore(corePackageJsons()[0], load);
 
-    await assert.rejects(instrumenter.instrument([{ name: 'sample.ts', content: "f('x');" }]), {
-      message: message(replaced.join()),
-    });
+    await assert.rejects(
+      instrumenter.instrument([{ name: 'sample.ts', content: "f('x');" }]),
+      {
+        message: message(replaced.join()),
+      },
+    );
   });
 
   it('instruments a file whose directive names a mutator it does not apply, which Stryker warns about', async () => {
     const instrumenter = await lzResolveFromCore();
-    const content = "// Stryker disable next-line LzNodeTimerDelay: a directive for another catalogue\nf('x');";
+    const content =
+      "// Stryker disable next-line LzNodeTimerDelay: a directive for another catalogue\nf('x');";
 
-    const mutants = await instrumenter.instrument([{ name: 'sample.ts', content }]);
+    const mutants = await instrumenter.instrument([
+      { name: 'sample.ts', content },
+    ]);
 
     assert.deepEqual(
       mutants.map(({ mutatorName }) => mutatorName),

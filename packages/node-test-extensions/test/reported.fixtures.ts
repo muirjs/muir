@@ -37,7 +37,11 @@ declare module 'node:test' {
        * `lzTestEach`, `lzTestFor` and `report` and nothing else of the caller's, so `cases` can use only those and globals.
        * With `only`, node:test runs only the tests marked only.
        */
-      reports(cases: () => void, expected: Reported[], options?: { readonly only?: boolean }): Promise<void>;
+      reports(
+        cases: () => void,
+        expected: Reported[],
+        options?: { readonly only?: boolean },
+      ): Promise<void>;
     }
   }
 }
@@ -45,7 +49,12 @@ declare module 'node:test' {
 assert.register(
   'reports',
   // eslint-disable-next-line @typescript-eslint/no-misused-promises -- t.assert.reports returns the promise, and every caller awaits it
-  async function (this: TestContext, cases: () => void, expected: Reported[], options: { only?: boolean } = {}) {
+  async function (
+    this: TestContext,
+    cases: () => void,
+    expected: Reported[],
+    options: { only?: boolean } = {},
+  ) {
     this.assert.deepStrictEqual(await reported(cases, options.only), expected);
   },
 );
@@ -86,7 +95,10 @@ async function reported(cases: () => void, only = false): Promise<Reported[]> {
         outcome,
         ...(skip !== undefined && { skip: true }),
         ...(todo !== undefined && { todo: true }),
-        ...(error && { error: error.cause instanceof Error ? error.cause.message : error.message }),
+        ...(error && {
+          error:
+            error.cause instanceof Error ? error.cause.message : error.message,
+        }),
       });
     };
     // The stream's iterator yields `any`; its named events carry typed data.
@@ -142,11 +154,15 @@ function capturedNames(source: string): string[] {
   const unknown = program
     .getSemanticDiagnostics(program.getSourceFile(casesFile))
     // Cannot find name 'x', and the same with a suggestion.
-    .filter((diagnostic) => diagnostic.code === 2304 || diagnostic.code === 2552);
+    .filter(
+      (diagnostic) => diagnostic.code === 2304 || diagnostic.code === 2552,
+    );
 
   const names = unknown.map(({ start, length, messageText }) => {
     if (start === undefined || length === undefined) {
-      throw new Error(`A diagnostic without a position: ${JSON.stringify(messageText)}`);
+      throw new Error(
+        `A diagnostic without a position: ${JSON.stringify(messageText)}`,
+      );
     }
 
     return text.slice(start, start + length);

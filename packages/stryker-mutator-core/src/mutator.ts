@@ -42,8 +42,13 @@ export interface LzMutator<TName extends string = string> {
 /** The shape of Stryker's `NodeMutator`, which the instrumenter's exports keep out of reach. */
 export interface LzNodeMutatorLike {
   readonly name: string;
-  mutate(path: NodePath, context: { readonly isExpressionContext: boolean }): Iterable<types.Node>;
-  readonly filter?: ((mutantsInScope: readonly unknown[]) => boolean) | undefined;
+  mutate(
+    path: NodePath,
+    context: { readonly isExpressionContext: boolean },
+  ): Iterable<types.Node>;
+  readonly filter?:
+    | ((mutantsInScope: readonly unknown[]) => boolean)
+    | undefined;
 }
 
 /**
@@ -57,7 +62,11 @@ interface OwnMutator extends LzNodeMutatorLike {
 }
 
 /** Yields nothing where Stryker's instrumenter allows no statement, such as a Vue template's expression. */
-export function lzToNodeMutator(mutator: LzMutator, t: LzBabelTypes, packageName: string): OwnMutator {
+export function lzToNodeMutator(
+  mutator: LzMutator,
+  t: LzBabelTypes,
+  packageName: string,
+): OwnMutator {
   return {
     name: mutator.name,
     [own]: packageName,

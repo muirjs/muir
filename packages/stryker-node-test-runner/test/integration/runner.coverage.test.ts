@@ -42,7 +42,9 @@ describe('LzNodeTestTestRunner coverage', () => {
     const file = join(dir, 'a.test.mjs');
     const runner = await initRunner(['*.test.mjs']);
 
-    const { tests, mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
+    const { tests, mutantCoverage } = complete(
+      await settle(runner.dryRun(dryRun)),
+    );
 
     assert.deepEqual(summary(tests), [
       passed(`${file} > suite > passes`),
@@ -53,18 +55,30 @@ describe('LzNodeTestTestRunner coverage', () => {
       tests.map((test) => test.name),
       ['suite > passes', 'suite > fails', 'spawns'],
     );
-    assert.ok(tests.every((test) => test.fileName === file && test.timeSpentMs >= 0));
+    assert.ok(
+      tests.every((test) => test.fileName === file && test.timeSpentMs >= 0),
+    );
     assert.equal(mutantCoverage?.perTest[`${file} > spawns`]?.['f-static'], 1);
     assert.equal(mutantCoverage.static['f-static'], undefined);
-    assert.equal(mutantCoverage.perTest[`${file} > suite > passes`]?.['f-pass'], 1);
-    assert.equal(mutantCoverage.perTest[`${file} > suite > fails`]?.['f-fail'], 1);
+    assert.equal(
+      mutantCoverage.perTest[`${file} > suite > passes`]?.['f-pass'],
+      1,
+    );
+    assert.equal(
+      mutantCoverage.perTest[`${file} > suite > fails`]?.['f-fail'],
+      1,
+    );
     assert.equal(mutantCoverage.perTest[`${file} > spawns`]?.['f-shared'], 2);
     assert.equal(mutantCoverage.perTest[`${file} > spawns`]?.['f-child'], 1);
   });
 
   it("credits the coverage of a test file's own process outside its tests to each of its tests", async (t) => {
     const dir = project(t, {
-      'a.test.mjs': fixture("cover('load');", "it('one', () => {});", "it('two', () => { cover('two'); });"),
+      'a.test.mjs': fixture(
+        "cover('load');",
+        "it('one', () => {});",
+        "it('two', () => { cover('two'); });",
+      ),
     });
     const file = join(dir, 'a.test.mjs');
     const runner = await initRunner(['*.test.mjs']);
@@ -73,21 +87,37 @@ describe('LzNodeTestTestRunner coverage', () => {
 
     assert.deepEqual(fixtureCoverage(mutantCoverage), {
       static: {},
-      perTest: { [`${file} > one`]: { load: 1 }, [`${file} > two`]: { load: 1, two: 1 } },
+      perTest: {
+        [`${file} > one`]: { load: 1 },
+        [`${file} > two`]: { load: 1, two: 1 },
+      },
     });
   });
 
   it('reports coverage as the coverage analysis asks: per test, all as static, or none', async (t) => {
-    const dir = project(t, { 'a.test.mjs': fixture("cover('s');", "it('covers', () => { cover('t'); });") });
+    const dir = project(t, {
+      'a.test.mjs': fixture(
+        "cover('s');",
+        "it('covers', () => { cover('t'); });",
+      ),
+    });
     const runner = await initRunner(['a.test.mjs']);
-    const coverage = async (coverageAnalysis: DryRunOptions['coverageAnalysis']) =>
-      fixtureCoverage(complete(await settle(runner.dryRun({ ...dryRun, coverageAnalysis }))).mutantCoverage);
+    const coverage = async (
+      coverageAnalysis: DryRunOptions['coverageAnalysis'],
+    ) =>
+      fixtureCoverage(
+        complete(await settle(runner.dryRun({ ...dryRun, coverageAnalysis })))
+          .mutantCoverage,
+      );
 
     assert.deepEqual(await coverage('perTest'), {
       static: {},
       perTest: { [`${join(dir, 'a.test.mjs')} > covers`]: { s: 1, t: 1 } },
     });
-    assert.deepEqual(await coverage('all'), { static: { s: 1, t: 1 }, perTest: {} });
+    assert.deepEqual(await coverage('all'), {
+      static: { s: 1, t: 1 },
+      perTest: {},
+    });
     assert.equal(await coverage('off'), undefined);
   });
 
@@ -150,7 +180,11 @@ describe('LzNodeTestTestRunner coverage', () => {
       static: {},
       perTest: {
         [`${a} > first`]: { ...hooks, beforeEach: 1 + sharedName.first },
-        [`${a} > suite > second`]: { ...hooks, beforeEach: 1 + sharedName.other, 'callback beforeEach': 1 },
+        [`${a} > suite > second`]: {
+          ...hooks,
+          beforeEach: 1 + sharedName.other,
+          'callback beforeEach': 1,
+        },
         [`${a} > suite > second > child`]: {
           ...hooks,
           beforeEach: 1 + sharedName.other,
@@ -203,7 +237,10 @@ describe('LzNodeTestTestRunner coverage', () => {
 
     const { mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
 
-    assert.deepEqual(fixtureCoverage(mutantCoverage), outlivingCoverage(join(dir, 'a.test.mjs')));
+    assert.deepEqual(
+      fixtureCoverage(mutantCoverage),
+      outlivingCoverage(join(dir, 'a.test.mjs')),
+    );
   });
 
   it('gives the coverage of a child process that outlives the test that started it to every test it overlapped', async (t) => {
@@ -218,7 +255,10 @@ describe('LzNodeTestTestRunner coverage', () => {
 
     const { mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
 
-    assert.deepEqual(fixtureCoverage(mutantCoverage), outlivingCoverage(join(dir, 'a.test.mjs')));
+    assert.deepEqual(
+      fixtureCoverage(mutantCoverage),
+      outlivingCoverage(join(dir, 'a.test.mjs')),
+    );
   });
 
   it('gives the coverage of a worker thread that a test starts and its awaited subtest uses to that subtest', async (t) => {
@@ -244,7 +284,10 @@ describe('LzNodeTestTestRunner coverage', () => {
 
     assert.deepEqual(fixtureCoverage(mutantCoverage), {
       static: {},
-      perTest: { [`${a} > server`]: { m: 1 }, [`${a} > server > talks`]: { m: 1 } },
+      perTest: {
+        [`${a} > server`]: { m: 1 },
+        [`${a} > server > talks`]: { m: 1 },
+      },
     });
   });
 
@@ -314,7 +357,9 @@ describe('LzNodeTestTestRunner coverage', () => {
 
     assert.deepEqual(fixtureCoverage(mutantCoverage), {
       static: {},
-      perTest: { [`${join(dir, 'a.test.mjs')} > terminates`]: { terminated: 1 } },
+      perTest: {
+        [`${join(dir, 'a.test.mjs')} > terminates`]: { terminated: 1 },
+      },
     });
   });
 
@@ -346,8 +391,12 @@ describe('LzNodeTestTestRunner coverage', () => {
 
   it(
     'keeps the coverage of a child process that the test ends with child.kill() right after it covered a line',
-    // eslint-disable-next-line node-test/no-skip-test -- POSIX only, with the reason as its value
-    { skip: process.platform === 'win32' && 'Windows has no signals to catch: every kill is TerminateProcess' },
+    {
+      // eslint-disable-next-line node-test/no-skip-test -- POSIX only, with the reason as its value
+      skip:
+        process.platform === 'win32' &&
+        'Windows has no signals to catch: every kill is TerminateProcess',
+    },
     async (t) => {
       const child = `${cover} cover('killed'); process.send('covered'); setInterval(() => {}, 1_000);`;
       const dir = project(t, {
@@ -375,7 +424,10 @@ describe('LzNodeTestTestRunner coverage', () => {
   );
 
   it('reads no temporary file that a process ended between writing its record and renaming it leaves behind', async (t) => {
-    const temp = JSON.stringify({ tests: [], mutantCoverage: { static: { stray: 1 }, perTest: {} } });
+    const temp = JSON.stringify({
+      tests: [],
+      mutantCoverage: { static: { stray: 1 }, perTest: {} },
+    });
     project(t, {
       'a.test.mjs': fixture(
         "import { writeFileSync } from 'node:fs';",
@@ -389,7 +441,10 @@ describe('LzNodeTestTestRunner coverage', () => {
 
     const { mutantCoverage } = complete(await settle(runner.dryRun(dryRun)));
 
-    assert.deepEqual(fixtureCoverage(mutantCoverage), { static: {}, perTest: {} });
+    assert.deepEqual(fixtureCoverage(mutantCoverage), {
+      static: {},
+      perTest: {},
+    });
   });
 
   it('runs the tests of a suite or test asking for concurrency one at a time, for coverage of their own', async (t) => {

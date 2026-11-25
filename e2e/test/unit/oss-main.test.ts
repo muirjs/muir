@@ -41,7 +41,10 @@ describe('main', () => {
                 mutatorName: 'StringLiteral',
                 replacement: '""',
                 status: 'Killed',
-                location: { start: { line: 1, column: 3 }, end: { line: 1, column: 9 } },
+                location: {
+                  start: { line: 1, column: 3 },
+                  end: { line: 1, column: 9 },
+                },
               },
             ],
           },
@@ -58,13 +61,24 @@ describe('main', () => {
         mutantTimeoutMs: 30000,
         installedVersions: [],
         tarballDigests: [],
-        projectSetup: { mutate: ['index.js'], testFiles: ['test/*.test.js'], patches: [] },
-        sides: { lz: { stryker: { reported: true }, strykerConfig: 'lz config' } },
+        projectSetup: {
+          mutate: ['index.js'],
+          testFiles: ['test/*.test.js'],
+          patches: [],
+        },
+        sides: {
+          lz: { stryker: { reported: true }, strykerConfig: 'lz config' },
+        },
       }),
     );
 
     const out = join(dir, 'merged');
-    const { status, stdout, stderr } = runMain(['--merge', join(runDir, 'result.json'), '--out', out]);
+    const { status, stdout, stderr } = runMain([
+      '--merge',
+      join(runDir, 'result.json'),
+      '--out',
+      out,
+    ]);
 
     assert.deepEqual(
       { status, stdout, stderr },
@@ -89,6 +103,9 @@ describe('main', () => {
     ]);
 
     assert.equal(status, 1);
-    assert.ok(stderr.includes(`ENOENT: no such file or directory, lstat '${source}'`), stderr);
+    assert.ok(
+      stderr.includes(`ENOENT: no such file or directory, lstat '${source}'`),
+      stderr,
+    );
   });
 });

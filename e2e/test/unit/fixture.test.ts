@@ -131,12 +131,19 @@ function useFakeNpm(t: TestContext): () => unknown[] {
 }
 
 function workspacePins(): string[] {
-  return lzPinned(JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8')));
+  return lzPinned(
+    JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8')),
+  );
 }
 
 describe('lzConsumerEnv', () => {
   it("drops the test runner's variables, puts this Node.js first on the PATH as Windows spells it, and sets the temporary folder", () => {
-    const env = lzConsumerEnv('t', { KEEP: 'z', Path: 'a', NODE_OPTIONS: 'x', NODE_TEST_CONTEXT: 'y' });
+    const env = lzConsumerEnv('t', {
+      KEEP: 'z',
+      Path: 'a',
+      NODE_OPTIONS: 'x',
+      NODE_TEST_CONTEXT: 'y',
+    });
 
     assert.deepEqual(env, {
       KEEP: 'z',
@@ -198,7 +205,12 @@ describe('lzStrykerCommand', () => {
 
   it('adds further reporters to the one --reporters, as a second one would replace the first', () => {
     assert.equal(
-      lzStrykerCommand('s.mjs', 3, [], ['progress-append-only', 'lz-checkpoint'])[6],
+      lzStrykerCommand(
+        's.mjs',
+        3,
+        [],
+        ['progress-append-only', 'lz-checkpoint'],
+      )[6],
       'clear-text,json,progress-append-only,lz-checkpoint',
     );
   });
@@ -229,12 +241,34 @@ describe('lzStryker', () => {
       {
         exitCode: 0,
         output: {
-          args: ['run', 's.mjs', '--concurrency', '2', '--reporters', 'clear-text,json'],
+          args: [
+            'run',
+            's.mjs',
+            '--concurrency',
+            '2',
+            '--reporters',
+            'clear-text,json',
+          ],
           cwd: dir,
           tmp: join(dir, 'tmp'),
           files: ['node_modules', 'tmp'],
         },
-        leftover: ['B', 'D', 'F', 'H', 'J', 'L', 'a', 'c', 'e', 'g', 'i', 'k', '\u{1F600}', '｡'],
+        leftover: [
+          'B',
+          'D',
+          'F',
+          'H',
+          'J',
+          'L',
+          'a',
+          'c',
+          'e',
+          'g',
+          'i',
+          'k',
+          '\u{1F600}',
+          '｡',
+        ],
         timedOut: false,
         reported: false,
       },
@@ -242,7 +276,9 @@ describe('lzStryker', () => {
   });
 
   it('reads the report the run writes', async (t) => {
-    const run = await lzStryker(consumerDir(t), 's.mjs', 2, { args: ['--report'] });
+    const run = await lzStryker(consumerDir(t), 's.mjs', 2, {
+      args: ['--report'],
+    });
 
     assert.deepEqual(run.reported ? run.report : 'no report', new Map());
   });
@@ -254,7 +290,10 @@ describe('lzStryker', () => {
     const run = await lzStryker(dir, 's.mjs', 2, { logFile, reporters: ['r'] });
 
     assert.equal(readFileSync(logFile, 'utf8'), run.output);
-    assert.match(run.output, /"--reporters","clear-text,json,progress-append-only,r"\]/);
+    assert.match(
+      run.output,
+      /"--reporters","clear-text,json,progress-append-only,r"\]/,
+    );
   });
 });
 
@@ -274,7 +313,9 @@ function mutant(line: number, replacement: string): LzMutantDetail {
   };
 }
 
-function reported(files: Readonly<Record<string, readonly LzMutantDetail[]>>): LzStrykerRun {
+function reported(
+  files: Readonly<Record<string, readonly LzMutantDetail[]>>,
+): LzStrykerRun {
   return {
     exitCode: 0,
     output: '',
@@ -286,14 +327,22 @@ function reported(files: Readonly<Record<string, readonly LzMutantDetail[]>>): L
 }
 
 function unreported(timedOut: boolean): LzStrykerRun {
-  return { exitCode: 1, output: 'Error during import', leftover: [], timedOut, reported: false };
+  return {
+    exitCode: 1,
+    output: 'Error during import',
+    leftover: [],
+    timedOut,
+    reported: false,
+  };
 }
 
 describe('lzMutants', () => {
   it('lists the mutants of a file of the report', () => {
     const run = reported({ 'src/a.ts': [mutant(1, '""')] });
 
-    assert.deepEqual(lzMutants(run, 'src/a.ts'), ['1:1 StringLiteral "" Killed']);
+    assert.deepEqual(lzMutants(run, 'src/a.ts'), [
+      '1:1 StringLiteral "" Killed',
+    ]);
   });
 
   it('refuses a file the report does not have, and names the files it has', () => {
@@ -311,26 +360,38 @@ describe('lzMutants', () => {
   });
 
   it('refuses a run that wrote its report and then failed, and shows the exit code and output', () => {
-    const run = { ...reported({ 'src/a.ts': [mutant(1, '""')] }), exitCode: 1, output: 'dispose failed' };
+    const run = {
+      ...reported({ 'src/a.ts': [mutant(1, '""')] }),
+      exitCode: 1,
+      output: 'dispose failed',
+    };
 
     assert.throws(() => lzMutants(run, 'src/a.ts'), {
-      message: 'Stryker wrote a report, then failed (exit code 1):\ndispose failed',
+      message:
+        'Stryker wrote a report, then failed (exit code 1):\ndispose failed',
     });
   });
 
   it('refuses a run with no report, and says when it timed out after its 15 minutes', () => {
     assert.equal(lzStrykerTimeoutMs, 15 * 60_000);
     assert.throws(() => lzMutants(unreported(true), 'src/a.ts'), {
-      message: 'Stryker wrote no report (exit code 1, ended after 15 minutes):\nError during import',
+      message:
+        'Stryker wrote no report (exit code 1, ended after 15 minutes):\nError during import',
     });
   });
 });
 
 describe('lzLeftover', () => {
   it("replaces the pid in each leftover's name", () => {
-    const run = { ...unreported(false), leftover: ['lz-node-test-e2e-1234-abc', 'x-56-y-7-'] };
+    const run = {
+      ...unreported(false),
+      leftover: ['lz-node-test-e2e-1234-abc', 'x-56-y-7-'],
+    };
 
-    assert.deepEqual(lzLeftover(run), ['lz-node-test-e2e-<pid>-abc', 'x-<pid>-y-7-']);
+    assert.deepEqual(lzLeftover(run), [
+      'lz-node-test-e2e-<pid>-abc',
+      'x-<pid>-y-7-',
+    ]);
   });
 });
 
@@ -341,25 +402,40 @@ describe('lzMutant', () => {
   });
 
   it('finds the one mutant at a place with a replacement', () => {
-    assert.deepEqual(lzMutant(run, { at: 'src/b.ts:1:1', replacement: '"x"' }), mutant(1, '"x"'));
+    assert.deepEqual(
+      lzMutant(run, { at: 'src/b.ts:1:1', replacement: '"x"' }),
+      mutant(1, '"x"'),
+    );
   });
 
   it('refuses a place with no mutant of the replacement', () => {
-    assert.throws(() => lzMutant(run, { at: 'src/b.ts:1:1', replacement: '""' }), {
-      message: 'Expected one mutant at src/b.ts:1:1 with replacement """", found 0.',
-    });
+    assert.throws(
+      () => lzMutant(run, { at: 'src/b.ts:1:1', replacement: '""' }),
+      {
+        message:
+          'Expected one mutant at src/b.ts:1:1 with replacement """", found 0.',
+      },
+    );
   });
 
   it('refuses a place with more than one mutant of the replacement', () => {
-    assert.throws(() => lzMutant(run, { at: 'src/a.ts:2:1', replacement: '""' }), {
-      message: 'Expected one mutant at src/a.ts:2:1 with replacement """", found 2.',
-    });
+    assert.throws(
+      () => lzMutant(run, { at: 'src/a.ts:2:1', replacement: '""' }),
+      {
+        message:
+          'Expected one mutant at src/a.ts:2:1 with replacement """", found 2.',
+      },
+    );
   });
 
   it('refuses a run with no report', () => {
-    assert.throws(() => lzMutant(unreported(false), { at: 'src/a.ts:1:1', replacement: '""' }), {
-      message: 'Stryker wrote no report (exit code 1):\nError during import',
-    });
+    assert.throws(
+      () =>
+        lzMutant(unreported(false), { at: 'src/a.ts:1:1', replacement: '""' }),
+      {
+        message: 'Stryker wrote no report (exit code 1):\nError during import',
+      },
+    );
   });
 });
 
@@ -369,11 +445,16 @@ describe('lzPackedFile', () => {
   });
 
   it('reads the file name from the object npm 12 prints', () => {
-    assert.equal(lzPackedFile('{"@x/a":{"filename":"x-a-1.0.0.tgz"}}'), 'x-a-1.0.0.tgz');
+    assert.equal(
+      lzPackedFile('{"@x/a":{"filename":"x-a-1.0.0.tgz"}}'),
+      'x-a-1.0.0.tgz',
+    );
   });
 
   it("refuses output with no file name, and shows npm's output", () => {
-    assert.throws(() => lzPackedFile('[{}]'), { message: 'npm pack --json printed no filename:\n[{}]' });
+    assert.throws(() => lzPackedFile('[{}]'), {
+      message: 'npm pack --json printed no filename:\n[{}]',
+    });
   });
 });
 
@@ -395,9 +476,13 @@ describe('lzPinned', () => {
   });
 
   it('refuses a manifest that pins one of them nowhere, and names it', () => {
-    assert.throws(() => lzPinned({ devDependencies: { '@stryker-mutator/core': '1' } }), {
-      message: 'The workspace package.json pins no @stryker-mutator/typescript-checker in devDependencies.',
-    });
+    assert.throws(
+      () => lzPinned({ devDependencies: { '@stryker-mutator/core': '1' } }),
+      {
+        message:
+          'The workspace package.json pins no @stryker-mutator/typescript-checker in devDependencies.',
+      },
+    );
   });
 });
 
@@ -415,7 +500,10 @@ describe('lzNpmCli', () => {
     const dir = tempDir(t, 'lz-npm-cli-');
     const file = withFile(dir, 'npm-cli.js');
 
-    assert.equal(lzNpmCli({ npm_execpath: join(dir, 'npx-cli.js') }, join(dir, 'node')), file);
+    assert.equal(
+      lzNpmCli({ npm_execpath: join(dir, 'npx-cli.js') }, join(dir, 'node')),
+      file,
+    );
   });
 
   it('takes the npm beside Node.js in the Windows layout', (t) => {
@@ -427,7 +515,14 @@ describe('lzNpmCli', () => {
 
   it('takes the npm beside Node.js in the POSIX layout', (t) => {
     const dir = tempDir(t, 'lz-npm-cli-');
-    const file = withFile(dir, 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js');
+    const file = withFile(
+      dir,
+      'lib',
+      'node_modules',
+      'npm',
+      'bin',
+      'npm-cli.js',
+    );
 
     assert.equal(lzNpmCli({}, join(dir, 'bin', 'node')), file);
   });
@@ -435,7 +530,15 @@ describe('lzNpmCli', () => {
   it('refuses when there is no npm, and names where it looked', (t) => {
     const dir = tempDir(t, 'lz-npm-cli-');
     const windows = join(dir, 'node_modules', 'npm', 'bin', 'npm-cli.js');
-    const posix = join(dir, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js');
+    const posix = join(
+      dir,
+      '..',
+      'lib',
+      'node_modules',
+      'npm',
+      'bin',
+      'npm-cli.js',
+    );
 
     assert.throws(() => lzNpmCli({}, join(dir, 'node')), {
       message: `Found no npm-cli.js; looked at ${windows}, ${posix}.`,
@@ -457,7 +560,13 @@ describe('lzPack', () => {
     );
     assert.deepEqual(
       npmRuns(),
-      names.map((name) => ['pack', '--json', '--pack-destination', into, join(packagesDir, name)]),
+      names.map((name) => [
+        'pack',
+        '--json',
+        '--pack-destination',
+        into,
+        join(packagesDir, name),
+      ]),
     );
     assert.ok(existsSync(into));
   });
@@ -511,7 +620,16 @@ describe('lzInstall', () => {
   it("refuses a failed npm run, and shows npm's command, exit code and output", async (t) => {
     useFakeNpm(t);
     const dir = tempDir(t, 'lz-install-');
-    const command = ['install', '--save-dev', '--save-exact', '--prefix', dir, '--no-audit', '--no-fund', 'fail'];
+    const command = [
+      'install',
+      '--save-dev',
+      '--save-exact',
+      '--prefix',
+      dir,
+      '--no-audit',
+      '--no-fund',
+      'fail',
+    ];
 
     await assert.rejects(lzInstall(dir, ['fail']), {
       message: `npm ${[...command, ...workspacePins()].join(' ')} ended with exit code 3:\nout\nerr\n`,
@@ -522,7 +640,9 @@ describe('lzInstall', () => {
 describe('lzFixture', () => {
   it("copies the fixture into a run folder of this pid, installs into it, runs Stryker there, and removes dead runs' folders and its own at exit", (t) => {
     const tmp = tempDir(t, 'lz-fixture-');
-    const deadPid = spawnSync(process.execPath, ['-e', ''], { windowsHide: true }).pid;
+    const deadPid = spawnSync(process.execPath, ['-e', ''], {
+      windowsHide: true,
+    }).pid;
     const deadDir = join(tmp, `lz-node-test-e2e-${deadPid}-a`);
 
     mkdirSync(deadDir);
@@ -557,7 +677,14 @@ describe('lzFixture', () => {
     const cwd = String(saw['cwd']);
 
     assert.deepEqual(saw, {
-      args: ['run', 'stryker.config.mjs', '--concurrency', '2', '--reporters', 'clear-text,json'],
+      args: [
+        'run',
+        'stryker.config.mjs',
+        '--concurrency',
+        '2',
+        '--reporters',
+        'clear-text,json',
+      ],
       cwd,
       tmp: join(cwd, 'tmp'),
       files: [...readdirSync(srcDir), 'node_modules', 'tarballs', 'tmp'].sort(),
@@ -571,7 +698,10 @@ describe('lzFixture', () => {
 describe('lzRemoveOnExit', () => {
   // A process that ends by itself, rather than through process.exit(), runs the exit listener before the mutation test
   // runner records what the process covered.
-  function exitAfterRemoveOnExit(dir: string, ending: 'process.exit(0);' | 'by itself' = 'by itself'): string {
+  function exitAfterRemoveOnExit(
+    dir: string,
+    ending: 'process.exit(0);' | 'by itself' = 'by itself',
+  ): string {
     const child = spawnSync(
       process.execPath,
       [
@@ -593,24 +723,35 @@ describe('lzRemoveOnExit', () => {
     writeFileSync(join(dir, 'a'), '');
 
     assert.deepEqual(
-      { stderr: exitAfterRemoveOnExit(dir, 'process.exit(0);'), exists: existsSync(dir) },
+      {
+        stderr: exitAfterRemoveOnExit(dir, 'process.exit(0);'),
+        exists: existsSync(dir),
+      },
       { stderr: '', exists: false },
     );
   });
 
   it('says nothing when the folder is already gone', (t) => {
-    assert.equal(exitAfterRemoveOnExit(join(tempDir(t, 'lz-remove-on-exit-'), 'gone')), '');
+    assert.equal(
+      exitAfterRemoveOnExit(join(tempDir(t, 'lz-remove-on-exit-'), 'gone')),
+      '',
+    );
   });
 
   it('reports a folder it cannot remove', () => {
-    assert.match(exitAfterRemoveOnExit('a\0b'), /^Left behind a\0b: The argument 'path' .+\n$/);
+    assert.match(
+      exitAfterRemoveOnExit('a\0b'),
+      /^Left behind a\0b: The argument 'path' .+\n$/,
+    );
   });
 });
 
 describe('lzRemoveDeadRunDirs', () => {
   it("removes the prefix's folders of a dead pid, and keeps a live pid's and another prefix's", (t) => {
     const dir = mkdtempSync(join(tmpdir(), 'lz-remove-dead-'));
-    const deadPid = spawnSync(process.execPath, ['-e', ''], { windowsHide: true }).pid;
+    const deadPid = spawnSync(process.execPath, ['-e', ''], {
+      windowsHide: true,
+    }).pid;
 
     t.after(() => {
       rmSync(dir, { recursive: true, force: true });
@@ -622,7 +763,10 @@ describe('lzRemoveDeadRunDirs', () => {
 
     lzRemoveDeadRunDirs(dir, 'p-');
 
-    assert.deepEqual(readdirSync(dir).sort(), [`p-${process.pid}-a`, `q-${deadPid}-a`]);
+    assert.deepEqual(readdirSync(dir).sort(), [
+      `p-${process.pid}-a`,
+      `q-${deadPid}-a`,
+    ]);
   });
 
   it('keeps the folder of a pid it cannot ask about', (t) => {

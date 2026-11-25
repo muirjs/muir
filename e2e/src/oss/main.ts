@@ -10,7 +10,9 @@ switch (command.kind) {
     break;
   }
   case 'merge': {
-    process.stdout.write(`Wrote ${lzMerge(command.options.merge, command.options.out)}\n`);
+    process.stdout.write(
+      `Wrote ${lzMerge(command.options.merge, command.options.out)}\n`,
+    );
     break;
   }
   case 'run': {

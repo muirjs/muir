@@ -15,8 +15,16 @@ const site: LzMutator = {
   name: 'Site',
   sample: '',
   *mutate(path, t) {
-    if (path.isNumericLiteral() && (path.parentPath.isCallExpression() || path.parentPath.isAssignmentExpression())) {
-      yield t.binaryExpression('+', t.cloneNode(path.node), t.numericLiteral(1));
+    if (
+      path.isNumericLiteral() &&
+      (path.parentPath.isCallExpression() ||
+        path.parentPath.isAssignmentExpression())
+    ) {
+      yield t.binaryExpression(
+        '+',
+        t.cloneNode(path.node),
+        t.numericLiteral(1),
+      );
     }
   },
 };
@@ -29,30 +37,68 @@ describe('LzJsNumericLiteral', () => {
     ['a hexadecimal literal', 'const n = 0x10;', ['17', '15']],
     ['a literal with separators', 'const n = 1_024;', ['1025', '1023']],
     ['an exponent literal', 'const n = 1e3;', ['1001', '999']],
-    ['the literal of a negative number, so -1 becomes -2 and -0', 'const n = -1;', ['2', '0']],
+    [
+      'the literal of a negative number, so -1 becomes -2 and -0',
+      'const n = -1;',
+      ['2', '0'],
+    ],
     ['an index', 'const first = items[0];', ['1', '-1']],
     ['a computed key', "const o = { [1]: 'a' };", ['2', '0']],
     ['the value of a property', 'const o = { a: 2 };', ['3', '1']],
     ['a case', 'switch (n) {\n  case 3:\n    break;\n}', ['4', '2']],
     ['an argument of another call', 'child.close(9);', ['10', '8']],
     ['a negative argument of another call', 'skip(-1);', ['2', '0']],
-    ['a number in a call inside a kill call, as the nearest call decides', 'kill(pid, next(1));', ['2', '0']],
-    ['an index in the callee of a kill call, which picks a child of the test', 'children[1].kill();', ['2', '0']],
-    ['an argument of a call named by a variable key', 'process[name](9);', ['10', '8']],
+    [
+      'a number in a call inside a kill call, as the nearest call decides',
+      'kill(pid, next(1));',
+      ['2', '0'],
+    ],
+    [
+      'an index in the callee of a kill call, which picks a child of the test',
+      'children[1].kill();',
+      ['2', '0'],
+    ],
+    [
+      'an argument of a call named by a variable key',
+      'process[name](9);',
+      ['10', '8'],
+    ],
     ['the value of a computed uid key', 'const o = { [uid]: 2 };', ['3', '1']],
-    ['the value that JSON.stringify writes, though not its indentation', 'JSON.stringify(2, null, 4);', ['3', '1']],
-    ['the third argument of another stringify', 'yaml.stringify(value, null, 4);', ['5', '3']],
-    ['the third argument of a stringify that is not a method', 'stringify(value, null, 4);', ['5', '3']],
-    ['the third argument of another JSON method', 'JSON.parse(text, reviver, 4);', ['5', '3']],
+    [
+      'the value that JSON.stringify writes, though not its indentation',
+      'JSON.stringify(2, null, 4);',
+      ['3', '1'],
+    ],
+    [
+      'the third argument of another stringify',
+      'yaml.stringify(value, null, 4);',
+      ['5', '3'],
+    ],
+    [
+      'the third argument of a stringify that is not a method',
+      'stringify(value, null, 4);',
+      ['5', '3'],
+    ],
+    [
+      'the third argument of another JSON method',
+      'JSON.parse(text, reviver, 4);',
+      ['5', '3'],
+    ],
   ])('moves %s by 1 each way', async (_title, source, expected) => {
     assert.deepEqual(await mutantsOf(jsNumericLiteral, source), expected);
   });
 
   lzTestEach([
     ['a fraction', 'const n = 2.5;'],
-    ['an integer beyond the safe range, where 1 more is the same number', 'const n = 9007199254740993;'],
+    [
+      'an integer beyond the safe range, where 1 more is the same number',
+      'const n = 9007199254740993;',
+    ],
     ['a BigInt', 'const n = 10n;'],
-    ['an octal file mode, where 1 more or less gives others access', 'chmodSync(f, 0o600);\nconst m = 0O755;'],
+    [
+      'an octal file mode, where 1 more or less gives others access',
+      'chmodSync(f, 0o600);\nconst m = 0O755;',
+    ],
     ['a number type', 'type T = 1;\nlet x: 2 | 3;'],
     [
       'a number type after satisfies, where Babel takes no expression',
@@ -64,15 +110,39 @@ describe('LzJsNumericLiteral', () => {
     ['a class member key', 'class C {\n  1 = 2.5;\n}'],
     ['the signal of process.kill, as 0 + 1 is SIGHUP', 'process.kill(pid, 0);'],
     ['the signal of a kill method', 'child.kill(9);'],
-    ['a negative process id of a kill function, as -0 is the process group', 'kill(-1, 15);'],
+    [
+      'a negative process id of a kill function, as -0 is the process group',
+      'kill(-1, 15);',
+    ],
     ['an argument of an optional kill call', 'child?.kill(9);'],
-    ['the process id of a kill call named by a string key', "process['kill'](4321);"],
-    ['the uid of a spawn option, as 1 more is another user', 'spawn(cmd, args, { uid: 1000 });'],
-    ['the gid of a spawn option named by a string key', "spawn(cmd, args, { 'gid': 1000 });"],
-    ['a number in a condition inside the arguments of a kill call', 'process.kill(pid, cond ? 0 : 9);'],
-    ['a number inside an expression in the arguments of a kill call', 'kill(pid, signal + 1);'],
-    ['the indentation of JSON.stringify, which changes only whitespace', 'JSON.stringify(value, null, 2);'],
-    ['the indentation of an optional JSON.stringify call', 'JSON?.stringify(value, null, 2);'],
+    [
+      'the process id of a kill call named by a string key',
+      "process['kill'](4321);",
+    ],
+    [
+      'the uid of a spawn option, as 1 more is another user',
+      'spawn(cmd, args, { uid: 1000 });',
+    ],
+    [
+      'the gid of a spawn option named by a string key',
+      "spawn(cmd, args, { 'gid': 1000 });",
+    ],
+    [
+      'a number in a condition inside the arguments of a kill call',
+      'process.kill(pid, cond ? 0 : 9);',
+    ],
+    [
+      'a number inside an expression in the arguments of a kill call',
+      'kill(pid, signal + 1);',
+    ],
+    [
+      'the indentation of JSON.stringify, which changes only whitespace',
+      'JSON.stringify(value, null, 2);',
+    ],
+    [
+      'the indentation of an optional JSON.stringify call',
+      'JSON?.stringify(value, null, 2);',
+    ],
     [
       'the signal of a private kill method',
       'class C {\n  #kill(pid, signal) {}\n  stop() {\n    this.#kill(pid, 0);\n  }\n}',
@@ -83,20 +153,33 @@ describe('LzJsNumericLiteral', () => {
 
   lzTestEach([
     ['an argument', 'setTimeout(f, 10);\nconst n = 2;', ['10 + 1', '3', '1']],
-    ['a number assigned in a statement, which keeps it', 'process.exitCode = 1;', ['1 + 1']],
-  ])('leaves a number that another mutator mutates, as %s, to that mutator', async (_title, source, expected) => {
-    const mutants = await mutantsOfAll([site, jsAssignmentStatement, jsNumericLiteral], source);
+    [
+      'a number assigned in a statement, which keeps it',
+      'process.exitCode = 1;',
+      ['1 + 1'],
+    ],
+  ])(
+    'leaves a number that another mutator mutates, as %s, to that mutator',
+    async (_title, source, expected) => {
+      const mutants = await mutantsOfAll(
+        [site, jsAssignmentStatement, jsNumericLiteral],
+        source,
+      );
 
-    assert.deepEqual(
-      mutants.map(([, replacement]) => replacement),
-      expected,
-    );
-  });
+      assert.deepEqual(
+        mutants.map(([, replacement]) => replacement),
+        expected,
+      );
+    },
+  );
 
   it('keeps its mutants of an assigned number, so LzJsAssignmentStatement leaves the statement alone', async () => {
-    assert.deepEqual(await mutantsOfAll([jsAssignmentStatement, jsNumericLiteral], 'x = 1;'), [
-      ['LzJsNumericLiteral', '2'],
-      ['LzJsNumericLiteral', '0'],
-    ]);
+    assert.deepEqual(
+      await mutantsOfAll([jsAssignmentStatement, jsNumericLiteral], 'x = 1;'),
+      [
+        ['LzJsNumericLiteral', '2'],
+        ['LzJsNumericLiteral', '0'],
+      ],
+    );
   });
 });

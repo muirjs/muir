@@ -9,9 +9,21 @@ describe('lzTestEach', () => {
       lzTestEach([[1, 'a'], [2], []])('case %# of %s %s', report);
       lzTestEach([])('none', report);
     }, [
-      { name: 'case 0 of 1 a', outcome: 'fail', error: JSON.stringify([1, 'a']) },
-      { name: 'case 1 of 2 undefined', outcome: 'fail', error: JSON.stringify([2]) },
-      { name: 'case 2 of undefined undefined', outcome: 'fail', error: JSON.stringify([]) },
+      {
+        name: 'case 0 of 1 a',
+        outcome: 'fail',
+        error: JSON.stringify([1, 'a']),
+      },
+      {
+        name: 'case 1 of 2 undefined',
+        outcome: 'fail',
+        error: JSON.stringify([2]),
+      },
+      {
+        name: 'case 2 of undefined undefined',
+        outcome: 'fail',
+        error: JSON.stringify([]),
+      },
     ]);
   });
 
@@ -20,9 +32,21 @@ describe('lzTestEach', () => {
       lzTestEach([[1, 2], 'x', null, { a: 1 }])('%s and %s, $a', report);
     }, [
       { name: '1 and 2, $a', outcome: 'fail', error: JSON.stringify([[1, 2]]) },
-      { name: 'x and undefined, $a', outcome: 'fail', error: JSON.stringify(['x']) },
-      { name: 'null and undefined, $a', outcome: 'fail', error: JSON.stringify([null]) },
-      { name: '{ a: 1 } and undefined, 1', outcome: 'fail', error: JSON.stringify([{ a: 1 }]) },
+      {
+        name: 'x and undefined, $a',
+        outcome: 'fail',
+        error: JSON.stringify(['x']),
+      },
+      {
+        name: 'null and undefined, $a',
+        outcome: 'fail',
+        error: JSON.stringify([null]),
+      },
+      {
+        name: '{ a: 1 } and undefined, 1',
+        outcome: 'fail',
+        error: JSON.stringify([{ a: 1 }]),
+      },
     ]);
   });
 
@@ -35,8 +59,16 @@ describe('lzTestEach', () => {
           ${3}
         `('$first-$second', report);
     }, [
-      { name: '1-x', outcome: 'fail', error: JSON.stringify([{ first: 1, second: 'x' }]) },
-      { name: '2-y', outcome: 'fail', error: JSON.stringify([{ first: 2, second: 'y' }]) },
+      {
+        name: '1-x',
+        outcome: 'fail',
+        error: JSON.stringify([{ first: 1, second: 'x' }]),
+      },
+      {
+        name: '2-y',
+        outcome: 'fail',
+        error: JSON.stringify([{ first: 2, second: 'y' }]),
+      },
     ]);
   });
 
@@ -56,7 +88,9 @@ describe('lzTestEach', () => {
           throw new Error('two');
         }
       });
-      lzTestEach([1, 2])('async %s', (n) => (n === 2 ? Promise.reject(new Error('rejects')) : Promise.resolve()));
+      lzTestEach([1, 2])('async %s', (n) =>
+        n === 2 ? Promise.reject(new Error('rejects')) : Promise.resolve(),
+      );
     }, [
       { name: 'case 1', outcome: 'pass' },
       { name: 'case 2', outcome: 'fail', error: 'two' },

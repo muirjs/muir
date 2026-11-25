@@ -27,7 +27,10 @@ describe('lzPartRanges', () => {
   });
 
   it('cuts only where a top-level statement starts, nearest an even share of the lines', () => {
-    assert.deepEqual(lzPartRanges('index.js', source, 2), ['index.js:1-6', 'index.js:7-11']);
+    assert.deepEqual(lzPartRanges('index.js', source, 2), [
+      'index.js:1-6',
+      'index.js:7-11',
+    ]);
   });
 
   it('weighs each line by its mutants, and a line without any by 0', () => {
@@ -38,56 +41,91 @@ describe('lzPartRanges', () => {
       [11, 4],
     ]);
 
-    assert.deepEqual(lzPartRanges('index.js', source, 2, mutantsByLine), ['index.js:1-10', 'index.js:11-11']);
+    assert.deepEqual(lzPartRanges('index.js', source, 2, mutantsByLine), [
+      'index.js:1-10',
+      'index.js:11-11',
+    ]);
   });
 
   it('gives the lines between two mutants no weight, so the cut follows the first', () => {
-    const oneLineStatements = Array.from({ length: 12 }, (_, index) => `const v${index} = ${index}`).join('\n');
+    const oneLineStatements = Array.from(
+      { length: 12 },
+      (_, index) => `const v${index} = ${index}`,
+    ).join('\n');
     const mutantsByLine = new Map([
       [1, 1],
       [12, 1],
     ]);
 
-    assert.deepEqual(lzPartRanges('index.js', oneLineStatements, 2, mutantsByLine), ['index.js:1-1', 'index.js:2-12']);
+    assert.deepEqual(
+      lzPartRanges('index.js', oneLineStatements, 2, mutantsByLine),
+      ['index.js:1-1', 'index.js:2-12'],
+    );
   });
 
   it('never cuts inside a statement or between two statements that share a line', () => {
     const ranges = lzPartRanges('index.js', source, 11);
 
-    assert.deepEqual(ranges, ['index.js:1-2', 'index.js:3-6', 'index.js:7-9', 'index.js:10-10', 'index.js:11-11']);
+    assert.deepEqual(ranges, [
+      'index.js:1-2',
+      'index.js:3-6',
+      'index.js:7-9',
+      'index.js:10-10',
+      'index.js:11-11',
+    ]);
   });
 
   it('counts lines as Stryker does, where U+2028 also ends a line', () => {
-    const ranges = lzPartRanges('index.js', "const a = ' '\nconst b = 1\nconst c = 2", 3);
+    const ranges = lzPartRanges(
+      'index.js',
+      "const a = ' '\nconst b = 1\nconst c = 2",
+      3,
+    );
 
     assert.deepEqual(ranges, ['index.js:1-2', 'index.js:3-3', 'index.js:4-4']);
   });
 
   it('aims each cut at its own share of the weight, which shows with three parts or more', () => {
-    const oneLineStatements = Array.from({ length: 12 }, (_, index) => `const v${index} = ${index}`).join('\n');
+    const oneLineStatements = Array.from(
+      { length: 12 },
+      (_, index) => `const v${index} = ${index}`,
+    ).join('\n');
 
-    assert.deepEqual(lzPartRanges('index.js', oneLineStatements, 3), ['index.js:1-4', 'index.js:5-8', 'index.js:9-12']);
-  });
-
-  it('cuts at the earlier of two statements equally near an even share', () => {
-    assert.deepEqual(lzPartRanges('index.js', 'const a = 1\nconst b = 2\nconst c = 3', 2), [
-      'index.js:1-1',
-      'index.js:2-3',
+    assert.deepEqual(lzPartRanges('index.js', oneLineStatements, 3), [
+      'index.js:1-4',
+      'index.js:5-8',
+      'index.js:9-12',
     ]);
   });
 
+  it('cuts at the earlier of two statements equally near an even share', () => {
+    assert.deepEqual(
+      lzPartRanges('index.js', 'const a = 1\nconst b = 2\nconst c = 3', 2),
+      ['index.js:1-1', 'index.js:2-3'],
+    );
+  });
+
   it('never cuts at a statement that starts on the line where a statement spanning lines ends', () => {
-    const ranges = lzPartRanges('index.js', 'function a () {\n  return 1\n} const b = 2\nconst c = 3', 2);
+    const ranges = lzPartRanges(
+      'index.js',
+      'function a () {\n  return 1\n} const b = 2\nconst c = 3',
+      2,
+    );
 
     assert.deepEqual(ranges, ['index.js:1-3', 'index.js:4-4']);
   });
 
   it('refuses a part count below 1', () => {
-    assert.throws(() => lzPartRanges('index.js', source, 0), { message: 'parts is a positive integer; got 0.' });
+    assert.throws(() => lzPartRanges('index.js', source, 0), {
+      message: 'parts is a positive integer; got 0.',
+    });
   });
 });
 
-function reportWith(t: TestContext, mutantLinesByFile: Readonly<Record<string, readonly number[]>>): string {
+function reportWith(
+  t: TestContext,
+  mutantLinesByFile: Readonly<Record<string, readonly number[]>>,
+): string {
   const dir = mkdtempSync(join(tmpdir(), 'lz-oss-parts-'));
   const file = join(dir, 'mutation.json');
   const files = Object.fromEntries(
@@ -113,7 +151,10 @@ function reportWith(t: TestContext, mutantLinesByFile: Readonly<Record<string, r
 
 describe('lzMutantsByLine', () => {
   it('counts the mutants on each line of the file the report names exactly', (t) => {
-    const report = reportWith(t, { 'lib/utils/index.js': [9, 9], 'index.js': [1, 2, 2] });
+    const report = reportWith(t, {
+      'lib/utils/index.js': [9, 9],
+      'index.js': [1, 2, 2],
+    });
 
     assert.deepEqual(
       lzMutantsByLine(report, 'index.js'),
@@ -148,7 +189,10 @@ function partsMain(
   {
     indexJs = source,
     files = {},
-  }: { readonly indexJs?: string; readonly files?: Readonly<Record<string, string>> } = {},
+  }: {
+    readonly indexJs?: string;
+    readonly files?: Readonly<Record<string, string>>;
+  } = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), 'lz-oss-parts-main-'));
   const path = join(dir, 'index.js');
@@ -163,7 +207,11 @@ function partsMain(
 
   return spawnSync(
     process.execPath,
-    [join(import.meta.dirname, '..', '..', 'src', 'oss', 'parts-main.ts'), path, ...args],
+    [
+      join(import.meta.dirname, '..', '..', 'src', 'oss', 'parts-main.ts'),
+      path,
+      ...args,
+    ],
     {
       cwd: dir,
       encoding: 'utf8',
@@ -178,7 +226,11 @@ describe('parts-main', () => {
 
     assert.deepEqual(
       { status, stdout, stderr },
-      { status: 0, stdout: '--mutate index.js:1-6\n--mutate index.js:7-11\n', stderr: '' },
+      {
+        status: 0,
+        stdout: '--mutate index.js:1-6\n--mutate index.js:7-11\n',
+        stderr: '',
+      },
     );
   });
 
@@ -206,7 +258,11 @@ describe('parts-main', () => {
 
     assert.deepEqual(
       { status, stdout, stderr },
-      { status: 0, stdout: '--mutate index.js:1-1\n--mutate index.js:2-2\n', stderr: '' },
+      {
+        status: 0,
+        stdout: '--mutate index.js:1-1\n--mutate index.js:2-2\n',
+        stderr: '',
+      },
     );
   });
 

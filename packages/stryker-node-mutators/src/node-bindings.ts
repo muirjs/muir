@@ -5,7 +5,10 @@ import { lzBuiltin, lzNodeAssert } from './bindings.ts';
 
 const nodeProcess = lzBuiltin('process');
 
-export function isNodeAssertCall(path: NodePath, call: types.CallExpression): boolean {
+export function isNodeAssertCall(
+  path: NodePath,
+  call: types.CallExpression,
+): boolean {
   const root = lzCalleeRoot(call.callee);
   const source = root && lzImportOf(path, root.name)?.source;
 

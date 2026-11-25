@@ -1,15 +1,32 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
-import { isOwn, isRunning, lzDirPrefix, ownDir, removeDir, removeLeftDirs } from '../../src/dirs.ts';
+import {
+  isOwn,
+  isRunning,
+  lzDirPrefix,
+  ownDir,
+  removeDir,
+  removeLeftDirs,
+} from '../../src/dirs.ts';
 import { logger, noProcess } from '../runner.fixtures.ts';
 import { lzDryRunDir } from '../../src/dry-run-store.ts';
 
-function tempDirWith(t: TestContext, prefix: string, names: readonly string[] = []) {
+function tempDirWith(
+  t: TestContext,
+  prefix: string,
+  names: readonly string[] = [],
+) {
   const dir = mkdtempSync(join(tmpdir(), prefix));
   t.after(() => {
     rmSync(dir, { recursive: true, force: true });
@@ -58,13 +75,17 @@ describe('removeDir', () => {
   });
 
   it('leaves a directory it cannot remove, with a warning, and stops waiting', async (t) => {
-    const { warnings, settled } = removal(t, () => Promise.reject(new Error('EPERM: operation not permitted')));
+    const { warnings, settled } = removal(t, () =>
+      Promise.reject(new Error('EPERM: operation not permitted')),
+    );
 
     assert.equal(await settled(), 'done');
 
     t.mock.timers.tick(1_000);
 
-    assert.deepEqual(warnings, [`Left ${dir} for a later runner to remove: EPERM: operation not permitted`]);
+    assert.deepEqual(warnings, [
+      `Left ${dir} for a later runner to remove: EPERM: operation not permitted`,
+    ]);
   });
 
   it('names what the removal rejected with in the warning, also when it is no Error', async (t) => {
@@ -75,7 +96,9 @@ describe('removeDir', () => {
 
     t.mock.timers.tick(1_000);
 
-    assert.deepEqual(warnings, [`Left ${dir} for a later runner to remove: EBUSY`]);
+    assert.deepEqual(warnings, [
+      `Left ${dir} for a later runner to remove: EBUSY`,
+    ]);
   });
 
   it('stops waiting for a directory still in use after `waitMs`, with a warning', async (t) => {
@@ -88,22 +111,36 @@ describe('removeDir', () => {
 
     assert.deepEqual(
       [await settled(), warnings],
-      ['done', [`Stopped waiting for ${dir} to be removed after 1000 ms; a later runner removes what is left.`]],
+      [
+        'done',
+        [
+          `Stopped waiting for ${dir} to be removed after 1000 ms; a later runner removes what is left.`,
+        ],
+      ],
     );
   });
 
   it('leaves no timer holding the process open once the removal settles', async () => {
-    const timers = () => process.getActiveResourcesInfo().filter((resource) => resource === 'Timeout').length;
+    const timers = () =>
+      process
+        .getActiveResourcesInfo()
+        .filter((resource) => resource === 'Timeout').length;
     const before = timers();
 
-    await removeDir(dir, logger({ debugEnabled: false, warnings: [] }), { waitMs: 5_000, remove: async () => {} });
+    await removeDir(dir, logger({ debugEnabled: false, warnings: [] }), {
+      waitMs: 5_000,
+      remove: async () => {},
+    });
 
     assert.equal(timers(), before);
   });
 
   it('warns once when the removal fails after it stopped waiting', async (t) => {
     let fail = (_error: Error) => {};
-    const { warnings, settled } = removal(t, () => new Promise((_, reject) => (fail = reject)));
+    const { warnings, settled } = removal(
+      t,
+      () => new Promise((_, reject) => (fail = reject)),
+    );
     t.mock.timers.tick(1_000);
     fail(new Error('EBUSY: resource busy or locked'));
     await settled();
@@ -146,13 +183,16 @@ describe('isRunning', () => {
     ['an Error without a code', new Error('kill failed')],
     ['an object with the code ESRCH that is no Error', { code: 'ESRCH' }],
     ['a string', 'ESRCH'],
-  ])('takes a process as running when signalling it throws %s', (_title, thrown: unknown) => {
-    const kill = () => {
-      throw thrown;
-    };
+  ])(
+    'takes a process as running when signalling it throws %s',
+    (_title, thrown: unknown) => {
+      const kill = () => {
+        throw thrown;
+      };
 
-    assert.equal(isRunning(42, kill), true);
-  });
+      assert.equal(isRunning(42, kill), true);
+    },
+  );
 });
 
 describe('ownDir', () => {
@@ -192,7 +232,9 @@ describe('ownDir', () => {
           return false;
         });
       },
-      { message: `"${dir}" belongs to another user; remove it, or run Stryker as that user.` },
+      {
+        message: `"${dir}" belongs to another user; remove it, or run Stryker as that user.`,
+      },
     );
     assert.deepEqual(asked, [dir]);
   });
@@ -205,9 +247,12 @@ describe('lzDirPrefix', () => {
     ['dryRun', 'lz-node-test-dry-run-111-'],
   ];
 
-  lzTestEach(rows)('names the %s directories of a process %s', (kind, prefix) => {
-    assert.equal(lzDirPrefix(kind, 111), prefix);
-  });
+  lzTestEach(rows)(
+    'names the %s directories of a process %s',
+    (kind, prefix) => {
+      assert.equal(lzDirPrefix(kind, 111), prefix);
+    },
+  );
 });
 
 describe('removeLeftDirs', () => {
@@ -238,7 +283,11 @@ describe('removeLeftDirs', () => {
   });
 
   it("leaves the directories of other users' runners", (t) => {
-    const names = ['lz-node-test-111-mine', 'lz-node-test-111-theirs', 'lz-node-test-222-running'];
+    const names = [
+      'lz-node-test-111-mine',
+      'lz-node-test-111-theirs',
+      'lz-node-test-222-running',
+    ];
     const dir = tempDirWith(t, 'left-dirs-', names);
     const asked: string[] = [];
     removeLeftDirs(dir, {
@@ -258,7 +307,11 @@ describe('removeLeftDirs', () => {
   });
 
   it('leaves a directory it cannot check or remove yet and goes on with the others', (t) => {
-    const names = ['lz-node-test-111-a', 'lz-node-test-111-b', 'lz-node-test-111-c'];
+    const names = [
+      'lz-node-test-111-a',
+      'lz-node-test-111-b',
+      'lz-node-test-111-c',
+    ];
     const dir = tempDirWith(t, 'left-dirs-', names);
     const removed: string[] = [];
 
@@ -290,7 +343,13 @@ describe('isOwn', () => {
       return { uid: 7 };
     };
 
-    assert.deepEqual([isOwn('a', { getuid: () => 7 }, stat), isOwn('b', { getuid: () => 8 }, stat)], [true, false]);
+    assert.deepEqual(
+      [
+        isOwn('a', { getuid: () => 7 }, stat),
+        isOwn('b', { getuid: () => 8 }, stat),
+      ],
+      [true, false],
+    );
     assert.deepEqual(stated, ['a', 'b']);
   });
 

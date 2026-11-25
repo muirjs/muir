@@ -1,11 +1,16 @@
 /** The member `key` of a value from a module whose types the tests cannot reach; nothing when it has none. */
 export function member(value: unknown, key: string): unknown {
-  return (typeof value === 'object' && value !== null) || typeof value === 'function'
+  return (typeof value === 'object' && value !== null) ||
+    typeof value === 'function'
     ? Reflect.get(value, key)
     : undefined;
 }
 
-export function callMember(target: unknown, name: string, ...args: unknown[]): unknown {
+export function callMember(
+  target: unknown,
+  name: string,
+  ...args: unknown[]
+): unknown {
   const fn = member(target, name);
 
   if (typeof fn !== 'function') {

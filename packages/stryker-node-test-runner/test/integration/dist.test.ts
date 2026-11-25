@@ -9,11 +9,17 @@ const dist = join(import.meta.dirname, '..', '..', 'dist');
 
 /** The string literals and template pieces of `file` that end in `.ts`, as `file: text`, comments aside. */
 function tsLiterals(file: string): string[] {
-  const source = ts.createSourceFile(file, readFileSync(join(dist, file), 'utf8'), ts.ScriptTarget.Latest);
+  const source = ts.createSourceFile(
+    file,
+    readFileSync(join(dist, file), 'utf8'),
+    ts.ScriptTarget.Latest,
+  );
   const found: string[] = [];
   const visit = (node: ts.Node): void => {
     if (
-      (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateLiteralToken(node)) &&
+      (ts.isStringLiteral(node) ||
+        ts.isNoSubstitutionTemplateLiteral(node) ||
+        ts.isTemplateLiteralToken(node)) &&
       node.text.endsWith('.ts')
     ) {
       found.push(`${file}: ${node.text}`);

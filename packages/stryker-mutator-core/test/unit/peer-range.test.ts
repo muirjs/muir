@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { lzTestEach } from '@layzee/node-test-extensions';
-import { inPeerRange, lzWarnOutsidePeerRange, parseCaretFloor } from '../../src/peer-range.ts';
+import {
+  inPeerRange,
+  lzWarnOutsidePeerRange,
+  parseCaretFloor,
+} from '../../src/peer-range.ts';
 
 const packageName = 'lz-sample-mutators';
 
@@ -16,13 +20,20 @@ describe('inPeerRange', () => {
     ['v10.1.1', '^10.1.1', false],
     ['10.12.0', '^10.1.1', true],
   ])('takes %s in %s: %s', (version, range, expected) => {
-    assert.equal(inPeerRange(version, parseCaretFloor(range, packageName)), expected);
+    assert.equal(
+      inPeerRange(version, parseCaretFloor(range, packageName)),
+      expected,
+    );
   });
 });
 
 describe('parseCaretFloor', () => {
   it('gives the first release of the range', () => {
-    assert.deepEqual(parseCaretFloor('^10.2.3', packageName), { major: 10, minor: 2, patch: 3 });
+    assert.deepEqual(parseCaretFloor('^10.2.3', packageName), {
+      major: 10,
+      minor: 2,
+      patch: 3,
+    });
   });
 
   lzTestEach(['~10.1.1', '^10.1', '^10.1.1-beta.0', '10.1.1'])(
@@ -41,8 +52,11 @@ describe('lzWarnOutsidePeerRange', () => {
   function warningsFor(...versions: readonly string[]): readonly string[] {
     const warnings: string[] = [];
 
-    lzWarnOutsidePeerRange(packageName, parseCaretFloor(range, packageName), versions, (message) =>
-      warnings.push(message),
+    lzWarnOutsidePeerRange(
+      packageName,
+      parseCaretFloor(range, packageName),
+      versions,
+      (message) => warnings.push(message),
     );
 
     return warnings;

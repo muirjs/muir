@@ -4,14 +4,19 @@ import { join } from 'node:path';
 import type { LzOssPatch } from './options.ts';
 
 /** Makes each patch in the project's copy, refusing one whose `from` is not in its file exactly once. */
-export function lzApplyPatches(dir: string, patches: readonly LzOssPatch[]): void {
+export function lzApplyPatches(
+  dir: string,
+  patches: readonly LzOssPatch[],
+): void {
   patches.forEach(({ file, from, to }) => {
     const path = join(dir, file);
     const text = readFileSync(path, 'utf8');
     const count = text.split(from).length - 1;
 
     if (count !== 1) {
-      throw new Error(`The patch of ${file} expects ${JSON.stringify(from)} once and found it ${count} times.`);
+      throw new Error(
+        `The patch of ${file} expects ${JSON.stringify(from)} once and found it ${count} times.`,
+      );
     }
 
     writeFileSync(
@@ -36,16 +41,20 @@ export function lzFileWriters(
 ): ReadonlyMap<string, readonly string[]> {
   // Stryker disable next-line StringLiteral: Windows only, as Linux paths hold no backslash; the Windows run kills it
   const posix = (file: string): string => file.replaceAll('\\', '/');
-  const files = [...new Set(testFiles.flatMap((pattern) => globSync(pattern, { cwd: dir })))]
+  const files = [
+    ...new Set(testFiles.flatMap((pattern) => globSync(pattern, { cwd: dir }))),
+  ]
     .map(posix)
     .filter((file) => !patched.includes(file))
     .sort();
 
   return new Map(
     files.flatMap((file): [string, string[]][] => {
-      const calls = [...new Set(readFileSync(join(dir, file), 'utf8').match(fileWrite) ?? [])].map((call) =>
-        call.slice(0, -1).trimEnd(),
-      );
+      const calls = [
+        ...new Set(
+          readFileSync(join(dir, file), 'utf8').match(fileWrite) ?? [],
+        ),
+      ].map((call) => call.slice(0, -1).trimEnd());
 
       return calls.length === 0 ? [] : [[file, calls.sort()]];
     }),

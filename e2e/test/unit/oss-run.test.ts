@@ -20,12 +20,35 @@ import { describe, it, type TestContext } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 
 import { lzExec } from '../../src/exec.ts';
-import { lzInstall, lzPack, lzReportFile, lzStryker, type LzStrykerRun } from '../../src/fixture.ts';
-import { lzCheckpointArgs, lzCheckpointReporterName } from '../../src/oss/checkpoint.ts';
-import { lzStrykerConfig, type LzOssOptions, type LzOssProject } from '../../src/oss/options.ts';
+import {
+  lzInstall,
+  lzPack,
+  lzReportFile,
+  lzStryker,
+  type LzStrykerRun,
+} from '../../src/fixture.ts';
+import {
+  lzCheckpointArgs,
+  lzCheckpointReporterName,
+} from '../../src/oss/checkpoint.ts';
+import {
+  lzStrykerConfig,
+  type LzOssOptions,
+  type LzOssProject,
+} from '../../src/oss/options.ts';
 import type { LzProcessRow } from '../../src/oss/processes.ts';
-import { lzClearResult, lzClearSideFiles, lzRunDriver, lzRunSteps, type LzRunSteps } from '../../src/oss/run.ts';
-import { lzSnapshot, lzStartSampler, type LzSamples } from '../../src/oss/sampler.ts';
+import {
+  lzClearResult,
+  lzClearSideFiles,
+  lzRunDriver,
+  lzRunSteps,
+  type LzRunSteps,
+} from '../../src/oss/run.ts';
+import {
+  lzSnapshot,
+  lzStartSampler,
+  type LzSamples,
+} from '../../src/oss/sampler.ts';
 import { lzReportScore } from '../../src/oss/verdicts.ts';
 import { lzIsRecord } from '../../src/report.ts';
 
@@ -62,11 +85,21 @@ describe('lzClearResult', () => {
 
 describe('lzClearSideFiles', () => {
   it("removes an earlier run's report and log of the side, and keeps the other side's", (t) => {
-    const out = setup(t, ['lz.mutation.json', 'lz.log', 'command.mutation.json', 'command.log', 'result.json']);
+    const out = setup(t, [
+      'lz.mutation.json',
+      'lz.log',
+      'command.mutation.json',
+      'command.log',
+      'result.json',
+    ]);
 
     lzClearSideFiles(out, 'lz');
 
-    assert.deepEqual(readdirSync(out).sort(), ['command.log', 'command.mutation.json', 'result.json']);
+    assert.deepEqual(readdirSync(out).sort(), [
+      'command.log',
+      'command.mutation.json',
+      'result.json',
+    ]);
   });
 
   it('accepts a folder that holds neither file', (t) => {
@@ -99,16 +132,27 @@ function row(pid: number, workingSetBytes: number, name: string): LzProcessRow {
   return { pid, ppid: process.pid, workingSetBytes, created: 1n, name };
 }
 
-function sampler(pid: number, stop: () => Promise<LzSamples>): LzRunSteps['startSampler'] {
+function sampler(
+  pid: number,
+  stop: () => Promise<LzSamples>,
+): LzRunSteps['startSampler'] {
   return () => Promise.resolve({ pid, ended: Promise.resolve(), stop });
 }
 
 function notReported(): Promise<LzStrykerRun> {
-  return Promise.resolve({ reported: false, exitCode: 1, output: '', leftover: [], timedOut: false });
+  return Promise.resolve({
+    reported: false,
+    exitCode: 1,
+    output: '',
+    leftover: [],
+    timedOut: false,
+  });
 }
 
 function readResult(out: string): Record<string, unknown> {
-  const result: unknown = JSON.parse(readFileSync(join(out, 'result.json'), 'utf8'));
+  const result: unknown = JSON.parse(
+    readFileSync(join(out, 'result.json'), 'utf8'),
+  );
 
   assert.ok(lzIsRecord(result));
 
@@ -169,10 +213,16 @@ function pointTmpAt(path: string): void {
  * The driver's run folders and TMP listings go to a TMP of the test's own, so that neither the machine's TMP nor the
  * other test files' entries in it reach them.
  */
-async function setupDriver(t: TestContext, overrides: Partial<LzOssOptions> = {}) {
+async function setupDriver(
+  t: TestContext,
+  overrides: Partial<LzOssOptions> = {},
+) {
   const base = mkdtempSync(join(tmpdir(), 'lz-oss-run-'));
   const osTmp = join(base, 'os-tmp');
-  const saved = tmpVariables.map((name) => ({ name, value: process.env[name] }));
+  const saved = tmpVariables.map((name) => ({
+    name,
+    value: process.env[name],
+  }));
 
   t.after(() => {
     saved.forEach(({ name, value }) => {
@@ -188,17 +238,31 @@ async function setupDriver(t: TestContext, overrides: Partial<LzOssOptions> = {}
   pointTmpAt(osTmp);
   const source = join(base, 'source');
   const tarballs = join(base, 'tarballs');
-  const { stdout: gitDir } = await lzExec('git', ['rev-parse', '--absolute-git-dir'], { cwd: import.meta.dirname });
-  const { stdout: head } = await lzExec('git', ['rev-parse', 'HEAD'], { cwd: import.meta.dirname });
+  const { stdout: gitDir } = await lzExec(
+    'git',
+    ['rev-parse', '--absolute-git-dir'],
+    { cwd: import.meta.dirname },
+  );
+  const { stdout: head } = await lzExec('git', ['rev-parse', 'HEAD'], {
+    cwd: import.meta.dirname,
+  });
 
-  [join(source, 'src'), join(source, 'test'), join(source, 'node_modules'), tarballs].forEach((dir) => {
+  [
+    join(source, 'src'),
+    join(source, 'test'),
+    join(source, 'node_modules'),
+    tarballs,
+  ].forEach((dir) => {
     mkdirSync(dir, { recursive: true });
   });
   // A Git file, so that the copy of the source sits in this workspace's work tree without a clone.
   writeFileSync(join(source, '.git'), `gitdir: ${gitDir.trim()}\n`);
   writeFileSync(join(source, 'src', 'a.js'), "export const value = 'one';\n");
   symlinkSync('a.js', join(source, 'src', 'link'));
-  writeFileSync(join(source, 'test', 'a.test.js'), "writeFileSync('x', '');\nmkdirSync('y');\n");
+  writeFileSync(
+    join(source, 'test', 'a.test.js'),
+    "writeFileSync('x', '');\nmkdirSync('y');\n",
+  );
   writeFileSync(join(source, 'node_modules', 'stale.txt'), '');
   writeFileSync(join(tarballs, 'a.tgz'), 'tarball a');
   writeFileSync(join(tarballs, 'notes.txt'), '');
@@ -226,17 +290,29 @@ async function setupDriver(t: TestContext, overrides: Partial<LzOssOptions> = {}
       mkdirSync(join(dir, 'node_modules'));
       writeFileSync(
         join(dir, 'node_modules', '.package-lock.json'),
-        JSON.stringify({ packages: { '': { version: '1.0.0' }, 'node_modules/x': { version: '2.0.0' } } }),
+        JSON.stringify({
+          packages: {
+            '': { version: '1.0.0' },
+            'node_modules/x': { version: '2.0.0' },
+          },
+        }),
       );
 
       return Promise.resolve();
     },
     stryker: (dir, configFile, concurrency, strykerOptions) => {
-      strykerCalls.push({ dir, configFile, concurrency, options: strykerOptions });
+      strykerCalls.push({
+        dir,
+        configFile,
+        concurrency,
+        options: strykerOptions,
+      });
 
       return notReported();
     },
-    startSampler: sampler(deadPid, () => Promise.resolve({ samples: [], error: null })),
+    startSampler: sampler(deadPid, () =>
+      Promise.resolve({ samples: [], error: null }),
+    ),
     snapshot: () => Promise.resolve([]),
   };
 
@@ -252,7 +328,9 @@ async function setupDriver(t: TestContext, overrides: Partial<LzOssOptions> = {}
     installs,
     strykerCalls,
     printed: (): string[] =>
-      write.mock.calls.flatMap(({ arguments: [text] }) => (typeof text === 'string' ? [text] : [])),
+      write.mock.calls.flatMap(({ arguments: [text] }) =>
+        typeof text === 'string' ? [text] : [],
+      ),
   };
 }
 
@@ -276,7 +354,9 @@ describe('lzRunDriver', () => {
     // Its digest sorts before a.tgz's.
     writeFileSync(join(tarballs, 'b.tgz'), 'tarball e');
     // In the order the folder lists them, which differs between platforms.
-    const tarballNames = readdirSync(tarballs).filter((name) => name !== 'notes.txt');
+    const tarballNames = readdirSync(tarballs).filter(
+      (name) => name !== 'notes.txt',
+    );
     const exitListeners = process.listenerCount('exit');
 
     await lzRunDriver(options, fakeSteps);
@@ -298,8 +378,14 @@ describe('lzRunDriver', () => {
         timeLimitMinutes: 3,
         mutantTimeoutMs: 5_000,
         installedVersions: ['@1.0.0', 'node_modules/x@2.0.0'],
-        tarballDigests: ['tarball e', 'tarball a'].map((data) => createHash('sha256').update(data).digest('hex')),
-        projectSetup: { mutate: project.mutate, testFiles: project.testFiles, patches: project.patches },
+        tarballDigests: ['tarball e', 'tarball a'].map((data) =>
+          createHash('sha256').update(data).digest('hex'),
+        ),
+        projectSetup: {
+          mutate: project.mutate,
+          testFiles: project.testFiles,
+          patches: project.patches,
+        },
         mutate: ['src/a.js'],
         tarballs: tarballNames,
         npmBefore: '2026-01-01',
@@ -317,7 +403,9 @@ describe('lzRunDriver', () => {
         link: readlinkSync(join(dir, 'src', 'link')),
         git: existsSync(join(dir, '.git')),
         sourceModules: existsSync(join(dir, 'node_modules', 'stale.txt')),
-        configs: ['lz', 'command'].map((side) => readFileSync(join(dir, `stryker.${side}.config.mjs`), 'utf8')),
+        configs: ['lz', 'command'].map((side) =>
+          readFileSync(join(dir, `stryker.${side}.config.mjs`), 'utf8'),
+        ),
         installs,
         exitListeners: process.listenerCount('exit'),
         deadRun: existsSync(deadRun),
@@ -330,14 +418,25 @@ describe('lzRunDriver', () => {
         link: 'a.js',
         git: false,
         sourceModules: false,
-        configs: [lzStrykerConfig('lz', project), lzStrykerConfig('command', project)],
-        installs: [{ dir, tarballs: tarballNames.map((name) => join(tarballs, name)), before: '2026-01-01' }],
+        configs: [
+          lzStrykerConfig('lz', project),
+          lzStrykerConfig('command', project),
+        ],
+        installs: [
+          {
+            dir,
+            tarballs: tarballNames.map((name) => join(tarballs, name)),
+            before: '2026-01-01',
+          },
+        ],
         exitListeners,
         deadRun: false,
       },
     );
     assert.deepEqual(
-      printed().filter((text) => /^(?:test\/a\.test\.js|Prepared|Wrote) /.test(text)),
+      printed().filter((text) =>
+        /^(?:test\/a\.test\.js|Prepared|Wrote) /.test(text),
+      ),
       [
         'test/a.test.js writes files (mkdirSync, writeFileSync); a fixed path there would collide across Stryker workers.\n',
         `Wrote ${join(out, 'result.json')}\n`,
@@ -347,7 +446,10 @@ describe('lzRunDriver', () => {
   });
 
   it('packs the workspace into the run folder when no tarball folder is given', async (t) => {
-    const driver = await setupDriver(t, { prepareOnly: true, tarballs: undefined });
+    const driver = await setupDriver(t, {
+      prepareOnly: true,
+      tarballs: undefined,
+    });
     const packs: string[] = [];
 
     await lzRunDriver(driver.options, {
@@ -377,7 +479,9 @@ describe('lzRunDriver', () => {
     mkdirSync(out, { recursive: true });
     writeFileSync(join(out, 'result.json'), '{}');
 
-    await assert.rejects(lzRunDriver(options, fakeSteps), { message: `${tarballs} holds no .tgz file.` });
+    await assert.rejects(lzRunDriver(options, fakeSteps), {
+      message: `${tarballs} holds no .tgz file.`,
+    });
 
     assert.equal(existsSync(join(out, 'result.json')), false);
   });
@@ -386,7 +490,10 @@ describe('lzRunDriver', () => {
     const { options, steps: fakeSteps } = await setupDriver(t);
 
     await assert.rejects(
-      lzRunDriver(options, { ...fakeSteps, install: () => Promise.reject(new Error('no install')) }),
+      lzRunDriver(options, {
+        ...fakeSteps,
+        install: () => Promise.reject(new Error('no install')),
+      }),
       { message: 'no install' },
     );
   });
@@ -400,17 +507,23 @@ describe('lzRunDriver', () => {
       lzRunDriver(options, fakeSteps),
       (error) =>
         error instanceof Error &&
-        error.message.startsWith(`git rev-parse HEAD in ${source} ended with exit code 128:\n`),
+        error.message.startsWith(
+          `git rev-parse HEAD in ${source} ended with exit code 128:\n`,
+        ),
     );
   });
 
   it('runs Stryker on each side and records its report, the processes it left and what it left in TMP', async (t) => {
     const driver = await setupDriver(t);
     const { options, out, strykerCalls } = driver;
-    const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
-      stdio: 'ignore',
-      windowsHide: true,
-    });
+    const child = spawn(
+      process.execPath,
+      ['-e', 'setInterval(() => {}, 1000)'],
+      {
+        stdio: 'ignore',
+        windowsHide: true,
+      },
+    );
     const exited = once(child, 'exit');
 
     t.after(() => {
@@ -429,7 +542,12 @@ describe('lzRunDriver', () => {
     await lzRunDriver(options, {
       ...driver.steps,
       stryker: (dir, configFile, concurrency, strykerOptions) => {
-        strykerCalls.push({ dir, configFile, concurrency, options: strykerOptions });
+        strykerCalls.push({
+          dir,
+          configFile,
+          concurrency,
+          options: strykerOptions,
+        });
         mkdirSync(join(dir, dirname(lzReportFile)), { recursive: true });
         writeFileSync(join(dir, lzReportFile), 'report');
         mkdirSync(newTmp);
@@ -446,7 +564,13 @@ describe('lzRunDriver', () => {
       },
       startSampler: sampler(deadPid, () =>
         Promise.resolve({
-          samples: [[row(process.pid, 1, 'node'), row(deadPid, 1_000, 'pwsh'), leftover]],
+          samples: [
+            [
+              row(process.pid, 1, 'node'),
+              row(deadPid, 1_000, 'pwsh'),
+              leftover,
+            ],
+          ],
           error: null,
         }),
       ),
@@ -501,7 +625,13 @@ describe('lzRunDriver', () => {
             options: {
               tmp: join(root, 'tmp'),
               timeoutMs: 3 * 60_000,
-              args: ['--mutate', 'src/a.js', '--timeoutMS', '5000', ...lzCheckpointArgs(checkpoint)],
+              args: [
+                '--mutate',
+                'src/a.js',
+                '--timeoutMS',
+                '5000',
+                ...lzCheckpointArgs(checkpoint),
+              ],
               logFile: join(out, 'lz.log'),
               reporters: [lzCheckpointReporterName],
             },
@@ -531,7 +661,10 @@ describe('lzRunDriver', () => {
         return notReported();
       },
       startSampler: sampler(deadPid - 4, () =>
-        Promise.resolve({ samples: [[row(process.pid, 1, 'node'), lingering]], error: null }),
+        Promise.resolve({
+          samples: [[row(process.pid, 1, 'node'), lingering]],
+          error: null,
+        }),
       ),
       snapshot: () => Promise.resolve(ended ? [] : [lingering]),
     });
@@ -558,7 +691,10 @@ describe('lzRunDriver', () => {
         steps: steps(side).filter((step) => step.startsWith('Checkpoint')),
         resumedMutants: side['resumedMutants'],
       },
-      { steps: ['Checkpoint', 'Checkpoint after removing the unreadable one'], resumedMutants: 0 },
+      {
+        steps: ['Checkpoint', 'Checkpoint after removing the unreadable one'],
+        resumedMutants: 0,
+      },
     );
   });
 
@@ -585,7 +721,9 @@ describe('lzRunDriver', () => {
     assert.deepEqual(
       {
         steps: steps(failedSide),
-        thrown: messages(failedSide).filter((message) => / no \w+$/.test(message)),
+        thrown: messages(failedSide).filter((message) =>
+          / no \w+$/.test(message),
+        ),
         stryker: failedSide['stryker'],
         newInOsTmp: failedSide['newInOsTmp'],
         leftoverStrykerTmp: failedSide['leftoverStrykerTmp'],
@@ -599,7 +737,11 @@ describe('lzRunDriver', () => {
           'Leftover snapshot',
           'TMP listing after the run',
         ],
-        thrown: ['Sampler start: no sampler', 'Stryker run: no stryker', 'Leftover snapshot: no snapshot'],
+        thrown: [
+          'Sampler start: no sampler',
+          'Stryker run: no stryker',
+          'Leftover snapshot: no snapshot',
+        ],
         stryker: null,
         newInOsTmp: [],
         leftoverStrykerTmp: [],
@@ -614,8 +756,17 @@ describe('lzRunDriver', () => {
     await lzRunDriver(options, {
       ...driver.steps,
       stryker: () =>
-        Promise.resolve({ reported: true, report: new Map(), exitCode: 0, output: '', leftover: [], timedOut: false }),
-      startSampler: sampler(deadPid - 4, () => Promise.resolve({ samples: [gone], error: 'pwsh failed' })),
+        Promise.resolve({
+          reported: true,
+          report: new Map(),
+          exitCode: 0,
+          output: '',
+          leftover: [],
+          timedOut: false,
+        }),
+      startSampler: sampler(deadPid - 4, () =>
+        Promise.resolve({ samples: [gone], error: 'pwsh failed' }),
+      ),
       snapshot: () => Promise.resolve(gone),
     });
 
@@ -631,7 +782,13 @@ describe('lzRunDriver', () => {
         removed: driver.printed().filter((text) => text.startsWith('Removed ')),
       },
       {
-        steps: ['Checkpoint', 'Sampler', 'Ending 1.5', 'Report copy', '.stryker-tmp listing'],
+        steps: [
+          'Checkpoint',
+          'Sampler',
+          'Ending 1.5',
+          'Report copy',
+          '.stryker-tmp listing',
+        ],
         sampler: 'Sampler: pwsh failed',
         resumedMutants: 0,
         processes: {
@@ -644,7 +801,9 @@ describe('lzRunDriver', () => {
           ],
         },
         leftoverStrykerTmp: [],
-        removed: [`Removed ${checkpoint}, which could not be read; lz starts afresh.\n`],
+        removed: [
+          `Removed ${checkpoint}, which could not be read; lz starts afresh.\n`,
+        ],
       },
     );
 
@@ -655,7 +814,9 @@ describe('lzRunDriver', () => {
 
     await lzRunDriver(options, {
       ...driver.steps,
-      startSampler: sampler(deadPid, () => Promise.reject(new Error('stop failed'))),
+      startSampler: sampler(deadPid, () =>
+        Promise.reject(new Error('stop failed')),
+      ),
     });
 
     const unresumedSide = sideOf(readResult(out));
@@ -670,9 +831,16 @@ describe('lzRunDriver', () => {
           : null,
       },
       {
-        steps: ['Checkpoint', 'Checkpoint after removing the unreadable one', 'Sampler'],
+        steps: [
+          'Checkpoint',
+          'Checkpoint after removing the unreadable one',
+          'Sampler',
+        ],
         sampler: 'Sampler: stop failed',
-        options: { args: ['--mutate', 'src/a.js', '--timeoutMS', '5000'], reporters: [] },
+        options: {
+          args: ['--mutate', 'src/a.js', '--timeoutMS', '5000'],
+          reporters: [],
+        },
       },
     );
   });
