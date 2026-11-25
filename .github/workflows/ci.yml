@@ -56,7 +56,8 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: npx nx run-many -t e2e
+      # demo-app-e2e's e2e target drives a browser, so the browser job runs it.
+      - run: npx nx run e2e:e2e
 
   mutation:
     name: Mutation testing (${{ matrix.project }}:mutate-${{ matrix.config }}${{ matrix.shard && format(' {0}', matrix.shard) || '' }})
@@ -379,6 +380,7 @@ jobs:
       matrix:
         include:
           - target: '@muirjs/siryn-playwright:test-browser'
+          - target: '@muirjs/demo-app-e2e:e2e'
           - target: '@muirjs/demo-app-e2e:mutate-e2e'
             report: e2e
           - target: '@muirjs/demo-app-e2e:mutate-e2e-ui'
