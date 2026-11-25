@@ -17,12 +17,12 @@ cp -r apps/demo-app/index.html apps/demo-app/src apps/demo-app/public <scratch>/
 rm <scratch>/app/src/app/price-tag.story.tsx
 cp apps/demo-app-e2e/src/*.spec.ts <scratch>/e2e/
 (cd packages/siryn-playwright && npm pack --pack-destination <scratch>/tarballs)
-(cd packages/proteus-jsx && npm pack --pack-destination <scratch>/tarballs)
+(cd packages/proteus-react && npm pack --pack-destination <scratch>/tarballs)
 (cd packages/moira-mutators && npm pack --pack-destination <scratch>/tarballs)
 cd <scratch>
 npm install --ignore-scripts
 npx playwright install chromium
-node --no-experimental-strip-types --input-type=module -e "await import('@muirjs/siryn-playwright'); await import('@muirjs/proteus-jsx'); await import('@muirjs/moira-mutators')"
+node --no-experimental-strip-types --input-type=module -e "await import('@muirjs/siryn-playwright'); await import('@muirjs/proteus-react'); await import('@muirjs/moira-mutators')"
 npx playwright test
 npx stryker run stryker.config.mjs
 ```

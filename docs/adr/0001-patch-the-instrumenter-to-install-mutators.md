@@ -1,7 +1,7 @@
 # Mutator packages patch Stryker's instrumenter, through an awaited install call
 
 StrykerJS 10.1 has no plugin kind for mutators, and a plugin cannot turn a built-in mutator off (only the user's
-`mutator.excludedMutations` can), so `@muirjs/proteus-jsx` and `@muirjs/proteus-playwright` install
+`mutator.excludedMutations` can), so `@muirjs/proteus-react` and `@muirjs/proteus-playwright` install
 their mutators by patching the installed `@stryker-mutator/instrumenter` in memory, through
 `@muirjs/moira-mutators`. The patch touches
 undocumented internals (the instrumenter's mutator list and expression placer), so the mutator packages peer on
@@ -9,7 +9,7 @@ undocumented internals (the instrumenter's mutator list and expression placer), 
 added mutator makes a mutant of a sample and that each removed built-in makes none. A failed check undoes the patch
 and stops the run.
 
-The install is a function the Stryker config awaits (`await muirProteusJsxMutators()`), not a side effect of listing the
+The install is a function the Stryker config awaits (`await muirProteusReactMutators()`), not a side effect of listing the
 package in `plugins`. Stryker only warns when a module in `plugins` fails to load, so a broken install there would
 let the run finish and report a score without the mutators.
 

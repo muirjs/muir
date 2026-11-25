@@ -1,7 +1,7 @@
-import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusReactMutators } from '@muirjs/proteus-react';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
-await muirProteusJsxMutators();
+await muirProteusReactMutators();
 
 // The component-test case: the feature components that the story specs mount through the gallery, with the
 // built-in and the JSX mutators.

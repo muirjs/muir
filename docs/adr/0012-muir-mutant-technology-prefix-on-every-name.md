@@ -31,7 +31,7 @@ between plugins in the monorepo, to ease auto-import in editors, and to help _pr
 ## Consequences
 
 - Stryker's names change for users: the runners `muir-siryn-node-test` and `muir-siryn-playwright`, the options keys
-  `muirSirynNodeTest` and `muirSirynPlaywright`, the mutators (`MuirProteusJsx*`, `MuirProteusPlaywright*` and the
+  `muirSirynNodeTest` and `muirSirynPlaywright`, the mutators (`MuirProteusReact*`, `MuirProteusPlaywright*` and the
   others), the reporters and ignorers, and the `MUIR_*` environment variables. A Stryker configuration, a
   `mutator.excludedMutations` list or a `// Stryker disable` comment that names an old `Lz` name no longer matches.
 - Names that StrykerJS requires keep their names: `strykerPlugins` and `strykerValidationSchema`.

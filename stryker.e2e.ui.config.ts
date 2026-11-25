@@ -1,8 +1,8 @@
-import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusReactMutators } from '@muirjs/proteus-react';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 import base from './stryker.base.ts';
 
-await muirProteusJsxMutators();
+await muirProteusReactMutators();
 
 export default {
   ...base,

@@ -1,7 +1,7 @@
 # @muirjs/demo-app
 
 A small React shop built with Vite. It is private: it exists so that the Playwright runner,
-`@muirjs/siryn-playwright`, and the JSX mutators, `@muirjs/proteus-jsx`, have an app to mutation test.
+`@muirjs/siryn-playwright`, and the JSX mutators, `@muirjs/proteus-react`, have an app to mutation test.
 
 - `npx nx run @muirjs/demo-app:dev` starts the app.
 - `npx nx run @muirjs/demo-app:mutate-ct` runs Stryker on the app with its Playwright component tests

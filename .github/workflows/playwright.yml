@@ -31,9 +31,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx nx run-many -t lint
-      - run: npx nx run-many -t build --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
+      - run: npx nx run-many -t build --projects=@muirjs/siryn-playwright,@muirjs/proteus-react
       - run: npx nx run-many -t typecheck
-      - run: npx nx run-many -t test --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
+      - run: npx nx run-many -t test --projects=@muirjs/siryn-playwright,@muirjs/proteus-react
 
   browser:
     name: ${{ matrix.target }}

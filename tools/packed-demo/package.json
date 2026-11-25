@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@muirjs/siryn-playwright": "file:tarballs/muirjs-siryn-playwright-0.0.0.tgz",
-    "@muirjs/proteus-jsx": "file:tarballs/muirjs-proteus-jsx-0.0.0.tgz",
+    "@muirjs/proteus-react": "file:tarballs/muirjs-proteus-react-0.0.0.tgz",
     "@muirjs/moira-mutators": "file:tarballs/muirjs-moira-mutators-0.0.0.tgz",
     "@playwright/test": "1.64.1",
     "@stryker-mutator/core": "10.1.1",

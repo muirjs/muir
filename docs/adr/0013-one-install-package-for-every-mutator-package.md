@@ -7,7 +7,7 @@ status: accepted
 The repositories merged, so the two install layers that ADR 0003 kept apart merged too. `@muirjs/moira-node-test`
 is gone. Its Babel mutator model moved into `@muirjs/moira-mutators`, and every mutator package now installs through
 one function, `muirMoiraMutatorsInstall`: `@muirjs/proteus-js`, `-node` and `-node-test` through its Babel form
-`muirMoiraMutatorsInstallBabelMutators`, and `@muirjs/proteus-jsx`, `-msw`, `-playwright`, `-storybook` and
+`muirMoiraMutatorsInstallBabelMutators`, and `@muirjs/proteus-react`, `-msw`, `-playwright`, `-storybook` and
 `-storybook-test` directly. Selecting tiers, checking names, the self-check, finding Stryker core and the version
 warning each have one implementation. Where the two layers differed, the merge kept the stricter or the more general
 behaviour. The brief quoted Lars: "Don't worry about breaking changes. There are no users yet".

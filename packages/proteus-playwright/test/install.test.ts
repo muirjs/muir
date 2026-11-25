@@ -253,7 +253,7 @@ describe('install', () => {
     const sibling = {
       name: 'MuirProteusPlaywrightSibling',
       mutate: () => undefined,
-      [muirMoiraMutatorsMarkOf('@muirjs/proteus-jsx')]: 1,
+      [muirMoiraMutatorsMarkOf('@muirjs/proteus-react')]: 1,
     };
     const { instrumenter, names } = fakeInstrumenter({ extra: [sibling] });
     const list = instrumenter.allMutators;

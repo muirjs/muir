@@ -3,7 +3,7 @@ import './break.ts';
 
 export default {
   mutate: ['src.tsx'],
-  plugins: ['@muirjs/proteus-jsx'],
+  plugins: ['@muirjs/proteus-react'],
   ignorers: ['lz-jsx'],
   testRunner: 'command',
   commandRunner: { command: 'node -e "process.exit(0)"' },

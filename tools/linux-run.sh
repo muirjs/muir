@@ -26,11 +26,11 @@ step() {
 step npm-ci npm ci --no-audit --no-fund
 # Without node_modules, npx would download whatever nx the registry serves.
 [ "$failed" -eq 0 ] || exit "$failed"
-step nx-lint npx nx run-many -t lint --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
+step nx-lint npx nx run-many -t lint --projects=@muirjs/siryn-playwright,@muirjs/proteus-react
 step nx-typecheck npx nx run-many -t typecheck
-step nx-build npx nx run-many -t build --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
+step nx-build npx nx run-many -t build --projects=@muirjs/siryn-playwright,@muirjs/proteus-react
 step test-runner npx nx run @muirjs/siryn-playwright:test
-step test-ui npx nx run @muirjs/proteus-jsx:test
+step test-ui npx nx run @muirjs/proteus-react:test
 step test-browser npx nx run @muirjs/siryn-playwright:test-browser
 step stryker-e2e npx nx run @muirjs/demo-app-e2e:mutate-e2e
 step stryker-e2e-ui npx nx run @muirjs/demo-app-e2e:mutate-e2e-ui

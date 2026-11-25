@@ -4,7 +4,7 @@
   "private": true,
   "devDependencies": {
     "@muirjs/siryn-playwright": "*",
-    "@muirjs/proteus-jsx": "*"
+    "@muirjs/proteus-react": "*"
   },
   "nx": {
     "tags": [

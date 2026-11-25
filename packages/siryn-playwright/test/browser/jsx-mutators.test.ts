@@ -3,7 +3,7 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusReactMutators } from '@muirjs/proteus-react';
 import type { Location, Mutant } from '@stryker-mutator/api/core';
 import { MutantRunStatus, TestStatus } from '@stryker-mutator/api/test-runner';
 import { Instrumenter } from '@stryker-mutator/instrumenter';
@@ -65,7 +65,7 @@ function mutantRun(m: Mutant, title: string) {
 }
 
 before(async () => {
-  await muirProteusJsxMutators();
+  await muirProteusReactMutators();
   const result = await new Instrumenter(log).instrument(
     [{ name: fixture('src/app.tsx'), content: source, mutate: true }],
     { plugins: null, excludedMutations: [], ignorers: [] },
@@ -103,8 +103,8 @@ test('dry run completes with every test passing', () => {
 
 test('per-test coverage credits a text mutant only to the tests that render its element', () => {
   const { perTest, static: staticCoverage } = session.mutantCoverage;
-  const heading = mutant('MuirProteusJsxTextLiteral', 'Orders', '').id;
-  const status = mutant('MuirProteusJsxTextLiteral', 'Revealed', '').id;
+  const heading = mutant('MuirProteusReactTextLiteral', 'Orders', '').id;
+  const status = mutant('MuirProteusReactTextLiteral', 'Revealed', '').id;
 
   assert.ok(perTest[session.testId('shows the heading')]?.[heading]);
   assert.ok(perTest[session.testId('reveals the status')]?.[heading]);
@@ -124,70 +124,70 @@ const rows: readonly {
   bystander: string;
 }[] = [
   {
-    mutator: 'MuirProteusJsxTextLiteral',
+    mutator: 'MuirProteusReactTextLiteral',
     original: 'Orders',
     replacement: '',
     killer: 'shows the heading',
     bystander: 'shows the total',
   },
   {
-    mutator: 'MuirProteusJsxLabelAttribute',
+    mutator: 'MuirProteusReactLabelAttribute',
     original: 'aria-label="Close"',
     replacement: 'aria-label=""',
     killer: 'closes the dialog',
     bystander: 'toggle reports expanded',
   },
   {
-    mutator: 'MuirProteusJsxEventHandler',
+    mutator: 'MuirProteusReactEventHandler',
     original: 'onClick={actions.reveal}',
     replacement: 'onClick={undefined}',
     killer: 'reveals the status',
     bystander: 'shows the heading',
   },
   {
-    mutator: 'MuirProteusJsxConditionalElement',
+    mutator: 'MuirProteusReactConditionalElement',
     original: 'open && <p>Details panel</p>',
     replacement: '<p>Details panel</p>',
     killer: 'panel starts hidden',
     bystander: 'shows the heading',
   },
   {
-    mutator: 'MuirProteusJsxUrlAttribute',
+    mutator: 'MuirProteusReactUrlAttribute',
     original: 'href="#/done"',
     replacement: 'href=""',
     killer: 'navigates to done',
     bystander: 'shows the heading',
   },
   {
-    mutator: 'MuirProteusJsxDisabledAttribute',
+    mutator: 'MuirProteusReactDisabledAttribute',
     original: 'disabled={busy}',
     replacement: 'disabled={false}',
     killer: 'submit is disabled while busy',
     bystander: 'shows the heading',
   },
   {
-    mutator: 'MuirProteusJsxHiddenAttribute',
+    mutator: 'MuirProteusReactHiddenAttribute',
     original: 'hidden={!open}',
     replacement: 'hidden={false}',
     killer: 'region hidden until opened',
     bystander: 'shows the heading',
   },
   {
-    mutator: 'MuirProteusJsxElementRole',
+    mutator: 'MuirProteusReactElementRole',
     original: 'role="dialog"',
     replacement: 'role={undefined}',
     killer: 'opens the dialog',
     bystander: 'toggle reports expanded',
   },
   {
-    mutator: 'MuirProteusJsxChildExpression',
+    mutator: 'MuirProteusReactChildExpression',
     original: 'total',
     replacement: 'null',
     killer: 'shows the total',
     bystander: 'shows the heading',
   },
   {
-    mutator: 'MuirProteusJsxStateAttribute',
+    mutator: 'MuirProteusReactStateAttribute',
     original: 'aria-expanded={open}',
     replacement: 'aria-expanded={!open}',
     killer: 'toggle reports expanded',

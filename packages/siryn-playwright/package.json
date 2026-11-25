@@ -46,7 +46,7 @@
     "@stryker-mutator/api": "10.1.1"
   },
   "devDependencies": {
-    "@muirjs/proteus-jsx": "*",
+    "@muirjs/proteus-react": "*",
     "@muirjs/proteus-playwright": "*",
     "ajv": "8.20.0"
   },

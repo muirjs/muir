@@ -220,7 +220,7 @@ in Playwright e2e, component and API tests. None of the 17 stays on in test code
 A mutant that dies whenever its line runs is killed by every test that reaches the line, so it shows only that the
 line runs, not what the test checks. It costs run time and finds nothing.
 
-The install removes the built-ins by name. Mutators from other packages, such as `@muirjs/proteus-jsx`, stay
+The install removes the built-ins by name. Mutators from other packages, such as `@muirjs/proteus-react`, stay
 on. When the instrumenter holds a mutator that is neither one of the 17 nor from a `@muirjs` package, the install
 warns that it stays on and that this package has not reviewed it.
 

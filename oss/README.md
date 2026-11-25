@@ -91,7 +91,7 @@ dev server (`npm run dev`), which compiles Stryker's sandbox on the fly.
 
 1. Copy `.env.example` to `.env`, the repo's own setup step.
 2. Install the runner, StrykerJS, and Playwright as above, plus the mutators and the checker:
-   `npm install -D @stryker-mutator/typescript-checker@10.1.1 file:<this repo>/packages/proteus-jsx`.
+   `npm install -D @stryker-mutator/typescript-checker@10.1.1 file:<this repo>/packages/proteus-react`.
    The copy pins `@playwright/test` to `^1.58.1`.
 3. Apply `epic-stack/copy.patch` and copy `epic-stack/stryker.playwright.config.ts` into the copy.
    The patch:
@@ -129,7 +129,7 @@ below runs in `packages/react-virtuoso` unless it says otherwise.
    has `@playwright/test` `^1.60.0`, below the runner's 1.63 floor, and a separate `playwright`
    dependency; with only `@playwright/test` raised, `npx playwright` still runs the 1.60 CLI. Then link
    the runner and the mutators as junctions at `node_modules/@muirjs/siryn-playwright` and
-   `node_modules/@muirjs/proteus-jsx` in the copy's root. Stryker loads plugins from its own
+   `node_modules/@muirjs/proteus-react` in the copy's root. Stryker loads plugins from its own
    install in pnpm's store, which sees the root `node_modules` but not the package's.
 3. Apply `react-virtuoso/copy.patch` from the copy's root and copy
    `react-virtuoso/stryker.playwright.config.ts` into `packages/react-virtuoso`. The patch:

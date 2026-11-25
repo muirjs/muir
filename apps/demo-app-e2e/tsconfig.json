@@ -25,7 +25,7 @@
   ],
   "references": [
     {
-      "path": "../../packages/proteus-jsx"
+      "path": "../../packages/proteus-react"
     },
     {
       "path": "../../packages/siryn-playwright"

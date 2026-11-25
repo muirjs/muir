@@ -1,7 +1,7 @@
 # Design: JSX mutators that Playwright tests can kill
 
 Status: chosen design, 2026-10-25, by Claude during an AFK run. Built on 2026-10-26, now in
-`packages/proteus-jsx`. Lars approved the mutator and mutation names in Names, without a
+`packages/proteus-react`. Lars approved the mutator and mutation names in Names, without a
 namespace prefix, on 2026-10-25 ("2-3: Approve").
 
 ## Why
@@ -120,7 +120,7 @@ attribute or the tag that gives an element its implicit role.
 
 ## Rules the synthetic cases settled
 
-`packages/proteus-jsx/test/cases.ts` holds 144 synthetic cases: JSX versions of UI shapes in the repos
+`packages/proteus-react/test/cases.ts` holds 144 synthetic cases: JSX versions of UI shapes in the repos
 the runner was exercised on (RealWorld, ngx-yeti, Analog and hello-world at the commits `oss/README.md` names,
 and the demo app), each with the exact JSX mutants it must give. `spikes/ui-mutator-cases/` keeps the mined rows
 they came from. The cases first ran against the prototype and now run against the package. The design was silent on
@@ -257,7 +257,7 @@ shapes cannot ship there, and the mutators measure what lint cannot see.
 
 ## Integration
 
-- **Package.** `@muirjs/proteus-jsx`. A JavaScript or TypeScript config imports `lzJsxMutators`
+- **Package.** `@muirjs/proteus-react`. A JavaScript or TypeScript config imports `lzJsxMutators`
   and awaits it at the top (see "Fail loud"). Importing the module installs nothing, so the package
   declares `sideEffects: false`. The call takes no options in v1: the package has no opt-in or experimental
   mutators yet, and the call throws on any option, so a config cannot name one that does nothing. Users
@@ -380,7 +380,7 @@ decides each mutator.
    - A Playwright test written for the behaviour kills at least one of its mutants.
 
    Measured on 2026-10-26 (`docs/VERDICT.md`, Evidence): every mutator meets the bar. The corpus diff
-   is the placement test in `packages/proteus-jsx/test/`. On the demo app, with
+   is the placement test in `packages/proteus-react/test/`. On the demo app, with
    `actionTimeout` set, none of the 17 JSX mutants is equivalent or an error, and without it 3 kills
    show as Timeout. In `packages/siryn-playwright/test/browser/jsx-mutators.test.ts` a
    written test kills a mutant of each mutator. A copy of epic-stack, outside the bar's scope, adds
@@ -396,7 +396,7 @@ MODE=patched node spikes/design-opus/neutral.ts
 MODE=ui node spikes/design-opus/neutral.ts
 node spikes/design-opus/directive.ts
 node spikes/design-fable/spike-jsx-placement.ts
-node --test packages/proteus-jsx/test/cases.test.ts
+node --test packages/proteus-react/test/cases.test.ts
 ```
 
 `MODE=patched` shows that the placer patch leaves built-in mutants unchanged, and `MODE=ui` prints the

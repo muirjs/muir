@@ -34,7 +34,7 @@
       "path": "./packages/siryn-playwright"
     },
     {
-      "path": "./packages/proteus-jsx"
+      "path": "./packages/proteus-react"
     },
     {
       "path": "./packages/moira-mutators"

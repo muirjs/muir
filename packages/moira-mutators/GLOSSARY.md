@@ -10,7 +10,7 @@ packages, the swap engine and the site readers it reads swap sites with.
 ### Installing
 
 **Mutator package**:
-A `@muirjs` package whose mutators reach Stryker through an install: `@muirjs/proteus-jsx`,
+A `@muirjs` package whose mutators reach Stryker through an install: `@muirjs/proteus-react`,
 `@muirjs/proteus-playwright`, `@muirjs/proteus-storybook`,
 `@muirjs/proteus-storybook-test`, `@muirjs/proteus-msw`, and the Node mutator packages.
 _Avoid_: mutator plugin, operator package

@@ -479,7 +479,7 @@ pick.
 access into its own module, so another package can copy it byte for byte, answers no smell, so steps 2 to 4 gave no
 guidance. The step that mattered, keeping `resolveFromCore` async so that a throwing default still rejects instead
 of throwing, is not one its checklist prompts for. The mandatory loop audit then cost a read with nothing to audit,
-since no loop moved. Evidence: step 6 chunk 0, commit "refactor(proteus-jsx): move instrumenter access into
+since no loop moved. Evidence: step 6 chunk 0, commit "refactor(proteus-react): move instrumenter access into
 instrumenter.ts", `step6-chunk0-notes.md`.
 
 **O54. `lz-tpp` has no transformation for widening or narrowing an existing condition.** Four greens in step 6 chunk
@@ -1789,7 +1789,7 @@ that checks the element is visible kills both; a test that checks it is hidden k
 replace the `true` mutant with the right operand (`<p>Details</p>`), which forces the element to show
 and is the mutant `true` stands for in plain JavaScript. A smaller fix drops the `true` mutant there.
 
-**Context.** `@muirjs/proteus-jsx` in this repo adds that force-show mutant as
+**Context.** `@muirjs/proteus-react` in this repo adds that force-show mutant as
 `LzConditionalElement`, and skips a `&&` whose left operand is a comparison or a `&&` or `||` expression,
 because there the built-in `true` already exists. An upstream fix would make that skip need revisiting.
 

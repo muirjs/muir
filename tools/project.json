@@ -19,7 +19,7 @@
         "{workspaceRoot}/oss/**/*.ts",
         "{workspaceRoot}/stryker.*.ts",
         "{workspaceRoot}/packages/siryn-playwright/src/**/*.ts",
-        "{workspaceRoot}/packages/proteus-jsx/src/**/*.ts",
+        "{workspaceRoot}/packages/proteus-react/src/**/*.ts",
         "{workspaceRoot}/packages/moira-mutators/src/**/*.ts",
         "{workspaceRoot}/tsconfig.tools.json",
         "{workspaceRoot}/tsconfig.node.json",

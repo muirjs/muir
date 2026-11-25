@@ -18,7 +18,7 @@ const playwrightProjects = [
   'tools/packed-demo/**',
   'packages/moira-storybook/**',
   'packages/pixie-storybook-vite/**',
-  'packages/proteus-jsx/**',
+  'packages/proteus-react/**',
   'packages/proteus-msw/**',
   'packages/moira-mutators/**',
   'packages/proteus-playwright/**',
@@ -555,7 +555,7 @@ const playwrightConfigs = [
   },
   {
     files: ['packages/**/*.ts', 'packages/**/*.tsx'],
-    ignores: ['packages/proteus-jsx/test/corpus/**'],
+    ignores: ['packages/proteus-react/test/corpus/**'],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -633,7 +633,7 @@ const playwrightConfigs = [
   },
   {
     files: [
-      'packages/proteus-jsx/package.json',
+      'packages/proteus-react/package.json',
       'packages/proteus-storybook-test/package.json',
       'packages/proteus-storybook/package.json',
       'packages/proteus-msw/package.json',

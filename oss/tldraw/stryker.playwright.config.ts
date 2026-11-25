@@ -1,7 +1,7 @@
-import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusReactMutators } from '@muirjs/proteus-react';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
-await muirProteusJsxMutators();
+await muirProteusReactMutators();
 
 const webServerMutate = process.env['MUIR_CORPUS_WEBSERVER_MUTATE'] ?? 'true';
 

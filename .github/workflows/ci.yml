@@ -182,11 +182,11 @@ jobs:
             config: src
             mutated: '!packages/pixie-storybook-vite/src/**/*.ts'
             timeout: 60
-          - project: '@muirjs/proteus-jsx'
-            slug: proteus-jsx
-            root: packages/proteus-jsx
+          - project: '@muirjs/proteus-react'
+            slug: proteus-react
+            root: packages/proteus-react
             config: src
-            mutated: '!packages/proteus-jsx/src/**/*.ts'
+            mutated: '!packages/proteus-react/src/**/*.ts'
             timeout: 60
           - project: '@muirjs/proteus-msw'
             slug: proteus-msw

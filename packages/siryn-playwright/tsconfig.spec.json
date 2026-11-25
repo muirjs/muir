@@ -16,7 +16,7 @@
       "path": "../proteus-playwright/tsconfig.lib.json"
     },
     {
-      "path": "../proteus-jsx/tsconfig.lib.json"
+      "path": "../proteus-react/tsconfig.lib.json"
     }
   ]
 }

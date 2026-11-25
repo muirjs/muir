@@ -26,7 +26,7 @@ Every package is named `@muirjs/<mutant>-<technology>`. The mutant names the kin
 
 Every exported symbol starts with its package's prefix, `Muir<Mutant><Technology>`, such as
 `MuirShadowcatStorybook` for `@muirjs/shadowcat-storybook`. So do the names that Stryker shows: the runner
-`muir-siryn-node-test`, the options key `muirSirynNodeTest` and the mutator `MuirProteusJsxTextLiteral`.
+`muir-siryn-node-test`, the options key `muirSirynNodeTest` and the mutator `MuirProteusReactTextLiteral`.
 [ADR 0012](docs/adr/0012-muir-mutant-technology-prefix-on-every-name.md) records why.
 
 ## Packages
@@ -45,7 +45,7 @@ Mutators:
 - [`@muirjs/proteus-node`](packages/proteus-node/README.md): code that uses Node.js APIs and `node:assert`.
 - [`@muirjs/proteus-node-test`](packages/proteus-node-test/README.md): test files that use `node:assert` and
   `node:test`.
-- [`@muirjs/proteus-jsx`](packages/proteus-jsx/README.md): the parts of JSX that Playwright tests look at.
+- [`@muirjs/proteus-react`](packages/proteus-react/README.md): the parts of JSX that Playwright tests look at.
 - [`@muirjs/proteus-playwright`](packages/proteus-playwright/README.md): Playwright test code.
 - [`@muirjs/proteus-storybook`](packages/proteus-storybook/README.md): Storybook story data.
 - [`@muirjs/proteus-storybook-test`](packages/proteus-storybook-test/README.md): Storybook play functions.
@@ -76,7 +76,7 @@ This is an Nx workspace with npm workspaces. Run tasks through Nx:
 ```sh
 npm ci
 npx nx run-many -t lint typecheck build test
-npx nx run @muirjs/proteus-jsx:mutate-src
+npx nx run @muirjs/proteus-react:mutate-src
 ```
 
 The workspace mutation tests itself with its own packages: every package's Stryker config runs its tests on

@@ -1,6 +1,6 @@
-import { muirProteusJsxMutators } from '@muirjs/proteus-jsx';
+import { muirProteusReactMutators } from '@muirjs/proteus-react';
 
-await muirProteusJsxMutators();
+await muirProteusReactMutators();
 
 export default {
   concurrency: 1,

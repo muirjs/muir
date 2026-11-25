@@ -2,7 +2,7 @@
 
 The code that puts custom mutators into StrykerJS. It is not a mutator package and has no mutators of its own. Every
 mutator package installs through it: `@muirjs/proteus-js`, `@muirjs/proteus-node`, `@muirjs/proteus-node-test`,
-`@muirjs/proteus-jsx`, `@muirjs/proteus-msw`, `@muirjs/proteus-playwright`, `@muirjs/proteus-storybook` and
+`@muirjs/proteus-react`, `@muirjs/proteus-msw`, `@muirjs/proteus-playwright`, `@muirjs/proteus-storybook` and
 `@muirjs/proteus-storybook-test`. The package is private and is not for direct use. Each mutator package declares it
 as a regular dependency, so installing one installs this one.
 

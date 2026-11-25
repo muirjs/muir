@@ -15,7 +15,7 @@
   server support, the `webServer`.
 - [Playwright mutators](./packages/proteus-playwright/GLOSSARY.md): mutate Playwright test code, so a
   test-code run shows which test steps no test outcome depends on.
-- [JSX mutators](./packages/proteus-jsx/GLOSSARY.md): mutate the parts of JSX that Playwright tests look
+- [JSX mutators](./packages/proteus-react/GLOSSARY.md): mutate the parts of JSX that Playwright tests look
   at, and ignore the mutants such tests cannot see.
 - [Mutator install](./packages/moira-mutators/GLOSSARY.md): puts a mutator package's mutators into
   Stryker and checks them before a run starts, and holds the Babel mutator model, the swap engine and the site

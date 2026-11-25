@@ -29,7 +29,7 @@ needed changes before its suite passed (an upstream test bug, a build switch, an
 Analog file has no server-only code, so it does not exercise server-side rendering. The Evidence section
 lists the changes, and Limits lists the general ones.
 
-A second plugin, `@muirjs/proteus-jsx`, adds ten mutators for the JSX that Playwright
+A second plugin, `@muirjs/proteus-react`, adds ten mutators for the JSX that Playwright
 tests look at, such as text, labels, links, and disabled or hidden state. StrykerJS 10.1.1 leaves those
 parts of a component unmutated (`docs/design/jsx-mutators.md`). On the demo app's e2e suite they
 add 17 mutants to 48 built-in ones: 11 killed, 4 survived because of gaps in the tests, and 2 in a
@@ -164,7 +164,7 @@ After every row, the package names changed again, to `@muirjs/siryn-playwright` 
 `@muirjs/proteus-playwright`, because `stryker init` lists a package named `@layzee/lz-*` as `@layzee/lz`.
 The plugin name `lz-stryker-playwright`, the `lzStrykerPlaywright` options key and the `Lz` mutator names stayed.
 Later still, those became `lz-playwright`, `lzPlaywright` and `LzJsx` mutator names, and the mutators package
-became `@muirjs/proteus-jsx`; this page uses the current names throughout.
+became `@muirjs/proteus-react`; this page uses the current names throughout.
 
 | Case                                                                                                                                                                  | Runner                                                                                       | Code                             | Score                                                                                                            | Wall time                      |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------ |
@@ -224,7 +224,7 @@ literals. epic-stack needed a Prisma engine that runs on Windows arm64, a fixed 
 timeout, and one upstream test marked `fixme`; `oss/README.md` lists each change.
 
 The JSX mutators have three more layers of evidence, all at or after 107505c.
-`packages/proteus-jsx/test/` runs without a browser: 107 synthetic cases from the open-source
+`packages/proteus-react/test/` runs without a browser: 107 synthetic cases from the open-source
 repos and the design, each with the exact UI mutants it must give (0 todo); install checks for the
 name refusal, a second install, the self-check, and core resolution; an in-process check that the
 JSX placement leaves the built-in mutants of five files unchanged, with a negative control; and a
@@ -548,7 +548,7 @@ npx playwright install chromium
 npx nx run-many -t typecheck build
 npx nx run @muirjs/siryn-playwright:test
 npx nx run @muirjs/siryn-playwright:test-browser
-npx nx run @muirjs/proteus-jsx:test
+npx nx run @muirjs/proteus-react:test
 npx nx run @muirjs/demo-app-e2e:mutate-e2e
 npx nx run @muirjs/demo-app-e2e:mutate-e2e-ui
 npx nx run @muirjs/demo-app:mutate-ct

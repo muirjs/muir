@@ -2,7 +2,7 @@
 // import of the package beside it could start installing first; awaiting the package after it keeps the order.
 import './break.ts';
 
-await import('@muirjs/proteus-jsx');
+await import('@muirjs/proteus-react');
 
 export default {
   mutate: ['src.tsx'],
