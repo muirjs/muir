@@ -1735,7 +1735,8 @@ to the next statement.
 
 ## stryker-mutator/stryker-js: the TypeScript checker misses compile errors when a mutant lands in the last emit's millisecond (already reported)
 
-Status: comment drafted for #6141, not posted (2026-11-25). Issue #6141, "`typescript-checker` sometimes misses
+Status: commented on #6141 on 2026-11-25, at Lars's request
+([the comment](https://github.com/stryker-mutator/stryker-js/issues/6141#issuecomment-7175867106)). Issue #6141, "`typescript-checker` sometimes misses
 compile errors in build mode under concurrency", reports it. [A comment on PR #6143](https://github.com/stryker-mutator/stryker-js/pull/6143#issuecomment-5940174496)
 (2026-10-01) traces it to the same
 millisecond tie, and the PR carries the fix, a strictly increasing clock in `ScriptFile`. Neither is merged or
