@@ -571,6 +571,7 @@ export function muirSirynPlaywrightRaiseRetries(
     const title = muirSirynPlaywrightFieldOf(project, 'title');
     const allTests = muirSirynPlaywrightFieldOf(project, 'allTests');
     const retries =
+      // Stryker disable next-line ConditionalExpression: equivalent, as a map keyed by project names gets undefined for a title that is not a string
       typeof title === 'string' ? retriesByProject.get(title) : undefined;
 
     if (retries === undefined || typeof allTests !== 'function') {

@@ -42,6 +42,7 @@ export function muirSirynPlaywrightReportFileName(
   fileName: string,
   projectRoot: string,
 ): string {
+  // Stryker disable next-line StringLiteral: Windows only, as POSIX paths use no backslash separator; the Windows run kills it
   return path.relative(projectRoot, fileName).replaceAll('\\', '/');
 }
 

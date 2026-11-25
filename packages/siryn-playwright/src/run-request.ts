@@ -111,6 +111,7 @@ export function muirSirynPlaywrightRunPlan(
 ): MuirSirynPlaywrightRunPlan {
   const mutant = request.kind === 'mutant' ? request : undefined;
   const perTest =
+    // Stryker disable next-line ConditionalExpression: equivalent, as a mutant run request has no coverageAnalysis, so it reads undefined
     request.kind === 'dry' && request.coverageAnalysis === 'perTest';
   const settings: MuirSirynPlaywrightRunSettings = {
     outDir,

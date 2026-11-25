@@ -918,6 +918,19 @@ test('a page request carries the id of the test running when it is sent, though 
   ]);
 });
 
+test("a page request sent while Playwright's timeout manager runs nothing carries the id of the test", async (t) => {
+  const hooked = installed(
+    t,
+    { perTest: true, testIdHosts: webServerHosts },
+    { info: () => ({ testId: 't1', _timeoutManager: { _running: {} } }) },
+  );
+  const created = await hooked.context();
+
+  assert.deepEqual(await routed(created), [
+    { headers: { [muirSirynPlaywrightTestIdHeader]: 't1' } },
+  ]);
+});
+
 test('page requests carry no test id without per-test coverage or without webServer hosts', async (t) => {
   const contexts = [
     installed(t, { perTest: false, testIdHosts: webServerHosts }),

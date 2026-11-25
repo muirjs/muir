@@ -444,10 +444,8 @@ const perTestSlots: ReadonlySet<MuirSirynPlaywrightSlotType> = new Set([
   'beforeEach',
   'afterEach',
 ]);
-const groupHooks: ReadonlySet<MuirSirynPlaywrightSlotType> = new Set([
-  'beforeAll',
-  'afterAll',
-]);
+const groupHooks: ReadonlySet<MuirSirynPlaywrightSlotType | undefined> =
+  new Set(['beforeAll', 'afterAll']);
 
 /** The test that Node code running now belongs to: none in a beforeAll or afterAll hook or a fixture. */
 function nodeTestId(test: CurrentTest): string | undefined {
@@ -471,11 +469,8 @@ function nodeTestId(test: CurrentTest): string | undefined {
  */
 function owningTestId(test: CurrentTest): string | undefined {
   const running = test();
-  const type = running?.slot?.type;
 
-  return type !== undefined && groupHooks.has(type)
-    ? undefined
-    : running?.testId;
+  return groupHooks.has(running?.slot?.type) ? undefined : running?.testId;
 }
 
 async function readPages(

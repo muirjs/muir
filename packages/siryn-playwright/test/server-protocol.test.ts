@@ -53,6 +53,8 @@ test('a missing or invalid control file reads as none', (t) => {
     '{"outDir":"o","perTest":true,"hitLimit":"9"}',
     '{"outDir":"o","perTest":true,"issuedTestIds":"a"}',
     '{"outDir":"o","perTest":true,"issuedTestIds":["a",1]}',
+    '{"outDir":"o","perTest":true,"testIdHosts":"localhost:4820"}',
+    '{"outDir":"o","perTest":true,"testIdHosts":["localhost:4820",1]}',
   ].forEach((raw) => {
     writeFileSync(path.join(dir, muirSirynPlaywrightControlFile), raw);
 

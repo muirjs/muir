@@ -37,7 +37,7 @@ export async function muirSirynPlaywrightGlobalSetupWatchingConfiguredPorts(
         return bound;
       }
 
-      // Stryker disable next-line NodeTimerDelay: the delay only paces the watch; 1 ms more or less changes no result
+      // Stryker disable next-line MuirProteusNodeTimerDelay: the delay only paces the watch; 1 ms more or less changes no result
       await setTimeout(boundPollMs);
     }
 

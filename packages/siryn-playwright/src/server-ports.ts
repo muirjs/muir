@@ -91,6 +91,7 @@ export async function muirSirynPlaywrightMoveServersApart(
   const [baseURL] = baseUrls;
   const testBaseUrl = env[baseUrlEnv];
   const movedTestBaseUrl =
+    // Stryker disable next-line ConditionalExpression: equivalent, as movedUrl moves no URL it cannot parse, and undefined is one
     testBaseUrl === undefined ? undefined : movedUrl(testBaseUrl);
 
   return {

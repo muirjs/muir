@@ -15,7 +15,7 @@ export class MuirSirynPlaywrightStrykerHelpersChanged extends Error {
 
 const probeName = 'muirSirynPlaywrightStrykerProbe';
 
-// Stryker disable next-line BooleanLiteral: every log method ignores its message, so an enabled level changes nothing
+// Stryker disable next-line BooleanLiteral,ArrowFunction: every log method ignores its message, so an enabled level changes nothing
 const off = () => false;
 const ignore = () => undefined;
 const silentLog: Logger = {
