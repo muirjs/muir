@@ -22,8 +22,8 @@ experimental. The package is private and not on npm yet.
 
 ## Turn the mutators on
 
-List the files that hold your handlers in the `mutate` of a Stryker configuration for test code. Call `muirProteusMswMutators`
-at the top of the Stryker configuration file and await it:
+List the files that hold your handlers in the `mutate` of a Stryker configuration for test code. Call
+`muirProteusMswMutators` at the top of the Stryker configuration file and await it:
 
 ```ts
 // stryker.test-code.config.mjs
@@ -60,12 +60,13 @@ than `undefined` or an object whose every value is `undefined`, such as `{}`:
 
 ### Handlers next to Storybook or Playwright test code
 
-`muirProteusStorybookTestMutators()` and `muirProteusPlaywrightMutators()` turn Stryker's built-in mutators off for every file in the
-run. In a configuration that installs either of them, the handlers get the `MuirProteusMswResponse` mutants and no built-in
-mutants. Mutate the handlers in a configuration of their own to keep the built-ins.
+`muirProteusStorybookTestMutators()` and `muirProteusPlaywrightMutators()` turn Stryker's built-in mutators off for
+every file in the run. In a configuration that installs either of them, the handlers get the `MuirProteusMswResponse`
+mutants and no built-in mutants. Mutate the handlers in a configuration of their own to keep the built-ins.
 
-Handlers in a story's `parameters.msw` are story test code. With `@muirjs/shadowcat-storybook`, the CSF ignorer reports
-their mutants as Ignored unless its play mode is `mutate`, so mutate them in the Storybook test-code configuration.
+Handlers in a story's `parameters.msw` are story test code. With `@muirjs/shadowcat-storybook`, the CSF ignorer
+reports their mutants as Ignored unless its play mode is `mutate`, so mutate them in the Storybook test-code
+configuration.
 The ignorer hides only the value of `parameters.msw`. A handler that the story file declares elsewhere and
 `parameters.msw` names still gets mutants in the components configuration.
 
@@ -115,8 +116,9 @@ Each response gets two mutants:
 
 A handler behaves like app code for the code under test: it decides what the server answers. An analysis of 130
 built-in mutants sampled from one open-source repository's msw handlers and other test doubles turned no built-in
-off. It kept nine of them and left the rest open, most for lack of test outcomes. `MuirProteusMswResponse` adds what the
-built-ins cannot do: a network error, and a body emptied by its kind instead of every object literal emptied.
+off. It kept nine of them and left the rest undecided, most for lack of test outcomes. `MuirProteusMswResponse` adds
+two changes that no built-in makes: a network error, and a body emptied by its kind instead of every object literal
+emptied.
 
 ## Turn a mutator off
 
@@ -137,8 +139,8 @@ For a block, use `// Stryker disable <name>: <reason>` and `// Stryker restore <
 
 ## Survivors to expect and limits
 
-On two open-source repositories, 7 of the 10 `MuirProteusMswResponse` survivors pointed at a test that does not check what
-the response changes, such as a test that also passes before any response arrives, or one that cannot tell an error
+On two open-source repositories, 7 of the 10 `MuirProteusMswResponse` survivors pointed at a test that does not check
+what the response changes, such as a test that also passes before any response arrives, or one that cannot tell an error
 status from a network error. Read a survivor as a missing check first. These survive without one:
 
 - An outcome mutant survives when the app catches the failed request and the page looks the same. Such a mutant is

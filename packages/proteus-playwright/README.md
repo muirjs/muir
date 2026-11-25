@@ -88,10 +88,9 @@ With opt-in or experimental mutators on, the line names them:
 @muirjs/proteus-playwright: Stryker's 17 built-in mutators are off for every file in this run; 11 MuirProteusPlaywright mutators on. Opt-in or experimental: MuirProteusPlaywrightSleepWait, MuirProteusPlaywrightRequestUrl.
 ```
 
-The call throws, with a message that starts with the package name, on options that are not a plain object, such as
-a `Map` or an array, on an unknown key, on a value other than `true`,
-on the name of a default mutator, on an opt-in name inside `experimental`, and on an experimental name outside it.
-For example:
+The call throws, with a message that starts with the package name, in these cases: options that are not a plain
+object, such as a `Map` or an array; an unknown key; a value other than `true`; the name of a default mutator; an
+opt-in name inside `experimental`; an experimental name outside it. For example:
 
 ```text
 @muirjs/proteus-playwright: no opt-in mutator is named MuirProteusPlaywrightRequestUrl; it is experimental, so it goes inside experimental.
@@ -134,8 +133,9 @@ These run on `await muirProteusPlaywrightMutators()`.
 | `MuirProteusPlaywrightRouteOutcome`     | In a route handler, turns `route.abort(...)` into `route.continue()`, and `route.continue(...)` or `route.fallback(...)` into `route.abort()`.                                                                                                                                                                                                 | `await route.abort();` becomes `await route.continue();`.                                  |
 
 The four Action mutators skip teardown: `test.afterEach` and `test.afterAll` bodies, and the code after
-`await use(...)` in a fixture. The API request removals of `MuirProteusPlaywrightInputAction` also skip `test.beforeEach` and
-`test.beforeAll` bodies and `finally` blocks, where a request usually prepares or cleans up data.
+`await use(...)` in a fixture. The API request removals of `MuirProteusPlaywrightInputAction` also skip
+`test.beforeEach` and `test.beforeAll` bodies and `finally` blocks, where a request usually prepares or cleans up
+data.
 
 The Locator mutators replace a value with the nearest distinct value before it and the nearest after it in the
 file, so a site gets at most two mutants. They change locators in assertions too, such as
@@ -156,7 +156,8 @@ The three Wait mutators and `MuirProteusPlaywrightClock` skip teardown, as the A
 
 #### Run the Wait and Clock mutators with failOnFlakyTests
 
-Set `failOnFlakyTests: true` in the Playwright configuration whenever a Wait mutator or `MuirProteusPlaywrightClock` is on:
+Set `failOnFlakyTests: true` in the Playwright configuration whenever a Wait mutator or `MuirProteusPlaywrightClock`
+is on:
 
 ```ts
 // playwright.config.ts
@@ -183,8 +184,8 @@ measured on few repositories, and its matching rules or its name can still chang
 | `MuirProteusPlaywrightRequestUrl`  | Empties the URL of a `get`, `head` or `fetch` API request whose result the test reads.                                                   | `request.get('/api/health')` becomes `request.get('')`.       |
 | `MuirProteusPlaywrightClock`       | Removes an awaited `runFor` or `fastForward` statement on `clock` or `<x>.clock`.                                                        | `await page.clock.runFor(1000);` is removed.                  |
 
-`MuirProteusPlaywrightRequestUrl` also empties each URL in the array of a `for (const url of [...])` loop whose variable is
-the URL of such a request.
+`MuirProteusPlaywrightRequestUrl` also empties each URL in the array of a `for (const url of [...])` loop whose
+variable is the URL of such a request.
 
 ### Why a mutator is opt-in or experimental
 
@@ -249,14 +250,14 @@ warns that it stays on and that this package has not reviewed it.
 ## Hide browser callbacks with muir-proteus-playwright-serialized
 
 Playwright sends some functions to another realm as source text: a browser page, a worker, a service worker or an
-Electron process. A mutant inside such a function carries Stryker's helper calls along, which do not exist there, so
-the function throws a `ReferenceError` and the mutant counts as killed whatever the test checks.
-`@muirjs/siryn-playwright` defines the helpers in pages, so `page.evaluate` callbacks work there. Workers,
-service workers and Electron get no helpers.
+Electron process. A mutant inside such a function calls the functions that Stryker adds to each mutated file, and
+they do not exist in that realm. The function throws a `ReferenceError`, and the mutant counts as killed whatever the
+test checks. `@muirjs/siryn-playwright` defines these functions in pages, so `page.evaluate` callbacks work there.
+Workers, service workers and Electron do not get them.
 
-The opt-in `muir-proteus-playwright-serialized` ignorer reports the mutants of such functions as Ignored, with a reason such
-as "muir-proteus-playwright-serialized: Playwright's evaluate runs this function's source text where Stryker's helpers do not
-exist". Ignored mutants stay in the report and are left out of the score.
+The opt-in `muir-proteus-playwright-serialized` ignorer reports the mutants of such functions as Ignored, with a
+reason such as "muir-proteus-playwright-serialized: Playwright's evaluate runs this function's source text where
+Stryker's helpers do not exist". Ignored mutants stay in the report and are left out of the score.
 
 List the package in `appendPlugins`, then the ignorer:
 
@@ -265,8 +266,8 @@ appendPlugins: ['@muirjs/siryn-playwright', '@muirjs/proteus-playwright'],
 ignorers: ['muir-proteus-playwright-serialized'],
 ```
 
-Listing the package loads the ignorer and installs no mutator. The `muirProteusPlaywrightMutators` call still turns the
-mutators on.
+Listing the package loads the ignorer and installs no mutator. The `muirProteusPlaywrightMutators` call still turns
+the mutators on.
 
 The ignorer hides every mutant inside a function or arrow function passed directly as an argument to `evaluate`,
 `evaluateHandle`, `evaluateAll`, `$eval`, `$$eval`, `addInitScript` or `waitForFunction`, on any receiver. A function
@@ -279,7 +280,7 @@ What it misses:
 - A function passed by variable, such as `worker.evaluate(readCount)`.
 - A function wrapped in a cast, such as `worker.evaluate((() => 1) as Fn)`.
 
-Their mutants still carry Stryker's helpers to the other realm and count as killed by the `ReferenceError`.
+Their mutants still call Stryker's added functions in the other realm and count as killed by the `ReferenceError`.
 
 ## Turn a mutator off
 
@@ -317,7 +318,7 @@ These mutants survive or are missed by design. Each entry says what to do with i
   `await page.mouse.click(10, 20);`, makes no mutant, and neither does a call on Vitest's `vi` or Jest's `jest`.
 - The mutators match the method name, not the type of what it is called on: an awaited `db.clear()` or
   `userEvent.click(el)` in a test file is removed like a Playwright call. Disable such a mutant with a comment, or keep
-  helpers like these out of `mutate`.
+  the files that define such functions out of `mutate`.
 - A click right before a `fill` on the same element, or a value written and overwritten before any assertion, can
   survive. The survivor shows a line that the test does not need.
 - A removed `goto` or click makes the next action wait for an element that never appears. Without
@@ -339,8 +340,8 @@ These mutants survive or are missed by design. Each entry says what to do with i
 
 ### MuirProteusPlaywrightFulfill
 
-- It takes `fulfill` only on the route parameter of a handler, found as `MuirProteusPlaywrightRouteOutcome` finds it, and
-  only the object literal that is its first argument. A `fulfill` on another receiver, such as a deferred promise,
+- It takes `fulfill` only on the route parameter of a handler, found as `MuirProteusPlaywrightRouteOutcome` finds it,
+  and only the object literal that is its first argument. A `fulfill` on another receiver, such as a deferred promise,
   gets no mutant.
 - An options object under `satisfies`, `!` or `<T>` keeps its mutants. One under `as` gets none: Stryker's
   instrumenter mutates nothing under `as`.
@@ -367,9 +368,9 @@ These mutants survive or are missed by design. Each entry says what to do with i
 
 ### MuirProteusPlaywrightRequestData
 
-- It follows only `<x>.request` and a bare `request` that a parameter binds: the `request` fixture or a helper's
-  argument. An imported `request`, such as superagent's, gets no mutant, and neither does a context from
-  `request.newContext()`, although `MuirProteusPlaywrightRequestUrl` follows one.
+- It follows only `<x>.request` and a bare `request` that a parameter binds: the `request` fixture or the argument of
+  a function the test calls. An imported `request`, such as superagent's, gets no mutant, and neither does a context
+  from `request.newContext()`, although `MuirProteusPlaywrightRequestUrl` follows one.
 - It never empties a value or drops a key. Identifiers, raw string bodies and negative numbers get no mutant.
 - A payload or options object under `satisfies`, `!` or `<T>` keeps its mutants. One under `as` gets none: Stryker's
   instrumenter mutates nothing under `as`.

@@ -19,8 +19,8 @@ _Avoid_: mutant type, sub-mutator
 
 **Markup category**:
 The word in a JSX mutator's name that says what part of the markup it changes: `Literal` (static text),
-`Attribute`, `Element`, `Expression` or `Handler`. It is the last word, except in `MuirProteusReactElementRole`, where it
-comes first.
+`Attribute`, `Element`, `Expression` or `Handler`. It is the last word, except in `MuirProteusReactElementRole`,
+where it comes first.
 
 ### Where mutants land
 

@@ -20,7 +20,7 @@ callees by name.
 
 ## What it hides
 
-It hides every mutant of a statement that is just a call to one of these callees:
+It hides every mutant of a statement that is nothing but a call to one of these callees:
 
 - Analytics: `gtag`, `window.gtag`, `fbq`, `ttq.track`, `dataLayer.push`, `window.dataLayer.push`,
   `analytics.track`, `analytics.page`, `analytics.identify`, `analytics.group`, `analytics.alias`,

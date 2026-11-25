@@ -23,8 +23,8 @@ It does not need a particular test runner.
 
 ## What it hides
 
-The ignorer hides every mutant of a statement that is just a call to one of the listed `console` methods. Reason:
-"muir-shadowcat-js-console: console output; DOM tests do not observe it".
+The ignorer hides every mutant of a statement that is nothing but a call to one of the listed `console` methods. Its
+reason is "muir-shadowcat-js-console: console output; DOM tests do not observe it".
 
 By default it hides `console.log`, `console.debug`, `console.info`, and `console.trace`. It keeps the
 mutants of `console.warn` and `console.error` unless you list them.
@@ -69,7 +69,7 @@ Leave `muir-shadowcat-js-console` out when your tests check console output, for 
 - `strykerPlugins`: the `muir-shadowcat-js-console` ignorer.
 - `strykerValidationSchema`: the schema of `muirShadowcatJsConsole`.
 - `muirShadowcatJsHideableCallee`: takes a Babel statement node and returns the callee's dotted name when the
-  statement is just a call whose arguments cannot act on the page, else `undefined`.
+  statement is nothing but a call whose arguments cannot act on the page, else `undefined`.
 - `muirShadowcatJsListOption`: reads a list option of an ignorer, and throws with the package's name when it is not
   a list of the expected items.
 - `muirShadowcatJsTypeOf`: returns the `type` field of a Babel node, read without trusting the value's shape.

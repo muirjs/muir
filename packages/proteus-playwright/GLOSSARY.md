@@ -23,7 +23,8 @@ configuration that mutates app code.
 _Avoid_: test config, spec config
 
 **MuirProteusPlaywright mutator**:
-One of this package's mutators, named `MuirProteusPlaywright` plus what it changes, such as `MuirProteusPlaywrightClickAction`.
+One of this package's mutators, named `MuirProteusPlaywright` plus what it changes, such as
+`MuirProteusPlaywrightClickAction`.
 _Avoid_: Playwright operator, test mutator
 
 ### Mutator families
@@ -43,8 +44,8 @@ _Avoid_: timing mutator
 _Avoid_: timer mutator
 
 **Mount mutator**:
-`MuirProteusPlaywrightMountStory`, the mutator that swaps the story id a `mount(...)` call names for another story id that
-the same file mounts.
+`MuirProteusPlaywrightMountStory`, the mutator that swaps the story id a `mount(...)` call names for another story id
+that the same file mounts.
 _Avoid_: story mutator
 
 **Locator mutator**:
@@ -53,12 +54,13 @@ A mutator that swaps a locator's value for another value in the same file: `Muir
 _Avoid_: selector mutator
 
 **Route mock mutator**:
-A mutator that changes what a route handler does with a request: `MuirProteusPlaywrightFulfill` changes a mocked response,
-`MuirProteusPlaywrightRouteOutcome` turns an abort into a continue and back.
+A mutator that changes what a route handler does with a request: `MuirProteusPlaywrightFulfill` changes a mocked
+response, and `MuirProteusPlaywrightRouteOutcome` turns an abort into a continue and a continue or fallback into an
+abort.
 _Avoid_: network mock mutator
 
 **Request mutator**:
-A mutator that changes an API request a test sends: `MuirProteusPlaywrightRequestData` changes its payload,
+A mutator that changes an API request a test sends: `MuirProteusPlaywrightRequestData` changes its payload, and
 `MuirProteusPlaywrightRequestUrl` empties its URL.
 _Avoid_: API mutator
 
@@ -77,8 +79,8 @@ _Avoid_: cleanup
 ### Playwright shapes the mutators read
 
 **Navigation fixture**:
-A fixture whose awaited call `MuirProteusPlaywrightNavigationAction` removes like a `goto`; the `navigationFixtures` setting
-names them, `navigate` by default.
+A fixture whose awaited call `MuirProteusPlaywrightNavigationAction` removes like a `goto`; the `navigationFixtures`
+setting names them, `navigate` by default.
 _Avoid_: navigation helper
 
 **Route handler**:
@@ -103,6 +105,6 @@ _Avoid_: story name, component id
 
 **Serialized callback**:
 A function passed directly to `evaluate`, `evaluateHandle`, `evaluateAll`, `$eval`, `$$eval`, `addInitScript` or
-`waitForFunction`, which Playwright sends as source text to run in another realm; the `muir-proteus-playwright-serialized`
-ignorer reports its mutants as Ignored.
+`waitForFunction`, which Playwright sends as source text to run in another realm; the
+`muir-proteus-playwright-serialized` ignorer reports its mutants as Ignored.
 _Avoid_: browser callback, page function

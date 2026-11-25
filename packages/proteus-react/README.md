@@ -4,12 +4,13 @@
 
 # @muirjs/proteus-react
 
-Mutators for the parts of JSX that Playwright tests look at. StrykerJS mutates expressions
-and leaves JSX text and attribute strings alone, so a suite that finds elements by role, label, and text
-gets few mutants it can kill. This plugin adds ten mutators:
+Mutators for the parts of JSX that Playwright tests look at. StrykerJS mutates expressions and leaves JSX text and
+attribute strings alone, so a suite that finds elements by role, label, and text gets few mutants it can kill. This
+package adds ten mutators:
 
 - `MuirProteusReactTextLiteral`: empties JSX text that has a letter or digit.
-- `MuirProteusReactLabelAttribute`: empties `aria-label`, `aria-labelledby`, `alt`, `title`, `placeholder`, and `htmlFor`.
+- `MuirProteusReactLabelAttribute`: empties `aria-label`, `aria-labelledby`, `alt`, `title`, `placeholder`, and
+  `htmlFor`.
 - `MuirProteusReactEventHandler`: sets an `onX` handler that is not inline to `undefined`.
 - `MuirProteusReactConditionalElement`: forces `x && <A/>` to render, and forces each branch of a JSX ternary.
 - `MuirProteusReactUrlAttribute`: empties `href`, `to`, and `action`.
@@ -20,8 +21,8 @@ gets few mutants it can kill. This plugin adds ten mutators:
 - `MuirProteusReactChildExpression`: replaces a `{value}` child with `null`.
 - `MuirProteusReactStateAttribute`: flips `aria-expanded`, `aria-pressed`, `aria-checked`, and `aria-selected`.
 
-The [design document](https://github.com/muirjs/muir/blob/main/docs/design/jsx-mutators.md)
-says exactly what each mutator changes and which shapes it skips. Stryker's reports show these names as the mutator of each mutant.
+The [design document](https://github.com/muirjs/muir/blob/main/docs/design/jsx-mutators.md) says what each mutator
+changes and which shapes it skips. Stryker's reports show these names as the mutator of each mutant.
 
 ## Requirements
 
@@ -46,7 +47,7 @@ The table holds a tag when any test engine gives it that role by tag alone, so a
 such a role keeps its place even where only one engine would see it go. It joins two tables:
 
 - Playwright 1.64.1's, which alone gives `svg` (`img`) and `search` (`search`) a role.
-- Testing Library 10.4.0's, from aria-query 5.3.0, which ignores aria-query's context rules and so gives
+- Testing Library 10.4.2's, from aria-query 5.3.0, which ignores aria-query's context rules and so gives
   `address` (`group`), `footer` (`contentinfo`), `header` (`banner`), `td` (`cell`) and `th`
   (`columnheader`) their role anywhere. Playwright gives `address` no role, and the others only in some
   places, such as a `header` that is not inside a `section`.
@@ -76,8 +77,8 @@ Call it in the configuration file, not through `plugins`. Stryker only warns whe
 load, while a failed call stops the run. The configuration file must be a JavaScript or TypeScript ES module, such
 as `stryker.config.mjs`, as a JSON configuration cannot import a module.
 
-The package has no opt-in or experimental mutators yet, so `muirProteusReactMutators` takes no options. It throws when it
-gets any. Turn a mutator off with `mutator.excludedMutations`, as below.
+The package has no opt-in or experimental mutators yet, so `muirProteusReactMutators` takes no options. It throws
+when it gets any. Turn a mutator off with `mutator.excludedMutations`, as below.
 
 The call checks that each mutator makes a mutant of a sample. It stops the run with the names of the
 mutators that do not, and with the instrumenter's folder and version when an internal it patches is
@@ -130,22 +131,22 @@ Babel attaches it to the code that follows, so in JSX only these forms work:
 A JSX comment, `{/* Stryker disable ... */}`, is never read, and Stryker logs nothing about it. A
 `next-line` comment before a multi-line element covers only that element's first line.
 
-A comment or exclusion names a mutator, not one of its mutations, so it turns off both branches of an
-`MuirProteusReactConditionalElement` ternary, and both the `role` removal and the span swap of `MuirProteusReactElementRole`.
+A comment or exclusion names a mutator, not one of its mutations, so it turns off both branches of a
+`MuirProteusReactConditionalElement` ternary, and both the `role` removal and the span swap of
+`MuirProteusReactElementRole`.
 
 ## Survivors to expect
 
-The mutators skip the mutants that are cheap to detect as changing nothing a test can see. These
-remain:
+The mutators skip the mutants that are cheap to detect as changing nothing a test can see. These remain:
 
-- An `MuirProteusReactEventHandler` mutant can behave like StrykerJS's own `BlockStatement` mutant, which empties the
+- A `MuirProteusReactEventHandler` mutant can behave like StrykerJS's own `BlockStatement` mutant, which empties the
   handler's body. They differ only when the handler is shared or a parent handler relies on the event
   bubbling.
-- An `MuirProteusReactConditionalElement` mutant on an empty list renders an empty list element, which Playwright
+- A `MuirProteusReactConditionalElement` mutant on an empty list renders an empty list element, which Playwright
   reports as hidden. `toBeHidden` does not kill it; `toHaveCount(0)` on the items does.
 
-With `@stryker-mutator/typescript-checker` and `strictNullChecks` on, an `MuirProteusReactEventHandler` mutant on a
-component prop that the component's type requires, such as `onClick: () => void`, fails to compile.
+With `@stryker-mutator/typescript-checker` and `strictNullChecks` on, a `MuirProteusReactEventHandler` mutant on
+a component prop that the component's type requires, such as `onClick: () => void`, fails to compile.
 Stryker reports it as a CompileError and leaves it out of the score, so no test runs against it. The
 mutator cannot see prop types. A disable comment on that attribute turns the mutant into an Ignored one,
 which the report still lists and the score also leaves out.
