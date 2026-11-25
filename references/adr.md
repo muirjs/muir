@@ -7,7 +7,7 @@ knowing what it cost.
 
 - `docs/adr/` holds decisions that span the workspace: module format, how packages load each other, the mutation gate,
   CI.
-- `<project>/docs/adr/`, such as `packages/stryker-node-test-runner/docs/adr/`, holds decisions inside one context of
+- `<project>/docs/adr/`, such as `packages/siryn-node-test/docs/adr/`, holds decisions inside one context of
   [GLOSSARY-MAP.md](../GLOSSARY-MAP.md).
 
 Each folder numbers its own ADRs: `0001-slug.md`, `0002-slug.md`. Take the highest number in the folder and add one.

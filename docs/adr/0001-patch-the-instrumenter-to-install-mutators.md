@@ -1,9 +1,9 @@
 # Mutator packages patch Stryker's instrumenter, through an awaited install call
 
 StrykerJS 10.1 has no plugin kind for mutators, and a plugin cannot turn a built-in mutator off (only the user's
-`mutator.excludedMutations` can), so `@layzee/stryker-jsx-mutators` and `@layzee/stryker-playwright-mutators` install
+`mutator.excludedMutations` can), so `@muirjs/proteus-jsx` and `@muirjs/proteus-playwright` install
 their mutators by patching the installed `@stryker-mutator/instrumenter` in memory, through
-`@layzee/stryker-mutator-install`. The patch touches
+`@muirjs/moira-mutators`. The patch touches
 undocumented internals (the instrumenter's mutator list and expression placer), so the mutator packages peer on
 `@stryker-mutator/core` `~10.1.0`, warn on any other instrumenter version, and check after every install that each
 added mutator makes a mutant of a sample and that each removed built-in makes none. A failed check undoes the patch

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, it } from 'node:test';
 
-import { lzTestFor } from '@layzee/node-test-extensions';
+import { lzTestFor } from '@muirjs/madrox-node-test';
 
 import { double } from '../src/double.js';
 import { half } from '../src/half.js';

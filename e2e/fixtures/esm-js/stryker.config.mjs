@@ -1,11 +1,11 @@
-import { lzNodeMutators } from '@layzee/stryker-node-mutators';
+import { lzNodeMutators } from '@muirjs/proteus-node';
 
 await lzNodeMutators();
 
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   mutate: ['src/**/*.js'],
-  plugins: ['@stryker-mutator/*', '@layzee/stryker-node-test-runner'],
+  plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
   testRunner: 'lz-node-test',
   lzNodeTest: { testFiles: ['test/**/*.test.js'] },
   reporters: ['clear-text', 'progress'],

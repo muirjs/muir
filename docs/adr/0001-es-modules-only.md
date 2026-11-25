@@ -22,4 +22,4 @@ maintain.
   `node:assert`.
 
 Evidence: 205c182 (the ES module base configuration and engines), 0765eb3 (why the floor is 22.18), 20ea351
-("ES modules, not CommonJS"), the "ES modules only" section of `packages/stryker-node-mutators/README.md`.
+("ES modules, not CommonJS"), the "ES modules only" section of `packages/proteus-node/README.md`.

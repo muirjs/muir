@@ -4,7 +4,7 @@
 
 - Prove that a test catches a change with `npx nx run <project>:mutate-src --mutate <file>:<start>-<end>` (for
   example
-  `npx nx run @layzee/stryker-node-test-runner:mutate-src --mutate packages/stryker-node-test-runner/src/dirs.ts:80-80`;
+  `npx nx run @muirjs/siryn-node-test:mutate-src --mutate packages/siryn-node-test/src/dirs.ts:80-80`;
   a line without a range matches no file, and the dry run still reports success), not by reverting code or writing a
   control test by hand
 
@@ -38,15 +38,15 @@ add or change a skip, name its row.
 | Skip             | Means                                           | Unsure | Decided by                                             | A new kind                                        |
 | ---------------- | ----------------------------------------------- | ------ | ------------------------------------------------------ | ------------------------------------------------- |
 | Site rule        | no play or test runs it, or a function reads it | skip   | `playedStories`, `sitesOf`; the read keys in `args.ts` | a site rule, with a case for each direction       |
-| Equivalence skip | the file proves removing it changes nothing     | place  | a `Proven` minted in `@layzee/storybook-core`          | a new `ProofReason` there, never a mutator filter |
+| Equivalence skip | the file proves removing it changes nothing     | place  | a `Proven` minted in `@muirjs/moira-storybook`         | a new `ProofReason` there, never a mutator filter |
 
-- Site rules: `packages/stryker-storybook-mutators/docs/adr/0001-args-mutated-only-where-a-play-or-test-runs.md`;
+- Site rules: `packages/proteus-storybook/docs/adr/0001-args-mutated-only-where-a-play-or-test-runs.md`;
   at the meta's args they apply per key, decided by each meta run's `keyFrom` in `sitesOf`:
-  `packages/stryker-storybook-mutators/docs/adr/0002-the-meta-args-are-an-args-site-judged-per-key.md`.
+  `packages/proteus-storybook/docs/adr/0002-the-meta-args-are-an-args-site-judged-per-key.md`.
 - Equivalence skips: `docs/adr/0006-place-a-mutant-unless-the-file-proves-it-changes-nothing.md`, and
-  `packages/stryker-storybook/docs/adr/0005-every-equivalence-skip-carries-a-proven.md` for how a `Proven` is made.
+  `packages/shadowcat-storybook/docs/adr/0005-every-equivalence-skip-carries-a-proven.md` for how a `Proven` is made.
 - The interaction mutators skip only an interaction in a `beforeEach` or `afterEach` (a site rule, decided by
   the interaction reader's `inHook`) and place every other one:
-  `packages/stryker-storybook-test-mutators/docs/adr/0002-place-every-interaction-outside-a-before-each-or-after-each.md`.
+  `packages/proteus-storybook-test/docs/adr/0002-place-every-interaction-outside-a-before-each-or-after-each.md`.
 - A default global (`LzStorybookStoryGlobals`) is an equivalence skip too: its `default-global` `Proven` rests on
-  Storybook 10.6.5's initial values, which `@layzee/storybook-core` holds, as well as on the file.
+  Storybook 10.6.5's initial values, which `@muirjs/moira-storybook` holds, as well as on the file.

@@ -144,7 +144,7 @@ Each entry: AST pattern (Babel node types, from `@babel/types` 8.0.8 as nested i
 
 ### 3.1 Package shape
 
-One workspace package, `packages/stryker-ui-mutators`, named `@layzee/stryker-ui-mutators` (the Playwright runner is `@layzee/stryker-playwright-runner` [checked: `packages/stryker-playwright-runner/package.json`]). It is a Stryker plugin module: listed in `plugins`, imported by core's `PluginLoader` in the main process before instrumentation [checked: `packages/core/src/di/plugin-loader.ts:171` imports the module; research 3.2 for the executor order].
+One workspace package, `packages/stryker-ui-mutators`, named `@layzee/stryker-ui-mutators` (the Playwright runner is `@muirjs/siryn-playwright` [checked: `packages/siryn-playwright/package.json`]). It is a Stryker plugin module: listed in `plugins`, imported by core's `PluginLoader` in the main process before instrumentation [checked: `packages/core/src/di/plugin-loader.ts:171` imports the module; research 3.2 for the executor order].
 
 ```
 packages/stryker-ui-mutators/
@@ -161,7 +161,7 @@ packages/stryker-ui-mutators/
 
 The plugin depends on `@babel/types` only through the instrumenter's own nested copy (`createRequire(<instrumenter>/package.json)('@babel/core').types`), so there is exactly one Babel in play; the spike does this [checked: `spike-jsx-placement.ts:19-24`]. The root `node_modules/@babel/types` is 7.29 while the instrumenter nests 8.0.8 [checked]; using the root copy would make `path.replaceWith` validate against a different version.
 
-The lazier alternative, shipping the operators inside `@layzee/stryker-playwright-runner` and registering them from its `index.ts`, saves a package but couples two unrelated concerns (a test runner and a mutator set) and would register mutators in every process that loads the runner plugin, including the test-runner child processes where they are useless. Separate package.
+The lazier alternative, shipping the operators inside `@muirjs/siryn-playwright` and registering them from its `index.ts`, saves a package but couples two unrelated concerns (a test runner and a mutator set) and would register mutators in every process that loads the runner plugin, including the test-runner child processes where they are useless. Separate package.
 
 ### 3.2 Registering with StrykerJS 10.1.1 without upstream changes
 
@@ -306,7 +306,7 @@ Riskiest first. Each row says what a spike would settle; the first row's spike w
 **Command and result** [checked]:
 
 ```
-node D:/projects/sandbox/stryker-playwright-runner/spikes/design-fable/spike-jsx-placement.ts
+node D:/projects/sandbox/siryn-playwright/spikes/design-fable/spike-jsx-placement.ts
 ```
 
 ```
@@ -375,7 +375,7 @@ Exit code 0; full output in `spikes/design-fable/spike-output.txt`. The spot che
 
 ## 6. Verification plan
 
-Two test layers in `packages/stryker-ui-mutators/test/`, both `node --test` like `packages/stryker-playwright-runner/test/runner.test.ts` [checked: that file's structure: `before` instruments a fixture with `Instrumenter`, writes the instrumented file into `fixture/public`, starts the runner, then each `test` looks up a mutant by `(mutatorName, replacement)` and runs it with `testFilter: [testId(title)]` and asserts the `MutantRunStatus`].
+Two test layers in `packages/stryker-ui-mutators/test/`, both `node --test` like `packages/siryn-playwright/test/runner.test.ts` [checked: that file's structure: `before` instruments a fixture with `Instrumenter`, writes the instrumented file into `fixture/public`, starts the runner, then each `test` looks up a mutant by `(mutatorName, replacement)` and runs it with `testFilter: [testId(title)]` and asserts the `MutantRunStatus`].
 
 ### 6.1 Node only: the operators generate the intended mutants (fast, runs on every change)
 

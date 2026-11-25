@@ -8,9 +8,9 @@
     "react-router-dom": "6.30.3"
   },
   "devDependencies": {
-    "@layzee/stryker-playwright-runner": "file:tarballs/layzee-stryker-playwright-runner-0.0.0.tgz",
-    "@layzee/stryker-jsx-mutators": "file:tarballs/layzee-stryker-jsx-mutators-0.0.0.tgz",
-    "@layzee/stryker-mutator-install": "file:tarballs/layzee-stryker-mutator-install-0.0.0.tgz",
+    "@muirjs/siryn-playwright": "file:tarballs/muirjs-siryn-playwright-0.0.0.tgz",
+    "@muirjs/proteus-jsx": "file:tarballs/muirjs-proteus-jsx-0.0.0.tgz",
+    "@muirjs/moira-mutators": "file:tarballs/muirjs-moira-mutators-0.0.0.tgz",
     "@playwright/test": "1.64.1",
     "@stryker-mutator/core": "10.1.1",
     "@vitejs/plugin-react": "6.1.2",

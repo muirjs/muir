@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@layzee/node-test-extensions';
+import { lzTestEach } from '@muirjs/madrox-node-test';
 import { ESLint } from 'eslint';
 
 const workspaceRoot = join(import.meta.dirname, '..', '..');
-const testFile = 'packages/stryker-node-mutators/test/unit/mutators.test.ts';
+const testFile = 'packages/proteus-node/test/unit/mutators.test.ts';
 
 async function reports(
   code: string,
@@ -55,8 +55,8 @@ describe('the .only guard', () => {
 
 describe('the type-safety disable guard', () => {
   lzTestEach([
-    'packages/node-test-extensions/src/title.ts',
-    'packages/node-test-extensions/test/reported.fixtures.ts',
+    'packages/madrox-node-test/src/title.ts',
+    'packages/madrox-node-test/test/reported.fixtures.ts',
   ])('reports a disable of no-explicit-any in %s', async (file) => {
     const found = await reports(
       '// eslint-disable-next-line @typescript-eslint/no-explicit-any -- a reason\nexport const x: any = 1;\n',
@@ -72,7 +72,7 @@ describe('the type-safety disable guard', () => {
 
 describe('curly', () => {
   lzTestEach([
-    'packages/node-test-extensions/src/title.ts',
+    'packages/madrox-node-test/src/title.ts',
     testFile,
     'tools/eslint-rules/index.ts',
     'stryker.base.mjs',

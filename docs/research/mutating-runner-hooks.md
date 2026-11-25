@@ -1,6 +1,6 @@
 # Mutating the runner's hooks
 
-Can Stryker mutate the code that this runner loads into the processes it tests, as `@layzee/stryker-node-test-runner`
+Can Stryker mutate the code that this runner loads into the processes it tests, as `@muirjs/siryn-node-test`
 does for its own hook? Short answer: yes, once the hooks' tests install the hooks under test on a global of their
 own. The spike at the end of this note measured it, and the runner's Stryker config now mutates all of `src`. The
 sections before the spike describe the state that led to it.
@@ -10,7 +10,7 @@ sections before the spike describe the state that led to it.
 Read from `LayZeeDK/lz-node-test` at its main branch, 2026-11-10.
 
 - The runner package's config mutates all of `src/**/*.ts`, the hook included
-  (`packages/stryker-node-test-runner/stryker.config.mjs`), and runs every test file, unit and integration, with its
+  (`packages/siryn-node-test/stryker.config.mjs`), and runs every test file, unit and integration, with its
   own runner.
 - The hook is split in two. `src/hook-core.ts` exports `install(deps)`, which takes everything it touches from
   `deps`: the environment, the pid, timers, and the global object (`HookDependencies['global']`). `src/hook.ts` is the

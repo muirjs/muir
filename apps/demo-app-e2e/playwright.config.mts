@@ -42,8 +42,8 @@ export default defineConfig({
   },
   webServer: {
     command: preview
-      ? `npx nx run @layzee/demo-app:preview --port=${port}`
-      : `npx nx run @layzee/demo-app:dev --port=${port}`,
+      ? `npx nx run @muirjs/demo-app:preview --port=${port}`
+      : `npx nx run @muirjs/demo-app:dev --port=${port}`,
     url: webServerAddress,
     reuseExistingServer: strykerWorker === undefined,
     cwd: workspaceRoot,

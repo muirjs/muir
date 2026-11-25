@@ -147,7 +147,7 @@ Common rules for every attribute operator [checked: prototype `classifyValue` in
 
 ### 3.1 Package shape
 
-One package, `packages/stryker-ui-mutators` (`@layzee/stryker-ui-mutators`), ESM, TypeScript source run by Node type stripping like the runner package (`"main": "./src/index.ts"` [checked: `packages/stryker-playwright-runner/package.json`]). Three modules:
+One package, `packages/stryker-ui-mutators` (`@layzee/stryker-ui-mutators`), ESM, TypeScript source run by Node type stripping like the runner package (`"main": "./src/index.ts"` [checked: `packages/siryn-playwright/package.json`]). Three modules:
 
 | Module             | Contents                                                                                                                                                                  | Depends on                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -200,7 +200,7 @@ Example (this repository's config style [checked: `stryker.e2e.config.ts`]):
 
 ```ts
 export default {
-  plugins: ['@layzee/stryker-playwright-runner', '@layzee/stryker-ui-mutators'],
+  plugins: ['@muirjs/siryn-playwright', '@layzee/stryker-ui-mutators'],
   testRunner: 'playwright',
   playwright: { configFile: 'apps/demo-app-e2e/playwright.config.mts' },
   mutate: ['apps/demo-app/src/app/**/*.tsx', '!**/*.story.tsx'],
@@ -394,7 +394,7 @@ Three layers, cheapest first. Each layer has a negative control, so a green resu
 
 ### 6.1 Operator unit tests (Node, no browser)
 
-`packages/stryker-ui-mutators/test/operators.test.ts`, run with `node --test`, in the style of `packages/stryker-playwright-runner/test/runner.test.ts` (plain `node:test` + `assert/strict`, the real `Instrumenter`, helper lookups by `mutatorName` and `replacement`).
+`packages/stryker-ui-mutators/test/operators.test.ts`, run with `node --test`, in the style of `packages/siryn-playwright/test/runner.test.ts` (plain `node:test` + `assert/strict`, the real `Instrumenter`, helper lookups by `mutatorName` and `replacement`).
 
 - **Generation table**: one row per operator with a TSX snippet and the exact set of `(mutatorName, replacement)` pairs expected, filtered to UI operators. For example `<button aria-label="Close" onClick={close}>Save</button>` must give exactly `AccessibleName aria-label=""`, `EventHandler onClick={undefined}`, `TextContent ""`, `Role <span ...>`.
 - **Must-not-generate rows**, one per skip rule: `aria-label=""`, `aria-label={'x'}`, ``aria-label={`${x}`}``, `onClick={() => f()}`, `<button>&times;</button>`, `<style>{'...'}</style>` text, `<button role="button">`, `<label htmlFor="q">Q <input id="q"/></label>`, `user && <p>{user.name}</p>`, `c ? <A/> : <A/>`, `<svg aria-hidden="true">`, `disabled={true}`, `items.map(...)` as a child.
@@ -405,7 +405,7 @@ Three layers, cheapest first. Each layer has a negative control, so a green resu
 
 ### 6.2 Runner integration: a Playwright test kills each operator's mutant
 
-`packages/stryker-playwright-runner/test/ui-mutators.test.ts`, structured like `runner.test.ts`: `before()` installs the operators, instruments a fixture, writes the served bundle, creates `PlaywrightTestRunner`, and runs the dry run with `coverageAnalysis: 'perTest'`; each test calls `mutantRun` with a `testFilter` and asserts the status and `killedBy`.
+`packages/siryn-playwright/test/ui-mutators.test.ts`, structured like `runner.test.ts`: `before()` installs the operators, instruments a fixture, writes the served bundle, creates `PlaywrightTestRunner`, and runs the dry run with `coverageAnalysis: 'perTest'`; each test calls `mutantRun` with a `testFilter` and asserts the status and `killedBy`.
 
 Fixture `test/ui-fixture/`:
 

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@layzee/node-test-extensions';
+import { lzTestEach } from '@muirjs/madrox-node-test';
 import parser from '@typescript-eslint/parser';
 import { ESLint, Linter } from 'eslint';
 import {

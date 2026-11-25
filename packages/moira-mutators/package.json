@@ -1,0 +1,73 @@
+{
+  "name": "@muirjs/moira-mutators",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Installs custom mutators into StrykerJS for the @muirjs mutator packages",
+  "keywords": [
+    "stryker",
+    "mutation testing",
+    "mutators"
+  ],
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/moira-mutators#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muirjs/muir.git",
+    "directory": "packages/moira-mutators"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@stryker-mutator/core": "~10.1.0"
+  },
+  "dependencies": {
+    "@stryker-mutator/api": "10.1.1"
+  },
+  "devDependencies": {
+    "@muirjs/test-util-mutator-packages": "0.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test test/*.test.ts"
+  }
+}

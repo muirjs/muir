@@ -1,0 +1,38 @@
+{
+  "name": "@muirjs/madrox-node-test",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test \"test/unit/**/*.test.ts\"",
+    "test-integration": "node --conditions=@muirjs/source --test \"test/integration/**/*.test.ts\""
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "mutate": {},
+      "mutate-src": {},
+      "mutate-test-code": {}
+    }
+  }
+}

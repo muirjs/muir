@@ -16,8 +16,8 @@ export default await production(
     ignorePatterns: ignorePatternsKeepingE2e,
     tsconfigFile: 'tools/eslint-rules/tsconfig.stryker.json',
     incrementalFile:
-      'reports/stryker-incremental/@layzee/eslint-rules.src.json',
-    ...reportFiles('@layzee/eslint-rules.src'),
+      'reports/stryker-incremental/@muirjs/eslint-rules.src.json',
+    ...reportFiles('@muirjs/eslint-rules.src'),
     lzNodeTest: {
       testFiles: ['tools/eslint-rules/*.test.ts'],
       nodeArgs: [source],

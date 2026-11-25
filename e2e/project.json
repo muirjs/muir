@@ -3,12 +3,12 @@
   "projectType": "application",
   "tags": ["type:tool"],
   "implicitDependencies": [
-    "@layzee/node-test-extensions",
-    "@layzee/stryker-node-test-runner",
-    "@layzee/stryker-node-mutators",
-    "@layzee/stryker-js-mutators",
-    "@layzee/stryker-node-test-mutators",
-    "@layzee/stryker-mutator-core"
+    "@muirjs/madrox-node-test",
+    "@muirjs/siryn-node-test",
+    "@muirjs/proteus-node",
+    "@muirjs/proteus-js",
+    "@muirjs/proteus-node-test",
+    "@muirjs/moira-node-test"
   ],
   "targets": {
     "test": {

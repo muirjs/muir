@@ -5,7 +5,7 @@ import { basename, join, sep } from 'node:path';
 import { describe, it } from 'node:test';
 import { isDeepStrictEqual } from 'node:util';
 
-import { field, isRecord, propertyKey } from '@layzee/storybook-core';
+import { field, isRecord, propertyKey } from '@muirjs/moira-storybook';
 
 import {
   type Case,

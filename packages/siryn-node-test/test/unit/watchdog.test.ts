@@ -1,0 +1,139 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import { lzTestFor } from '@muirjs/madrox-node-test';
+import { checkMemory, watch, workersAllowed } from '../../src/watchdog.ts';
+
+const data = { limitMB: 200, recordPath: '/out/4321.memory.json' };
+const mb = 1048576;
+
+function check(rssBytes: number) {
+  const writes: unknown[][] = [];
+  const kills: unknown[][] = [];
+  checkMemory(
+    data,
+    rssBytes,
+    (path, record) => writes.push([path, record]),
+    (pid, signal) => kills.push([pid, signal]),
+  );
+
+  return { writes, kills };
+}
+
+describe('workersAllowed', () => {
+  lzTestFor<readonly [string, boolean | undefined, boolean]>([
+    ['outside the permission model', undefined, true],
+    ['under the permission model with workers', true, true],
+    ['under the permission model without workers', false, false],
+  ])('lets a process start workers %s, or not', ([, allowed, expected]) => {
+    const asked: string[] = [];
+    const permission =
+      allowed === undefined
+        ? undefined
+        : {
+            has: (scope: string) => {
+              asked.push(scope);
+
+              return allowed;
+            },
+          };
+
+    assert.equal(workersAllowed(permission), expected);
+    assert.deepEqual(asked, allowed === undefined ? [] : ['worker']);
+  });
+});
+
+describe('checkMemory', () => {
+  it("writes the watchdog's record and ends the process once it holds more than the limit", () => {
+    assert.deepEqual(check(200.6 * mb), {
+      writes: [
+        [
+          data.recordPath,
+          { tests: [], memoryLimitReached: { rssMB: 201, limitMB: 200 } },
+        ],
+      ],
+      kills: [[process.pid, 'SIGKILL']],
+    });
+  });
+
+  it('ends the process also when its record cannot be written', () => {
+    const kills: unknown[][] = [];
+
+    assert.throws(() => {
+      checkMemory(
+        data,
+        200.6 * mb,
+        () => {
+          throw new Error('ENOENT');
+        },
+        (pid, signal) => kills.push([pid, signal]),
+      );
+    }, /ENOENT/);
+    assert.deepEqual(kills, [[process.pid, 'SIGKILL']]);
+  });
+
+  it('ends the process through process.kill by default', (t) => {
+    const kill = t.mock.method(process, 'kill', () => true);
+
+    checkMemory(data, 200.6 * mb, () => {});
+
+    assert.deepEqual(
+      kill.mock.calls.map((call) => call.arguments),
+      [[process.pid, 'SIGKILL']],
+    );
+  });
+
+  lzTestFor<readonly [string, number]>([
+    ['at the limit', 200 * mb],
+    ['just below the limit after rounding', 200.4 * mb],
+    [
+      'one byte short of half a MB over the limit, which rounds down',
+      200.5 * mb - 1,
+    ],
+  ])('leaves the process alone %s', ([, rssBytes]) => {
+    assert.deepEqual(check(rssBytes), { writes: [], kills: [] });
+  });
+
+  it('counts half a MB over the limit as the next MB, which is over it', () => {
+    assert.deepEqual(check(200.5 * mb).writes, [
+      [
+        data.recordPath,
+        { tests: [], memoryLimitReached: { rssMB: 201, limitMB: 200 } },
+      ],
+    ]);
+  });
+});
+
+describe('watch', () => {
+  it("looks at the process's memory every 50 ms and leaves it alone under the limit", (t) => {
+    t.mock.timers.enable({ apis: ['setInterval'] });
+    const kill = t.mock.method(process, 'kill', () => true);
+    const looks: number[] = [];
+    let rss = 0;
+    watch(data, () => {
+      looks.push(rss);
+
+      return ++rss;
+    });
+
+    t.mock.timers.tick(49);
+    assert.deepEqual(looks, []);
+    t.mock.timers.tick(1);
+    t.mock.timers.tick(50);
+
+    assert.deepEqual(looks, [0, 1]);
+    assert.equal(kill.mock.callCount(), 0);
+  });
+
+  it("measures the process's resident memory by default", (t) => {
+    t.mock.timers.enable({ apis: ['setInterval'] });
+    const kill = t.mock.method(process, 'kill', () => true);
+    const rss = t.mock.method(process.memoryUsage, 'rss', () => 1);
+    watch(data);
+
+    t.mock.timers.tick(50);
+
+    assert.equal(rss.mock.callCount(), 1);
+    assert.equal(kill.mock.callCount(), 0);
+  });
+});

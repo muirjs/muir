@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@layzee/node-test-extensions';
+import { lzTestEach } from '@muirjs/madrox-node-test';
 
 import { isAdult } from '../src/age.js';
 

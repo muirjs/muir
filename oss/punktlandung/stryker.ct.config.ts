@@ -1,4 +1,4 @@
-import { lzJsxMutators } from '@layzee/stryker-jsx-mutators';
+import { lzJsxMutators } from '@muirjs/proteus-jsx';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
 await lzJsxMutators();
@@ -6,7 +6,7 @@ await lzJsxMutators();
 // The component-test case: the feature components that the story specs mount through the gallery, with the
 // built-in and the JSX mutators.
 export default {
-  plugins: ['@layzee/stryker-playwright-runner'],
+  plugins: ['@muirjs/siryn-playwright'],
   testRunner: 'lz-playwright',
   lzPlaywright: {
     configFile: 'playwright.stryker.config.ts',

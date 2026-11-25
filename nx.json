@@ -83,7 +83,7 @@
         "cwd": "{workspaceRoot}",
         "parallel": false,
         "commands": [
-          "node --conditions=@layzee/source node_modules/@stryker-mutator/core/bin/stryker.js run {projectRoot}/stryker.config.mjs",
+          "node --conditions=@muirjs/source node_modules/@stryker-mutator/core/bin/stryker.js run {projectRoot}/stryker.config.mjs",
           {
             "command": "node tools/eslint-rules/runtime-errors.cli.ts reports/mutation/{projectName}.src.json",
             "forwardAllArgs": false
@@ -105,7 +105,7 @@
         "cwd": "{workspaceRoot}",
         "parallel": false,
         "commands": [
-          "node --conditions=@layzee/source node_modules/@stryker-mutator/core/bin/stryker.js run {projectRoot}/stryker.test-code.config.mjs",
+          "node --conditions=@muirjs/source node_modules/@stryker-mutator/core/bin/stryker.js run {projectRoot}/stryker.test-code.config.mjs",
           {
             "command": "node tools/eslint-rules/runtime-errors.cli.ts reports/mutation/{projectName}.test-code.json",
             "forwardAllArgs": false

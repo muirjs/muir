@@ -2,7 +2,7 @@ import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
 // The component-test case: the hook's source, mounted as gallery stories by plain @playwright/test tests.
 export default {
-  plugins: ['@layzee/stryker-playwright-runner'],
+  plugins: ['@muirjs/siryn-playwright'],
   testRunner: 'lz-playwright',
   lzPlaywright: {
     configFile: 'playwright.stryker.config.ts',

@@ -1,4 +1,4 @@
-# The mutator packages share test support through `@layzee/test-util-mutator-packages`
+# The mutator packages share test support through `@muirjs/test-util-mutator-packages`
 
 Five mutator packages each held a byte copy of `test/support/temp-tree.ts`, the two Storybook mutator packages each
 held one of `test/support/compose-skips.ts` behind a drift guard, and four packages held their own README tier
@@ -14,7 +14,7 @@ it as a dev dependency.
 
 - Only a package's test files may import a `type:test-util` project: the module boundary rule allows the tag in
   `packages/*/test/**` and nowhere else, and the project is never published. A `type:test-util` project may import
-  `type:lib` projects, as `composeSkips` imports `@layzee/storybook-core`.
+  `type:lib` projects, as `composeSkips` imports `@muirjs/moira-storybook`.
 - `composeSkips` loads Babel and Storybook, so it has its own export path, and the packages without Storybook do not
   load it through the main entry.
 - The Nx TypeScript sync puts each consumer's reference to the project in its `tsconfig.lib.json`, as it does for

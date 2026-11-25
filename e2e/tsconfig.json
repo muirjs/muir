@@ -9,13 +9,13 @@
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "references": [
     {
-      "path": "../packages/node-test-extensions"
+      "path": "../packages/madrox-node-test"
     },
     {
-      "path": "../packages/stryker-node-test-mutators"
+      "path": "../packages/proteus-node-test"
     },
     {
-      "path": "../packages/stryker-node-mutators"
+      "path": "../packages/proteus-node"
     }
   ]
 }

@@ -71,110 +71,110 @@ jobs:
         # the test files; every other input goes into the cache key below. A `shard` mutates only the files its
         # `mutate` names, and its last shard takes the rest, so a new file lands in it.
         include:
-          - project: '@layzee/eslint-rules'
+          - project: '@muirjs/eslint-rules'
             slug: eslint-rules
             root: tools/eslint-rules
             config: src
             mutated: "!tools/eslint-rules/*.ts\ntools/eslint-rules/*.fixtures.ts"
             timeout: 30
-          - project: '@layzee/eslint-rules'
+          - project: '@muirjs/eslint-rules'
             slug: eslint-rules
             root: tools/eslint-rules
             config: test-code
             mutated: '!tools/eslint-rules/*.test.ts'
             timeout: 30
-          - project: '@layzee/node-test-extensions'
-            slug: node-test-extensions
-            root: packages/node-test-extensions
+          - project: '@muirjs/madrox-node-test'
+            slug: madrox-node-test
+            root: packages/madrox-node-test
             config: src
-            mutated: '!packages/node-test-extensions/src/**/*.ts'
+            mutated: '!packages/madrox-node-test/src/**/*.ts'
             timeout: 30
-          - project: '@layzee/node-test-extensions'
-            slug: node-test-extensions
-            root: packages/node-test-extensions
+          - project: '@muirjs/madrox-node-test'
+            slug: madrox-node-test
+            root: packages/madrox-node-test
             config: test-code
-            mutated: '!packages/node-test-extensions/test/**/*.test.ts'
+            mutated: '!packages/madrox-node-test/test/**/*.test.ts'
             timeout: 30
-          - project: '@layzee/stryker-mutator-core'
-            slug: stryker-mutator-core
-            root: packages/stryker-mutator-core
+          - project: '@muirjs/moira-node-test'
+            slug: moira-node-test
+            root: packages/moira-node-test
             config: src
-            mutated: '!packages/stryker-mutator-core/src/**/*.ts'
+            mutated: '!packages/moira-node-test/src/**/*.ts'
             timeout: 30
-          - project: '@layzee/stryker-mutator-core'
-            slug: stryker-mutator-core
-            root: packages/stryker-mutator-core
+          - project: '@muirjs/moira-node-test'
+            slug: moira-node-test
+            root: packages/moira-node-test
             config: test-code
-            mutated: '!packages/stryker-mutator-core/test/**/*.test.ts'
+            mutated: '!packages/moira-node-test/test/**/*.test.ts'
             timeout: 30
-          - project: '@layzee/stryker-node-mutators'
-            slug: stryker-node-mutators
-            root: packages/stryker-node-mutators
+          - project: '@muirjs/proteus-node'
+            slug: proteus-node
+            root: packages/proteus-node
             config: src
-            mutated: "!packages/stryker-node-mutators/src/**/*.ts\n!packages/stryker-node-mutators/test/synthetic/node-apis.ts"
+            mutated: "!packages/proteus-node/src/**/*.ts\n!packages/proteus-node/test/synthetic/node-apis.ts"
             timeout: 45
-          - project: '@layzee/stryker-node-mutators'
-            slug: stryker-node-mutators
-            root: packages/stryker-node-mutators
+          - project: '@muirjs/proteus-node'
+            slug: proteus-node
+            root: packages/proteus-node
             config: test-code
-            mutated: '!packages/stryker-node-mutators/test/**/*.test.ts'
+            mutated: '!packages/proteus-node/test/**/*.test.ts'
             timeout: 30
-          - project: '@layzee/stryker-js-mutators'
-            slug: stryker-js-mutators
-            root: packages/stryker-js-mutators
+          - project: '@muirjs/proteus-js'
+            slug: proteus-js
+            root: packages/proteus-js
             config: src
-            mutated: "!packages/stryker-js-mutators/src/**/*.ts\n!packages/stryker-js-mutators/test/synthetic/js-shapes.ts"
+            mutated: "!packages/proteus-js/src/**/*.ts\n!packages/proteus-js/test/synthetic/js-shapes.ts"
             timeout: 45
-          - project: '@layzee/stryker-js-mutators'
-            slug: stryker-js-mutators
-            root: packages/stryker-js-mutators
+          - project: '@muirjs/proteus-js'
+            slug: proteus-js
+            root: packages/proteus-js
             config: test-code
-            mutated: '!packages/stryker-js-mutators/test/**/*.test.ts'
+            mutated: '!packages/proteus-js/test/**/*.test.ts'
             timeout: 30
-          - project: '@layzee/stryker-node-test-mutators'
-            slug: stryker-node-test-mutators
-            root: packages/stryker-node-test-mutators
+          - project: '@muirjs/proteus-node-test'
+            slug: proteus-node-test
+            root: packages/proteus-node-test
             config: src
-            mutated: '!packages/stryker-node-test-mutators/src/**/*.ts'
+            mutated: '!packages/proteus-node-test/src/**/*.ts'
             timeout: 30
-          - project: '@layzee/stryker-node-test-mutators'
-            slug: stryker-node-test-mutators
-            root: packages/stryker-node-test-mutators
+          - project: '@muirjs/proteus-node-test'
+            slug: proteus-node-test
+            root: packages/proteus-node-test
             config: test-code
-            mutated: '!packages/stryker-node-test-mutators/test/**/*.test.ts'
+            mutated: '!packages/proteus-node-test/test/**/*.test.ts'
             timeout: 30
-          - project: '@layzee/stryker-node-test-runner'
-            slug: stryker-node-test-runner
-            root: packages/stryker-node-test-runner
+          - project: '@muirjs/siryn-node-test'
+            slug: siryn-node-test
+            root: packages/siryn-node-test
             config: src
             shard: a
-            mutate: packages/stryker-node-test-runner/src/runner.ts,packages/stryker-node-test-runner/src/wrap.ts
-            mutated: '!packages/stryker-node-test-runner/src/**/*.ts'
+            mutate: packages/siryn-node-test/src/runner.ts,packages/siryn-node-test/src/wrap.ts
+            mutated: '!packages/siryn-node-test/src/**/*.ts'
             timeout: 90
-          - project: '@layzee/stryker-node-test-runner'
-            slug: stryker-node-test-runner
-            root: packages/stryker-node-test-runner
+          - project: '@muirjs/siryn-node-test'
+            slug: siryn-node-test
+            root: packages/siryn-node-test
             config: src
             shard: b
-            mutate: packages/stryker-node-test-runner/src/hook-core.ts,packages/stryker-node-test-runner/src/record.ts
-            mutated: '!packages/stryker-node-test-runner/src/**/*.ts'
+            mutate: packages/siryn-node-test/src/hook-core.ts,packages/siryn-node-test/src/record.ts
+            mutated: '!packages/siryn-node-test/src/**/*.ts'
             timeout: 90
-          - project: '@layzee/stryker-node-test-runner'
-            slug: stryker-node-test-runner
-            root: packages/stryker-node-test-runner
+          - project: '@muirjs/siryn-node-test'
+            slug: siryn-node-test
+            root: packages/siryn-node-test
             config: src
             shard: c
             mutate:
-              "packages/stryker-node-test-runner/src/**/*.ts,!packages/stryker-node-test-runner/src/runner.ts,\
-              !packages/stryker-node-test-runner/src/wrap.ts,!packages/stryker-node-test-runner/src/hook-core.ts,\
-              !packages/stryker-node-test-runner/src/record.ts"
-            mutated: '!packages/stryker-node-test-runner/src/**/*.ts'
+              "packages/siryn-node-test/src/**/*.ts,!packages/siryn-node-test/src/runner.ts,\
+              !packages/siryn-node-test/src/wrap.ts,!packages/siryn-node-test/src/hook-core.ts,\
+              !packages/siryn-node-test/src/record.ts"
+            mutated: '!packages/siryn-node-test/src/**/*.ts'
             timeout: 90
-          - project: '@layzee/stryker-node-test-runner'
-            slug: stryker-node-test-runner
-            root: packages/stryker-node-test-runner
+          - project: '@muirjs/siryn-node-test'
+            slug: siryn-node-test
+            root: packages/siryn-node-test
             config: test-code
-            mutated: '!packages/stryker-node-test-runner/test/**/*.test.ts'
+            mutated: '!packages/siryn-node-test/test/**/*.test.ts'
             timeout: 30
           - project: e2e
             slug: e2e

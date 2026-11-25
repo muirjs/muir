@@ -16,16 +16,16 @@ const playwrightProjects = [
   'oss/**',
   'tools/*.ts',
   'tools/packed-demo/**',
-  'packages/storybook-core/**',
-  'packages/storybook-mock-transformer/**',
-  'packages/stryker-jsx-mutators/**',
-  'packages/stryker-msw-mutators/**',
-  'packages/stryker-mutator-install/**',
-  'packages/stryker-playwright-mutators/**',
-  'packages/stryker-playwright-runner/**',
-  'packages/stryker-storybook/**',
-  'packages/stryker-storybook-mutators/**',
-  'packages/stryker-storybook-test-mutators/**',
+  'packages/moira-storybook/**',
+  'packages/pixie-storybook/**',
+  'packages/proteus-jsx/**',
+  'packages/proteus-msw/**',
+  'packages/moira-mutators/**',
+  'packages/proteus-playwright/**',
+  'packages/siryn-playwright/**',
+  'packages/shadowcat-storybook/**',
+  'packages/proteus-storybook/**',
+  'packages/proteus-storybook-test/**',
   'packages/test-util-mutator-packages/**',
 ];
 
@@ -350,7 +350,7 @@ const nodeTestConfigs = [
     },
   },
   {
-    // Test rules stay off src: @layzee/node-test-extensions's src imports node:test as a library.
+    // Test rules stay off src: @muirjs/madrox-node-test's src imports node:test as a library.
     files: test,
     plugins: { 'node-test': nodeTest },
     rules: {
@@ -555,7 +555,7 @@ const playwrightConfigs = [
   },
   {
     files: ['packages/**/*.ts', 'packages/**/*.tsx'],
-    ignores: ['packages/stryker-jsx-mutators/test/corpus/**'],
+    ignores: ['packages/proteus-jsx/test/corpus/**'],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -633,10 +633,10 @@ const playwrightConfigs = [
   },
   {
     files: [
-      'packages/stryker-jsx-mutators/package.json',
-      'packages/stryker-storybook-test-mutators/package.json',
-      'packages/stryker-storybook-mutators/package.json',
-      'packages/stryker-msw-mutators/package.json',
+      'packages/proteus-jsx/package.json',
+      'packages/proteus-storybook-test/package.json',
+      'packages/proteus-storybook/package.json',
+      'packages/proteus-msw/package.json',
     ],
     rules: {
       // The mutators import Babel for types only.
@@ -663,8 +663,8 @@ export default withWarningsAsErrors([
       ...synthetic,
       ...e2eFixtures,
       // Instrumented bundles that the browser tests write before each run.
-      'packages/stryker-playwright-runner/test/**/public/*.js',
-      'packages/stryker-playwright-runner/test/browser/load-fixture/pages/unused.js',
+      'packages/siryn-playwright/test/**/public/*.js',
+      'packages/siryn-playwright/test/browser/load-fixture/pages/unused.js',
     ],
   },
   ...outsidePlaywrightProjects(nodeTestConfigs),

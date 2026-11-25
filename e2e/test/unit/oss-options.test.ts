@@ -691,7 +691,7 @@ describe('lzStrykerOptions', () => {
   it('selects the runner of this workspace with the test files on the lz side', () => {
     assert.deepEqual(lzStrykerOptions('lz', project), {
       mutate: ['index.js'],
-      plugins: ['@stryker-mutator/*', '@layzee/stryker-node-test-runner'],
+      plugins: ['@stryker-mutator/*', '@muirjs/siryn-node-test'],
       testRunner: 'lz-node-test',
       lzNodeTest: { testFiles: ['test/*.test.js'] },
     });
@@ -713,7 +713,7 @@ describe('lzStrykerConfig', () => {
 
     assert.match(
       config,
-      /^import \{ lzNodeMutators \} from '@layzee\/stryker-node-mutators';\n\nawait lzNodeMutators\(\);\n\nexport default \{\n/,
+      /^import \{ lzNodeMutators \} from '@muirjs\/proteus-node';\n\nawait lzNodeMutators\(\);\n\nexport default \{\n/,
     );
     assert.match(config, /"testRunner": "command"/);
   });

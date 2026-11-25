@@ -26,15 +26,15 @@ step() {
 step npm-ci npm ci --no-audit --no-fund
 # Without node_modules, npx would download whatever nx the registry serves.
 [ "$failed" -eq 0 ] || exit "$failed"
-step nx-lint npx nx run-many -t lint --projects=@layzee/stryker-playwright-runner,@layzee/stryker-jsx-mutators
+step nx-lint npx nx run-many -t lint --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
 step nx-typecheck npx nx run-many -t typecheck
-step nx-build npx nx run-many -t build --projects=@layzee/stryker-playwright-runner,@layzee/stryker-jsx-mutators
-step test-runner npx nx run @layzee/stryker-playwright-runner:test
-step test-ui npx nx run @layzee/stryker-jsx-mutators:test
-step test-browser npx nx run @layzee/stryker-playwright-runner:test-browser
-step stryker-e2e npx nx run @layzee/demo-app-e2e:mutate-e2e
-step stryker-e2e-ui npx nx run @layzee/demo-app-e2e:mutate-e2e-ui
-step stryker-ct npx nx run @layzee/demo-app:mutate-ct
+step nx-build npx nx run-many -t build --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
+step test-runner npx nx run @muirjs/siryn-playwright:test
+step test-ui npx nx run @muirjs/proteus-jsx:test
+step test-browser npx nx run @muirjs/siryn-playwright:test-browser
+step stryker-e2e npx nx run @muirjs/demo-app-e2e:mutate-e2e
+step stryker-e2e-ui npx nx run @muirjs/demo-app-e2e:mutate-e2e-ui
+step stryker-ct npx nx run @muirjs/demo-app:mutate-ct
 
 for report in e2e e2e-ui ct; do
   if [ -f "reports/$report/mutation.json" ]; then

@@ -178,11 +178,11 @@ ships.
 Decide per built-in mutator before you exclude any. The verdict differs by kind of test code:
 
 - Storybook play functions and the rest of story test code: all 17 built-ins off, approved on 2026-11-05.
-  `@layzee/stryker-storybook-test-mutators` removes them, and the interaction mutators bring back the useful part.
-- Playwright test code: all 17 off. `@layzee/stryker-playwright-mutators` removes them, and its named mutators bring
+  `@muirjs/proteus-storybook-test` removes them, and the interaction mutators bring back the useful part.
+- Playwright test code: all 17 off. `@muirjs/proteus-playwright` removes them, and its named mutators bring
   back the useful parts.
 - Test doubles such as msw handlers: every built-in stays on. The doubles analysis
-  (`.audit/builtin-mutators/doubles.md`) dropped none, and `@layzee/stryker-msw-mutators` removes none.
+  (`.audit/builtin-mutators/doubles.md`) dropped none, and `@muirjs/proteus-msw` removes none.
 
 Run the steps below again for a new kind of test code instead of assuming one of these results.
 
@@ -200,8 +200,8 @@ Run the steps below again for a new kind of test code instead of assuming one of
 
 The Playwright analysis (`.audit/builtin-mutators/analysis.md`) is the worked example, and
 `.audit/builtin-mutators/analysis-play.md` repeats it for Storybook play functions. The reasons per built-in are in
-the "Why Stryker's built-in mutators are off" sections of `packages/stryker-playwright-mutators/README.md` and
-`packages/stryker-storybook-test-mutators/README.md`.
+the "Why Stryker's built-in mutators are off" sections of `packages/proteus-playwright/README.md` and
+`packages/proteus-storybook-test/README.md`.
 
 ## 7. Auditing mutators that already ship
 

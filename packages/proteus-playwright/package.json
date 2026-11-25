@@ -1,0 +1,81 @@
+{
+  "name": "@muirjs/proteus-playwright",
+  "version": "0.0.0",
+  "private": true,
+  "description": "StrykerJS mutators for Playwright test code that Playwright tests of the app can kill",
+  "keywords": [
+    "stryker",
+    "playwright",
+    "mutation testing",
+    "mutators",
+    "test code"
+  ],
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/proteus-playwright#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muirjs/muir.git",
+    "directory": "packages/proteus-playwright"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@stryker-mutator/core": "~10.1.0"
+  },
+  "dependencies": {
+    "@muirjs/moira-mutators": "0.0.0",
+    "@stryker-mutator/api": "10.1.1"
+  },
+  "devDependencies": {
+    "@muirjs/test-util-mutator-packages": "0.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test test/*.test.ts"
+  }
+}

@@ -10,7 +10,7 @@ Lars, 2026-11-07: it "failed to verify its lz-refactor worth with evals in the P
 as the lz-tdd plugin"; he asked that its use go on and that this ledger record experiences and issues, including
 cases where `lz-tpp` is not a good fit for the green step. Plugin: `lz-tdd` 0.0.3
 (`lz-red`, `lz-tpp`, `lz-refactor`), in its first real use outside its evals: the production hardening of
-`@layzee/stryker-playwright-runner` and `@layzee/stryker-ui-mutators` by four agent workers (Opus 5.5), each
+`@muirjs/siryn-playwright` and `@layzee/stryker-ui-mutators` by four agent workers (Opus 5.5), each
 following an implementation brief. Workers record findings in their progress files
 (`.audit/prod/mutation/*-progress.md`, `.audit/prod/arch/impl-progress.md`; local, gitignored); Claude sorts them
 into the three lists below. A finding is a bug report only when it comes with a minimal reproducible example: the
@@ -479,7 +479,7 @@ pick.
 access into its own module, so another package can copy it byte for byte, answers no smell, so steps 2 to 4 gave no
 guidance. The step that mattered, keeping `resolveFromCore` async so that a throwing default still rejects instead
 of throwing, is not one its checklist prompts for. The mandatory loop audit then cost a read with nothing to audit,
-since no loop moved. Evidence: step 6 chunk 0, commit "refactor(stryker-jsx-mutators): move instrumenter access into
+since no loop moved. Evidence: step 6 chunk 0, commit "refactor(proteus-jsx): move instrumenter access into
 instrumenter.ts", `step6-chunk0-notes.md`.
 
 **O54. `lz-tpp` has no transformation for widening or narrowing an existing condition.** Four greens in step 6 chunk
@@ -1201,7 +1201,7 @@ a correct green changed a shape assertion and hand-built test values (O76 and O1
 `wave2/cycles.log` cycle 24.
 
 **O164. A shared library's signature change left its dependents' new cases no red of their own.** Item 8d gave
-`sitesOf` in `@layzee/storybook-core` a file-name parameter. Its first cycle went red and green in that package. The
+`sitesOf` in `@muirjs/moira-storybook` a file-name parameter. Its first cycle went red and green in that package. The
 two mutator packages that call it then failed every case that rests on a proof, all at once, because their callers
 did not yet pass the file name. Their new self-import cases, run through the real instrumenter, passed as soon as
 the callers did, so they could only be logged as `test-after`. `lz-red` sizes one failing test per cycle within one
@@ -1221,7 +1221,7 @@ transformation breaks earlier tests, write the narrowest of those broken rows as
 Evidence: `item9/cycles.log` cycle 10 and the three `test-after` lines after it.
 
 **O166. A green that moves existing code over-generates, and nothing names the move as a transformation.** Item 10c
-moved the test mutators' file-naming error wrapper into `@layzee/storybook-core` to turn one red green: a read that
+moved the test mutators' file-naming error wrapper into `@muirjs/moira-storybook` to turn one red green: a read that
 throws names the story file. The moved body brought two branches the red never asked for (a file with no name, a
 thrown value that is no `Error`), which could then only be logged as `test-after`. `lz-tpp` ranks transformations of
 code written for the red; it has no entry for "move a tested body from elsewhere", which is often the right green
@@ -1789,7 +1789,7 @@ that checks the element is visible kills both; a test that checks it is hidden k
 replace the `true` mutant with the right operand (`<p>Details</p>`), which forces the element to show
 and is the mutant `true` stands for in plain JavaScript. A smaller fix drops the `true` mutant there.
 
-**Context.** `@layzee/stryker-jsx-mutators` in this repo adds that force-show mutant as
+**Context.** `@muirjs/proteus-jsx` in this repo adds that force-show mutant as
 `LzConditionalElement`, and skips a `&&` whose left operand is a comparison or a `&&` or `||` expression,
 because there the built-in `true` already exists. An upstream fix would make that skip need revisiting.
 
@@ -1858,7 +1858,7 @@ page sets `titlepostfix`, which nothing reads.
 **Reproduction.** Run Stryker with the `html` reporter and open `reports/mutation/mutation.html`. The tab title
 is "All files", not "All files - Stryker". Changing the attribute to `title-postfix="Stryker"` gives
 "All files - Stryker" (measured 2026-11-03 headless in Chromium, on a page built the same way by
-`@layzee/stryker-playwright-runner`'s `lz-playwright-traces` reporter).
+`@muirjs/siryn-playwright`'s `lz-playwright-traces` reporter).
 
 **Possible fix.** `title-postfix="Stryker"` in `html-reporter.ts`, with the reporter's test asserting the
 attribute name.
@@ -1908,9 +1908,9 @@ for the hooks it needed instead of working around Jest (The Deep Dive episode 6,
 
 **Versions.** `@playwright/test` and `playwright-core` 1.63 and 1.64.1, Node 22 and 24.
 
-**What a mutation testing runner needs, and what it uses today.** `@layzee/stryker-playwright-runner` runs
+**What a mutation testing runner needs, and what it uses today.** `@muirjs/siryn-playwright` runs
 Playwright Test in-process, once per mutant, and reads only internals for it
-(`packages/stryker-playwright-runner/src/playwright-internals.ts`, checked at load by `probeInternals`, so a
+(`packages/siryn-playwright/src/playwright-internals.ts`, checked at load by `probeInternals`, so a
 Playwright release that moves them fails with a named error):
 
 1. A test runner object: `initialize`, `loadConfig` (projects and webServers), `listTests`, `runGlobalSetup`,

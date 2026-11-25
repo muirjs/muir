@@ -11,7 +11,7 @@ if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
 // The WebGL case: sigma's node shapes, edge extremities and edge paths, mostly GLSL held in TS strings, which
 // only the regression suite's screenshots of the WebGL canvas can catch.
 export default {
-  plugins: ['@layzee/stryker-playwright-runner'],
+  plugins: ['@muirjs/siryn-playwright'],
   testRunner: 'lz-playwright',
   lzPlaywright: {
     configFile: 'packages/browser-tests/playwright.stryker.config.ts',

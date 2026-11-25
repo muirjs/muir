@@ -31,9 +31,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx nx run-many -t lint
-      - run: npx nx run-many -t build --projects=@layzee/stryker-playwright-runner,@layzee/stryker-jsx-mutators
+      - run: npx nx run-many -t build --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
       - run: npx nx run-many -t typecheck
-      - run: npx nx run-many -t test --projects=@layzee/stryker-playwright-runner,@layzee/stryker-jsx-mutators
+      - run: npx nx run-many -t test --projects=@muirjs/siryn-playwright,@muirjs/proteus-jsx
 
   browser:
     name: ${{ matrix.target }}
@@ -47,12 +47,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: '@layzee/stryker-playwright-runner:test-browser'
-          - target: '@layzee/demo-app-e2e:mutate-e2e'
+          - target: '@muirjs/siryn-playwright:test-browser'
+          - target: '@muirjs/demo-app-e2e:mutate-e2e'
             report: e2e
-          - target: '@layzee/demo-app-e2e:mutate-e2e-ui'
+          - target: '@muirjs/demo-app-e2e:mutate-e2e-ui'
             report: e2e-ui
-          - target: '@layzee/demo-app:mutate-ct'
+          - target: '@muirjs/demo-app:mutate-ct'
             report: ct
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

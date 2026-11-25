@@ -8,7 +8,7 @@ mutation score of 100.
 ### Loading
 
 **Source condition**:
-The `@layzee/source` export condition, which makes the workspace's packages load each other's TypeScript source
+The `@muirjs/source` export condition, which makes the workspace's packages load each other's TypeScript source
 instead of built output.
 _Avoid_: dev condition
 

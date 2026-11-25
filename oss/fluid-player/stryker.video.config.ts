@@ -11,7 +11,7 @@ if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
 // The video case: the player's playback, seek, volume, miniplayer, subtitle and timeline code, which the specs
 // check through the <video> element's currentTime, paused, readyState and playbackRate.
 export default {
-  plugins: ['@layzee/stryker-playwright-runner'],
+  plugins: ['@muirjs/siryn-playwright'],
   testRunner: 'lz-playwright',
   lzPlaywright: {
     configFile: 'playwright.stryker.config.ts',

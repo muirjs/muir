@@ -33,7 +33,7 @@ Playwright runs init-script content inside a function, so the helper declaration
 `globalThis`; plain declarations stayed local and the first try failed the same way as the bare page.
 
 The runner already gives every page an init script that sets `__stryker__.activeMutant`, the current test id and
-the hit limit, and reads page coverage per test (`packages/stryker-playwright-runner/src/worker-hook.ts:241,455-508`).
+the hit limit, and reads page coverage per test (`packages/siryn-playwright/src/worker-hook.ts:241,455-508`).
 The page-helper fix adds the three helper functions to that script.
 
 Not covered by an init script: web workers and service workers (`worker.evaluate`) and Electron's main process

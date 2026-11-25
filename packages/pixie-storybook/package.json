@@ -1,0 +1,91 @@
+{
+  "name": "@muirjs/pixie-storybook",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Vite plugin that keeps Storybook's definition-time spy stubs through the default mock reset",
+  "keywords": [
+    "storybook",
+    "vite",
+    "vitest",
+    "mocks",
+    "spies"
+  ],
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/pixie-storybook#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muirjs/muir.git",
+    "directory": "packages/pixie-storybook"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@babel/parser": "7.29.11",
+    "@muirjs/moira-storybook": "0.0.0",
+    "magic-string": "1.4.4"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+    "vitest": "^4.0.0 || ^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "storybook": "10.6.5"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test test/*.test.ts"
+  }
+}

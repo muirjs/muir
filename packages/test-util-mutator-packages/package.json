@@ -1,20 +1,20 @@
 {
-  "name": "@layzee/test-util-mutator-packages",
+  "name": "@muirjs/test-util-mutator-packages",
   "version": "0.0.0",
   "private": true,
-  "description": "Test support the @layzee mutator packages share: temporary file trees and the README tier checks",
+  "description": "Test support the @muirjs mutator packages share: temporary file trees and the README tier checks",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "@layzee/source": "./src/index.ts",
+      "@muirjs/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./compose-skips": {
-      "@layzee/source": "./src/compose-skips.ts",
+      "@muirjs/source": "./src/compose-skips.ts",
       "types": "./dist/compose-skips.d.ts",
       "default": "./dist/compose-skips.js"
     },
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@babel/core": "8.0.9",
-    "@layzee/storybook-core": "0.0.0",
+    "@muirjs/moira-storybook": "0.0.0",
     "storybook": "10.6.5"
   },
   "nx": {
@@ -54,6 +54,6 @@
     }
   },
   "scripts": {
-    "test": "node --conditions=@layzee/source --test test/*.test.ts"
+    "test": "node --conditions=@muirjs/source --test test/*.test.ts"
   }
 }

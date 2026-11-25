@@ -2,7 +2,7 @@
 
 Note, 2026-10-25: The "Prototype today" lines describe an earlier prototype, not the current runner. Their `PW:` citations point to `playwright-test-runner.js` and other JavaScript files that commit 67df91a replaced with TypeScript. `docs/VERDICT.md` describes the current runner. This file does not cite the external `RESEARCH.md` that the other research files build on.
 
-Scope: what StrykerJS's first-party `@stryker-mutator/karma-runner` (StrykerJS v10.1.1) does to run mutants in real browsers, and which of its choices carry over to the prototype `stryker-playwright-runner`.
+Scope: what StrykerJS's first-party `@stryker-mutator/karma-runner` (StrykerJS v10.1.1) does to run mutants in real browsers, and which of its choices carry over to the prototype `siryn-playwright`.
 
 Labels: [checked] = read in source, docs, an issue or PR, with a citation. [inferred] = reasoning from checked facts.
 
@@ -10,7 +10,7 @@ Citation shorthand:
 
 - `KR:<path>:<line>` = `git show v10.1.1:packages/karma-runner/<path>` in `D:/projects/github/stryker-mutator/stryker-js`.
 - `CORE:<path>:<line>` = `git show v10.1.1:packages/core/<path>` in the same clone.
-- `PW:<file>:<line>` = `D:/projects/sandbox/stryker-playwright-runner/packages/stryker-playwright-runner/src/<file>`.
+- `PW:<file>:<line>` = `D:/projects/sandbox/siryn-playwright/packages/siryn-playwright/src/<file>`.
 - `#N` = `https://github.com/stryker-mutator/stryker-js/issues/N` (or pull N), read with `gh`.
 
 The local clone is shallow (`git rev-parse --is-shallow-repository` = true; 6 commits under `packages/karma-runner`), so history comes from `KR:CHANGELOG.md` and GitHub, not `git log`.

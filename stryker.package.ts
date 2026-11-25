@@ -2,7 +2,7 @@ import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
 import base from './stryker.base.ts';
 
-// The src/index.ts of an @layzee/stryker-node-test-runner checkout; that runner is not on npm.
+// The src/index.ts of an @muirjs/siryn-node-test checkout; that runner is not on npm.
 const { LZ_NODE_TEST_RUNNER: nodeTestRunner } = process.env;
 
 /**
@@ -26,7 +26,7 @@ export function packageConfig(
       ? {
           testRunner: 'command',
           commandRunner: {
-            command: `node --conditions=@layzee/source --test --test-concurrency=1 ${testFiles.join(' ')}`,
+            command: `node --conditions=@muirjs/source --test --test-concurrency=1 ${testFiles.join(' ')}`,
           },
           coverageAnalysis: 'off',
         }
@@ -35,7 +35,7 @@ export function packageConfig(
           appendPlugins: [nodeTestRunner],
           lzNodeTest: {
             testFiles,
-            nodeArgs: ['--conditions=@layzee/source'],
+            nodeArgs: ['--conditions=@muirjs/source'],
           },
           coverageAnalysis: 'perTest',
         };

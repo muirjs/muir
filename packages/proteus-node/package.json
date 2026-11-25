@@ -1,0 +1,71 @@
+{
+  "name": "@muirjs/proteus-node",
+  "version": "0.0.0",
+  "private": true,
+  "description": "StrykerJS mutators for code that uses Node.js APIs and node:assert",
+  "license": "MIT",
+  "keywords": [
+    "stryker",
+    "mutation-testing",
+    "node:test",
+    "node:assert"
+  ],
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/proteus-node#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muirjs/muir.git",
+    "directory": "packages/proteus-node"
+  },
+  "bugs": {
+    "url": "https://github.com/LayZeeDK/lz-node-test/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./bindings": {
+      "@muirjs/source": "./src/bindings.ts",
+      "types": "./dist/bindings.d.ts",
+      "default": "./dist/bindings.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "!dist/corpus-diff.*",
+    "!dist/mutant-diff.*"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test \"test/unit/**/*.test.ts\" \"test/synthetic/**/*.test.ts\"",
+    "test-integration": "node --conditions=@muirjs/source --test \"test/integration/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@muirjs/moira-node-test": "*"
+  },
+  "peerDependencies": {
+    "@babel/core": "~8.0.0",
+    "@stryker-mutator/core": "^10.1.1"
+  },
+  "devDependencies": {
+    "@muirjs/madrox-node-test": "*"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "mutate": {},
+      "mutate-src": {},
+      "mutate-test-code": {}
+    }
+  }
+}

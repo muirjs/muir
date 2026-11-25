@@ -5,14 +5,14 @@ Never apply these to the upstream clone itself. `docs/VERDICT.md` (Evidence) has
 
 Every copy also needs this runner and StrykerJS installed. Link the runner as a directory junction or
 an absolute link. Node resolves the link and strips the runner's TypeScript outside `node_modules`.
-Every Stryker config here loads the runner by its package name, `@layzee/stryker-playwright-runner`.
+Every Stryker config here loads the runner by its package name, `@muirjs/siryn-playwright`.
 
 Build both packages in this repo first. A copy loads each package from its `dist` folder, which a fresh
 clone does not have; without it the import fails with `ERR_MODULE_NOT_FOUND`.
 
 ```sh
 npx nx run-many -t build
-npm install -D @stryker-mutator/core@^10.1.1 file:<this repo>/packages/stryker-playwright-runner
+npm install -D @stryker-mutator/core@^10.1.1 file:<this repo>/packages/siryn-playwright
 ```
 
 The runner needs `@playwright/test` 1.63 or a later 1.x release. If the copy has an older one or none,
@@ -72,7 +72,7 @@ it uses is `oss/realworld-api`. Then run `npx stryker run stryker.playwright.con
    `pnpm add -D @stryker-mutator/core@10.1.1 @playwright/test@^1.64.1`. The copy's own
    `@playwright/test` is `^1.58.2`, below the runner's 1.63 floor; the copy's `package.json` diff
    after the run showed both versions. Then link the runner as a junction at
-   `node_modules/@layzee/stryker-playwright-runner`, the name that
+   `node_modules/@muirjs/siryn-playwright`, the name that
    `analog/stryker.playwright.config.ts` loads.
 2. Apply `analog/copy.patch` and copy `analog/stryker.playwright.config.ts` into the copy. The patch:
    - starts the built SSR server instead of `nx serve-nitro`, whose `PORT=3000 node ...` cannot run
@@ -91,7 +91,7 @@ dev server (`npm run dev`), which compiles Stryker's sandbox on the fly.
 
 1. Copy `.env.example` to `.env`, the repo's own setup step.
 2. Install the runner, StrykerJS, and Playwright as above, plus the mutators and the checker:
-   `npm install -D @stryker-mutator/typescript-checker@10.1.1 file:<this repo>/packages/stryker-jsx-mutators`.
+   `npm install -D @stryker-mutator/typescript-checker@10.1.1 file:<this repo>/packages/proteus-jsx`.
    The copy pins `@playwright/test` to `^1.58.1`.
 3. Apply `epic-stack/copy.patch` and copy `epic-stack/stryker.playwright.config.ts` into the copy.
    The patch:
@@ -128,8 +128,8 @@ below runs in `packages/react-virtuoso` unless it says otherwise.
    `pnpm add -D @stryker-mutator/core@10.1.1 @playwright/test@^1.64.1 playwright@^1.64.1`. The copy
    has `@playwright/test` `^1.60.0`, below the runner's 1.63 floor, and a separate `playwright`
    dependency; with only `@playwright/test` raised, `npx playwright` still runs the 1.60 CLI. Then link
-   the runner and the mutators as junctions at `node_modules/@layzee/stryker-playwright-runner` and
-   `node_modules/@layzee/stryker-jsx-mutators` in the copy's root. Stryker loads plugins from its own
+   the runner and the mutators as junctions at `node_modules/@muirjs/siryn-playwright` and
+   `node_modules/@muirjs/proteus-jsx` in the copy's root. Stryker loads plugins from its own
    install in pnpm's store, which sees the root `node_modules` but not the package's.
 3. Apply `react-virtuoso/copy.patch` from the copy's root and copy
    `react-virtuoso/stryker.playwright.config.ts` into `packages/react-virtuoso`. The patch:
@@ -319,7 +319,7 @@ mutates the hook's one source file, `src/index.ts`, against the 8 spec files in 
      on the `PATH`;
    - adds `.stryker-tmp` and `/reports` to `.gitignore`.
 2. Run `node .yarn/releases/yarn-4.18.1.cjs install`, then
-   `node .yarn/releases/yarn-4.18.1.cjs add -D @stryker-mutator/core@10.1.1 @layzee/stryker-playwright-runner@file:<runner tarball>`.
+   `node .yarn/releases/yarn-4.18.1.cjs add -D @stryker-mutator/core@10.1.1 @muirjs/siryn-playwright@file:<runner tarball>`.
    The repo commits its yarn release, so neither Corepack nor a global yarn is needed.
 3. Run `npx playwright install chromium`. Plain `npx playwright test -c playwright.stryker.config.ts` then
    passes 47 tests in 14 seconds.

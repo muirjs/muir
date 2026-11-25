@@ -1,9 +1,9 @@
 {
-  "name": "@layzee/demo-app",
+  "name": "@muirjs/demo-app",
   "version": "0.0.1",
   "private": true,
   "devDependencies": {
-    "@layzee/stryker-playwright-runner": "*"
+    "@muirjs/siryn-playwright": "*"
   },
   "nx": {
     "tags": [

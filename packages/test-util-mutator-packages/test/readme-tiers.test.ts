@@ -23,17 +23,17 @@ const tiers: MutatorTiers = {
   experimental: [],
 };
 const facts: ReadmeFacts = {
-  packageName: '@layzee/example',
+  packageName: '@muirjs/example',
   prefix: 'LzExample',
   builtIns: 'on',
   builtInCount: 5,
 };
-const readme = `# @layzee/example
+const readme = `# @muirjs/example
 
 The package keeps Stryker's 5 built-in mutators on and adds 3 of its own: 2 run by default, 1 is opt-in and 0 are
 experimental.
 
-@layzee/example: 2 LzExample mutators on, beside Stryker's built-in mutators.
+@muirjs/example: 2 LzExample mutators on, beside Stryker's built-in mutators.
 
 ### Default mutators
 
@@ -59,7 +59,7 @@ const offFacts: ReadmeFacts = { ...facts, builtIns: 'off', builtInCount: 17 };
 const offReadme = `The package turns Stryker's 17 built-in mutators off and adds 4 of its own: 1 runs by default, 2 are opt-in and
 1 is experimental.
 
-@layzee/example: Stryker's 17 built-in mutators are off for every file in this run; 1 LzExample mutators on.
+@muirjs/example: Stryker's 17 built-in mutators are off for every file in this run; 1 LzExample mutators on.
 
 ### Default mutators
 

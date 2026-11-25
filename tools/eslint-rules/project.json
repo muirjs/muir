@@ -16,7 +16,7 @@
   },
   "targets": {
     "test": {
-      "command": "node --conditions=@layzee/source --test \"*.test.ts\"",
+      "command": "node --conditions=@muirjs/source --test \"*.test.ts\"",
       "options": { "cwd": "{projectRoot}" },
       "inputs": ["default", "^production", "mutation", "workspaceConfigs"]
     },

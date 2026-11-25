@@ -25,10 +25,10 @@
   ],
   "references": [
     {
-      "path": "../../packages/stryker-jsx-mutators"
+      "path": "../../packages/proteus-jsx"
     },
     {
-      "path": "../../packages/stryker-playwright-runner"
+      "path": "../../packages/siryn-playwright"
     }
   ]
 }

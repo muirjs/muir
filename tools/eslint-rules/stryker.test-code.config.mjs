@@ -11,8 +11,8 @@ export default await testCode({
   ignorePatterns: ignorePatternsKeepingE2e,
   tsconfigFile: 'tools/eslint-rules/tsconfig.stryker.json',
   incrementalFile:
-    'reports/stryker-incremental/@layzee/eslint-rules.test-code.json',
-  ...reportFiles('@layzee/eslint-rules.test-code'),
+    'reports/stryker-incremental/@muirjs/eslint-rules.test-code.json',
+  ...reportFiles('@muirjs/eslint-rules.test-code'),
   lzNodeTest: {
     testFiles: ['tools/eslint-rules/*.test.ts'],
     nodeArgs: [source],

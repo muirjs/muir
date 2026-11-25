@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { lzTestEach } from '@layzee/node-test-extensions';
+import { lzTestEach } from '@muirjs/madrox-node-test';
 import { parse } from 'yaml';
 import {
   configs,
@@ -44,16 +44,16 @@ const notWorkspaceConfigs = new Set([
   'dist',
   'reports',
   // The Playwright repository's packages, which keep its stryker.package.ts configs until they move to these.
-  'packages/storybook-core',
-  'packages/storybook-mock-transformer',
-  'packages/stryker-jsx-mutators',
-  'packages/stryker-msw-mutators',
-  'packages/stryker-mutator-install',
-  'packages/stryker-playwright-mutators',
-  'packages/stryker-playwright-runner',
-  'packages/stryker-storybook',
-  'packages/stryker-storybook-mutators',
-  'packages/stryker-storybook-test-mutators',
+  'packages/moira-storybook',
+  'packages/pixie-storybook',
+  'packages/proteus-jsx',
+  'packages/proteus-msw',
+  'packages/moira-mutators',
+  'packages/proteus-playwright',
+  'packages/siryn-playwright',
+  'packages/shadowcat-storybook',
+  'packages/proteus-storybook',
+  'packages/proteus-storybook-test',
   'packages/test-util-mutator-packages',
 ]);
 

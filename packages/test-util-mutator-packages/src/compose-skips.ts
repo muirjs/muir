@@ -17,7 +17,7 @@ import {
   list,
   propertyKey,
   type ProofReason,
-} from '@layzee/storybook-core';
+} from '@muirjs/moira-storybook';
 import { definePreview, getStoryChildren } from 'storybook/internal/csf';
 import { composeStories } from 'storybook/preview-api';
 

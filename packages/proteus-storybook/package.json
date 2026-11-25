@@ -1,0 +1,83 @@
+{
+  "name": "@muirjs/proteus-storybook",
+  "version": "0.0.0",
+  "private": true,
+  "description": "StrykerJS mutators for Storybook story data that story tests can kill",
+  "keywords": [
+    "stryker",
+    "storybook",
+    "mutation testing",
+    "mutators",
+    "args"
+  ],
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/proteus-storybook#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muirjs/muir.git",
+    "directory": "packages/proteus-storybook"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@muirjs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "peerDependencies": {
+    "@stryker-mutator/core": "~10.1.0"
+  },
+  "dependencies": {
+    "@muirjs/moira-storybook": "0.0.0",
+    "@muirjs/moira-mutators": "0.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "8.0.9",
+    "@muirjs/test-util-mutator-packages": "0.0.0",
+    "storybook": "10.6.5"
+  },
+  "nx": {
+    "tags": [
+      "type:lib"
+    ],
+    "targets": {
+      "build": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "build",
+          "^typecheck"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build"
+        ]
+      },
+      "lint": {
+        "inputs": [
+          "...",
+          "{workspaceRoot}/tsconfig.base.json"
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --conditions=@muirjs/source --test test/*.test.ts"
+  }
+}

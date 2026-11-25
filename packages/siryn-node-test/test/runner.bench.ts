@@ -1,0 +1,445 @@
+// Benchmarks the node:test runner on fixed synthetic fixtures, plus each Stryker suite that the Nx `mutate` target
+// runs through the per-config targets it depends on, timed apart.
+//
+//   npm run bench
+//   npm run bench -- --runs 9 --mutate-runs 0
+//   npm run bench -- --runner path/to/baseline/index.ts --runner packages/siryn-node-test/src/index.ts
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import {
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { availableParallelism, tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { parseArgs } from 'node:util';
+
+import {
+  DryRunStatus,
+  MutantRunStatus,
+  TestStatus,
+  type DryRunOptions,
+  type MutantRunOptions,
+} from '@stryker-mutator/api/test-runner';
+import { Bench } from 'tinybench';
+
+import { callMember, construct, member } from './reflect.fixtures.ts';
+import {
+  cover,
+  dryRun,
+  fixture,
+  logger,
+  mutantRunOptions,
+  strykerOptions,
+} from './runner.fixtures.ts';
+
+/**
+ * A runner loaded from any path, this package's source or a baseline build of it, so the bench checks what its methods
+ * return instead of trusting a type.
+ */
+interface BenchRunner {
+  readonly dryRun: (options: DryRunOptions) => Promise<unknown>;
+  readonly mutantRun: (options: MutantRunOptions) => Promise<unknown>;
+  readonly dispose: () => Promise<unknown>;
+}
+
+interface Scenario {
+  readonly name: string;
+  readonly run: (runner: BenchRunner) => Promise<number>;
+}
+
+function method(
+  target: unknown,
+  name: string,
+): (...args: unknown[]) => Promise<unknown> {
+  return async (...args) => {
+    const result: unknown = await callMember(target, name, ...args);
+
+    return result;
+  };
+}
+
+function timeOf(times: Map<string, number>, label: string): number {
+  const ms = times.get(label);
+
+  if (ms === undefined) {
+    throw new Error(`No time for ${label}.`);
+  }
+
+  return ms;
+}
+
+interface Stat {
+  readonly runs: number;
+  readonly medianMs: number;
+  readonly minMs: number;
+  readonly maxMs: number;
+  readonly spread: number;
+}
+
+const workspaceRoot = join(import.meta.dirname, '..', '..', '..');
+const projectRoot = 'packages/siryn-node-test';
+const fileCount = 6;
+const testsPerFile = 5;
+const spawningFiles = 2;
+const testCount = fileCount * testsPerFile;
+
+const { values: args } = parseArgs({
+  options: {
+    runs: { type: 'string', default: '7' },
+    'mutate-runs': { type: 'string', default: '1' },
+    runner: { type: 'string', multiple: true, default: [] },
+    json: { type: 'string' },
+  },
+});
+const runs = Number(args.runs);
+const mutateRuns = Number(args['mutate-runs']);
+const runnerPaths =
+  args.runner.length > 0
+    ? args.runner
+    : [join(import.meta.dirname, '..', 'src', 'index.ts')];
+assert.ok(runs >= 1, 'runs must be >= 1');
+assert.ok(mutateRuns >= 0, 'mutate-runs must be >= 0');
+
+function fixtureFile(index: number): string {
+  const spawns = index < spawningFiles;
+  const tests: string[] = [];
+
+  for (let test = 0; test < testsPerFile; test++) {
+    const body =
+      spawns && test === 0
+        ? `const child = spawnSync(process.execPath, ['-e', ${JSON.stringify(`${cover} cover('child-${index}');`)}]); assert.equal(child.status, 0, String(child.stderr));`
+        : `assert.equal([${test}].length, 1);`;
+    tests.push(
+      `  it('test ${test}', () => { cover('m-${index}-${test}'); ${body} });`,
+    );
+  }
+
+  return fixture(
+    `cover('static-${index}');`,
+    `describe('suite ${index}', () => {`,
+    ...tests,
+    '});',
+  );
+}
+
+function scenarios(files: string[]): Scenario[] {
+  const testId = (file: number, test: number) => {
+    const path = files[file];
+
+    if (path === undefined) {
+      throw new Error(`No fixture file ${file}.`);
+    }
+
+    return `${path} > suite ${file} > test ${test}`;
+  };
+
+  return [
+    {
+      name: `dry run, ${fileCount} files x ${testsPerFile} tests`,
+      run: async (runner) => {
+        const result = await runner.dryRun({ ...dryRun, timeout: 60_000 });
+        const tests = member(result, 'tests');
+        const perTest = member(member(result, 'mutantCoverage'), 'perTest');
+        assert.equal(member(result, 'status'), DryRunStatus.Complete);
+        assert.ok(Array.isArray(tests));
+        assert.ok(
+          tests.every((test) => member(test, 'status') === TestStatus.Success),
+        );
+        assert.equal(Object.keys(new Object(perTest)).length, testCount);
+        assert.equal(member(member(perTest, testId(0, 0)), 'child-0'), 1);
+
+        return tests.length;
+      },
+    },
+    {
+      name: 'mutant run, no filter (every file)',
+      run: async (runner) => {
+        const result = await runner.mutantRun(
+          mutantRunOptions({ timeout: 60_000 }),
+        );
+        assert.equal(member(result, 'status'), MutantRunStatus.Survived);
+        assert.equal(member(result, 'nrOfTests'), testCount);
+
+        return testCount;
+      },
+    },
+    {
+      name: 'mutant run, filter covering 3 files',
+      run: async (runner) => {
+        const result = await runner.mutantRun(
+          mutantRunOptions({
+            timeout: 60_000,
+            testFilter: [testId(0, 1), testId(2, 1), testId(4, 1)],
+          }),
+        );
+        assert.equal(member(result, 'status'), MutantRunStatus.Survived);
+        assert.equal(member(result, 'nrOfTests'), 3);
+
+        return 3;
+      },
+    },
+    {
+      name: 'mutant run, filter covering 1 file',
+      run: async (runner) => {
+        const result = await runner.mutantRun(
+          mutantRunOptions({ timeout: 60_000, testFilter: [testId(3, 2)] }),
+        );
+        assert.equal(member(result, 'status'), MutantRunStatus.Survived);
+        assert.equal(member(result, 'nrOfTests'), 1);
+
+        return 1;
+      },
+    },
+  ];
+}
+
+function stat(ms: number[]): Stat {
+  const sorted = [...ms].sort((a, b) => a - b);
+  // One middle value for an odd count, two for an even one.
+  const middle = sorted.slice(
+    Math.floor((sorted.length - 1) / 2),
+    Math.floor(sorted.length / 2) + 1,
+  );
+  const medianMs =
+    middle.reduce((sum, value) => sum + value, 0) / middle.length;
+  const minMs = Math.min(...sorted);
+  const maxMs = Math.max(...sorted);
+
+  return {
+    runs: sorted.length,
+    medianMs,
+    minMs,
+    maxMs,
+    spread: (maxMs - minMs) / medianMs,
+  };
+}
+
+function format(
+  name: string,
+  { runs, medianMs, minMs, maxMs, spread }: Stat,
+  unit = 'ms',
+): string {
+  const fixed = (value: number) =>
+    (unit === 'ms' ? value.toFixed(0) : value.toFixed(3)).padStart(7);
+
+  return `${name.padEnd(44)} median ${fixed(medianMs)} ${unit}  min ${fixed(minMs)}  max ${fixed(maxMs)}  spread ${(spread * 100).toFixed(0).padStart(3)}%  runs ${runs}`;
+}
+
+async function round(
+  tasks: [name: string, fn: () => unknown][],
+): Promise<Map<string, number>> {
+  const bench = new Bench({
+    iterations: 1,
+    time: 0,
+    warmup: false,
+    timestampProvider: 'hrtimeNow',
+    throws: true,
+    retainSamples: true,
+  });
+
+  for (const [name, fn] of tasks) {
+    bench.add(name, fn);
+  }
+
+  const results = await bench.run();
+  assert.deepEqual(
+    results.map((task) => [task.name, task.result.state]),
+    tasks.map(([name]) => [name, 'completed']),
+  );
+
+  return new Map(
+    results.map((task) => [
+      task.name,
+      (task.result.state === 'completed'
+        ? task.result.latency.samples?.[0]
+        : undefined) ?? NaN,
+    ]),
+  );
+}
+
+async function loadRunner(path: string, dir: string): Promise<BenchRunner> {
+  const module: unknown = await import(pathToFileURL(resolve(path)).href);
+  const options = {
+    lzNodeTest: { testFiles: [join(dir, '*.test.mjs').replaceAll('\\', '/')] },
+  };
+  const runner = construct(member(module, 'LzNodeTestTestRunner'), [
+    strykerOptions(options),
+    logger({ debugEnabled: false }),
+  ]);
+  await method(runner, 'init')();
+
+  return {
+    dryRun: method(runner, 'dryRun'),
+    mutantRun: method(runner, 'mutantRun'),
+    dispose: method(runner, 'dispose'),
+  };
+}
+
+function mutateSuites(): string[] {
+  const nx: unknown = JSON.parse(
+    readFileSync(join(workspaceRoot, 'nx.json'), 'utf8'),
+  );
+  const targetDefaults = field(nx, 'targetDefaults');
+  const targets = field(field(targetDefaults, 'mutate'), 'dependsOn');
+  const commands: unknown[] = Array.isArray(targets)
+    ? targets.map((target: unknown) =>
+        typeof target === 'string'
+          ? field(field(field(targetDefaults, target), 'options'), 'command')
+          : undefined,
+      )
+    : [];
+
+  if (
+    commands.length === 0 ||
+    !commands.every((command) => typeof command === 'string')
+  ) {
+    throw new Error(
+      'nx.json has no mutate target commands whose Stryker suites the bench could time',
+    );
+  }
+
+  return commands.map((command: string) =>
+    command.replaceAll('{projectRoot}', projectRoot),
+  );
+}
+
+function field(value: unknown, key: string): unknown {
+  return typeof value === 'object' && value !== null
+    ? Object.entries(value).find(([name]) => name === key)?.[1]
+    : undefined;
+}
+
+function mutate(suite: string): void {
+  const result = spawnSync(suite, {
+    cwd: workspaceRoot,
+    shell: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  });
+  assert.equal(
+    result.status,
+    0,
+    `${suite} failed:\n${result.stdout}\n${result.stderr}`,
+  );
+  const summary = result.stdout.match(/All files\s*\|\s*([\d.]+)/);
+  assert.equal(
+    summary?.[1],
+    '100.00',
+    `${suite} did not reach 100%:\n${result.stdout}`,
+  );
+}
+
+async function main(): Promise<void> {
+  const dir = realpathSync.native(
+    mkdtempSync(join(tmpdir(), 'node-test-runner-bench-')),
+  );
+  const files: string[] = [];
+  const runners: BenchRunner[] = [];
+
+  try {
+    for (let index = 0; index < fileCount; index++) {
+      const file = join(dir, `file-${index}.test.mjs`);
+      writeFileSync(file, fixtureFile(index));
+      files.push(file);
+    }
+
+    const labeled = await Promise.all(
+      runnerPaths.map(async (path) => ({
+        runner: await loadRunner(path, dir),
+        label: runnerPaths.length > 1 ? `[${path}] ` : '',
+      })),
+    );
+    runners.push(...labeled.map(({ runner }) => runner));
+    const samples = new Map<string, number[]>();
+    const add = (label: string, ms: number) =>
+      samples.set(label, [...(samples.get(label) ?? []), ms]);
+
+    console.log(
+      `node ${process.version} on ${process.platform} ${process.arch}, ${availableParallelism()} cores`,
+    );
+    console.log(
+      `fixtures: ${fileCount} files x ${testsPerFile} tests, ${spawningFiles} files spawn a child process`,
+    );
+
+    for (const scenario of scenarios(files)) {
+      const sides = labeled.map(
+        ({ runner, label }): [string, () => Promise<void>] => [
+          `${label}${scenario.name}`,
+          async () => {
+            assert.ok((await scenario.run(runner)) > 0);
+          },
+        ],
+      );
+      await round(sides);
+      const [first] = sides;
+
+      if (first === undefined) {
+        throw new Error('No runner to benchmark.');
+      }
+
+      const [firstLabel] = first;
+
+      for (let run = 0; run < runs; run++) {
+        const times = await round(run % 2 === 0 ? sides : [...sides].reverse());
+
+        for (const [label] of sides) {
+          add(label, timeOf(times, label));
+
+          if (label !== firstLabel) {
+            add(
+              `${label} / first runner`,
+              timeOf(times, label) / timeOf(times, firstLabel),
+            );
+          }
+        }
+      }
+    }
+
+    for (let run = 0; run < mutateRuns; run++) {
+      for (const suite of mutateSuites()) {
+        const label = `${suite}, wall`;
+        const mutateOnce = () => {
+          mutate(suite);
+        };
+        add(label, timeOf(await round([[label, mutateOnce]]), label));
+      }
+    }
+
+    const stats = Object.fromEntries(
+      [...samples].map(([label, values]) => [label, stat(values)]),
+    );
+
+    for (const [label, value] of Object.entries(stats)) {
+      console.log(
+        format(label, value, label.endsWith(' / first runner') ? 'x' : 'ms'),
+      );
+    }
+
+    if (args.json) {
+      writeFileSync(
+        args.json,
+        JSON.stringify(
+          {
+            node: process.version,
+            platform: process.platform,
+            arch: process.arch,
+            cores: availableParallelism(),
+            stats,
+          },
+          null,
+          2,
+        ),
+      );
+    }
+  } finally {
+    await Promise.all(runners.map((runner) => runner.dispose()));
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+await main();

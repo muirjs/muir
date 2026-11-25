@@ -1,0 +1,129 @@
+import {
+  csfShapes,
+  field,
+  fileNameOf,
+  isRecord,
+  list,
+  propertyKey,
+  type CsfShapes,
+} from '@muirjs/moira-storybook';
+import type { Ignorer } from '@stryker-mutator/api/ignore';
+import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
+
+import {
+  isStoryFile,
+  strykerStorybookProject,
+  type ProjectLog,
+} from './storybook-project.ts';
+
+export const csfIgnorerName = 'lz-storybook-csf';
+
+const staticReason = `${csfIgnorerName}: Storybook reads this CSF value without running the file, so it stays as written`;
+const metaReason = `${csfIgnorerName}: Storybook reads the meta object without running the file, so it stays an object literal`;
+const containerReason = `${csfIgnorerName}: Storybook reads this story, its parameters or its test options without running the file, so it stays an object or a function`;
+const testReason = `${csfIgnorerName}: test code in a story file is mutated by the Stryker config with lzStorybookCsf.play set to mutate`;
+const mswReason = `${csfIgnorerName}: msw handlers in a story file are mutated by the Stryker config with lzStorybookCsf.play set to mutate`;
+
+export function csfIgnorer(options: object, log: ProjectLog): Ignorer {
+  const ignoreMode = field(options, 'lzStorybookCsf', 'play') !== 'mutate';
+  let reasons: ReadonlyMap<unknown, string> = new Map();
+  const fileReasons = (
+    program: unknown,
+    fileName: string | undefined,
+  ): ReadonlyMap<unknown, string> => {
+    if (
+      fileName === undefined ||
+      !isStoryFile(strykerStorybookProject(options, log), fileName)
+    ) {
+      return new Map();
+    }
+
+    const shapes = csfShapes(program);
+
+    if (!ignoreMode) {
+      return staticReasons(shapes);
+    }
+
+    // StrykerJS reads a node's leading comments when it enters that node, after the ignorer has seen the Program node.
+    shapes.literalContainers.forEach(keepLiteralContainer);
+    shapes.testStatementsWithOptions.forEach(keepTestCall);
+    shapes.metaObjects.forEach(keepMetaObject);
+
+    return ignoreModeReasons(shapes);
+  };
+
+  return {
+    shouldIgnore(path) {
+      const node = field(path, 'node');
+
+      if (field(node, 'type') === 'Program') {
+        reasons = fileReasons(node, fileNameOf(path));
+      }
+
+      return reasons.get(node);
+    },
+  };
+}
+
+csfIgnorer.inject = tokens(commonTokens.options, commonTokens.logger);
+
+function staticReasons(shapes: CsfShapes): ReadonlyMap<unknown, string> {
+  return new Map(
+    [...shapes.staticValues].map((node) => [node, staticReason] as const),
+  );
+}
+
+function ignoreModeReasons(shapes: CsfShapes): ReadonlyMap<unknown, string> {
+  // A later entry wins: meta over test code over msw over static values.
+  return new Map([
+    ...staticReasons(shapes),
+    ...[...shapes.mswValues].map((node) => [node, mswReason] as const),
+    ...[...shapes.testCode].map((node) => [node, testReason] as const),
+    ...[...shapes.metaObjects]
+      .flatMap(metaPartsKept)
+      .map((node) => [node, metaReason] as const),
+  ]);
+}
+
+/** Every property of a meta object but its `args`, which are story data, mutated as a story's are. */
+function metaPartsKept(meta: unknown): readonly unknown[] {
+  return list(field(meta, 'properties')).filter(
+    (property) => propertyKey(property) !== 'args',
+  );
+}
+
+// An ignorer skips a whole subtree, so the meta object itself is kept by a directive, leaving its args unignored. A next-line directive matches every ObjectLiteral mutant on the meta's first line, so the `{}` of args written on that line is kept too, as a story's own is.
+function keepMetaObject(meta: unknown): void {
+  addDirective(meta, `Stryker disable next-line ObjectLiteral: ${metaReason}`);
+}
+
+// A Stryker ignorer skips a whole subtree; a next-line directive skips only the mutants on the container's first line.
+function keepLiteralContainer(container: unknown): void {
+  addDirective(
+    container,
+    `Stryker disable next-line ObjectLiteral,ArrowFunction: ${containerReason}`,
+  );
+}
+
+// The statement stays unignored so that its options are mutated; the directive keeps out the mutant that removes the call.
+function keepTestCall(statement: unknown): void {
+  addDirective(
+    statement,
+    `Stryker disable next-line CallExpression: ${testReason}`,
+  );
+}
+
+function addDirective(node: unknown, directive: string): void {
+  if (!isRecord(node)) {
+    return;
+  }
+
+  node['leadingComments'] = [
+    ...list(node['leadingComments']),
+    {
+      // Stryker disable next-line StringLiteral: the type keeps the node a well-formed Babel comment, but no output depends on its value: StrykerJS reads only the comment's value, and Babel's generator prints a comment of any type but CommentBlock as a line comment
+      type: 'CommentLine',
+      value: ` ${directive}`,
+    },
+  ];
+}

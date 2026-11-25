@@ -3,7 +3,7 @@ import './break.ts';
 
 export default {
   mutate: ['src.tsx'],
-  plugins: ['@layzee/stryker-jsx-mutators'],
+  plugins: ['@muirjs/proteus-jsx'],
   ignorers: ['lz-jsx'],
   testRunner: 'command',
   commandRunner: { command: 'node -e "process.exit(0)"' },

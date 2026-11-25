@@ -4,19 +4,19 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/stryker-node-test-runner"
+      "path": "./packages/siryn-node-test"
     },
     {
-      "path": "./packages/stryker-node-mutators"
+      "path": "./packages/proteus-node"
     },
     {
-      "path": "./packages/stryker-node-test-mutators"
+      "path": "./packages/proteus-node-test"
     },
     {
-      "path": "./packages/node-test-extensions"
+      "path": "./packages/madrox-node-test"
     },
     {
-      "path": "./packages/stryker-mutator-core"
+      "path": "./packages/moira-node-test"
     },
     {
       "path": "./tools/eslint-rules"
@@ -25,7 +25,7 @@
       "path": "./e2e"
     },
     {
-      "path": "./packages/stryker-js-mutators"
+      "path": "./packages/proteus-js"
     },
     {
       "path": "./apps/demo-app-e2e"
@@ -34,34 +34,34 @@
       "path": "./apps/demo-app"
     },
     {
-      "path": "./packages/stryker-playwright-runner"
+      "path": "./packages/siryn-playwright"
     },
     {
-      "path": "./packages/stryker-jsx-mutators"
+      "path": "./packages/proteus-jsx"
     },
     {
-      "path": "./packages/stryker-mutator-install"
+      "path": "./packages/moira-mutators"
     },
     {
-      "path": "./packages/stryker-playwright-mutators"
+      "path": "./packages/proteus-playwright"
     },
     {
-      "path": "./packages/stryker-storybook"
+      "path": "./packages/shadowcat-storybook"
     },
     {
-      "path": "./packages/stryker-storybook-test-mutators"
+      "path": "./packages/proteus-storybook-test"
     },
     {
-      "path": "./packages/stryker-storybook-mutators"
+      "path": "./packages/proteus-storybook"
     },
     {
-      "path": "./packages/stryker-msw-mutators"
+      "path": "./packages/proteus-msw"
     },
     {
-      "path": "./packages/storybook-mock-transformer"
+      "path": "./packages/pixie-storybook"
     },
     {
-      "path": "./packages/storybook-core"
+      "path": "./packages/moira-storybook"
     },
     {
       "path": "./packages/test-util-mutator-packages"

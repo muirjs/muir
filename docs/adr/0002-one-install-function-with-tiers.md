@@ -9,6 +9,6 @@ unknown name, a default mutator's name, or a name in the wrong tier. Turning a m
 
 ## Considered Options
 
-- A subpath entry per group, such as `@layzee/stryker-playwright-mutators/wait` or `.../experimental`. It was
+- A subpath entry per group, such as `@muirjs/proteus-playwright/wait` or `.../experimental`. It was
   approved for the Wait mutators first and then replaced by the ruling above, so the same rule holds for every
   mutator package, here and in the sibling Node mutator packages.

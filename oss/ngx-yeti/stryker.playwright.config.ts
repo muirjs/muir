@@ -9,7 +9,7 @@ if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
 }
 
 export default {
-  plugins: ['@layzee/stryker-playwright-runner'],
+  plugins: ['@muirjs/siryn-playwright'],
   testRunner: 'lz-playwright',
   lzPlaywright: {
     configFile: 'apps/ngx-yeti-e2e/playwright.config.mts',

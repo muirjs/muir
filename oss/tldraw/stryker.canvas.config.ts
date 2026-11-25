@@ -11,7 +11,7 @@ if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
 // The canvas case: the minimap's background fill and transform, which only a screenshot shows. The minimap
 // test checks visibility only, so these mutants survive, and their traces show the drawing.
 export default {
-  plugins: ['@layzee/stryker-playwright-runner'],
+  plugins: ['@muirjs/siryn-playwright'],
   testRunner: 'lz-playwright',
   lzPlaywright: {
     configFile: 'apps/examples/e2e/playwright.stryker.config.ts',

@@ -98,7 +98,7 @@ The prototype also covers attributes that the design does not list: `formAction`
 ## Transcription choices
 
 - **Origins** are written `<repo>@<commit>:<path>:<line>`. A line range keeps its first line. The repo names
-  are `realworld`, `ngx-yeti`, `analog`, `stryker-playwright-hello-world`, and `stryker-playwright-runner` for
+  are `realworld`, `ngx-yeti`, `analog`, `stryker-playwright-hello-world`, and `siryn-playwright` for
   the demo app.
 - **`...` contents** in a mined `jsx` became empty children (realworld-3, -5, -10; analog-11, -12, -20). Real
   content would add text mutants that the row did not intend.

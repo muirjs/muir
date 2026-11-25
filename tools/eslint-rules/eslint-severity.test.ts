@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe } from 'node:test';
 
-import { lzTestEach } from '@layzee/node-test-extensions';
+import { lzTestEach } from '@muirjs/madrox-node-test';
 import { ESLint, type Linter } from 'eslint';
 import { lzIsRecord } from './stryker-report.ts';
 
@@ -12,26 +12,26 @@ const workspaceRoot = join(import.meta.dirname, '..', '..');
 const samples = [
   'eslint.config.mjs',
   'stryker.base.mjs',
-  'packages/node-test-extensions/eslint.config.mjs',
-  'packages/node-test-extensions/stryker.config.mjs',
-  'packages/stryker-node-mutators/stryker.config.mjs',
-  'packages/stryker-node-test-runner/stryker.test-code.config.mjs',
+  'packages/madrox-node-test/eslint.config.mjs',
+  'packages/madrox-node-test/stryker.config.mjs',
+  'packages/proteus-node/stryker.config.mjs',
+  'packages/siryn-node-test/stryker.test-code.config.mjs',
   'tools/eslint-rules/stryker.config.mjs',
-  'packages/node-test-extensions/src/index.ts',
-  'packages/stryker-node-mutators/src/index.ts',
-  'packages/stryker-node-test-runner/src/index.ts',
-  'packages/node-test-extensions/test/unit/title.test.ts',
-  'packages/node-test-extensions/test/modified.types.ts',
-  'packages/stryker-node-mutators/test/unit/mutators.test.ts',
-  'packages/stryker-node-test-runner/test/runner.fixtures.ts',
+  'packages/madrox-node-test/src/index.ts',
+  'packages/proteus-node/src/index.ts',
+  'packages/siryn-node-test/src/index.ts',
+  'packages/madrox-node-test/test/unit/title.test.ts',
+  'packages/madrox-node-test/test/modified.types.ts',
+  'packages/proteus-node/test/unit/mutators.test.ts',
+  'packages/siryn-node-test/test/runner.fixtures.ts',
   'tools/eslint-rules/index.ts',
   'tools/eslint-rules/index.test.ts',
   'e2e/src/exec.ts',
   'e2e/test/esm-js.e2e.ts',
   'e2e/test/unit/report.test.ts',
-  'packages/node-test-extensions/package.json',
-  'packages/stryker-node-mutators/package.json',
-  'packages/stryker-node-test-runner/package.json',
+  'packages/madrox-node-test/package.json',
+  'packages/proteus-node/package.json',
+  'packages/siryn-node-test/package.json',
 ];
 
 const warnSettings: readonly Linter.RuleSeverity[] = ['warn', 1];

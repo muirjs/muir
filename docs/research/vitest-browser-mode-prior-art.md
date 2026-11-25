@@ -2,7 +2,7 @@
 
 Note, 2026-10-25: The "prototype" statements and the `PROTO` and `HOOK` citations describe an earlier prototype, not the current runner. Commit 67df91a replaced those JavaScript files with TypeScript. `docs/VERDICT.md` describes the current runner. The `RESEARCH.md` this file builds on is `D:/projects/github/LayZeeDK/ngx-yeti/tmp/afk-m003/stryker-spike/RESEARCH.md`, which is outside this repo.
 
-Scope: what `@stryker-mutator/vitest-runner` (StrykerJS v10.1.1) does in Vitest Browser Mode, and which of its choices carry over to the prototype `stryker-playwright-runner`. Builds on `ngx-yeti/tmp/afk-m003/stryker-spike/RESEARCH.md` section 1 and does not repeat it.
+Scope: what `@stryker-mutator/vitest-runner` (StrykerJS v10.1.1) does in Vitest Browser Mode, and which of its choices carry over to the prototype `siryn-playwright`. Builds on `ngx-yeti/tmp/afk-m003/stryker-spike/RESEARCH.md` section 1 and does not repeat it.
 
 Labels: [checked] = read in source, git history, or an issue/PR, with a citation. [inferred] = reasoning from checked facts.
 
@@ -16,7 +16,7 @@ Citation shorthands:
 - `VORCH` = `@vitest/browser@5.0.5` tarball, `dist/client/__vitest_browser__/orchestrator-C2U7TVD1.js`
 - `VPW` = `@vitest/browser-playwright@5.0.5` tarball, `dist/index.js`
 - `PW` = installed `node_modules/playwright/lib/...` (1.64.1) in this workspace
-- `PROTO` = `packages/stryker-playwright-runner/src/playwright-test-runner.js`, `HOOK` = `.../src/worker-hook.cjs`
+- `PROTO` = `packages/siryn-playwright/src/playwright-test-runner.js`, `HOOK` = `.../src/worker-hook.cjs`
 
 ## 1. Lifetime and reset between runs
 
@@ -99,7 +99,7 @@ What it asserts, and why each assertion matters:
 7. Separate spec: **hit limit** gives Timeout with "Hit limit reached", and the hit counter resets between runs. [checked `test/integration/timeout-on-infinite-loop.it.spec.ts`]
 8. Uses namespace `__stryker2__` via `createVitestTestRunnerFactory('__stryker2__')`, so StrykerJS can mutation-test the runner itself without the fixture's namespace colliding with its own. [checked `BMIT:34-36`, `VTR:438-455`]
 
-The prototype has no `test/` directory. [checked `ls packages/stryker-playwright-runner`] Its checks so far are whole `stryker run`s on the demo and a benchmark script (`tools/bench-playwright-runs.mjs`). [checked `decisions.tsv`, `todo.md`]
+The prototype has no `test/` directory. [checked `ls packages/siryn-playwright`] Its checks so far are whole `stryker run`s on the demo and a benchmark script (`tools/bench-playwright-runs.mjs`). [checked `decisions.tsv`, `todo.md`]
 
 ## Lessons for the Playwright runner
 

@@ -1,4 +1,4 @@
-import { lzJsxMutators } from '@layzee/stryker-jsx-mutators';
+import { lzJsxMutators } from '@muirjs/proteus-jsx';
 import type { PartialStrykerOptions } from '@stryker-mutator/api/core';
 
 await lzJsxMutators();
@@ -12,7 +12,7 @@ if (webServerMutate !== 'true' && webServerMutate !== 'auto') {
 }
 
 export default {
-  plugins: ['@layzee/stryker-playwright-runner'],
+  plugins: ['@muirjs/siryn-playwright'],
   testRunner: 'lz-playwright',
   lzPlaywright: {
     configFile: 'apps/examples/e2e/playwright.stryker.config.ts',
