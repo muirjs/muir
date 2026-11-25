@@ -3,6 +3,8 @@ import {
   muirMoiraStorybookField,
   type MuirMoiraStorybookInteraction,
   muirMoiraStorybookInteractionsOf,
+  muirMoiraStorybookParseProgram,
+  muirMoiraStorybookShadowcatPluginName,
   type MuirMoiraStorybookStoryInteractions,
 } from '@muirjs/moira-storybook';
 import type { schema } from '@stryker-mutator/api/core';
@@ -12,8 +14,6 @@ import {
   muirShadowcatStorybookShapesOf,
 } from './interaction-shapes.ts';
 import { muirShadowcatStorybookPackageName } from './package-name.ts';
-import { muirShadowcatStorybookParseProgram } from './parse.ts';
-import { muirShadowcatStorybookPluginName } from './stub-verdict.ts';
 
 export const muirShadowcatStorybookInteractionMutatorNames = [
   'MuirProteusStorybookTestInteraction',
@@ -129,10 +129,10 @@ function interactionsOfSource(
   file: string,
   warn: (message: string) => void,
 ): MuirMoiraStorybookStoryInteractions | undefined {
-  let program: ReturnType<typeof muirShadowcatStorybookParseProgram>;
+  let program: ReturnType<typeof muirMoiraStorybookParseProgram>;
 
   try {
-    program = muirShadowcatStorybookParseProgram(source, file);
+    program = muirMoiraStorybookParseProgram(source, file);
   } catch (error) {
     warn(
       `${muirShadowcatStorybookPackageName}: Babel could not parse ${file}, so muir-shadowcat-storybook gave no interaction hints for it: ${error instanceof Error ? error.message : String(error)}`,
@@ -314,6 +314,6 @@ function hintOf(
     mutatorNames,
     reason,
     fix,
-    comment: `// Stryker disable next-line ${mutatorNames.join(', ')}: ${muirShadowcatStorybookPluginName}: ${shape}: ${short}`,
+    comment: `// Stryker disable next-line ${mutatorNames.join(', ')}: ${muirMoiraStorybookShadowcatPluginName}: ${shape}: ${short}`,
   };
 }

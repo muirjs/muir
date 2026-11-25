@@ -2,12 +2,11 @@
 // @muirjs/proteus-storybook-test.
 import { it } from 'node:test';
 
-import type { MuirProteusStorybookTestMutatorOptions } from '@muirjs/proteus-storybook-test';
-
 import {
-  muirShadowcatStorybookSpyStubName,
-  muirShadowcatStorybookSpyStubOutcomeName,
-} from '../src/stub-verdict.ts';
+  muirMoiraStorybookSpyStubName,
+  muirMoiraStorybookSpyStubOutcomeName,
+} from '@muirjs/moira-storybook';
+import type { MuirProteusStorybookTestMutatorOptions } from '@muirjs/proteus-storybook-test';
 
 type ExperimentalName = keyof Exclude<
   MuirProteusStorybookTestMutatorOptions['experimental'],
@@ -15,6 +14,6 @@ type ExperimentalName = keyof Exclude<
 >;
 
 it('names experimental mutators of the test mutators package', () => {
-  muirShadowcatStorybookSpyStubName satisfies ExperimentalName;
-  muirShadowcatStorybookSpyStubOutcomeName satisfies ExperimentalName;
+  muirMoiraStorybookSpyStubName satisfies ExperimentalName;
+  muirMoiraStorybookSpyStubOutcomeName satisfies ExperimentalName;
 });

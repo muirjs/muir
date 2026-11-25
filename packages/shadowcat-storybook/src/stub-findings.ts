@@ -1,23 +1,20 @@
 import {
+  muirMoiraStorybookDescribeVerdict,
   muirMoiraStorybookField,
   muirMoiraStorybookIsRecord,
   muirMoiraStorybookList,
+  muirMoiraStorybookParseProgram,
+  muirMoiraStorybookReasonSites,
+  muirMoiraStorybookSpyStubName,
   muirMoiraStorybookWrittenMethodOf,
+  type MuirMoiraStorybookProject,
+  type MuirMoiraStorybookReasonSite,
+  type MuirMoiraStorybookSpyStubReason,
   type MuirMoiraStorybookWrittenStubMethod,
 } from '@muirjs/moira-storybook';
 
-import { muirShadowcatStorybookParseProgram } from './parse.ts';
-import type { MuirShadowcatStorybookProject } from './storybook-project.ts';
-import {
-  muirShadowcatStorybookDescribeVerdict,
-  muirShadowcatStorybookReasonSites,
-  muirShadowcatStorybookSpyStubName,
-  type MuirShadowcatStorybookReasonSite,
-  type MuirShadowcatStorybookSpyStubReason,
-} from './stub-verdict.ts';
-
 export interface MuirShadowcatStorybookSiteFinding
-  extends MuirShadowcatStorybookSpyStubReason {
+  extends MuirMoiraStorybookSpyStubReason {
   readonly line: number;
   readonly method: MuirMoiraStorybookWrittenStubMethod;
 }
@@ -35,20 +32,20 @@ const directive =
 export function muirShadowcatStorybookSiteFindings(
   code: string,
   fileName: string,
-  project: MuirShadowcatStorybookProject,
+  project: MuirMoiraStorybookProject,
   onUnparsable: (fileName: string, error: unknown) => void,
 ): readonly MuirShadowcatStorybookSiteFinding[] {
-  let program: ReturnType<typeof muirShadowcatStorybookParseProgram>;
+  let program: ReturnType<typeof muirMoiraStorybookParseProgram>;
 
   try {
-    program = muirShadowcatStorybookParseProgram(code, fileName);
+    program = muirMoiraStorybookParseProgram(code, fileName);
   } catch (error) {
     onUnparsable(fileName, error);
 
     return [];
   }
 
-  const sites = muirShadowcatStorybookReasonSites(
+  const sites = muirMoiraStorybookReasonSites(
     { program, code, fileName },
     project,
   );
@@ -59,15 +56,15 @@ export function muirShadowcatStorybookSiteFindings(
     .map((site) => ({
       line: site.line,
       method: muirMoiraStorybookWrittenMethodOf(site),
-      ...muirShadowcatStorybookDescribeVerdict(site.verdict),
+      ...muirMoiraStorybookDescribeVerdict(site.verdict),
     }));
 }
 
 function silencedSites(
   program: unknown,
-  sites: readonly MuirShadowcatStorybookReasonSite[],
-): ReadonlySet<MuirShadowcatStorybookReasonSite> {
-  const silenced = new Set<MuirShadowcatStorybookReasonSite>();
+  sites: readonly MuirMoiraStorybookReasonSite[],
+): ReadonlySet<MuirMoiraStorybookReasonSite> {
+  const silenced = new Set<MuirMoiraStorybookReasonSite>();
   const rules: DirectiveRule[] = [];
   const visit = (node: unknown): void => {
     if (!muirMoiraStorybookIsRecord(node)) {
@@ -120,7 +117,7 @@ function isSilenced(rules: readonly DirectiveRule[], line: number): boolean {
     rules.findLast(
       (rule) =>
         (rule.line === undefined || rule.line === line) &&
-        (rule.names.includes(muirShadowcatStorybookSpyStubName.toLowerCase()) ||
+        (rule.names.includes(muirMoiraStorybookSpyStubName.toLowerCase()) ||
           rule.names.includes('all')),
     )?.disable === true
   );

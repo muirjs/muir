@@ -1,3 +1,4 @@
+import { muirMoiraStorybookShadowcatPluginName } from '@muirjs/moira-storybook';
 import { declareFactoryPlugin, PluginKind } from '@stryker-mutator/api/plugin';
 
 import {
@@ -7,7 +8,6 @@ import {
 import { muirShadowcatStorybookPlayModes } from './options.ts';
 import { muirShadowcatStorybookReporter } from './reporter.ts';
 import { muirShadowcatStorybookStubIgnorer } from './stub-ignorer.ts';
-import { muirShadowcatStorybookPluginName } from './stub-verdict.ts';
 
 export { muirShadowcatStorybookStrykerPlugin } from './stryker-vite-plugin.ts';
 export type {
@@ -67,12 +67,12 @@ export const strykerPlugins = [
   ),
   declareFactoryPlugin(
     PluginKind.Ignore,
-    muirShadowcatStorybookPluginName,
+    muirMoiraStorybookShadowcatPluginName,
     muirShadowcatStorybookStubIgnorer,
   ),
   declareFactoryPlugin(
     PluginKind.Reporter,
-    muirShadowcatStorybookPluginName,
+    muirMoiraStorybookShadowcatPluginName,
     muirShadowcatStorybookReporter,
   ),
 ];

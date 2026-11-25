@@ -43,8 +43,10 @@ Five packages work together. This README describes the setup they share.
   `npx playwright install chromium` installs.
 - Node.js 22 or later.
 
-Only this package imports Storybook at run time, so only this package declares the `storybook` peer. The other four
-packages read source text and state the same range in their READMEs.
+Only `@muirjs/moira-storybook`, the internal package that this package, `@muirjs/pixie-storybook-vite`,
+`@muirjs/proteus-storybook` and `@muirjs/proteus-storybook-test` depend on, loads Storybook at run time, the first
+time a plugin reads the Storybook project. So only it declares the `storybook` peer, and the peer reaches the four
+packages through it. `@muirjs/proteus-msw` reads source text and states the same range in its README.
 
 ## Set up two Stryker configurations
 

@@ -1,25 +1,21 @@
 import {
   muirMoiraStorybookField,
   muirMoiraStorybookFileNameOf,
+  muirMoiraStorybookIsStoryFile,
+  muirMoiraStorybookStubIgnores,
+  type MuirMoiraStorybookProjectLog,
+  type MuirMoiraStorybookStubIgnore,
 } from '@muirjs/moira-storybook';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import {
-  muirShadowcatStorybookIsStoryFile,
-  muirShadowcatStorybookStrykerStorybookProject,
-  type MuirShadowcatStorybookProjectLog,
-} from './storybook-project.ts';
-import {
-  muirShadowcatStorybookStubIgnores,
-  type MuirShadowcatStorybookStubIgnore,
-} from './stub-verdict.ts';
+import { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
 
 export function muirShadowcatStorybookStubIgnorer(
   options: object,
-  log: MuirShadowcatStorybookProjectLog,
+  log: MuirMoiraStorybookProjectLog,
 ): Ignorer {
-  let ignores: readonly MuirShadowcatStorybookStubIgnore[] = [];
+  let ignores: readonly MuirMoiraStorybookStubIgnore[] = [];
 
   return {
     shouldIgnore(path) {
@@ -35,8 +31,8 @@ export function muirShadowcatStorybookStubIgnorer(
         ignores =
           fileName !== undefined &&
           typeof code === 'string' &&
-          muirShadowcatStorybookIsStoryFile(project, fileName)
-            ? muirShadowcatStorybookStubIgnores(
+          muirMoiraStorybookIsStoryFile(project, fileName)
+            ? muirMoiraStorybookStubIgnores(
                 { program: node, code, fileName },
                 project,
               )

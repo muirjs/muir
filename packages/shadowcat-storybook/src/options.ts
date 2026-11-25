@@ -1,6 +1,9 @@
 import {
   muirMoiraStorybookField,
   muirMoiraStorybookIsRecord,
+  muirMoiraStorybookProject,
+  type MuirMoiraStorybookProject,
+  type MuirMoiraStorybookProjectLog,
 } from '@muirjs/moira-storybook';
 
 import { muirShadowcatStorybookPackageName } from './package-name.ts';
@@ -47,4 +50,16 @@ export function muirShadowcatStorybookOptions(
   }
 
   return { configDir };
+}
+
+export function muirShadowcatStorybookStrykerStorybookProject(
+  options: object,
+  log: MuirMoiraStorybookProjectLog,
+): MuirMoiraStorybookProject {
+  return muirMoiraStorybookProject(
+    muirShadowcatStorybookPackageName,
+    muirShadowcatStorybookOptions(options).configDir,
+    log,
+    muirShadowcatStorybookVitestConfigFile(options),
+  );
 }

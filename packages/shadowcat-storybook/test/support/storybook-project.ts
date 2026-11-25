@@ -1,9 +1,10 @@
-import type { MuirShadowcatStorybookProject } from '../../src/storybook-project.ts';
+import type { MuirMoiraStorybookProject } from '@muirjs/moira-storybook';
+
 import { untaggedPreviewTestTags } from './test-tags.ts';
 
 /** A project with the fallback story files and a preview that sets no parameters.test. */
 export function project(
-  transformer: MuirShadowcatStorybookProject['transformer'],
+  transformer: MuirMoiraStorybookProject['transformer'],
   testTags = untaggedPreviewTestTags,
 ) {
   return {
@@ -12,5 +13,5 @@ export function project(
     transformer,
     previewTest: {},
     testTags,
-  } satisfies MuirShadowcatStorybookProject;
+  } satisfies MuirMoiraStorybookProject;
 }

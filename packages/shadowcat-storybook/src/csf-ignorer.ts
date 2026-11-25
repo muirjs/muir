@@ -3,18 +3,16 @@ import {
   muirMoiraStorybookField,
   muirMoiraStorybookFileNameOf,
   muirMoiraStorybookIsRecord,
+  muirMoiraStorybookIsStoryFile,
   muirMoiraStorybookList,
   muirMoiraStorybookPropertyKey,
   type MuirMoiraStorybookCsfShapes,
+  type MuirMoiraStorybookProjectLog,
 } from '@muirjs/moira-storybook';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
 import { commonTokens, tokens } from '@stryker-mutator/api/plugin';
 
-import {
-  muirShadowcatStorybookIsStoryFile,
-  muirShadowcatStorybookStrykerStorybookProject,
-  type MuirShadowcatStorybookProjectLog,
-} from './storybook-project.ts';
+import { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
 
 export const muirShadowcatStorybookCsfIgnorerName =
   'muir-shadowcat-storybook-csf';
@@ -27,7 +25,7 @@ const mswReason = `${muirShadowcatStorybookCsfIgnorerName}: msw handlers in a st
 
 export function muirShadowcatStorybookCsfIgnorer(
   options: object,
-  log: MuirShadowcatStorybookProjectLog,
+  log: MuirMoiraStorybookProjectLog,
 ): Ignorer {
   const ignoreMode =
     muirMoiraStorybookField(options, 'muirShadowcatStorybookCsf', 'play') !==
@@ -39,7 +37,7 @@ export function muirShadowcatStorybookCsfIgnorer(
   ): ReadonlyMap<unknown, string> => {
     if (
       fileName === undefined ||
-      !muirShadowcatStorybookIsStoryFile(
+      !muirMoiraStorybookIsStoryFile(
         muirShadowcatStorybookStrykerStorybookProject(options, log),
         fileName,
       )

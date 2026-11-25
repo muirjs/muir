@@ -15,8 +15,10 @@ import { fileURLToPath } from 'node:url';
 
 import {
   muirMoiraStorybookAppendRecord,
+  muirMoiraStorybookDescribeVerdict,
   muirMoiraStorybookIsRecord,
   muirMoiraStorybookRecordVariable,
+  muirMoiraStorybookSpyStubReason,
 } from '@muirjs/moira-storybook';
 import { PlanKind, type schema } from '@stryker-mutator/api/core';
 
@@ -24,10 +26,6 @@ import {
   muirShadowcatStorybookReporter,
   muirShadowcatStorybookStoryFileFindings,
 } from '../src/reporter.ts';
-import {
-  muirShadowcatStorybookDescribeVerdict,
-  muirShadowcatStorybookSpyStubReason,
-} from '../src/stub-verdict.ts';
 import { project } from './support/storybook-project.ts';
 import recorded from './fixtures/reporter/mutation.json' with { type: 'json' };
 
@@ -177,7 +175,7 @@ function ignoredAt(source: string, text: string, mutatorName: string) {
   return {
     mutatorName,
     status: 'Ignored',
-    statusReason: muirShadowcatStorybookSpyStubReason('erased'),
+    statusReason: muirMoiraStorybookSpyStubReason('erased'),
     location: {
       start: { line, column },
       end: { line, column: column + text.length },
@@ -349,7 +347,7 @@ describe('storybookReporter', () => {
           file: 'src/SpyStubDefault.stories.tsx',
           line: 15,
           method: 'mockReturnValue',
-          ...muirShadowcatStorybookDescribeVerdict('erased'),
+          ...muirMoiraStorybookDescribeVerdict('erased'),
         },
       ],
     );
@@ -372,13 +370,13 @@ describe('storybookReporter', () => {
           file: 'src/muirsb/Imported.stories.tsx',
           line: 14,
           method: 'mockReturnValue',
-          ...muirShadowcatStorybookDescribeVerdict('unknown'),
+          ...muirMoiraStorybookDescribeVerdict('unknown'),
         },
         {
           file: 'src/muirsb/OrderDep.stories.tsx',
           line: 13,
           method: 'mockReturnValue',
-          ...muirShadowcatStorybookDescribeVerdict('order-dependent'),
+          ...muirMoiraStorybookDescribeVerdict('order-dependent'),
         },
       ],
     );
@@ -405,7 +403,7 @@ describe('storybookReporter', () => {
         file: 'src/Literal.stories.tsx',
         line: 4,
         method: 'mockReturnValue',
-        ...muirShadowcatStorybookDescribeVerdict('erased'),
+        ...muirMoiraStorybookDescribeVerdict('erased'),
       },
     ]);
   });
@@ -433,7 +431,7 @@ describe('storybookReporter', () => {
         file: 'src/Meta.stories.tsx',
         line: 3,
         method: 'mockReturnValue',
-        ...muirShadowcatStorybookDescribeVerdict('erased'),
+        ...muirMoiraStorybookDescribeVerdict('erased'),
       },
     ]);
   });
@@ -804,7 +802,7 @@ describe('storybookReporter', () => {
 
   it('prints one line per finding with its verdict, place, cause and fix', (t) => {
     const { reporter, consoleBlock } = setup(t);
-    const erased = muirShadowcatStorybookDescribeVerdict('erased');
+    const erased = muirMoiraStorybookDescribeVerdict('erased');
 
     reporter.onMutationTestReportReady(recordedReport);
 
@@ -930,7 +928,7 @@ describe('storybookReporter', () => {
         file: 'src/Meta.stories.tsx',
         line: 3,
         method: 'mockReturnValue',
-        ...muirShadowcatStorybookDescribeVerdict('erased'),
+        ...muirMoiraStorybookDescribeVerdict('erased'),
       },
     ]);
   });
@@ -959,7 +957,7 @@ describe('storybookReporter', () => {
 
   it('prints a scanned finding in its console block', (t) => {
     const { reporter, consoleBlock, projectDir } = setup(t);
-    const erased = muirShadowcatStorybookDescribeVerdict('erased');
+    const erased = muirMoiraStorybookDescribeVerdict('erased');
     writeStory(projectDir, 'Meta.stories.tsx', erasedStub);
 
     reporter.onMutationTestReportReady({ files: {} });

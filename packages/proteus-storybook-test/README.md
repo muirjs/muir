@@ -18,7 +18,8 @@ experimental. The package is private and not on npm yet.
 - `@stryker-mutator/core` 10.1, tested on 10.1.1. The install patches internals of that version's instrumenter, and
   warns when `@stryker-mutator/instrumenter` is a version other than 10.1.1.
 - Storybook 10.6 or a later 10.x minor, tested on 10.6.5. The mutators read story files as source and import nothing
-  from Storybook, so the package declares no `storybook` peer dependency.
+  from Storybook, so the package declares no `storybook` peer dependency. The `storybook` peer of
+  `@muirjs/moira-storybook`, which it depends on, still asks for Storybook.
 - Stryker's Vitest runner, `@stryker-mutator/vitest-runner`, with Storybook's Vitest addon,
   `@storybook/addon-vitest`, running the story tests.
 - `@muirjs/shadowcat-storybook`, for its CSF ignorer and its `muir-shadowcat-storybook` ignorer and reporter. Its README describes

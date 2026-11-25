@@ -6,8 +6,16 @@ import { join, relative, resolve, sep } from 'node:path';
 import {
   muirMoiraStorybookField,
   muirMoiraStorybookHasRecords,
+  muirMoiraStorybookIsStoryFile,
   muirMoiraStorybookList,
+  muirMoiraStorybookOutcomeUncheckedFinding,
   muirMoiraStorybookRecordVariable,
+  muirMoiraStorybookSpyStubName,
+  muirMoiraStorybookSpyStubOutcomeName,
+  muirMoiraStorybookStoryFilePaths,
+  muirMoiraStorybookUncheckedFinding,
+  type MuirMoiraStorybookProject,
+  type MuirMoiraStorybookProjectLog,
 } from '@muirjs/moira-storybook';
 import {
   PlanKind,
@@ -25,24 +33,12 @@ import {
   type MuirShadowcatStorybookReportMutant,
   muirShadowcatStorybookSkippedOnRangeError,
 } from './interaction-hints.ts';
+import { muirShadowcatStorybookStrykerStorybookProject } from './options.ts';
 import { muirShadowcatStorybookPackageName } from './package-name.ts';
-import {
-  muirShadowcatStorybookIsStoryFile,
-  muirShadowcatStorybookStoryFilePaths,
-  muirShadowcatStorybookStrykerStorybookProject,
-  type MuirShadowcatStorybookProjectLog,
-  type MuirShadowcatStorybookProject,
-} from './storybook-project.ts';
 import {
   muirShadowcatStorybookSiteFindings,
   type MuirShadowcatStorybookSiteFinding,
 } from './stub-findings.ts';
-import {
-  muirShadowcatStorybookOutcomeUncheckedFinding,
-  muirShadowcatStorybookSpyStubName,
-  muirShadowcatStorybookSpyStubOutcomeName,
-  muirShadowcatStorybookUncheckedFinding,
-} from './stub-verdict.ts';
 
 export interface MuirShadowcatStorybookReport {
   readonly findings: readonly StubFinding[];
@@ -53,8 +49,8 @@ export interface MuirShadowcatStorybookReport {
 type StubFinding =
   | (MuirShadowcatStorybookSiteFinding & { readonly file: string })
   | ((
-      | typeof muirShadowcatStorybookUncheckedFinding
-      | typeof muirShadowcatStorybookOutcomeUncheckedFinding
+      | typeof muirMoiraStorybookUncheckedFinding
+      | typeof muirMoiraStorybookOutcomeUncheckedFinding
     ) & {
       readonly file: string;
       readonly line: number;
@@ -89,7 +85,7 @@ interface PlanEvent {
 
 export function muirShadowcatStorybookReporter(
   options: object,
-  log: MuirShadowcatStorybookProjectLog,
+  log: MuirMoiraStorybookProjectLog,
 ) {
   let staticStoryMutants: readonly StaticStoryMutant[] = [];
   const recordFile = join(
@@ -97,7 +93,7 @@ export function muirShadowcatStorybookReporter(
     `muir-storybook-records-${randomUUID()}.jsonl`,
   );
   process.env[muirMoiraStorybookRecordVariable] = recordFile;
-  const storybook = (): MuirShadowcatStorybookProject =>
+  const storybook = (): MuirMoiraStorybookProject =>
     muirShadowcatStorybookStrykerStorybookProject(options, log);
 
   return {
@@ -121,7 +117,7 @@ export function muirShadowcatStorybookReporter(
       staticStoryMutants = mutantPlans.flatMap((plan) =>
         plan.plan === PlanKind.Run &&
         plan.mutant.static === true &&
-        muirShadowcatStorybookIsStoryFile(storybook(), plan.mutant.fileName)
+        muirMoiraStorybookIsStoryFile(storybook(), plan.mutant.fileName)
           ? [
               {
                 file: projectPath(plan.mutant.fileName),
@@ -211,14 +207,14 @@ function consoleBlock({
 
 function stubFindings(
   files: ReportInput['files'],
-  project: MuirShadowcatStorybookProject,
+  project: MuirMoiraStorybookProject,
   warn: (message: string) => void,
 ): readonly StubFinding[] {
   const storyFiles = new Set([
     ...Object.keys(files).filter((file) =>
-      muirShadowcatStorybookIsStoryFile(project, resolve(file)),
+      muirMoiraStorybookIsStoryFile(project, resolve(file)),
     ),
-    ...muirShadowcatStorybookStoryFilePaths(project).map(projectPath),
+    ...muirMoiraStorybookStoryFilePaths(project).map(projectPath),
   ]);
 
   return [
@@ -246,8 +242,8 @@ function survivorFindings(
 ): readonly StubFinding[] {
   const mutantsOf = (
     mutatorName:
-      | typeof muirShadowcatStorybookSpyStubName
-      | typeof muirShadowcatStorybookSpyStubOutcomeName,
+      | typeof muirMoiraStorybookSpyStubName
+      | typeof muirMoiraStorybookSpyStubOutcomeName,
     statuses: readonly MuirShadowcatStorybookReportMutant['status'][],
   ): readonly MuirShadowcatStorybookReportMutant[] =>
     mutants.filter(
@@ -255,15 +251,15 @@ function survivorFindings(
         mutant.mutatorName === mutatorName && statuses.includes(mutant.status),
     );
   const detectedRemovals = new Set(
-    mutantsOf(muirShadowcatStorybookSpyStubName, ['Killed', 'Timeout']).flatMap(
+    mutantsOf(muirMoiraStorybookSpyStubName, ['Killed', 'Timeout']).flatMap(
       pairedOutcomeSpans,
     ),
   );
   const uncheckedLines = new Set(
-    mutantsOf(muirShadowcatStorybookSpyStubName, ['Survived']).map(lineOf),
+    mutantsOf(muirMoiraStorybookSpyStubName, ['Survived']).map(lineOf),
   );
   const outcomeUncheckedLines = new Set(
-    mutantsOf(muirShadowcatStorybookSpyStubOutcomeName, ['Survived'])
+    mutantsOf(muirMoiraStorybookSpyStubOutcomeName, ['Survived'])
       .filter((mutant) => detectedRemovals.has(spanOf(mutant)))
       .map(lineOf),
   );
@@ -272,12 +268,12 @@ function survivorFindings(
     ...[...uncheckedLines].map((line) => ({
       file,
       line,
-      ...muirShadowcatStorybookUncheckedFinding,
+      ...muirMoiraStorybookUncheckedFinding,
     })),
     ...[...outcomeUncheckedLines].map((line) => ({
       file,
       line,
-      ...muirShadowcatStorybookOutcomeUncheckedFinding,
+      ...muirMoiraStorybookOutcomeUncheckedFinding,
     })),
   ];
 }
@@ -320,7 +316,7 @@ function spanKey(start: Position, end: Position): string {
 export function muirShadowcatStorybookStoryFileFindings(
   file: string,
   sourceOf: () => string,
-  project: MuirShadowcatStorybookProject,
+  project: MuirMoiraStorybookProject,
   warn: (message: string) => void,
 ): readonly StubFinding[] {
   const onUnparsable = (fileName: string, error: unknown): void =>
@@ -343,7 +339,7 @@ export function muirShadowcatStorybookStoryFileFindings(
 function excludesSpyStub(options: object): boolean {
   return muirMoiraStorybookList(
     muirMoiraStorybookField(options, 'mutator', 'excludedMutations'),
-  ).includes(muirShadowcatStorybookSpyStubName);
+  ).includes(muirMoiraStorybookSpyStubName);
 }
 
 function projectPath(fileName: string): string {

@@ -34,8 +34,22 @@
   "engines": {
     "node": ">=22.0.0"
   },
-  "devDependencies": {
+  "dependencies": {
     "@babel/parser": "7.29.11"
+  },
+  "peerDependencies": {
+    "storybook": "^10.6.0",
+    "vitest": "^4.0.0 || ^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@storybook/addon-vitest": "10.6.5",
+    "storybook": "10.6.5",
+    "vitest": "5.1.0"
   },
   "nx": {
     "tags": [

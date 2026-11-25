@@ -1,16 +1,10 @@
 import {
-  muirShadowcatStorybookDefaultTestTags,
-  type MuirShadowcatStorybookTestTags,
-} from '../../src/reset-setting.ts';
+  muirMoiraStorybookDefaultTestTags,
+  type MuirMoiraStorybookTestTags,
+} from '@muirjs/moira-storybook';
 
 /** The default tag filter in a project whose preview declares no tags. */
-export const untaggedPreviewTestTags: MuirShadowcatStorybookTestTags = {
-  ...muirShadowcatStorybookDefaultTestTags,
+export const untaggedPreviewTestTags: MuirMoiraStorybookTestTags = {
+  ...muirMoiraStorybookDefaultTestTags,
   previewTags: [],
 };
-
-export function testTags(
-  rule: Partial<MuirShadowcatStorybookTestTags>,
-): MuirShadowcatStorybookTestTags {
-  return { ...untaggedPreviewTestTags, ...rule };
-}

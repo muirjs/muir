@@ -6,13 +6,13 @@ import { join } from 'node:path';
 import { before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import {
+  muirMoiraStorybookSpyStubName,
+  muirMoiraStorybookSpyStubReason,
+} from '@muirjs/moira-storybook';
 import { muirProteusStorybookTestMutators } from '@muirjs/proteus-storybook-test';
 
 import { muirShadowcatStorybookStubIgnorer } from '../src/stub-ignorer.ts';
-import {
-  muirShadowcatStorybookSpyStubName,
-  muirShadowcatStorybookSpyStubReason,
-} from '../src/stub-verdict.ts';
 import { instrument } from './support/instrument.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -36,9 +36,7 @@ async function spyStubMutants(name: string) {
   );
 
   return mutants
-    .filter(
-      ({ mutatorName }) => mutatorName === muirShadowcatStorybookSpyStubName,
-    )
+    .filter(({ mutatorName }) => mutatorName === muirMoiraStorybookSpyStubName)
     .map(({ line, ignoreReason }) => ({ line, ignoreReason }));
 }
 
@@ -59,7 +57,7 @@ async function namedStubMutants(stub: string) {
 
   return mutants
     .filter(({ mutatorName }) =>
-      mutatorName.startsWith(muirShadowcatStorybookSpyStubName),
+      mutatorName.startsWith(muirMoiraStorybookSpyStubName),
     )
     .map(({ mutatorName, replacement }) => [mutatorName, replacement]);
 }
@@ -76,8 +74,8 @@ describe('MuirProteusStorybookTestSpyStub with the muir-shadowcat-storybook igno
 
   it('reports each SpyStub mutant at a stub the reset erases as Ignored with the erased reason', async () => {
     assert.deepEqual(await spyStubMutants('F01AllDefault'), [
-      { line: 14, ignoreReason: muirShadowcatStorybookSpyStubReason('erased') },
-      { line: 21, ignoreReason: muirShadowcatStorybookSpyStubReason('erased') },
+      { line: 14, ignoreReason: muirMoiraStorybookSpyStubReason('erased') },
+      { line: 21, ignoreReason: muirMoiraStorybookSpyStubReason('erased') },
     ]);
   });
 
@@ -85,7 +83,7 @@ describe('MuirProteusStorybookTestSpyStub with the muir-shadowcat-storybook igno
     assert.deepEqual(
       await namedStubMutants("fn().mockResolvedValue('saved')"),
       [
-        [muirShadowcatStorybookSpyStubName, 'fn()'],
+        [muirMoiraStorybookSpyStubName, 'fn()'],
         [
           'MuirProteusStorybookTestSpyStubOutcome',
           'fn().mockRejectedValue(new Error("Stryker"))',
@@ -98,7 +96,7 @@ describe('MuirProteusStorybookTestSpyStub with the muir-shadowcat-storybook igno
     assert.deepEqual(
       await namedStubMutants("fn().mockRejectedValueOnce(new Error('no'))"),
       [
-        [muirShadowcatStorybookSpyStubName, 'fn()'],
+        [muirMoiraStorybookSpyStubName, 'fn()'],
         [
           'MuirProteusStorybookTestSpyStubOutcome',
           'fn().mockResolvedValueOnce(undefined)',

@@ -6,8 +6,16 @@
 
 The code that `@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook-vite`,
 `@muirjs/proteus-storybook` and `@muirjs/proteus-storybook-test` share: reading story files (CSF) from a parsed program, finding definition-time
-spy stubs, and the transformer record. The package is internal: it is published for those packages and is not for direct use. Each of those packages
+spy stubs, the transformer record, reading a Storybook project and the stub verdict. The package is internal: it is published for those packages and is not for direct use. Each of those packages
 declares it as a regular dependency, so installing one of them installs this one. It has no Stryker peer dependency.
+
+## Requirements
+
+- Storybook 10.6 or a later 10.x minor (`storybook` peer `^10.6.0`), tested on 10.6.5. The package loads Storybook's
+  internals the first time it reads a Storybook project or a story index, so a package that only reads story files
+  never loads Storybook.
+- Vitest 4 or 5 (optional `vitest` peer), tested on 5.1.0, to read the tag filter of Storybook's Vitest addon.
+- Node.js 22 or later.
 
 ## Exports
 
@@ -35,6 +43,21 @@ declares it as a regular dependency, so installing one of them installs this one
 - `muirMoiraStorybookStubMethodOf` and `muirMoiraStorybookWrittenMethodOf`, with the types `MuirMoiraStorybookStubMethod` and `MuirMoiraStorybookWrittenStubMethod`: a spy method name read
   as a stub method and its `Once` form, and written back.
 - `muirMoiraStorybookAppendRecord`, `muirMoiraStorybookHasRecords`, `muirMoiraStorybookRecordVariable`, `muirMoiraStorybookMockTransformerPluginName`: write and read the transformer record.
+- `muirMoiraStorybookProject`, `muirMoiraStorybookIsStoryFile` and `muirMoiraStorybookStoryFilePaths`, with the types
+  `MuirMoiraStorybookProject` and `MuirMoiraStorybookProjectLog`: read one Storybook config folder once (its story
+  files, its preview's reset settings, the tag filter, and whether the mock transformer runs) and tell story files
+  from other files. The caller passes its package name, which starts every message the reader logs or throws.
+- `muirMoiraStorybookDefaultTestTags`, with the type `MuirMoiraStorybookTestTags`: the tag filter of Storybook's Vitest
+  addon, and its default.
+- `muirMoiraStorybookParseProgram`: parses a story file as Stryker's instrumenter does.
+- `muirMoiraStorybookReasonSites`, `muirMoiraStorybookStubIgnores`, `muirMoiraStorybookSpyStubReason`,
+  `muirMoiraStorybookDescribeVerdict`, `muirMoiraStorybookUnrewrittenChainReason`, `muirMoiraStorybookUncheckedFinding`,
+  `muirMoiraStorybookOutcomeUncheckedFinding`, with the types `MuirMoiraStorybookReasonSite`,
+  `MuirMoiraStorybookSpyStubReason` and `MuirMoiraStorybookStubIgnore`: the stub verdict of each definition-time stub
+  in a story file, and the reasons and fixes the `muir-shadowcat-storybook` ignorer and report give.
+- `muirMoiraStorybookShadowcatPluginName`, `muirMoiraStorybookSpyStubName`, `muirMoiraStorybookSpyStubOutcomeName`:
+  the name of the `muir-shadowcat-storybook` ignorer and reporter, and the names of the two test mutators whose
+  surviving mutants make stub findings.
 - `muirMoiraStorybookIsRecord`, `muirMoiraStorybookIsStringArray`, `muirMoiraStorybookField`, `muirMoiraStorybookList`: read values of unknown shape, such as Babel nodes.
 - `muirMoiraStorybookFileNameOf`: the path of the file a Babel path's tree was parsed from, as Stryker's instrumenter gives it.
 - `muirMoiraStorybookReadNamingStoryFile`: runs a read of one story file; an error it throws comes back naming the package and the

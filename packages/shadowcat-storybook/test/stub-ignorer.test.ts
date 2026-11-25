@@ -4,11 +4,12 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { muirShadowcatStorybookStubIgnorer } from '../src/stub-ignorer.ts';
 import {
-  muirShadowcatStorybookSpyStubReason,
-  muirShadowcatStorybookUnrewrittenChainReason,
-} from '../src/stub-verdict.ts';
+  muirMoiraStorybookSpyStubReason,
+  muirMoiraStorybookUnrewrittenChainReason,
+} from '@muirjs/moira-storybook';
+
+import { muirShadowcatStorybookStubIgnorer } from '../src/stub-ignorer.ts';
 import { instrument } from './support/instrument.ts';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
@@ -59,7 +60,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      muirShadowcatStorybookSpyStubReason('erased'),
+      muirMoiraStorybookSpyStubReason('erased'),
     ]);
   });
 
@@ -75,7 +76,7 @@ describe('stubIgnorer', () => {
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
       undefined,
-      muirShadowcatStorybookSpyStubReason('erased'),
+      muirMoiraStorybookSpyStubReason('erased'),
     ]);
   });
 
@@ -100,7 +101,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      muirShadowcatStorybookSpyStubReason('order-dependent'),
+      muirMoiraStorybookSpyStubReason('order-dependent'),
     ]);
   });
 
@@ -112,7 +113,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      muirShadowcatStorybookSpyStubReason('unknown'),
+      muirMoiraStorybookSpyStubReason('unknown'),
     ]);
   });
 
@@ -137,8 +138,8 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
-      muirShadowcatStorybookSpyStubReason('erased'),
-      muirShadowcatStorybookSpyStubReason('erased'),
+      muirMoiraStorybookSpyStubReason('erased'),
+      muirMoiraStorybookSpyStubReason('erased'),
     ]);
   });
 
@@ -184,7 +185,7 @@ describe('stubIgnorer', () => {
       );
 
       assert.deepEqual(reasonsOf("mockReturnValueOnce('stubbed')"), [
-        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
+        muirMoiraStorybookSpyStubReason('once-not-rewritten'),
       ]);
     });
 
@@ -200,7 +201,7 @@ describe('stubIgnorer', () => {
 
       assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
         undefined,
-        muirShadowcatStorybookSpyStubReason('spy-arguments-not-rewritten'),
+        muirMoiraStorybookSpyStubReason('spy-arguments-not-rewritten'),
       ]);
     });
 
@@ -231,7 +232,7 @@ describe('stubIgnorer', () => {
 
       assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
         undefined,
-        muirShadowcatStorybookSpyStubReason('chain-not-rewritten'),
+        muirMoiraStorybookSpyStubReason('chain-not-rewritten'),
       ]);
     });
 
@@ -246,8 +247,8 @@ describe('stubIgnorer', () => {
       );
 
       assert.deepEqual(reasonsOf("mockReturnValueOnce('first')"), [
-        muirShadowcatStorybookUnrewrittenChainReason,
-        muirShadowcatStorybookUnrewrittenChainReason,
+        muirMoiraStorybookUnrewrittenChainReason,
+        muirMoiraStorybookUnrewrittenChainReason,
       ]);
     });
 
@@ -263,7 +264,7 @@ describe('stubIgnorer', () => {
 
       assert.deepEqual(reasonsOf("mockReturnValue('first')"), [
         undefined,
-        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
+        muirMoiraStorybookSpyStubReason('once-not-rewritten'),
       ]);
     });
 
@@ -278,8 +279,8 @@ describe('stubIgnorer', () => {
       );
 
       assert.deepEqual(reasonsOf("mockReturnValueOnce('first')"), [
-        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
-        muirShadowcatStorybookSpyStubReason('once-not-rewritten'),
+        muirMoiraStorybookSpyStubReason('once-not-rewritten'),
+        muirMoiraStorybookSpyStubReason('once-not-rewritten'),
       ]);
     });
   });
@@ -295,7 +296,7 @@ describe('stubIgnorer', () => {
     );
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
-      muirShadowcatStorybookSpyStubReason('erased'),
+      muirMoiraStorybookSpyStubReason('erased'),
       undefined,
     ]);
   });
@@ -355,7 +356,7 @@ describe('stubIgnorer', () => {
 
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [
       undefined,
-      muirShadowcatStorybookSpyStubReason('erased'),
+      muirMoiraStorybookSpyStubReason('erased'),
     ]);
   });
 });

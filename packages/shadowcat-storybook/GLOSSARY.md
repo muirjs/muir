@@ -4,7 +4,8 @@ Stryker plugins for Storybook story files, and three Vite plugins: one rewrites 
 the mock reset, one resets module mock spies before each test, and one lets Storybook's tests run in Stryker's
 sandbox. This context covers `@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook-vite` and
 `@muirjs/moira-storybook`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
-same spy stub shape from `@muirjs/moira-storybook`, which holds the code they share.
+same spy stub shape from `@muirjs/moira-storybook`, which holds the code they share, the Storybook project reader and
+the stub verdict included.
 _Avoid_: `@layzee/storybook-csf` (the shared package's former name)
 
 ## Language

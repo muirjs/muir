@@ -31,3 +31,5 @@ without depending on a Stryker plugin package or on a package created only for s
   links to the unmutated sources.
 - The `is-record.ts` files in `@muirjs/moira-mutators` and `@muirjs/siryn-playwright` stay where
   they are; this package serves the Storybook packages only.
+- 2026-11-25: widened by [ADR-0016](0016-moira-storybook-loads-storybook-on-first-use.md). The package also holds
+  the Storybook project reader and the stub verdict, and declares `storybook` as a required peer.

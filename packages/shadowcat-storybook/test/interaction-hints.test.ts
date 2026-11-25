@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import {
   muirMoiraStorybookCsfShapes,
   muirMoiraStorybookInteractionsOf,
+  muirMoiraStorybookParseProgram,
 } from '@muirjs/moira-storybook';
 import { muirProteusStorybookTestMutators } from '@muirjs/proteus-storybook-test';
 import type { schema } from '@stryker-mutator/api/core';
@@ -19,7 +20,6 @@ import {
   muirShadowcatStorybookSkippedOnRangeError,
 } from '../src/interaction-hints.ts';
 import { muirShadowcatStorybookShapesOf } from '../src/interaction-shapes.ts';
-import { muirShadowcatStorybookParseProgram } from '../src/parse.ts';
 import { interactionHintCases } from './interaction-hint-cases.ts';
 import { instrument } from './support/instrument.ts';
 import {
@@ -171,7 +171,7 @@ describe('interactionHints', () => {
 
   it('finds at most one shape at each interaction of every case', () => {
     const overlaps = interactionHintCases.flatMap(({ id, source }) => {
-      const program = muirShadowcatStorybookParseProgram(source, file);
+      const program = muirMoiraStorybookParseProgram(source, file);
       const interactions = muirMoiraStorybookInteractionsOf(
         program,
         muirMoiraStorybookCsfShapes(program),

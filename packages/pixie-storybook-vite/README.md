@@ -17,7 +17,8 @@ README shows the full Stryker setup. The package is private and not on npm yet.
 ## Requirements
 
 - Storybook 10.6 or a later 10.x minor, tested on 10.6.5. The plugins read source text and a global that Storybook
-  sets, and import nothing from Storybook, so the package declares no `storybook` peer dependency.
+  sets, and import nothing from Storybook, so the package declares no `storybook` peer dependency. The
+  `storybook` peer of `@muirjs/moira-storybook`, which it depends on, still asks for Storybook.
 - Vite 5 to 8. The mock reset plugin also needs Vitest 4 or 5.
 - Node.js 22 or later.
 
