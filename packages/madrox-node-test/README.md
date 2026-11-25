@@ -5,7 +5,7 @@
 # @muirjs/madrox-node-test
 
 Table tests for `node:test`: `muirTestEach` and `muirTestFor` work like Vitest's `test.each` and `test.for`. It is ESM
-only, needs Node.js 22.18 or later, and is tested on Node.js 22 and 24.
+only, needs Node.js 22.18 or later, and is tested on Node.js 22, 24 and 26.
 
 ## Install
 

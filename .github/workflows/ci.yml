@@ -23,8 +23,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        # An empty value reads .node-version. 22 is the oldest major that package.json engines allows.
-        node-version: ['', '22']
+        # An empty value reads .node-version (26). 22 is the oldest major that package.json engines allows.
+        node-version: ['', '22', '24']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

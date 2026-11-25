@@ -5,8 +5,8 @@
 # @muirjs/proteus-js
 
 Extra [StrykerJS](https://stryker-mutator.io/) mutators for any JavaScript or TypeScript code: statements and literals
-that Stryker's own mutators leave alone. It is ESM only, needs Node.js 22.18 or later, and is tested on Node.js 22
-and 24. It works with any Stryker test runner. For code that uses Node.js APIs, see
+that Stryker's own mutators leave alone. It is ESM only, needs Node.js 22.18 or later, and is tested on Node.js 22,
+24 and 26. It works with any Stryker test runner. For code that uses Node.js APIs, see
 [`@muirjs/proteus-node`](../proteus-node/README.md).
 
 ## Install

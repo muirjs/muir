@@ -6,7 +6,7 @@
 
 A [StrykerJS](https://stryker-mutator.io/) test runner for `node:test`. It runs each test file in its own `node`
 process with `node:test`, so the tests run as they do under `node --test`. It is ESM only, needs Node.js 22.18 or
-later, and is tested on Node.js 22 and 24.
+later, and is tested on Node.js 22, 24 and 26.
 
 - Stryker plugin name: `muir-siryn-node-test`
 - Stryker options key: `muirSirynNodeTest`

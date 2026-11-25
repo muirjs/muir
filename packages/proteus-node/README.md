@@ -5,7 +5,7 @@
 # @muirjs/proteus-node
 
 Extra [StrykerJS](https://stryker-mutator.io/) mutators for code that uses Node.js APIs and `node:assert`. It is ESM
-only, needs Node.js 22.18 or later, and is tested on Node.js 22 and 24. It works with any Stryker test runner. To
+only, needs Node.js 22.18 or later, and is tested on Node.js 22, 24 and 26. It works with any Stryker test runner. To
 mutate test files, use [`@muirjs/proteus-node-test`](../proteus-node-test/README.md).
 
 ## Install
