@@ -308,6 +308,7 @@ describe('muir-shadowcat-react-styling', () => {
       "{{ [color]: on ? 'red' : 'blue' }}",
     ],
     ['a value that is not an object literal', "{styleOf(on ? 'red' : 'blue')}"],
+    ['a numeric key', "{{ color: on ? 'red' : 'blue', 0: on ? 'a' : 'b' }}"],
   ].forEach(([title, value]) => {
     it(`keeps the mutants of a style with ${title}`, async () => {
       await assertEvery(`export const a = <a style=${value} />;`, 'placed');

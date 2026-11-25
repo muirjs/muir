@@ -50,12 +50,6 @@ async function mutantsOf(
   }));
 }
 
-const muirProteusStorybookTestNames: ReadonlySet<string> = new Set(
-  Object.values(muirProteusStorybookTestMutatorSets)
-    .flat()
-    .map(({ name }) => name),
-);
-
 function fileOf(testCase: Case): string {
   return join(import.meta.dirname, '..', 'out', `${testCase.id}.stories.ts`);
 }
@@ -70,6 +64,11 @@ export async function mutantLinesByFile(
   mutatorName: string,
 ): Promise<ReadonlyMap<string, readonly string[]>> {
   const mutants = await mutantsOf(files);
+  const ownNames: ReadonlySet<string> = new Set(
+    Object.values(muirProteusStorybookTestMutatorSets)
+      .flat()
+      .map(({ name }) => name),
+  );
 
   return new Map(
     files.map(({ name }) => [
@@ -79,7 +78,7 @@ export async function mutantLinesByFile(
           (mutant) =>
             mutant.fileName === name &&
             (mutant.mutatorName === mutatorName ||
-              !muirProteusStorybookTestNames.has(mutant.mutatorName)),
+              !ownNames.has(mutant.mutatorName)),
         )
         .map((mutant) => mutantLine(mutant.mutatorName, mutant.replacement))
         .sort(),
