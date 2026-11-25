@@ -60,7 +60,7 @@ Extensions and utilities:
 
 - [`@muirjs/madrox-node-test`](packages/madrox-node-test/README.md): `muirTestEach` and `muirTestFor`, table
   tests for `node:test` that work like Vitest's `test.each` and `test.for`.
-- [`@muirjs/pixie-storybook`](packages/pixie-storybook/README.md): Vite plugins that keep Storybook's
+- [`@muirjs/pixie-storybook-vite`](packages/pixie-storybook-vite/README.md): Vite plugins that keep Storybook's
   definition-time spy stubs through its mock reset.
 
 Core, which the other packages use:

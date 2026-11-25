@@ -886,7 +886,7 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [
-        "warn: @muirjs/shadowcat-storybook: the mock transformer rewrote stubs during the dry run, but the Storybook main file's viteFinal does not add muirPixieStorybookMockTransformerPlugin(), so the muir-shadowcat-storybook ignorer treated repaired stubs as erased; add the plugin through viteFinal",
+        "warn: @muirjs/shadowcat-storybook: the mock transformer rewrote stubs during the dry run, but the Storybook main file's viteFinal does not add muirPixieStorybookViteMockTransformerPlugin(), so the muir-shadowcat-storybook ignorer treated repaired stubs as erased; add the plugin through viteFinal",
       ],
     );
   });
@@ -899,7 +899,7 @@ describe('storybookReporter', () => {
     assert.deepEqual(
       lines.filter((line) => line.startsWith('warn: ')),
       [
-        "warn: @muirjs/shadowcat-storybook: the Storybook main file's viteFinal adds muirPixieStorybookMockTransformerPlugin(), but it rewrote no stub during the dry run, so the muir-shadowcat-storybook ignorer may have kept stubs that the mock reset erases; check that the test run uses the Storybook Vite config, or ignore this if no story file stubs a spy outside a function",
+        "warn: @muirjs/shadowcat-storybook: the Storybook main file's viteFinal adds muirPixieStorybookViteMockTransformerPlugin(), but it rewrote no stub during the dry run, so the muir-shadowcat-storybook ignorer may have kept stubs that the mock reset erases; check that the test run uses the Storybook Vite config, or ignore this if no story file stubs a spy outside a function",
       ],
     );
   });

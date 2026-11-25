@@ -2,7 +2,7 @@
 
 Stryker plugins for Storybook story files, and three Vite plugins: one rewrites definition-time stubs so they survive
 the mock reset, one resets module mock spies before each test, and one lets Storybook's tests run in Stryker's
-sandbox. This context covers `@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook` and
+sandbox. This context covers `@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook-vite` and
 `@muirjs/moira-storybook`: the transformer exists only to rewrite the stubs this package diagnoses, and both read the
 same spy stub shape from `@muirjs/moira-storybook`, which holds the code they share.
 _Avoid_: `@layzee/storybook-csf` (the shared package's former name)
@@ -297,7 +297,7 @@ _Avoid_: slow mutant
 ### Plugins
 
 **Mock transformer**:
-The Vite plugin `muir-pixie-storybook-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
+The Vite plugin `muir-pixie-storybook-vite-mock-transformer` that rewrites each definition-time stub into `fn(implementation)`
 form, which survives the mock reset. It rewrites a stub only when it is the first of its chain, not one of the
 `Once` forms, and on a spy call that takes no arguments (`fn()`, not `fn(impl)`, as the rewrite would replace them),
 and keeps every other call of the chain in place. It moves the stub's arguments into `fn(...)`, so they
@@ -310,7 +310,7 @@ verdict `chain-not-rewritten`, and an erased first stub on a spy call that takes
 _Avoid_: stub rewriter, mock plugin
 
 **Mock reset plugin**:
-The Vite plugin `muir-pixie-storybook-mock-reset` that resets every module mock spy before each test, in every run of the
+The Vite plugin `muir-pixie-storybook-vite-mock-reset` that resets every module mock spy before each test, in every run of the
 Vitest configuration, so a story that relies on a module mock leak fails in every run, not only under Stryker.
 _Avoid_: module mock reset plugin, reset plugin
 

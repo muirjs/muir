@@ -5,10 +5,10 @@ import { type TestContext, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
-  muirPixieStorybookMockResetPlugin,
-  muirPixieStorybookMockResetConfig,
+  muirPixieStorybookViteMockResetPlugin,
+  muirPixieStorybookViteMockResetConfig,
 } from '../src/mock-reset.ts';
-import { muirPixieStorybookResetModuleMockSpies } from '../src/module-mock-spies.ts';
+import { muirPixieStorybookViteResetModuleMockSpies } from '../src/module-mock-spies.ts';
 
 const registryKey = '__STORYBOOK_MODULE_MOCK_SPIES__';
 
@@ -31,18 +31,18 @@ function setRegistry(t: TestContext, registry: unknown): void {
   });
 }
 
-describe('muirPixieStorybookMockResetPlugin', () => {
-  it('is named muir-pixie-storybook-mock-reset', () => {
+describe('muirPixieStorybookViteMockResetPlugin', () => {
+  it('is named muir-pixie-storybook-vite-mock-reset', () => {
     assert.equal(
-      muirPixieStorybookMockResetPlugin().name,
-      'muir-pixie-storybook-mock-reset',
+      muirPixieStorybookViteMockResetPlugin().name,
+      'muir-pixie-storybook-vite-mock-reset',
     );
   });
 
   it('adds the setup module as Vite resolves its config', () => {
     assert.equal(
-      muirPixieStorybookMockResetPlugin().config,
-      muirPixieStorybookMockResetConfig,
+      muirPixieStorybookViteMockResetPlugin().config,
+      muirPixieStorybookViteMockResetConfig,
     );
   });
 });
@@ -59,7 +59,7 @@ describe('mockResetConfig', () => {
 
   it('adds the setup module that resets the spies before each test', () => {
     assert.deepEqual(
-      muirPixieStorybookMockResetConfig({ root: packageRoot }).test,
+      muirPixieStorybookViteMockResetConfig({ root: packageRoot }).test,
       {
         setupFiles: [setupFile],
       },
@@ -70,7 +70,7 @@ describe('mockResetConfig', () => {
   // Browser mode serves setup files through the dev server, which refuses a linked package outside fs.allow.
   it("allows the setup module's folder beside the workspace root Vite allows when the config sets no fs.allow", () => {
     assert.deepEqual(
-      muirPixieStorybookMockResetConfig({ root: packageRoot }).server,
+      muirPixieStorybookViteMockResetConfig({ root: packageRoot }).server,
       {
         fs: { allow: [repositoryRoot, setupFolder] },
       },
@@ -79,7 +79,7 @@ describe('mockResetConfig', () => {
 
   it("adds only the setup module's folder to an fs.allow the config sets, so that it widens nothing else", () => {
     assert.deepEqual(
-      muirPixieStorybookMockResetConfig({
+      muirPixieStorybookViteMockResetConfig({
         root: packageRoot,
         server: { fs: { allow: ['src'] } },
       }).server,
@@ -88,7 +88,7 @@ describe('mockResetConfig', () => {
   });
 
   it('finds the workspace root from the working directory when the config sets no root', () => {
-    assert.deepEqual(muirPixieStorybookMockResetConfig({}).server, {
+    assert.deepEqual(muirPixieStorybookViteMockResetConfig({}).server, {
       fs: { allow: [repositoryRoot, setupFolder] },
     });
   });
@@ -98,7 +98,7 @@ describe('resetModuleMockSpies', () => {
   it('does nothing when no story module has loaded storybook/test', (t) => {
     setRegistry(t, undefined);
 
-    assert.doesNotThrow(() => muirPixieStorybookResetModuleMockSpies());
+    assert.doesNotThrow(() => muirPixieStorybookViteResetModuleMockSpies());
   });
 
   it("resets every spy that sb.mock put in Storybook's registry", (t) => {
@@ -106,7 +106,7 @@ describe('resetModuleMockSpies', () => {
     const spy = (name: string) => ({ mockReset: () => resets.push(name) });
     setRegistry(t, new Set([spy('getName'), spy('getUser')]));
 
-    muirPixieStorybookResetModuleMockSpies();
+    muirPixieStorybookViteResetModuleMockSpies();
 
     assert.deepEqual(resets, ['getName', 'getUser']);
   });
@@ -114,7 +114,7 @@ describe('resetModuleMockSpies', () => {
   it('names the registry when it holds something other than a spy', (t) => {
     setRegistry(t, new Set([{}]));
 
-    assert.throws(() => muirPixieStorybookResetModuleMockSpies(), {
+    assert.throws(() => muirPixieStorybookViteResetModuleMockSpies(), {
       name: 'TypeError',
       message: /__STORYBOOK_MODULE_MOCK_SPIES__/,
     });
@@ -123,7 +123,7 @@ describe('resetModuleMockSpies', () => {
   it('names the registry when it holds a value that is not an object', (t) => {
     setRegistry(t, new Set(['getName']));
 
-    assert.throws(() => muirPixieStorybookResetModuleMockSpies(), {
+    assert.throws(() => muirPixieStorybookViteResetModuleMockSpies(), {
       name: 'TypeError',
       message: /__STORYBOOK_MODULE_MOCK_SPIES__/,
     });
@@ -134,7 +134,7 @@ describe('resetModuleMockSpies', () => {
     const spy = Object.assign(() => undefined, { mockReset: () => resets++ });
     setRegistry(t, new Set([spy]));
 
-    muirPixieStorybookResetModuleMockSpies();
+    muirPixieStorybookViteResetModuleMockSpies();
 
     assert.equal(resets, 1);
   });

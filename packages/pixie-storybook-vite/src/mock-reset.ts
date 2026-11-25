@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { type Plugin, type UserConfig, searchForWorkspaceRoot } from 'vite';
 import type { ViteUserConfig } from 'vitest/config';
 
-export function muirPixieStorybookMockResetPlugin(): Plugin {
+export function muirPixieStorybookViteMockResetPlugin(): Plugin {
   return {
-    name: 'muir-pixie-storybook-mock-reset',
-    config: muirPixieStorybookMockResetConfig,
+    name: 'muir-pixie-storybook-vite-mock-reset',
+    config: muirPixieStorybookViteMockResetConfig,
   };
 }
 
@@ -16,7 +16,7 @@ export function muirPixieStorybookMockResetPlugin(): Plugin {
  * files through the dev server, which refuses a linked package outside that list. A config without the list gets the
  * workspace root Vite would allow by itself, since Vite stops adding it once the list is set.
  */
-export function muirPixieStorybookMockResetConfig(
+export function muirPixieStorybookViteMockResetConfig(
   config: UserConfig,
 ): ViteUserConfig {
   const setupFile = fileURLToPath(

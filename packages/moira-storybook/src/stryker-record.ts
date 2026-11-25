@@ -2,7 +2,7 @@ import { appendFileSync, existsSync } from 'node:fs';
 import { relative, sep } from 'node:path';
 
 export const muirMoiraStorybookMockTransformerPluginName =
-  'muir-pixie-storybook-mock-transformer';
+  'muir-pixie-storybook-vite-mock-transformer';
 
 export const muirMoiraStorybookRecordVariable = 'MUIR_MOIRA_STORYBOOK_RECORD';
 

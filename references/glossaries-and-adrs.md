@@ -27,7 +27,7 @@
   code cannot show, and an alternative that was rejected for a reason someone would miss.
 - Put a decision that spans contexts in `docs/adr/`, and a decision inside one context in the `docs/adr/` next to
   that context's `GLOSSARY.md`, such as `packages/shadowcat-storybook/docs/adr/` for the Storybook context, which also
-  covers `pixie-storybook`.
+  covers `pixie-storybook-vite`.
 - Name the file `NNNN-slug.md` with the next number in that folder. Numbers are never reused.
 - Start with a short title, then one to three sentences: the context, the decision, and why. Add a
   `Considered Options` section only when a reader would propose the rejected option again, and `Consequences` only

@@ -90,10 +90,10 @@ export const configs: readonly StrykerConfigRow[] = [
     mutate: ['packages/moira-storybook/src/**/*.ts'],
   },
   {
-    file: 'packages/pixie-storybook/stryker.config.mjs',
-    project: '@muirjs/pixie-storybook',
+    file: 'packages/pixie-storybook-vite/stryker.config.mjs',
+    project: '@muirjs/pixie-storybook-vite',
     config: 'src',
-    mutate: ['packages/pixie-storybook/src/**/*.ts'],
+    mutate: ['packages/pixie-storybook-vite/src/**/*.ts'],
   },
   {
     file: 'packages/proteus-jsx/stryker.config.mjs',

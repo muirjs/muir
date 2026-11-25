@@ -10,9 +10,9 @@ import {
 } from '@muirjs/moira-storybook';
 import MagicString, { type SourceMap } from 'magic-string';
 
-import { muirPixieStorybookPackageName } from './package-name.ts';
+import { muirPixieStorybookVitePackageName } from './package-name.ts';
 
-export interface MuirPixieStorybookTransformResult {
+export interface MuirPixieStorybookViteTransformResult {
   readonly code: string;
   readonly map: SourceMap;
 }
@@ -27,10 +27,10 @@ const implementationWrappers: Readonly<
   mockImplementation: ['', ''],
 };
 
-export function muirPixieStorybookTransform(
+export function muirPixieStorybookViteTransform(
   code: string,
   id: string,
-): MuirPixieStorybookTransformResult | undefined {
+): MuirPixieStorybookViteTransformResult | undefined {
   const [file = id] = id.split('?');
 
   if (!/\.[cm]?[jt]sx?$/.test(file) || !code.includes('storybook/test')) {
@@ -174,7 +174,7 @@ function positionIn(
 
   if (typeof position !== 'number') {
     // Stryker disable next-line StringLiteral: no input reaches this throw; see the two token lookups that call it
-    throw new Error(`${muirPixieStorybookPackageName}: ${missing}`);
+    throw new Error(`${muirPixieStorybookVitePackageName}: ${missing}`);
   }
 
   return position;
@@ -197,7 +197,7 @@ function parseModule(
     };
   } catch (error: unknown) {
     throw new Error(
-      `${muirPixieStorybookPackageName}: cannot parse ${file}: ${error instanceof Error ? error.message : String(error)}`,
+      `${muirPixieStorybookVitePackageName}: cannot parse ${file}: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
     );
   }

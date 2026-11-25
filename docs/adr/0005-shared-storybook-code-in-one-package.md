@@ -1,6 +1,6 @@
 # The code the Storybook packages share lives in one package, `@muirjs/moira-storybook`
 
-`@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook`, `@muirjs/proteus-storybook` and
+`@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook-vite`, `@muirjs/proteus-storybook` and
 `@muirjs/proteus-storybook-test` need the same code to read story files (`csf.ts`), find definition-time spy
 stubs (`stub-shape.ts`), write and read the transformer record (`stryker-record.ts`), and read values of unknown shape
 (`is-record.ts`, `node-field.ts`). That code lives in the internal package `@muirjs/moira-storybook`, which the four

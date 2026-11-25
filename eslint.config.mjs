@@ -17,7 +17,7 @@ const playwrightProjects = [
   'tools/*.ts',
   'tools/packed-demo/**',
   'packages/moira-storybook/**',
-  'packages/pixie-storybook/**',
+  'packages/pixie-storybook-vite/**',
   'packages/proteus-jsx/**',
   'packages/proteus-msw/**',
   'packages/moira-mutators/**',

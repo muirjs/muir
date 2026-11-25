@@ -1,6 +1,6 @@
 const registryKey = '__STORYBOOK_MODULE_MOCK_SPIES__';
 
-export function muirPixieStorybookResetModuleMockSpies(): void {
+export function muirPixieStorybookViteResetModuleMockSpies(): void {
   const registry: unknown = Reflect.get(globalThis, registryKey);
 
   if (registry instanceof Set) {

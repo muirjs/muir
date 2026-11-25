@@ -176,11 +176,11 @@ jobs:
             config: src
             mutated: '!packages/moira-storybook/src/**/*.ts'
             timeout: 60
-          - project: '@muirjs/pixie-storybook'
-            slug: pixie-storybook
-            root: packages/pixie-storybook
+          - project: '@muirjs/pixie-storybook-vite'
+            slug: pixie-storybook-vite
+            root: packages/pixie-storybook-vite
             config: src
-            mutated: '!packages/pixie-storybook/src/**/*.ts'
+            mutated: '!packages/pixie-storybook-vite/src/**/*.ts'
             timeout: 60
           - project: '@muirjs/proteus-jsx'
             slug: proteus-jsx

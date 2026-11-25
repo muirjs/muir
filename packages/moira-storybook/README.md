@@ -1,6 +1,6 @@
 # @muirjs/moira-storybook
 
-The code that `@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook`,
+The code that `@muirjs/shadowcat-storybook`, `@muirjs/pixie-storybook-vite`,
 `@muirjs/proteus-storybook` and `@muirjs/proteus-storybook-test` share: reading story files (CSF) from a parsed program, finding definition-time
 spy stubs, and the transformer record. The package is internal: it is published for those packages and is not for direct use. Each of those packages
 declares it as a regular dependency, so installing one of them installs this one. It has no Stryker peer dependency.

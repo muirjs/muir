@@ -22,7 +22,7 @@ Five packages work together. This README describes the setup they share.
 | Package                          | What it adds                                                                | Where it goes                       |
 | -------------------------------- | --------------------------------------------------------------------------- | ----------------------------------- |
 | `@muirjs/shadowcat-storybook`    | the CSF ignorer, the stub ignorer, the reporter and the sandbox plugin      | both Stryker configurations; Vitest |
-| `@muirjs/pixie-storybook`        | the mock transformer and the mock reset plugin, two Vite plugins            | Storybook's `viteFinal`; Vitest     |
+| `@muirjs/pixie-storybook-vite`   | the mock transformer and the mock reset plugin, two Vite plugins            | Storybook's `viteFinal`; Vitest     |
 | `@muirjs/proteus-storybook`      | `MuirProteusStorybookArgs`, which mutates story data                        | the components configuration        |
 | `@muirjs/proteus-storybook-test` | the mutators for play functions, which turn Stryker's built-in mutators off | the story test code configuration   |
 | `@muirjs/proteus-msw`            | `MuirProteusMswResponse`, which mutates msw responses with any test runner  | a test code configuration           |
@@ -57,7 +57,7 @@ Both run the same Vitest configuration.
 
    ```ts
    // .storybook/main.ts
-   import { muirPixieStorybookMockTransformerPlugin } from '@muirjs/pixie-storybook';
+   import { muirPixieStorybookViteMockTransformerPlugin } from '@muirjs/pixie-storybook-vite';
    import type { StorybookConfig } from '@storybook/react-vite';
    import { mergeConfig } from 'vite';
 
@@ -67,7 +67,7 @@ Both run the same Vitest configuration.
      addons: ['@storybook/addon-vitest'],
      viteFinal: (viteConfig) =>
        mergeConfig(viteConfig, {
-         plugins: [muirPixieStorybookMockTransformerPlugin()],
+         plugins: [muirPixieStorybookViteMockTransformerPlugin()],
        }),
    };
 
@@ -75,20 +75,20 @@ Both run the same Vitest configuration.
    ```
 
    In `viteFinal`, the Storybook UI, the Vitest addon and the stub ignorer all see the transformer. The
-   `@muirjs/pixie-storybook` README says what it rewrites.
+   `@muirjs/pixie-storybook-vite` README says what it rewrites.
 
 2. Add the sandbox plugin and the mock reset plugin to the Vitest configuration that runs the story tests:
 
    ```ts
    // vitest.config.ts
-   import { muirPixieStorybookMockResetPlugin } from '@muirjs/pixie-storybook';
+   import { muirPixieStorybookViteMockResetPlugin } from '@muirjs/pixie-storybook-vite';
    import { muirShadowcatStorybookStrykerPlugin } from '@muirjs/shadowcat-storybook';
    import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
    import { playwright } from '@vitest/browser-playwright';
    import { defineConfig } from 'vitest/config';
 
    export default defineConfig({
-     plugins: [muirShadowcatStorybookStrykerPlugin(), muirPixieStorybookMockResetPlugin()],
+     plugins: [muirShadowcatStorybookStrykerPlugin(), muirPixieStorybookViteMockResetPlugin()],
      test: {
        projects: [
          {

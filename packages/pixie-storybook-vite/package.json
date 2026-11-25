@@ -1,5 +1,5 @@
 {
-  "name": "@muirjs/pixie-storybook",
+  "name": "@muirjs/pixie-storybook-vite",
   "version": "0.0.0",
   "private": true,
   "description": "Vite plugin that keeps Storybook's definition-time spy stubs through the default mock reset",
@@ -10,11 +10,11 @@
     "mocks",
     "spies"
   ],
-  "homepage": "https://github.com/muirjs/muir/tree/main/packages/pixie-storybook#readme",
+  "homepage": "https://github.com/muirjs/muir/tree/main/packages/pixie-storybook-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/muirjs/muir.git",
-    "directory": "packages/pixie-storybook"
+    "directory": "packages/pixie-storybook-vite"
   },
   "license": "MIT",
   "type": "module",

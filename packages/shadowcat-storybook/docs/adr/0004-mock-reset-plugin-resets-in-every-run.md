@@ -5,7 +5,7 @@ so a stub one story sets is still there when a later story renders. A story that
 full run and fails when it runs alone, which is what Stryker does for a mutant only that story covers: Stryker then
 reports the mutant Killed whatever it changes. Lars ruled that a plugin injects the reset ("Sure it does, if they
 don't know that it's an issue at all or how to fix it."), and left whether it applies only under Stryker to the
-probe result. `muirPixieStorybookMockResetPlugin()` adds a Vitest setup module that resets every spy in the registry before
+probe result. `muirPixieStorybookViteMockResetPlugin()` adds a Vitest setup module that resets every spy in the registry before
 each test, and it does so in every run of the Vitest config, Stryker's or not.
 
 ## Considered Options

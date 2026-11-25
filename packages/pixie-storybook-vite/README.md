@@ -1,10 +1,10 @@
-# @muirjs/pixie-storybook
+# @muirjs/pixie-storybook-vite
 
 Two Vite plugins that make Storybook's spies behave the same in every story test, with or without Stryker:
 
-- `muirPixieStorybookMockTransformerPlugin()`, the mock transformer, rewrites spy stubs that Storybook's mock reset would
+- `muirPixieStorybookViteMockTransformerPlugin()`, the mock transformer, rewrites spy stubs that Storybook's mock reset would
   erase into a form the reset keeps.
-- `muirPixieStorybookMockResetPlugin()`, the mock reset plugin, resets every module mock spy before each test, so a stub one
+- `muirPixieStorybookViteMockResetPlugin()`, the mock reset plugin, resets every module mock spy before each test, so a stub one
   story sets cannot leak into the next.
 
 The package has no Stryker dependency. `@muirjs/shadowcat-storybook` reads what the mock transformer did, and its
@@ -54,7 +54,7 @@ Add the plugin to `viteFinal` in Storybook's main file:
 
 ```ts
 // .storybook/main.ts
-import { muirPixieStorybookMockTransformerPlugin } from '@muirjs/pixie-storybook';
+import { muirPixieStorybookViteMockTransformerPlugin } from '@muirjs/pixie-storybook-vite';
 import type { StorybookConfig } from '@storybook/react-vite';
 import { mergeConfig } from 'vite';
 
@@ -63,7 +63,7 @@ const config: StorybookConfig = {
   framework: '@storybook/react-vite',
   viteFinal: (viteConfig) =>
     mergeConfig(viteConfig, {
-      plugins: [muirPixieStorybookMockTransformerPlugin()],
+      plugins: [muirPixieStorybookViteMockTransformerPlugin()],
     }),
 };
 
@@ -100,16 +100,16 @@ one story sets on a module mock spy is still there when a later story renders. A
 passes in a full run and fails when it runs alone. Stryker runs a story alone when only that story covers a mutant,
 and then reports the mutant Killed whatever it changes.
 
-`muirPixieStorybookMockResetPlugin()` adds a Vitest setup file that resets every spy in the registry before each test. Add
+`muirPixieStorybookViteMockResetPlugin()` adds a Vitest setup file that resets every spy in the registry before each test. Add
 it to the Vitest configuration that runs the story tests:
 
 ```ts
 // vitest.config.ts
-import { muirPixieStorybookMockResetPlugin } from '@muirjs/pixie-storybook';
+import { muirPixieStorybookViteMockResetPlugin } from '@muirjs/pixie-storybook-vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [muirPixieStorybookMockResetPlugin()],
+  plugins: [muirPixieStorybookViteMockResetPlugin()],
 });
 ```
 

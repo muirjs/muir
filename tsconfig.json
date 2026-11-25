@@ -55,7 +55,7 @@
       "path": "./packages/proteus-msw"
     },
     {
-      "path": "./packages/pixie-storybook"
+      "path": "./packages/pixie-storybook-vite"
     },
     {
       "path": "./packages/moira-storybook"

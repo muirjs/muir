@@ -7,7 +7,7 @@ export default {
     ...config,
     plugins: [
       ...(config.plugins ?? []),
-      [false, [{ name: 'muir-pixie-storybook-mock-transformer' }]],
+      [false, [{ name: 'muir-pixie-storybook-vite-mock-transformer' }]],
     ],
   }),
 };
