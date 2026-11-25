@@ -360,6 +360,25 @@ describe('stubIgnorer', () => {
     assert.deepEqual(reasonsOf("mockReturnValue('stubbed')"), [undefined]);
   });
 
+  it('names its own package in an options error', async () => {
+    const ignorer = muirShadowcatStorybookVitestStubIgnorer(
+      { muirShadowcatStorybook: { configDir: 1 } },
+      { info: () => undefined, warn: () => undefined },
+    );
+
+    await assert.rejects(
+      instrument(
+        join(fixtures, 'no-main', 'src', 'A.stories.tsx'),
+        'export const a = 1;',
+        [ignorer],
+      ),
+      {
+        message:
+          '@muirjs/shadowcat-storybook-vitest: muirShadowcatStorybook.configDir must be a string, not 1',
+      },
+    );
+  });
+
   it("counts the stories that the tag filter of Stryker's Vitest config tests", async () => {
     const content = [
       "import { fn } from 'storybook/test';",
