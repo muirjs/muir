@@ -4,9 +4,9 @@
 
 # @muirjs/proteus-node-test
 
-[StrykerJS](https://stryker-mutator.io/) mutators for mutating test files that use `node:assert` and `node:test`. It
-is ESM only, needs Node.js 22.18 or later, and is tested on Node.js 22, 24 and 26. It works with any Stryker test runner.
-To mutate production code, use [`@muirjs/proteus-node`](../proteus-node/README.md).
+[StrykerJS](https://stryker-mutator.io/) mutators for test files that use `node:assert` and `node:test`. The package
+is ESM only, needs Node.js 22.18 or later, and is tested on Node.js 22, 24 and 26. It works with any Stryker test
+runner. To mutate production code, use [`@muirjs/proteus-node`](../proteus-node/README.md).
 
 ## Install
 
@@ -28,7 +28,8 @@ list of mutators.
 
 To check that your tests' assertions can fail, mutate the test files in a configuration of their own. Call
 `muirProteusNodeTestMutators` at the top of it. It removes Stryker's 17 built-in mutators by name and adds the default
-mutators below; a mutator another package installed stays on, and one without a Muir mark gets a warning:
+mutators below. A mutator that another package installed stays on, and the call warns about each one without a Muir
+mark:
 
 ```js
 import { muirProteusNodeTestMutators } from '@muirjs/proteus-node-test';
@@ -45,22 +46,23 @@ export default {
 };
 ```
 
-The mutated test files are also the files the test runner runs, so a mutant in a test is run by that test.
+The mutated test files are also the files that the test runner runs, so the test that holds a mutant runs it.
 
 Call it in the configuration file, not through `plugins`. Stryker only warns when a module in `plugins` fails to
 load, while a failed call stops the run.
 
-The package has no opt-in or experimental mutators, so `muirProteusNodeTestMutators` takes no options and throws an
-error when it gets any. Turn a mutator off with `mutator.excludedMutations`.
+The package has no opt-in or experimental mutators, so `muirProteusNodeTestMutators` takes no options. It throws an
+error when it gets one; an option left `undefined` counts as absent. Turn a mutator off with
+`mutator.excludedMutations`.
 
-`MuirProteusNodeTestCatchAssert` moved from the experimental tier to the defaults under the
-[mutator process](https://github.com/muirjs/muir/blob/main/docs/mutator-process.md#how-a-measured-mutator-ships): on
-three repositories it placed 94 mutants, of which 80 were killed and 3 timed out, and each of its 11 survivors pointed
-at a weak check.
+`MuirProteusNodeTestCatchAssert` started as experimental and is now a default under the
+[mutator process](https://github.com/muirjs/muir/blob/main/docs/mutator-process.md#how-a-measured-mutator-ships). On
+three repositories it placed 94 mutants: 80 were killed, 3 timed out, and each of the 11 survivors pointed at a weak
+check.
 
-`MuirProteusNodeTestAssertCall` and `MuirProteusNodeTestAssertValidator` find `node:assert` and `node:test` through an ES module
-`import`, not a CommonJS `require`, so a CommonJS test file gets no mutant from them. `MuirProteusNodeTestCatchAssert` finds
-assertions by name and also counts a `require`d `assert`.
+`MuirProteusNodeTestAssertCall` and `MuirProteusNodeTestAssertValidator` find `node:assert` and `node:test` through
+an ES module `import`, not a CommonJS `require`, so a CommonJS test file gets no mutant from them.
+`MuirProteusNodeTestCatchAssert` finds assertions by name and also counts a `require`d `assert`.
 
 ### Default mutators
 

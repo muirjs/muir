@@ -62,8 +62,8 @@ name, so build names from values that the code under test does not compute.
 
 - A row that calls the code under test, such as `[30, isAdult(30)]`, puts that code's result in the name. A mutant of
   `isAdult` then renames the test that kills it. The next incremental run cannot match that test, so it runs the mutant
-  again, on every run. The results stay correct; only the time grows. Call the code under test in the test function
-  instead.
+  again, on every run. The results stay correct, but each run takes longer. Call the code under test in the test
+  function instead.
 
 Vitest's `test.each` and `test.for` behave the same way under Stryker's Vitest runner, which also names tests by their
 titles.
@@ -133,7 +133,7 @@ The package exports a type for each value its functions take or return:
 
 Chain modifiers before the table, in any order: `muirTestEach.skip`, `.only`, `.todo` and `.fails` turn their flag on.
 `.skipIf(condition)` turns `skip` on when the condition is truthy, and `.runIf(condition)` when it is falsy. As in
-Vitest, neither turns off a `skip` chained before it.
+Vitest, neither turns off a `skip` chained before or after it.
 
 ```ts
 muirTestEach.skipIf(process.platform === 'win32')([['/tmp']])('reads %s', (dir) => {

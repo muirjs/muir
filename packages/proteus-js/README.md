@@ -4,9 +4,9 @@
 
 # @muirjs/proteus-js
 
-Extra [StrykerJS](https://stryker-mutator.io/) mutators for any JavaScript or TypeScript code: statements and literals
-that Stryker's own mutators leave alone. It is ESM only, needs Node.js 22.18 or later, and is tested on Node.js 22,
-24 and 26. It works with any Stryker test runner. For code that uses Node.js APIs, see
+Extra [StrykerJS](https://stryker-mutator.io/) mutators for any JavaScript or TypeScript code. They mutate statements
+and literals that Stryker's own mutators leave alone. The package is ESM only, needs Node.js 22.18 or later, and is
+tested on Node.js 22, 24 and 26. It works with any Stryker test runner. For code that uses Node.js APIs, see
 [`@muirjs/proteus-node`](../proteus-node/README.md).
 
 ## Install
@@ -25,14 +25,17 @@ mutators the way `@muirjs/proteus-node` does; its README explains the files invo
 
 ## Mutate production code
 
-Call `muirProteusJsMutators` at the top of your Stryker configuration file, an ES module such as `stryker.config.mjs`. No
-mutator runs by default yet: `MuirProteusJsNumericLiteral` is opt-in and `MuirProteusJsAssignmentStatement` is experimental. This call
-turns on both:
+Call `muirProteusJsMutators` at the top of your Stryker configuration file, an ES module such as
+`stryker.config.mjs`. No mutator runs by default yet: `MuirProteusJsNumericLiteral` is opt-in and
+`MuirProteusJsAssignmentStatement` is experimental. This call turns on both:
 
 ```js
 import { muirProteusJsMutators } from '@muirjs/proteus-js';
 
-await muirProteusJsMutators({ MuirProteusJsNumericLiteral: true, experimental: { MuirProteusJsAssignmentStatement: true } });
+await muirProteusJsMutators({
+  MuirProteusJsNumericLiteral: true,
+  experimental: { MuirProteusJsAssignmentStatement: true },
+});
 
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
@@ -52,15 +55,16 @@ await muirProteusJsMutators({ extended: true, experimental: true });
 - An experimental mutator has been measured on too few projects to run by default, and may change or go in a minor
   release. Turn one on by its name inside `experimental`, or all of them with `experimental: true`.
 
-Each option takes only `true`; an option left `undefined` counts as absent. The call throws on a name it does not know, on another value than `true`, and
-on a name in the wrong place; the message says where the name belongs. Call it in the configuration file, not through
-`plugins`: Stryker only warns when a module in `plugins` fails to load, while a failed call stops the run.
+Each option takes only `true`; an option left `undefined` counts as absent. The call throws on a name it does not
+know, on a value other than `true`, and on a name in the wrong place; the message says where the name belongs. Call it
+in the configuration file, not through `plugins`. Stryker only warns when a module in `plugins` fails to load, while a
+failed call stops the run.
 
 ### Opt-in mutators
 
-| Mutator                       | What it changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MuirProteusJsNumericLiteral` | Moves an integer literal by 1 each way, including 0 and 1, as an off-by-one in a limit, an index or a count does. Stryker has no numeric mutator. A survivor is a constant that no test pins; a tuning value, such as a poll interval, gives survivors that need a disable comment with a reason. It leaves fractions, BigInts, octal literals such as the file mode `0o600`, types, enum members, property keys, every number inside the arguments of the nearest call named `kill`, such as `process.kill(pid, 0)`, `process.kill(base + 1)` or `process['kill'](pid)`, and the `uid` and `gid` values of an options object, such as `spawn(cmd, args, { uid: 1000 })`, alone, as a mutant there would signal a real process or run one as another user; a signal or process id held in a variable, as in `const probe = 0; process.kill(pid, probe)`, is still mutated, so give its declaration a disable comment. It also leaves the indentation of `JSON.stringify(value, null, 2)` alone, as it changes only whitespace; an indentation held in a variable or written as an expression is still mutated. |
+| Mutator                       | What it changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MuirProteusJsNumericLiteral` | Moves an integer literal by 1 each way, including 0 and 1, as an off-by-one in a limit, an index or a count does. Stryker has no numeric mutator. A survivor is a constant that no test pins; a tuning value, such as a poll interval, gives survivors that need a disable comment with a reason. It leaves fractions, BigInts, octal literals such as the file mode `0o600`, types, enum members and property keys alone. It also leaves every number inside the arguments of the nearest call named `kill`, such as `process.kill(pid, 0)`, `process.kill(base + 1)` or `process['kill'](pid)`, and the `uid` and `gid` values of an options object, such as `spawn(cmd, args, { uid: 1000 })`, because a mutant there would signal a real process or run one as another user. A signal or process id held in a variable, as in `const probe = 0; process.kill(pid, probe)`, is still mutated, so give its declaration a disable comment. The indentation of `JSON.stringify(value, null, 2)` is left alone too, as it changes only whitespace; an indentation held in a variable or written as an expression is still mutated. |
 
 ### Experimental mutators
 
@@ -98,12 +102,13 @@ The mutators' names work in Stryker's disable comments like Stryker's own mutato
 const pollMs = 100;
 ```
 
-Both mutators step back where another mutant exists, so they add no mutant on a node that another mutator mutates.
-`MuirProteusJsAssignmentStatement`, like Stryker's `CallExpression` removal of a call statement, removes a statement only when
-no other mutant shares it: `x = true;` keeps its `BooleanLiteral` mutant and gets no removal, while `x = f(a);` gets
-one. `MuirProteusJsNumericLiteral` drops its mutants of a literal that another mutator also mutates, so a mutator of a site,
-such as `MuirProteusNodeTimerDelay`'s delay of `setTimeout(f, 10)` or `MuirProteusNodeExitCode`'s `process.exitCode = 1`, takes
-precedence. An assigned number keeps the two `MuirProteusJsNumericLiteral` mutants, so `x = 1;` gets those and no removal.
+Both mutators add no mutant on a node that another mutator mutates. `MuirProteusJsAssignmentStatement`, like
+Stryker's `CallExpression` removal of a call statement, removes a statement only when no other mutant shares it:
+`x = true;` keeps its `BooleanLiteral` mutant and gets no removal, while `x = f(a);` gets one.
+`MuirProteusJsNumericLiteral` drops its mutants of a literal that another mutator also mutates, so a mutator of a
+site takes precedence, such as `MuirProteusNodeTimerDelay` on the delay of `setTimeout(f, 10)` or
+`MuirProteusNodeExitCode` on `process.exitCode = 1`. An assigned number keeps the two `MuirProteusJsNumericLiteral`
+mutants, so `x = 1;` gets those and no removal.
 A mutant of a nearby node can still behave the same: `x > 2` moved to `x > 1` acts like Stryker's `x >= 2` for
 integers, and without the Node.js mutators `setTimeout(f, 0)` gets delays of 1 and -1, which Node.js runs like 0.
 

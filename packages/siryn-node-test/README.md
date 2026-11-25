@@ -153,8 +153,8 @@ once per run as under `node --test`.
     the signal itself.
   - A worker thread that `worker.terminate()` ends, and on Windows a child process that anything ends, counts up to
     its last write: in the dry run, each such process writes its coverage every 250 ms.
-  - Lost: what such a process covered in its last 250 ms, what a process that SIGKILL ends covered since its last
-    write, and what a process whose event loop is busy when it is ended covered since its last write.
+  - The runner loses what such a process covered in its last 250 ms. It also loses what a process covered since its
+    last write when SIGKILL ends it, or when its event loop is busy as it ends.
     A lost hit can make a mutant that another test also reaches come out Survived, as Stryker then runs only that
     other test.
   - When a test file's process exits, the runner ends the processes its tests left running. On Linux and macOS, it
@@ -184,8 +184,9 @@ once per run as under `node --test`.
   Stryker's `timeoutFactor` and `timeoutMS`. A run that ends this way is a `Timeout` that names the deadline, and
   Stryker keeps the worker running. A mutant that runs one test of each file gets Stryker's timeout unchanged.
   The runner measures each file's start-up in the dry run: the time its run took outside its tests, from starting
-  `node` until the runner has read the file's process records and removed its temporary folder. A file without a measured start-up, such as one that
-  Stryker's `--testFiles` left out of the dry run, keeps Stryker's timeout, and the runner warns about it once.
+  `node` until the runner has read the file's process records and removed its temporary folder. A file without a
+  measured start-up, such as one that Stryker's `--testFiles` left out of the dry run, keeps Stryker's timeout, and
+  the runner warns about it once.
   Both the deadline and Stryker's timeout come from the tests' times in the dry run. Tests that slow down when the
   machine is busy, such as tests that start processes, can take longer in a mutant run, where they compete with
   Stryker's checkers and the other workers. When many mutants end as `Timeout` at the deadline, raise Stryker's
@@ -386,15 +387,15 @@ If you cannot change tests that write fixed paths inside the project, set `muirS
 `true`. Each worker then copies the sandbox once as it starts, into `muir-node-test-copy-<pid>-*` beside the sandbox,
 and runs its test files there with the copy as their working directory. Links in the sandbox, such as Stryker's
 `node_modules` link, are linked again, not copied. Test names, coverage and killing tests still name the sandbox's
-files, as they do without the option, also where a test's name holds its working directory as `process.cwd()` spells it. The worker removes its
-copy when it ends, and the next worker started with the option removes copies that killed workers left. That clean-up
-goes by process id, so a container and its host that share one checkout can remove each other's copies; give each its
-own checkout. The option refuses to run with Stryker's `inPlace`, where the sandbox is the project itself.
+files, as they do without the option. This holds also where a test's name holds its working directory as
+`process.cwd()` spells it. The worker removes its copy when it ends, and the next worker started with the option
+removes copies that killed workers left. That clean-up goes by process id, so a container and its host that share one
+checkout can remove each other's copies; give each its own checkout. The option refuses to run with Stryker's
+`inPlace`, where the sandbox is the project itself.
 
-Measured on 2026-11-06 on Windows, on fast-json-stringify, whose standalone-mode test writes into `test/fixtures`: 5
-runs at concurrency 6 without the
-option each gave 0 to 2 mutants a status that differed from a run at concurrency 1, all of them kills by that test.
-With the option, no mutant differed in 5 runs. It cost:
+Measured on 2026-11-06 on Windows, on fast-json-stringify, whose standalone-mode test writes into `test/fixtures`:
+each of 5 runs at concurrency 6 without the option gave 0 to 2 mutants a status that differed from a run at
+concurrency 1, all of them kills by that test. With the option, no mutant differed in 5 runs. It cost:
 
 - about 5% wall clock: a median of 86.3 s against 82.2 s;
 - one copy of the sandbox without `node_modules` per worker, about 48 MB each there, and 158 to 323 ms to make it.
@@ -436,8 +437,8 @@ When the test files run under Node.js's permission model (`--permission`), give 
 
 The runner keeps its run directories in `os.tmpdir()`, named `muir-node-test-*`, and removes them when the run
 ends. Each test file's process gets its own empty folder there as `TMPDIR`, `TEMP` and `TMP`, so `os.tmpdir()` in a
-test returns that folder, which is removed when the file ends. Which test files the dry run ran, and what it measured
-of each, its memory peak and its start-up, is kept in `muir-node-test-dry-run-<pid>-store` and stays until Stryker's
-own process exits, as the mutant runs read it.
+test returns that folder, which is removed when the file ends. The dry run keeps which test files it ran, the memory
+peak and start-up of each, and the mutants it reached outside every test in `muir-node-test-dry-run-<pid>-store`.
+The mutant runs read that folder, so it stays until Stryker's own process exits.
 When Stryker is killed instead, the next run removes it, as it removes any directory that a crashed run left behind.
 With `maxMemoryMB` set, the runner records no peaks.

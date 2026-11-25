@@ -1,7 +1,7 @@
 # Table tests
 
-`muirTestEach` and `muirTestFor`: Vitest's `test.each` and `test.for` for node:test, which turn a table of cases into one
-test per case.
+`muirTestEach` and `muirTestFor`: Vitest's `test.each` and `test.for` for node:test, which turn a table of cases into
+one test per case.
 
 ## Language
 
