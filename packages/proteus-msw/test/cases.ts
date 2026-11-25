@@ -335,6 +335,12 @@ export const cases: readonly Case[] = [
     expect: [],
   },
   {
+    id: 'optional-call',
+    title: 'an optional call of a factory is no site',
+    source: inHandler('return HttpResponse.json?.({ a: 1 });'),
+    expect: [],
+  },
+  {
     id: 'new-other-global',
     title: 'new of a global class that is not Response is no site',
     source: inHandler("return new Blob(['a']);"),
