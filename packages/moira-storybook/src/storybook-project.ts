@@ -197,12 +197,10 @@ export function muirMoiraStorybookStoryFilePaths(
 }
 
 function normalizePath(path: string): string {
-  return (
-    path
-      .replaceAll('\\', '/')
-      // Stryker disable next-line MethodExpression: only a Windows path starts with a drive letter, and CI mutates on Linux
-      .replace(/^[a-z]:/, (drive) => drive.toUpperCase())
-  );
+  const slashed = path.replaceAll('\\', '/');
+
+  // Stryker disable next-line all: only a Windows path starts with a drive letter and holds no other colon, and CI mutates on Linux
+  return slashed.replace(/^[a-z]:/, (drive) => drive.toUpperCase());
 }
 
 function fallbackProject(

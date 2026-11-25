@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { isAbsolute, join, relative } from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -111,6 +111,33 @@ describe('storybookProject', () => {
           file('src', 'Button.stories.cts'),
         ),
         false,
+      );
+    });
+
+    it('lists the story files under the working directory, outside node_modules, as absolute paths', (t) => {
+      const { project } = setup('no-main');
+      const root = mkdtempSync(join(tmpdir(), 'muir-story-file-paths-'));
+      const cwd = process.cwd();
+      t.after(() => {
+        process.chdir(cwd);
+        rmSync(root, { recursive: true, force: true });
+      });
+      for (const file of [
+        ['src', 'A.stories.tsx'],
+        ['src', 'A.tsx'],
+        ['node_modules', 'lib', 'B.stories.tsx'],
+      ]) {
+        mkdirSync(join(root, ...file.slice(0, -1)), { recursive: true });
+        writeFileSync(join(root, ...file), '');
+      }
+      process.chdir(root);
+
+      assert.deepEqual(
+        muirMoiraStorybookStoryFilePaths(project).map((path) => [
+          isAbsolute(path),
+          relative(root, path),
+        ]),
+        [[true, join('src', 'A.stories.tsx')]],
       );
     });
 

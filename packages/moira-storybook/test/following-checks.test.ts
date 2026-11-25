@@ -25,6 +25,14 @@ const followingCases: readonly FollowingCase[] = [
     expect: [{ checks: ['query'], end: 'none' }],
   },
   {
+    title: 'a failing query called by its bare name is a check',
+    source: inPlay(
+      'await userEvent.click(open);',
+      "await findByRole('dialog');",
+    ),
+    expect: [{ checks: ['query'], end: 'none' }],
+  },
+  {
     title: 'an expect call after an interaction is one of its following checks',
     source: inPlay(
       'await userEvent.click(open);',

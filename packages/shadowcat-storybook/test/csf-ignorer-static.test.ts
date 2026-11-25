@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
 import {
   containerReason,
   metaReason,
@@ -8,8 +9,24 @@ import {
   staticReason,
   testReason,
 } from './support/csf-ignorer.ts';
+import { instrument } from './support/instrument.ts';
 
 describe('muir-shadowcat-storybook-csf', () => {
+  it('names its own package in an options error', async () => {
+    const ignorer = muirShadowcatStorybookCsfIgnorer(
+      { muirShadowcatStorybook: { configDir: 1 } },
+      { info: () => undefined, warn: () => undefined },
+    );
+
+    await assert.rejects(
+      instrument('src/a.stories.tsx', 'export const a = 1;', [ignorer]),
+      {
+        message:
+          '@muirjs/shadowcat-storybook: muirShadowcatStorybook.configDir must be a string, not 1',
+      },
+    );
+  });
+
   it('keeps the meta title as written', async () => {
     const { outcomes } = setup('mutate');
 
