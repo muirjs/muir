@@ -4,25 +4,25 @@
 
 # Muir
 
-Plugins for [StrykerJS](https://stryker-mutator.io/), the mutation testing framework for JavaScript and
-TypeScript: test runners for `node:test` and Playwright Test, mutators for JSX, Node.js, Playwright,
-Storybook and msw code, and ignorers and a reporter for Storybook stories. The packages are ESM-only and
-need Node.js 22.18 or later. CI tests them on Node.js 22 and 24.
+[StrykerJS](https://stryker-mutator.io/) plugins, mutators and utilities for JavaScript, TypeScript, Node.js,
+`node:test`, Playwright, React, Storybook and msw, as well as utilities and extensions for `node:test`, Storybook
+and Vite that work without StrykerJS. The packages are ESM-only and need Node.js 22.18 or later. CI tests them on
+Node.js 22, 24 and 26.
 
 ## Package names
 
-Every package is named `@muirjs/<mutant>-<technology>`. The mutant names the kind of plugin:
+Every package is named `@muirjs/<mutant>-<technology>`. The mutant names the kind of package:
 
-| Kind of package | Family    |
-| --------------- | --------- |
-| Core            | Moira     |
-| Mutators        | Proteus   |
-| Test runners    | Siryn     |
-| Reporters       | Banshee   |
-| Ignorers        | Shadowcat |
-| Checkers        | Polaris   |
-| Extensions      | Madrox    |
-| Utilities       | Pixie     |
+| Family    | Package kind |
+| --------- | ------------ |
+| Banshee   | Reporters    |
+| Madrox    | Extensions   |
+| Moira     | Core         |
+| Pixie     | Utilities    |
+| Polaris   | Checkers     |
+| Proteus   | Mutators     |
+| Shadowcat | Ignorers     |
+| Siryn     | Test runners |
 
 Every exported symbol starts with its package's prefix, `Muir<Mutant><Technology>`, such as
 `MuirShadowcatStorybook` for `@muirjs/shadowcat-storybook`. So do the names that Stryker shows: the runner
@@ -102,4 +102,4 @@ The workspace mutation tests itself with its own packages: every package's Stryk
 
 MIT, in [LICENSE](LICENSE).
 
-The logo was created by AI using Microsoft Designer via Microsoft Copilot.
+The logo was created by Lars Gyrup Brink Nielsen using AI in Microsoft Designer via Microsoft Copilot.
