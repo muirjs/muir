@@ -1,11 +1,139 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { parseSync, types } from '@babel/core';
+
+import { muirTestEach } from '@muirjs/madrox-node-test';
 import { muirMoiraMutatorsFieldOf } from '../src/is-record.ts';
 import {
+  muirMoiraMutatorsFirstArgumentSite,
+  muirMoiraMutatorsLiteralText,
+  muirMoiraMutatorsLiteralValue,
+  muirMoiraMutatorsRoleSite,
   muirMoiraMutatorsSwapMutator,
   type MuirMoiraMutatorsSiteReader,
 } from '../src/same-file-swap.ts';
+
+/** `source` parsed as a TypeScript module. */
+function parsed(source: string): types.File {
+  const file = parseSync(source, {
+    babelrc: false,
+    configFile: false,
+    filename: 'sample.ts',
+    parserOpts: { plugins: ['typescript'] },
+  });
+  assert.ok(file);
+
+  return file;
+}
+
+/** The expression of the statement `source`, assigned so that a string literal is no directive. */
+function expressionOf(source: string): types.Expression {
+  const [statement] = parsed(`value = ${source}`).program.body;
+  assert.ok(statement?.type === 'ExpressionStatement');
+  assert.ok(statement.expression.type === 'AssignmentExpression');
+
+  return statement.expression.right;
+}
+
+describe('literalValue', () => {
+  muirTestEach([
+    ['a string literal', "'Save';", 'string:Save'],
+    ['a template literal without expressions', '`Save`;', 'string:Save'],
+    ['a template literal with an expression', '`Save ${n}`;', undefined],
+    ['a regex literal', '/^Save$/iu;', 'regex:/^Save$/iu'],
+    ['an identifier', 'Save;', undefined],
+  ])('tells %s apart by', (_title, source, expected) => {
+    assert.equal(muirMoiraMutatorsLiteralValue(expressionOf(source)), expected);
+  });
+});
+
+describe('literalText', () => {
+  muirTestEach([
+    ['a string literal', "'Save';", 'Save'],
+    ['a template literal without expressions', '`Save`;', 'Save'],
+    ['a template literal with an expression', '`Save ${n}`;', undefined],
+    ['a regex literal', '/Save/;', undefined],
+  ])('reads the text of %s', (_title, source, expected) => {
+    assert.equal(muirMoiraMutatorsLiteralText(expressionOf(source)), expected);
+  });
+
+  it('reads no text of a string literal whose value is no string, or a template literal without quasis', () => {
+    assert.equal(
+      muirMoiraMutatorsLiteralText({ type: 'StringLiteral', value: 1 }),
+      undefined,
+    );
+    assert.equal(
+      muirMoiraMutatorsLiteralText({ type: 'TemplateLiteral' }),
+      undefined,
+    );
+  });
+
+  it('reads no text of a tagged template whose escape has no cooked value', () => {
+    const tagged = expressionOf('String.raw`\\u`;');
+    assert.ok(tagged.type === 'TaggedTemplateExpression');
+
+    assert.equal(muirMoiraMutatorsLiteralText(tagged.quasi), undefined);
+  });
+});
+
+describe('roleSite', () => {
+  const read = muirMoiraMutatorsRoleSite(['getByRole', 'findByRole']);
+
+  it('reads the name of a call to one of the methods, keyed by the role', () => {
+    const call = expressionOf(
+      "screen.findByRole('button', { exact: true, name: 'Save' });",
+    );
+    const options = call.type === 'CallExpression' ? call.arguments[1] : null;
+    const name =
+      options?.type === 'ObjectExpression' ? options.properties[1] : null;
+
+    assert.deepEqual(read(call), {
+      key: 'role:string:button',
+      value: 'string:Save',
+      node: name?.type === 'ObjectProperty' ? name.value : null,
+    });
+  });
+
+  muirTestEach([
+    ['another method', "screen.getByText('button', { name: 'Save' });"],
+    [
+      'a role that is no string literal',
+      "screen.getByRole(role, { name: 'Save' });",
+    ],
+    [
+      'a role in a template literal',
+      "screen.getByRole(`button`, { name: 'Save' });",
+    ],
+    ['a name that is no literal', "screen.getByRole('button', { name });"],
+    ['no options', "screen.getByRole('button');"],
+  ])('reads no site of a call with %s', (_title, source) => {
+    assert.equal(read(expressionOf(source)), undefined);
+  });
+});
+
+describe('firstArgumentSite', () => {
+  const read = muirMoiraMutatorsFirstArgumentSite(['fill', 'type']);
+
+  it('reads the first argument of a call to one of the methods, keyed by the method', () => {
+    const call = expressionOf("input.type('Ada', { delay: 10 });");
+    const [argument] = call.type === 'CallExpression' ? call.arguments : [];
+
+    assert.deepEqual(read(call), {
+      key: 'type',
+      value: 'string:Ada',
+      node: argument,
+    });
+  });
+
+  muirTestEach([
+    ['another method', "input.press('Ada');"],
+    ['a first argument that is no literal', 'input.fill(name);'],
+    ['a callee that is no member', "fill('Ada');"],
+  ])('reads no site of a call to %s', (_title, source) => {
+    assert.equal(read(expressionOf(source)), undefined);
+  });
+});
 
 interface Literal {
   readonly type: 'Literal';
@@ -154,5 +282,28 @@ describe('swapMutator', () => {
     const swap = muirMoiraMutatorsSwapMutator('Swap', '', readArgument);
 
     assert.deepEqual([...swap.mutate({ node: literal(0, 'a') }, t)], []);
+  });
+
+  it('finds the sites of a parsed file, under statements and inside other calls', () => {
+    const ast = parsed(
+      "await input.fill('Ada');\nexpect(await input.fill('Grace')).toBe(true);",
+    );
+    const swap = muirMoiraMutatorsSwapMutator(
+      'Swap',
+      '',
+      muirMoiraMutatorsFirstArgumentSite(['fill']),
+    );
+    const literals: types.StringLiteral[] = [];
+    types.traverseFast(ast.program, (node) => {
+      if (node.type === 'StringLiteral') {
+        literals.push(node);
+      }
+    });
+    const [ada, grace] = literals;
+
+    assert.deepEqual(
+      [...swap.mutate({ hub: { file: { ast } }, node: ada }, types)],
+      [types.cloneNode(grace)],
+    );
   });
 });

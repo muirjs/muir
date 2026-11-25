@@ -94,6 +94,25 @@ describe('removeBuiltIns', () => {
     assert.equal(warnings.length, 1);
   });
 
+  it('warns about an entry whose only symbol is not registered', () => {
+    const unregistered = {
+      ...listed('UnregisteredMutator'),
+      [Symbol('@muirjs/mutators')]: 1,
+    };
+    const warnings: string[] = [];
+
+    muirMoiraMutatorsRemoveBuiltIns(
+      packageName,
+      fakeInstrumenter([
+        ...muirMoiraMutatorsBuiltInNames.map(listed),
+        unregistered,
+      ]),
+      (message) => warnings.push(message),
+    );
+
+    assert.equal(warnings.length, 1);
+  });
+
   it('does not warn when none of the built-ins is present, as nothing is removed', () => {
     const warnings: string[] = [];
 

@@ -93,6 +93,7 @@ export function muirMoiraMutatorsLiteralValue(
     }
     case 'RegExpLiteral':
       return `regex:/${String(muirMoiraMutatorsFieldOf(node, 'pattern'))}/${String(muirMoiraMutatorsFieldOf(node, 'flags'))}`;
+    // Stryker disable next-line ConditionalExpression: without the default case the function ends and returns undefined all the same
     default:
       return undefined;
   }

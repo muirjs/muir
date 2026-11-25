@@ -5,9 +5,14 @@ import { parseSync, traverse, types, type NodePath } from '@babel/core';
 
 import { muirTestEach } from '@muirjs/madrox-node-test';
 import {
+  muirMoiraMutatorsArgumentOf,
   muirMoiraMutatorsAwaited,
   muirMoiraMutatorsCalleeRoot,
+  muirMoiraMutatorsFindProperty,
   muirMoiraMutatorsImportOf,
+  muirMoiraMutatorsIsMember,
+  muirMoiraMutatorsMemberNameOf,
+  muirMoiraMutatorsPropertyKey,
   muirMoiraMutatorsPropertyName,
 } from '../src/ast.ts';
 
@@ -123,5 +128,101 @@ describe('muirMoiraMutatorsAwaited', () => {
     const call = types.callExpression(types.identifier('f'), []);
 
     assert.equal(muirMoiraMutatorsAwaited(call), call);
+  });
+});
+
+/** The object literal that the first call in `source` takes as its first argument. */
+function firstObject(source: string): types.ObjectExpression {
+  const [object] = firstCall(source).node.arguments;
+  assert.ok(object?.type === 'ObjectExpression');
+
+  return object;
+}
+
+describe('muirMoiraMutatorsIsMember', () => {
+  muirTestEach([
+    ['a member', 'a.b();', true],
+    ['an optional member', '(a?.b)();', true],
+    ['a computed member', "a['b']();", true],
+    ['an identifier', 'b();', false],
+  ])('tells whether %s is a member', (_title, source, expected) => {
+    assert.equal(
+      muirMoiraMutatorsIsMember(firstCall(source).node.callee),
+      expected,
+    );
+  });
+});
+
+describe('muirMoiraMutatorsMemberNameOf', () => {
+  muirTestEach([
+    ['a member', 'a.b();', 'b'],
+    ['an optional member', '(a?.b)();', 'b'],
+    ['a computed member', 'a[b]();', undefined],
+    ['an identifier', 'b();', undefined],
+  ])('names the property of %s', (_title, source, expected) => {
+    assert.equal(
+      muirMoiraMutatorsMemberNameOf(firstCall(source).node.callee),
+      expected,
+    );
+  });
+
+  it('names nothing for a node of another type with the fields of a member', () => {
+    assert.equal(
+      muirMoiraMutatorsMemberNameOf({
+        type: 'ObjectProperty',
+        computed: false,
+        property: { name: 'b' },
+      }),
+      undefined,
+    );
+  });
+});
+
+describe('muirMoiraMutatorsArgumentOf', () => {
+  it('gives the argument at the index', () => {
+    const call = firstCall('f(x, y);').node;
+
+    assert.equal(muirMoiraMutatorsArgumentOf(call, 1), call.arguments[1]);
+  });
+
+  it('gives undefined past the last argument, or for a node that is no call', () => {
+    const call = firstCall('f(x);').node;
+
+    assert.equal(muirMoiraMutatorsArgumentOf(call, 1), undefined);
+    assert.equal(muirMoiraMutatorsArgumentOf(call.callee, 0), undefined);
+  });
+});
+
+describe('muirMoiraMutatorsPropertyKey', () => {
+  it('gives the name of an identifier key and the value of a literal key, and nothing for a computed key', () => {
+    const object = firstObject("f({ a: 1, 'b': 2, 3: 3, [c]: 4 });");
+
+    assert.deepEqual(object.properties.map(muirMoiraMutatorsPropertyKey), [
+      'a',
+      'b',
+      3,
+      undefined,
+    ]);
+  });
+});
+
+describe('muirMoiraMutatorsFindProperty', () => {
+  it('finds the property whose key is the key', () => {
+    const object = firstObject("f({ role: 'button', name: 'Save' });");
+
+    assert.equal(
+      muirMoiraMutatorsFindProperty(object, 'name'),
+      object.properties[1],
+    );
+  });
+
+  it('finds nothing for a key the object lacks, or in a node that is no object', () => {
+    const object = firstObject("f({ role: 'button' });");
+
+    assert.equal(muirMoiraMutatorsFindProperty(object, 'name'), undefined);
+    assert.equal(
+      muirMoiraMutatorsFindProperty(types.identifier('name'), 'name'),
+      undefined,
+    );
   });
 });
