@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 
 import { muirShadowcatStorybookCsfIgnorer } from '../../src/csf-ignorer.ts';
-import { instrument } from './instrument.ts';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 const configDir = fileURLToPath(
   new URL(
@@ -31,11 +31,11 @@ export function setup(play?: 'ignore' | 'mutate') {
 
   return {
     outcomes: async (code: string, fileName = 'src/a.stories.tsx') =>
-      (await instrument(fileName, code, [ignorer])).mutants.map(
+      (await muirInstrument(fileName, code, [ignorer])).mutants.map(
         ({ mutatorName, line, ignoreReason }) =>
           `${line} ${mutatorName} ${ignoreReason ?? 'placed'}`,
       ),
     warnings: async (code: string) =>
-      (await instrument('src/a.stories.tsx', code, [ignorer])).warnings,
+      (await muirInstrument('src/a.stories.tsx', code, [ignorer])).warnings,
   };
 }

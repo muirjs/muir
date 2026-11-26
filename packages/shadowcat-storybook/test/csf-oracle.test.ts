@@ -7,7 +7,7 @@ import { muirMoiraStorybookIsRecord } from '@muirjs/moira-storybook';
 import { loadCsf, vitestTransform } from 'storybook/internal/csf-tools';
 
 import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
-import { instrument } from './support/instrument.ts';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 const root = fileURLToPath(new URL('fixtures/csf-oracle/', import.meta.url));
 // A Storybook project of @muirjs/moira-storybook's tests; the test and mutate-src targets list them as inputs.
@@ -97,7 +97,8 @@ describe('muir-shadowcat-storybook-csf oracle: Storybook reads an instrumented s
 
   fixtures.forEach(({ name, code }) => {
     it(name, async () => {
-      const instrumented = (await instrument(fileName, code, [ignorer])).code;
+      const instrumented = (await muirInstrument(fileName, code, [ignorer]))
+        .code;
 
       assert.deepEqual(
         {

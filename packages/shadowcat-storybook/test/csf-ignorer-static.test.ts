@@ -9,7 +9,7 @@ import {
   staticReason,
   testReason,
 } from './support/csf-ignorer.ts';
-import { instrument } from './support/instrument.ts';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 describe('muir-shadowcat-storybook-csf', () => {
   it('names its own package in an options error', async () => {
@@ -19,7 +19,7 @@ describe('muir-shadowcat-storybook-csf', () => {
     );
 
     await assert.rejects(
-      instrument('src/a.stories.tsx', 'export const a = 1;', [ignorer]),
+      muirInstrument('src/a.stories.tsx', 'export const a = 1;', [ignorer]),
       {
         message:
           '@muirjs/shadowcat-storybook: muirShadowcatStorybook.configDir must be a string, not 1',

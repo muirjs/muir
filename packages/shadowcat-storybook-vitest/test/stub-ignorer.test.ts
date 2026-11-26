@@ -13,7 +13,7 @@ import {
   muirShadowcatStorybookVitestPluginName,
   muirShadowcatStorybookVitestStubIgnorer,
 } from '../src/stub-ignorer.ts';
-import { instrument } from './support/instrument.ts';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 // The Storybook projects of @muirjs/moira-storybook's tests; the test and mutate-src targets list them as inputs.
 const fixtures = fileURLToPath(
@@ -36,7 +36,7 @@ async function setup(fixture: string, fileName: string, content: string) {
     },
     { info: () => undefined, warn: () => undefined },
   );
-  const { mutants } = await instrument(
+  const { mutants } = await muirInstrument(
     join(fixtures, fixture, 'src', fileName),
     content,
     [ignorer],
@@ -367,7 +367,7 @@ describe('stubIgnorer', () => {
     );
 
     await assert.rejects(
-      instrument(
+      muirInstrument(
         join(fixtures, 'no-main', 'src', 'A.stories.tsx'),
         'export const a = 1;',
         [ignorer],
@@ -398,7 +398,7 @@ describe('stubIgnorer', () => {
       { info: () => undefined, warn: () => undefined },
     );
 
-    const { mutants } = await instrument(
+    const { mutants } = await muirInstrument(
       join(fixtures, 'vitest-tags', 'src', 'Button.stories.tsx'),
       content,
       [ignorer],

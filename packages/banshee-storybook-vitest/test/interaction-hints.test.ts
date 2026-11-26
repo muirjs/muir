@@ -21,7 +21,7 @@ import {
 } from '../src/interaction-hints.ts';
 import { muirBansheeStorybookVitestShapesOf } from '../src/interaction-shapes.ts';
 import { interactionHintCases } from './interaction-hint-cases.ts';
-import { instrument } from './support/instrument.ts';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 import {
   inPlay,
   survives,
@@ -40,7 +40,7 @@ async function reportOf(
   listed: readonly Survivor[],
   status: schema.MutantStatus = 'Survived',
 ): Promise<MuirBansheeStorybookVitestReportFiles> {
-  const { mutants } = await instrument(
+  const { mutants } = await muirInstrument(
     join(fixtures, 'no-main', file),
     source,
     [],
@@ -136,12 +136,12 @@ describe('interactionHints', () => {
             ...lines.slice(line - 1),
           ].join('\n');
           const reason = hint.comment.slice(hint.comment.indexOf(': ') + 2);
-          const { mutants: before } = await instrument(
+          const { mutants: before } = await muirInstrument(
             join(fixtures, 'no-main', file),
             source,
             [],
           );
-          const { mutants: after } = await instrument(
+          const { mutants: after } = await muirInstrument(
             join(fixtures, 'no-main', file),
             commented,
             [],
@@ -196,7 +196,7 @@ describe('interactionHints', () => {
   });
 
   it('makes at least one mutant of each interaction mutator name, so the list matches the test mutators', async () => {
-    const { mutants } = await instrument(
+    const { mutants } = await muirInstrument(
       join(fixtures, 'no-main', file),
       inPlay(
         "await userEvent.click(canvas.getByRole('button', { name: 'Open' }));",

@@ -7,6 +7,9 @@
 Test support that the `@muirjs` ignorer packages share. It is private: no package depends on it at run time, and
 it is not published.
 
+- `muirInstrument(fileName, content, ignorers)` instruments one file with Stryker's own instrumenter, its built-in
+  mutators and `ignorers`. It gives the instrumented code, Stryker's warnings, and each mutant's mutator, place
+  (1-based, as the mutation report gives it), replacement and ignore reason.
 - `muirIgnorerOutcomes(ignorer, code, name?)` instruments `code` with Stryker's own instrumenter, its built-in
   mutators and `ignorer`, and gives each mutant's outcome: the ignore reason, or `placed`. The file name, `a.tsx`
   by default, picks the parser.

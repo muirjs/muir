@@ -16,7 +16,7 @@ import {
   muirShadowcatStorybookVitestPluginName,
   muirShadowcatStorybookVitestStubIgnorer,
 } from '../src/stub-ignorer.ts';
-import { instrument } from './support/instrument.ts';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 // The Storybook projects of @muirjs/moira-storybook's tests; the test and mutate-src targets list them as inputs.
 const fixtures = fileURLToPath(
@@ -32,7 +32,7 @@ async function spyStubMutants(name: string) {
     },
     { info: () => undefined, warn: () => undefined },
   );
-  const { mutants } = await instrument(
+  const { mutants } = await muirInstrument(
     join(fixtures, 'no-main', 'src', `${name}.stories.tsx`),
     readFileSync(
       join(fixtures, 'reset-cases', `${name}.stories.tsx.txt`),
@@ -48,7 +48,7 @@ async function spyStubMutants(name: string) {
 
 /** The SpyStub and SpyStubOutcome mutants of a story whose `onSave` arg is `stub`, each as its mutator name and replacement. */
 async function namedStubMutants(stub: string) {
-  const { mutants } = await instrument(
+  const { mutants } = await muirInstrument(
     join(fixtures, 'no-main', 'src', 'Outcome.stories.tsx'),
     [
       "import { fn } from 'storybook/test';",

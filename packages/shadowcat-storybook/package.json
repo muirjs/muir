@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@muirjs/proteus-storybook-test": "0.0.0",
+    "@muirjs/test-util-ignorer-packages": "0.0.0",
     "@storybook/addon-vitest": "10.6.5",
     "ajv": "8.20.0",
     "storybook": "10.6.5",

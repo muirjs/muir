@@ -15,6 +15,9 @@
       "path": "../moira-storybook/tsconfig.lib.json"
     },
     {
+      "path": "../test-util-ignorer-packages/tsconfig.lib.json"
+    },
+    {
       "path": "../proteus-storybook-test/tsconfig.lib.json"
     }
   ]
