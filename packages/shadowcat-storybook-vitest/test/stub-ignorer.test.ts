@@ -8,12 +8,12 @@ import {
   muirMoiraStorybookSpyStubReason,
   muirMoiraStorybookUnrewrittenChainReason,
 } from '@muirjs/moira-storybook';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 import {
   muirShadowcatStorybookVitestPluginName,
   muirShadowcatStorybookVitestStubIgnorer,
 } from '../src/stub-ignorer.ts';
-import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 // The Storybook projects of @muirjs/moira-storybook's tests; the test and mutate-src targets list them as inputs.
 const fixtures = fileURLToPath(

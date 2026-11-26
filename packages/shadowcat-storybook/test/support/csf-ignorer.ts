@@ -1,7 +1,8 @@
 import { fileURLToPath } from 'node:url';
 
-import { muirShadowcatStorybookCsfIgnorer } from '../../src/csf-ignorer.ts';
 import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
+
+import { muirShadowcatStorybookCsfIgnorer } from '../../src/csf-ignorer.ts';
 
 const configDir = fileURLToPath(
   new URL(

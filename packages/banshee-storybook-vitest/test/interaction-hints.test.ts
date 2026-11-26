@@ -11,6 +11,7 @@ import {
   muirMoiraStorybookParseProgram,
 } from '@muirjs/moira-storybook';
 import { muirProteusStorybookTestMutators } from '@muirjs/proteus-storybook-test';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 import type { schema } from '@stryker-mutator/api/core';
 
 import {
@@ -21,7 +22,6 @@ import {
 } from '../src/interaction-hints.ts';
 import { muirBansheeStorybookVitestShapesOf } from '../src/interaction-shapes.ts';
 import { interactionHintCases } from './interaction-hint-cases.ts';
-import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 import {
   inPlay,
   survives,

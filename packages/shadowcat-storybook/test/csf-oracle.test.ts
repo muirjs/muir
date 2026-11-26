@@ -4,10 +4,10 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { muirMoiraStorybookIsRecord } from '@muirjs/moira-storybook';
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 import { loadCsf, vitestTransform } from 'storybook/internal/csf-tools';
 
 import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
-import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 const root = fileURLToPath(new URL('fixtures/csf-oracle/', import.meta.url));
 // A Storybook project of @muirjs/moira-storybook's tests; the test and mutate-src targets list them as inputs.

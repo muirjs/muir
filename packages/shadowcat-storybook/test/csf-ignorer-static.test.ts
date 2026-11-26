@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
+
 import { muirShadowcatStorybookCsfIgnorer } from '../src/csf-ignorer.ts';
 import {
   containerReason,
@@ -9,7 +11,6 @@ import {
   staticReason,
   testReason,
 } from './support/csf-ignorer.ts';
-import { muirInstrument } from '@muirjs/test-util-ignorer-packages';
 
 describe('muir-shadowcat-storybook-csf', () => {
   it('names its own package in an options error', async () => {
