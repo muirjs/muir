@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import {
@@ -30,18 +29,20 @@ export async function muirInstrument(
   content: string,
   ignorers: readonly Ignorer[],
 ): Promise<MuirInstrumented> {
-  const instrumenterDir = dirname(
-    createRequire(muirMoiraMutatorsCorePackageJsons()[0]).resolve(
-      '@stryker-mutator/instrumenter/package.json',
-    ),
-  );
-  const instrumenterModule: unknown = await import(
-    pathToFileURL(join(instrumenterDir, 'dist', 'src', 'index.js')).href
+  // The entry the instrumenter's package exports, the one Stryker core imports.
+  const entry = createRequire(muirMoiraMutatorsCorePackageJsons()[0]).resolve(
+    '@stryker-mutator/instrumenter',
   );
   const Instrumenter = muirMoiraMutatorsFieldOf(
-    instrumenterModule,
+    await import(pathToFileURL(entry).href),
     'Instrumenter',
   );
+
+  if (typeof Instrumenter !== 'function') {
+    // Stryker disable next-line StringLiteral: only another StrykerJS version can change the instrumenter's shape
+    throw new Error('the Stryker instrumenter exports no Instrumenter class');
+  }
+
   const warnings: string[] = [];
   // The logger methods StrykerJS 10.1.1's instrumenter calls; only its warnings reach the caller.
   const logger = {
@@ -51,12 +52,6 @@ export async function muirInstrument(
     info: () => undefined,
     warn: (message: string) => warnings.push(message),
   };
-
-  if (typeof Instrumenter !== 'function') {
-    // Stryker disable next-line StringLiteral: only another StrykerJS version can change the instrumenter's shape
-    throw new Error('the Stryker instrumenter exports no Instrumenter class');
-  }
-
   const instrumenter: unknown = Reflect.construct(Instrumenter, [logger]);
   const instrumentMethod = muirMoiraMutatorsFieldOf(instrumenter, 'instrument');
 
@@ -86,18 +81,9 @@ export async function muirInstrument(
     warnings,
     mutants: mutants.map((mutant: unknown) => {
       const mutatorName = muirMoiraMutatorsFieldOf(mutant, 'mutatorName');
-      const start = schemaPosition(
-        muirMoiraMutatorsFieldOf(
-          muirMoiraMutatorsFieldOf(mutant, 'location'),
-          'start',
-        ),
-      );
-      const end = schemaPosition(
-        muirMoiraMutatorsFieldOf(
-          muirMoiraMutatorsFieldOf(mutant, 'location'),
-          'end',
-        ),
-      );
+      const location = muirMoiraMutatorsFieldOf(mutant, 'location');
+      const start = schemaPosition(muirMoiraMutatorsFieldOf(location, 'start'));
+      const end = schemaPosition(muirMoiraMutatorsFieldOf(location, 'end'));
       const replacement = muirMoiraMutatorsFieldOf(mutant, 'replacement');
       const statusReason = muirMoiraMutatorsFieldOf(mutant, 'statusReason');
 
@@ -118,9 +104,11 @@ export async function muirInstrument(
         line: start.line,
         location: { start, end },
         replacement,
-        // The instrumenter gives a reason to an ignored mutant only.
         ignoreReason:
-          typeof statusReason === 'string' ? statusReason : undefined,
+          muirMoiraMutatorsFieldOf(mutant, 'status') === 'Ignored' &&
+          typeof statusReason === 'string'
+            ? statusReason
+            : undefined,
       };
     }),
   };
