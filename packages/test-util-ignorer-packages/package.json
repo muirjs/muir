@@ -2,7 +2,7 @@
   "name": "@muirjs/test-util-ignorer-packages",
   "version": "0.0.0",
   "private": true,
-  "description": "Test support the @muirjs ignorer packages share: ignorer outcomes through Stryker's instrumenter, and Stryker's options check",
+  "description": "Test support the @muirjs ignorer packages and the Storybook reporter share: one file through Stryker's instrumenter, ignorer outcomes, and Stryker's options check",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

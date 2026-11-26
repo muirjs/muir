@@ -4,8 +4,9 @@
 
 # @muirjs/test-util-ignorer-packages
 
-Test support that the `@muirjs` ignorer packages share. It is private: no package depends on it at run time, and
-it is not published.
+Test support that the `@muirjs` ignorer packages share. The tests of the Storybook reporter,
+`@muirjs/banshee-storybook-vitest`, use its `muirInstrument` too. It is private: no package depends on it at run
+time, and it is not published.
 
 - `muirInstrument(fileName, content, ignorers)` instruments one file with Stryker's own instrumenter, its built-in
   mutators and `ignorers`. It gives the instrumented code, Stryker's warnings, and each mutant's mutator, place

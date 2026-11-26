@@ -20,7 +20,8 @@
 - [Shadowcat ignorers](./packages/shadowcat-js/GLOSSARY.md): report as Ignored the mutants a DOM test does not
   observe: console output, analytics and error-monitoring calls, and React class names and inline styles. Covers
   `packages/shadowcat-js`, `packages/shadowcat-telemetry` and `packages/shadowcat-react`, and
-  `packages/test-util-ignorer-packages`, the private test support the ignorer packages share.
+  `packages/test-util-ignorer-packages`, the private test support the ignorer packages share; the Storybook
+  context's reporter tests use it too.
 - [Mutator install](./packages/moira-mutators/GLOSSARY.md): puts a mutator package's mutators into
   Stryker and checks them before a run starts, and holds the Babel mutator model, the swap engine and the site
   readers that more than one mutator package uses. Covers the three Node mutator packages, `packages/proteus-node`,
