@@ -33,8 +33,9 @@ export async function muirInstrument(
   const entry = createRequire(muirMoiraMutatorsCorePackageJsons()[0]).resolve(
     '@stryker-mutator/instrumenter',
   );
+  const instrumenterModule: unknown = await import(pathToFileURL(entry).href);
   const Instrumenter = muirMoiraMutatorsFieldOf(
-    await import(pathToFileURL(entry).href),
+    instrumenterModule,
     'Instrumenter',
   );
 
