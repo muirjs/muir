@@ -131,12 +131,13 @@ describe('muirExec', () => {
   });
 
   it('records no timeout for a process that exits before its timeout while a child it started holds its stdout', async () => {
+    // The child outlives the timeout by a second; the timeout leaves a loaded machine 10 seconds to start and end the parent.
     const parent =
-      "require('node:child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 3500)'], " +
+      "require('node:child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 11000)'], " +
       "{ stdio: ['ignore', 'inherit', 'inherit'], detached: true, windowsHide: true }).unref(); process.exit(0);";
     const result = await muirExec(process.execPath, ['-e', parent], {
       cwd: tmpdir(),
-      timeoutMs: 3_000,
+      timeoutMs: 10_000,
     });
 
     assert.deepEqual(
