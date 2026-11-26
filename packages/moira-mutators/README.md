@@ -65,4 +65,4 @@ and checks that the patch took effect.
 - `@stryker-mutator/core` 10.1, tested on 10.1.1. `muirMoiraMutatorsWarnUntested` warns when it finds another
   version.
 - `@babel/core` 8.0, Stryker 10's Babel, for the Babel mutators.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.

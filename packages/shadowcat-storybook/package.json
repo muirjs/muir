@@ -34,7 +34,7 @@
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=22.0.0"
+    "node": "^22.18.0 || ^24.11.0 || ^26.13.0"
   },
   "dependencies": {
     "@muirjs/moira-storybook": "0.0.0",

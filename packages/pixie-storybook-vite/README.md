@@ -26,7 +26,7 @@ private and not on npm yet.
   sets, and import nothing from Storybook, so the package declares no `storybook` peer dependency. The
   `storybook` peer of `@muirjs/moira-storybook`, which it depends on, still asks for Storybook.
 - Vite 5 to 8. The mock reset plugin also needs Vitest 4 or 5.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 ## Keep definition-time stubs through the mock reset
 

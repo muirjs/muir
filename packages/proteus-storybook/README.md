@@ -26,7 +26,7 @@ not on npm yet.
   Stryker configurations share.
 - `@muirjs/shadowcat-storybook-vitest`, for its stub ignorer, and `@muirjs/banshee-storybook-vitest`, for its
   reporter.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 ## Turn the mutators on
 

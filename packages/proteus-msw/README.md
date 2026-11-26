@@ -18,7 +18,7 @@ experimental. The package is private and not on npm yet.
   warns when `@stryker-mutator/instrumenter` is a version other than 10.1.1.
 - Handlers written with msw's `http`, `graphql` and `HttpResponse` exports, imported from `msw`. The mutator reads
   the handler files as source and imports nothing from msw.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 ## Turn the mutators on
 

@@ -28,7 +28,7 @@ changes and which shapes it skips. Stryker's reports show these names as the mut
 
 - `@stryker-mutator/core` 10.1, tested on 10.1.1. The plugin patches internals of that version's
   instrumenter, and warns when it finds another version.
-- Node.js 22 or later, tested on 22.23.1 and 24.22.0 on Windows 11 arm64, and on 24.22.1 on Linux arm64.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x, tested on 22.23.1 and 24.22.0 on Windows 11 arm64, and on 24.22.1 on Linux arm64.
 - React JSX or TSX. The mutators match React's attribute names, such as `htmlFor` and `readOnly`, so
   Solid, Preact or Vue JSX written with `for` or `readonly` gets no mutants on those attributes. Vue,
   Angular and Svelte templates get no JSX mutants; JSX in a Vue `<script lang="tsx">` block does. The run

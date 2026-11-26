@@ -107,18 +107,23 @@ export interface MuirSirynNodeTestOptions {
 
 const defaults = schema.properties.muirSirynNodeTest.properties;
 
-/** The oldest Node.js the runner supports, as `engines` in package.json says, as major and minor version. */
-export const muirSirynNodeTestMinNodeVersion: readonly [
-  major: number,
-  minor: number,
-] = [22, 18];
+/** The Node.js major versions the runner supports, each with its oldest supported minor version. */
+const minorFloors = new Map([
+  [22, 18],
+  [24, 11],
+  [26, 13],
+]);
+
+/** The Node.js versions the runner supports, as `engines` in package.json says. */
+export const muirSirynNodeTestNodeRange = [...minorFloors]
+  .map(([major, minor]) => `^${major}.${minor}.0`)
+  .join(' || ');
 
 function supportsNode(version: string): boolean {
   // Stryker disable next-line MuirProteusJsNumericLiteral: equivalent, as a Node.js version always has a major and a minor part
   const [major = 0, minor = 0] = version.split('.').map(Number);
-  const [minMajor, minMinor] = muirSirynNodeTestMinNodeVersion;
 
-  return major > minMajor || (major === minMajor && minor >= minMinor);
+  return minor >= (minorFloors.get(major) ?? Infinity);
 }
 
 export type MuirSirynNodeTestRunOptions =
@@ -780,7 +785,7 @@ export class MuirSirynNodeTestTestRunner implements TestRunner {
 
     if (!supportsNode(node)) {
       throw new Error(
-        `The muir-siryn-node-test test runner needs Node.js ${muirSirynNodeTestMinNodeVersion.join('.')} or later, and this is Node.js ${node}.`,
+        `The muir-siryn-node-test test runner needs Node.js ${muirSirynNodeTestNodeRange}, and this is Node.js ${node}.`,
       );
     }
 

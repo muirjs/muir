@@ -43,7 +43,7 @@ Seven packages work together. This README describes the setup they share.
 - Vite 5 to 8, for the Vite plugins of `@muirjs/pixie-storybook-vite`.
 - Vitest browser mode for the story tests. The setup below uses `@vitest/browser-playwright` with Chromium, which
   `npx playwright install chromium` installs.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 Every package in the table apart from `@muirjs/proteus-msw` depends on `@muirjs/moira-storybook`, an internal
 package. Only that package loads Storybook at run time, the first time a plugin reads the Storybook project. So only

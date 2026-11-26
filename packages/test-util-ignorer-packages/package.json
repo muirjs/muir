@@ -17,7 +17,7 @@
   },
   "sideEffects": false,
   "engines": {
-    "node": ">=22.0.0"
+    "node": "^22.18.0 || ^24.11.0 || ^26.13.0"
   },
   "peerDependencies": {
     "@stryker-mutator/core": "~10.1.0"

@@ -17,7 +17,7 @@ The package is private and not on npm yet.
 ## Requirements
 
 - `@stryker-mutator/core` 10.1, tested on 10.1.1.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 It does not need a particular test runner.
 

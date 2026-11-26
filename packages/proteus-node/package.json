@@ -42,7 +42,7 @@
     "!dist/mutant-diff.*"
   ],
   "engines": {
-    "node": ">=22.18"
+    "node": "^22.18.0 || ^24.11.0 || ^26.13.0"
   },
   "scripts": {
     "test": "node --conditions=@muirjs/source --test \"test/unit/**/*.test.ts\" \"test/synthetic/**/*.test.ts\"",

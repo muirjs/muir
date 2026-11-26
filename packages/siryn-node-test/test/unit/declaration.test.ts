@@ -12,7 +12,7 @@ import {
   strykerPlugins,
   strykerValidationSchema,
 } from '../../src/index.ts';
-import { muirSirynNodeTestMinNodeVersion } from '../../src/runner.ts';
+import { muirSirynNodeTestNodeRange } from '../../src/runner.ts';
 import pkg from '../../package.json' with { type: 'json' };
 
 /** Stryker validates its options with these settings, and merges the properties of each plugin's schema into its own. */
@@ -93,10 +93,7 @@ describe('plugin declaration', () => {
   });
 
   it('supports the Node.js versions that package.json supports', () => {
-    assert.equal(
-      pkg.engines.node,
-      `>=${muirSirynNodeTestMinNodeVersion.join('.')}`,
-    );
+    assert.equal(pkg.engines.node, muirSirynNodeTestNodeRange);
   });
 
   muirTestEach([

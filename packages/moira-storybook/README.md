@@ -17,7 +17,7 @@ installing one of them installs this one. It has no Stryker peer dependency.
   internals the first time it reads a Storybook project or a story index, so a package that only reads story files
   never loads Storybook.
 - Vitest 4 or 5 (optional `vitest` peer), tested on 5.1.0, to read the tag filter of Storybook's Vitest addon.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 ## Exports
 

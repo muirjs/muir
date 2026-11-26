@@ -16,7 +16,7 @@ are experimental. The package is private and not on npm yet.
 
 - `@stryker-mutator/core` 10.1, tested on 10.1.1. The install patches internals of that version's instrumenter, and
   warns when `@stryker-mutator/instrumenter` is a version other than 10.1.1.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 ## Turn the mutators on
 

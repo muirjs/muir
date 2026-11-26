@@ -108,18 +108,22 @@ describe('MuirSirynNodeTestTestRunner', () => {
   });
 
   muirTestFor<readonly [string, string, string | undefined]>([
-    [
-      'refuses',
+    ...[
       '21.20.0',
-      'The muir-siryn-node-test test runner needs Node.js 22.18 or later, and this is Node.js 21.20.0.',
-    ],
-    [
-      'refuses',
       '22.17.1',
-      'The muir-siryn-node-test test runner needs Node.js 22.18 or later, and this is Node.js 22.17.1.',
-    ],
+      '23.11.0',
+      '24.10.0',
+      '25.9.0',
+      '26.12.0',
+      '27.0.0',
+    ].map((version): readonly [string, string, string] => [
+      'refuses',
+      version,
+      `The muir-siryn-node-test test runner needs Node.js ^22.18.0 || ^24.11.0 || ^26.13.0, and this is Node.js ${version}.`,
+    ]),
     ['runs on', '22.18.0', undefined],
-    ['runs on', '23.0.0', undefined],
+    ['runs on', '24.11.0', undefined],
+    ['runs on', '26.13.0', undefined],
   ])('%s Node.js %s', async ([, version, message], t) => {
     const value = process.versions.node;
     Object.defineProperty(process.versions, 'node', { value: version });

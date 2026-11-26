@@ -5,8 +5,8 @@
 # @muirjs/siryn-node-test
 
 A [StrykerJS](https://stryker-mutator.io/) test runner for `node:test`. It runs each test file in its own `node`
-process with `node:test`, so the tests run as they do under `node --test`. It is ESM only, needs Node.js 22.18 or
-later, and is tested on Node.js 22, 24 and 26.
+process with `node:test`, so the tests run as they do under `node --test`. It is ESM only and needs Node.js 22.18
+or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x. On any other version the runner stops with an error.
 
 - Stryker plugin name: `muir-siryn-node-test`
 - Stryker options key: `muirSirynNodeTest`

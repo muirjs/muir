@@ -15,7 +15,7 @@ The package is private and not on npm yet.
 - StrykerJS 10.1 with its Vitest runner, and Vitest 4 or 5.
 - Storybook 10.6 or a later 10.x minor with `@storybook/addon-vitest`. The `storybook` peer comes from
   `@muirjs/moira-storybook`, which this package depends on.
-- Node.js 22 or later.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 ## Set it up
 

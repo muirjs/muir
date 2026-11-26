@@ -16,7 +16,7 @@ runs, with no change to the app.
   Playwright internals that a release can change, and stops with an error that names them when they
   have changed.
 - `@stryker-mutator/core` 10, tested on 10.1.1.
-- Node.js 22 or later, tested on 22.23.1 and 24.22.0 on Windows 11 arm64, and on 24.22.1 on Linux arm64.
+- Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x, tested on 22.23.1 and 24.22.0 on Windows 11 arm64, and on 24.22.1 on Linux arm64.
 - Chromium. Firefox and WebKit are untested.
 
 ## Configure Stryker

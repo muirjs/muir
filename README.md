@@ -6,9 +6,10 @@
 
 [StrykerJS](https://stryker-mutator.io/) plugins, mutators and utilities for JavaScript, TypeScript, Node.js,
 `node:test`, Playwright, React, Storybook and msw, as well as utilities and extensions for `node:test`, Storybook
-and Vite that work without StrykerJS. The packages are ESM-only and need Node.js 22 or later. The `node:test` runner,
-the table tests and the three Node mutator packages need Node.js 22.18 or later. CI tests the packages on Node.js 22,
-24 and 26.
+and Vite that work without StrykerJS. The packages are ESM-only and support each Node.js LTS major
+version from its first LTS release: 22.18 or a later 22.x, 24.11 or a later 24.x, and 26.13 or a later 26.x. Node.js
+22 starts at 22.18, not 22.11, because the workspace runs its TypeScript files by type stripping, which Node.js 22
+turns on by default from 22.18. CI tests the packages on the latest Node.js 22, 24 and 26.
 
 ## Package names
 
