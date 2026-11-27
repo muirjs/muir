@@ -7,6 +7,8 @@
   `npx nx run @muirjs/siryn-node-test:mutate-src --mutate packages/siryn-node-test/src/dirs.ts:80-80`;
   a line without a range matches no file, and the dry run still reports success), not by reverting code or writing a
   control test by hand
+- For several ranges, join them with commas in one flag (`--mutate a.ts:18-31,a.ts:330-330`). A repeated `--mutate`
+  flag ran no mutants and still reported success
 
 ## Domain language
 
