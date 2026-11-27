@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import type { Ignorer } from '@stryker-mutator/api/ignore';
+import type { Logger } from '@stryker-mutator/api/logging';
 
 import {
   muirMoiraMutatorsFieldOf,
@@ -14,7 +15,7 @@ import {
 
 const coreBin = /[\\/]@stryker-mutator[\\/]core[\\/]bin[\\/]stryker\.js$/;
 const nothing = (): undefined => undefined;
-const silentLogger = {
+const silentLogger: Logger = {
   debug: nothing,
   info: nothing,
   warn: nothing,
@@ -23,6 +24,10 @@ const silentLogger = {
   fatal: nothing,
   isDebugEnabled: () => false,
   isTraceEnabled: () => false,
+  isInfoEnabled: () => false,
+  isWarnEnabled: () => false,
+  isErrorEnabled: () => false,
+  isFatalEnabled: () => false,
 };
 
 export interface MuirMoiraMutatorsSourceFile {
@@ -316,11 +321,13 @@ function hasNo({
 
 /**
  * The `Instrumenter` of the entry that the instrumenter's package exports, the one Stryker constructs, so that a
- * bundled entry fails the self-check. With `mutators`, it transforms with them in place of `allMutators`.
+ * bundled entry fails the self-check. With `mutators`, it transforms with them in place of `allMutators`. The
+ * instrumenter logs to `logger`, a silent one by default.
  */
 export async function muirMoiraMutatorsCoreInstrument(
   instrumenter: MuirMoiraMutatorsLocated,
   load: MuirMoiraMutatorsLoad = importFile,
+  logger: Logger = silentLogger,
 ): Promise<
   (
     files: readonly MuirMoiraMutatorsSourceFile[],
@@ -370,7 +377,7 @@ export async function muirMoiraMutatorsCoreInstrument(
     const result: unknown = await Reflect.apply(
       instrument,
       Reflect.construct(Instrumenter, [
-        silentLogger,
+        logger,
         undefined,
         undefined,
         transform,

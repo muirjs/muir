@@ -1,12 +1,14 @@
 import { createRequire } from 'node:module';
-import { pathToFileURL } from 'node:url';
+import { dirname } from 'node:path';
 
 import {
+  muirMoiraMutatorsCoreInstrument,
   muirMoiraMutatorsCorePackageJsons,
   muirMoiraMutatorsFieldOf,
 } from '@muirjs/moira-mutators';
 import type { schema } from '@stryker-mutator/api/core';
 import type { Ignorer } from '@stryker-mutator/api/ignore';
+import type { Logger } from '@stryker-mutator/api/logging';
 
 export interface MuirInstrumented {
   readonly code: string;
@@ -29,43 +31,28 @@ export async function muirInstrument(
   content: string,
   ignorers: readonly Ignorer[],
 ): Promise<MuirInstrumented> {
-  // The entry the instrumenter's package exports, the one Stryker core imports.
-  const entry = createRequire(muirMoiraMutatorsCorePackageJsons()[0]).resolve(
-    '@stryker-mutator/instrumenter',
+  const corePackage = muirMoiraMutatorsCorePackageJsons()[0];
+  const packageJson = createRequire(corePackage).resolve(
+    '@stryker-mutator/instrumenter/package.json',
   );
-  const instrumenterModule: unknown = await import(pathToFileURL(entry).href);
-  const Instrumenter = muirMoiraMutatorsFieldOf(
-    instrumenterModule,
-    'Instrumenter',
+  const version: unknown = muirMoiraMutatorsFieldOf(
+    createRequire(corePackage)(packageJson),
+    // Stryker disable next-line StringLiteral: the version only names the instrumenter in the error for one without an Instrumenter, and the installed one has it
+    'version',
   );
-
-  if (typeof Instrumenter !== 'function') {
-    // Stryker disable next-line StringLiteral: only another StrykerJS version can change the instrumenter's shape
-    throw new Error('the Stryker instrumenter exports no Instrumenter class');
-  }
-
   const warnings: string[] = [];
-  // The logger methods StrykerJS 10.1.1's instrumenter calls; only its warnings reach the caller.
-  const logger = {
-    // Stryker disable next-line ArrowFunction,BooleanLiteral: equivalent, as the debug lines it guards go nowhere
-    isDebugEnabled: () => false,
-    debug: () => undefined,
-    info: () => undefined,
-    warn: (message: string) => warnings.push(message),
-  };
-  const instrumenter: unknown = Reflect.construct(Instrumenter, [logger]);
-  const instrumentMethod = muirMoiraMutatorsFieldOf(instrumenter, 'instrument');
-
-  if (typeof instrumentMethod !== 'function') {
-    // Stryker disable next-line StringLiteral: only another StrykerJS version can change the instrumenter's shape
-    throw new Error('the Stryker instrumenter has no instrument method');
-  }
-
-  const result: unknown = await Reflect.apply(instrumentMethod, instrumenter, [
-    [{ name: fileName, content, mutate: true }],
-    // Stryker disable next-line ArrayDeclaration: equivalent, as a name no mutator has excludes nothing
-    { plugins: null, excludedMutations: [], ignorers },
-  ]);
+  const instrument = await muirMoiraMutatorsCoreInstrument(
+    {
+      // Stryker disable next-line StringLiteral: the package name only starts the error for an instrumenter without an Instrumenter, and the installed one has it
+      packageName: '@muirjs/test-util-ignorer-packages',
+      dir: dirname(packageJson),
+      version: String(version),
+    },
+    undefined,
+    warningsLogger(warnings),
+  );
+  // Stryker disable next-line ArrayDeclaration: equivalent, as a name no mutator has excludes nothing
+  const result = await instrument([{ name: fileName, content }], [], ignorers);
   const files = muirMoiraMutatorsFieldOf(result, 'files');
   const mutants = muirMoiraMutatorsFieldOf(result, 'mutants');
   const code = Array.isArray(files)
@@ -112,6 +99,31 @@ export async function muirInstrument(
             : undefined,
       };
     }),
+  };
+}
+
+/** A logger that keeps only the instrumenter's warnings. */
+function warningsLogger(warnings: string[]): Logger {
+  const ignore = (): undefined => undefined;
+  // Stryker disable next-line ArrowFunction,BooleanLiteral: equivalent, as every level but warn goes nowhere
+  const disabled = (): boolean => false;
+
+  return {
+    trace: ignore,
+    debug: ignore,
+    info: ignore,
+    warn: (message) => {
+      warnings.push(message);
+    },
+    error: ignore,
+    fatal: ignore,
+    isTraceEnabled: disabled,
+    isDebugEnabled: disabled,
+    isInfoEnabled: disabled,
+    // Stryker disable next-line ArrowFunction,BooleanLiteral: equivalent, as StrykerJS 10.1.1's instrumenter warns without asking
+    isWarnEnabled: () => true,
+    isErrorEnabled: disabled,
+    isFatalEnabled: disabled,
   };
 }
 

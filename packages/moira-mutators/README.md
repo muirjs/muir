@@ -25,7 +25,8 @@ and checks that the patch took effect.
   install for mutators written as Babel mutators, which the Node mutator packages use.
 - `muirMoiraMutatorsCorePackageJsons`, `muirMoiraMutatorsResolveEachCore`, `muirMoiraMutatorsResolveInstrumenter`,
   `muirMoiraMutatorsCoreInstrument`: find each copy of `@stryker-mutator/core` that may run the process, and load
-  the instrumenter it uses.
+  the instrumenter it uses. `muirMoiraMutatorsCoreInstrument` takes an optional Stryker `Logger` as its third
+  argument; without one, the instrumenter logs nothing.
 - `muirMoiraMutatorsResolveExpressionPlacer`: the instrumenter's expression placer, for a package that patches it.
   The other functions do not need the placer to exist.
 - `muirMoiraMutatorsFieldOf`, `muirMoiraMutatorsIsRecord`: read a field of a value of unknown shape, and test for an

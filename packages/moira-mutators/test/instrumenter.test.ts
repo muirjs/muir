@@ -729,6 +729,40 @@ describe('resolveInstrumenter against a fake instrumenter', () => {
     assert.equal(calls.length, 1);
   });
 
+  it('constructs the instrumenter with the logger it is given', async (t) => {
+    const { modules } = fakeCore(t, ['expressionMutantPlacer']);
+    const dir = join(modules, '@stryker-mutator', 'instrumenter');
+    const logger = {
+      debug: () => undefined,
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+      trace: () => undefined,
+      fatal: () => undefined,
+      isDebugEnabled: () => false,
+      isTraceEnabled: () => false,
+      isInfoEnabled: () => false,
+      isWarnEnabled: () => false,
+      isErrorEnabled: () => false,
+      isFatalEnabled: () => false,
+    };
+    const instrument = await muirMoiraMutatorsCoreInstrument(
+      { packageName, dir, version: '9.9.8' },
+      undefined,
+      logger,
+    );
+
+    await instrument([{ name: 'a.tsx', content: 'x' }], [], []);
+
+    const calls = await callsOf(modules, indexPath);
+    assert.ok(Array.isArray(calls) && calls.length === 1);
+    const call: unknown = calls[0];
+    assert.ok(typeof call === 'object' && call !== null);
+    const { args }: { args?: unknown } = call;
+    assert.ok(Array.isArray(args));
+    assert.equal(args[0], logger);
+  });
+
   it('instruments every file with mutate set, no plugins, no ignorers and no exclusions, through a silent logger and the default transform', async (t) => {
     const { corePackage, modules } = fakeCore(t, ['expressionMutantPlacer']);
     const instrumenter = await resolveFromCore(corePackage);
@@ -775,6 +809,10 @@ describe('resolveInstrumenter against a fake instrumenter', () => {
         ['fatal', undefined],
         ['isDebugEnabled', false],
         ['isTraceEnabled', false],
+        ['isInfoEnabled', false],
+        ['isWarnEnabled', false],
+        ['isErrorEnabled', false],
+        ['isFatalEnabled', false],
       ],
     );
   });
