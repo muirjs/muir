@@ -26,6 +26,14 @@ jobs:
         # An empty value reads .node-version (26). The exact versions are the oldest that package.json engines allows
         # in each major: ^22.18.0 || ^24.11.0 || ^26.13.0.
         node-version: ['', '22', '24', '22.18.0', '24.11.0', '26.13.0']
+        # The oldest versions run on Linux only.
+        exclude:
+          - os: windows-latest
+            node-version: '22.18.0'
+          - os: windows-latest
+            node-version: '24.11.0'
+          - os: windows-latest
+            node-version: '26.13.0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
