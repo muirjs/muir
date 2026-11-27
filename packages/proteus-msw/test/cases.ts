@@ -325,6 +325,31 @@ export const cases: readonly Case[] = [
     ],
   },
   {
+    id: 'msw-http-entry',
+    title:
+      "http and HttpResponse imported from msw 3's msw/http entry make a site",
+    source:
+      "import { http, HttpResponse } from 'msw/http';\n" +
+      "export const handlers = [http.get('/a', () => HttpResponse.json({ a: 1 }))];\n",
+    expect: [
+      [response, 'HttpResponse.json({})'],
+      [response, 'HttpResponse.error()'],
+    ],
+  },
+  {
+    id: 'msw-graphql-entry',
+    title:
+      'graphql imported from msw/graphql, its only entry in msw 3, makes a site',
+    source:
+      "import { graphql } from 'msw/graphql';\n" +
+      "import { HttpResponse } from 'msw';\n" +
+      "export const handlers = [graphql.query('Get', () => HttpResponse.json({ data: { a: 1 } }))];\n",
+    expect: [
+      [response, 'HttpResponse.json({})'],
+      [response, 'HttpResponse.error()'],
+    ],
+  },
+  {
     id: 'computed-factory',
     title:
       'a computed HttpResponse member is no site, though the key is a variable named after a factory',

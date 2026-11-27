@@ -21,6 +21,12 @@ const handlerMethods: readonly (readonly [string, readonly string[]])[] = [
   ['graphql', ['query', 'mutation', 'operation']],
 ];
 
+/**
+ * The msw entry points that export `http`, `graphql` or `HttpResponse`. msw 3 added `msw/http` and `msw/graphql`,
+ * and exports `graphql` from `msw/graphql` only.
+ */
+const mswEntries: readonly string[] = ['msw', 'msw/http', 'msw/graphql'];
+
 export function muirProteusMswResponseMutator(): MuirProteusMswMutator & {
   readonly name: 'MuirProteusMswResponse';
 } {
@@ -155,7 +161,7 @@ function isHandlerCallback(fn: NodePath): boolean {
   );
 }
 
-/** `path` is an identifier bound by `import { <exported> } from 'msw'`, under any local name. */
+/** `path` is an identifier bound by `import { <exported> }` from one of `mswEntries`, under any local name. */
 function isMswImport(path: NodePath, exported: string): boolean {
   const binding = path.isIdentifier()
     ? path.scope.getBinding(path.node.name)
@@ -168,7 +174,7 @@ function isMswImport(path: NodePath, exported: string): boolean {
     importedName(specifier.node.imported) === exported &&
     // Stryker disable next-line OptionalChaining: declaration is read only once specifier is an ImportSpecifier, whose parent path is always its ImportDeclaration, so it is never null here
     declaration?.isImportDeclaration() === true &&
-    declaration.node.source.value === 'msw'
+    mswEntries.includes(declaration.node.source.value)
   );
 }
 
