@@ -65,9 +65,10 @@ const lateClose = fixture(
   '});',
 );
 
-/** A test that never settles, with a timer that keeps its file's event loop busy. */
-const hangs = fixture(
-  "it('hangs', () => new Promise(() => { setInterval(() => {}, 1000); }));",
+const threeTests = fixture(
+  "it('first', () => {});",
+  "it('second', () => {});",
+  "it('third', () => {});",
 );
 
 /** With MUIR_SIRYN_NODE_TEST_FIXTURE_PENDING set, its test waits on nothing that could settle it: `callback` or `promise`. */
@@ -92,6 +93,16 @@ const nodeMajor = Number.parseInt(process.versions.node, 10);
 
 /** A deadline that passed before the run started. */
 const passed = { signal: AbortSignal.abort(), reason: 'Passed the deadline' };
+
+/** Runs `late` under a deadline that has passed before it starts, and the runner's other files under none. */
+function passDeadlineBefore(
+  runner: Awaited<ReturnType<typeof initRunner>>,
+  late: string,
+): void {
+  const runFile = runner.runFile.bind(runner);
+  runner.runFile = (file, run, memoryLimitMB) =>
+    runFile(file, run, memoryLimitMB, file === late ? passed : undefined);
+}
 
 /** Resolves once the process whose pid `path` holds has exited. */
 async function processExit(path: string): Promise<void> {
@@ -150,11 +161,12 @@ describe('MuirSirynNodeTestTestRunner deadline', () => {
   it('reports the tests that failed before the deadline ended a later file as killing the mutant, with bail disabled', async (t) => {
     const dir = project(t, {
       'a.test.mjs': failing,
-      'b.test.mjs': hangs,
+      'b.test.mjs': passing,
     });
     const runner = await initRunner(['*.test.mjs']);
     const a = join(dir, 'a.test.mjs');
-    const options = mutantRunOptions({ timeout: 4000, disableBail: true });
+    passDeadlineBefore(runner, join(dir, 'b.test.mjs'));
+    const options = mutantRunOptions({ disableBail: true });
 
     assert.deepEqual(withoutDuration(await settle(runner.mutantRun(options))), {
       status: MutantRunStatus.Killed,
@@ -165,11 +177,12 @@ describe('MuirSirynNodeTestTestRunner deadline', () => {
   });
 
   it('reports a mutant run whose later file timed out after earlier files passed as timed out, with bail disabled', async (t) => {
-    project(t, { 'a.test.mjs': passing, 'b.test.mjs': hangs });
+    const dir = project(t, { 'a.test.mjs': passing, 'b.test.mjs': passing });
     const runner = await initRunner(['*.test.mjs']);
+    passDeadlineBefore(runner, join(dir, 'b.test.mjs'));
 
     const result = await settle(
-      runner.mutantRun(mutantRunOptions({ timeout: 4000, disableBail: true })),
+      runner.mutantRun(mutantRunOptions({ disableBail: true })),
     );
 
     assert.strictEqual(
@@ -200,15 +213,8 @@ describe('MuirSirynNodeTestTestRunner deadline', () => {
   it('reports a dry run whose later file timed out as timed out, though an earlier file failed, with bail disabled', async (t) => {
     const dir = project(t, { 'a.test.mjs': failing, 'b.test.mjs': passing });
     const runner = await initRunner(['*.test.mjs']);
-    const runFile = runner.runFile.bind(runner);
-    // The dry run has no deadline of its own; this one has passed before b starts.
-    runner.runFile = (file, run, memoryLimitMB) =>
-      runFile(
-        file,
-        run,
-        memoryLimitMB,
-        file === join(dir, 'b.test.mjs') ? passed : undefined,
-      );
+    // The dry run has no deadline of its own.
+    passDeadlineBefore(runner, join(dir, 'b.test.mjs'));
 
     const result = await settle(
       runner.dryRun({ ...dryRun, disableBail: true }),
@@ -305,12 +311,18 @@ describe('MuirSirynNodeTestTestRunner deadline', () => {
     project(t, { 'a.test.mjs': slowStart });
     const runner = await initRunner(['a.test.mjs']);
     const { tests } = complete(await settle(runner.dryRun(dryRun)));
+    const testFilter = tests.map((test) => test.id);
     const options = mutantRunOptions({
       timeout: timeoutFromDryRun(tests, loadedStartUpSlackMs),
-      testFilter: tests.map((test) => test.id),
+      testFilter,
     });
     hang(t);
-    const timedOut = await settle(runner.mutantRun(options));
+    // No slack: this run ends by the deadline wherever its file has got to.
+    const timedOut = await settle(
+      runner.mutantRun(
+        mutantRunOptions({ timeout: timeoutFromDryRun(tests, 0), testFilter }),
+      ),
+    );
     stopHanging();
 
     assert.strictEqual(
@@ -388,7 +400,7 @@ describe('MuirSirynNodeTestTestRunner deadline', () => {
   });
 
   it('runs the mutants of a file the dry run did not run, warning once that it has no start-up time', async (t) => {
-    const dir = project(t, { 'a.test.mjs': slowStart });
+    const dir = project(t, { 'a.test.mjs': threeTests });
     const warnings: string[] = [];
     const runner = await initRunner(
       ['a.test.mjs'],
@@ -396,7 +408,7 @@ describe('MuirSirynNodeTestTestRunner deadline', () => {
       { log: logger({ warnings }) },
     );
     const options = mutantRunOptions({
-      testFilter: ['hangs', 'passes', 'passes too'].map(
+      testFilter: ['first', 'second', 'third'].map(
         (name) => `${join(dir, 'a.test.mjs')} > ${name}`,
       ),
     });
