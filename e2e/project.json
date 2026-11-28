@@ -61,6 +61,38 @@
         }
       ]
     },
+    "e2e-storybook-react": {
+      "command": "node --test \"e2e/test/browser/storybook-react.e2e.ts\"",
+      "options": { "cwd": "{workspaceRoot}" },
+      "cache": true,
+      "parallelism": false,
+      "dependsOn": ["^build"],
+      "inputs": [
+        "default",
+        "!{projectRoot}/src/oss/**/*",
+        "!{projectRoot}/test/unit/**/*",
+        "!{projectRoot}/stryker*.config.mjs",
+        "!{projectRoot}/tsconfig.stryker.json",
+        "^production",
+        "nodeVersion",
+        "{workspaceRoot}/package.json",
+        {
+          "externalDependencies": [
+            "@stryker-mutator/core",
+            "@stryker-mutator/typescript-checker",
+            "typescript",
+            "@types/node"
+          ]
+        }
+      ],
+      "defaultConfiguration": "react-19",
+      "configurations": {
+        "react-16": { "env": { "MUIR_E2E_REACT": "16.14.0" } },
+        "react-17": { "env": { "MUIR_E2E_REACT": "17.0.2" } },
+        "react-18": { "env": { "MUIR_E2E_REACT": "18.3.1" } },
+        "react-19": { "env": { "MUIR_E2E_REACT": "19.3.1" } }
+      }
+    },
     "mutate": {},
     "mutate-src": {},
     "mutate-test-code": {}

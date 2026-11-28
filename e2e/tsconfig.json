@@ -16,6 +16,21 @@
     },
     {
       "path": "../packages/proteus-node"
+    },
+    {
+      "path": "../packages/pixie-storybook-vite"
+    },
+    {
+      "path": "../packages/proteus-react"
+    },
+    {
+      "path": "../packages/proteus-storybook"
+    },
+    {
+      "path": "../packages/proteus-msw"
+    },
+    {
+      "path": "../packages/proteus-storybook-test"
     }
   ]
 }

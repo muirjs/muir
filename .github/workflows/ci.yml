@@ -480,6 +480,8 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      MUIR_E2E_CONCURRENCY: 2
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
       options: --init
@@ -495,6 +497,10 @@ jobs:
             report: e2e-ui
           - target: '@muirjs/demo-app:mutate-ct'
             report: ct
+          - target: 'e2e:e2e-storybook-react:react-16'
+          - target: 'e2e:e2e-storybook-react:react-17'
+          - target: 'e2e:e2e-storybook-react:react-18'
+          - target: 'e2e:e2e-storybook-react:react-19'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
