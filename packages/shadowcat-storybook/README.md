@@ -118,6 +118,11 @@ Both run the same Vitest configuration.
    });
    ```
 
+   With React 16 or 17, also add `optimizeDeps: { include: ['@storybook/react-dom-shim'] }` beside `plugins` in that
+   project. Without it, Storybook 10.6.5 has Vite optimize its React DOM shim while the first story renders, Vite
+   reloads, and the first `vitest run` after a fresh install fails, for example with `Invalid hook call` (measured
+   with React 16.14.0 and 17.0.2). React 18 and 19 do not need the line.
+
 3. Write the components configuration. `MuirProteusStorybookArgs` is experimental, so turn it on by name inside
    `experimental`:
 
@@ -132,13 +137,16 @@ Both run the same Vitest configuration.
    export default {
      testRunner: 'vitest',
      vitest: { configFile: 'vitest.config.ts' },
-     mutate: ['src/**/*.tsx', '!src/**/*.test.tsx'],
+     mutate: ['src/**/*.tsx'],
      appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest', '@muirjs/banshee-storybook-vitest'],
      ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook-vitest'],
      muirShadowcatStorybook: { configDir: '.storybook' },
      reporters: ['clear-text', 'html', 'muir-banshee-storybook-vitest'],
    };
    ```
+
+   When the project also has unit test files, leave them out, for example with `'!src/**/*.test.tsx'` in `mutate`.
+   StrykerJS warns about a pattern that matches no file.
 
 4. Write the story test code configuration. Set the CSF ignorer's play mode to `mutate`:
 

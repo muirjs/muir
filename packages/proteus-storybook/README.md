@@ -48,7 +48,7 @@ await muirProteusStorybookMutators({
 
 export default {
   testRunner: 'vitest',
-  mutate: ['src/**/*.tsx', '!src/**/*.test.tsx'],
+  mutate: ['src/**/*.tsx'],
   appendPlugins: ['@muirjs/shadowcat-storybook', '@muirjs/shadowcat-storybook-vitest', '@muirjs/banshee-storybook-vitest'],
   ignorers: ['muir-shadowcat-storybook-csf', 'muir-shadowcat-storybook-vitest'],
   reporters: ['clear-text', 'html', 'muir-banshee-storybook-vitest'],
