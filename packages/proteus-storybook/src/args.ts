@@ -1,12 +1,12 @@
 import type { NodePath } from '@babel/core';
 import {
   muirMoiraStorybookField,
-  muirMoiraStorybookFileNameOf,
   muirMoiraStorybookIsUnknownPlay,
   muirMoiraStorybookList,
   muirMoiraStorybookPropertyKey,
   muirMoiraStorybookReadNamingStoryFile,
   muirMoiraStorybookSitesOf,
+  muirMoiraStorybookTraversedFileNameOf,
   type MuirMoiraStorybookProven,
   type MuirMoiraStorybookSiteRun,
 } from '@muirjs/moira-storybook';
@@ -118,7 +118,10 @@ export function muirProteusStorybookSitesIn(program: NodePath): Sites {
 
       return argsSites(
         muirMoiraStorybookList(muirMoiraStorybookField(program.node, 'body')),
-        muirMoiraStorybookFileNameOf(program),
+        muirMoiraStorybookTraversedFileNameOf(
+          muirProteusStorybookPackageName,
+          program,
+        ),
         (fn) => keysRead(paths.get(fn)),
       );
     },

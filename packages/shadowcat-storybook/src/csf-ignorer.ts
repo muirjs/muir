@@ -1,11 +1,11 @@
 import {
   muirMoiraStorybookCsfShapes,
   muirMoiraStorybookField,
-  muirMoiraStorybookFileNameOf,
   muirMoiraStorybookIsRecord,
   muirMoiraStorybookIsStoryFile,
   muirMoiraStorybookList,
   muirMoiraStorybookPropertyKey,
+  muirMoiraStorybookTraversedFileNameOf,
   type MuirMoiraStorybookCsfShapes,
   type MuirMoiraStorybookProjectLog,
 } from '@muirjs/moira-storybook';
@@ -69,7 +69,13 @@ export function muirShadowcatStorybookCsfIgnorer(
       const node = muirMoiraStorybookField(path, 'node');
 
       if (muirMoiraStorybookField(node, 'type') === 'Program') {
-        reasons = fileReasons(node, muirMoiraStorybookFileNameOf(path));
+        reasons = fileReasons(
+          node,
+          muirMoiraStorybookTraversedFileNameOf(
+            muirShadowcatStorybookPackageName,
+            path,
+          ),
+        );
       }
 
       return reasons.get(node);

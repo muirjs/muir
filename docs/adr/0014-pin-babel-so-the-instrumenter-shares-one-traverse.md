@@ -25,6 +25,13 @@ side, npm left the instrumenter a second traverse, `path.hub` was undefined, and
   `npm dedupe`. The mutator packages' self-checks fail loudly when the copies split again.
 - A consumer's project can hit the same split when it hoists a Babel 8 that differs from the instrumenter's. The swap
   mutators' self-check then stops the install with an error rather than running without mutants.
+- The Storybook plugins read the file name through `path.hub` too, and found nothing under the split. The CSF
+  ignorer then hid no mutant, and Storybook refused the mutated story files with
+  `CSF: default export must be an object`. The per-React-major end-to-end run found it on 2026-11-28, in an install
+  of all the packed packages. They now read it through `muirMoiraStorybookTraversedFileNameOf` in
+  `@muirjs/moira-storybook`, which stops the run with an error naming the split and the workaround: an npm override
+  that gives the instrumenter the `@babel/traverse` its `@babel/core` uses. That override was measured to leave one
+  copy and a working components run.
 
 Evidence: the merge commit cdfde948 (root config resolution) and the self-check failures it fixed, recorded in the
 merge run's log.

@@ -1,8 +1,8 @@
 import {
   muirMoiraStorybookField,
-  muirMoiraStorybookFileNameOf,
   muirMoiraStorybookIsStoryFile,
   muirMoiraStorybookStubIgnores,
+  muirMoiraStorybookTraversedFileNameOf,
   type MuirMoiraStorybookProjectLog,
   type MuirMoiraStorybookStubIgnore,
 } from '@muirjs/moira-storybook';
@@ -27,7 +27,10 @@ export function muirShadowcatStorybookVitestStubIgnorer(
       const node = muirMoiraStorybookField(path, 'node');
 
       if (muirMoiraStorybookField(node, 'type') === 'Program') {
-        const fileName = muirMoiraStorybookFileNameOf(path);
+        const fileName = muirMoiraStorybookTraversedFileNameOf(
+          muirShadowcatStorybookVitestPackageName,
+          path,
+        );
         const code = muirMoiraStorybookField(path, 'hub', 'file', 'code');
         const project = muirShadowcatStorybookStrykerStorybookProject(
           options,

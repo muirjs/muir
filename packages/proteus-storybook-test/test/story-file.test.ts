@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  File,
+  loadOptionsSync,
   parseSync,
   transformSync,
   traverse,
@@ -30,17 +32,22 @@ interface StoryFile {
   readonly at: (text: string, type: types.Node['type']) => NodePath;
 }
 
+/** Walks `source` inside Babel's own File, as Stryker's instrumenter does, so each path carries the file. */
 function parse(source: string): StoryFile {
-  const file = parseSync(source, {
+  const input = {
     configFile: false,
     babelrc: false,
     filename: 'case.stories.ts',
-    parserOpts: { plugins: ['typescript'] },
-  });
-  assert.ok(file);
+    parserOpts: { plugins: ['typescript' as const] },
+  };
+  const options = loadOptionsSync(input);
+  assert.ok(options);
+  const ast = parseSync(source, input);
+  assert.ok(ast);
+  const file = new File(options, { code: source, ast, inputMap: null });
   const paths: NodePath[] = [];
 
-  traverse(file, {
+  traverse(file.ast, {
     enter(path) {
       paths.push(path);
     },

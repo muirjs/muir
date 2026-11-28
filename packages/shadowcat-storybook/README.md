@@ -44,6 +44,11 @@ Seven packages work together. This README describes the setup they share.
 - Vitest browser mode for the story tests. The setup below uses `@vitest/browser-playwright` with Chromium, which
   `npx playwright install chromium` installs.
 - Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
+- One copy of `@babel/traverse` 8 shared by `@stryker-mutator/instrumenter` and its `@babel/core`. With two copies,
+  Stryker walks each file without the file name, and the plugins stop the run with an error that says so. Run
+  `npm ls @babel/traverse` to see the copies, then point the instrumenter at the copy its `@babel/core` uses with an
+  npm override and install again, for example
+  `"overrides": { "@stryker-mutator/instrumenter": { "@babel/traverse": "8.1.4" } }`.
 
 Every package in the table apart from `@muirjs/proteus-msw` depends on `@muirjs/moira-storybook`, an internal
 package. Only that package loads Storybook at run time, the first time a plugin reads the Storybook project, so its

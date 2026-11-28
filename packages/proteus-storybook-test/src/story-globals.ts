@@ -1,11 +1,12 @@
 import {
-  muirMoiraStorybookFileNameOf,
   muirMoiraStorybookList,
   muirMoiraStorybookSitesOf,
+  muirMoiraStorybookTraversedFileNameOf,
   type MuirMoiraStorybookProven,
 } from '@muirjs/moira-storybook';
 
 import type { MuirProteusStorybookTestMutator } from './mutator.ts';
+import { muirProteusStorybookTestPackageName } from './package-name.ts';
 import {
   muirProteusStorybookTestPerFile,
   muirProteusStorybookTestReadStoryFileAt,
@@ -18,7 +19,10 @@ export const muirProteusStorybookTestProofsBySite =
         muirMoiraStorybookSitesOf(
           muirMoiraStorybookList(program.node.body),
           'globals',
-          muirMoiraStorybookFileNameOf(program),
+          muirMoiraStorybookTraversedFileNameOf(
+            muirProteusStorybookTestPackageName,
+            program,
+          ),
         ).map(({ node, proofs }) => [node, proofs]),
       ),
     new Map<unknown, readonly MuirMoiraStorybookProven[]>(),
