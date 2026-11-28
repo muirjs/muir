@@ -29,3 +29,6 @@ Scripts that run after a mutation run:
   run. It fails a mutation run whose report scored no mutant, or that holds a RuntimeError mutant that
   `runtime-errors.json` does not list, as the mutation score leaves those out.
 - `mutation-summary.cli.ts`: writes a report's score and its mutants per status to the CI job summary.
+- `dist-tags.cli.ts`: prints the npm dist-tags a release moves to a package's new version besides `latest`, one per
+  line, computed from its `package.json` as `docs/adr/0017-one-shared-version-whose-major-is-the-strykerjs-major.md`
+  defines them. Nothing calls it yet: it is for the release workflow.
