@@ -6,12 +6,15 @@ import type { MuirProteusReactMutatorName } from '../src/mutators.ts';
 export interface Case {
   readonly id: string;
   readonly title: string;
-  // `<repo>@<commit>:<path>:<line>[,<line>]`, the shape this case reproduces; `design:<section>` for a design rule.
+  // `<repo>@<commit>:<path>:<line>[,<line>]`, the shape this case reproduces; `design:<section>` for a design rule;
+  // `storybook:<package>` for a story file written for that Storybook framework.
   readonly origin: string;
   // Module code before the component, for shapes that need a same-file declaration.
   readonly setup?: string;
   // One JSX expression; free identifiers stand for props.
   readonly jsx: string;
+  // `jsx` is a whole module instead: a story file.
+  readonly whole?: true;
   readonly expect: readonly (readonly [
     mutator: MuirProteusReactMutatorName,
     replacement: string,
@@ -27,6 +30,18 @@ const helloWorldOrigin = 'stryker-playwright-hello-world@fa6dd64:';
 const demoOrigin = 'siryn-playwright@f00806e:apps/demo-app/src/app/';
 const rulesOrigin = 'design:Rules the synthetic cases settled';
 const release = 'design:Mutators in the first release';
+const storybookOrigin = 'storybook:@storybook/react-vite';
+
+/** A CSF 3 story file for `@storybook/react-vite`, with `meta` and `primary` as the rest of each object. */
+function storyFile(meta: string, primary: string): string {
+  return [
+    "import type { Meta, StoryObj } from '@storybook/react-vite';",
+    "import { Button } from './button';",
+    `const meta = { component: Button${meta} } satisfies Meta<typeof Button>;`,
+    'export default meta;',
+    `export const Primary: StoryObj<typeof meta> = {${primary}};`,
+  ].join('\n');
+}
 
 export const cases: readonly Case[] = [
   {
@@ -1225,10 +1240,10 @@ export const cases: readonly Case[] = [
     jsx:
       '<div><area href="/x" alt="Map" coords="0,0,1,1" shape="rect" target="_blank" download="m" hrefLang="en" media="print" referrerPolicy="no-referrer" id="m" />' +
       '<a href="/a" target="_blank" rel="noopener" type="text/html" ping="/p" id="a">A</a>' +
-      '<button type="submit" name="n" value="v" form="f" formAction="/b" formEncType="text/plain" formMethod="post" formNoValidate formTarget="_self" className="b">B</button></div>',
+      '<button type="submit" name="n" value="v" form="f" formAction="/b" formEncType="text/plain" formMethod="post" formNoValidate formTarget="_self" autoFocus className="b">B</button></div>',
     expect: [
       ['MuirProteusReactElementRole', '<span id="m" />'],
-      ['MuirProteusReactElementRole', '<span rel="noopener" id="a">A</span>'],
+      ['MuirProteusReactElementRole', '<span id="a">A</span>'],
       ['MuirProteusReactElementRole', '<span className="b">B</span>'],
       ['MuirProteusReactUrlAttribute', 'href=""'],
       ['MuirProteusReactUrlAttribute', 'href=""'],
@@ -1523,5 +1538,48 @@ export const cases: readonly Case[] = [
         'aria-selected={!!(a === b ?? c === d)}',
       ],
     ],
+  },
+  {
+    id: 'storybook-1',
+    title:
+      'the JSX of a story render function is mutated like the JSX of a component',
+    origin: storybookOrigin,
+    whole: true,
+    jsx: storyFile(
+      '',
+      ' render: (args) => <Button {...args} aria-label="Save draft" onClick={save} disabled={busy}>Save</Button> ',
+    ),
+    expect: [
+      ['MuirProteusReactDisabledAttribute', 'disabled={false}'],
+      ['MuirProteusReactEventHandler', 'onClick={undefined}'],
+      ['MuirProteusReactLabelAttribute', 'aria-label=""'],
+      ['MuirProteusReactTextLiteral', ''],
+    ],
+  },
+  {
+    id: 'storybook-2',
+    title: 'the JSX of a decorator is mutated, and the Story it wraps is not',
+    origin: storybookOrigin,
+    whole: true,
+    jsx: storyFile(
+      ', decorators: [(Story) => <div role="dialog" aria-hidden={!open}><Story /></div>]',
+      '',
+    ),
+    expect: [
+      ['MuirProteusReactElementRole', 'role={undefined}'],
+      ['MuirProteusReactHiddenAttribute', 'aria-hidden={false}'],
+    ],
+  },
+  {
+    id: 'storybook-3',
+    title:
+      'args and argTypes are objects, not JSX, so their props get no JSX mutant',
+    origin: storybookOrigin,
+    whole: true,
+    jsx: storyFile(
+      ", args: { 'aria-label': 'Close', disabled: true, onClick: close }, argTypes: { role: { control: 'text' } }",
+      " args: { title: 'Close dialog' } ",
+    ),
+    expect: [],
   },
 ];

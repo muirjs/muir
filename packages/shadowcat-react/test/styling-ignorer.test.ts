@@ -415,6 +415,50 @@ describe('the muir-shadowcat-react-styling options schema', () => {
     assert.deepEqual(withSchema, { valid: true, log: [] });
   });
 
+  describe('in a @storybook/react-vite story file', () => {
+    const story = (meta: string, primary: string) =>
+      [
+        "import type { Meta, StoryObj } from '@storybook/react-vite';",
+        "import { Button } from './button';",
+        `const meta = { component: Button${meta} } satisfies Meta<typeof Button>;`,
+        'export default meta;',
+        `export const Primary: StoryObj<typeof meta> = {${primary}};`,
+      ].join('\n');
+    // The meta object, the story object or the decorators array, and the arrow function: none is styling.
+    const placedOutside = ['placed', 'placed', 'placed'];
+
+    it('ignores every mutant in the className and the paint style of a render function', async () => {
+      assert.deepEqual(
+        await outcomes(
+          story(
+            '',
+            " render: (args) => <Button {...args} className={on ? 'a' : 'b'} style={{ color: 'red' }} /> ",
+          ),
+        ),
+        [...placedOutside, classReason, classReason, styleReason, styleReason],
+      );
+    });
+
+    it('ignores every mutant in the className of a decorator', async () => {
+      assert.deepEqual(
+        await outcomes(
+          story(
+            ", decorators: [(Story) => <div className={cn('p-4', dark && 'dark')}><Story /></div>]",
+            '',
+          ),
+        ),
+        [...placedOutside, ...Array<string>(5).fill(classReason)],
+      );
+    });
+
+    it('places the mutants of a className in args, which is no JSX attribute', async () => {
+      assert.deepEqual(
+        await outcomes(story(", args: { className: 'btn' }", '')),
+        ['placed', 'placed', 'placed'],
+      );
+    });
+  });
+
   [
     { visibilityClasses: 'closed' },
     { visibilityClasses: [1] },

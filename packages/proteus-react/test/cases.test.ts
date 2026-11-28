@@ -15,6 +15,10 @@ import {
 import { installInto, ours } from './support/installed.ts';
 
 function source(testCase: Case): string {
+  if (testCase.whole) {
+    return testCase.jsx;
+  }
+
   return `${testCase.setup ?? ''}\nexport function Case(props: any) {\n  return (${testCase.jsx});\n}\n`;
 }
 

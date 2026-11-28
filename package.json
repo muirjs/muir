@@ -82,6 +82,7 @@
   "packageManager": "npm@12.2.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tools/react-versions/*"
   ]
 }

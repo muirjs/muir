@@ -14,6 +14,10 @@ The package is private and not on npm yet.
 
 - `@stryker-mutator/core` 10.1, tested on 10.1.1.
 - Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
+- React 16.14 or a later 16.x, 17, 18 or 19, tested on the oldest and the newest release of each: 16.14.0, 17.0.0,
+  17.0.2, 18.0.0, 18.3.1, 19.0.0 and 19.3.1. The package imports nothing from React and states the range as an
+  optional `react` peer dependency, so an install with another React version fails. Story files written for
+  `@storybook/react-vite` are covered like component files.
 - React JSX or TSX. The ignorer matches React's attribute names, such as `className` and `style` with an object
   value.
 

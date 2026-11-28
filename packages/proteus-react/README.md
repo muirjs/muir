@@ -29,6 +29,11 @@ changes and which shapes it skips. Stryker's reports show these names as the mut
 - `@stryker-mutator/core` 10.1, tested on 10.1.1. The plugin patches internals of that version's
   instrumenter, and warns when it finds another version.
 - Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x, tested on 22.23.1 and 24.22.0 on Windows 11 arm64, and on 24.22.1 on Linux arm64.
+- React 16.14 or a later 16.x, 17, 18 or 19, with the classic or the automatic JSX transform. The tests render every
+  mutant of a sample component under the oldest and the newest release of each: 16.14.0, 17.0.0, 17.0.2, 18.0.0,
+  18.3.1, 19.0.0 and 19.3.1. The package imports nothing from React and states the range as an optional `react` peer
+  dependency, so an install with another React version fails. Story files written for `@storybook/react-vite` are
+  mutated like component files.
 - React JSX or TSX. The mutators match React's attribute names, such as `htmlFor` and `readOnly`, so
   Solid, Preact or Vue JSX written with `for` or `readonly` gets no mutants on those attributes. Vue,
   Angular and Svelte templates get no JSX mutants; JSX in a Vue `<script lang="tsx">` block does. The run
