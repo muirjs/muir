@@ -1,0 +1,84 @@
+name: Mutation run
+
+# A full Stryker run of one project's mutate target, started by hand or with
+# `gh workflow run mutation.yml --ref <branch> -f project=<project> -f config=<config>`, for a run too heavy for a
+# shared machine or a timing that has to come from CI. It keeps no incremental file, so every mutant runs and the
+# job's time is the run's. Each copy runs on its own runner at the same time.
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Nx project, such as @muirjs/siryn-node-test
+        required: true
+        type: string
+      config:
+        description: The mutate target's suffix, such as src or test-code
+        required: true
+        default: src
+        type: string
+      mutate:
+        description: Optional --mutate value, such as packages/siryn-node-test/src/runner.ts:546-569
+        required: false
+        default: ''
+        type: string
+      copies:
+        description: How many runs of the same commit to start at once, from 1 to 5
+        required: true
+        default: '1'
+        type: choice
+        options: ['1', '2', '3', '4', '5']
+      timeout:
+        description: Minutes before a run is stopped
+        required: true
+        default: '90'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: ${{ inputs.project }}:mutate-${{ inputs.config }} (copy ${{ matrix.copy }})
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ fromJSON(inputs.timeout) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        copy: >-
+          ${{ fromJSON(inputs.copies == '1' && '[1]' || inputs.copies == '2' && '[1,2]' || inputs.copies == '3' &&
+          '[1,2,3]' || inputs.copies == '4' && '[1,2,3,4]' || '[1,2,3,4,5]') }}
+    env:
+      REPORT: reports/mutation/${{ inputs.project }}.${{ inputs.config }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Run Stryker
+        run: npx nx run "$PROJECT:mutate-$CONFIG" --skip-nx-cache ${MUTATE:+--mutate="$MUTATE"}
+        env:
+          PROJECT: ${{ inputs.project }}
+          CONFIG: ${{ inputs.config }}
+          MUTATE: ${{ inputs.mutate }}
+      # Also when the run fails its threshold: the job summary shows the score and the mutants per status.
+      - name: Summarize the mutation score
+        if: always()
+        env:
+          TITLE: ${{ inputs.project }}.${{ inputs.config }} (copy ${{ matrix.copy }})
+        run: |
+          if [ ! -f "$REPORT.json" ]; then
+            echo "Stryker wrote no mutation report for $TITLE." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node tools/eslint-rules/mutation-summary.cli.ts "$REPORT.json" "$TITLE" >> "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-report-copy-${{ matrix.copy }}
+          path: |
+            ${{ env.REPORT }}.json
+            ${{ env.REPORT }}.html
