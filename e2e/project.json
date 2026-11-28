@@ -93,6 +93,28 @@
         "react-19": { "env": { "MUIR_E2E_REACT": "19.3.1" } }
       }
     },
+    "e2e-playwright": {
+      "command": "node --test \"e2e/test/browser/playwright.e2e.ts\"",
+      "options": { "cwd": "{workspaceRoot}" },
+      "cache": true,
+      "parallelism": false,
+      "dependsOn": ["^build"],
+      "inputs": [
+        "default",
+        "!{projectRoot}/src/oss/**/*",
+        "!{projectRoot}/test/unit/**/*",
+        "!{projectRoot}/stryker*.config.mjs",
+        "!{projectRoot}/tsconfig.stryker.json",
+        "^production",
+        "nodeVersion",
+        "{workspaceRoot}/package.json"
+      ],
+      "defaultConfiguration": "stryker-10-1",
+      "configurations": {
+        "stryker-10-0": { "env": { "MUIR_E2E_STRYKER": "10.0.0" } },
+        "stryker-10-1": { "env": { "MUIR_E2E_STRYKER": "10.1.1" } }
+      }
+    },
     "mutate": {},
     "mutate-src": {},
     "mutate-test-code": {}

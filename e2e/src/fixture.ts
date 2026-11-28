@@ -79,11 +79,17 @@ export async function muirFixture(name: string): Promise<MuirFixture> {
   };
 }
 
-/** Installs the packed packages and the workspace's pinned Stryker, TypeScript and Node.js types into `dir`. */
+/**
+ * Installs the packed packages and `pinned` into `dir`: by default the workspace's pinned Stryker, TypeScript and
+ * Node.js types.
+ */
 export async function muirInstallPacked(
   dir: string,
   tarballs: readonly string[],
   before?: string,
+  pinned: readonly string[] = muirPinned(
+    JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8')),
+  ),
 ): Promise<void> {
   // npx and npm exec hand npm_config_prefix and npm_config_local_prefix (the workspace) on to this process.
   await npm(dir, [
@@ -96,9 +102,7 @@ export async function muirInstallPacked(
     '--no-fund',
     ...(before === undefined ? [] : ['--before', before]),
     ...tarballs,
-    ...muirPinned(
-      JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8')),
-    ),
+    ...pinned,
   ]);
 }
 

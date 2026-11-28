@@ -501,6 +501,8 @@ jobs:
           - target: 'e2e:e2e-storybook-react:react-17'
           - target: 'e2e:e2e-storybook-react:react-18'
           - target: 'e2e:e2e-storybook-react:react-19'
+          - target: 'e2e:e2e-playwright:stryker-10-0'
+          - target: 'e2e:e2e-playwright:stryker-10-1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

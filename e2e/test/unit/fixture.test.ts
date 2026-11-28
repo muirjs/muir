@@ -624,6 +624,29 @@ describe('muirInstallPacked', () => {
     ]);
   });
 
+  it('installs the given pins instead of the workspace pins', async (t) => {
+    const npmRuns = useFakeNpm(t);
+    const dir = tempDir(t, 'muir-install-');
+
+    await muirInstallPacked(dir, ['a.tgz'], undefined, [
+      '@stryker-mutator/core@10.0.0',
+    ]);
+
+    assert.deepEqual(npmRuns(), [
+      [
+        'install',
+        '--save-dev',
+        '--save-exact',
+        '--prefix',
+        dir,
+        '--no-audit',
+        '--no-fund',
+        'a.tgz',
+        '@stryker-mutator/core@10.0.0',
+      ],
+    ]);
+  });
+
   it("refuses a failed npm run, and shows npm's command, exit code and output", async (t) => {
     useFakeNpm(t);
     const dir = tempDir(t, 'muir-install-');
