@@ -5,8 +5,9 @@
 # @muirjs/siryn-node-test
 
 A [StrykerJS](https://stryker-mutator.io/) test runner for `node:test`. It runs each test file in its own `node`
-process with `node:test`, so the tests run as they do under `node --test`. It is ESM only and needs Node.js 22.18
+process with `node:test`, so the tests run as they do under `node --test`. It is ESM only and needs Node.js 22.20
 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x. On any other version the runner stops with an error.
+Test files are ES modules too: a CommonJS test file is not supported.
 
 - Stryker plugin name: `muir-siryn-node-test`
 - Stryker options key: `muirSirynNodeTest`
@@ -233,7 +234,7 @@ once per run as under `node --test`.
   file. That is the partial level "Tests per file without location": after any change to such a file, Stryker runs
   again the mutants that any of its tests cover. [Use incremental mode](#use-incremental-mode) lists what Stryker does
   not see.
-- **Node.js version.** On a Node.js older than 22.18, the runner stops with an error before the dry run.
+- **Node.js version.** On a Node.js older than 22.20, the runner stops with an error before the dry run.
 
 ## What each status means
 

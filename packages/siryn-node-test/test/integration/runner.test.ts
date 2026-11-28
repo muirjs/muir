@@ -110,7 +110,7 @@ describe('MuirSirynNodeTestTestRunner', () => {
   muirTestFor<readonly [string, string, string | undefined]>([
     ...[
       '21.20.0',
-      '22.17.1',
+      '22.19.0',
       '23.11.0',
       '24.10.0',
       '25.9.0',
@@ -119,9 +119,9 @@ describe('MuirSirynNodeTestTestRunner', () => {
     ].map((version): readonly [string, string, string] => [
       'refuses',
       version,
-      `The muir-siryn-node-test test runner needs Node.js ^22.18.0 || ^24.11.0 || ^26.13.0, and this is Node.js ${version}.`,
+      `The muir-siryn-node-test test runner needs Node.js ^22.20.0 || ^24.11.0 || ^26.13.0, and this is Node.js ${version}.`,
     ]),
-    ['runs on', '22.18.0', undefined],
+    ['runs on', '22.20.0', undefined],
     ['runs on', '24.11.0', undefined],
     ['runs on', '26.13.0', undefined],
   ])('%s Node.js %s', async ([, version, message], t) => {

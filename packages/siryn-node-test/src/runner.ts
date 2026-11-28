@@ -109,7 +109,7 @@ const defaults = schema.properties.muirSirynNodeTest.properties;
 
 /** The Node.js major versions the runner supports, each with its oldest supported minor version. */
 const minorFloors = new Map([
-  [22, 18],
+  [22, 20],
   [24, 11],
   [26, 13],
 ]);

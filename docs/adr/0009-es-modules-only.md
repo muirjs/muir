@@ -27,6 +27,15 @@ maintain.
   syntax inside our repo". Node.js 27 and 28 are left out: "`>=26.13.0` would allow Node.js 27 (Alpha) and Node.js 28
   (future release). We don't support either." Stryker 10.1's `@babel/core` 8 also declares
   `^22.18.0 || >=24.11.0`.
+- 2026-11-28: `@muirjs/siryn-node-test` alone starts at `^22.20.0`, in its `engines` and its start-up check. On
+  22.18.0 and 22.19.0 its runner fails on three `node:test` bugs that Node.js fixed in 22.20.0: the root test
+  context's `fullName` throws (nodejs/node#59377), a suite does not pass `todo` on to its tests (nodejs/node#59721),
+  and mock timers keep a cleared interval (nodejs/node#59479). Lars approved the floor ("siryn-node-test floor: OK").
+- 2026-11-28: the rule covers test files as well. Lars: "All Muir packages should only officially support ESM, not
+  CommonJS to increase maintainability and reduce complexity." The test that ran a CommonJS test file under the
+  `muir-siryn-node-test` hook is removed; such a file fails to load with the hook before Node.js 22.22.3. The hook
+  still redirects `require('node:test')`, which an ES module reaches through `createRequire` and a CommonJS dependency
+  through `require`.
 
 Evidence: 205c182 (the ES module base configuration and engines), 0765eb3 (why the floor is 22.18), 20ea351
 ("ES modules, not CommonJS"), the "ES modules only" section of `packages/proteus-node/README.md`.

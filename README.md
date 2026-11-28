@@ -9,8 +9,9 @@
 and Vite that work without StrykerJS. The packages are ESM-only and support each Node.js LTS major
 version from its first LTS release: 22.18 or a later 22.x, 24.11 or a later 24.x, and 26.13 or a later 26.x. Node.js
 22 starts at 22.18, not 22.11, because the workspace runs its TypeScript files by type stripping, which Node.js 22
-turns on by default from 22.18. CI tests the packages on the latest Node.js 22, 24 and 26, and on Linux on the oldest
-supported version of each: 22.18.0, 24.11.0 and 26.13.0.
+turns on by default from 22.18. `@muirjs/siryn-node-test` alone starts at 22.20, the first Node.js 22 release whose
+`node:test` has the fixes it depends on. CI tests the packages on the latest Node.js 22, 24 and 26, and on Linux on
+the oldest supported version of each: 22.18.0 (22.20.0 for `@muirjs/siryn-node-test`), 24.11.0 and 26.13.0.
 
 ## Package names
 

@@ -613,17 +613,6 @@ describe('hook', () => {
     },
   );
 
-  it('records where a CommonJS test file declares its tests', async (t) => {
-    const { code, record } = await runTestFile(
-      t,
-      "const { it } = require('node:test');\n\n  it('passes', () => {});\n",
-      { name: 'fixture.test.cjs' },
-    );
-
-    assert.equal(code, 0);
-    assert.deepEqual(record?.tests[0]?.startPosition, { line: 2, column: 2 });
-  });
-
   /** A test file whose source map sends line 2, the `it` call, to line 41, column 3 of `source`. */
   const mapped = (source: string) => {
     const map = {

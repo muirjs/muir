@@ -532,7 +532,7 @@ describe('install', () => {
     });
   });
 
-  it('records where the test file declares a test, named by URL as an ES module or by path as CommonJS', () => {
+  it('records where the test file declares a test, named by URL or by path', () => {
     const file = resolve(testFile);
     const other = pathToFileURL(resolve('/repo', 'other.ts')).href;
     const startPositions = [pathToFileURL(file).href, file, other].map(

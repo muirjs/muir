@@ -24,12 +24,16 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         # An empty value reads .node-version (26). The exact versions are the oldest that package.json engines allows
-        # in each major: ^22.18.0 || ^24.11.0 || ^26.13.0.
-        node-version: ['', '22', '24', '22.18.0', '24.11.0', '26.13.0']
+        # in each major: ^22.18.0 || ^24.11.0 || ^26.13.0. @muirjs/siryn-node-test starts at 22.20.0 instead of 22.18.0,
+        # so the 22.18.0 job leaves it out and the 22.20.0 job checks it alone.
+        node-version:
+          ['', '22', '24', '22.18.0', '22.20.0', '24.11.0', '26.13.0']
         # The oldest versions run on Linux only.
         exclude:
           - os: windows-latest
             node-version: '22.18.0'
+          - os: windows-latest
+            node-version: '22.20.0'
           - os: windows-latest
             node-version: '24.11.0'
           - os: windows-latest
@@ -47,7 +51,10 @@ jobs:
       # Formatting does not vary by OS or Node.js version.
       - if: matrix.os == 'ubuntu-latest' && !matrix.node-version
         run: npx prettier --check .
-      - run: npx nx run-many -t lint typecheck build test test-integration
+      - run: >-
+          npx nx run-many -t lint typecheck build test test-integration
+          ${{ matrix.node-version == '22.18.0' && '--exclude=@muirjs/siryn-node-test' ||
+          matrix.node-version == '22.20.0' && '--projects=@muirjs/siryn-node-test' || '' }}
 
   e2e:
     name: End-to-end tests

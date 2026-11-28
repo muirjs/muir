@@ -269,7 +269,7 @@ export function muirSirynNodeTestInstall(
       stallMs,
     );
     end = ends;
-    // ES modules are named by their URL, CommonJS modules by their path.
+    // A call site names its file by URL in an ES module and by path otherwise.
     const callSites = (sourceMap: boolean) =>
       deps
         .callSites(callSiteFrames, { sourceMap })
