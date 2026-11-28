@@ -12,6 +12,8 @@
       "{workspaceRoot}/packages/*/src/**/*.ts",
       "{workspaceRoot}/packages/*/README.md",
       "{workspaceRoot}/packages/*/test/synthetic/**/*",
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/e2e/fixtures/*/package.json",
       "eslintPlugins"
     ]
   },

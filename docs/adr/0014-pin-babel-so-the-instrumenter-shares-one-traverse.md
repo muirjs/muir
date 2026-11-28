@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0018
 ---
 
 # Pin the workspace's Babel 8 packages so Stryker's instrumenter and its @babel/core share one @babel/traverse

@@ -97,9 +97,14 @@ export default base;
 
 /**
  * The ignore patterns of the configs whose runs read e2e/: the e2e project mutates it, and the eslint-rules tests
- * load its Stryker configs. Its consumer fixtures stay out of the sandbox.
+ * load its Stryker configs. Its consumer fixtures stay out of the sandbox apart from their package.json, whose
+ * override the eslint-rules tests compare with the workspace's.
  */
-export const ignorePatternsKeepingE2e = [...ignoredEverywhere, '/e2e/fixtures'];
+export const ignorePatternsKeepingE2e = [
+  ...ignoredEverywhere,
+  '/e2e/fixtures/*/**',
+  '!/e2e/fixtures/*/package.json',
+];
 
 /**
  * The production-code config of `packages/<name>`, which mutates its src with the package's node:test files.

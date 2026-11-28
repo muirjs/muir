@@ -24,13 +24,16 @@ function runKey({
   return `${project}:mutate-${config}`;
 }
 
-// The packages' runs never read e2e/; the e2e runs mutate it, and these tests load its Stryker configs.
+// The packages' runs never read e2e/; the e2e runs mutate it, these tests load its Stryker configs, and
+// babel-override.test.ts reads its fixtures' package.json.
 const ignorePatterns = (file: string): string[] => [
   '/.claude',
   '/.nx',
   '/.scratch',
   '/reports',
-  file.startsWith('packages/') ? '/e2e' : '/e2e/fixtures',
+  ...(file.startsWith('packages/')
+    ? ['/e2e']
+    : ['/e2e/fixtures/*/**', '!/e2e/fixtures/*/package.json']),
 ];
 
 const notWorkspaceConfigs = new Set([

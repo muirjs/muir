@@ -33,7 +33,7 @@ export function muirMoiraStorybookFileNameOf(
 /**
  * The file name of a path from Stryker's instrumenter, as `muirMoiraStorybookFileNameOf` gives it. Throws when the path
  * carries no Babel File, which happens when the instrumenter's `@babel/traverse` and its `@babel/core`'s are two copies
- * (docs/adr/0014-pin-babel-so-the-instrumenter-shares-one-traverse.md): without the file name nothing could be read.
+ * (docs/adr/0018-the-workspace-takes-the-override-its-readmes-require.md): without the file name nothing could be read.
  */
 export function muirMoiraStorybookTraversedFileNameOf(
   packageName: string,
