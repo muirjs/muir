@@ -83,6 +83,58 @@ describe('muirDistTags', () => {
     );
   });
 
+  it('tags a package that has a Storybook peer with the Storybook major its range starts at', () => {
+    assert.deepEqual(
+      muirDistTags({
+        name: '@muirjs/proteus-storybook',
+        version: '0.0.1',
+        peerDependencies: {
+          '@stryker-mutator/core': '~10.1.0',
+          storybook: '^10.6.0',
+        },
+      }),
+      ['stryker-10', 'storybook-10'],
+    );
+  });
+
+  it('tags a package that has a Vitest peer with every Vitest major its range lists', () => {
+    assert.deepEqual(
+      muirDistTags({
+        name: '@muirjs/moira-storybook',
+        version: '0.0.1',
+        peerDependencies: {
+          storybook: '^10.6.0',
+          vitest: '^4.0.0 || ^5.0.0',
+        },
+      }),
+      ['storybook-10', 'vitest-4', 'vitest-5'],
+    );
+  });
+
+  it('tags a package that has an MSW peer with every MSW major its range lists', () => {
+    assert.deepEqual(
+      muirDistTags({
+        name: '@muirjs/proteus-msw',
+        version: '0.0.1',
+        peerDependencies: { msw: '^2.0.0 || ^3.0.0' },
+      }),
+      ['msw-2', 'msw-3'],
+    );
+  });
+
+  it('tags a package that has a React peer with every React major its range lists', () => {
+    assert.deepEqual(
+      muirDistTags({
+        name: '@muirjs/proteus-react',
+        version: '0.0.1',
+        peerDependencies: {
+          react: '^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0',
+        },
+      }),
+      ['react-16', 'react-17', 'react-18', 'react-19'],
+    );
+  });
+
   it('skips an alternative of a range that names no version', () => {
     assert.deepEqual(
       muirDistTags({

@@ -12,7 +12,8 @@ function startsOf(range: unknown, pattern: RegExp): string[] {
 /**
  * The npm dist-tags a release moves to this version of a package, besides `latest`: `stryker-<major>` per StrykerJS
  * major of its peer range, `node-<major>` per Node.js major of its engines when its name has the `node` technology,
- * and `playwright-<major>.<minor>` for the Playwright Test release its peer range starts at.
+ * `playwright-<major>.<minor>` for the Playwright Test release its peer range starts at, and `storybook-<major>`,
+ * `vitest-<major>`, `msw-<major>` and `react-<major>` per major of that peer's range.
  */
 export function muirDistTags(manifest: unknown): string[] {
   if (!muirIsRecord(manifest)) {
@@ -36,6 +37,9 @@ export function muirDistTags(manifest: unknown): string[] {
     ...startsOf(nodeRange, /\d+/).map((major) => `node-${major}`),
     ...startsOf(peerRange('@playwright/test'), /\d+\.\d+/).map(
       (release) => `playwright-${release}`,
+    ),
+    ...['storybook', 'vitest', 'msw', 'react'].flatMap((peer) =>
+      startsOf(peerRange(peer), /\d+/).map((major) => `${peer}-${major}`),
     ),
   ];
 }

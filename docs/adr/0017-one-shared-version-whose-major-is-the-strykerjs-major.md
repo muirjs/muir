@@ -33,6 +33,12 @@ Besides `latest`, a release moves these npm dist-tags:
   - A `playwright-<major>.<minor>` tag on `@muirjs/siryn-playwright` for each Playwright release that broke the
     runner, and no tag for the minors between them (Lars: "I suggest a new Playwright dist-tag per breaking change
     that affects us.").
+  - `storybook-<major>`, `vitest-<major>`, `msw-<major>` and `react-<major>` on every package with a `storybook`,
+    `vitest`, `msw` or `react` peer dependency, one tag for each major the peer range lists: `storybook-10`,
+    `vitest-4` and `vitest-5`, `msw-2` and `msw-3`, `react-16` to `react-19` at the first release. The peer range
+    decides, not the package name, so `@muirjs/moira-storybook` gets the Vitest tags and the Storybook packages,
+    which have no `react` peer, get no React tag. Lars approved each in turn (2026-11-28), and
+    `storybook-<major>` over `storybook-<major>.<minor>` because the Storybook floor holds for the major.
 
 ## Dropping a version of a technology
 
