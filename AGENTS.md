@@ -10,6 +10,16 @@
 - For several ranges, join them with commas in one flag (`--mutate a.ts:18-31,a.ts:330-330`). A repeated `--mutate`
   flag ran no mutants and still reported success
 
+## Git history
+
+- Until the first release is cut, and after that between release cuts, you may amend, fix up and rewrite the commits
+  on `main` back to the previous release cut. Once pull requests are in use, the limit is the last merge commit of a
+  pull request instead. Never rewrite a release cut or anything before it.
+- So fold the fix of a mistake into the commit that made it, instead of adding a commit that repairs it.
+- Before the push, compare the rewritten branch's tree with the old one (`git diff <old> <new>` prints nothing unless
+  the rewrite was meant to change content), and push with `git push --force-with-lease`.
+- Lint, typecheck and test a change before you commit it; a formatting check alone is not enough.
+
 ## Domain language
 
 Before you name a type, function, option, test or heading, read the glossary of the context you work in.
