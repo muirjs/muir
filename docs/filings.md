@@ -2168,3 +2168,84 @@ Measured with a Playwright test runner plugin whose later processes failed `init
 
 **Evidence.** The `concurrency: 2` debug log is kept in this repository's spike folder, `spikes/server-d/out/`
 (untracked). The checker run's log was removed in a cleanup; its outcome is recorded in the spike's report.
+
+## storybookjs/storybook: `@storybook/react` does not load under React 16.8 to 16.12, which its peer range allows
+
+Status: draft, not filed (2026-11-28). Not checked: whether upstream already has an issue for it.
+
+**Versions.** `storybook`, `@storybook/react-vite` and `@storybook/addon-vitest` 10.6.5, Vite 8.3.5, Vitest 5.1.0,
+Node.js 26.13.1, npm 12.2.0, Windows 11 arm64. React and react-dom 16.8.0 and 16.12.0 fail; 16.13.0, 16.14.0,
+17.0.2, 18.3.1 and 19.3.1 work.
+
+**Reproduction.**
+
+1. A project with `react` and `react-dom` 16.8.0, `storybook` and `@storybook/react-vite` 10.6.5, a
+   `.storybook/main.ts` with `framework: '@storybook/react-vite'`, and one story.
+2. `npx storybook build`, or `npx vitest run` with `@storybook/addon-vitest`.
+
+**What happens.**
+
+```
+Failed to load preset: {"type":"presets","name":".../node_modules/@storybook/react/dist/preset.js"}
+.../node_modules/@storybook/react/dist/_node-chunks/chunk-WARHQ43F.js:14471
+import React__default, { Fragment, isValidElement as isValidElement2 } from "react";
+SyntaxError: The requested module 'react' does not provide an export named 'Fragment'
+```
+
+`storybook build` goes on and exits 0. Story tests then fail with `SB_PREVIEW_API_0014 (NoRenderFunctionError): No
+render function available for storyId '...'` or `context.renderToCanvas is not a function`.
+
+**Expected.** Storybook loads under every React its `peerDependencies` allow (`^16.8.0`), or the range starts at
+16.13.0.
+
+**Cause.** The preset's Node.js chunk imports named exports from `react`. Node.js finds no named export in React's
+CommonJS build before 16.13.0: importing `react` from an ES module gives 0 names under 16.8.0, 16.8.6, 16.9.0 and
+16.12.0, and 28 under 16.13.0 (measured; the counts for 16.12.0 and 16.13.0 were run twice). So the import fails
+when the module links. A default import with property access (`React.Fragment`) would load under all of them.
+
+**Not checked.** `storybook dev`; frameworks other than `react-vite`.
+
+## storybookjs/storybook: with React 16 or 17 the first `vitest run` on a cold Vite cache fails
+
+Status: draft, not filed (2026-11-28). Not checked: whether upstream already has an issue for it.
+
+**Versions.** As in the entry above, with `@vitest/browser-playwright` 5.1.0 and Playwright 1.64.1 (Chromium). React
+16.14.0 and 17.0.2 fail; 18.3.1 and 19.3.1 pass.
+
+**Reproduction.**
+
+1. A project with `react` and `react-dom` 17.0.2, `@storybook/react-vite` and `@storybook/addon-vitest` 10.6.5, and
+   the documented Vitest project (`storybookTest({ configDir: '.storybook' })`, browser mode, Playwright, Chromium).
+2. A few story files with play functions, for components that use a hook.
+3. Delete `node_modules/.cache`, then `npx vitest run`.
+
+**What happens.** On every cold cache (2 of 2 runs under 16.14.0, 5 of 5 under 17.0.2):
+
+```
+[vite] (client) dependency optimized: @storybook/react-dom-shim/react-16
+[vite] (client) optimized dependencies changed. reloading
+[vitest] Vite unexpectedly reloaded a test. This may cause tests to fail, lead to flaky behaviour or duplicated test runs.
+For a stable experience, add the newly optimized dependencies to your config's `optimizeDeps.include` field manually.
+```
+
+Tests then fail with `Invalid hook call`, `Failed to fetch dynamically imported module
+.../deps/@storybook_react-dom-shim_react-16.js` or `Vitest failed to find the current suite`. A second run, with the
+cache in place, passes.
+
+**Expected.** The first run passes, as it does under React 18 and 19.
+
+**Cause.** `code/lib/react-dom-shim/src/preset.ts` at v10.6.5 adds `react-dom/client` to `optimizeDeps.include` for
+React 18 and 19, and adds nothing for the versions it aliases to `@storybook/react-dom-shim/react-16`. The include
+list of `code/addons/vitest/src/vitest-plugin/index.ts` (lines 478 to 493 at v10.6.5) has no shim entry either. The
+renderer imports the shim when the first story renders, so Vite finds it during the run.
+
+**Workaround.** In the Vitest project: `optimizeDeps: { include: ['@storybook/react-dom-shim'] }`. The alias turns it
+into the `react-16` entry. Naming `@storybook/react-dom-shim/react-16` there does not work: the alias rewrites it to
+`@storybook/react-dom-shim/react-16/react-16`, which the package does not export.
+
+**Suggested fix.** In the shim's `viteFinal`, include the aliased entry when React is below 18.
+
+**Not checked.** Linux; Vite 5 to 7; why a Vitest instance that StrykerJS starts does not fail the same way.
+
+**Evidence for both entries.** The logs of a local spike (seven projects, one per React version); the folder is not
+in the repository.
