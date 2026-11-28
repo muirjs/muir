@@ -17,7 +17,8 @@ experimental. The package is private and not on npm yet.
 - `@stryker-mutator/core` 10.1, tested on 10.1.1. The install patches internals of that version's instrumenter, and
   warns when `@stryker-mutator/instrumenter` is a version other than 10.1.1.
 - Handlers written for msw 2 or msw 3 with its `http`, `graphql` and `HttpResponse` exports, imported from `msw`,
-  `msw/http` or `msw/graphql`. The mutator reads the handler files as source and imports nothing from msw.
+  `msw/http` or `msw/graphql`. The mutator reads the handler files as source and imports nothing from msw. It states the range as an optional
+  `msw` peer dependency (`^2.0.0 || ^3.0.0`), so an install with another msw version fails.
 - Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 ## Turn the mutators on

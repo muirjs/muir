@@ -443,6 +443,12 @@ const nodeTestConfigs = [
 
 const playwrightRecommended = playwright.configs['flat/recommended'];
 
+/**
+ * Optional peers by which a package states the versions it supports of a tool whose files it reads as source,
+ * without importing the tool.
+ */
+const versionPeers = ['msw', 'react', 'storybook', 'vitest'];
+
 function dependencyChecks(ignoredDependencies) {
   return [
     'error',
@@ -655,6 +661,21 @@ const playwrightConfigs = [
       '@nx/dependency-checks': dependencyChecks([
         '@stryker-mutator/core',
         '@babel/core',
+        ...versionPeers,
+      ]),
+    },
+  },
+  {
+    files: [
+      'packages/banshee-storybook-vitest/package.json',
+      'packages/shadowcat-react/package.json',
+      'packages/shadowcat-storybook-vitest/package.json',
+      'packages/shadowcat-storybook/package.json',
+    ],
+    rules: {
+      '@nx/dependency-checks': dependencyChecks([
+        '@stryker-mutator/core',
+        ...versionPeers,
       ]),
     },
   },

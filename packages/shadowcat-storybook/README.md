@@ -46,9 +46,11 @@ Seven packages work together. This README describes the setup they share.
 - Node.js 22.18 or a later 22.x, 24.11 or a later 24.x, or 26.13 or a later 26.x.
 
 Every package in the table apart from `@muirjs/proteus-msw` depends on `@muirjs/moira-storybook`, an internal
-package. Only that package loads Storybook at run time, the first time a plugin reads the Storybook project. So only
-it declares the `storybook` peer, and the peer reaches the other six packages through it. `@muirjs/proteus-msw` reads
-source text and states the same range in its README.
+package. Only that package loads Storybook at run time, the first time a plugin reads the Storybook project, so its
+`storybook` peer is required. The packages you install state the versions they support as optional peer
+dependencies, so that an install with another version fails: `storybook` `^10.6.0` on the five packages named after
+Storybook, `vitest` `^4.0.0 || ^5.0.0` on the two named after Vitest, and `msw` `^2.0.0 || ^3.0.0` on
+`@muirjs/proteus-msw`.
 
 ## Set up two Stryker configurations
 
