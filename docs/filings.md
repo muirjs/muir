@@ -2249,3 +2249,42 @@ into the `react-16` entry. Naming `@storybook/react-dom-shim/react-16` there doe
 
 **Evidence for both entries.** The logs of a local spike (seven projects, one per React version); the folder is not
 in the repository.
+
+## stryker-mutator/stryker-js: the instrumenter walks without `path.hub` when npm installs a second `@babel/traverse`
+
+Status: draft, not filed (2026-11-28). Upstream searched for "path.hub" and "babel traverse copies": no matching
+issue.
+
+**Versions.** `@stryker-mutator/core` and `@stryker-mutator/instrumenter` 10.1.1 (also unchanged on `master` at
+8f24ef0be), npm 11, Node.js 26.13.1, Windows 11 on ARM64.
+
+**What happens.** `packages/instrumenter/src/transformers/babel-transformer.ts` imports `File` from `@babel/core` and
+`traverse` from `@babel/traverse`, wraps the AST in `new File({ filename }, ...)` and calls `traverse(file.ast, ...)`
+(lines 44 and 86 at v10.1.1). Babel sets `path.hub` from the File only when that `traverse` is the same copy as the
+one inside `@babel/core`. The instrumenter's `package.json` asks for `@babel/traverse` `~8.0.4` and `@babel/core`
+`~8.0.0`, and `@babel/core` 8.0.10 asks for `@babel/traverse` `^8.0.10`. When another package hoists
+`@babel/traverse` 8.1.x, npm gives `@babel/core` the root 8.1.4 and nests 8.0.10 under the instrumenter. Every path
+then has `hub` undefined:
+
+- `nodePath.buildCodeFrameError`, the reason the File wrap exists (comment at line 39), loses its code frame.
+- A mutator or ignorer plugin that reads the file through `path.hub.file` (file name, source text, the whole AST) gets
+  nothing.
+
+**Reproduction.** In a project whose install holds the two copies (`npm ls @babel/traverse` shows a nested 8.0.10
+under `@stryker-mutator/instrumenter` and 8.1.4 at the root), resolve `@babel/core` and `@babel/traverse` from the
+instrumenter's folder, build `new File({ filename: 'example.ts' }, { code, ast, inputMap: null })` and walk
+`file.ast` with that `traverse`: `path.hub` is undefined. With one copy, `path.hub.file.opts.filename` is
+`example.ts`.
+
+**Expected.** The instrumenter's walk carries the File whatever npm's placement.
+
+**Suggested fix.** Walk with the File's own path, `file.path.traverse(visitor)`, so the walk uses the `@babel/core`
+copy that built the File; or take `traverse` from `@babel/core` (`import { traverse } from '@babel/core'`) and drop
+the direct `@babel/traverse` dependency.
+
+**Workaround.** `"overrides": { "@stryker-mutator/instrumenter": { "@babel/traverse": "8.1.4" } }`, with the version
+`@babel/core` resolves, then install again. Measured: one copy, `path.hub` present, and a Storybook project's Stryker
+run completes.
+
+**Evidence.** The hub probe and both installs (one copy and two copies) of the Muir end-to-end Storybook run; the
+folders are not in the repository. Muir's side: `docs/adr/0014-pin-babel-so-the-instrumenter-shares-one-traverse.md`.
