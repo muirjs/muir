@@ -3,12 +3,26 @@
   "projectType": "application",
   "tags": ["type:tool"],
   "implicitDependencies": [
+    "@muirjs/banshee-storybook-vitest",
     "@muirjs/madrox-node-test",
-    "@muirjs/siryn-node-test",
-    "@muirjs/proteus-node",
+    "@muirjs/moira-mutators",
+    "@muirjs/moira-storybook",
+    "@muirjs/pixie-storybook-vite",
     "@muirjs/proteus-js",
+    "@muirjs/proteus-msw",
     "@muirjs/proteus-node-test",
-    "@muirjs/moira-mutators"
+    "@muirjs/proteus-node",
+    "@muirjs/proteus-playwright",
+    "@muirjs/proteus-react",
+    "@muirjs/proteus-storybook-test",
+    "@muirjs/proteus-storybook",
+    "@muirjs/shadowcat-js",
+    "@muirjs/shadowcat-react",
+    "@muirjs/shadowcat-storybook-vitest",
+    "@muirjs/shadowcat-storybook",
+    "@muirjs/shadowcat-telemetry",
+    "@muirjs/siryn-node-test",
+    "@muirjs/siryn-playwright"
   ],
   "targets": {
     "test": {

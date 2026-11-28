@@ -4,6 +4,9 @@
   "private": true,
   "description": "StrykerJS mutators for test files that use node:assert and node:test",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "stryker",
     "mutation-testing",

@@ -4,6 +4,9 @@
   "private": true,
   "description": "StrykerJS mutators for any JavaScript or TypeScript code: statements and literals Stryker leaves alone",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "stryker",
     "mutation-testing",

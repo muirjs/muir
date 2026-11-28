@@ -4,6 +4,9 @@
   "private": true,
   "description": "A StrykerJS test runner for node:test that runs each test file in its own node process",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "stryker",
     "stryker-plugin",
